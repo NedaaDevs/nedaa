@@ -81,8 +81,8 @@ type Shafaqs = AlAdhan["shafaqs"];
 
 /**
  * ID of the midnight calculation mode
- * - 0: Standard (mid-point between Maghrib and Fajr)
- * - 1: Jafari (mid-point between Maghrib and Sunrise)
+ * - 0: Standard (mid-point between sunset and sunrise)
+ * - 1: Jafari (mid-point between sunset and Fajr)
  */
 export type AladhanMidnightModeId = MidnightModes[number]["id"];
 

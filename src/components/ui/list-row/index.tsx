@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react-native";
 
 import { HStack, type HStackProps } from "@/components/ui/hstack";
 import { Icon, type IconProps, type IconSize } from "@/components/ui/icon";
@@ -89,7 +89,15 @@ type BaseProps = {
 
 /** A row with an action leads somewhere; one without states a fact. */
 type Props = BaseProps &
-  ({ onPress: () => void; hint?: string } | { onPress?: never; hint?: never });
+  (
+    | {
+        onPress: () => void;
+        hint?: string;
+        /** Names a page outside the app; the row reads as a link and points outward. */
+        linkLabel?: string;
+      }
+    | { onPress?: never; hint?: never; linkLabel?: never }
+  );
 
 /**
  * With `onPress`: a button with its name, its state now and a chevron onward.
@@ -101,6 +109,7 @@ export const ListRow = ({
   title,
   status,
   hint,
+  linkLabel,
   variant = LIST_ROW_VARIANT.CARD,
   onPress,
 }: Props) => {
@@ -135,7 +144,10 @@ export const ListRow = ({
   return (
     <Pressable
       onPress={onPress}
-      accessibilityLabel={status ? t("a11y.join", { first: title, second: status }) : title}
+      accessibilityRole={linkLabel ? "link" : undefined}
+      accessibilityLabel={
+        linkLabel ?? (status ? t("a11y.join", { first: title, second: status }) : title)
+      }
       accessibilityHint={hint}
       flexDirection="row"
       alignItems="center"
@@ -153,7 +165,7 @@ export const ListRow = ({
         ) : null}
       </VStack>
       <Icon
-        as={isRTL ? ChevronLeft : ChevronRight}
+        as={linkLabel ? ExternalLink : isRTL ? ChevronLeft : ChevronRight}
         size="md"
         color="$muted"
         strokeWidth={style.chevronStroke}

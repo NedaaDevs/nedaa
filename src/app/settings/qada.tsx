@@ -249,8 +249,7 @@ const QadaSettings = () => {
                   {t("qada.daysBeforeRamadan")}
                 </Text>
                 <Text size="xs" color="$typographySecondary">
-                  {formatNumberToLocale("1")}-
-                  {formatNumberToLocale(t("qada.days_other", { count: 365 }))}
+                  {formatNumberToLocale("1")}-{formatNumberToLocale(t("qada.days", { count: 365 }))}
                 </Text>
               </HStack>
               <TextInput
