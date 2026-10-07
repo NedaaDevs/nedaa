@@ -36,6 +36,7 @@ jest.mock("@/utils/sound", () => ({ getNotificationSound: () => undefined }));
 const mockSetAlarmSettings = jest.fn();
 const mockGetAlarmSettings = jest.fn();
 jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
   setAlarmSettings: (...args: unknown[]) => mockSetAlarmSettings(...args),
   getAlarmSettings: (...args: unknown[]) => mockGetAlarmSettings(...args),
 }));

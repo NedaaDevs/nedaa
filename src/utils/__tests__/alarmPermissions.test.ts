@@ -8,6 +8,7 @@ import { alarmPermissionsGranted, readAlarmPermissions } from "@/utils/alarmPerm
 import { checkPermissions } from "@/utils/notifications";
 
 jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
   isAlarmKitAvailable: jest.fn(),
   getAuthorizationStatus: jest.fn(),
   canScheduleExactAlarms: jest.fn(),

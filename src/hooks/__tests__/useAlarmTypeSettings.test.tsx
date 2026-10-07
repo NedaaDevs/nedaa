@@ -13,7 +13,10 @@ import { DEFAULT_VIBRATION_CONFIG, type AlarmType, type TimingConfig } from "@/t
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 
-jest.mock("expo-alarm", () => ({ setAlarmSettings: jest.fn() }));
+jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
+  setAlarmSettings: jest.fn(),
+}));
 jest.mock("@/utils/alarmScheduler", () => ({
   scheduleFajrAlarm: jest.fn(),
   scheduleFridayAlarm: jest.fn(),
