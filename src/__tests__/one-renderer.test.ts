@@ -33,6 +33,13 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\bhijriAdjustmentLabel\(/,
     home: "utils/hijriAdjustment.ts",
   },
+  // Today's header and the Hijri screen's hero both write today's dates.
+  {
+    concept: "today's Hijri and Gregorian dates",
+    shows: /\btoday\.gregorianDate\b|\buseTodayDates\b/,
+    drawsWith: /\buseTodayDates\(/,
+    home: "hooks/useTodayDates.ts",
+  },
   // The launch announcement and the About list both draw What's New entries.
   {
     concept: "a What's New entry",
