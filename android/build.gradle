@@ -1,6 +1,8 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
+  // AGP 9 resolves KGP 2.2.10 through its Kotlin BOM; modules compile Compose against this version.
+  ext.kotlinVersion = '2.2.10'
   repositories {
     google()
     mavenCentral()
@@ -10,18 +12,18 @@ buildscript {
   }
   dependencies {
     // AGConnect requires the Android Gradle Plugin coordinate to carry its version explicitly.
-    // Keep this aligned with React Native's gradle/libs.versions.toml.
-    classpath('com.android.tools.build:gradle:8.12.0')
+    // It is ahead of React Native's gradle/libs.versions.toml; the highest version wins.
+    classpath('com.android.tools.build:gradle:9.0.1')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
     if (System.getenv("BUILD_VARIANT") == "hms") {
-      classpath('com.huawei.agconnect:agcp:1.9.1.301')
+      classpath('com.huawei.agconnect:agcp:1.9.6.300')
     }
   }
 }
 
 plugins {
-  id 'org.jetbrains.kotlin.plugin.compose' version '2.1.20' apply false
+  id 'org.jetbrains.kotlin.plugin.compose' version '2.2.10' apply false
 }
 
 allprojects {

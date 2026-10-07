@@ -6,6 +6,7 @@ on:
       - "android/**"
       - "modules/**"
       - "plugins/**"
+      - "patches/**"
       - "package.json"
       - "bun.lock"
       - ".bun-version"

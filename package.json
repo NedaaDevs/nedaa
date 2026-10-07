@@ -164,7 +164,8 @@
   "private": true,
   "patchedDependencies": {
     "react-native-worklets@0.10.1": "patches/react-native-worklets@0.10.1.patch",
-    "expo-modules-core@57.0.19": "patches/expo-modules-core@57.0.19.patch"
+    "expo-modules-core@57.0.19": "patches/expo-modules-core@57.0.19.patch",
+    "@react-native/gradle-plugin@0.86.3": "patches/@react-native%2Fgradle-plugin@0.86.3.patch"
   },
   "expo": {
     "install": {
