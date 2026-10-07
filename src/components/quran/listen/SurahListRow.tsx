@@ -92,7 +92,7 @@ const SurahListRowBase = ({
   // Whatever has landed is shown, so the row never waits on the slower source.
   const metaLine =
     [
-      ayahCount ? t("quran.surah.ayahCount", { n: formatNumberToLocale(String(ayahCount)) }) : null,
+      ayahCount ? t("quran.surah.ayahCount", { count: ayahCount }) : null,
       revelationPlace
         ? revelationPlace === RevelationPlace.MAKKAH
           ? t("quran.surah.makki")

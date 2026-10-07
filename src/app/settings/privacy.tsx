@@ -1,3 +1,4 @@
+import { Linking } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import type { ParseKeys } from "i18next";
@@ -5,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Building2,
   ChartNoAxesColumn,
+  Globe,
   LocateFixed,
   MessageSquareText,
   Send,
@@ -22,10 +24,14 @@ import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { SECTION_KIND } from "@/constants/Section";
 import { SETTINGS_ROW } from "@/constants/SettingsRoot";
 import { useHaptic } from "@/hooks/useHaptic";
 import { usePreferencesStore } from "@/stores/preferences";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("app");
 
 type PointProps = { icon: IconProps["as"]; titleKey: ParseKeys; bodyKey: ParseKeys };
 
@@ -91,6 +97,20 @@ export default function PrivacyScreen() {
                   icon={LocateFixed}
                   titleKey="settings.privacy.location.title"
                   bodyKey="settings.privacy.location.body"
+                />
+                <ListRow
+                  variant={LIST_ROW_VARIANT.GROUPED}
+                  icon={Globe}
+                  tile
+                  title={t("settings.privacy.providerSite")}
+                  linkLabel={t("settings.privacy.providerSite")}
+                  hint={t("a11y.opensInBrowser")}
+                  onPress={async () => {
+                    await selectionHaptic();
+                    await Linking.openURL(PRAYER_TIME_PROVIDERS.ALADHAN.website).catch((error) =>
+                      log.e("Privacy", "Provider site failed to open", error)
+                    );
+                  }}
                 />
                 <Point
                   icon={Building2}

@@ -142,7 +142,7 @@ export default function AlarmCompleteScreen() {
 
                 {isFajr && sunriseMinutes != null && (
                   <Text textAlign="center" size="sm" color="$typographySecondary">
-                    {t("alarm.complete.sunriseIn", { minutes: sunriseMinutes })}
+                    {t("alarm.complete.sunriseIn", { count: sunriseMinutes })}
                   </Text>
                 )}
 

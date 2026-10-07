@@ -246,7 +246,7 @@ const NotificationSettings = () => {
                 {totalOverrideCount > 0 && (
                   <Badge size="sm" variant="outline" marginTop="$1" alignSelf="flex-start">
                     <Badge.Text>
-                      {totalOverrideCount} {t("notification.customSettings")}
+                      {t("notification.customSettings", { count: totalOverrideCount })}
                     </Badge.Text>
                   </Badge>
                 )}
