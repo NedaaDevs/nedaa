@@ -49,10 +49,10 @@ describe("groupMyAthkarByCategory", () => {
   });
 
   test("returns a fresh array, so callers must memoize it", () => {
-    const args = [
+    const args: Parameters<typeof groupMyAthkarByCategory> = [
       [item(1, 10, 100)],
       display([[10, { categoryTitleAr: "ص", categoryTitleEn: "M" }]]),
-    ] as const;
+    ];
 
     expect(groupMyAthkarByCategory(...args)).not.toBe(groupMyAthkarByCategory(...args));
   });

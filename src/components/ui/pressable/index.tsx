@@ -26,7 +26,8 @@ const PressableFrame = styled(View, {
   } as const,
 });
 
-type PressableProps = GetProps<typeof PressableFrame>;
+// Tamagui's native press handler reads `delayLongPress` but leaves it off the view's props.
+type PressableProps = GetProps<typeof PressableFrame> & { delayLongPress?: number };
 
 /**
  * `disabled` is a style variant, which Tamagui consumes rather than forwarding to the

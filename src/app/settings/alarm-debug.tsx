@@ -189,7 +189,7 @@ const AlarmDebugScreen = () => {
     });
 
     // Sync to native so the alarm service uses these values
-    ExpoAlarm.setAlarmSettings("fajr", {
+    ExpoAlarm.setAlarmSettings(ScheduledAlarmType.FAJR, {
       sound: testSound,
       volume: testVolume,
       challengeType: testChallengeType,
@@ -283,7 +283,7 @@ const AlarmDebugScreen = () => {
 
   const scheduleNextFajr = async () => {
     try {
-      const alarmId = await schedulePrayerAlarm(PRAYER_ID.FAJR, PRAYER_ID.FAJR);
+      const alarmId = await schedulePrayerAlarm(PRAYER_ID.FAJR, ScheduledAlarmType.FAJR);
       if (alarmId) {
         const nextFajr = getNextPrayerDate(PRAYER_ID.FAJR);
         setLastResult(`Scheduled Fajr: ${nextFajr?.toISOString()}`);
