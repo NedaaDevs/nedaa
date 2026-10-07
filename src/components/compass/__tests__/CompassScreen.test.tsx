@@ -37,7 +37,9 @@ jest.mock("lucide-react-native", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, string>) => {
+    t: (key: string, options?: Record<string, unknown>) => {
+      // The dial label carries its options, so a test can read the count it was given.
+      if (key === "a11y.compass.dial") return JSON.stringify(options);
       if (key === "compass.accuracyDegrees") return `±${options?.degrees}°`;
       if (key === "compass.locationAccuracyMeters") return `±${options?.meters} m`;
       return key;
@@ -203,6 +205,17 @@ describe("CompassScreen Qibla reliability", () => {
       })
     );
     expect(hasEnableLocation).toBe(false);
+  });
+
+  // A numeric count lets each locale pick the plural form of "degree".
+  it("labels the dial with the heading as a count", async () => {
+    const tree = await renderScreen();
+    const dialProps = mockCompassDial.mock.calls[0]?.[0];
+    act(() => tree.unmount());
+
+    expect(JSON.parse(String(dialProps?.accessibilityLabel))).toEqual(
+      expect.objectContaining({ count: reliableCompass.heading })
+    );
   });
 
   it("falls back to a plain compass with an enable-location line when no fix exists", async () => {
