@@ -28,6 +28,17 @@ const buildDex = (strings: string[]): Uint8Array => {
   return dex;
 };
 
+const STRING_IDS_SIZE_OFFSET = 0x38;
+const STRING_IDS_OFF_OFFSET = 0x3c;
+
+const setUint32 = (dex: Uint8Array, offset: number, value: number): Uint8Array => {
+  new DataView(dex.buffer, dex.byteOffset, dex.byteLength).setUint32(offset, value, true);
+  return dex;
+};
+
+const firstStringIdOffset = (dex: Uint8Array): number =>
+  new DataView(dex.buffer, dex.byteOffset, dex.byteLength).getUint32(STRING_IDS_OFF_OFFSET, true);
+
 describe("HMS artifact markers", () => {
   test("reads the DEX string table", () => {
     expect(readDexStrings(buildDex(["a", "Lfoo/Bar;"]))).toEqual(["a", "Lfoo/Bar;"]);
@@ -58,5 +69,44 @@ describe("HMS artifact markers", () => {
   test("allows nothing outside DEX files", () => {
     const manifest = new TextEncoder().encode(`x${CONSCRYPT_PROBE}x`);
     expect(findRawViolations(manifest)).toEqual(["com.google.android.gms"]);
+  });
+
+  describe("rejects a malformed DEX", () => {
+    test("with a ULEB128 length cut off by the end of the file", () => {
+      const dex = buildDex(["a"]);
+      dex[dex.length - 1] = 0x80;
+      setUint32(dex, firstStringIdOffset(dex), dex.length - 1);
+      expect(() => readDexStrings(dex)).toThrow();
+      expect(() => findDexViolations(dex)).toThrow();
+    });
+
+    test("with a ULEB128 length longer than five bytes", () => {
+      const dex = buildDex(["abcdef"]);
+      const dataStart = firstStringIdOffset(dex) + 4;
+      dex.fill(0x80, dataStart, dataStart + 6);
+      expect(() => readDexStrings(dex)).toThrow();
+    });
+
+    test("with a string data offset past the end of the file", () => {
+      const dex = setUint32(buildDex(["a"]), HEADER_SIZE, 0xffff);
+      expect(() => readDexStrings(dex)).toThrow();
+      expect(() => findDexViolations(dex)).toThrow();
+    });
+
+    test("with string data missing its NUL terminator", () => {
+      const dex = buildDex(["abc"]).subarray(0, -1);
+      expect(() => readDexStrings(dex)).toThrow();
+      expect(() => findDexViolations(dex)).toThrow();
+    });
+
+    test("with a string_ids table running past the end of the file", () => {
+      const dex = setUint32(buildDex(["a"]), STRING_IDS_SIZE_OFFSET, 1000);
+      expect(() => readDexStrings(dex)).toThrow();
+      expect(() => findDexViolations(dex)).toThrow();
+    });
+
+    test("with a header shorter than the string_ids fields", () => {
+      expect(() => readDexStrings(new TextEncoder().encode("dex\n035\0"))).toThrow();
+    });
   });
 });
