@@ -270,6 +270,76 @@ describe("SteppedSlider", () => {
     });
   });
 
+  describe("fill from a middle stop", () => {
+    const OFFSETS = [-2, -1, 0, 1, 2] as const;
+    type Offset = (typeof OFFSETS)[number];
+    // Five stops on the same track sit 75pt apart, the origin in the middle.
+    const AT5 = [12, 87, 162, 237, 312] as const;
+    const ORIGIN = AT5[2];
+
+    const showOffset = async (value: Offset, isRTL = false) => {
+      await render(
+        <ThemeProvider isRTL={isRTL}>
+          <SteppedSlider
+            stops={OFFSETS}
+            value={value}
+            fillFrom={0}
+            onChange={onChange}
+            formatValue={String}
+            accessibilityLabel={LABEL}
+          />
+        </ThemeProvider>
+      );
+      await layOut();
+    };
+    const fill = () =>
+      StyleSheet.flatten(screen.getByTestId(STEPPED_SLIDER_PART.FILL, hidden).props.style);
+
+    it.each([
+      [2, { start: ORIGIN, width: AT5[4] - ORIGIN }],
+      [-2, { start: AT5[0], width: ORIGIN - AT5[0] }],
+      [0, { start: ORIGIN, width: 0 }],
+    ] as const)("runs between the origin and the thumb at %p", async (value, expected) => {
+      await showOffset(value);
+
+      expect(fill()).toMatchObject(expected);
+    });
+
+    it("measures the fill from the reading start in RTL too", async () => {
+      await showOffset(-1, true);
+
+      expect(fill()).toMatchObject({ start: AT5[1], width: ORIGIN - AT5[1] });
+    });
+
+    it("colours only the stops between the origin and the thumb", async () => {
+      await showOffset(-1);
+
+      const dots = screen.getAllByTestId(STEPPED_SLIDER_PART.DOT, hidden);
+      expect(dots.map((dot) => StyleSheet.flatten(dot.props.style).backgroundColor)).toEqual([
+        NEDAA_LIGHT.mutedSky.hex,
+        NEDAA_LIGHT.accent.hex,
+        NEDAA_LIGHT.accent.hex,
+        NEDAA_LIGHT.mutedSky.hex,
+        NEDAA_LIGHT.mutedSky.hex,
+      ]);
+    });
+
+    it("marks the origin with a tick centred on its stop", async () => {
+      await showOffset(1);
+
+      const tick = StyleSheet.flatten(
+        screen.getByTestId(STEPPED_SLIDER_PART.TICK, hidden).props.style
+      );
+      expect(tick.start + tick.width / 2).toBe(ORIGIN);
+    });
+
+    it("draws no tick when the fill runs from the first stop", async () => {
+      await show("m");
+
+      expect(screen.queryByTestId(STEPPED_SLIDER_PART.TICK, hidden)).toBeNull();
+    });
+  });
+
   describe("screen reader", () => {
     it("is one adjustable element that speaks the stop's name", async () => {
       await show("s");
