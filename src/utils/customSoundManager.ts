@@ -1,10 +1,15 @@
 import * as DocumentPicker from "expo-document-picker";
+import type { TFunction } from "i18next";
 import { File, Paths } from "expo-file-system";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 // Enums
 import { PlatformType } from "@/enums/app";
+
+// Constants
+import { ALARM_TYPE } from "@/constants/Alarm";
+import { CUSTOM_SOUND_ERROR, CUSTOM_SOUND_MAX_BYTES } from "@/constants/CustomSound";
 
 // Types
 import type {
@@ -33,7 +38,7 @@ import * as ExpoAlarm from "expo-alarm";
  */
 export const CUSTOM_SOUND_REPLACEMENT = "beep";
 
-const ALARM_TYPES: AlarmType[] = ["fajr", "friday"];
+const ALARM_TYPES: AlarmType[] = Object.values(ALARM_TYPE);
 
 /**
  * Pick an audio file from the device
@@ -74,6 +79,12 @@ export function validateAudioFile(file: DocumentPicker.DocumentPickerAsset): {
       valid: false,
       error: `Unsupported file format. Supported formats: ${SUPPORTED_AUDIO_EXTENSIONS.join(", ")}`,
     };
+  }
+
+  // The picker copies into the cache, so a missing size is read from that copy.
+  const size = file.size ?? new File(file.uri).size ?? 0;
+  if (size > CUSTOM_SOUND_MAX_BYTES) {
+    return { valid: false, error: CUSTOM_SOUND_ERROR.TOO_LARGE };
   }
 
   return { valid: true };
@@ -119,7 +130,7 @@ export async function addCustomSound(
     if (duplicate) {
       return {
         success: false,
-        error: "duplicate",
+        error: CUSTOM_SOUND_ERROR.DUPLICATE,
         duplicateSound: duplicate,
       };
     }
@@ -371,14 +382,16 @@ export const isCustomSoundInUse = (
   return usedSounds.has(soundId);
 };
 
+export type CustomSoundUsage = { prayerId?: string; type: CustomSoundUsageType };
+
 /**
  * Get all usage instances of a custom sound in notification settings
  */
 export const getCustomSoundUsages = (
   soundId: string,
   notificationSettings: NotificationSettings
-): { prayerId?: string; type: CustomSoundUsageType }[] => {
-  const usages: { prayerId?: string; type: CustomSoundUsageType }[] = [];
+): CustomSoundUsage[] => {
+  const usages: CustomSoundUsage[] = [];
 
   // Check default settings
   if (notificationSettings.defaults.prayer.sound === soundId) {
@@ -411,6 +424,21 @@ export const getCustomSoundUsages = (
 
   return usages;
 };
+
+/** Names every place a custom sound is used, as one list in the reader's language. */
+export const describeCustomSoundUsages = (
+  usages: CustomSoundUsage[],
+  alarmUsages: AlarmType[],
+  t: TFunction
+): string =>
+  [
+    ...usages.map(({ prayerId, type }) =>
+      prayerId
+        ? t(`notification.customSound.usage.${type}`, { prayer: t(`prayerTimes.${prayerId}`) })
+        : t(`notification.customSound.usage.default.${type}`)
+    ),
+    ...alarmUsages.map((alarmType) => t(`alarm.types.${alarmType}`)),
+  ].join(t("common.listSeparator"));
 
 /**
  * Alarm types whose selected sound is this content:// URI. Alarms persist the URI

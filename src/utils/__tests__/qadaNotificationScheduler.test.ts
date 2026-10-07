@@ -4,7 +4,13 @@ import { Platform } from "react-native";
 import { NOTIFICATION_CHANNEL_ID } from "@/constants/Notification";
 import type { QadaSoundKey } from "@/constants/sounds";
 import type { QadaNotificationConfig } from "@/types/notification";
-import { setupQadaNotificationChannel } from "@/utils/qadaNotificationScheduler";
+import { AppLocale } from "@/enums/app";
+import i18n from "@/localization/i18n";
+import { usePreferencesStore } from "@/stores/preferences";
+import {
+  buildNotificationContent,
+  setupQadaNotificationChannel,
+} from "@/utils/qadaNotificationScheduler";
 
 jest.mock("expo-notifications", () => ({
   AndroidImportance: { HIGH: 4 },
@@ -58,5 +64,24 @@ describe("qada notification channel", () => {
     await setupQadaNotificationChannel(SOUND, [], true);
 
     expect(deleted).not.toHaveBeenCalled();
+  });
+});
+
+describe("qada notification content", () => {
+  const arabic = i18n.getFixedT(AppLocale.AR);
+
+  beforeAll(() => usePreferencesStore.setState({ useWesternNumerals: true }));
+
+  // Each number picks its own plural form; one switch for both misreads the days.
+  it("counts the days to Ramadan and the fasts owed separately", () => {
+    const { body } = buildNotificationContent(1, false, arabic, "ramadan", 10);
+
+    expect(body).toBe("بقي 10 أيام على رمضان. عليك يوم واحد من صيام القضاء.");
+  });
+
+  it("titles a private notification with the app's name", () => {
+    expect(buildNotificationContent(3, true, arabic, "custom").title).toBe(
+      i18n.t("brand.name", { lng: AppLocale.AR })
+    );
   });
 });
