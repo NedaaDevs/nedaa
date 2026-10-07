@@ -8,6 +8,7 @@ on:
       - "plugins/**"
       - "package.json"
       - "bun.lock"
+      - ".bun-version"
       - "app.json"
       - "app.config.js"
       - "scripts/verify-hms-build.ts"
