@@ -24,10 +24,8 @@ type Props = {
   onGraceExpire?: () => void;
 };
 
-function getGraceDuration(config: ChallengeConfig): number {
-  if (config.type === CHALLENGE_TYPE.NONE) return 0;
-  return GRACE_PERIOD_SECONDS[config.type][config.difficulty];
-}
+const getGraceDuration = (config: ChallengeConfig): number =>
+  GRACE_PERIOD_SECONDS[config.type][config.difficulty];
 
 function getChallengeInstruction(
   t: (key: string, opts?: Record<string, unknown>) => string,
