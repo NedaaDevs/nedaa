@@ -39,6 +39,7 @@ jest.mock("@/services/qada-db", () => ({
   },
 }));
 jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
   scheduleAthan: jest.fn(),
   stopAthan: jest.fn(),
   isAthanPlaying: jest.fn(),
