@@ -24,7 +24,11 @@ jest.mock("@/utils/notifications", () => ({
   scheduleNotification: jest.fn(() => Promise.resolve({ success: true })),
   scheduleRecurringNotification: jest.fn(() => Promise.resolve({ success: true })),
 }));
-jest.mock("expo-alarm", () => ({ scheduleAthan: jest.fn(), cancelAllAthans: jest.fn() }));
+jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
+  scheduleAthan: jest.fn(),
+  cancelAllAthans: jest.fn(),
+}));
 jest.mock("@/utils/qadaNotificationScheduler", () => ({ scheduleQadaNotifications: jest.fn() }));
 jest.mock("@/stores/customSounds", () => ({
   useCustomSoundsStore: { getState: () => ({ customSounds: [] }) },

@@ -16,7 +16,7 @@ import {
   ScrollDirection,
   SpreadPreference,
 } from "@/enums/quran";
-import type { OrnamentPackMeta } from "@/constants/Quran";
+import type { OrnamentPackMeta, QURAN_LIBRARY_TAB } from "@/constants/Quran";
 
 export type { DownloadPhase, DownloadStep };
 
@@ -192,8 +192,7 @@ export type QuranManifest = {
   audio?: QuranAudioManifest;
 };
 
-export type QuranLibraryTab =
-  "index" | "highlights" | "bookmarks" | "khatmah" | "reminders" | "guide";
+export type QuranLibraryTab = (typeof QURAN_LIBRARY_TAB)[keyof typeof QURAN_LIBRARY_TAB];
 
 export type QuranState = {
   currentPage: number;

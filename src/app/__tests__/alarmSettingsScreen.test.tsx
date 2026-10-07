@@ -14,7 +14,7 @@ import { ThemeProvider } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
-jest.mock("expo-alarm", () => ({}));
+jest.mock("expo-alarm", () => ({ ...jest.requireActual("expo-alarm") }));
 // Every permission granted, so the screen draws its alarms.
 jest.mock("@/utils/alarmPermissions", () => ({
   readAlarmPermissions: jest.fn(() => Promise.resolve([])),
