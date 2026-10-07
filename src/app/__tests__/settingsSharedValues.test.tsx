@@ -4,7 +4,6 @@ import ToolsScreen from "@/app/(tabs)/tools";
 import SettingsScreen from "@/app/(tabs)/settings";
 import HijriSettings from "@/app/settings/advance/hijri";
 import type { ReactNode } from "react";
-import { within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { AppLocale } from "@/enums/app";
@@ -21,7 +20,7 @@ jest.mock("@/hooks/useAlarmSupported", () => ({ useAlarmSupported: () => true })
 jest.mock("@/utils/date", () => ({
   ...jest.requireActual("@/utils/date"),
   HijriNative: {
-    today: () => ({ year: 1448, month: 4, day: 12 }),
+    fromTimestamp: () => ({ year: 1448, month: 4, day: 12 }),
     addDays: (date: { day: number }, days: number) => ({ ...date, day: date.day + days }),
   },
 }));
@@ -111,12 +110,12 @@ describe("A Hijri day offset", () => {
       );
 
       const onSettings = statusOf(i18n.t("settings.rows.hijri"));
-      const picker = screen.getByRole("button", {
-        name: i18n.t("settings.hijri.date.selectAdjustment"),
+      const slider = screen.getByRole("adjustable", {
+        name: i18n.t("settings.hijri.date.adjustmentTitle"),
       });
 
       expect(onSettings).not.toBe("");
-      expect(within(picker).getByText(onSettings)).toBeTruthy();
+      expect(slider).toHaveAccessibilityValue({ text: onSettings });
     }
   );
 });
