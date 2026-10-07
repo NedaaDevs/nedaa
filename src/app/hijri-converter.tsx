@@ -21,6 +21,7 @@ import { Icon } from "@/components/ui/icon";
 import HijriWheelPicker from "@/components/hijri/HijriWheelPicker";
 
 import { HijriNative, type HijriDate, getDateLocale } from "@/utils/date";
+import { hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
 import { formatNumberToLocale } from "@/utils/number";
 
 import { ArrowUpDown, TriangleAlert, Copy, Check, Info } from "lucide-react-native";
@@ -217,7 +218,7 @@ const HijriConverterScreen = () => {
               <Icon as={Info} color="$typographySecondary" size="xs" />
               <Text size="xs" color="$typographySecondary">
                 {t("tools.hijriConverter.offsetNote", {
-                  offset: formatNumberToLocale(hijriDaysOffset.toString()),
+                  adjustment: hijriAdjustmentLabel(hijriDaysOffset, t),
                 })}
               </Text>
             </HStack>

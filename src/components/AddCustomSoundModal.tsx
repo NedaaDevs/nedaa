@@ -32,6 +32,7 @@ import type { AddCustomSoundResult } from "@/types/customSound";
 import { PlatformType } from "@/enums/app";
 
 // Constants
+import { CUSTOM_SOUND_ERROR, CUSTOM_SOUND_MAX_MB } from "@/constants/CustomSound";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Utils
@@ -40,6 +41,7 @@ import {
   addCustomSound,
   formatFileSize,
   findDuplicateSound,
+  validateAudioFile,
 } from "@/utils/customSoundManager";
 
 // Stores
@@ -80,12 +82,24 @@ export default function AddCustomSoundModal({
     return null;
   }
 
+  const describeError = (code: string) =>
+    code === CUSTOM_SOUND_ERROR.TOO_LARGE
+      ? t("notification.customSound.fileTooLarge", { maxMb: CUSTOM_SOUND_MAX_MB })
+      : code;
+
   const handlePickFile = async () => {
     try {
       setError(null);
       setDuplicateWarning(null);
       setForceAdd(false);
       const file = await pickAudioFile();
+
+      // Refused at pick time so a name is never typed for a file that cannot be added.
+      if (file && validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
+        setSelectedFile(null);
+        setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
+        return;
+      }
 
       if (file) {
         // Check for duplicates
@@ -167,7 +181,7 @@ export default function AddCustomSoundModal({
         onSuccess(result);
         handleClose();
       } else {
-        setError(result.error);
+        setError(describeError(result.error));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("notification.customSound.addError"));
