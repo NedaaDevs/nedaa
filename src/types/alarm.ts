@@ -148,13 +148,12 @@ export const CHALLENGE_TYPES: ChallengeType[] = Object.values(CHALLENGE_TYPE);
 
 export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = Object.values(CHALLENGE_DIFFICULTY);
 
-export const GRACE_PERIOD_SECONDS: Record<
-  Exclude<ChallengeType, typeof CHALLENGE_TYPE.NONE>,
-  Record<ChallengeDifficulty, number>
-> = {
-  tap: { easy: 10, medium: 15, hard: 20 },
-  math: { easy: 15, medium: 20, hard: 30 },
-  dhikr: { easy: 20, medium: 30, hard: 45 },
+// No challenge means no grace period.
+export const GRACE_PERIOD_SECONDS: Record<ChallengeType, Record<ChallengeDifficulty, number>> = {
+  [CHALLENGE_TYPE.NONE]: { easy: 0, medium: 0, hard: 0 },
+  [CHALLENGE_TYPE.TAP]: { easy: 10, medium: 15, hard: 20 },
+  [CHALLENGE_TYPE.MATH]: { easy: 15, medium: 20, hard: 30 },
+  [CHALLENGE_TYPE.DHIKR]: { easy: 20, medium: 30, hard: 45 },
 };
 
 export interface DhikrPhrase {
