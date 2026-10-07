@@ -13,6 +13,7 @@ import CompletionSummary from "@/components/umrah/CompletionSummary";
 
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { UmrahRecord } from "@/types/umrah";
 
 export default function CompleteScreen() {
@@ -36,7 +37,7 @@ export default function CompleteScreen() {
   }, []);
 
   const handleDone = () => {
-    router.replace("/(tabs)/tools");
+    router.replace(BACK_DESTINATION.TOOLS.href);
   };
 
   const handleStartNew = () => {
@@ -45,7 +46,7 @@ export default function CompleteScreen() {
   };
 
   const handleBackToHome = () => {
-    router.replace("/(tabs)/");
+    router.replace(BACK_DESTINATION.HOME.href);
   };
 
   if (!record) {
