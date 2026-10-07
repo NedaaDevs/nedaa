@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { MotiView } from "moti";
-import { useTheme } from "@/components/ui/theme-color";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -19,7 +18,6 @@ type Props = {
 
 const JourneyTimeline = ({ onStagePress }: Props) => {
   const { t } = useTranslation();
-  const theme = useTheme();
   const { activeProgress, isStageCompleted } = useUmrahGuideStore();
 
   const getStageState = (index: number) => {
@@ -98,9 +96,7 @@ const JourneyTimeline = ({ onStagePress }: Props) => {
                   <Box
                     width={2}
                     height={48}
-                    backgroundColor={
-                      state === "completed" ? theme.accentPrimary.val : theme.outline.val
-                    }
+                    backgroundColor={state === "completed" ? "$accentPrimary" : "$outline"}
                   />
                 )}
               </VStack>

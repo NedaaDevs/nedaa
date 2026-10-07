@@ -7,6 +7,7 @@ import {
   getEffectiveConfig,
   type NotificationSettings,
   NotificationType,
+  type PrayerNotificationType,
 } from "@/types/notification";
 import { PrayerName } from "@/types/prayerTimes";
 import type { CustomSound } from "@/types/customSound";
@@ -118,23 +119,20 @@ const generateChannelId = (
 // Splits a current-version generateChannelId id into type, prayer and sound.
 const PRAYER_CHANNEL_ID = new RegExp(`^([^_]+)_([^_]+)_(.+)_v${CHANNEL_VERSION}_[a-z]+_[a-z]+$`);
 
-/**
- * Get the display name for a channel
- */
+const CHANNEL_TYPE_NAME: Record<PrayerNotificationType, string> = {
+  [NOTIFICATION_TYPE.PRAYER]: "Prayer",
+  [NOTIFICATION_TYPE.IQAMA]: "Iqama",
+  [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
+};
+
+/** Get the display name for a channel */
 const getChannelDisplayName = (
   prayer: PrayerName,
-  type: NotificationType,
+  type: PrayerNotificationType,
   soundKey: string
 ): string => {
   const prayerName = prayer.charAt(0).toUpperCase() + prayer.slice(1);
-  const typeName = {
-    [NOTIFICATION_TYPE.PRAYER]: "Prayer",
-    [NOTIFICATION_TYPE.IQAMA]: "Iqama",
-    [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
-    [NOTIFICATION_TYPE.ATHKAR]: "Athkar",
-    [NOTIFICATION_TYPE.QADA]: "Qada",
-    [NOTIFICATION_TYPE.OTHER_TIMING]: "Other Timing",
-  }[type];
+  const typeName = CHANNEL_TYPE_NAME[type];
 
   return `${prayerName} ${typeName} (${soundKey})`;
 };
