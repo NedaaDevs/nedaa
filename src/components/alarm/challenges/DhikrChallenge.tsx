@@ -94,6 +94,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
         borderColor={isWrong ? "$borderError" : "transparent"}
         width="100%"
         accessibilityLabel={t("a11y.alarm.dhikrPhrase", {
+          arabic: phrase.arabic,
           transliteration: phrase.transliteration,
         })}
         accessibilityLiveRegion="polite">
