@@ -11,12 +11,13 @@ const OnboardingScreen = () => {
   const { steps, loading } = useOnboardingSteps();
   const { setIsFirstRun } = useAppStore();
 
+  // Advancing from a step is idempotent: a step may call onNext more than once.
   const handleNext = useCallback(() => {
-    if (currentIndex < steps.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
+    if (currentIndex === steps.length - 1) {
       setIsFirstRun(false);
+      return;
     }
+    setCurrentIndex((prev) => (prev === currentIndex ? currentIndex + 1 : prev));
   }, [currentIndex, steps.length, setIsFirstRun]);
 
   if (loading || steps.length === 0) {
