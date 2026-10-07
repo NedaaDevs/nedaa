@@ -13,6 +13,7 @@ pre-commit:
       glob:
         - "package.json"
         - "bun.lock"
+        - ".bun-version"
         - "modules/expo-hms-*/**"
         - "android/**"
       run: bun run verify:android:hms
