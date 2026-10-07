@@ -1,0 +1,29 @@
+# Commit hooks format and lint what is staged; push hooks run CI's static checks.
+pre-commit:
+  jobs:
+    - name: format
+      glob: "*.{js,jsx,ts,tsx,json,md,yml}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+    - name: eslint
+      glob: "*.{js,jsx,ts,tsx}"
+      run: ./node_modules/.bin/eslint --max-warnings 0 --no-warn-ignored {staged_files}
+    # Only Gradle catches an expo-notifications bump that breaks the vendored HMS fork.
+    - name: hms-gate
+      glob:
+        - "package.json"
+        - "bun.lock"
+        - "modules/expo-hms-*/**"
+        - "android/**"
+      run: bun run verify:android:hms
+  piped: true
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: format
+      run: bun run format:check
+    - name: lint
+      run: bun run lint -- --max-warnings 0
+    - name: typecheck
+      run: bun run typecheck
