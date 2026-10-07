@@ -161,9 +161,7 @@ describe("fitSinglePageBox (tablet portrait: whole page, no scroll, dense pack)"
   });
   it("packs denser than the ink-ratio fit, so the page is wider for the same height", () => {
     const availHeight = 1024;
-    expect(fitSinglePageBox(2000, availHeight).w).toBeGreaterThan(
-      fitPageBox(2000, availHeight).w
-    );
+    expect(fitSinglePageBox(2000, availHeight).w).toBeGreaterThan(fitPageBox(2000, availHeight).w);
   });
   it("never exceeds the slot width", () => {
     expect(fitSinglePageBox(600, 5000).w).toBeLessThanOrEqual(600);
