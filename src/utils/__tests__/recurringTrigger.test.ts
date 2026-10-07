@@ -20,7 +20,10 @@ jest.mock("expo-notifications", () => ({
 
 jest.mock("react-native", () => ({ Platform: { OS: "ios" } }));
 jest.mock("expo-router", () => ({ useRouter: jest.fn() }));
-jest.mock("expo-alarm", () => ({ stopAthan: jest.fn() }));
+jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
+  stopAthan: jest.fn(),
+}));
 jest.mock("@/services/cleanup", () => ({ cleanupManager: { register: jest.fn() } }));
 
 describe("scheduleRecurringNotification weekday", () => {
