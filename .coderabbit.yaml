@@ -18,6 +18,8 @@ reviews:
     enabled: true
     drafts: false
     auto_incremental_review: true
+    # PRs here are small and single-author; pausing only hides reviews.
+    auto_pause_after_reviewed_commits: 0
     base_branches:
       - master
       - v3
