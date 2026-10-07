@@ -22,13 +22,14 @@ export const ALLOWED_DEX_STRINGS: ReadonlySet<string> = new Set([
 ]);
 
 const DEX_MAGIC = "dex\n";
+const DEX_HEADER_SIZE = 0x70;
 const STRING_IDS_SIZE_OFFSET = 0x38;
 const STRING_IDS_OFF_OFFSET = 0x3c;
 
 const ULEB128_MAX_BYTES = 5;
 const STRING_ID_SIZE = 4;
 
-// Any read outside the file throws, so a corrupt DEX fails the scan instead of passing it.
+// Any read outside its section throws, so a corrupt DEX fails the scan instead of passing it.
 const readUleb128End = (bytes: Uint8Array, start: number): number => {
   for (let index = 0; index < ULEB128_MAX_BYTES; index += 1) {
     const position = start + index;
@@ -43,12 +44,13 @@ export const readDexStrings = (dex: Uint8Array): string[] => {
   if (new TextDecoder("latin1").decode(dex.subarray(0, DEX_MAGIC.length)) !== DEX_MAGIC) {
     throw new Error("Not a DEX file");
   }
-  if (dex.length < STRING_IDS_OFF_OFFSET + STRING_ID_SIZE) {
-    throw new Error("DEX header is truncated");
-  }
+  if (dex.length < DEX_HEADER_SIZE) throw new Error("DEX header is truncated");
   const view = new DataView(dex.buffer, dex.byteOffset, dex.byteLength);
   const count = view.getUint32(STRING_IDS_SIZE_OFFSET, true);
   const idsOffset = view.getUint32(STRING_IDS_OFF_OFFSET, true);
+  if (count > 0 && idsOffset < DEX_HEADER_SIZE) {
+    throw new Error("DEX string_ids table starts inside the header");
+  }
   if (idsOffset + count * STRING_ID_SIZE > dex.length) {
     throw new Error("DEX string_ids table runs past the end of the file");
   }
