@@ -17,7 +17,7 @@ jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/botto
 jest.mock("@/utils/date", () => ({
   ...jest.requireActual("@/utils/date"),
   HijriNative: {
-    today: () => ({ year: 1448, month: 4, day: 12 }),
+    fromTimestamp: () => ({ year: 1448, month: 4, day: 12 }),
     addDays: (date: { day: number }, days: number) => ({ ...date, day: date.day + days }),
   },
 }));
