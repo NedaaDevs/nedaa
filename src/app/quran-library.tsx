@@ -41,10 +41,13 @@ const QuranLibraryScreen = () => {
   const libraryTab = useQuranStore((s) => s.libraryTab);
   const setLibraryTab = useQuranStore((s) => s.setLibraryTab);
   const params = useLocalSearchParams<{ tab?: string }>();
-  const deepLinked = TABS.some((x) => x.id === params.tab) ? (params.tab as LibTab) : undefined;
 
-  // Open to the deep-linked tab if given, else the last tab the user left on.
-  const [tab, setTab] = useState<LibTab>(deepLinked ?? libraryTab);
+  // Open to the deep-linked tab if given, else the last tab the user left on;
+  // the drawer stores tabs this screen does not show, which fall back to the first.
+  const [tab, setTab] = useState<LibTab>(
+    () =>
+      (TABS.find((x) => x.id === params.tab) ?? TABS.find((x) => x.id === libraryTab) ?? TABS[0]).id
+  );
   const selectTab = (id: LibTab) => {
     setTab(id);
     setLibraryTab(id);

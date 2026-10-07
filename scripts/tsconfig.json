@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["bun"],
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  // screenshots/ is its own project with its own dependencies.
+  "exclude": ["${configDir}/node_modules", "${configDir}/screenshots"]
+}

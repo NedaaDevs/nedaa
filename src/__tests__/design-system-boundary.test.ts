@@ -19,7 +19,7 @@ const CEILING = {
   /** Files importing any value from `tamagui` or `@tamagui/*`. */
   tamaguiValueImporters: 52,
   /** `useTheme()` calls on Tamagui's hook. */
-  useThemeCalls: 25,
+  useThemeCalls: 24,
   /** Radius props not set to a named token ($chip, $control, $card, $sheet, $pill). */
   rawRadius: 380,
   /** Width, height and their bounds given a non-zero number. */

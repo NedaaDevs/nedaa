@@ -141,6 +141,7 @@
     "@tamagui/babel-plugin": "^2.7.7",
     "@tamagui/cli": "^2.7.7",
     "@testing-library/react-native": "^14.0.1",
+    "@types/bun": "^1.4.2",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.18",
     "baseline-browser-mapping": "^2.11.19",
