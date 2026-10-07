@@ -781,3 +781,13 @@ export const DOWNLOAD_CONCURRENCY = 6;
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_DELAYS_MS = [1000, 3000, 10000];
 export const MIN_PAGES_BEFORE_READING = 5;
+
+// Library hub tabs; the drawer shows every tab, the full-screen library a subset.
+export const QURAN_LIBRARY_TAB = {
+  INDEX: "index",
+  HIGHLIGHTS: "highlights",
+  BOOKMARKS: "bookmarks",
+  KHATMAH: "khatmah",
+  REMINDERS: "reminders",
+  GUIDE: "guide",
+} as const;
