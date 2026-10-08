@@ -47,8 +47,15 @@ adb logcat -v threadtime --uid="$app_uid" >"$out/logcat-app.txt" 2>&1 &
 logcat_pids+=($!)
 echo "::endgroup::"
 
+# A loaded runner can drop the emulator off adb for a moment; reconnect before failing.
+ensure_device() {
+  adb reconnect offline >/dev/null 2>&1 || true
+  timeout 90 adb wait-for-device || fail "The emulator went offline (runner fault, not the app)"
+}
+
 run_flow() {
   step "Maestro: $1"
+  ensure_device
   "$maestro" test --test-output-dir "$out/maestro/$1" "$flows/$1.yaml"
   echo "::endgroup::"
 }
@@ -98,9 +105,7 @@ echo "::endgroup::"
 run_flow smoke
 
 step "App is alive and logged no crash"
-# An emulator that drops off adb is a runner fault, reported apart from an app crash.
-adb reconnect offline >/dev/null 2>&1 || true
-timeout 90 adb wait-for-device || fail "The emulator went offline after the smoke flow (runner fault, not the app)"
+ensure_device
 adb shell pidof "$APP_ID" >/dev/null || fail "$APP_ID is not running after the smoke flow"
 sleep 2
 if grep -E "$CRASH_PATTERN" "$out/logcat-app.txt"; then
