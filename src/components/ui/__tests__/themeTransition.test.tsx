@@ -30,6 +30,13 @@ jest.mock("@/utils/appLogger", () => ({
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
+let mockScreenshotMode = false;
+jest.mock("@/screenshot-mode/flag", () => ({
+  get IS_SCREENSHOT_MODE() {
+    return mockScreenshotMode;
+  },
+}));
+
 let transition: WithThemeTransition;
 
 // The preset mocks `currentState` as a function; replace it outright.
@@ -117,6 +124,7 @@ const finish = async (done: Promise<void>) => {
 describe("ThemeTransitionProvider", () => {
   beforeEach(() => {
     mockReduced = false;
+    mockScreenshotMode = false;
     mockWarn.mockClear();
     jest.mocked(captureRef).mockReset().mockResolvedValue(SNAPSHOT_URI);
     jest.mocked(releaseCapture).mockClear();
@@ -174,6 +182,19 @@ describe("ThemeTransitionProvider", () => {
 
   it("runs the change at once under Reduce Motion, with no snapshot", async () => {
     mockReduced = true;
+    await renderProvider();
+    const fn = jest.fn();
+
+    await act(() => transition(fn));
+
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(captureRef).not.toHaveBeenCalled();
+    expect(snapshot()).toBeNull();
+  });
+
+  // A captured screen must be settled, and a full-screen readback strains software GPUs.
+  it("runs the change at once in a screenshot build, with no snapshot", async () => {
+    mockScreenshotMode = true;
     await renderProvider();
     const fn = jest.fn();
 

@@ -5,6 +5,7 @@ import { openSettings } from "expo-linking";
 
 // Utils
 import { cancelAllScheduledNotifications } from "@/utils/notifications";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { scheduleAllNotifications, shouldReschedule } from "@/utils/notificationScheduler";
 import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 import { singleFlight } from "@/utils/singleFlight";
@@ -347,6 +348,14 @@ export const useNotificationStore = create<NotificationStore>()(
 
         // Runs cancel and rebuild every notification; two at once can duplicate them.
         scheduleAllNotifications: singleFlight(async (): Promise<SchedulingResult> => {
+          // A screenshot build runs on a frozen clock, so every time to schedule is past.
+          if (IS_SCREENSHOT_MODE) {
+            return {
+              success: true,
+              scheduledCount: 0,
+              skipReason: SchedulingSkipReason.SCREENSHOT_MODE,
+            };
+          }
           const {
             settings,
             morningNotification,
