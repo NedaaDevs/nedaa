@@ -74,12 +74,14 @@ printf '%s\n' "$alarm_dump" >"$out/dumpsys-alarm.txt"
 grep -A1 "Next alarm clock information:" <<<"$alarm_dump"
 echo "::endgroup::"
 
+# Only lines logged after the tap count, so an earlier alarm cannot pass the check.
+since="$(adb shell date '+%m-%d %H:%M:%S.000')"
 run_flow alarm-debug-schedule
 
 step "Test alarm fires"
 fired=false
 for _ in $(seq 1 "$ALARM_FIRE_TIMEOUT_S"); do
-  fire_log="$(adb logcat -d -s AlarmReceiver:D AlarmService:D)"
+  fire_log="$(adb logcat -d -T "$since" -s AlarmReceiver:D AlarmService:D)"
   if grep -q "AlarmReceiver.*Alarm received" <<<"$fire_log" &&
     grep -q "AlarmService.*Alarm ringing" <<<"$fire_log"; then
     fired=true
@@ -96,6 +98,9 @@ echo "::endgroup::"
 run_flow smoke
 
 step "App is alive and logged no crash"
+# An emulator that drops off adb is a runner fault, reported apart from an app crash.
+adb reconnect offline >/dev/null 2>&1 || true
+timeout 90 adb wait-for-device || fail "The emulator went offline after the smoke flow (runner fault, not the app)"
 adb shell pidof "$APP_ID" >/dev/null || fail "$APP_ID is not running after the smoke flow"
 sleep 2
 if grep -E "$CRASH_PATTERN" "$out/logcat-app.txt"; then
