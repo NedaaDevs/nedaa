@@ -15,7 +15,7 @@ fi
     if [ -n "${!name:-}" ]; then
       printf '%s=%s\n' "$name" "${!name}"
     else
-      echo "::notice::$name is not set; the bundle is built without it."
+      echo "::notice::$name is not set; the bundle is built without it." >&2
     fi
   done
 } >.env.local
