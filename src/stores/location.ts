@@ -90,7 +90,7 @@ export const useLocationStore = create<LocationStore>()(
         autoUpdateLocation: true,
         showCityChangeModal: false,
         pendingCityChange: null,
-        // A screenshot build shows its seeded city from the first load.
+        // A screenshot build starts on its seeded city; restore below keeps it there.
         locationMode: IS_SCREENSHOT_MODE ? LocationMode.MANUAL : LocationMode.DEVICE,
         manualLocation: null,
         manualLocationChosenAt: null,
@@ -465,6 +465,12 @@ export const useLocationStore = create<LocationStore>()(
           locationMode: state.locationMode,
           manualLocation: state.manualLocation,
           manualLocationChosenAt: state.manualLocationChosenAt,
+        }),
+        // A saved DEVICE mode would read the device position in a screenshot build.
+        merge: (persisted, current) => ({
+          ...current,
+          ...(typeof persisted === "object" && persisted !== null ? persisted : {}),
+          ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
         }),
       }
     ),
