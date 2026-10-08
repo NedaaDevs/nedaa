@@ -121,6 +121,9 @@ jobs:
           echo "MAESTRO_CLI_NO_ANALYTICS=1" >> "$GITHUB_ENV"
 
       - name: Compare the visual set on the emulator
+        # The CI x86_64 emulator dies drawing Appearance; a local run covers that screen.
+        env:
+          VISUAL_SKIP_SCREENS: settings-appearance
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: ${{ env.API_LEVEL }}

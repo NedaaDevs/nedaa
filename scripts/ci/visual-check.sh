@@ -111,6 +111,7 @@ for locale in "${LOCALES[@]}"; do
   # Native RTL follows the locale only from the next launch.
   add_flow prime "${SCREENS[0]}" "$locale" "${THEMES[0]}"
   for screen in "${SCREENS[@]}"; do
+    [[ " ${VISUAL_SKIP_SCREENS:-} " == *" $screen "* ]] && continue
     for theme in "${THEMES[@]}"; do
       shot="$screen-$locale-$theme"
       if [ -f "$suite/lib/baselines/$shot.png" ]; then
