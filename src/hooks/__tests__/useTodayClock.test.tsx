@@ -1,5 +1,6 @@
 import { renderHook } from "@testing-library/react-native";
 
+import { SCREENSHOT_LOCALES, STATIC_SCREENSHOT_SCREENS } from "@/constants/Screenshot";
 import { useTodayClock } from "@/hooks/useTodayClock";
 import { SCREENSHOT_NOW_MS } from "@/screenshot-mode/clock";
 import { useScreenshotStore } from "@/stores/screenshotStore";
@@ -38,8 +39,8 @@ describe("useTodayClock", () => {
   it("holds the screenshot moment while another screen is captured", async () => {
     mockScreenshotMode = true;
     useScreenshotStore.getState().setShot({
-      screen: "settings-hijri",
-      locale: "en",
+      screen: STATIC_SCREENSHOT_SCREENS[0],
+      locale: SCREENSHOT_LOCALES[0],
       seed: "default",
       payload: {},
     });
