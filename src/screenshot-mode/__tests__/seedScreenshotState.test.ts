@@ -22,3 +22,13 @@ it("starts a screenshot build in manual mode", () => {
     expect(freshStore.getState().locationMode).toBe(LocationMode.MANUAL);
   });
 });
+
+// A saved DEVICE mode is restored after the first render and must not win.
+it("keeps manual mode when saved state is restored in a screenshot build", () => {
+  const { merge } = useLocationStore.persist.getOptions();
+  const current = useLocationStore.getState();
+
+  const restored = merge?.({ locationMode: LocationMode.DEVICE }, current);
+
+  expect(restored?.locationMode).toBe(LocationMode.MANUAL);
+});
