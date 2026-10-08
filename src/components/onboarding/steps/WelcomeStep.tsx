@@ -5,6 +5,7 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
+import { E2E_ID } from "@/constants/E2E";
 
 type WelcomeStepProps = {
   onNext: () => void;
@@ -33,7 +34,11 @@ const WelcomeStep = ({ onNext }: WelcomeStepProps) => {
         </Text>
       </VStack>
 
-      <Button onPress={onNext} size="lg" paddingHorizontal="$12">
+      <Button
+        testID={E2E_ID.ONBOARDING_GET_STARTED}
+        onPress={onNext}
+        size="lg"
+        paddingHorizontal="$12">
         <Button.Text fontWeight="500">{t("onboarding.welcome.getStarted")}</Button.Text>
       </Button>
     </VStack>
