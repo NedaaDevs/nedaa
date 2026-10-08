@@ -19,6 +19,7 @@ import { APP_STATE } from "@/constants/AppState";
 import { DISSOLVE_CURVE, DURATION_MS } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { AppLogger } from "@/utils/appLogger";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("app");
 const TAG = "theme-transition";
@@ -194,7 +195,8 @@ const runDissolve = async (h: DissolveHandles, fn: Change): Promise<void> => {
 /** Holds the whole UI so a theme change shows as the old screen fading off. */
 export const ThemeTransitionProvider = ({ children }: { children: ReactNode }) => {
   const root = useRef<View>(null);
-  const reduced = useReducedMotion();
+  // A screenshot build captures settled screens, so it never dissolves.
+  const reduced = useReducedMotion() || IS_SCREENSHOT_MODE;
   const [snapshot, setSnapshot] = useState<string | null>(null);
   const [opacity] = useState(() => new Animated.Value(1));
   const flight = useRef<Flight | null>(null);
