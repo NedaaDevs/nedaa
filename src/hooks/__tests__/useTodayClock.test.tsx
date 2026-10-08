@@ -1,16 +1,22 @@
 import { renderHook } from "@testing-library/react-native";
 
 import { useTodayClock } from "@/hooks/useTodayClock";
-import { prayerTimesPresets } from "@/screenshot-mode/presets/prayer-times";
+import { SCREENSHOT_NOW_MS } from "@/screenshot-mode/clock";
 import { useScreenshotStore } from "@/stores/screenshotStore";
 
-const SEED = Object.values(prayerTimesPresets)[0];
+let mockScreenshotMode = false;
+jest.mock("@/screenshot-mode/flag", () => ({
+  get IS_SCREENSHOT_MODE() {
+    return mockScreenshotMode;
+  },
+}));
 
 describe("useTodayClock", () => {
   beforeEach(() => jest.useFakeTimers({ now: new Date("2026-09-23T09:00:00.000Z") }));
   afterEach(() => {
     jest.useRealTimers();
-    useScreenshotStore.setState({ screen: null, payload: null });
+    mockScreenshotMode = false;
+    useScreenshotStore.getState().reset();
   });
 
   it("reads the device clock", async () => {
@@ -19,12 +25,27 @@ describe("useTodayClock", () => {
     expect(result.current.toISOString()).toBe("2026-09-23T09:00:00.000Z");
   });
 
-  // Every store shot of Today shows the same moment, wherever it is captured.
-  it("holds the seeded moment during a screenshot", async () => {
-    useScreenshotStore.setState({ screen: "prayer-times", payload: SEED });
+  // Every shot shows the same moment, wherever and whenever it is captured.
+  it("holds the screenshot moment in a screenshot build", async () => {
+    mockScreenshotMode = true;
 
     const { result } = await renderHook(() => useTodayClock());
 
-    expect(result.current.getTime()).toBe(SEED.frozenNow);
+    expect(result.current.getTime()).toBe(SCREENSHOT_NOW_MS);
+  });
+
+  // The sky and the Hijri date sit on screens other than Today.
+  it("holds the screenshot moment while another screen is captured", async () => {
+    mockScreenshotMode = true;
+    useScreenshotStore.getState().setShot({
+      screen: "settings-hijri",
+      locale: "en",
+      seed: "default",
+      payload: {},
+    });
+
+    const { result } = await renderHook(() => useTodayClock());
+
+    expect(result.current.getTime()).toBe(SCREENSHOT_NOW_MS);
   });
 });

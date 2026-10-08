@@ -29,13 +29,18 @@ const flows = readdirSync(FLOWS_DIR)
   .filter((name) => name.endsWith(".yaml"))
   .map((name) => ({ name, text: readFileSync(join(FLOWS_DIR, name), "utf8") }));
 
+// A templated value is filled per shot; visual-check.test.ts checks those.
+const isTemplate = (value: string) => value.includes("${");
+
 const valuesOf = (key: string) =>
-  flows.flatMap(({ name, text }) =>
-    [...text.matchAll(new RegExp(`^\\s*-?\\s*${key}:\\s*"([^"]+)"`, "gm"))].map((match) => ({
-      name,
-      value: match[1],
-    }))
-  );
+  flows
+    .flatMap(({ name, text }) =>
+      [...text.matchAll(new RegExp(`^\\s*-?\\s*${key}:\\s*"([^"]+)"`, "gm"))].map((match) => ({
+        name,
+        value: match[1],
+      }))
+    )
+    .filter(({ value }) => !isTemplate(value));
 
 describe("CI Maestro flows", () => {
   it("finds the flows", () => {

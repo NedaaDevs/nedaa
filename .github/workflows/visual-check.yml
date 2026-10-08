@@ -1,0 +1,154 @@
+name: Visual Check
+
+# Compares screenshot-mode shots with .maestro/ci/baselines on the CI emulator.
+on:
+  pull_request:
+    paths: &paths
+      - ".github/workflows/visual-check.yml"
+      - ".maestro/ci/**"
+      - "scripts/ci/visual-check.sh"
+      - "scripts/ci/emulator-lib.sh"
+      - "src/**"
+      - "assets/**"
+      - "patches/**"
+      - "app.config.js"
+      - "app.json"
+      - "tamagui.config.ts"
+      - "babel.config.js"
+      - "metro.config.js"
+      - "package.json"
+      - "bun.lock"
+  push:
+    branches: [v3]
+    paths: *paths
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  ARTIFACT: visual-check-apk-${{ github.run_id }}-${{ github.run_attempt }}
+  # Pull request runs restore caches and never save them.
+  CACHE_READ_ONLY: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build screenshot-mode release (x86_64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the Android build
+        uses: ./.github/actions/setup-android-build # zizmor: ignore[self-repository] -- actionlint rejects $/
+        with:
+          ccache-variant: gms-x86_64
+          cache-read-only: ${{ env.CACHE_READ_ONLY }}
+
+      - name: Write public build config
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
+          EXPO_PUBLIC_TELEGRAM_USERNAME: ${{ vars.EXPO_PUBLIC_TELEGRAM_USERNAME }}
+          EXPO_PUBLIC_WHATSAPP_NUMBER: ${{ vars.EXPO_PUBLIC_WHATSAPP_NUMBER }}
+        run: bash scripts/ci/write-public-env.sh
+
+      # app.config.js reads the flag into `extra.screenshotMode`.
+      - name: Build screenshot-mode release APK
+        working-directory: android
+        env:
+          EXPO_PUBLIC_SCREENSHOT_MODE: "1"
+        run: >-
+          ./gradlew :app:assembleRelease
+          -PreactNativeArchitectures=x86_64
+          --build-cache --console=plain
+
+      - name: Upload APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  emulator:
+    name: Emulator (API 35 x86_64)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      API_LEVEL: 35
+      APK: visual-check-apk/app-release.apk
+      MAESTRO_VERSION: "2.11.0"
+      MAESTRO_SHA256: "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download APK
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: visual-check-apk
+
+      - name: Set up Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Maestro
+        run: |
+          archive="$RUNNER_TEMP/maestro.zip"
+          curl -fsSL -o "$archive" "https://github.com/mobile-dev-inc/maestro/releases/download/cli-${MAESTRO_VERSION}/maestro.zip"
+          echo "${MAESTRO_SHA256}  ${archive}" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          echo "MAESTRO=$RUNNER_TEMP/maestro/bin/maestro" >> "$GITHUB_ENV"
+          echo "MAESTRO_CLI_NO_ANALYTICS=1" >> "$GITHUB_ENV"
+
+      - name: Compare the visual set on the emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          target: google_apis
+          arch: x86_64
+          cores: 3
+          ram-size: 4096M
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash scripts/ci/visual-check.sh "$APK" visual-check
+
+      # Shots recorded for missing baselines, for the owner to review and commit.
+      - name: Upload recorded baselines
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-baselines-${{ github.event.pull_request.head.sha || github.sha }}
+          path: visual-check/visual-baselines
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 7
+
+      # Diffs, Maestro output and logcat of a throwaway device; nothing secret.
+      - name: Upload visual check evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-check-${{ github.run_id }}-${{ github.run_attempt }}
+          path: visual-check
+          if-no-files-found: ignore
+          retention-days: 7
