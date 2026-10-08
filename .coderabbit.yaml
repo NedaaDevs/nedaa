@@ -43,7 +43,7 @@ reviews:
     - "!local-data/**"
 
   path_instructions:
-    - path: "**/*.{ts,tsx}"
+    - path: "src/**/*.{ts,tsx}"
       instructions: |
         - Imports use the `@/` alias, never relative `./` paths.
         - No magic strings: ids, storage keys, modes and types the code branches on live in
@@ -58,6 +58,13 @@ reviews:
         - Comments describe the present code and its reason in one short clause. Flag comments that
           narrate a change ("now", "no longer", "instead of"), cite plans or tasks, or state a
           guarantee the code does not hold.
+    - path: "scripts/**/*.ts"
+      instructions: |
+        - Build and CI tooling, not app code: its constants live in the script module as
+          `const X = {...} as const` with a derived union, not in `src/constants`.
+        - Relative imports between scripts are fine; `@/` is only for reaching into `src/`.
+        - Prefer arrow-function expressions. Fail closed on malformed input.
+        - Comments describe the present code and its reason in one short clause.
     - path: "src/components/**/*.tsx"
       instructions: |
         - Radius uses the five intents only: `$chip`, `$control`, `$card`, `$sheet`, `$pill`.
