@@ -1,9 +1,13 @@
 import { readFileSync } from "node:fs";
 import { sep } from "node:path";
 
-import { STATIC_SCREENSHOT_SCREENS } from "@/constants/Screenshot";
+import {
+  SCREENSHOT_SCREENS,
+  STATIC_SCREENSHOT_SCREENS,
+  type ScreenshotScreenKey,
+} from "@/constants/Screenshot";
 import { readRoutes, resolvesToRoute, walkFiles, ROUTES_DIR } from "@/test-helpers/routeTree";
-import { presets } from "@/screenshot-mode/presets";
+import { getPreset, presets } from "@/screenshot-mode/presets";
 import { SCREEN_TO_PATH } from "@/screenshot-mode/screenPaths";
 
 /**
@@ -40,7 +44,7 @@ const SEEDLESS_SCREENS: Record<string, string> = {
   tools:
     "The Tools menu is static content. Its preset exists only so the router's getPreset() guard returns non-null and navigation proceeds.",
   "prayer-times":
-    "Today reads the screenshot clock, which holds one moment app-wide in a screenshot build, so the preset only names the shot.",
+    "Today reads the screenshot clock, which holds one moment app-wide in a screenshot build (useTodayClock.test pins it), so the preset only names the shot.",
   ...Object.fromEntries(
     STATIC_SCREENSHOT_SCREENS.map((key) => [
       key,
@@ -48,6 +52,12 @@ const SEEDLESS_SCREENS: Record<string, string> = {
     ])
   ),
 };
+
+const DEFAULT_SEED = "default";
+
+const SEEDLESS_KEYS = SCREENSHOT_SCREENS.filter(
+  (key: ScreenshotScreenKey) => key in SEEDLESS_SCREENS
+);
 
 describe("screenshot contract", () => {
   it("finds the seed consumers and the route tree", () => {
@@ -82,21 +92,18 @@ describe("screenshot contract", () => {
     expect(router).toContain('link.screen === "reliable-alarms"');
   });
 
-  it("re-proves that the tools screen is documented as seedless", () => {
-    const preset = readFileSync(`${SRC}/screenshot-mode/presets/tools.ts`, "utf8");
+  // The router navigates only when the link's seed names a preset.
+  it("gives every seedless screen a preset the router accepts", () => {
+    const rejected = SEEDLESS_KEYS.filter(
+      (key) => !Object.keys(presets[key]).some((seed) => getPreset(key, seed) !== null)
+    );
 
-    expect(preset).toContain("reads no seed");
+    expect(rejected).toEqual([]);
   });
 
-  it("re-proves that Today's clock reads the screenshot moment", () => {
-    const clock = readFileSync(`${SRC}/hooks/useTodayClock.ts`, "utf8");
-
-    expect(clock).toContain("screenshotNow()");
-  });
-
-  it("re-proves that the static screens are documented as seedless", () => {
-    const preset = readFileSync(`${SRC}/screenshot-mode/presets/static.ts`, "utf8");
-
-    expect(preset).toContain("reads no seed");
+  it("carries no data in a settings screen's preset", () => {
+    for (const key of STATIC_SCREENSHOT_SCREENS) {
+      expect(getPreset(key, DEFAULT_SEED)).toEqual({});
+    }
   });
 });
