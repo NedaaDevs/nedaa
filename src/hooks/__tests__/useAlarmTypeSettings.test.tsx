@@ -6,7 +6,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { ALARM_TIMING_MODE, ALARM_TYPE } from "@/constants/Alarm";
 import type { SOUND_ASSETS } from "@/constants/sounds";
 import { ScheduledAlarmType } from "@/enums/alarm";
-import { PlatformType } from "@/enums/app";
+import { PlatformType, type PlatformTypeValue } from "@/enums/app";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { DEFAULT_VIBRATION_CONFIG, type AlarmType, type TimingConfig } from "@/types/alarm";
@@ -49,7 +49,7 @@ const enableInStore = (alarmType: AlarmType) =>
     [alarmType]: { ...useAlarmSettingsStore.getState()[alarmType], enabled: true },
   });
 
-const onPlatform = (os: PlatformType) => jest.replaceProperty(Platform, "OS", os);
+const onPlatform = (os: PlatformTypeValue) => jest.replaceProperty(Platform, "OS", os);
 
 describe("useAlarmTypeSettings", () => {
   beforeEach(() => {
