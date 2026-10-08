@@ -28,6 +28,7 @@ import {
 import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
 
 import { ALARM_TYPE } from "@/constants/Alarm";
+import { E2E_ID } from "@/constants/E2E";
 import { PlatformType } from "@/enums/app";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -141,6 +142,7 @@ const AlarmTypeSettingsScreen = () => {
                 </Text>
               </VStack>
               <Switch
+                testID={E2E_ID.ALARM_ENABLE_SWITCH}
                 value={settings.enabled}
                 onValueChange={handleEnabledToggle}
                 size="md"

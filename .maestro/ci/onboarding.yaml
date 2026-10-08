@@ -1,0 +1,31 @@
+appId: dev.nedaa.android
+---
+# A fresh install with -g has every runtime permission, so Welcome is the only step.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-get-started"
+    timeout: 60000
+- tapOn:
+    id: "onboarding-get-started"
+# Play services asks to turn on Google location accuracy over the app until accepted.
+# The countdown renders only once prayer times have come back from the API.
+- repeat:
+    while:
+      notVisible:
+        id: "focus-countdown-row"
+    times: 30
+    commands:
+      - runFlow:
+          when:
+            visible:
+              text: ".*Google.s location service.*"
+          commands:
+            - tapOn:
+                id: "android:id/button1"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: "focus-countdown-row"
+- takeScreenshot: today

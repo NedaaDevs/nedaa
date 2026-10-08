@@ -1,0 +1,74 @@
+name: Set up an Android release build
+description: >-
+  Installs Node, JDK 17, Gradle with its build cache, the Bun dependencies and ccache.
+  Both caches are content-addressed; a read-only caller restores them and never saves.
+
+inputs:
+  ccache-variant:
+    description: Names the native build in the ccache key, such as gms-x86_64-arm64-v8a.
+    required: true
+  cache-read-only:
+    description: '"true" restores the Gradle cache and ccache without saving either.'
+    required: true
+  gradle-cache-disabled:
+    description: '"true" neither restores nor saves the Gradle cache.'
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "22"
+
+    - name: Set up Java
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      with:
+        java-version: "17"
+        distribution: temurin
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      with:
+        cache-read-only: ${{ inputs.cache-read-only }}
+        cache-disabled: ${{ inputs.gradle-cache-disabled }}
+
+    - name: Set up dependencies
+      uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
+
+    # React Native's version catalog pins the NDK the app compiles with.
+    - name: Read NDK version
+      id: ndk
+      shell: bash
+      run: |
+        version="$(sed -n 's/^ndkVersion = "\(.*\)"$/\1/p' node_modules/react-native/gradle/libs.versions.toml)"
+        if [ -z "$version" ]; then
+          echo "::error::ndkVersion not found in react-native's libs.versions.toml"
+          exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+      with:
+        key: ccache-${{ runner.os }}-${{ inputs.ccache-variant }}-ndk${{ steps.ndk.outputs.version }}
+        max-size: 2G
+        save: ${{ inputs.cache-read-only != 'true' }}
+        evict-old-files: job
+
+    # Library CMake projects reach ccache only through these launchers.
+    # A hit needs identical sources, flags and compiler bytes.
+    - name: Route native compiles through ccache
+      shell: bash
+      env:
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        {
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache"
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          echo "CCACHE_BASEDIR=$WORKSPACE"
+          echo "CCACHE_COMPILERCHECK=content"
+          echo "CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime"
+        } >> "$GITHUB_ENV"

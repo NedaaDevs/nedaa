@@ -1,0 +1,17 @@
+appId: dev.nedaa.android
+---
+- openLink: "myapp://settings/alarm/fajr"
+- extendedWaitUntil:
+    visible:
+      id: "alarm-enable-switch"
+      checked: false
+    timeout: 30000
+- tapOn:
+    id: "alarm-enable-switch"
+# A failed schedule turns the switch back off, so it must stay on.
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: "alarm-enable-switch"
+    checked: true
+- takeScreenshot: alarm-enabled
