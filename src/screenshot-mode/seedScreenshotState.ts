@@ -1,3 +1,4 @@
+import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 
 const LOCALIZED_MAKKAH: Record<"en" | "ar", { city: string; country: string }> = {
@@ -38,5 +39,7 @@ export function seedScreenshotState(locale: "en" | "ar" = "en") {
       longitude: 39.8262,
     },
     cityChangeDetected: false,
+    // A manual city never reads the device position, which would open a system dialog.
+    locationMode: LocationMode.MANUAL,
   });
 }
