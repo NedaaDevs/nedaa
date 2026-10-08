@@ -1,3 +1,4 @@
+import { STATIC_SCREENSHOT_SCREENS } from "@/constants/Screenshot";
 import { presets, getPreset } from "@/screenshot-mode/presets";
 
 describe("preset registry", () => {
@@ -22,5 +23,9 @@ describe("preset registry", () => {
   test("umrah seeds a mid-journey position (2 of 4 stages)", () => {
     const preset = getPreset("umrah", "sai-2-of-4");
     expect(preset).toEqual({ stageIndex: 2, stepIndex: 1 });
+  });
+
+  test.each(STATIC_SCREENSHOT_SCREENS)("%s has the navigate-only default preset", (screen) => {
+    expect(getPreset(screen, "default")).toEqual({});
   });
 });
