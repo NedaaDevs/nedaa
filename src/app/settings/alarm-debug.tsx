@@ -37,6 +37,7 @@ import {
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
 import { shareAlarmReport, copyAlarmReport } from "@/utils/alarmReport";
 import { PRAYER_ID } from "@/constants/Prayer";
+import { ALARM_DEBUG_TEST_SECONDS, alarmDebugScheduleId } from "@/constants/E2E";
 
 const AlarmDebugScreen = () => {
   // Whether the native module is linked cannot change while the process runs, so it
@@ -639,9 +640,10 @@ const AlarmDebugScreen = () => {
               </Text>
 
               <HStack gap="$2" flexWrap="wrap">
-                {[10, 30, 60, 180].map((seconds) => (
+                {ALARM_DEBUG_TEST_SECONDS.map((seconds) => (
                   <Button
                     key={seconds}
+                    testID={alarmDebugScheduleId(seconds)}
                     size="sm"
                     variant="outline"
                     onPress={() => scheduleTestAlarm(seconds)}>

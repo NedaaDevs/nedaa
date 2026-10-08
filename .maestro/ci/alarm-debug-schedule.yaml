@@ -1,0 +1,11 @@
+appId: dev.nedaa.android
+---
+- openLink: "myapp://settings/alarm-debug"
+- scrollUntilVisible:
+    element:
+      id: "alarm-debug-schedule-60s"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "alarm-debug-schedule-60s"
+- takeScreenshot: alarm-debug-scheduled
