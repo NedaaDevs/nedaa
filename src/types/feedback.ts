@@ -1,4 +1,4 @@
-import type { PlatformType } from "@/enums/app";
+import type { PlatformTypeValue } from "@/enums/app";
 
 export const Report = {
   CRASH: "crash",
@@ -24,7 +24,7 @@ export type FeedbackTier = (typeof Tier)[keyof typeof Tier];
 export interface AppMeta {
   version: string;
   build: string;
-  platform: PlatformType;
+  platform: PlatformTypeValue;
   osVersion: string;
   device?: string;
   source?: string;
