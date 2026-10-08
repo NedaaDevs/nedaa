@@ -3,7 +3,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { PermissionStatus } from "expo-notifications";
 
 import { ALARM_PERMISSION } from "@/constants/Alarm";
-import { PlatformType } from "@/enums/app";
+import { PlatformType, type PlatformTypeValue } from "@/enums/app";
 import { alarmPermissionsGranted, readAlarmPermissions } from "@/utils/alarmPermissions";
 import { checkPermissions } from "@/utils/notifications";
 
@@ -24,7 +24,7 @@ const notificationStatus = (status: PermissionStatus) =>
     .mocked(checkPermissions)
     .mockResolvedValue({ status } as Awaited<ReturnType<typeof checkPermissions>>);
 
-const onPlatform = (os: PlatformType) => jest.replaceProperty(Platform, "OS", os);
+const onPlatform = (os: PlatformTypeValue) => jest.replaceProperty(Platform, "OS", os);
 
 const grantAllAndroid = () => {
   notificationStatus(PermissionStatus.GRANTED);

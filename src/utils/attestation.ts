@@ -1,14 +1,14 @@
 import * as AppIntegrity from "@expo/app-integrity";
 import { Platform } from "react-native";
 
-import { PlatformType } from "@/enums/app";
+import { PlatformType, type PlatformTypeValue } from "@/enums/app";
 import { CLOUD_PROJECT_NUMBER, isCloudProjectConfigured } from "@/constants/Attestation";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("feedback");
 
 export interface AttestationResult {
-  platform: PlatformType;
+  platform: PlatformTypeValue;
   token: string;
   keyId?: string;
 }
