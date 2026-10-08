@@ -1,24 +1,15 @@
 import { create } from "zustand";
 
-export type ScreenshotScreenKey =
-  | "prayer-times"
-  | "reliable-alarms"
-  | "athkar"
-  | "qibla"
-  | "qada"
-  | "quran"
-  | "athkar-with-audio"
-  | "tools"
-  | "umrah";
+import type { ScreenshotLocale, ScreenshotScreenKey } from "@/constants/Screenshot";
 
 export type ScreenshotState = {
   screen: ScreenshotScreenKey | null;
-  locale: "en" | "ar";
+  locale: ScreenshotLocale;
   seed: string | null;
   payload: Record<string, unknown> | null;
   setShot: (input: {
     screen: ScreenshotScreenKey;
-    locale: "en" | "ar";
+    locale: ScreenshotLocale;
     seed: string;
     payload: Record<string, unknown>;
   }) => void;
