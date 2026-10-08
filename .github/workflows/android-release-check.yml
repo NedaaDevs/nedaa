@@ -17,6 +17,7 @@ on:
       - ".github/actions/setup-android-build/**"
       - ".github/actions/setup-deps/**"
       - ".maestro/ci/**"
+      - "!.maestro/ci/baselines/**"
       - "android/**"
       - "modules/**/android/**"
       - "patches/**"
