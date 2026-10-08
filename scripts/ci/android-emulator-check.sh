@@ -75,7 +75,7 @@ grep -A1 "Next alarm clock information:" <<<"$alarm_dump"
 echo "::endgroup::"
 
 # Only lines logged after the tap count, so an earlier alarm cannot pass the check.
-since="$(adb shell date '+%m-%d %H:%M:%S.000')"
+since="$(adb shell "date '+%m-%d %H:%M:%S.000'" | tr -d '\r')"
 run_flow alarm-debug-schedule
 
 step "Test alarm fires"
