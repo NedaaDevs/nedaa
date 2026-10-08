@@ -3,10 +3,13 @@ import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import appJson from "../app.json";
+import { PlatformType } from "@/enums/app";
 
 const [platform, profile = "production"] = Bun.argv.slice(2);
 
-if (!platform || !["ios", "android"].includes(platform)) {
+const PLATFORMS: readonly string[] = Object.values(PlatformType);
+
+if (!platform || !PLATFORMS.includes(platform)) {
   console.error("Usage: bun scripts/build-local.ts <ios|android> [profile]");
   process.exit(1);
 }
@@ -21,7 +24,7 @@ try {
 } catch {}
 
 const suffix = profile.includes("hms") ? "-hms" : "";
-const ext = platform === "ios" ? "ipa" : "aab";
+const ext = platform === PlatformType.IOS ? "ipa" : "aab";
 
 await $`mkdir -p ./builds`;
 
@@ -46,7 +49,7 @@ try {
   await $`eas build -p ${platform} --profile ${profile} --local --non-interactive --output ${output}`.env(
     easEnv
   );
-  if (platform === "android") {
+  if (platform === PlatformType.ANDROID) {
     if (!(await Bun.file(mappingSource).exists())) {
       throw new Error(`No R8 mapping at ${mappingSource}; ${output} cannot be deobfuscated`);
     }
