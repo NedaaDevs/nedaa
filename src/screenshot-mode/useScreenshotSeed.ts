@@ -1,8 +1,5 @@
-import {
-  useScreenshotStore,
-  type ScreenshotScreenKey,
-  type ScreenshotState,
-} from "@/stores/screenshotStore";
+import type { ScreenshotScreenKey } from "@/constants/Screenshot";
+import { useScreenshotStore, type ScreenshotState } from "@/stores/screenshotStore";
 import type { PresetMap } from "@/screenshot-mode/presets";
 
 export function selectScreenshotSeed<K extends ScreenshotScreenKey>(
