@@ -30,6 +30,7 @@ import {
   LOCATION_REQUEST_TIMEOUT_EXTENDED,
   LocationPermissionError,
 } from "@/utils/location";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("location");
 
@@ -89,7 +90,8 @@ export const useLocationStore = create<LocationStore>()(
         autoUpdateLocation: true,
         showCityChangeModal: false,
         pendingCityChange: null,
-        locationMode: LocationMode.DEVICE,
+        // A screenshot build shows its seeded city from the first load.
+        locationMode: IS_SCREENSHOT_MODE ? LocationMode.MANUAL : LocationMode.DEVICE,
         manualLocation: null,
         manualLocationChosenAt: null,
         // Initialize location when permission is granted
