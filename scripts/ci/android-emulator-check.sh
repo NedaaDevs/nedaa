@@ -3,9 +3,9 @@
 # MAESTRO overrides the maestro binary.
 set -euo pipefail
 
-readonly APP_ID="dev.nedaa.android"
-# Mecca, as longitude then latitude, the order `geo fix` takes.
-readonly GEO_FIX=(39.8262 21.4225)
+# shellcheck source=scripts/ci/emulator-lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/emulator-lib.sh"
+
 readonly ALARM_FIRE_TIMEOUT_S=150
 readonly CRASH_PATTERN='FATAL EXCEPTION|ClassNotFoundException|NoSuchMethodError|NoSuchMethodException|NullPointerException|has been rejected'
 
@@ -17,41 +17,12 @@ flows="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.maestro/ci" && pwd)"
 mkdir -p "$out"
 out="$(cd "$out" && pwd)"
 
-step() { echo "::group::$1"; }
-fail() {
-  echo "::error::$1"
-  exit 1
-}
-
-logcat_pids=()
-trap 'kill "${logcat_pids[@]}" 2>/dev/null || true' EXIT
-
-adb wait-for-device
-# The default ring buffer drops lines over a run this long.
-adb logcat -G 16M
-adb logcat -c
-adb logcat -v threadtime >"$out/logcat.txt" 2>&1 &
-logcat_pids+=($!)
+start_device_log "$out"
 
 step "Install"
-# Location off makes Play services prompt over the app; on, the fix is used.
-adb shell cmd location set-location-enabled true
-adb emu geo fix "${GEO_FIX[@]}"
 # A fresh install is what shows onboarding.
-adb uninstall "$APP_ID" >/dev/null 2>&1 || true
-adb install -g "$apk"
-app_uid="$(adb shell cmd package list packages -U "$APP_ID" | sed -n 's/.*uid:\([0-9]*\).*/\1/p' | tr -d '\r')"
-[ -n "$app_uid" ] || fail "$APP_ID is not installed"
-# Every process the app starts shares its uid, so restarts stay in this log.
-adb logcat -v threadtime --uid="$app_uid" >"$out/logcat-app.txt" 2>&1 &
-logcat_pids+=($!)
+install_fresh "$apk" "$out"
 echo "::endgroup::"
-
-# A loaded runner can drop the emulator off adb for a moment; reconnect before failing.
-ensure_device() {
-  adb reconnect offline >/dev/null 2>&1 || true
-  timeout 90 adb wait-for-device || fail "The emulator went offline (runner fault, not the app)"
-}
 
 run_flow() {
   step "Maestro: $1"
