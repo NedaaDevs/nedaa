@@ -13,7 +13,7 @@ import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 import { DEFAULT_ATHKAR_DATA } from "@/constants/AthkarData";
 
 // Types
-import type { Athkar, AthkarProgress } from "@/types/athkar";
+import type { Athkar, AthkarProgress, AthkarState, Streak } from "@/types/athkar";
 
 // Builds the morning list the same way useInitializeAthkar does (id =
 // `${order}-morning`) so the focus reader/player ids stay consistent with
@@ -30,13 +30,17 @@ function buildMorningList(): Athkar[] {
   return list;
 }
 
-// In screenshot mode the SQLite-backed progress is empty (fresh DB) and the
-// athkar lists are only populated by useInitializeAthkar on the landing screen.
-// AthkarList.initializeSession asynchronously reloads currentProgress from the
-// empty DB, so seeded progress has to be re-asserted to win that race. A small
-// number of timed re-applies keeps the captured screen stable without touching
-// production behavior (the effects no-op when no screenshot seed is active).
+// Timed re-applies that let the focus reader's seed outlast its async setup.
 const REASSERT_DELAYS_MS = [0, 350, 900, 1600] as const;
+
+/** A believable streak for the landing screenshot. */
+const SEEDED_STREAK: Streak = {
+  currentStreak: 7,
+  longestStreak: 30,
+  lastCompletedDate: null,
+  isPaused: false,
+  toleranceDays: 0,
+};
 
 function buildSeededProgress(
   morningIds: string[],
@@ -62,7 +66,6 @@ function buildSeededProgress(
  */
 export function useAthkarLandingScreenshotSeed(): "morning" | "evening" | null {
   const seed = useScreenshotSeed("athkar");
-  const morningAthkarList = useAthkarStore((s) => s.morningAthkarList);
 
   useEffect(() => {
     if (!seed) return;
@@ -71,44 +74,44 @@ export function useAthkarLandingScreenshotSeed(): "morning" | "evening" | null {
     const total = Math.max(1, seed.progress.total);
     const completed = Math.max(0, Math.min(seed.progress.completed, total));
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    let held: Pick<AthkarState, "morningAthkarList" | "currentProgress"> | null = null;
 
     const apply = () => {
-      const state = useAthkarStore.getState();
-      const fullMorning = state.morningAthkarList;
+      const fullMorning = useAthkarStore.getState().morningAthkarList;
       if (fullMorning.length === 0) return;
 
       // Trim the displayed list to `total` so completed/total maps cleanly to
       // the streak card percentage (completed / displayed list length).
       const trimmed = fullMorning.slice(0, Math.min(total, fullMorning.length));
+      // Single-count items keep the card UI clean for the screenshot.
       const seededProgress = buildSeededProgress(
         trimmed.map((a) => a.id),
-        // Single-count items keep the card UI clean for the screenshot.
         1,
         completed
       );
+      held = { morningAthkarList: trimmed, currentProgress: seededProgress };
 
       useAthkarStore.setState({
-        morningAthkarList: trimmed,
+        ...held,
         currentType: period,
-        currentProgress: seededProgress,
         todayCompleted: { morning: false, evening: false },
-        streak: {
-          currentStreak: 7,
-          longestStreak: 30,
-          lastCompletedDate: null,
-          isPaused: false,
-          toleranceDays: 0,
-        },
+        streak: SEEDED_STREAK,
       });
     };
 
-    REASSERT_DELAYS_MS.forEach((delay) => {
-      timers.push(setTimeout(apply, delay));
-    });
+    const drifted = (state: AthkarState) =>
+      held === null ||
+      state.morningAthkarList !== held.morningAthkarList ||
+      state.currentProgress !== held.currentProgress ||
+      state.streak !== SEEDED_STREAK ||
+      state.currentType !== period;
 
-    return () => timers.forEach(clearTimeout);
-  }, [seed, morningAthkarList.length]);
+    apply();
+    // The session reloads progress and streak from the database after mount.
+    return useAthkarStore.subscribe((state) => {
+      if (drifted(state)) apply();
+    });
+  }, [seed]);
 
   if (!seed) return null;
   return seed.period;

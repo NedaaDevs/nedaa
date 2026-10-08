@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { sep } from "node:path";
 
+import { STATIC_SCREENSHOT_SCREENS } from "@/constants/Screenshot";
 import { readRoutes, resolvesToRoute, walkFiles, ROUTES_DIR } from "@/test-helpers/routeTree";
 import { presets } from "@/screenshot-mode/presets";
 import { SCREEN_TO_PATH } from "@/screenshot-mode/screenPaths";
@@ -38,6 +39,14 @@ const SEEDLESS_SCREENS: Record<string, string> = {
     "The router consumes it: it reads ringingPrayer off the payload and passes it as the alarmType param, so the screen shows a real Fajr title rather than the CUSTOM fallback.",
   tools:
     "The Tools menu is static content. Its preset exists only so the router's getPreset() guard returns non-null and navigation proceeds.",
+  "prayer-times":
+    "Today reads the screenshot clock, which holds one moment app-wide in a screenshot build, so the preset only names the shot.",
+  ...Object.fromEntries(
+    STATIC_SCREENSHOT_SCREENS.map((key) => [
+      key,
+      "A settings screen shows saved preferences only; its preset exists so the router's getPreset() guard passes.",
+    ])
+  ),
 };
 
 describe("screenshot contract", () => {
@@ -75,6 +84,18 @@ describe("screenshot contract", () => {
 
   it("re-proves that the tools screen is documented as seedless", () => {
     const preset = readFileSync(`${SRC}/screenshot-mode/presets/tools.ts`, "utf8");
+
+    expect(preset).toContain("reads no seed");
+  });
+
+  it("re-proves that Today's clock reads the screenshot moment", () => {
+    const clock = readFileSync(`${SRC}/hooks/useTodayClock.ts`, "utf8");
+
+    expect(clock).toContain("screenshotNow()");
+  });
+
+  it("re-proves that the static screens are documented as seedless", () => {
+    const preset = readFileSync(`${SRC}/screenshot-mode/presets/static.ts`, "utf8");
 
     expect(preset).toContain("reads no seed");
   });

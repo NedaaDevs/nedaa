@@ -1,23 +1,11 @@
 import { z } from "zod";
-import type { ScreenshotScreenKey } from "@/stores/screenshotStore";
-
-const SCREEN_KEYS: readonly ScreenshotScreenKey[] = [
-  "prayer-times",
-  "reliable-alarms",
-  "athkar",
-  "qibla",
-  "qada",
-  "quran",
-  "athkar-with-audio",
-  "tools",
-  "umrah",
-] as const;
+import { SCREENSHOT_LOCALES, SCREENSHOT_SCREENS, SCREENSHOT_THEMES } from "@/constants/Screenshot";
 
 const schema = z.object({
-  screen: z.enum(SCREEN_KEYS as [ScreenshotScreenKey, ...ScreenshotScreenKey[]]),
-  locale: z.enum(["en", "ar"]),
+  screen: z.enum(SCREENSHOT_SCREENS),
+  locale: z.enum(SCREENSHOT_LOCALES),
   seed: z.string().min(1),
-  theme: z.enum(["light", "dark"]).optional(),
+  theme: z.enum(SCREENSHOT_THEMES).optional(),
 });
 
 export type ScreenshotDeepLink = z.infer<typeof schema>;
