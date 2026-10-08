@@ -5,10 +5,11 @@ export enum AppLocale {
   MS = "ms",
 }
 
-export enum PlatformType {
-  IOS = "ios",
-  ANDROID = "android",
-}
+export const PlatformType = {
+  IOS: "ios",
+  ANDROID: "android",
+} as const;
+export type PlatformTypeValue = (typeof PlatformType)[keyof typeof PlatformType];
 
 export enum AppMode {
   SYSTEM = "system",
