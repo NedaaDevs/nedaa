@@ -1,14 +1,20 @@
 import type { ScreenshotScreenKey, StaticScreenshotScreenKey } from "@/constants/Screenshot";
-import { prayerTimesPresets, type PrayerTimesSeed } from "./prayer-times";
-import { reliableAlarmsPresets, type ReliableAlarmsSeed } from "./reliable-alarms";
-import { athkarPresets, type AthkarSeed } from "./athkar";
-import { qiblaPresets, type QiblaSeed } from "./qibla";
-import { qadaPresets, type QadaSeed } from "./qada";
-import { quranPresets, type QuranSeed } from "./quran";
-import { athkarWithAudioPresets, type AthkarWithAudioSeed } from "./athkar-with-audio";
-import { toolsPresets, type ToolsSeed } from "./tools";
-import { umrahPresets, type UmrahSeed } from "./umrah";
-import { staticPresets, type StaticSeed } from "./static";
+import { prayerTimesPresets, type PrayerTimesSeed } from "@/screenshot-mode/presets/prayer-times";
+import {
+  reliableAlarmsPresets,
+  type ReliableAlarmsSeed,
+} from "@/screenshot-mode/presets/reliable-alarms";
+import { athkarPresets, type AthkarSeed } from "@/screenshot-mode/presets/athkar";
+import { qiblaPresets, type QiblaSeed } from "@/screenshot-mode/presets/qibla";
+import { qadaPresets, type QadaSeed } from "@/screenshot-mode/presets/qada";
+import { quranPresets, type QuranSeed } from "@/screenshot-mode/presets/quran";
+import {
+  athkarWithAudioPresets,
+  type AthkarWithAudioSeed,
+} from "@/screenshot-mode/presets/athkar-with-audio";
+import { toolsPresets, type ToolsSeed } from "@/screenshot-mode/presets/tools";
+import { umrahPresets, type UmrahSeed } from "@/screenshot-mode/presets/umrah";
+import { staticPresets, type StaticSeed } from "@/screenshot-mode/presets/static";
 
 export type PresetMap = {
   "prayer-times": PrayerTimesSeed;
