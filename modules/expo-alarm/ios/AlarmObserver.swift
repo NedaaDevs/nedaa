@@ -319,7 +319,7 @@ import AppIntents
                 postAlert: 300
             )
             let stopButton = AlarmButton(
-                text: LocalizedStringResource(stringLiteral: "Dismiss"),
+                text: LocalizedStringResource(stringLiteral: AlarmCopy.text("stop", fallback: "Dismiss")),
                 textColor: .white,
                 systemImageName: "stop.circle.fill"
             )
@@ -328,7 +328,8 @@ import AppIntents
                 stopButton: stopButton
             )
             let countdownPresentation = AlarmPresentation.Countdown(
-                title: LocalizedStringResource(stringLiteral: "Alarm in...")
+                title: LocalizedStringResource(
+                    stringLiteral: AlarmCopy.text("backupCountdown", fallback: "Ringing again soon"))
             )
             let presentation = AlarmPresentation(
                 alert: alertPresentation,
@@ -651,8 +652,9 @@ import AppIntents
 
         for i in 0..<5 {
             let content = UNMutableNotificationContent()
-            content.title = "Complete challenge to dismiss"
-            content.body = "Open Nedaa to dismiss your alarm"
+            content.title = AlarmCopy.text("stillRingingTitle", fallback: "Your alarm is still on")
+            content.body = AlarmCopy.text(
+                "stillRingingBody", fallback: "Open Nedaa and solve the challenge to stop it.")
             // .critical needs an approved entitlement the app does not hold.
             content.sound = .default
             content.categoryIdentifier = "ALARM_BYPASS"
@@ -701,8 +703,10 @@ import AppIntents
         let newState = AlarmActivityAttributes.ContentState(state: "firing")
 
         let alertConfig = AlertConfiguration(
-            title: "Complete challenge to dismiss",
-            body: "Unlock device to dismiss alarm",
+            title: LocalizedStringResource(
+                stringLiteral: AlarmCopy.text("stillRingingTitle", fallback: "Your alarm is still on")),
+            body: LocalizedStringResource(
+                stringLiteral: AlarmCopy.text("unlockToStop", fallback: "Unlock your phone to stop the alarm")),
             sound: .default
         )
 

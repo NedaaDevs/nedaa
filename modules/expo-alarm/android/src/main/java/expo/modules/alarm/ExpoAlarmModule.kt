@@ -156,6 +156,11 @@ class ExpoAlarmModule : Module() {
         }
 
         // Completed queue (for processing alarms completed via overlay)
+        Function("setAlarmCopy") { copy: Map<String, String> ->
+            AlarmCopy.save(context, copy)
+            true
+        }
+
         AsyncFunction("getCompletedQueue") {
             db.getCompletedQueue().map { record ->
                 mapOf(

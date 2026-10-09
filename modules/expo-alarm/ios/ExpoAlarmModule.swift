@@ -143,7 +143,8 @@ public class ExpoAlarmModule: Module {
                         let schedule = Alarm.Schedule.fixed(triggerDate)
 
                         let stopButton = AlarmButton(
-                            text: LocalizedStringResource(stringLiteral: dismissText.isEmpty ? "Stop" : dismissText),
+                            text: LocalizedStringResource(
+                                stringLiteral: dismissText.isEmpty ? AlarmCopy.text("stop", fallback: "Stop") : dismissText),
                             textColor: .white,
                             systemImageName: "stop.circle.fill"
                         )
@@ -542,6 +543,11 @@ public class ExpoAlarmModule: Module {
 
         Function("isAlarmSoundPlaying") { () -> Bool in
             return AlarmAudioManager.shared.isCurrentlyPlaying()
+        }
+
+        Function("setAlarmCopy") { (copy: [String: String]) -> Bool in
+            AlarmCopy.save(copy)
+            return true
         }
 
         Function("stopAllAlarmEffects") { () -> Bool in

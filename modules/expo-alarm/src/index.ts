@@ -261,6 +261,12 @@ export function isAlarmSoundPlaying(): boolean {
   return NativeModule.isAlarmSoundPlaying();
 }
 
+// Saves the text native code shows while an alarm rings, in the app's language.
+export function setAlarmCopy(copy: Record<string, string>): boolean {
+  if (!isAvailable) return false;
+  return NativeModule.setAlarmCopy(copy);
+}
+
 export function stopAllAlarmEffects(): boolean {
   if (!isAvailable) return false;
   return NativeModule.stopAllAlarmEffects();
@@ -628,6 +634,7 @@ export default {
   startAlarmSound,
   stopAlarmSound,
   isAlarmSoundPlaying,
+  setAlarmCopy,
   stopAllAlarmEffects,
   setAlarmVolume,
   getAlarmVolume,

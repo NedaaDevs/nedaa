@@ -12,6 +12,7 @@ import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/provider
 
 // Utils
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
+import { registerAlarmCopySync } from "@/utils/alarmCopy";
 import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
 import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
@@ -44,6 +45,7 @@ export const appSetup = async (
     // Gate scheduling on alarm-store rehydration; reading defaults here silently
     // skips scheduling for the launch. Bounded so setup can never hang.
     await waitForAlarmStores();
+    registerAlarmCopySync();
     await ensureAlarmsScheduled();
 
     // Check for city changes (if auto-update is enabled). Skipped in screenshot

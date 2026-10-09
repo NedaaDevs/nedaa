@@ -23,10 +23,10 @@ class AlarmNotificationManager(private val context: Context) {
 
         val channel = NotificationChannel(
             CHANNEL_ID,
-            CHANNEL_NAME,
+            AlarmCopy.text(context, "channelName", CHANNEL_NAME),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Alarm notifications for prayer times"
+            description = AlarmCopy.text(context, "channelDescription", "Alarms for Fajr and Friday prayer")
             setBypassDnd(true)
             enableVibration(false)
             setSound(null, null)
@@ -54,7 +54,7 @@ class AlarmNotificationManager(private val context: Context) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(iconRes)
             .setContentTitle(title)
-            .setContentText("Tap to dismiss alarm")
+            .setContentText(AlarmCopy.text(context, "notificationBody", "Tap to stop the alarm"))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

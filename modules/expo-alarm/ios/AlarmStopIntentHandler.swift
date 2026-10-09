@@ -125,8 +125,10 @@ public enum AlarmStopIntentHandler {
             )
 
             let alertConfig = AlertConfiguration(
-                title: "Complete challenge to dismiss",
-                body: "Unlock device to dismiss alarm",
+                title: LocalizedStringResource(
+                stringLiteral: AlarmCopy.text("stillRingingTitle", fallback: "Your alarm is still on")),
+                body: LocalizedStringResource(
+                stringLiteral: AlarmCopy.text("unlockToStop", fallback: "Unlock your phone to stop the alarm")),
                 sound: .default
             )
 

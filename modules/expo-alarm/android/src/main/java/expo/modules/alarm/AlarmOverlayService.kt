@@ -1266,8 +1266,7 @@ class AlarmOverlayService : Service() {
         val snoozeTime = System.currentTimeMillis() + snoozeMs
         val snoozeId = UUID.randomUUID().toString()
 
-        val baseTitle = title.replace(Regex("\\s*\\(Snoozed \\d+/\\d+\\)$"), "")
-        val snoozeTitle = "$baseTitle (Snoozed $newSnoozeCount/$snoozeMaxCount)"
+        val snoozeTitle = AlarmCopy.snoozedTitle(this, title, newSnoozeCount, snoozeMaxCount)
 
         // The replacement is secured first; a failed snooze leaves this alarm ringing.
         val scheduler = AlarmScheduler(this)
