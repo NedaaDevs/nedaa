@@ -1,3 +1,4 @@
+import { ALARM_OUTCOME, type AlarmOutcome } from "expo-alarm";
 import i18next from "@/localization/i18n";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
@@ -7,6 +8,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
 import { pickNextTrigger } from "@/utils/alarmTrigger";
+import type { TimingConfig } from "@/types/alarm";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
 
@@ -69,7 +71,6 @@ export async function schedulePrayerAlarm(
   prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha",
   alarmType: ScheduledAlarmType = ScheduledAlarmType.CUSTOM
 ): Promise<string | null> {
-  const alarmStore = useAlarmStore.getState();
   const alarmSettings = useAlarmSettingsStore.getState();
 
   const settingsType =
@@ -85,39 +86,43 @@ export async function schedulePrayerAlarm(
   // Select by *trigger* time (prayer minus offset), not prayer time: right after a
   // before-prayer alarm fires, today's prayer is still future but its trigger is past,
   // and the next occurrence must come from tomorrow's data.
-  const { todayTimings, tomorrowTimings } = usePrayerTimesStore.getState();
+  // Later days too: an offset can put tomorrow's trigger before midnight.
+  const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
   const timing = settingsType ? alarmSettings[settingsType]?.timing : null;
-  const next = pickNextTrigger(
-    [todayTimings?.timings[prayerName], tomorrowTimings?.timings[prayerName]].map((iso) =>
-      iso ? new Date(iso) : null
-    ),
-    timing
-  );
-
-  if (!next) {
-    alarmLog.w(
-      "Scheduler",
-      `${alarmType}: no future trigger for ${prayerName} — alarm not scheduled`
-    );
-    return null;
-  }
-  const { triggerDate } = next;
-
-  const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
-  const title = i18next.t(`prayerTimes.${prayerName}`);
-
-  const success = await alarmStore.scheduleAlarm({
-    id,
-    triggerDate,
-    title,
-    alarmType,
+  const candidates = [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].map((day) => {
+    const iso = day?.timings[prayerName];
+    return iso ? new Date(iso) : null;
   });
 
-  if (success) {
-    return id;
-  }
+  return armNextOccurrences(candidates, timing, alarmType, i18next.t(`prayerTimes.${prayerName}`));
+}
 
-  return null;
+// Arms the next occurrence and the one after it. The second rings even when the
+// first one's completion never reaches JS, which is what schedules the next.
+async function armNextOccurrences(
+  candidates: (Date | null)[],
+  timing: TimingConfig | null | undefined,
+  alarmType: ScheduledAlarmType,
+  title: string
+): Promise<string | null> {
+  const next = pickNextTrigger(candidates, timing);
+  if (!next) {
+    alarmLog.w("Scheduler", `${alarmType}: no future trigger — alarm not scheduled`);
+    return null;
+  }
+  const following = pickNextTrigger(candidates, timing, next.triggerDate.getTime());
+
+  const arm = async (triggerDate: Date): Promise<string | null> => {
+    const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
+    const success = await useAlarmStore
+      .getState()
+      .scheduleAlarm({ id, triggerDate, title, alarmType });
+    return success ? id : null;
+  };
+
+  const firstId = await arm(next.triggerDate);
+  if (following) await arm(following.triggerDate);
+  return firstId;
 }
 
 export async function scheduleFajrAlarm(): Promise<string | null> {
@@ -131,29 +136,14 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   const settings = useAlarmSettingsStore.getState().friday;
   if (!settings.enabled) return null;
 
-  const alarmStore = useAlarmStore.getState();
-
   // Friday always uses beforePrayerTime; selecting by trigger lets a passed offset
   // roll over to the next Friday in the two-week window.
-  const next = pickNextTrigger(getFridayDhuhrCandidates(), settings.timing);
-
-  if (!next) {
-    alarmLog.w("Scheduler", "jummah: no future Friday trigger — alarm not scheduled");
-    return null;
-  }
-  const { triggerDate } = next;
-
-  const id = generateDeterministicUUID(getAlarmKey(ScheduledAlarmType.JUMMAH, triggerDate));
-  const title = i18next.t("prayerTimes.jumuah");
-
-  const success = await alarmStore.scheduleAlarm({
-    id,
-    triggerDate,
-    title,
-    alarmType: ScheduledAlarmType.JUMMAH,
-  });
-
-  return success ? id : null;
+  return armNextOccurrences(
+    getFridayDhuhrCandidates(),
+    settings.timing,
+    ScheduledAlarmType.JUMMAH,
+    i18next.t("prayerTimes.jumuah")
+  );
 }
 
 // One-off rehearsal alarm a few seconds out, routed through the normal fire path
@@ -177,27 +167,35 @@ export const schedulePreviewAlarm = async (
     title,
     alarmType,
     countdown: true,
+    isPreview: true,
   });
 
   return success ? id : null;
 };
 
-export async function completeAndRescheduleAlarm(alarmId: string): Promise<void> {
+// `queued` is the native completion record from the Android overlay: its type
+// covers an alarm the store no longer holds, its outcome says whether it was solved.
+export async function completeAndRescheduleAlarm(
+  alarmId: string,
+  queued?: { alarmType: ScheduledAlarmType; outcome: AlarmOutcome }
+): Promise<void> {
   const alarmStore = useAlarmStore.getState();
   const alarm = alarmStore.scheduledAlarms[alarmId];
+  const alarmType = alarm?.alarmType ?? queued?.alarmType;
+  const solved = (queued?.outcome ?? ALARM_OUTCOME.SOLVED) === ALARM_OUTCOME.SOLVED;
 
   await alarmStore.completeAlarm(alarmId);
 
   // Waking for Fajr grows the streak; the store's freshness guard drops the
   // stale-alarm auto-completion path so a skipped Fajr never counts.
-  if (alarm?.alarmType === ScheduledAlarmType.FAJR) {
+  if (alarm?.alarmType === ScheduledAlarmType.FAJR && !alarm.isPreview && solved) {
     useAlarmStreakStore.getState().recordFajrSuccess(alarm.triggerTime);
   }
 
   try {
-    if (alarm?.alarmType === ScheduledAlarmType.FAJR) {
+    if (alarmType === ScheduledAlarmType.FAJR) {
       await scheduleFajrAlarm();
-    } else if (alarm?.alarmType === ScheduledAlarmType.JUMMAH) {
+    } else if (alarmType === ScheduledAlarmType.JUMMAH) {
       await scheduleFridayAlarm();
     }
   } catch (error) {

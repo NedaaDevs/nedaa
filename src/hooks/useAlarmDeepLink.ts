@@ -48,8 +48,10 @@ async function processQueues() {
   if (isProcessingQueues) return;
   isProcessingQueues = true;
   try {
-    await processCompletedQueue();
+    // Snoozes first: a snooze alarm completed before this drain must already
+    // be in the store, or its completion cannot resolve the type.
     await processSnoozeQueue();
+    await processCompletedQueue();
     pruneHandledAlarmIds();
   } finally {
     isProcessingQueues = false;
@@ -72,7 +74,10 @@ async function processCompletedQueue() {
     const processedIds: number[] = [];
     for (const item of queue) {
       handledAlarmIds.set(item.alarmId, Date.now());
-      await completeAndRescheduleAlarm(item.alarmId);
+      await completeAndRescheduleAlarm(item.alarmId, {
+        alarmType: item.alarmType as ScheduledAlarmType,
+        outcome: item.outcome,
+      });
       processedIds.push(item.id);
     }
 
@@ -94,6 +99,7 @@ async function processSnoozeQueue() {
     await waitForAlarmStores();
     const queue = await getSnoozeQueue();
     if (queue.length === 0) return;
+    const completedIds = new Set(await ExpoAlarm.getCompletedAlarmIds());
 
     // Clear by processed row id so a native overlay insert during these awaits
     // survives to the next drain instead of being wiped unprocessed.
@@ -108,6 +114,12 @@ async function processSnoozeQueue() {
         delete newAlarms[item.originalAlarmId];
         return { scheduledAlarms: newAlarms };
       });
+
+      // A snooze already solved natively must not come back as scheduled.
+      if (completedIds.has(item.snoozeAlarmId)) {
+        processedIds.push(item.id);
+        continue;
+      }
 
       // Add new snooze alarm to store
       useAlarmStore.setState((state) => ({

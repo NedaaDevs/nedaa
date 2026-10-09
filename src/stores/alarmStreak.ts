@@ -24,7 +24,9 @@ export const useAlarmStreakStore = create<AlarmStreakState>()(
         bestStreak: 0,
 
         recordFajrSuccess: (triggerTime) => {
-          if (Date.now() - triggerTime > FRESHNESS_WINDOW_MS) return;
+          const age = Date.now() - triggerTime;
+          // A solve before the alarm was due is not a wake-up.
+          if (age < 0 || age > FRESHNESS_WINDOW_MS) return;
 
           const todayISO = toLocalDateISO(Date.now());
           const { lastSuccessDate, streak, bestStreak } = get();
