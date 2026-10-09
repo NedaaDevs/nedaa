@@ -1,5 +1,5 @@
 Apa yang baharu?
 
-• Membaiki widget yang masih meminta aplikasi dibuka untuk memuatkan data selepas aplikasi dibuka
-• Membaiki teks doa yang terpotong dalam panduan umrah pada peranti boleh lipat
+• Membaiki isu penggera tidak berbunyi selepas telefon dimulakan semula sehingga kunci dibuka
+• Butang dan pemberitahuan penggera mengikut bahasa aplikasi
 • Pembaikan pepijat dan penambahbaikan

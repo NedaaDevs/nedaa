@@ -1,5 +1,5 @@
 What's new?
 
-• Fixed widgets staying on "Open app to load data" after opening the app
-• Fixed clipped dua text in the Umrah guide on foldable devices
+• Fixed an issue where alarms didn't ring after a restart until the phone was unlocked
+• The alarm's buttons and notifications follow the app's language
 • Bug fixes and improvements
