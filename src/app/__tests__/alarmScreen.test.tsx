@@ -1,8 +1,10 @@
 import { act, screen } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
+import * as ExpoAlarm from "expo-alarm";
 
 import AlarmTriggeredScreen from "@/app/alarm";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { ScheduledAlarmType } from "@/enums/alarm";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -71,6 +73,13 @@ describe("AlarmTriggeredScreen", () => {
     useAppStore.setState({ locale: AppLocale.AR });
     usePreferencesStore.setState({ use24HourTime: false, useWesternNumerals: false });
     usePrayerTimesStore.setState({ todayTimings: DAY, tomorrowTimings: null });
+    // The route opens the screen only for the alarm that is ringing.
+    jest.spyOn(ExpoAlarm, "getPendingChallenge").mockResolvedValue({
+      alarmId: mockAlarmId,
+      alarmType: ScheduledAlarmType.JUMMAH,
+      title: "",
+      timestamp: 0,
+    });
   });
 
   // Arabic speech rewrites clock digits, so labels speak the time in words.

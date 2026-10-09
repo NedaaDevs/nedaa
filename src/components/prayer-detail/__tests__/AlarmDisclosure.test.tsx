@@ -111,7 +111,7 @@ beforeEach(() => {
   scheduleFajr.mockResolvedValue(ALARM_ID);
   scheduleFriday.mockResolvedValue(ALARM_ID);
   permissionsGranted.mockResolvedValue(true);
-  mockCancel.mockResolvedValue(undefined);
+  mockCancel.mockResolvedValue(true);
 });
 
 describe("AlarmDisclosure", () => {
