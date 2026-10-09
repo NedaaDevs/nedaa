@@ -48,14 +48,23 @@ public enum AlarmStopIntentHandler {
                 + "\(alarmId.prefix(8)) type=\(alarmType)")
         log.intent("Stop intent: \(alarmId), type=\(alarmType), title=\(alarmTitle)")
 
+        guard AlarmObserver.isLive(alarmId: alarmId) else {
+            plog.intent("Stop intent for \(alarmId.prefix(8)) is stale, ignoring")
+            return
+        }
+
         let isCompleted = AlarmDatabase.shared.isCompleted(id: alarmId)
         let pendingChallenge = AlarmDatabase.shared.getPendingChallenge()
 
         if isCompleted {
+            if let active = AlarmObserver.activeProtectedAlarmId(), active != alarmId.lowercased() {
+                plog.intent("Completed \(alarmId.prefix(8)); \(active.prefix(8)) still protected")
+                return
+            }
             let existingBackups = AlarmDatabase.shared.getBackupAlarmIds()
             for id in existingBackups {
                 if let uuid = UUID(uuidString: id) {
-                    try? AlarmManager.shared.cancel(id: uuid)
+                    try? AlarmObserver.removeOwnAlarm(uuid)
                 }
             }
             AlarmDatabase.shared.deleteAllBackups()
@@ -89,7 +98,7 @@ public enum AlarmStopIntentHandler {
         // it can't ring 15s after a successful dismissal.
         if AlarmDatabase.shared.isCompleted(id: alarmId) {
             if let scheduledBackupId {
-                try? AlarmManager.shared.cancel(id: scheduledBackupId)
+                try? AlarmObserver.removeOwnAlarm(scheduledBackupId)
                 AlarmDatabase.shared.deleteAlarm(id: scheduledBackupId.uuidString.lowercased())
             }
             AlarmDatabase.shared.clearBypassState()

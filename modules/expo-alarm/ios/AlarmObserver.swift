@@ -16,9 +16,15 @@ import AppIntents
     private static var hasObservedInProcess = false
     // Matches ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS on the JS side.
     private static let staleAlarmThresholdMs: Double = 2 * 60 * 60 * 1000
+    private static let bypassStaleThreshold: TimeInterval = 30 * 60
     private static var observerTask: Task<Void, Never>?
     private static var heartbeatTask: Task<Void, Never>?
     private static var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    // Ids the app removed itself; AlarmKit reports their removal like a user Stop.
+    private static var expectedRemovals: Set<UUID> = []
+    private static var backupTask: Task<UUID?, Never>?
+    // Bumped when protection ends, so an in-flight backup knows it is stale.
+    private static var bypassGeneration = 0
 
     @objc public static func startObserving() {
         #if canImport(AlarmKit)
@@ -137,6 +143,8 @@ import AppIntents
         let plog = PersistentLog.shared
         var silencedIds: Set<UUID> = []
 
+        // Read before recovery, which can start a fresh bypass of its own.
+        let bypassAtLaunch = AlarmDatabase.shared.getBypassState()
         await detectMissedDismissals(alarms: alarms)
 
         let now = Date().timeIntervalSince1970 * 1000
@@ -154,28 +162,24 @@ import AppIntents
                 continue
             }
             plog.observer("Already alerting on startup: \(alarmId.prefix(8))")
-            if !AlarmAudioManager.shared.isKeepAliveRunning() {
-                AlarmAudioManager.shared.startQuietKeepAlive()
-            }
             await handleAlarmAlerting(alarmId: alarmId)
         }
 
         guard isProcessStart else { return silencedIds }
 
-        if let bypassState = AlarmDatabase.shared.getBypassState() {
+        if let bypassState = bypassAtLaunch {
             let elapsed = Date().timeIntervalSince1970 - bypassState.activatedAt
-            let staleThreshold: TimeInterval = 30 * 60
             plog.observer("Bypass state found: \(bypassState.alarmId.prefix(8)) (active \(Int(elapsed))s ago)")
 
-            if elapsed > staleThreshold {
-                plog.observer("Bypass state is stale (\(Int(elapsed))s > \(Int(staleThreshold))s), clearing")
-                AlarmDatabase.shared.clearBypassState()
+            if elapsed > bypassStaleThreshold {
+                plog.observer("Bypass state is stale (\(Int(elapsed))s > \(Int(bypassStaleThreshold))s), clearing")
+                clearBypassState(ifNaming: bypassState.alarmId)
             } else if !AlarmDatabase.shared.isCompleted(id: bypassState.alarmId) {
                 plog.observer("Challenge NOT completed, re-triggering bypass")
                 await handleAlarmDismissed(alarmId: bypassState.alarmId)
             } else {
                 plog.observer("Challenge completed while dead, clearing bypass state")
-                AlarmDatabase.shared.clearBypassState()
+                clearBypassState(ifNaming: bypassState.alarmId)
             }
         }
         return silencedIds
@@ -201,10 +205,12 @@ import AppIntents
                             // stale window still outlives the completed-alarm lookups that read them.
                             plog.observer("Stale alarm \(dbId.prefix(8)) (\(Int(age/1000))s old), cleaning up")
                             AlarmDatabase.shared.deleteAlarm(id: dbId)
-                        } else if !alarmInfo.completed {
+                        } else if !alarmInfo.completed,
+                                  age <= bypassStaleThreshold * 1000,
+                                  AlarmDatabase.shared.getBypassState()?.alarmId != dbId {
+                            // The row stays so the challenge can still mark it completed.
                             plog.observer("Missed dismiss detected: \(dbId.prefix(8))")
                             await handleAlarmDismissed(alarmId: dbId)
-                            AlarmDatabase.shared.deleteAlarm(id: dbId)
                         }
                     }
                 }
@@ -225,9 +231,6 @@ import AppIntents
             let previousState = previousAlarms[alarm.id]
             if alarm.state == .alerting && previousState != .alerting && previousState != nil {
                 plog.observer("Alerting: \(alarm.id.uuidString.prefix(8))")
-                if !AlarmAudioManager.shared.isKeepAliveRunning() {
-                    AlarmAudioManager.shared.startQuietKeepAlive()
-                }
                 await handleAlarmAlerting(alarmId: alarm.id.uuidString.lowercased())
             }
         }
@@ -235,6 +238,10 @@ import AppIntents
         // Disappeared (dismissed/stopped)
         let dismissedIds = previousIds.subtracting(currentIds)
         for alarmId in dismissedIds {
+            if consumeExpectedRemoval(alarmId) {
+                plog.observer("Removed by app: \(alarmId.uuidString.prefix(8))")
+                continue
+            }
             let wasAlerting = previousAlarms[alarmId] == .alerting
             plog.observer("Gone: \(alarmId.uuidString.prefix(8)) wasAlerting=\(wasAlerting)")
             if wasAlerting {
@@ -261,12 +268,44 @@ import AppIntents
         title: String,
         delay: TimeInterval = 15
     ) async -> UUID? {
+        // The stop intent and the observer both arm a backup for one Stop;
+        // a second caller shares the backup already being scheduled.
+        let (task, generation) = stateLock.withLock { () -> (Task<UUID?, Never>, Int) in
+            if let running = backupTask { return (running, bypassGeneration) }
+            let task = Task {
+                await replaceBypassBackup(
+                    originalAlarmId: originalAlarmId, alarmType: alarmType, title: title, delay: delay)
+            }
+            backupTask = task
+            return (task, bypassGeneration)
+        }
+        let backupId = await task.value
+        let isStale = stateLock.withLock { () -> Bool in
+            if backupTask == task { backupTask = nil }
+            return generation != bypassGeneration
+        }
+        // Protection ended while this backup was being scheduled.
+        if isStale, let backupId {
+            try? removeOwnAlarm(backupId)
+            AlarmDatabase.shared.deleteAlarm(id: backupId.uuidString.lowercased())
+            return nil
+        }
+        return backupId
+    }
+
+    @available(iOS 26.1, *)
+    private static func replaceBypassBackup(
+        originalAlarmId: String,
+        alarmType: String,
+        title: String,
+        delay: TimeInterval
+    ) async -> UUID? {
         let plog = PersistentLog.shared
 
         let existingBackups = AlarmDatabase.shared.getBackupAlarmIds()
         for id in existingBackups {
             if let uuid = UUID(uuidString: id) {
-                try? AlarmManager.shared.cancel(id: uuid)
+                try? removeOwnAlarm(uuid)
             }
         }
         AlarmDatabase.shared.deleteAllBackups()
@@ -352,45 +391,26 @@ import AppIntents
 
         plog.observer("Alarm alerting: \(alarmId.prefix(8))")
 
-        var metadata = AlarmDatabase.shared.getMetadata(for: alarmId)
-        var originalAlarmId = alarmId
+        let isBackupAlarm = AlarmDatabase.shared.getBackupAlarmIds().contains(alarmId.lowercased())
 
-        // A backup is scheduled under its own UUID and carries its own alarms-row
-        // metadata, so a plain lookup resolves to the backup — not the alarm the JS
-        // store knows. Completion, Live Activity, and the deep link must all target
-        // the original alarm, whose id lives in the pending-challenge / bypass state.
-        let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
-        let isBackupAlarm = backupIds.contains(alarmId.lowercased())
-
-        if isBackupAlarm {
-            if let pending = AlarmDatabase.shared.getPendingChallenge(),
-               let pendingId = pending["alarmId"] as? String,
-               let pendingType = pending["alarmType"] as? String,
-               let pendingTitle = pending["title"] as? String {
-                originalAlarmId = pendingId
-                metadata = (alarmType: pendingType, title: pendingTitle)
-                plog.observer("Backup alerting, resolved original \(pendingId.prefix(8)) from pending challenge")
-            } else if let bypass = AlarmDatabase.shared.getBypassState() {
-                originalAlarmId = bypass.alarmId
-                metadata = (alarmType: bypass.alarmType, title: bypass.title)
-                plog.observer("Backup alerting, resolved original \(bypass.alarmId.prefix(8)) from bypass state")
-            } else {
-                plog.observer("Backup alerting but no original id found; falling back to backup id")
-            }
-        } else if metadata == nil {
-            if let pending = AlarmDatabase.shared.getPendingChallenge(),
-               let pendingId = pending["alarmId"] as? String,
-               let pendingType = pending["alarmType"] as? String,
-               let pendingTitle = pending["title"] as? String {
-                metadata = (alarmType: pendingType, title: pendingTitle)
-                originalAlarmId = pendingId
-                plog.observer("Using pending challenge metadata for backup")
-            }
+        guard let owner = resolveOwner(of: alarmId) else {
+            plog.observer("No owner for alarm: \(alarmId)")
+            return
+        }
+        let originalAlarmId = owner.alarmId
+        let metadata = (alarmType: owner.alarmType, title: owner.title)
+        if originalAlarmId != alarmId.lowercased() {
+            plog.observer("Resolved \(alarmId.prefix(8)) to original \(originalAlarmId.prefix(8))")
         }
 
-        guard let metadata = metadata else {
-            plog.observer("No metadata for alarm: \(alarmId)")
+        if AlarmDatabase.shared.isCompleted(id: originalAlarmId) {
+            plog.observer("Already completed, skipping: \(originalAlarmId.prefix(8))")
             return
+        }
+
+        // Holds the process awake while the alarm rings; only for a live alarm.
+        if !AlarmAudioManager.shared.isKeepAliveRunning() {
+            AlarmAudioManager.shared.startQuietKeepAlive()
         }
 
         // Start vibration immediately for backup alarms (they fire via AlarmKit,
@@ -402,11 +422,6 @@ import AppIntents
             }
         }
 
-        if AlarmDatabase.shared.isCompleted(id: originalAlarmId) {
-            plog.observer("Already completed, skipping: \(originalAlarmId.prefix(8))")
-            return
-        }
-
         if AlarmDatabase.shared.getPendingChallenge() == nil {
             AlarmDatabase.shared.setPendingChallenge(
                 alarmId: originalAlarmId,
@@ -416,10 +431,6 @@ import AppIntents
         }
 
         _ = await startFiringLiveActivity(alarmId: originalAlarmId)
-
-        if !AlarmAudioManager.shared.isKeepAliveRunning() {
-            AlarmAudioManager.shared.startQuietKeepAlive()
-        }
 
         if let url = URL(string: "dev.nedaa.app://alarm?alarmId=\(originalAlarmId)&alarmType=\(metadata.alarmType)") {
             await MainActor.run {
@@ -434,28 +445,25 @@ import AppIntents
 
         plog.observer("Dismissed: \(alarmId.prefix(8))")
 
-        var originalAlarmId = alarmId
-        if let pending = AlarmDatabase.shared.getPendingChallenge(),
-           let pendingId = pending["alarmId"] as? String {
-            originalAlarmId = pendingId
+        // The app's own cancels arrive here too; once completion has cleared
+        // the pending challenge and bypass, they resolve to no owner.
+        guard let owner = resolveOwner(of: alarmId) else {
+            plog.observer("No owner for \(alarmId.prefix(8)), app-side cancel, ignoring")
+            return
         }
+        let originalAlarmId = owner.alarmId
 
-        let isCompleted = AlarmDatabase.shared.isCompleted(id: originalAlarmId)
-
-        if isCompleted {
-            plog.observer("Challenge done, cleaning up")
-            let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
-            for id in backupIds {
-                if let uuid = UUID(uuidString: id) {
-                    try? AlarmManager.shared.cancel(id: uuid)
-                }
+        if AlarmDatabase.shared.isCompleted(id: originalAlarmId) {
+            // A late event for a finished alarm must not end another one's bypass.
+            if let active = activeProtectedAlarmId(), active != originalAlarmId {
+                plog.observer("Done: \(originalAlarmId.prefix(8)), \(active.prefix(8)) still protected")
+                return
             }
-            AlarmDatabase.shared.deleteAllBackups()
-            AlarmDatabase.shared.clearBypassState()
-            AlarmAudioManager.shared.stopAll()
-
-            let center = UNUserNotificationCenter.current()
-            center.removePendingNotificationRequests(withIdentifiers: bypassNotificationIds)
+            // Audio here belongs to a bypass, or to a newly scheduled alarm's keep-alive.
+            let hadBypass = AlarmDatabase.shared.getBypassState()?.alarmId == originalAlarmId
+            plog.observer("Challenge done, cleaning up (bypass=\(hadBypass))")
+            cleanUpBypass()
+            if hadBypass { AlarmAudioManager.shared.stopAll() }
             return
         }
 
@@ -485,10 +493,15 @@ import AppIntents
             stateLock.unlock()
         }
 
-        let metadata = AlarmDatabase.shared.getMetadata(for: originalAlarmId)
-        let alarmType = metadata?.alarmType ?? "prayer"
+        // JS may complete the challenge while this handler is suspended.
+        if AlarmDatabase.shared.isCompleted(id: originalAlarmId) {
+            plog.observer("Completed before bypass started, cleaning up")
+            cleanUpBypass()
+            AlarmAudioManager.shared.stopAll()
+            return
+        }
 
-        // Get configured alarm settings
+        let alarmType = owner.alarmType
         let settingsKey = "alarm_settings_\(alarmType)"
         let settings = UserDefaults.standard.dictionary(forKey: settingsKey) ?? [:]
         let soundName = settings["sound"] as? String ?? "beep"
@@ -499,20 +512,136 @@ import AppIntents
         AlarmDatabase.shared.setBypassState(
             alarmId: originalAlarmId,
             alarmType: alarmType,
-            title: metadata?.title ?? "Alarm"
+            title: owner.title
         )
 
-        let alarmTitle = metadata?.title ?? "Alarm"
         _ = await scheduleBypassBackup(
             originalAlarmId: originalAlarmId,
             alarmType: alarmType,
-            title: alarmTitle,
+            title: owner.title,
             delay: 15
         )
 
         await scheduleBypassNotifications()
 
+        if AlarmDatabase.shared.isCompleted(id: originalAlarmId) {
+            plog.observer("Completed during bypass setup, cleaning up")
+            cleanUpBypass()
+            AlarmAudioManager.shared.stopAll()
+            return
+        }
+
         await updateLiveActivityForDismiss(alarmId: originalAlarmId)
+    }
+
+    /// The alarm an event belongs to: a scheduled alarm owns itself.
+    /// A backup or removed row belongs to the pending challenge, then the bypass.
+    @available(iOS 26.1, *)
+    static func resolveOwner(of alarmId: String) -> (alarmId: String, alarmType: String, title: String)? {
+        let id = alarmId.lowercased()
+        let isBackup = AlarmDatabase.shared.getBackupAlarmIds().contains(id)
+        if !isBackup, let alarm = AlarmDatabase.shared.getAlarm(id: id) {
+            return (id, alarm.alarmType, alarm.title)
+        }
+        if let pending = AlarmDatabase.shared.getPendingChallenge(),
+           let pendingId = pending["alarmId"] as? String,
+           let pendingType = pending["alarmType"] as? String,
+           let pendingTitle = pending["title"] as? String {
+            return (pendingId, pendingType, pendingTitle)
+        }
+        if let bypass = AlarmDatabase.shared.getBypassState() {
+            return (bypass.alarmId, bypass.alarmType, bypass.title)
+        }
+        return nil
+    }
+
+    /// Whether an alarm can still ring: scheduled under 2 h ago, or named by a
+    /// fresh pending challenge or bypass. iOS can replay a stop intent hours late.
+    static func isLive(alarmId: String) -> Bool {
+        let id = alarmId.lowercased()
+        let nowMs = Date().timeIntervalSince1970 * 1000
+        if let alarm = AlarmDatabase.shared.getAlarm(id: id),
+           (0...staleAlarmThresholdMs).contains(nowMs - alarm.triggerTime) {
+            return true
+        }
+        if let pending = AlarmDatabase.shared.getPendingChallenge(),
+           (pending["alarmId"] as? String) == id,
+           let firedAt = pending["timestamp"] as? Double,
+           nowMs - firedAt * 1000 <= staleAlarmThresholdMs {
+            return true
+        }
+        if let bypass = AlarmDatabase.shared.getBypassState(), bypass.alarmId == id {
+            return Date().timeIntervalSince1970 - bypass.activatedAt <= bypassStaleThreshold
+        }
+        return false
+    }
+
+    /// Cancels an alarm on the app's behalf. AlarmKit gives no reason for a
+    /// removal, so the observer skips ids recorded here instead of re-arming.
+    @available(iOS 26.1, *)
+    static func removeOwnAlarm(_ id: UUID) throws {
+        // An id AlarmKit no longer holds produces no removal event to consume.
+        let isScheduled = (try? AlarmManager.shared.alarms)?.contains { $0.id == id } ?? true
+        if isScheduled {
+            stateLock.lock()
+            expectedRemovals.insert(id)
+            stateLock.unlock()
+        }
+        do {
+            try AlarmManager.shared.cancel(id: id)
+        } catch {
+            stateLock.lock()
+            expectedRemovals.remove(id)
+            stateLock.unlock()
+            throw error
+        }
+    }
+
+    /// Alarm ids are deterministic, so a rescheduled id must not stay marked.
+    static func forgetOwnRemoval(_ id: UUID) {
+        stateLock.lock()
+        expectedRemovals.remove(id)
+        stateLock.unlock()
+    }
+
+    private static func consumeExpectedRemoval(_ id: UUID) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return expectedRemovals.remove(id) != nil
+    }
+
+    /// Protection is ending; a backup still being scheduled must not survive it.
+    static func invalidateInFlightBackup() {
+        stateLock.withLock { bypassGeneration += 1 }
+    }
+
+    /// The alarm whose challenge is outstanding, if any.
+    static func activeProtectedAlarmId() -> String? {
+        if let pendingId = AlarmDatabase.shared.getPendingChallenge()?["alarmId"] as? String {
+            return pendingId
+        }
+        return AlarmDatabase.shared.getBypassState()?.alarmId
+    }
+
+    /// Recovery may have armed a newer bypass since the snapshot was read.
+    private static func clearBypassState(ifNaming alarmId: String) {
+        guard AlarmDatabase.shared.getBypassState()?.alarmId == alarmId else { return }
+        AlarmDatabase.shared.clearBypassState()
+    }
+
+    /// Ends bypass protection: backups, bypass state, notifications.
+    @available(iOS 26.1, *)
+    private static func cleanUpBypass() {
+        invalidateInFlightBackup()
+        for id in AlarmDatabase.shared.getBackupAlarmIds() {
+            if let uuid = UUID(uuidString: id) {
+                try? removeOwnAlarm(uuid)
+            }
+        }
+        AlarmDatabase.shared.deleteAllBackups()
+        AlarmDatabase.shared.clearBypassState()
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: bypassNotificationIds)
     }
 
     @available(iOS 26.1, *)
@@ -524,9 +653,10 @@ import AppIntents
             let content = UNMutableNotificationContent()
             content.title = "Complete challenge to dismiss"
             content.body = "Open Nedaa to dismiss your alarm"
-            content.sound = .defaultCritical
+            // .critical needs an approved entitlement the app does not hold.
+            content.sound = .default
             content.categoryIdentifier = "ALARM_BYPASS"
-            content.interruptionLevel = .critical
+            content.interruptionLevel = .active
 
             let trigger = UNTimeIntervalNotificationTrigger(
                 timeInterval: TimeInterval(15 + (i * 15)),
@@ -535,7 +665,11 @@ import AppIntents
             let request = UNNotificationRequest(
                 identifier: "bypass-\(i)", content: content, trigger: trigger
             )
-            try? await center.add(request)
+            do {
+                try await center.add(request)
+            } catch {
+                PersistentLog.shared.observer("Bypass notification \(i) failed: \(error)")
+            }
         }
         PersistentLog.shared.observer("Bypass protection active: loud alarm + backup + 5 notifications")
     }
@@ -585,6 +719,7 @@ import AppIntents
         alarmId: String, alarmType: String, title: String, triggerTime: Date
     ) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            PersistentLog.shared.alarm("Live Activities disabled")
             return
         }
 
@@ -618,6 +753,7 @@ import AppIntents
     @available(iOS 16.2, *)
     static func startFiringLiveActivity(alarmId: String) async -> String? {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            PersistentLog.shared.alarm("Live Activities disabled")
             return nil
         }
 

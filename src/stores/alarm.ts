@@ -20,6 +20,8 @@ export interface ScheduledAlarm {
   triggerTime: number;
   liveActivityId: string | null;
   snoozeCount: number;
+  // A settings preview; solving it is not a wake-up.
+  isPreview?: boolean;
 }
 
 export interface SnoozeResult {
@@ -38,13 +40,15 @@ interface AlarmState {
     alarmType: ScheduledAlarmType;
     snoozeCount?: number;
     baseTitle?: string;
+    isPreview?: boolean;
     countdown?: boolean;
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
   snoozeAlarm: (alarmId: string, snoozeDurationMinutes?: number) => Promise<SnoozeResult | null>;
   cancelAlarm: (alarmId: string) => Promise<void>;
-  cancelAlarmsByType: (alarmType: ScheduledAlarmType) => Promise<void>;
+  // False when an alarm could not be cancelled; its records are kept.
+  cancelAlarmsByType: (alarmType: ScheduledAlarmType) => Promise<boolean>;
   cancelAllAlarms: () => Promise<void>;
   getAlarm: (alarmId: string) => ScheduledAlarm | undefined;
   getAlarmByType: (alarmType: ScheduledAlarmType) => ScheduledAlarm | undefined;
@@ -64,6 +68,7 @@ export const useAlarmStore = create<AlarmState>()(
           snoozeCount,
           baseTitle,
           countdown,
+          isPreview,
         }) => {
           try {
             const success = await ExpoAlarm.scheduleAlarm({
@@ -94,6 +99,7 @@ export const useAlarmStore = create<AlarmState>()(
                   triggerTime: triggerDate.getTime(),
                   liveActivityId: null,
                   snoozeCount: snoozeCount ?? 0,
+                  ...(isPreview && { isPreview }),
                 },
               },
             }));
@@ -112,12 +118,22 @@ export const useAlarmStore = create<AlarmState>()(
         completeAlarm: async (alarmId) => {
           const alarm = get().scheduledAlarms[alarmId];
 
-          ExpoAlarm.stopAllAlarmEffects();
-          await ExpoAlarm.cancelAllBackups();
-          await ExpoAlarm.clearPendingChallenge();
-          await ExpoAlarm.cancelAlarm(alarmId);
-          await ExpoAlarm.endAllLiveActivities();
+          // Sound, backups, the challenge and the Live Activity are global native
+          // state; they belong to this alarm only when its challenge is the open one.
+          // A queued completion of an older alarm must not silence the current one.
+          const pending = await ExpoAlarm.getPendingChallenge();
+          const ownsAlarmState = !pending || pending.alarmId === alarmId;
+
+          // AlarmKit reports each cancel below as a dismissal; the observer must
+          // already see the alarm completed, or it re-arms bypass protection.
+          if (ownsAlarmState) ExpoAlarm.stopAllAlarmEffects();
           ExpoAlarm.markAlarmCompleted(alarmId);
+          if (ownsAlarmState) {
+            await ExpoAlarm.clearPendingChallenge();
+            await ExpoAlarm.cancelAllBackups();
+          }
+          await ExpoAlarm.cancelAlarm(alarmId);
+          if (ownsAlarmState) await ExpoAlarm.endAllLiveActivities();
 
           if (alarm) {
             alarmLog.i("Store", `completed ${alarm.alarmType} alarm ${alarmId}`);
@@ -159,10 +175,9 @@ export const useAlarmStore = create<AlarmState>()(
           });
 
           ExpoAlarm.stopAllAlarmEffects();
-          await ExpoAlarm.cancelAlarm(alarmId);
-          await ExpoAlarm.cancelAllBackups();
-          await ExpoAlarm.clearPendingChallenge();
 
+          // The replacement is secured before the original is touched, so a
+          // failed snooze leaves the original armed and its challenge open.
           const rescheduled = await get().scheduleAlarm({
             id: snoozeId,
             triggerDate: snoozeTime,
@@ -172,14 +187,18 @@ export const useAlarmStore = create<AlarmState>()(
             baseTitle,
           });
           if (!rescheduled) {
-            // Reschedule refused: keep the original store record so past-due detection
-            // can still surface it. Returning null shows no snooze countdown in the UI.
             alarmLog.e(
               "Store",
               `snooze: rescheduling ${alarm.alarmType} failed — keeping original alarm ${alarmId}`
             );
             return null;
           }
+
+          // Completed before the cancel, so its reported dismissal cannot re-arm it.
+          ExpoAlarm.markAlarmCompleted(alarmId);
+          await ExpoAlarm.clearPendingChallenge();
+          await ExpoAlarm.cancelAlarm(alarmId);
+          await ExpoAlarm.cancelAllBackups();
 
           // Remove the old alarm from store (new snooze alarm replaces it)
           set((state) => {
@@ -235,10 +254,15 @@ export const useAlarmStore = create<AlarmState>()(
             (alarm) => alarm.alarmType === alarmType
           );
 
+          const cancelledIds: string[] = [];
           for (const alarm of toCancel) {
             try {
-              await ExpoAlarm.cancelAlarm(alarm.alarmId);
-              ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
+              if (await ExpoAlarm.cancelAlarm(alarm.alarmId)) {
+                ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
+                cancelledIds.push(alarm.alarmId);
+              } else {
+                alarmLog.e("Store", `cancelAlarmsByType: native refused ${alarm.alarmId}`);
+              }
             } catch (error) {
               alarmLog.e(
                 "Store",
@@ -250,11 +274,12 @@ export const useAlarmStore = create<AlarmState>()(
 
           set((state) => {
             const newAlarms = { ...state.scheduledAlarms };
-            for (const alarm of toCancel) {
-              delete newAlarms[alarm.alarmId];
+            for (const alarmId of cancelledIds) {
+              delete newAlarms[alarmId];
             }
             return { scheduledAlarms: newAlarms };
           });
+          return cancelledIds.length === toCancel.length;
         },
 
         cancelAllAlarms: async () => {

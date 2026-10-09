@@ -24,12 +24,14 @@ class PersistentLog {
             guard let path = getLogPath() else { return }
 
             if FileManager.default.fileExists(atPath: path.path) {
+                // The throwing API: the legacy write raises an uncatchable
+                // exception on a full disk, which would abort the alarm path.
                 if let handle = try? FileHandle(forWritingTo: path) {
-                    handle.seekToEndOfFile()
+                    defer { try? handle.close() }
                     if let data = line.data(using: .utf8) {
-                        handle.write(data)
+                        _ = try? handle.seekToEnd()
+                        try? handle.write(contentsOf: data)
                     }
-                    handle.closeFile()
                 }
             } else {
                 try? line.write(to: path, atomically: true, encoding: .utf8)

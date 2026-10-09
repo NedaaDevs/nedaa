@@ -43,13 +43,7 @@ import {
 import { alarmLog } from "@/utils/alarmReport";
 import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
-import { SOUND_ASSETS } from "@/constants/sounds";
-
-const getNativeSoundName = (soundKey: string): string => {
-  const asset = SOUND_ASSETS[soundKey as keyof typeof SOUND_ASSETS];
-  if (!asset?.notificationSound) return soundKey;
-  return asset.notificationSound.replace(/\.[^.]+$/, "");
-};
+import { getNativeSoundName } from "@/utils/nativeSoundName";
 
 type SettingsSectionProps = {
   title: string;
@@ -229,8 +223,9 @@ const AlarmTypeSettingsScreen = () => {
           if (id === null) {
             handleChange({ enabled: false });
           }
-        } else {
-          await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
+        } else if (!(await useAlarmStore.getState().cancelAlarmsByType(scheduledType))) {
+          // The alarm is still armed, so the switch must not read Off.
+          handleChange({ enabled: true });
         }
       } catch {
         handleChange({ enabled: !enabled });

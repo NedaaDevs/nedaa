@@ -7,6 +7,7 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
+import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
 
@@ -15,10 +16,17 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [snoozeEndTime, setSnoozeEndTime] = useState<Date | null>(null);
   const [snoozeTimeRemaining, setSnoozeTimeRemaining] = useState(0);
+  // A snooze schedules a new alarm id; completion and navigation follow it.
+  const [activeAlarmId, setActiveAlarmId] = useState(alarmId);
+  const [routeAlarmId, setRouteAlarmId] = useState(alarmId);
+  if (routeAlarmId !== alarmId) {
+    setRouteAlarmId(alarmId);
+    setActiveAlarmId(alarmId);
+  }
 
   const snoozeAlarm = useAlarmStore((state) => state.snoozeAlarm);
   // Selected so the snooze count on screen follows the store.
-  const alarm = useAlarmStore((state) => state.scheduledAlarms[alarmId]);
+  const alarm = useAlarmStore((state) => state.scheduledAlarms[activeAlarmId]);
 
   const settingsType = alarmType === ScheduledAlarmType.JUMMAH ? "friday" : "fajr";
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
@@ -35,11 +43,11 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     : null;
 
   useEffect(() => {
-    const handled = isAlarmHandled(alarmId);
+    const handled = isAlarmHandled(activeAlarmId);
     if (handled && !isSnoozed && !snoozeEndTime) {
       router.replace("/");
     }
-  }, [alarmId, isSnoozed, snoozeEndTime]);
+  }, [activeAlarmId, isSnoozed, snoozeEndTime]);
 
   // On Android, the native AlarmService/AlarmOverlayService handles audio.
   // On iOS, we need to manage audio from React Native.
@@ -51,7 +59,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
         try {
           const isPlaying = ExpoAlarm.isAlarmSoundPlaying();
           if (!isPlaying) {
-            await ExpoAlarm.startAlarmSound(alarmSettings.sound || "beep");
+            await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
             ExpoAlarm.setAlarmVolume(alarmSettings.volume);
           }
         } catch {
@@ -71,9 +79,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }, []);
 
   useEffect(() => {
-    setAlarmScreenActive(alarmId);
+    setAlarmScreenActive(activeAlarmId);
     return () => setAlarmScreenActive(null);
-  }, [alarmId]);
+  }, [activeAlarmId]);
 
   useEffect(() => {
     if (!snoozeEndTime) return;
@@ -109,13 +117,21 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     Vibration.cancel();
     ExpoAlarm.stopAllAlarmEffects();
     ExpoAlarm.restoreSystemVolume();
-    markAlarmHandled(alarmId);
-    await completeAndRescheduleAlarm(alarmId);
+    markAlarmHandled(activeAlarmId);
+    await completeAndRescheduleAlarm(activeAlarmId);
     router.replace({
       pathname: "/alarm-complete",
       params: { alarmType },
     });
-  }, [alarmId, alarmType]);
+  }, [activeAlarmId, alarmType]);
+
+  const ringAgain = useCallback(async () => {
+    await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
+    ExpoAlarm.setAlarmVolume(alarmSettings.volume);
+    if (vibrationPattern) {
+      Vibration.vibrate([...vibrationPattern], true);
+    }
+  }, [alarmSettings.sound, alarmSettings.volume, vibrationPattern]);
 
   const handleGraceStart = useCallback(() => {
     if (dismissedRef.current) return;
@@ -125,28 +141,27 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
   const handleGraceExpire = useCallback(async () => {
     if (dismissedRef.current || isSnoozed) return;
-    const sound = alarmSettings.sound || "beep";
-    await ExpoAlarm.startAlarmSound(sound);
-    ExpoAlarm.setAlarmVolume(alarmSettings.volume);
-    if (vibrationPattern) {
-      Vibration.vibrate([...vibrationPattern], true);
-    }
-  }, [isSnoozed, alarmSettings.sound, alarmSettings.volume, vibrationPattern]);
+    await ringAgain();
+  }, [isSnoozed, ringAgain]);
 
   const handleSnooze = useCallback(async () => {
     if (!canSnooze) return;
 
     Vibration.cancel();
-    markAlarmHandled(alarmId);
 
     const snoozeDuration = alarmSettings.snooze.durationMinutes;
-    const result = await snoozeAlarm(alarmId, snoozeDuration);
-    if (result) {
-      setIsSnoozed(true);
-      setSnoozeEndTime(result.snoozeEndTime);
-      setSnoozeTimeRemaining(snoozeDuration * 60);
+    const result = await snoozeAlarm(activeAlarmId, snoozeDuration);
+    if (!result) {
+      // The alarm is still armed, so it rings until the challenge is solved.
+      await ringAgain();
+      return;
     }
-  }, [alarmId, canSnooze, alarmSettings.snooze.durationMinutes, snoozeAlarm]);
+    markAlarmHandled(activeAlarmId);
+    setActiveAlarmId(result.snoozeId);
+    setIsSnoozed(true);
+    setSnoozeEndTime(result.snoozeEndTime);
+    setSnoozeTimeRemaining(snoozeDuration * 60);
+  }, [activeAlarmId, canSnooze, alarmSettings.snooze.durationMinutes, snoozeAlarm, ringAgain]);
 
   return {
     isSnoozed,

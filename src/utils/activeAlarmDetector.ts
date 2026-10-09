@@ -11,12 +11,6 @@ export interface ActiveAlarmInfo {
   source: "pending-challenge" | "past-due";
 }
 
-function normalizeTimestampToMs(timestamp: number): number {
-  // iOS stores timestamp in seconds (timeIntervalSince1970), JS uses milliseconds
-  // If value is less than 1e12, it's in seconds and needs conversion
-  return timestamp < 1e12 ? timestamp * 1000 : timestamp;
-}
-
 async function autoCompleteStaleAlarm(alarmId: string): Promise<void> {
   await completeAndRescheduleAlarm(alarmId);
   alarmLog.i("Detector", `auto-completed stale alarm ${alarmId}`);
@@ -43,7 +37,7 @@ export async function detectActiveAlarm(
 
     if (pending && !completedIds.has(pending.alarmId) && !handledIds?.has(pending.alarmId)) {
       // Check if the pending challenge is stale (> 2 hours old)
-      const pendingTimestampMs = normalizeTimestampToMs(pending.timestamp);
+      const pendingTimestampMs = pending.timestamp;
       const age = now - pendingTimestampMs;
 
       if (age > ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS) {

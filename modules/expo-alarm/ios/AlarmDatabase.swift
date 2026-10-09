@@ -313,11 +313,6 @@ class AlarmDatabase {
         ) ?? nil
     }
 
-    func getMetadata(for alarmId: String) -> (alarmType: String, title: String)? {
-        guard let alarm = getAlarm(id: alarmId) else { return nil }
-        return (alarm.alarmType, alarm.title)
-    }
-
     func hasAlarms() -> Bool {
         return !getAllAlarmIds().isEmpty
     }
@@ -340,10 +335,18 @@ class AlarmDatabase {
 
     // MARK: - Bypass State
 
+    /// Re-arming the same alarm keeps its first activation time, so the
+    /// 30-minute staleness rule counts from the first dismissal.
     func setBypassState(alarmId: String, alarmType: String, title: String) {
         let sql = """
-            INSERT OR REPLACE INTO bypass_state (id, alarm_id, alarm_type, title, activated_at)
+            INSERT INTO bypass_state (id, alarm_id, alarm_type, title, activated_at)
             VALUES (1, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                activated_at = CASE WHEN bypass_state.alarm_id = excluded.alarm_id
+                    THEN bypass_state.activated_at ELSE excluded.activated_at END,
+                alarm_id = excluded.alarm_id,
+                alarm_type = excluded.alarm_type,
+                title = excluded.title
         """
         execute(sql) { [SQLITE_TRANSIENT] stmt in
             sqlite3_bind_text(stmt, 1, alarmId, -1, SQLITE_TRANSIENT)

@@ -14,7 +14,8 @@ internal import ExpoAlarm
 struct OpenNedaaAlarmIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Open Nedaa Alarm"
     static var description = IntentDescription("Opens Nedaa app to handle the alarm")
-    static var openAppWhenRun: Bool = true
+    // Arms the backup in the background first; the app opens when perform() ends.
+    static let supportedModes: IntentModes = [.background, .foreground(.deferred)]
 
     @Parameter(title: "Alarm ID")
     var alarmId: String

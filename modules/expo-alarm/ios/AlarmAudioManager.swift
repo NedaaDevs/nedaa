@@ -7,6 +7,8 @@ import UIKit
 
 class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     static let shared = AlarmAudioManager()
+    // Matches MIN_ALARM_VOLUME in JS and MIN_VOLUME on Android.
+    static let minimumVolume: Float = 0.25
 
     private let queue = DispatchQueue(label: "expo.alarm.audio")
 
@@ -508,7 +510,9 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
     }
 
     /// Transition from quiet keep-alive to loud alarm (called when observer detects hardware dismiss)
-    func transitionToLoudAlarm(soundName: String = "beep", alarmVolume: Float = 1.0) {
+    func transitionToLoudAlarm(soundName: String = "beep", alarmVolume requestedVolume: Float = 1.0) {
+        // A saved 0 predates the floor; it would pin the system volume at 0.
+        let alarmVolume = max(requestedVolume, Self.minimumVolume)
         log("Transitioning to loud alarm, volume: \(alarmVolume)")
 
         isVibrating = false

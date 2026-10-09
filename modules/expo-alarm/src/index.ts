@@ -142,6 +142,7 @@ export interface PendingChallenge {
   alarmId: string;
   alarmType: string;
   title: string;
+  // Milliseconds since the epoch; both native stores keep seconds.
   timestamp: number;
 }
 
@@ -153,7 +154,7 @@ export async function getPendingChallenge(): Promise<PendingChallenge | null> {
     alarmId: result.alarmId,
     alarmType: result.alarmType,
     title: result.title,
-    timestamp: result.timestamp,
+    timestamp: result.timestamp * 1000,
   };
 }
 
@@ -176,12 +177,17 @@ export async function getCompletedAlarmIds(): Promise<string[]> {
 }
 
 // Completed queue (alarms completed via Android overlay, need JS processing)
+// How an Android overlay challenge ended; only a solved one is a wake-up.
+export const ALARM_OUTCOME = { SOLVED: "solved", ABANDONED: "abandoned" } as const;
+export type AlarmOutcome = (typeof ALARM_OUTCOME)[keyof typeof ALARM_OUTCOME];
+
 export interface CompletedAlarm {
   id: number;
   alarmId: string;
   alarmType: string;
   title: string;
   completedAt: number;
+  outcome: AlarmOutcome;
 }
 
 export async function getCompletedQueue(): Promise<CompletedAlarm[]> {

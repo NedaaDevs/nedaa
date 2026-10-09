@@ -160,7 +160,7 @@ public class ExpoAlarmModule: Module {
                             promise.reject("ERR_INVALID_UUID", "Invalid alarm ID: \(id)")
                             return
                         }
-                        try? AlarmManager.shared.cancel(id: alarmUUID)
+                        try? AlarmObserver.removeOwnAlarm(alarmUUID)
 
                         let alertSound: AlertConfiguration.AlertSound
                         if let soundFile = self.alarmSoundFileName(for: alarmType) {
@@ -215,6 +215,8 @@ public class ExpoAlarmModule: Module {
                         }
 
                         self.withAlarmIds { $0.insert(id) }
+                        // The same id is live again; its next removal is not the app's.
+                        AlarmObserver.forgetOwnRemoval(alarmUUID)
 
                         AlarmDatabase.shared.saveAlarm(
                             id: id,
@@ -270,19 +272,25 @@ public class ExpoAlarmModule: Module {
             #if canImport(AlarmKit)
             if #available(iOS 26.1, *) {
                 Task {
+                    // Left running, the activity turns into a "Dismiss" alert at the trigger time.
+                    for activity in Activity<AlarmActivityAttributes>.activities
+                    where activity.attributes.alarmId == id {
+                        await activity.end(nil, dismissalPolicy: .immediate)
+                    }
                     do {
-                        if let alarmId = UUID(uuidString: id) {
-                            try AlarmManager.shared.cancel(id: alarmId)
-                            self.withAlarmIds { $0.remove(id) }
+                        // A fired or stopped alarm is already gone, which is what cancel wants.
+                        if let alarmId = UUID(uuidString: id),
+                           (try? AlarmManager.shared.alarms)?.contains(where: { $0.id == alarmId }) ?? true {
+                            try AlarmObserver.removeOwnAlarm(alarmId)
                         }
+                        self.withAlarmIds { $0.remove(id) }
                         if self.withAlarmIds({ $0.isEmpty }) {
                             AlarmAudioManager.shared.stopQuietKeepAlive()
                         }
                         AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()
                         promise.resolve(true)
                     } catch {
-                        self.withAlarmIds { $0.remove(id) }
-                        AlarmBackgroundTaskManager.shared.rescheduleForNextAlarm()
+                        PersistentLog.shared.alarm("Cancel failed for \(id.prefix(8)): \(error.localizedDescription)")
                         promise.resolve(false)
                     }
                 }
@@ -299,7 +307,7 @@ public class ExpoAlarmModule: Module {
                     let idsToCancel = self.withAlarmIds { Array($0) }
                     for id in idsToCancel {
                         if let alarmId = UUID(uuidString: id) {
-                            try? AlarmManager.shared.cancel(id: alarmId)
+                            try? AlarmObserver.removeOwnAlarm(alarmId)
                         }
                     }
                     self.withAlarmIds { $0.removeAll() }
@@ -307,7 +315,7 @@ public class ExpoAlarmModule: Module {
                     let backupIds = AlarmDatabase.shared.getBackupAlarmIds()
                     for id in backupIds {
                         if let alarmId = UUID(uuidString: id) {
-                            try? AlarmManager.shared.cancel(id: alarmId)
+                            try? AlarmObserver.removeOwnAlarm(alarmId)
                         }
                     }
                     AlarmDatabase.shared.deleteAllBackups()
@@ -494,12 +502,13 @@ public class ExpoAlarmModule: Module {
             #if canImport(AlarmKit)
             if #available(iOS 26.1, *) {
                 Task {
+                    AlarmObserver.invalidateInFlightBackup()
                     let backups = AlarmDatabase.shared.getBackupAlarmIds()
                     var cancelledCount = 0
                     for id in backups {
                         if let uuid = UUID(uuidString: id) {
                             do {
-                                try AlarmManager.shared.cancel(id: uuid)
+                                try AlarmObserver.removeOwnAlarm(uuid)
                                 cancelledCount += 1
                             } catch {
                                 PersistentLog.shared.alarm("Failed to cancel backup \(id.prefix(8)): \(error.localizedDescription)")
