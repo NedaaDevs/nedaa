@@ -12,7 +12,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 import { QuranContentDB } from "@/services/quran-content-db";
 import type { SurahMeta } from "@/types/quran";
-import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
+import { SearchField } from "@/components/ui/search-field";
 import { SurahListRow } from "@/components/quran/listen/SurahListRow";
 import { DownloadsDrawer } from "@/components/quran/listen/DownloadsDrawer";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
@@ -159,7 +159,7 @@ const QuranListenSurahsScreen = () => {
         }}
       />
       <VStack paddingHorizontal="$3" paddingTop="$2">
-        <ListenSearchBar
+        <SearchField
           value={query}
           onChangeText={setQuery}
           placeholder={t("quran.listen.searchSurah")}
