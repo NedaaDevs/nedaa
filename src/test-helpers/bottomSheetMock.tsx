@@ -1,6 +1,8 @@
 import {
+  createContext,
   Fragment,
   forwardRef,
+  use,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -10,8 +12,10 @@ import {
   type PropsWithChildren,
 } from "react";
 import {
+  FlatList,
   Pressable,
   ScrollView,
+  TextInput,
   View,
   type AccessibilityRole,
   type ViewProps,
@@ -64,6 +68,10 @@ type ModalProps = PropsWithChildren<
 
 type ModalMethods = { present: () => void; dismiss: () => void };
 
+/** Present inside a mounted sheet, as gorhom's internal context is. */
+const SheetContext = createContext<object | null>(null);
+const IN_SHEET = {};
+
 /** Every render's props, newest last. */
 export const modalProps = jest.fn<void, [ModalProps]>();
 
@@ -113,7 +121,7 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
           props.accessibilityRole,
           DEFAULT_CONTENT_A11Y.accessibilityRole
         )}>
-        {props.children}
+        <SheetContext value={IN_SHEET}>{props.children}</SheetContext>
       </View>
     </Container>
   );
@@ -139,6 +147,15 @@ export const BottomSheetBackdrop = ({
 );
 
 export const BottomSheetScrollView = ScrollView;
+export const BottomSheetFlatList = FlatList;
+export const BottomSheetTextInput = TextInput;
+
+/** Null outside a sheet when `unsafe`, as gorhom's hook returns. */
+export const useBottomSheetInternal = (unsafe?: boolean) => {
+  const context = use(SheetContext);
+  if (!unsafe && context === null) throw new Error("useBottomSheetInternal outside a sheet");
+  return context;
+};
 
 /** gorhom builds its timing config from these; the mock hands them back. */
 export const useBottomSheetTimingConfigs = <T,>(configs: T) => configs;
