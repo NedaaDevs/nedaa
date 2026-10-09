@@ -14,28 +14,46 @@
   <application>
 
     <activity
+        android:name="expo.modules.alarm.AlarmUnlockActivity"
+        android:directBootAware="true"
+        android:excludeFromRecents="true"
+        android:exported="false"
+        android:launchMode="singleInstance"
+        android:noHistory="true"
+        android:showWhenLocked="true"
+        android:taskAffinity=""
+        android:theme="@android:style/Theme.Translucent.NoTitleBar"
+        android:turnScreenOn="true" />
+
+    <activity
         android:name="expo.modules.alarm.AlarmSettingsActivity"
         android:exported="false"
         android:theme="@style/Theme.AppCompat.DayNight" />
 
+    <!-- Direct Boot aware: alarms are restored and ring before the first unlock. -->
     <service
         android:name="expo.modules.alarm.AlarmService"
+        android:directBootAware="true"
         android:exported="false"
         android:foregroundServiceType="mediaPlayback" />
 
     <service
         android:name="expo.modules.alarm.AlarmOverlayService"
+        android:directBootAware="true"
         android:exported="false"
         android:foregroundServiceType="mediaPlayback" />
 
     <receiver
         android:name="expo.modules.alarm.AlarmReceiver"
+        android:directBootAware="true"
         android:exported="false" />
 
     <receiver
         android:name="expo.modules.alarm.BootReceiver"
+        android:directBootAware="true"
         android:exported="true">
       <intent-filter>
+        <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
         <action android:name="android.intent.action.BOOT_COMPLETED" />
         <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
       </intent-filter>

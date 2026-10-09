@@ -8,13 +8,19 @@ class BootReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "BootReceiver"
+        private val RESTORE_ACTIONS = setOf(
+            Intent.ACTION_LOCKED_BOOT_COMPLETED,
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED
+        )
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) {
-            return
-        }
+        if (action !in RESTORE_ACTIONS) return
+        // Athan schedules live in credential-encrypted storage, readable only after unlock;
+        // alarms are restored at the locked boot too, so they ring before the first unlock.
+        val isLockedBoot = action == Intent.ACTION_LOCKED_BOOT_COMPLETED
 
         val appContext = context.applicationContext
         val pendingResult = goAsync()
@@ -22,7 +28,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 AlarmLogger.getInstance(appContext).d(TAG, "Restoring schedules after $action")
                 restoreAlarms(appContext)
-                restoreAthans(appContext)
+                if (!isLockedBoot) restoreAthans(appContext)
             } finally {
                 pendingResult.finish()
             }

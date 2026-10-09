@@ -1239,7 +1239,7 @@ class AlarmOverlayService : Service() {
         if (snoozeEnabled && currentSnoozeCount < snoozeMaxCount) {
             scheduleSnooze(db, snoozeMaxCount, snoozeDuration, currentSnoozeCount)
         } else {
-            completeAlarm()
+            finishAlarm(AlarmDatabase.OUTCOME_ABANDONED)
         }
     }
 
@@ -1269,14 +1269,20 @@ class AlarmOverlayService : Service() {
         val baseTitle = title.replace(Regex("\\s*\\(Snoozed \\d+/\\d+\\)$"), "")
         val snoozeTitle = "$baseTitle (Snoozed $newSnoozeCount/$snoozeMaxCount)"
 
+        // The replacement is secured first; a failed snooze leaves this alarm ringing.
+        val scheduler = AlarmScheduler(this)
+        if (!scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount)) {
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Snooze scheduling failed; alarm keeps ringing: id=$alarmId")
+            return
+        }
+
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 
         db.clearPendingChallenge()
         db.markCompleted(alarmId)
-
-        val scheduler = AlarmScheduler(this)
-        scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount)
+        // Also removes the abandoned-challenge re-arm scheduled under this id.
+        scheduler.cancelAlarm(alarmId)
 
         db.addToSnoozeQueue(
             originalAlarmId = alarmId,
@@ -1309,7 +1315,9 @@ class AlarmOverlayService : Service() {
         stopSelf()
     }
 
-    private fun completeAlarm() {
+    private fun completeAlarm() = finishAlarm(AlarmDatabase.OUTCOME_SOLVED)
+
+    private fun finishAlarm(outcome: String) {
         cancelAutoSnoozeTimeout()
         graceHandler.removeCallbacksAndMessages(null)
 
@@ -1317,7 +1325,7 @@ class AlarmOverlayService : Service() {
         audioManager.stopAll()
 
         val db = AlarmDatabase.getInstance(this)
-        db.addToCompletedQueue(alarmId, alarmType, title)
+        db.addToCompletedQueue(alarmId, alarmType, title, outcome)
         db.clearPendingChallenge()
         db.markCompleted(alarmId)
 
@@ -1331,7 +1339,8 @@ class AlarmOverlayService : Service() {
 
         removeOverlay()
 
-        try {
+        // The completion screen congratulates a wake-up; a timed-out challenge gets none.
+        if (outcome == AlarmDatabase.OUTCOME_SOLVED) try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
                 component = ComponentName(packageName, "$packageName.MainActivity")

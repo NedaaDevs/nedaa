@@ -97,8 +97,15 @@ class AlarmScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // The status bar's next-alarm entry opens this any time before the alarm; it must
+        // show the alarm's settings, not the challenge that silences it.
+        val settingsLink = when (alarmType) {
+            "fajr" -> "dev.nedaa.app://settings/alarm/fajr"
+            "jummah" -> "dev.nedaa.app://settings/alarm/friday"
+            else -> "dev.nedaa.app://settings/alarm"
+        }
         val showIntent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("dev.nedaa.app://alarm?alarmId=$id&alarmType=$alarmType")
+            data = Uri.parse(settingsLink)
             component = ComponentName(context.packageName, "${context.packageName}.MainActivity")
         }
         val showPendingIntent = PendingIntent.getActivity(

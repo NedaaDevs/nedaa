@@ -163,7 +163,8 @@ class ExpoAlarmModule : Module() {
                     "alarmId" to record.alarmId,
                     "alarmType" to record.alarmType,
                     "title" to record.title,
-                    "completedAt" to record.completedAt
+                    "completedAt" to record.completedAt,
+                    "outcome" to record.outcome
                 )
             }
         }

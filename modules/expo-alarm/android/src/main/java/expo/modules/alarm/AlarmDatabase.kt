@@ -10,7 +10,10 @@ class AlarmDatabase private constructor(private val context: Context) :
 
     companion object {
         private const val DB_NAME = "alarm_state.db"
-        private const val DB_VERSION = 4
+        private const val DB_VERSION = 5
+        // How a challenge ended; only a solved one is a wake-up.
+        const val OUTCOME_SOLVED = "solved"
+        const val OUTCOME_ABANDONED = "abandoned"
         const val SNOOZE_MINUTES = 5
         const val MAX_SNOOZES = 3
 
@@ -19,7 +22,10 @@ class AlarmDatabase private constructor(private val context: Context) :
 
         fun getInstance(context: Context): AlarmDatabase {
             return instance ?: synchronized(this) {
-                instance ?: AlarmDatabase(context.applicationContext).also { instance = it }
+                instance ?: run {
+                    DeviceStorage.migrate(context, databaseName = DB_NAME)
+                    AlarmDatabase(DeviceStorage.context(context)).also { instance = it }
+                }
             }
         }
     }
@@ -83,7 +89,8 @@ class AlarmDatabase private constructor(private val context: Context) :
                 alarm_id TEXT NOT NULL,
                 alarm_type TEXT NOT NULL,
                 title TEXT NOT NULL,
-                completed_at REAL NOT NULL
+                completed_at REAL NOT NULL,
+                outcome TEXT NOT NULL DEFAULT 'solved'
             )
         """)
 
@@ -102,6 +109,11 @@ class AlarmDatabase private constructor(private val context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 5) {
+            try {
+                db.execSQL("ALTER TABLE completed_queue ADD COLUMN outcome TEXT NOT NULL DEFAULT 'solved'")
+            } catch (_: Exception) {}
+        }
         if (oldVersion < 2) {
             db.execSQL("""
                 CREATE TABLE IF NOT EXISTS completed_queue (
@@ -407,12 +419,13 @@ class AlarmDatabase private constructor(private val context: Context) :
 
     // -- Completed Queue (for JS to process on app open) --
 
-    fun addToCompletedQueue(alarmId: String, alarmType: String, title: String) {
+    fun addToCompletedQueue(alarmId: String, alarmType: String, title: String, outcome: String) {
         val values = ContentValues().apply {
             put("alarm_id", alarmId)
             put("alarm_type", alarmType)
             put("title", title)
             put("completed_at", System.currentTimeMillis() / 1000.0)
+            put("outcome", outcome)
         }
         writableDatabase.insert("completed_queue", null, values)
     }
@@ -422,13 +435,14 @@ class AlarmDatabase private constructor(private val context: Context) :
         val alarmId: String,
         val alarmType: String,
         val title: String,
-        val completedAt: Double
+        val completedAt: Double,
+        val outcome: String
     )
 
     fun getCompletedQueue(): List<CompletedAlarmRecord> {
         val queue = mutableListOf<CompletedAlarmRecord>()
         val cursor = readableDatabase.rawQuery(
-            "SELECT id, alarm_id, alarm_type, title, completed_at FROM completed_queue ORDER BY completed_at ASC",
+            "SELECT id, alarm_id, alarm_type, title, completed_at, outcome FROM completed_queue ORDER BY completed_at ASC",
             null
         )
         cursor.use {
@@ -439,7 +453,8 @@ class AlarmDatabase private constructor(private val context: Context) :
                         alarmId = it.getString(1),
                         alarmType = it.getString(2),
                         title = it.getString(3),
-                        completedAt = it.getDouble(4)
+                        completedAt = it.getDouble(4),
+                        outcome = it.getString(5)
                     )
                 )
             }

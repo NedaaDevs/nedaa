@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -16,6 +17,7 @@ import android.os.VibratorManager
 class AlarmAudioManager(private val context: Context) {
 
     companion object {
+        private const val AUDIO_PREFS_NAME = "alarm_audio_prefs"
         @Volatile
         private var instance: AlarmAudioManager? = null
 
@@ -68,7 +70,10 @@ class AlarmAudioManager(private val context: Context) {
         AlarmLogger.getInstance(context).d("AlarmAudio", message)
     }
 
-    private val prefs = context.getSharedPreferences("alarm_audio_prefs", Context.MODE_PRIVATE)
+    private val prefs = run {
+        DeviceStorage.migrate(context, preferencesName = AUDIO_PREFS_NAME)
+        DeviceStorage.context(context).getSharedPreferences(AUDIO_PREFS_NAME, Context.MODE_PRIVATE)
+    }
     private val PREF_SAVED_VOLUME = "saved_system_volume"
 
     @Synchronized
@@ -342,11 +347,20 @@ class AlarmAudioManager(private val context: Context) {
                 "aggressive" -> longArrayOf(0, 100, 100, 100, 100, 100, 100, 100, 100)
                 else -> longArrayOf(0, 800, 200, 800, 200, 800, 200, 800) // default
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vib.vibrate(VibrationEffect.createWaveform(pattern, 0))
-            } else {
-                @Suppress("DEPRECATION")
-                vib.vibrate(pattern, 0)
+            // Alarm usage keeps the vibration through Battery Saver, which drops unknown usage.
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> vib.vibrate(
+                    VibrationEffect.createWaveform(pattern, 0),
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ALARM)
+                )
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> vib.vibrate(
+                    VibrationEffect.createWaveform(pattern, 0),
+                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
+                )
+                else -> {
+                    @Suppress("DEPRECATION")
+                    vib.vibrate(pattern, 0)
+                }
             }
         } catch (e: Exception) {
             log("Failed to start vibration: ${e.message}")

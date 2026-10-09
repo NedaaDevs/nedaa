@@ -27,19 +27,24 @@ class MainActivity : ReactActivity() {
     handleAlarmIntent(intent)
   }
 
+  // singleTask delivers a warm alarm launch here rather than to onCreate.
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    handleAlarmIntent(intent)
+  }
+
+  // Only the alarm screen may show over the lock screen; any other launch clears it.
   private fun handleAlarmIntent(intent: Intent?) {
-    val uri = intent?.data ?: return
-    if (!uri.toString().contains("alarm")) return
+    val isAlarm = intent?.data?.host == "alarm"
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-        setShowWhenLocked(true)
-        setTurnScreenOn(true)
+        setShowWhenLocked(isAlarm)
+        setTurnScreenOn(isAlarm)
     } else {
-        @Suppress("DEPRECATION")
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+        val flags = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
             WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-        )
+        @Suppress("DEPRECATION")
+        if (isAlarm) window.addFlags(flags) else window.clearFlags(flags)
     }
   }
 

@@ -87,7 +87,7 @@ class AlarmLogger private constructor(private val context: Context) {
 
     private fun appendToFile(entry: LogEntry) {
         try {
-            val file = File(context.filesDir, LOG_FILE_NAME)
+            val file = File(DeviceStorage.context(context).filesDir, LOG_FILE_NAME)
             file.appendText(entry.format(dateFormat.get()!!) + "\n")
 
             // Trim file if too large (> 100KB)
@@ -111,7 +111,7 @@ class AlarmLogger private constructor(private val context: Context) {
     fun getFullLog(): String {
         val memoryLogs = getLogsAsString()
         val fileLogs = try {
-            val file = File(context.filesDir, LOG_FILE_NAME)
+            val file = File(DeviceStorage.context(context).filesDir, LOG_FILE_NAME)
             if (file.exists()) file.readText() else ""
         } catch (e: Exception) {
             "Error reading log file: ${e.message}"
@@ -132,7 +132,7 @@ class AlarmLogger private constructor(private val context: Context) {
     fun clear() {
         logs.clear()
         try {
-            val file = File(context.filesDir, LOG_FILE_NAME)
+            val file = File(DeviceStorage.context(context).filesDir, LOG_FILE_NAME)
             if (file.exists()) file.delete()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to delete log file: ${e.message}")
