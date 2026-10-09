@@ -257,7 +257,7 @@
   "alarm.native.channelDescription": "Penggera untuk solat Subuh dan Jumaat",
   "alarm.native.channelName": "Penggera solat",
   "alarm.native.notificationBody": "Ketik untuk tutup penggera",
-  "alarm.native.stillRingingBody": "Buka Nedaa dan selesaikan cabaran untuk tutup penggera.",
+  "alarm.native.stillRingingBody": "Buka $t(brand.name) dan selesaikan cabaran untuk tutup penggera.",
   "alarm.native.stillRingingTitle": "Penggera masih berbunyi",
   "alarm.native.unlockToStop": "Buka kunci telefon untuk tutup penggera",
   "alarm.noMoreSnoozes": "Tiada lagi tunda",
