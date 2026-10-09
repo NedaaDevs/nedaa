@@ -257,7 +257,7 @@
   "alarm.native.channelDescription": "فجر اور جمعہ کی نماز کے الارم",
   "alarm.native.channelName": "نماز کے الارم",
   "alarm.native.notificationBody": "الارم بند کرنے کے لیے ٹیپ کریں",
-  "alarm.native.stillRingingBody": "اسے بند کرنے کے لیے نِداء کھولیں اور چیلنج حل کریں۔",
+  "alarm.native.stillRingingBody": "اسے بند کرنے کے لیے $t(brand.name) کھولیں اور چیلنج حل کریں۔",
   "alarm.native.stillRingingTitle": "الارم ابھی بند نہیں ہوا",
   "alarm.native.unlockToStop": "الارم بند کرنے کے لیے فون اَن لاک کریں",
   "alarm.noMoreSnoozes": "مزید سنوز نہیں",
