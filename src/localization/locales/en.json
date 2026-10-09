@@ -268,7 +268,7 @@
   "alarm.native.channelDescription": "Alarms for Fajr and Friday prayer",
   "alarm.native.channelName": "Prayer alarms",
   "alarm.native.notificationBody": "Tap to stop the alarm",
-  "alarm.native.stillRingingBody": "Open Nedaa and solve the challenge to stop it.",
+  "alarm.native.stillRingingBody": "Open $t(brand.name) and solve the challenge to stop it.",
   "alarm.native.stillRingingTitle": "Your alarm is still on",
   "alarm.native.unlockToStop": "Unlock your phone to stop the alarm",
   "alarm.noMoreSnoozes": "No more snoozes",
