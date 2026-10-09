@@ -23,14 +23,21 @@ jest.mock("react-native", () => ({
   BackHandler: { addEventListener: jest.fn(() => ({ remove: jest.fn() })) },
 }));
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
-jest.mock("expo-alarm", () => ({
-  isAlarmSoundPlaying: () => false,
-  startAlarmSound: (name: string) => mockStartAlarmSound(name),
-  setAlarmVolume: jest.fn(),
-  stopAllAlarmEffects: jest.fn(),
-  restoreSystemVolume: jest.fn(),
-  stopAlarmSound: jest.fn(),
-}));
+// The alarm constants import icons; react-native is stubbed here, so stub them too.
+jest.mock("lucide-react-native", () => new Proxy({}, { get: () => () => null }));
+jest.mock("expo-alarm", () => {
+  const { CHALLENGE_TYPE, CHALLENGE_DIFFICULTY } = jest.requireActual("expo-alarm");
+  return {
+    CHALLENGE_TYPE,
+    CHALLENGE_DIFFICULTY,
+    isAlarmSoundPlaying: () => false,
+    startAlarmSound: (name: string) => mockStartAlarmSound(name),
+    setAlarmVolume: jest.fn(),
+    stopAllAlarmEffects: jest.fn(),
+    restoreSystemVolume: jest.fn(),
+    stopAlarmSound: jest.fn(),
+  };
+});
 jest.mock("@/stores/alarm", () => ({
   useAlarmStore: (select: (state: object) => unknown) =>
     select({ snoozeAlarm: mockSnoozeAlarm, scheduledAlarms: {} }),
