@@ -58,7 +58,7 @@ describe("useAlarmTypeSettings", () => {
     setNative.mockResolvedValue(true);
     scheduleFajr.mockResolvedValue(ALARM_ID);
     scheduleFriday.mockResolvedValue(ALARM_ID);
-    mockCancel.mockResolvedValue(undefined);
+    mockCancel.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -206,6 +206,16 @@ describe("useAlarmTypeSettings", () => {
 
     expect(mockCancel).toHaveBeenCalledWith(ScheduledAlarmType.JUMMAH);
     expect(result.current.settings.enabled).toBe(false);
+  });
+
+  it("keeps the switch on when the alarm cannot be cancelled", async () => {
+    mockCancel.mockResolvedValue(false);
+    enableInStore(ALARM_TYPE.FRIDAY);
+    const { result } = await mount(ALARM_TYPE.FRIDAY);
+
+    await act(() => result.current.setEnabled(false));
+
+    expect(result.current.settings.enabled).toBe(true);
   });
 
   // The sheet and the screen can both be mounted; one lock serves them.
