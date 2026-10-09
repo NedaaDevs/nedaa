@@ -7,6 +7,8 @@ export const ALARM_DEFAULTS = {
   MAX_SNOOZES: 3,
   BACKUP_DELAY_SECONDS: 15,
   STALE_ALARM_THRESHOLD_MS: 2 * 60 * 60 * 1000, // 2 hours
+  // Clock skew allowed when the alarm screen opens just before the trigger.
+  EARLY_OPEN_GRACE_MS: 60 * 1000,
 } as const;
 
 export const ALARM_TYPE_META = {

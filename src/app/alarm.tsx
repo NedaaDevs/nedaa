@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, ScrollView } from "react-native";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { useLocalSearchParams, Stack, Redirect } from "expo-router";
+import * as ExpoAlarm from "expo-alarm";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { Theme } from "tamagui";
@@ -29,6 +30,7 @@ import { useAppStore } from "@/stores/app";
 import { clockFormat, formatPrayerTime, getDateLocale } from "@/utils/date";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
+import { isAlarmDue } from "@/utils/alarmDue";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
 // Friday Dhuhr occurrence; custom alarms have no associated prayer.
@@ -44,12 +46,45 @@ const localeTime = (
 ) =>
   formatNumberToLocale(format(date, clockFormat(use24HourTime), { locale: getDateLocale(locale) }));
 
-export default function AlarmTriggeredScreen() {
+const DUE_STATUS = { CHECKING: "checking", DUE: "due", NOT_DUE: "notDue" } as const;
+type DueStatus = (typeof DUE_STATUS)[keyof typeof DUE_STATUS];
+
+// Links reach this route before the alarm rings (the status bar's next-alarm
+// entry, a stale Live Activity); only a ringing alarm may open the challenge.
+export default function AlarmRoute() {
   const { alarmType, alarmId } = useLocalSearchParams<{
     alarmType: string;
     alarmId: string;
   }>();
+  const [status, setStatus] = useState<DueStatus>(DUE_STATUS.CHECKING);
 
+  useEffect(() => {
+    let active = true;
+    ExpoAlarm.getPendingChallenge()
+      .catch(() => null)
+      .then((pending) => {
+        if (!active) return;
+        // Read once: a snooze later replaces the record but not this decision.
+        const record = useAlarmStore.getState().scheduledAlarms[alarmId];
+        const due = isAlarmDue({
+          alarmId,
+          triggerTime: record?.triggerTime ?? null,
+          pendingAlarmId: pending?.alarmId ?? null,
+          now: Date.now(),
+        });
+        setStatus(due ? DUE_STATUS.DUE : DUE_STATUS.NOT_DUE);
+      });
+    return () => {
+      active = false;
+    };
+  }, [alarmId]);
+
+  if (status === DUE_STATUS.CHECKING) return null;
+  if (status === DUE_STATUS.NOT_DUE) return <Redirect href="/" />;
+  return <AlarmTriggeredScreen alarmId={alarmId} alarmType={alarmType} />;
+}
+
+function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmType: string }) {
   const {
     isSnoozed,
     snoozeEndTime,
@@ -214,7 +249,7 @@ function ActiveAlarmView({
       .filter((entry) => !!entry.iso);
     if (candidates.length === 0) return null;
 
-    const reference = triggerTime ?? Date.now();
+    const reference = triggerTime ?? now.getTime();
     const best = candidates.reduce((closest, entry) =>
       Math.abs(parseISO(entry.iso).getTime() - reference) <
       Math.abs(parseISO(closest.iso).getTime() - reference)
@@ -222,7 +257,7 @@ function ActiveAlarmView({
         : closest
     );
     return formatNumberToLocale(formatPrayerTime(best.iso, best.tz, { locale, use24HourTime }));
-  }, [prayer, todayTimings, tomorrowTimings, triggerTime, locale, use24HourTime]);
+  }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, locale, use24HourTime]);
 
   const clock = localeTime(now, locale, use24HourTime);
 
@@ -230,9 +265,7 @@ function ActiveAlarmView({
     AccessibilityInfo.announceForAccessibility(
       t("a11y.alarm.ringingAnnouncement", { prayer: prayerName })
     );
-    // Announce once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [t, prayerName]);
 
   return (
     <VStack
