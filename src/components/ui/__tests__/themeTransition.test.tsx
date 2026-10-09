@@ -14,6 +14,7 @@ import { DURATION_MS } from "@/constants/Motion";
 
 const SNAPSHOT_URI = "file:///tmp/snapshot.jpg";
 const DISSOLVING_ID = "dissolving";
+const WARM_UP_TIMEOUT_MS = 30_000;
 
 jest.mock("react-native-view-shot", () => ({
   captureRef: jest.fn(),
@@ -122,6 +123,9 @@ const finish = async (done: Promise<void>) => {
 };
 
 describe("ThemeTransitionProvider", () => {
+  // The first render loads lazy modules, which takes seconds on a cold runner.
+  beforeAll(async () => (await renderProvider()).unmount(), WARM_UP_TIMEOUT_MS);
+
   beforeEach(() => {
     mockReduced = false;
     mockScreenshotMode = false;
