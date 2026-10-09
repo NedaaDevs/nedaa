@@ -5,10 +5,11 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    // dist: build output. scripts: standalone bun/node tooling (bun:sqlite,
-    // import.meta) outside the Expo app's tsconfig, so the app lint can't
-    // resolve their imports.
-    ignores: ["dist/*", "scripts/**"],
+    // dist: build output. .expo, .tamagui: generated locally by the dev server
+    // and `tamagui generate-prompt`. scripts: standalone bun/node tooling
+    // (bun:sqlite, import.meta) outside the Expo app's tsconfig, so the app lint
+    // can't resolve their imports.
+    ignores: ["dist/*", ".expo/**", ".tamagui/**", "scripts/**"],
   },
   {
     // Every React Compiler rule runs at the preset severity (error): a hit is a
