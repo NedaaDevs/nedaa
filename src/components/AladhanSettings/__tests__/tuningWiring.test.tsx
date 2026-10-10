@@ -66,6 +66,7 @@ describe("tuning wiring against the real store", () => {
   beforeEach(() => {
     useProviderSettingsStore.setState({
       allSettings: { aladhan: { method: 3 } },
+      draft: null,
       currentProviderId: "aladhan",
     });
   });
@@ -80,7 +81,7 @@ describe("tuning wiring against the real store", () => {
       tree.root.findByProps({ testID: "tuning-increment" }).props.onPress();
     });
 
-    expect(useProviderSettingsStore.getState().getCurrentSettings<any>().tune.fajr).toBe(1);
+    expect(useProviderSettingsStore.getState().getDraftSettings()?.tune?.fajr).toBe(1);
   });
 
   test("the displayed offset follows the store", async () => {
