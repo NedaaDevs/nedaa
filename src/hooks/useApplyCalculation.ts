@@ -10,7 +10,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import { AppLogger } from "@/utils/appLogger";
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { reloadPrayerWidgets } from "expo-widget";
 
 const log = AppLogger.create("prayertimes");
 
