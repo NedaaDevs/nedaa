@@ -78,10 +78,6 @@ class AlarmScheduler(private val context: Context) {
             return false
         }
 
-        // Save to database
-        val db = AlarmDatabase.getInstance(context)
-        db.saveAlarm(id, alarmType, title, triggerTimeMs.toDouble(), isBackup = false, snoozeCount = snoozeCount)
-
         val receiverIntent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, id)
             putExtra(AlarmReceiver.EXTRA_ALARM_TYPE, alarmType)
@@ -116,7 +112,20 @@ class AlarmScheduler(private val context: Context) {
         )
 
         val alarmClockInfo = AlarmClockInfo(triggerTimeMs, showPendingIntent)
-        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        // Throws at the per-app alarm limit (500); callers handle false.
+        try {
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        } catch (e: IllegalStateException) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "setAlarmClock rejected id=$id type=$alarmType: ${e.message}")
+            return false
+        } catch (e: SecurityException) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "setAlarmClock denied id=$id type=$alarmType: ${e.message}")
+            return false
+        }
+
+        // Saved after arming, so BootReceiver never restores an unarmed alarm.
+        AlarmDatabase.getInstance(context)
+            .saveAlarm(id, alarmType, title, triggerTimeMs.toDouble(), isBackup = false, snoozeCount = snoozeCount)
         AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm scheduled: id=$id triggerTime=$triggerTimeMs")
 
         return true
