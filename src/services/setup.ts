@@ -14,7 +14,7 @@ import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/provider
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { registerAlarmCopySync } from "@/utils/alarmCopy";
 import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { reloadPrayerWidgets } from "expo-widget";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
 import { logLaunchWidgetAttachContext } from "@/services/widgetDiagnostics";
 
