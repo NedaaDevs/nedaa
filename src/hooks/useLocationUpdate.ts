@@ -5,7 +5,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useNotificationStore } from "@/stores/notification";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import type { ManualLocation } from "@/types/location";
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { reloadPrayerWidgets } from "expo-widget";
 
 export type UpdateStep = "location" | "prayerTimes" | "notifications" | "alarms" | "done";
 

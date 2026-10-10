@@ -74,8 +74,8 @@ jest.mock("@/utils/date", () => ({
   timeZonedNow: () => new Date("2026-07-19T12:00:00.000Z"),
 }));
 
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
-jest.mock("../../../modules/expo-widgets/src", () => ({ refreshAllWidgets: jest.fn() }));
+jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
+jest.mock("expo-widgets", () => ({ refreshAllWidgets: jest.fn() }));
 
 const LAHORE: ManualLocation = {
   cityId: 1172451,
