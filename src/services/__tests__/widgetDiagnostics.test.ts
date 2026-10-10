@@ -16,7 +16,7 @@ const mockLog = AppLogger.create("widgets") as unknown as {
   e: jest.Mock;
 };
 
-jest.mock("../../../modules/expo-widgets/src", () => ({
+jest.mock("expo-widgets", () => ({
   getPlacedWidgetCount: jest.fn(() => 0),
   isPersistentNotificationEnabled: jest.fn(() => false),
 }));

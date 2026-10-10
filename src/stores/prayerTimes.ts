@@ -39,7 +39,7 @@ import { AppLogger } from "@/utils/appLogger";
 import { getAdapterByProviderId } from "@/adapters/providers";
 
 // Widget
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { reloadPrayerWidgets } from "expo-widget";
 
 const log = AppLogger.create("prayertimes");
 

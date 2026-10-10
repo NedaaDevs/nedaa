@@ -37,7 +37,7 @@ jest.mock("@/stores/notification", () => ({
 jest.mock("@/utils/alarmScheduler", () => ({
   rescheduleAllAlarms: () => mockRescheduleAlarms(),
 }));
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
+jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: { create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
 }));
