@@ -1,56 +1,69 @@
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
-jest.mock("expo-sqlite/kv-store", () => ({
-  __esModule: true,
-  default: {
-    getItem: jest.fn(() => Promise.resolve(null)),
-    setItem: jest.fn(() => Promise.resolve()),
-    removeItem: jest.fn(() => Promise.resolve()),
-  },
-}));
+const store = () => useProviderSettingsStore.getState();
 
-describe("provider settings apply lifecycle", () => {
+describe("provider settings draft and apply", () => {
   beforeEach(() => {
-    useProviderSettingsStore.setState({ isModified: false, error: null });
+    store().selectProviderById(PRAYER_TIME_PROVIDERS.ALADHAN.id);
+    store().markSettingsApplied();
+    useProviderSettingsStore.setState({ pendingReapply: false, error: null });
   });
 
-  test("saveSettings leaves the dirty flag set for the caller to clear", async () => {
-    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+  // The fetch reads the applied settings; an edit reaches it only on Apply.
+  test("an edit stays in the draft until it is applied", () => {
+    const applied = store().getCurrentSettings();
 
-    await useProviderSettingsStore.getState().saveSettings();
+    store().updateCurrentSettings({ method: 5 });
 
-    expect(useProviderSettingsStore.getState().isModified).toBe(true);
+    expect(store().getCurrentSettings()).toEqual(applied);
+    expect(store().getDraftSettings()).toMatchObject({ method: 5 });
+    expect(store().isModified).toBe(true);
   });
 
-  test("markSettingsApplied clears the dirty flag", () => {
-    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+  test("an edit alone requests no refetch at the next launch", () => {
+    store().updateCurrentSettings({ method: 5 });
 
-    useProviderSettingsStore.getState().markSettingsApplied();
-
-    expect(useProviderSettingsStore.getState().isModified).toBe(false);
+    expect(store().pendingReapply).toBe(false);
   });
 
-  test("an edit requests a reapply, so an abandoned change is reconciled at next launch", () => {
-    useProviderSettingsStore.setState({ pendingReapply: false });
+  test("saving promotes the draft and requests a refetch until the times land", async () => {
+    store().updateCurrentSettings({ method: 5 });
 
-    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+    await store().saveSettings();
 
-    expect(useProviderSettingsStore.getState().pendingReapply).toBe(true);
+    expect(store().getCurrentSettings()).toMatchObject({ method: 5 });
+    expect(store().pendingReapply).toBe(true);
+    // Still dirty: a failed fetch after the save leaves the change to retry.
+    expect(store().isModified).toBe(true);
   });
 
-  test("markSettingsApplied clears the reapply request", () => {
-    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+  test("marking the change applied clears the draft and the refetch request", async () => {
+    store().updateCurrentSettings({ method: 5 });
+    await store().saveSettings();
 
-    useProviderSettingsStore.getState().markSettingsApplied();
+    store().markSettingsApplied();
 
-    expect(useProviderSettingsStore.getState().pendingReapply).toBe(false);
+    expect(store().isModified).toBe(false);
+    expect(store().pendingReapply).toBe(false);
+    expect(store().getDraftSettings()).toEqual(store().getCurrentSettings());
   });
 
-  test("saveSettings still persists the edit it was given", async () => {
-    useProviderSettingsStore.getState().updateCurrentSettings({ method: 5 });
+  test("never writes the draft to disk", () => {
+    store().updateCurrentSettings({ method: 5 });
 
-    await useProviderSettingsStore.getState().saveSettings();
+    const persisted = useProviderSettingsStore.persist.getOptions().partialize?.(store());
 
-    expect(useProviderSettingsStore.getState().getCurrentSettings()).toMatchObject({ method: 5 });
+    expect(persisted).not.toHaveProperty("draft");
+    expect(persisted).not.toHaveProperty("isModified");
+  });
+
+  test("switching provider drops an unapplied draft", () => {
+    store().updateCurrentSettings({ method: 5 });
+
+    store().selectProviderById(PRAYER_TIME_PROVIDERS.ALADHAN.id);
+
+    expect(store().isModified).toBe(false);
+    expect(store().getDraftSettings()).toEqual(store().getCurrentSettings());
   });
 });
