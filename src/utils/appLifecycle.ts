@@ -1,9 +1,11 @@
 import { AppState, AppStateStatus, Platform } from "react-native";
 import { File, Directory, Paths } from "expo-file-system";
 
+import { APP_STATE } from "@/constants/AppState";
 import { AppLogger } from "@/utils/appLogger";
 import { appVersionLabel } from "@/utils/appVersion";
 import { readPendingReport } from "@/utils/crashHandler";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 // Lifecycle breadcrumbs for diagnostic bundles: launch, foreground/background
 // transitions, and version updates go to the `app` domain — the timeline that
@@ -40,7 +42,7 @@ const writeSessionState = (state: SessionState["state"], version: string): void 
     if (!dir.exists) dir.create({ intermediates: true });
     const f = stateFile();
     if (!f.exists) f.create();
-    f.write(JSON.stringify({ state, version } satisfies SessionState));
+    writeFileSync(f, JSON.stringify({ state, version } satisfies SessionState));
   } catch {
     // best-effort — breadcrumbs must never break startup
   }
@@ -76,19 +78,20 @@ export const installLifecycleLogging = (): void => {
   // Android is excluded: its AppState constant reads `background` until the host reaches
   // RESUMED, which would mislabel ordinary cold launches, and a headless Android task never
   // mounts the tree to reach this code at all.
-  const launchedInBackground = Platform.OS === "ios" && AppState.currentState === "background";
+  const launchedInBackground =
+    Platform.OS === "ios" && AppState.currentState === APP_STATE.BACKGROUND;
   writeSessionState(launchedInBackground ? "background" : "active", version);
 
   AppState.addEventListener("change", (next: AppStateStatus) => {
     // `inactive` fires on every iOS control-center/app-switcher peek — noise.
-    if (next === "background" || next === "active") {
+    if (next === APP_STATE.BACKGROUND || next === APP_STATE.ACTIVE) {
       appLog.i("State", next);
       writeSessionState(next, version);
       // AppLogger's own listener runs first — it is registered at module scope, before
       // this one — so its background flush happens before this line is buffered. Android
       // freezes cached processes, so the buffered line has no later chance to reach disk:
       // flush it here or lose the marker that opens every background crash window.
-      if (next === "background") AppLogger.flushAllSync();
+      if (next === APP_STATE.BACKGROUND) AppLogger.flushAllSync();
     }
   });
 };

@@ -1,4 +1,4 @@
-import React, { createContext, use, useEffect, useState } from "react";
+import React, { createContext, use } from "react";
 
 // Enums
 import { AppLocale } from "@/enums/app";
@@ -6,28 +6,10 @@ import { AppLocale } from "@/enums/app";
 // Stores
 import { useAppStore } from "@/stores/app";
 
-export type FontWeight = "regular" | "medium" | "semibold" | "bold";
+// Constants
+import { DEFAULT_FACES, FONT_MAPPINGS, type FontWeight } from "@/constants/Fonts";
 
-export const FONT_MAPPINGS = {
-  [AppLocale.AR]: {
-    regular: "IBMPlexSans-Regular",
-    medium: "IBMPlexSans-Medium",
-    semibold: "IBMPlexSans-SemiBold",
-    bold: "IBMPlexSans-Bold",
-  },
-  [AppLocale.EN]: {
-    regular: "Asap-Regular",
-    medium: "Asap-Medium",
-    semibold: "Asap-SemiBold",
-    bold: "Asap-Bold",
-  },
-  [AppLocale.MS]: {
-    regular: "Asap-Regular",
-    medium: "Asap-Medium",
-    semibold: "Asap-SemiBold",
-    bold: "Asap-Bold",
-  },
-};
+export type { FontWeight };
 
 interface FontContextType {
   fontFamily: Record<FontWeight, string>;
@@ -38,7 +20,7 @@ interface FontContextType {
 const FontContext = createContext<FontContextType>({
   fontFamily: FONT_MAPPINGS[AppLocale.EN],
   locale: AppLocale.EN,
-  getFontFamily: () => "Asap-Regular",
+  getFontFamily: () => DEFAULT_FACES.regular,
 });
 
 interface FontProviderProps {
@@ -50,14 +32,11 @@ interface FontProviderProps {
  */
 export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
   const { locale } = useAppStore();
-  const [fontFamily, setFontFamily] = useState<Record<FontWeight, string>>(
-    FONT_MAPPINGS[locale] || FONT_MAPPINGS[AppLocale.EN]
-  );
 
-  // Update font families when locale changes
-  useEffect(() => {
-    setFontFamily(FONT_MAPPINGS[locale] || FONT_MAPPINGS[AppLocale.EN]);
-  }, [locale]);
+  // Derived during render, so a locale switch swaps the font in the same commit.
+  // Holding it in state costs a second render in which Arabic text is still laid
+  // out in the Latin-only family.
+  const fontFamily = FONT_MAPPINGS[locale] || FONT_MAPPINGS[AppLocale.EN];
 
   const getFontFamily = (weight: FontWeight): string => {
     return fontFamily[weight] || fontFamily.regular;

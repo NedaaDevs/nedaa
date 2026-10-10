@@ -36,11 +36,12 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 import { calculateIshraq, calculateDuha } from "@/utils/otherTimingCalculations";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { NOTIFICATION_CHANNEL_ID, NOTIFICATION_TYPE } from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
+import { OTHER_TIMING_IDS, PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
@@ -85,15 +86,6 @@ type NotificationScheduleItem = {
   channelId?: string;
 };
 
-const PRAYER_IDS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-const OTHER_TIMING_IDS: OtherTimingId[] = [
-  "ishraq",
-  "duha",
-  "midnight",
-  "firstthird",
-  "lastthird",
-  "imsak",
-];
 const MAX_IOS_NOTIFICATIONS = 63;
 const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
 
@@ -126,7 +118,10 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_morning",
-          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_morning" : undefined,
+          channelId:
+            Platform.OS === PlatformType.ANDROID
+              ? NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING
+              : undefined,
           timezone,
         }
       );
@@ -161,7 +156,10 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_evening",
-          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_evening" : undefined,
+          channelId:
+            Platform.OS === PlatformType.ANDROID
+              ? NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING
+              : undefined,
           timezone,
         }
       );
@@ -278,7 +276,10 @@ const scheduleQuranReminderNotifications = async (
         {
           vibrate: true,
           categoryId: "quran_reminder",
-          channelId: Platform.OS === PlatformType.ANDROID ? "quran_reminder" : undefined,
+          channelId:
+            Platform.OS === PlatformType.ANDROID
+              ? NOTIFICATION_CHANNEL_ID.QURAN_REMINDER
+              : undefined,
           weekday,
         }
       );
@@ -474,7 +475,7 @@ export const scheduleAllNotifications = async (
         title: t("notification.reminder.title"),
         body: t("notification.reminder.body"),
         type: NOTIFICATION_TYPE.PRAYER,
-        prayerId: "fajr",
+        prayerId: PRAYER_ID.FAJR,
         categoryId: "reminder",
         vibration: true,
         sound: "default",
@@ -768,7 +769,7 @@ const generatePrayerNotifications = (
 const formatPrayerName = (prayerId: PrayerName, date?: Date): string => {
   // Special case for Jumu'ah (Friday Dhuhr)
   const checkDate = date || new Date();
-  if (checkDate.getDay() === 5 && prayerId === "dhuhr") {
+  if (checkDate.getDay() === 5 && prayerId === PRAYER_ID.DHUHR) {
     return "jumuah";
   }
 

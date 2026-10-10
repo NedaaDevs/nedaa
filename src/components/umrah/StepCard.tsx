@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { AccessibilityInfo } from "react-native";
+import { useState } from "react";
+
 import { useTranslation } from "react-i18next";
 import { formatNumberToLocale } from "@/utils/number";
 import { useRouter } from "expo-router";
@@ -26,6 +26,7 @@ import HadithReference from "@/components/umrah/HadithReference";
 
 import { ExternalLink } from "lucide-react-native";
 import type { SubStep } from "@/types/umrah";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Props = {
   step: SubStep;
@@ -41,14 +42,10 @@ const StepCardContent = ({ step }: Props) => {
   const { hasSeenFlipHint } = useUmrahGuideStore();
   const selectionHaptic = useHaptic("selection");
   const [isFlipped, setIsFlipped] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReducedMotion();
   const flipValue = useSharedValue(0);
 
   const isArabic = locale === AppLocale.AR;
-
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
 
   const handleFlip = async () => {
     if (!step.dua) return;
@@ -57,19 +54,19 @@ const StepCardContent = ({ step }: Props) => {
     setIsFlipped(newFlipped);
 
     if (!reduceMotion) {
-      flipValue.value = withTiming(newFlipped ? 180 : 0, { duration: 400 });
+      flipValue.set(withTiming(newFlipped ? 180 : 0, { duration: 400 }));
     } else {
-      flipValue.value = newFlipped ? 180 : 0;
+      flipValue.set(newFlipped ? 180 : 0);
     }
   };
 
   const frontStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateY: `${interpolate(flipValue.value, [0, 180], [0, 180])}deg` }],
+    transform: [{ rotateY: `${interpolate(flipValue.get(), [0, 180], [0, 180])}deg` }],
     backfaceVisibility: "hidden" as const,
   }));
 
   const backStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateY: `${interpolate(flipValue.value, [0, 180], [180, 360])}deg` }],
+    transform: [{ rotateY: `${interpolate(flipValue.get(), [0, 180], [180, 360])}deg` }],
     backfaceVisibility: "hidden" as const,
   }));
 
@@ -170,6 +167,8 @@ const StepCardContent = ({ step }: Props) => {
 
           {step.dua && (
             <Pressable
+              // Holds text or a control the reader must reach; as one element iOS would hide them.
+              accessible={false}
               onPress={handleFlip}
               width="100%"
               accessibilityRole="button"
@@ -276,6 +275,8 @@ const StepCardContent = ({ step }: Props) => {
           )}
 
           <Pressable
+            // Holds text or a control the reader must reach; as one element iOS would hide them.
+            accessible={false}
             onPress={handleFlip}
             width="100%"
             accessibilityRole="button"

@@ -1,55 +1,66 @@
-import { useEffect, useRef } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { Background } from "@/components/ui/background";
-import Header from "@/components/Header";
-import TimingsCarousel from "@/components/TimingsCarousel";
+import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { CelestialRhythm } from "@/components/today/CelestialRhythm";
+import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
+import { FocusCountdown } from "@/components/today/FocusCountdown";
+import { LocationNotice } from "@/components/today/LocationNotice";
+import { OtherTimes } from "@/components/today/OtherTimes";
+import { PrayerGrid } from "@/components/today/PrayerGrid";
+import { PrayerTimesState } from "@/components/today/PrayerTimesState";
+import { TodayHeader } from "@/components/today/TodayHeader";
+import { UpcomingOccasions } from "@/components/today/UpcomingOccasions";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
-import ImportantDaysCard from "@/components/ImportantDaysCard";
-import UmrahResumeBanner from "@/components/umrah/UmrahResumeBanner";
-
-// Stores
-import { useAppStore } from "@/stores/app";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { useUmrahGuideStore } from "@/stores/umrahGuide";
+import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 
 // Hooks
-import { useAppVisibility } from "@/hooks/useAppVisibility";
-import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
+import { usePrayerDetail } from "@/hooks/usePrayerDetail";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
+
+// Stores
+import { usePreferencesStore } from "@/stores/preferences";
 
 export default function MainScreen() {
-  const { mode } = useAppStore();
-  const { loadPrayerTimes } = usePrayerTimesStore();
-  const { becameActiveAt } = useAppVisibility();
-  const activeProgress = useUmrahGuideStore((s) => s.activeProgress);
-  const isFirstMount = useRef(true);
-
-  useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
-    loadPrayerTimes().then(() => ensureAlarmsScheduled());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [becameActiveAt]);
+  const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
+  const showOccasions = usePreferencesStore((state) => state.showImportantDaysOnHome);
+  // A card opens its prayer's sheet; the card and its mark on the line stay lit.
+  const detail = usePrayerDetail();
 
   return (
-    <Background>
-      <Box flex={1}>
-        <ActiveAlarmBanner />
-        <Box>
-          <Header />
+    <DaySimulator>
+      <SkyBackground>
+        {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
+        <Box flex={1} paddingTop={insets.top}>
+          <ActiveAlarmBanner />
+          <SkyScrollView
+            contentContainerStyle={{ paddingBottom: tabBarInset }}
+            showsVerticalScrollIndicator={false}>
+            <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
+              <TodayHeader />
+              <FocusCountdown />
+              <SkyOccluder>
+                <CelestialRhythm selected={detail.prayerId} />
+              </SkyOccluder>
+              <SkyOccluder>
+                <LocationNotice />
+              </SkyOccluder>
+              <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
+              <OtherTimes />
+              <PrayerTimesState />
+              {showOccasions ? <UpcomingOccasions /> : null}
+              <DaySimulatorButton />
+            </Box>
+          </SkyScrollView>
         </Box>
-
-        {activeProgress && <UmrahResumeBanner />}
-
-        <ImportantDaysCard />
-
-        <Box flex={1}>
-          <TimingsCarousel mode={mode} />
-        </Box>
-      </Box>
-    </Background>
+        <PrayerDetailSheet
+          prayerId={detail.prayerId}
+          onClose={detail.close}
+          finalFocusRef={detail.openerRef}
+        />
+      </SkyBackground>
+    </DaySimulator>
   );
 }

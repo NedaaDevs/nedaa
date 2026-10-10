@@ -12,36 +12,47 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
 
+// Constants
+import { MIDNIGHT_MODE } from "@/constants/providers";
+
 // Stores
-import prayerTimesStore from "@/stores/prayerTimes";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
 
 // Types
 import type { OtherTimingId } from "@/types/notification";
+import type { AladhanMidnightModeId } from "@/types/providers/aladhan";
 
 type TimingGroup = {
   titleKey: string;
-  descriptionKey?: string;
+  /** The footer's key, given the midnight mode that sets the night's span. */
+  descriptionKey?: (midnightMode: AladhanMidnightModeId) => string;
   items: OtherTimingId[];
+};
+
+const NIGHT_DESCRIPTION_KEY: Record<AladhanMidnightModeId, string> = {
+  [MIDNIGHT_MODE.STANDARD]: "notification.otherTiming.group.night.description.standard",
+  [MIDNIGHT_MODE.JAFARI]: "notification.otherTiming.group.night.description.jafari",
 };
 
 const TIMING_GROUPS: TimingGroup[] = [
   {
     titleKey: "notification.otherTiming.group.morning",
-    descriptionKey: "notification.otherTiming.group.morning.description",
+    descriptionKey: () => "notification.otherTiming.group.morning.description",
     items: ["ishraq", "duha"],
   },
   {
     titleKey: "notification.otherTiming.group.night",
-    descriptionKey: "notification.otherTiming.group.night.description",
+    descriptionKey: (midnightMode) => NIGHT_DESCRIPTION_KEY[midnightMode],
     items: ["midnight", "firstthird", "lastthird"],
   },
   {
@@ -59,9 +70,15 @@ const OtherRemindersSettings = () => {
   const { otherTimingNotifications, duhaTime, updateOtherTimingNotification, updateDuhaTime } =
     useNotificationSettings();
 
+  // Subscribed rather than read once, because the screen can mount before the
+  // day's timings have loaded and the window would stay empty for its lifetime.
+  const today = usePrayerTimesStore((state) => state.todayTimings);
+  const midnightMode =
+    useProviderSettingsStore((state) => state.allSettings[state.currentProviderId]?.midnightMode) ??
+    MIDNIGHT_MODE.STANDARD;
+
   // Valid hours within today's Duha window
   const duhaHours = useMemo(() => {
-    const today = prayerTimesStore.getState().todayTimings;
     if (!today?.otherTimings.sunrise || !today?.timings.dhuhr) return [];
     const startHour =
       addMinutes(parseISO(today.otherTimings.sunrise), ISHRAQ_OFFSET_MINUTES).getHours() + 1;
@@ -71,11 +88,11 @@ const OtherRemindersSettings = () => {
       hours.push(h);
     }
     return hours;
-  }, []);
+  }, [today]);
 
   return (
     <Background>
-      <TopBar title="notification.otherReminders" backOnClick />
+      <ScreenHeader title={t("notification.otherReminders")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -224,7 +241,7 @@ const OtherRemindersSettings = () => {
               {/* Section Footer */}
               {group.descriptionKey && (
                 <Text size="xs" color="$typographySecondary" paddingHorizontal="$5">
-                  {t(group.descriptionKey)}
+                  {t(group.descriptionKey(midnightMode))}
                 </Text>
               )}
             </VStack>

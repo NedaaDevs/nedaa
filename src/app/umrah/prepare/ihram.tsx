@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import Animated, { FadeIn } from "react-native-reanimated";
 
@@ -10,24 +9,20 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
-import { useTheme } from "tamagui";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import IhramMale from "@/components/umrah/illustrations/IhramMale";
 import IhramFemale from "@/components/umrah/illustrations/IhramFemale";
-import NumberBadge from "@/components/umrah/illustrations/NumberBadge";
+import { NumberBadge } from "@/components/ui/number-badge";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
 import type { Gender } from "@/types/umrah";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export default function IhramScreen() {
   const { t } = useTranslation();
   const selectionHaptic = useHaptic("selection");
   const { selectedGender, setSelectedGender } = useUmrahGuideStore();
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const handleGenderSelect = async (gender: Gender) => {
     await selectionHaptic();
@@ -36,7 +31,7 @@ export default function IhramScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.prepare.ihram" backOnClick />
+      <ScreenHeader variant="bar" title={t("umrah.prepare.ihram")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         <HStack
@@ -175,21 +170,18 @@ export default function IhramScreen() {
   );
 }
 
-const NumberedItem = ({ n, text }: { n: number; text: string }) => {
-  const theme = useTheme();
-  return (
-    <HStack gap="$3" alignItems="flex-start" accessible accessibilityLabel={text}>
-      <NumberBadge n={n} size={24} color={theme.accentPrimary.val} bg={theme.background.val} />
-      <Text
-        size="sm"
-        color="$typographySecondary"
-        flex={1}
-        paddingTop="$0.5"
-        importantForAccessibility="no">
-        {text}
-      </Text>
-    </HStack>
-  );
-};
+const NumberedItem = ({ n, text }: { n: number; text: string }) => (
+  <HStack gap="$3" alignItems="flex-start" accessible accessibilityLabel={text}>
+    <NumberBadge n={n} size="md" />
+    <Text
+      size="sm"
+      color="$typographySecondary"
+      flex={1}
+      paddingTop="$0.5"
+      importantForAccessibility="no">
+      {text}
+    </Text>
+  </HStack>
+);
 
 const Divider = () => <Box height={1} backgroundColor="$outline" opacity={0.3} />;

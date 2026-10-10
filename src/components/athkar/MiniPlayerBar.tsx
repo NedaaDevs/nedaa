@@ -1,6 +1,6 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo } from "react-native";
+
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -23,20 +23,18 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { AUDIO_UI, DEFAULT_PLAYBACK_RATE, PLAYBACK_RATE_OPTIONS } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const DISMISS_THRESHOLD = 60;
 
 const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const reduceMotionShared = useSharedValue(false);
   useEffect(() => {
-    reduceMotionShared.value = reduceMotion;
+    reduceMotionShared.set(reduceMotion);
   }, [reduceMotion, reduceMotionShared]);
 
   const playerState = useAthkarStore((s) => s.playerState);
@@ -57,15 +55,15 @@ const MiniPlayerBar: FC = () => {
 
   useEffect(() => {
     if (isActive) {
-      heightAnim.value = height;
-      opacity.value = 1;
+      heightAnim.set(height);
+      opacity.set(1);
     }
   }, [isActive, height, heightAnim, opacity]);
 
   const containerStyle = useAnimatedStyle(() => ({
-    height: heightAnim.value,
+    height: heightAnim.get(),
     overflow: "hidden" as const,
-    opacity: opacity.value,
+    opacity: opacity.get(),
   }));
 
   if (!isActive) return null;
@@ -110,20 +108,20 @@ const MiniPlayerBar: FC = () => {
     .onUpdate((e) => {
       const clamped = Math.max(0, e.translationY);
       const progress = Math.min(clamped / DISMISS_THRESHOLD, 1);
-      heightAnim.value = height * (1 - progress);
-      opacity.value = 1 - progress;
+      heightAnim.set(height * (1 - progress));
+      opacity.set(1 - progress);
     })
     .onEnd((e) => {
       if (e.translationY > DISMISS_THRESHOLD) {
-        heightAnim.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
-        opacity.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
+        heightAnim.set(withTiming(0, { duration: reduceMotionShared.get() ? 0 : 150 }));
+        opacity.set(withTiming(0, { duration: reduceMotionShared.get() ? 0 : 150 }));
         scheduleOnRN(handleDismiss);
-      } else if (reduceMotionShared.value) {
-        heightAnim.value = withTiming(height, { duration: 0 });
-        opacity.value = withTiming(1, { duration: 0 });
+      } else if (reduceMotionShared.get()) {
+        heightAnim.set(withTiming(height, { duration: 0 }));
+        opacity.set(withTiming(1, { duration: 0 }));
       } else {
-        heightAnim.value = withSpring(height, { damping: 20, stiffness: 300 });
-        opacity.value = withSpring(1);
+        heightAnim.set(withSpring(height, { damping: 20, stiffness: 300 }));
+        opacity.set(withSpring(1));
       }
     });
 
@@ -131,6 +129,8 @@ const MiniPlayerBar: FC = () => {
     <GestureDetector gesture={swipeDismiss}>
       <Animated.View style={containerStyle}>
         <Pressable
+          // Holds text or a control the reader must reach; as one element iOS would hide them.
+          accessible={false}
           onPress={handleTap}
           accessibilityLabel={t("a11y.athkar.nowPlaying", {
             current: sessionProgress.current,

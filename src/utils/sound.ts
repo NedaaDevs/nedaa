@@ -1,9 +1,10 @@
 // Constants
-import { SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
+import { ALARM_SOUND_KEYS, SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
 
 // Types
-import type { NotificationType } from "@/types/notification";
-import type { SoundOption, SoundAsset } from "@/types/sound";
+import type { ConfigForType, NotificationType, PrayerNotificationType } from "@/types/notification";
+import type { TFunction } from "i18next";
+import type { PreviewSource, SoundAsset, SoundChoice, SoundOption } from "@/types/sound";
 import type { CustomSound } from "@/types/customSound";
 
 // Stores
@@ -13,6 +14,15 @@ import { useAthkarStore } from "@/stores/athkar";
 
 // Utils
 import { isCustomSoundKey } from "@/utils/customSoundHelpers";
+
+const BUNDLED_ASSETS: Readonly<Record<string, SoundAsset | undefined>> = SOUND_ASSETS;
+
+/** Whether a picked sound can be stored for this alert: bundled for it, or custom. */
+export const isNotificationSound = <T extends PrayerNotificationType>(
+  type: T,
+  value: string
+): value is ConfigForType<T>["sound"] =>
+  isCustomSoundKey(value) || (BUNDLED_ASSETS[value]?.availableFor.includes(type) ?? false);
 
 // Type-safe helper to get available sounds
 export const getAvailableSounds = <T extends NotificationType>(type: T): SoundOption[] => {
@@ -61,6 +71,12 @@ export const isSoundPreviewable = <T extends NotificationType>(
   return asset?.previewSource !== null;
 };
 
+// A preview never interrupts athkar playback.
+const isAthkarAudioActive = (): boolean => {
+  const athkarState = useAthkarStore.getState().playerState;
+  return athkarState === "playing" || athkarState === "loading";
+};
+
 // Event emitter for state synchronization
 type SoundPreviewListener = () => void;
 
@@ -68,13 +84,17 @@ type SoundPreviewListener = () => void;
 // react-native-nitro-player starts a media playback service when its module initialises,
 // and a background process may not start one. Previews are a foreground-only concern, so
 // the player loads on demand and stays out of the notification-scheduling import graph.
-const loadAudioPreview = () => import("@/services/audio/previewPlayer");
+// A call-time require stays lazy and, unlike import(), resolves under Jest.
+const loadAudioPreview = async (): Promise<typeof import("@/services/audio/previewPlayer")> =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@/services/audio/previewPlayer");
 
 class SoundPreviewManager {
   private static instance: SoundPreviewManager;
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
   private listeners: Set<SoundPreviewListener> = new Set();
+  private watchingPlayer = false;
 
   private constructor() {}
 
@@ -104,12 +124,6 @@ class SoundPreviewManager {
     soundKey: string,
     customSounds?: import("@/types/customSound").CustomSound[]
   ): Promise<void> {
-    // Guard: don't interrupt active athkar playback
-    const athkarState = useAthkarStore.getState().playerState;
-    if (athkarState === "playing" || athkarState === "loading") {
-      return;
-    }
-
     // Check if it's a custom sound
     const isCustom = isCustomSoundKey(soundKey);
 
@@ -118,28 +132,7 @@ class SoundPreviewManager {
       if (!customSound) return;
       if (!customSound.availableFor.includes(type)) return;
 
-      const soundId = `${type}.${soundKey}`;
-
-      try {
-        if (this.isPlaying) {
-          this.isPlaying = false;
-          this.currentSoundId = null;
-          this.notifyListeners();
-        }
-
-        this.isPlaying = true;
-        this.currentSoundId = soundId;
-        this.notifyListeners();
-
-        const { playPreview } = await loadAudioPreview();
-        await playPreview(customSound.contentUri);
-      } catch (error) {
-        console.error("[SoundPreview] Custom play failed:", error);
-        this.isPlaying = false;
-        this.currentSoundId = null;
-        this.notifyListeners();
-        throw error;
-      }
+      await this.playSource(`${type}.${soundKey}`, customSound.contentUri);
       return;
     }
 
@@ -150,28 +143,35 @@ class SoundPreviewManager {
     const soundSource = getPreviewSource(type, soundKey);
     if (!soundSource) return;
 
-    const soundId = `${type}.${soundKey}`;
+    await this.playSource(`${type}.${soundKey}`, soundSource);
+  }
+
+  /** Plays `source` as the one preview, known to listeners as `soundId`. */
+  async playSource(soundId: string, source: PreviewSource): Promise<void> {
+    if (isAthkarAudioActive()) return;
+
+    this.isPlaying = true;
+    this.currentSoundId = soundId;
+    this.notifyListeners();
 
     try {
-      if (this.isPlaying) {
-        this.isPlaying = false;
-        this.currentSoundId = null;
-        this.notifyListeners();
-      }
-
-      this.isPlaying = true;
-      this.currentSoundId = soundId;
-      this.notifyListeners();
-
-      const { playPreview } = await loadAudioPreview();
-      await playPreview(soundSource);
+      const player = await loadAudioPreview();
+      this.watchPlayer(player);
+      await player.playPreview(source);
     } catch (error) {
       console.error("[SoundPreview] Play failed:", error);
-      this.isPlaying = false;
-      this.currentSoundId = null;
-      this.notifyListeners();
+      this.forceReset();
       throw error;
     }
+  }
+
+  // A preview that plays to its end sends no stop; its finish clears it.
+  private watchPlayer(player: typeof import("@/services/audio/previewPlayer")): void {
+    if (this.watchingPlayer) return;
+    this.watchingPlayer = true;
+    player.addPreviewListener(({ didJustFinish }) => {
+      if (didJustFinish && this.isPlaying) this.forceReset();
+    });
   }
 
   async stopPreview(): Promise<void> {
@@ -235,6 +235,53 @@ export const getAvailableSoundsWithCustom = <T extends NotificationType>(
     }));
 
   return [...bundledSounds, ...customSoundOptions];
+};
+
+/** The bundled then custom sounds a notification type can use. */
+export const getSoundChoices = (
+  type: NotificationType,
+  customSounds: readonly CustomSound[],
+  t: TFunction
+): SoundChoice<string>[] => [
+  ...Object.entries(BUNDLED_ASSETS).flatMap(([key, asset]) =>
+    asset?.availableFor.includes(type)
+      ? [{ value: key, label: t(asset.label), previewSource: asset.previewSource }]
+      : []
+  ),
+  ...customSounds
+    .filter((sound) => sound.availableFor.includes(type))
+    .map((sound) => ({ value: sound.id, label: sound.name, previewSource: sound.contentUri })),
+];
+
+/** The chosen sound's name, or unset when no option offers it. */
+export const chosenSoundLabel = <K extends string>(
+  options: readonly SoundChoice<K>[],
+  value: K,
+  t: TFunction
+): string =>
+  options.find((option) => option.value === value)?.label ?? t("prayerDetail.soundPicker.unset");
+
+// An alarm stores a custom sound's URI: no JS runs when it fires.
+// A choice made outside the list stays listed, with nothing to preview.
+export const getAlarmSoundChoices = (
+  customSounds: readonly CustomSound[],
+  t: TFunction,
+  current: string
+): SoundChoice<string>[] => {
+  const bundled: SoundChoice<string>[] = ALARM_SOUND_KEYS.map((key) => ({
+    value: key,
+    label: t(SOUND_ASSETS[key].label),
+    previewSource: SOUND_ASSETS[key].previewSource,
+  }));
+  const custom: SoundChoice<string>[] = customSounds.map((sound) => ({
+    value: sound.contentUri,
+    label: sound.name,
+    previewSource: sound.contentUri,
+  }));
+  if (![...bundled, ...custom].some((option) => option.value === current)) {
+    bundled.push({ value: current, label: t("alarm.settings.systemSound"), previewSource: null });
+  }
+  return [...bundled, ...custom];
 };
 
 /**

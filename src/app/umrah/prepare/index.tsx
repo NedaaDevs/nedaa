@@ -9,7 +9,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import { Shirt, MapPin, ShieldAlert } from "lucide-react-native";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -47,7 +47,7 @@ export default function PrepareIndexScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.prepare.title" backOnClick />
+      <ScreenHeader variant="bar" title={t("umrah.prepare.title")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 16 }}>
         <VStack gap="$3" paddingTop="$4">

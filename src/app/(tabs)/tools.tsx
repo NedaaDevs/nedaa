@@ -1,145 +1,108 @@
 import { useTranslation } from "react-i18next";
-import { useRouter } from "expo-router";
-import { ScrollView } from "react-native";
-
-import { Background } from "@/components/ui/background";
-import { Box } from "@/components/ui/box";
-import { Card } from "@/components/ui/card";
-import { Text } from "@/components/ui/text";
-import { Icon } from "@/components/ui/icon";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
-import TopBar from "@/components/TopBar";
-
+import { useRouter, type Href } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlarmClock,
-  Compass,
-  CalendarHeart,
-  CalendarRange,
   CalendarCheck,
   CalendarDays,
+  CalendarHeart,
+  CalendarRange,
+  Compass,
   Headphones,
-  ChevronRight,
-  ChevronLeft,
+  Settings,
 } from "lucide-react-native";
-import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
-import ProgressRing from "@/components/umrah/ProgressRing";
 
-import { useUmrahGuideStore } from "@/stores/umrahGuide";
-import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { useQuranAudioStore } from "@/stores/quranAudio";
-import { UMRAH_STAGES } from "@/constants/UmrahGuide";
-import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
-import { localizedSurahName } from "@/utils/surahName";
-import { formatNumberToLocale } from "@/utils/number";
+import { Divider } from "@/components/ui/divider";
+import { Grid } from "@/components/ui/grid";
+import { ListRow } from "@/components/ui/list-row";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { Section } from "@/components/ui/section";
+import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { Tile } from "@/components/ui/tile";
+import { VStack } from "@/components/ui/vstack";
+import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
+import { UmrahContinue } from "@/components/umrah/UmrahContinue";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { useAlarmStatus } from "@/hooks/useAlarmStatus";
 import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
-import { useRTL } from "@/contexts/RTLContext";
+import { usePlace } from "@/hooks/usePlace";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
+import { useQuranAudioStore } from "@/stores/quranAudio";
+import { QURAN_PLAYER_STATE } from "@/types/quran-audio";
+import { localizedSurahName } from "@/utils/surahName";
 
 type ToolItem = {
   id: string;
   titleKey: string;
-  subtitleKey: string;
   icon: React.ComponentType<any>;
-  route: string;
+  route: Href;
+  /** Where it leads, when the title alone would mislead. */
+  hintKey?: string;
 };
 
 // Self-contained utilities: open, do one thing, leave. Anything with ongoing
 // state lives in the Continue card or the rows below instead.
-const UTILITIES: ToolItem[] = [
+const TOOLS: readonly ToolItem[] = [
   {
-    id: "umrah-guide",
-    titleKey: "tools.umrahGuide.title",
-    subtitleKey: "tools.umrahGuide.subtitle",
-    icon: KaabaIcon,
-    route: "/umrah",
+    id: "compass",
+    titleKey: BACK_DESTINATION.COMPASS.title,
+    icon: Compass,
+    route: BACK_DESTINATION.COMPASS.href,
   },
   {
     id: "hijri-calendar",
-    titleKey: "hijriCalendar.title",
-    subtitleKey: "hijriCalendar.subtitle",
+    titleKey: BACK_DESTINATION.HIJRI_CALENDAR.title,
     icon: CalendarHeart,
-    route: "/hijri-calendar",
+    route: BACK_DESTINATION.HIJRI_CALENDAR.href,
   },
   {
     id: "hijri-converter",
-    titleKey: "tools.hijriConverter.title",
-    subtitleKey: "tools.hijriConverter.subtitle",
+    titleKey: BACK_DESTINATION.HIJRI_CONVERTER.title,
     icon: CalendarRange,
-    route: "/hijri-converter",
+    route: BACK_DESTINATION.HIJRI_CONVERTER.href,
   },
+  // The occasions are marked on the Hijri calendar, so this tile opens it.
   {
     id: "important-days",
     titleKey: "importantDays.title",
-    subtitleKey: "importantDays.subtitle",
+    hintKey: "a11y.tools.occasionsHint",
     icon: CalendarDays,
-    route: "/important-days",
+    route: BACK_DESTINATION.HIJRI_CALENDAR.href,
   },
   {
     id: "qada",
     titleKey: "tools.qada.title",
-    subtitleKey: "tools.qada.subtitle",
     icon: CalendarCheck,
-    route: "/(tabs)/qada",
+    route: BACK_DESTINATION.QADA.href,
   },
   {
-    id: "compass",
-    titleKey: "tools.compass.title",
-    subtitleKey: "tools.compass.subtitle",
-    icon: Compass,
-    route: "/(tabs)/compass",
+    id: "umrah-guide",
+    titleKey: BACK_DESTINATION.UMRAH.title,
+    icon: KaabaIcon,
+    route: BACK_DESTINATION.UMRAH.href,
   },
 ];
-
-// Matches the section-label treatment used in Other Reminders and Custom Athkar.
-// No letter-spacing: positive tracking separates the joins in Arabic script.
-const SectionHeader = ({ label }: { label: string }) => (
-  <Text
-    size="sm"
-    fontWeight="600"
-    color="$typographySecondary"
-    textTransform="uppercase"
-    accessibilityRole="header">
-    {label}
-  </Text>
-);
 
 export default function ToolsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const selectionHaptic = useHaptic("selection");
-  const { isRTL } = useRTL();
-  const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
+  const alarmSupported = useAlarmSupported();
+  const insets = useSafeAreaInsets();
+  const tabBarInset = useTabBarInset();
 
-  const activeProgress = useUmrahGuideStore((state) => state.activeProgress);
-  // Called inside the selector so it re-runs on every store change.
-  const umrahProgress = useUmrahGuideStore((state) => state.getProgressFraction());
-  const { fajr, friday } = useAlarmSettingsStore();
+  const place = usePlace().name;
+  const alarmStatus = useAlarmStatus();
   const playerState = useQuranAudioStore((s) => s.playerState);
   const currentSurah = useQuranAudioStore((s) => s.currentSurah);
 
-  const alarmSupported = useAlarmSupported();
+  const opens = (name: string) => t("a11y.opens", { name });
 
-  const handleToolPress = async (route: string) => {
+  const open = async (route: Href) => {
     await selectionHaptic();
-    router.push(route as any);
+    router.push(route);
   };
-
-  const currentStage = activeProgress ? UMRAH_STAGES[activeProgress.currentStageIndex] : null;
-  const continueLabel = currentStage
-    ? t("tools.continue.stepOf", {
-        stage: t(currentStage.titleKey),
-        current: formatNumberToLocale(String((activeProgress?.currentStepIndex ?? 0) + 1)),
-        total: formatNumberToLocale(String(currentStage.steps.length)),
-      })
-    : "";
-
-  // Only two alarm types exist, so naming them is more useful than a count.
-  const enabledAlarms = [
-    fajr.enabled ? t("prayerTimes.fajr") : null,
-    friday.enabled ? t("prayerTimes.jumuah") : null,
-  ].filter(Boolean);
-  const alarmStatus = enabledAlarms.length ? enabledAlarms.join(" · ") : t("tools.alarm.statusOff");
 
   const isListening = currentSurah != null && playerState !== QURAN_PLAYER_STATE.IDLE;
   const listenStatus = isListening
@@ -147,134 +110,69 @@ export default function ToolsScreen() {
     : t("tools.quranListen.subtitle");
 
   return (
-    <Background>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}>
-        <TopBar title="tools.title" />
+    // The sky runs under both bars; the content scrolls clear of the tab bar.
+    <SkyBackground>
+      <SkyScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarInset }}>
+        <SkyOccluder>
+          <ScreenHeader title={t("tools.title")} subtitle={place} />
+        </SkyOccluder>
 
-        <VStack paddingHorizontal="$4" paddingTop="$2" gap="$5">
-          {/* Continue — present only while a journey is in progress. */}
-          {activeProgress && currentStage && (
-            <VStack gap="$2">
-              <SectionHeader label={t("tools.sections.continue")} />
-              <Card.Pressable
-                onPress={() => handleToolPress("/umrah")}
-                flexDirection="row"
-                alignItems="center"
-                gap="$3"
-                accessibilityRole="button"
-                accessibilityLabel={`${t("tools.umrahGuide.title")}, ${continueLabel}`}
-                accessibilityHint={t("a11y.tools.continueHint")}>
-                <ProgressRing progress={umrahProgress} size="md" />
-                <VStack flex={1} gap="$0.5">
-                  <Text size="md" fontWeight="600" color="$typography">
-                    {t("tools.umrahGuide.title")}
-                  </Text>
-                  <Text size="xs" color="$typographySecondary" numberOfLines={1}>
-                    {continueLabel}
-                  </Text>
-                </VStack>
-                <Icon as={ChevronIcon} size="sm" color="$accentPrimary" />
-              </Card.Pressable>
-            </VStack>
-          )}
+        <SkyOccluder>
+          <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$5" gap="$5">
+            <UmrahContinue />
 
-          {/* Utilities — content-height tiles so short labels don't strand. */}
-          <VStack gap="$2">
-            <SectionHeader label={t("tools.sections.utilities")} />
-            <HStack flexWrap="wrap" justifyContent="space-between" rowGap="$3">
-              {UTILITIES.map((tool) => (
-                <Card.Pressable
-                  key={tool.id}
-                  width="48%"
-                  minHeight={118}
-                  gap="$3"
-                  onPress={() => handleToolPress(tool.route)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t(tool.titleKey)}
-                  accessibilityHint={t(tool.subtitleKey)}>
-                  <Box
-                    width={44}
-                    height={44}
-                    borderRadius="$3"
-                    backgroundColor="$backgroundInteractive"
-                    alignItems="center"
-                    justifyContent="center">
-                    <Icon as={tool.icon} size="lg" color="$typographySecondary" />
-                  </Box>
-                  <VStack gap="$0.5">
-                    <Text size="md" fontWeight="600" color="$typography">
-                      {t(tool.titleKey)}
-                    </Text>
-                    <Text size="xs" color="$typographySecondary" numberOfLines={2}>
-                      {t(tool.subtitleKey)}
-                    </Text>
-                  </VStack>
-                </Card.Pressable>
-              ))}
-            </HStack>
-          </VStack>
+            <Section title={t("tools.sections.utilities")}>
+              <Grid columns={2} gap="$2">
+                {TOOLS.map((tool) => (
+                  <Grid.Item key={tool.id}>
+                    <Tile
+                      icon={tool.icon}
+                      label={t(tool.titleKey)}
+                      hint={tool.hintKey ? t(tool.hintKey) : opens(t(tool.titleKey))}
+                      onPress={() => open(tool.route)}
+                    />
+                  </Grid.Item>
+                ))}
+              </Grid>
+            </Section>
 
-          {/* Reminders & audio — rows, because they carry live state a tile can't show. */}
-          <VStack gap="$2">
-            <SectionHeader label={t("tools.sections.remindersAudio")} />
-            <VStack gap="$3">
-              {alarmSupported && (
-                <ToolRow
-                  icon={AlarmClock}
-                  title={t("tools.alarm.title")}
-                  status={alarmStatus}
-                  chevron={ChevronIcon}
-                  onPress={() => handleToolPress("/settings/alarm")}
+            {/* Rows, because they carry live state a tile can't show. */}
+            <Section title={t("tools.sections.remindersAudio")}>
+              <VStack gap="$2">
+                {alarmSupported && (
+                  <ListRow
+                    icon={AlarmClock}
+                    title={t("tools.alarm.title")}
+                    status={alarmStatus}
+                    hint={opens(t("tools.alarm.title"))}
+                    onPress={() => open(BACK_DESTINATION.SETTINGS_ALARM.href)}
+                  />
+                )}
+                <ListRow
+                  icon={Headphones}
+                  title={t("tools.quranListen.title")}
+                  status={listenStatus}
+                  hint={opens(t("tools.quranListen.title"))}
+                  onPress={() => open(BACK_DESTINATION.QURAN_LISTEN.href)}
                 />
-              )}
-              <ToolRow
-                icon={Headphones}
-                title={t("tools.quranListen.title")}
-                status={listenStatus}
-                chevron={ChevronIcon}
-                onPress={() => handleToolPress("/quran-listen")}
+              </VStack>
+            </Section>
+
+            {/* Set apart by a rule: the way into everything the app can be set to. */}
+            <VStack gap="$4">
+              <Divider />
+              <ListRow
+                icon={Settings}
+                title={t("settings.title")}
+                status={t("tools.settings.status")}
+                hint={opens(t("settings.title"))}
+                onPress={() => open(BACK_DESTINATION.SETTINGS.href)}
               />
             </VStack>
           </VStack>
-        </VStack>
-      </ScrollView>
-    </Background>
+        </SkyOccluder>
+      </SkyScrollView>
+    </SkyBackground>
   );
 }
-
-type ToolRowProps = {
-  icon: React.ComponentType<any>;
-  title: string;
-  status: string;
-  chevron: React.ComponentType<any>;
-  onPress: () => void;
-};
-
-const ToolRow = ({ icon, title, status, chevron, onPress }: ToolRowProps) => (
-  <Card.Pressable
-    onPress={onPress}
-    flexDirection="row"
-    alignItems="center"
-    gap="$3"
-    accessibilityRole="button"
-    accessibilityLabel={`${title}, ${status}`}>
-    <Box
-      width={44}
-      height={44}
-      borderRadius="$3"
-      backgroundColor="$backgroundInteractive"
-      alignItems="center"
-      justifyContent="center">
-      <Icon as={icon} size="lg" color="$typographySecondary" />
-    </Box>
-    <VStack flex={1} gap="$0.5">
-      <Text size="md" fontWeight="600" color="$typography">
-        {title}
-      </Text>
-      <Text size="xs" color="$typographySecondary" numberOfLines={1}>
-        {status}
-      </Text>
-    </VStack>
-    <Icon as={chevron} size="sm" color="$typographySecondary" />
-  </Card.Pressable>
-);

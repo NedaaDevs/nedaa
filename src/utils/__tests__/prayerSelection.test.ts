@@ -1,23 +1,24 @@
 import { toZonedTime } from "date-fns-tz";
 import { parseISO } from "date-fns";
 
+import { PRAYER_ID } from "@/constants/Prayer";
 import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 
 // Kuala Lumpur (UTC+8) prayer times for one day, as stored: ISO 8601 with offset.
 const KL = [
-  { name: "fajr", time: "2026-07-29T05:55:00+08:00" },
-  { name: "dhuhr", time: "2026-07-29T13:15:00+08:00" },
-  { name: "asr", time: "2026-07-29T16:37:00+08:00" },
-  { name: "maghrib", time: "2026-07-29T19:29:00+08:00" },
-  { name: "isha", time: "2026-07-29T20:42:00+08:00" },
+  { name: PRAYER_ID.FAJR, time: "2026-07-29T05:55:00+08:00" },
+  { name: PRAYER_ID.DHUHR, time: "2026-07-29T13:15:00+08:00" },
+  { name: PRAYER_ID.ASR, time: "2026-07-29T16:37:00+08:00" },
+  { name: PRAYER_ID.MAGHRIB, time: "2026-07-29T19:29:00+08:00" },
+  { name: PRAYER_ID.ISHA, time: "2026-07-29T20:42:00+08:00" },
 ];
 
 describe("prayer selection", () => {
   it("picks the next and previous timing around an instant", () => {
     // 14:00 in Kuala Lumpur — after Dhuhr, before Asr.
     const now = parseISO("2026-07-29T14:00:00+08:00");
-    expect(firstAfter(KL, now)?.name).toBe("asr");
-    expect(lastBefore(KL, now)?.name).toBe("dhuhr");
+    expect(firstAfter(KL, now)?.name).toBe(PRAYER_ID.ASR);
+    expect(lastBefore(KL, now)?.name).toBe(PRAYER_ID.DHUHR);
   });
 
   it("returns null once the day is over, so callers can roll to the next day", () => {
@@ -33,8 +34,8 @@ describe("prayer selection", () => {
   it("still yields a timing when the whole cached day is already behind us", () => {
     const wayLater = parseISO("2026-08-05T12:00:00+08:00");
     expect(firstAfter(KL, wayLater)).toBeNull();
-    expect(earliest(KL)?.name).toBe("fajr");
-    expect(latest(KL)?.name).toBe("isha");
+    expect(earliest(KL)?.name).toBe(PRAYER_ID.FAJR);
+    expect(latest(KL)?.name).toBe(PRAYER_ID.ISHA);
   });
 
   it("returns null from the fallbacks only when there is genuinely nothing", () => {
@@ -45,8 +46,8 @@ describe("prayer selection", () => {
   it("orders by instant, not by the order entries arrive in", () => {
     const shuffled = [KL[3], KL[0], KL[4], KL[1], KL[2]];
     const now = parseISO("2026-07-29T14:00:00+08:00");
-    expect(firstAfter(shuffled, now)?.name).toBe("asr");
-    expect(lastBefore(shuffled, now)?.name).toBe("dhuhr");
+    expect(firstAfter(shuffled, now)?.name).toBe(PRAYER_ID.ASR);
+    expect(lastBefore(shuffled, now)?.name).toBe(PRAYER_ID.DHUHR);
   });
 
   /**
@@ -66,7 +67,7 @@ describe("prayer selection", () => {
       const skewMinutes = Math.round((shifted.getTime() - now.getTime()) / 60000);
 
       // Correct behaviour: the true instant always resolves to Asr.
-      expect(firstAfter(KL, now)?.name).toBe("asr");
+      expect(firstAfter(KL, now)?.name).toBe(PRAYER_ID.ASR);
 
       // And the shifted value is a different instant wherever the zones differ,
       // which is precisely why it must never be used for comparisons.

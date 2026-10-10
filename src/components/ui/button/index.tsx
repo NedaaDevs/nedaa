@@ -1,9 +1,11 @@
 import React from "react";
 import { ActivityIndicator, Platform } from "react-native";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { buttonLabelFontSize } from "@/components/ui/button/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
 import {
+  getTokenValue,
   styled,
   View,
   XStack,
@@ -11,8 +13,8 @@ import {
   Text as TamaguiText,
   createStyledContext,
   withStaticProperties,
-  useTheme,
 } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
 
 type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -25,12 +27,26 @@ const ButtonContext = createStyledContext({
   action: "primary" as ButtonAction,
 });
 
-const ICON_SIZE: Record<ButtonSize, number> = {
-  xs: 14,
-  sm: 16,
-  md: 18,
-  lg: 18,
-  xl: 20,
+/** Each size's drawn height; below `$target`, a touch area makes up the rest. */
+const MIN_HEIGHT = {
+  xs: "$8",
+  sm: "$9",
+  md: "$10",
+  lg: "$target",
+  xl: "$12",
+} as const satisfies Record<ButtonSize, string>;
+
+const touchSlop = (size: ButtonSize) => {
+  const short = getTokenValue("$target", "size") - getTokenValue(MIN_HEIGHT[size], "size");
+  return short > 0 ? { top: short / 2, bottom: short / 2 } : undefined;
+};
+
+const ICON_SIZE: Record<ButtonSize, IconSize> = {
+  xs: "xs",
+  sm: "sm",
+  md: "md",
+  lg: "md",
+  xl: "lg",
 };
 
 const ACTION_THEME_KEY: Record<ButtonAction, string> = {
@@ -50,11 +66,13 @@ const ButtonFrame = styled(View, {
   name: "Button",
   context: ButtonContext,
   role: "button",
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
-  gap: "$2",
-  borderRadius: "$4",
+  gap: "$inline",
+  borderRadius: "$control",
   pressStyle: {
     opacity: 0.8,
   },
@@ -73,11 +91,11 @@ const ButtonFrame = styled(View, {
     // minHeight, not height: the box is a floor that grows with a scaled or
     // wrapped label instead of clipping it.
     size: {
-      xs: { minHeight: 32, paddingVertical: 4, paddingHorizontal: 14 },
-      sm: { minHeight: 36, paddingVertical: 4, paddingHorizontal: 16 },
-      md: { minHeight: 40, paddingVertical: 4, paddingHorizontal: 20 },
-      lg: { minHeight: 44, paddingVertical: 4, paddingHorizontal: 24 },
-      xl: { minHeight: 48, paddingVertical: 4, paddingHorizontal: 28 },
+      xs: { minHeight: MIN_HEIGHT.xs, paddingVertical: "$tight", paddingHorizontal: "$3.5" },
+      sm: { minHeight: MIN_HEIGHT.sm, paddingVertical: "$tight", paddingHorizontal: "$group" },
+      md: { minHeight: MIN_HEIGHT.md, paddingVertical: "$tight", paddingHorizontal: "$section" },
+      lg: { minHeight: MIN_HEIGHT.lg, paddingVertical: "$tight", paddingHorizontal: "$6" },
+      xl: { minHeight: MIN_HEIGHT.xl, paddingVertical: "$tight", paddingHorizontal: "$7" },
     },
     variant: {
       solid: { borderWidth: 0 },
@@ -108,7 +126,10 @@ const ButtonTextFrame = styled(TamaguiText, {
   context: ButtonContext,
   fontFamily: "$body",
   fontWeight: "600",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 8, textBreakStrategy: "simple" }),
+  ...(Platform.OS === PlatformType.ANDROID && {
+    paddingEnd: "$inline",
+    textBreakStrategy: "simple",
+  }),
 
   variants: {
     action: {
@@ -143,14 +164,12 @@ const ButtonTextFrame = styled(TamaguiText, {
 
 // The public Button.Text: applies the app text-scale to the size variant's
 // label font and keeps OS font scaling off (the app owns text size).
-type ButtonTextProps = GetProps<typeof ButtonTextFrame> & { scaleOverride?: number };
+type ButtonTextProps = GetProps<typeof ButtonTextFrame>;
 
 const ButtonText = React.forwardRef<React.ComponentRef<typeof ButtonTextFrame>, ButtonTextProps>(
-  ({ fontSize, size, scaleOverride, ...props }, ref) => {
+  ({ fontSize, size, ...props }, ref) => {
     const ctx = ButtonContext.useStyledContext();
-    // The hook always runs (hooks-order safety); the override only replaces its value.
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     // The label's own size prop wins over the Button's size context.
     const sizeKey = typeof size === "string" ? size : ctx.size;
     return (
@@ -193,7 +212,7 @@ const ButtonIcon: React.FC<ButtonIconProps> = ({
     resolvedColor = (theme as Record<string, { val: string }>)[key]?.val ?? theme.primary.val;
   }
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
 };
 ButtonIcon.displayName = "ButtonIcon";
 
@@ -246,14 +265,23 @@ ButtonGroup.displayName = "ButtonGroup";
 
 // --- Compound export ---
 
-const Button = withStaticProperties(ButtonFrame, {
+type ButtonFrameProps = GetProps<typeof ButtonFrame>;
+
+const ButtonRoot = React.forwardRef<React.ComponentRef<typeof ButtonFrame>, ButtonFrameProps>(
+  ({ hitSlop, ...props }, ref) => (
+    <ButtonFrame ref={ref} hitSlop={hitSlop ?? touchSlop(props.size ?? "md")} {...props} />
+  )
+);
+ButtonRoot.displayName = "Button";
+
+const Button = withStaticProperties(ButtonRoot, {
   Text: ButtonText,
   Icon: ButtonIcon,
   Spinner: ButtonSpinner,
   Group: ButtonGroup,
 });
 
-type ButtonProps = GetProps<typeof ButtonFrame>;
+type ButtonProps = ButtonFrameProps;
 
 export { Button, ButtonIcon, ButtonSpinner, ButtonGroup };
 export type {

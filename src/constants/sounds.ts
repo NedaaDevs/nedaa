@@ -101,6 +101,19 @@ export const SOUND_ASSETS = {
   },
 } as const satisfies SoundAssetsConfig;
 
+/** The bundled sounds an alarm offers, in the order a picker lists them. */
+export const ALARM_SOUND_KEYS = [
+  "beep",
+  "tasbih",
+  "takbir",
+  "knock",
+  "makkahAthan1",
+  "medinaAthan",
+  "athan2",
+  "athan3",
+  "yasserAldosari",
+] as const satisfies readonly (keyof typeof SOUND_ASSETS)[];
+
 // Helper function to create sound mappings with proper typing
 const createSoundMapping = <T extends NotificationType>(type: T): Record<string, string> => {
   const mapping: Record<string, string> = {};

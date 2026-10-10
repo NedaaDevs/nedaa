@@ -41,6 +41,21 @@ describe("alarm copy for native code", () => {
     }
   });
 
+  // Native code shows the text as given, so a nested key must arrive resolved.
+  it.each(Object.keys(LOCALES))(
+    "resolves nested keys before native code sees %s",
+    async (locale) => {
+      await i18n.changeLanguage(locale);
+
+      const copy = buildAlarmCopy();
+
+      expect(copy.stillRingingBody).toContain(i18n.t("brand.name"));
+      for (const text of Object.values(copy)) {
+        expect(text).not.toContain("$t(");
+      }
+    }
+  );
+
   it("saves the copy now and again in the new language after a change", async () => {
     await i18n.changeLanguage(AppLocale.EN);
     mockSetAlarmCopy.mockClear();

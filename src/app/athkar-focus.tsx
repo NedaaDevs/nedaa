@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, Dimensions, View } from "react-native";
+import { Dimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -70,6 +70,7 @@ import { AppLogger } from "@/utils/appLogger";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const log = AppLogger.create("athkar");
 
@@ -137,11 +138,7 @@ const AthkarFocusScreen = () => {
   const isAutopilot = playbackMode === PLAYBACK_MODE.AUTOPILOT;
   const isCellular = useIsCellular();
 
-  // Reduce motion check
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   // Onboarding modal
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -239,67 +236,68 @@ const AthkarFocusScreen = () => {
   const displayTextKey = currentAthkar ? getGroupDisplayText(currentAthkar, currentCount) : "";
 
   // Track previous group index for text fade animation
-  const [prevGroupIndex, setPrevGroupIndex] = useState(currentGroupIndex);
+  const prevGroupIndexRef = useRef(currentGroupIndex);
   const textFadeOpacity = useSharedValue(1);
 
   useEffect(() => {
-    if (isGrouped && prevGroupIndex !== currentGroupIndex) {
+    if (isGrouped && prevGroupIndexRef.current !== currentGroupIndex) {
       if (reduceMotion) {
-        setPrevGroupIndex(currentGroupIndex);
+        prevGroupIndexRef.current = currentGroupIndex;
         return;
       }
-      textFadeOpacity.value = withSequence(
-        withTiming(0, { duration: 100 }),
-        withTiming(1, { duration: 100 })
+      textFadeOpacity.set(
+        withSequence(withTiming(0, { duration: 100 }), withTiming(1, { duration: 100 }))
       );
-      setPrevGroupIndex(currentGroupIndex);
+      prevGroupIndexRef.current = currentGroupIndex;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGroupIndex, isGrouped]);
 
   const textFadeStyle = useAnimatedStyle(() => ({
-    opacity: textFadeOpacity.value,
+    opacity: textFadeOpacity.get(),
   }));
 
   // Sync with store's currentAthkarIndex changes (auto-move functionality)
   useEffect(() => {
     if (currentAthkar) {
       if (reduceMotion) {
-        animatedProgress.value = progressPercentage / 100;
+        animatedProgress.set(progressPercentage / 100);
       } else {
-        animatedProgress.value = withSpring(progressPercentage / 100, {
-          damping: 15,
-          stiffness: 150,
-          mass: 1,
-        });
+        animatedProgress.set(
+          withSpring(progressPercentage / 100, {
+            damping: 15,
+            stiffness: 150,
+            mass: 1,
+          })
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAthkarIndex, currentAthkar, progressPercentage]);
 
   // Track previous index for slide direction
-  const [previousIndex, setPreviousIndex] = useState(currentAthkarIndex);
+  const previousIndexRef = useRef(currentAthkarIndex);
 
   useEffect(() => {
-    if (previousIndex !== currentAthkarIndex) {
+    if (previousIndexRef.current !== currentAthkarIndex) {
       // Skip animation on first index change after mount/type-switch
       if (isFirstRender.current) {
         isFirstRender.current = false;
-        setPreviousIndex(currentAthkarIndex);
+        previousIndexRef.current = currentAthkarIndex;
         return;
       }
 
       if (reduceMotion) {
         // Instant update — no animation
-        slideOpacity.value = 1;
-        slideScale.value = 1;
-        slideTranslateY.value = 0;
-        navigationBlur.value = 0;
-        setPreviousIndex(currentAthkarIndex);
+        slideOpacity.set(1);
+        slideScale.set(1);
+        slideTranslateY.set(0);
+        navigationBlur.set(0);
+        previousIndexRef.current = currentAthkarIndex;
         return;
       }
 
-      const isNext = currentAthkarIndex > previousIndex;
+      const isNext = currentAthkarIndex > previousIndexRef.current;
       const slideDirection = isNext ? -1 : 1; // Up = next (-1), Down = previous (+1)
       const SLIDE_DISTANCE = 80;
 
@@ -307,25 +305,33 @@ const AthkarFocusScreen = () => {
       // reset as a zero-duration step. Sequences restart cleanly when a rapid
       // track change interrupts them; chaining the slide-in from a completion
       // callback recursed on the UI thread under fast skips (stack overflow).
-      slideOpacity.value = withSequence(
-        withTiming(0.4, { duration: 250 }),
-        withSpring(1, { damping: 18, stiffness: 280, mass: 0.9 })
+      slideOpacity.set(
+        withSequence(
+          withTiming(0.4, { duration: 250 }),
+          withSpring(1, { damping: 18, stiffness: 280, mass: 0.9 })
+        )
       );
-      slideScale.value = withSequence(
-        withTiming(0.92, { duration: 250 }),
-        withSpring(1, { damping: 16, stiffness: 220, mass: 0.8 })
+      slideScale.set(
+        withSequence(
+          withTiming(0.92, { duration: 250 }),
+          withSpring(1, { damping: 16, stiffness: 220, mass: 0.8 })
+        )
       );
-      slideTranslateY.value = withSequence(
-        withTiming(slideDirection * SLIDE_DISTANCE, { duration: 250 }),
-        withTiming(-slideDirection * SLIDE_DISTANCE, { duration: 0 }),
-        withSpring(0, { damping: 20, stiffness: 320, mass: 0.8 })
+      slideTranslateY.set(
+        withSequence(
+          withTiming(slideDirection * SLIDE_DISTANCE, { duration: 250 }),
+          withTiming(-slideDirection * SLIDE_DISTANCE, { duration: 0 }),
+          withSpring(0, { damping: 20, stiffness: 320, mass: 0.8 })
+        )
       );
-      navigationBlur.value = withSequence(
-        withTiming(0.5, { duration: 200 }),
-        withSpring(0, { damping: 22, stiffness: 380, mass: 0.7 })
+      navigationBlur.set(
+        withSequence(
+          withTiming(0.5, { duration: 200 }),
+          withSpring(0, { damping: 22, stiffness: 380, mass: 0.7 })
+        )
       );
 
-      setPreviousIndex(currentAthkarIndex);
+      previousIndexRef.current = currentAthkarIndex;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAthkarIndex]);
@@ -377,10 +383,10 @@ const AthkarFocusScreen = () => {
   // Animate completion celebration when all athkar are done
   useEffect(() => {
     if (allCompleted) {
-      completionScale.value = reduceMotion ? 1 : withSpring(1, { damping: 15, stiffness: 200 });
+      completionScale.set(reduceMotion ? 1 : withSpring(1, { damping: 15, stiffness: 200 }));
       hapticSuccess();
     } else {
-      completionScale.value = reduceMotion ? 0 : withTiming(0, { duration: 200 });
+      completionScale.set(reduceMotion ? 0 : withTiming(0, { duration: 200 }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allCompleted]);
@@ -388,13 +394,15 @@ const AthkarFocusScreen = () => {
   // Animate progress when count changes
   useEffect(() => {
     if (reduceMotion) {
-      animatedProgress.value = progressPercentage / 100;
+      animatedProgress.set(progressPercentage / 100);
     } else {
-      animatedProgress.value = withSpring(progressPercentage / 100, {
-        damping: 15,
-        stiffness: 150,
-        mass: 1,
-      });
+      animatedProgress.set(
+        withSpring(progressPercentage / 100, {
+          damping: 15,
+          stiffness: 150,
+          mass: 1,
+        })
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressPercentage]);
@@ -403,9 +411,9 @@ const AthkarFocusScreen = () => {
   useEffect(() => {
     if (audioDuration > 0) {
       const progress = audioPosition / audioDuration;
-      audioProgressValue.value = reduceMotion ? progress : withTiming(progress, { duration: 300 });
+      audioProgressValue.set(reduceMotion ? progress : withTiming(progress, { duration: 300 }));
     } else {
-      audioProgressValue.value = 0;
+      audioProgressValue.set(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioPosition, audioDuration]);
@@ -422,12 +430,12 @@ const AthkarFocusScreen = () => {
 
   // Animated props for the progress circle
   const animatedCircleProps = useAnimatedProps(() => {
-    const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - animatedProgress.value);
+    const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - animatedProgress.get());
 
     return {
       strokeDashoffset,
       stroke: interpolateColor(
-        animatedProgress.value,
+        animatedProgress.get(),
         [0, 1],
         [progressStartColor, progressEndColor]
       ),
@@ -436,14 +444,14 @@ const AthkarFocusScreen = () => {
 
   // Animated props for the audio playback ring (inner)
   const audioCircleProps = useAnimatedProps(() => ({
-    strokeDashoffset: AUDIO_RING_CIRCUMFERENCE * (1 - audioProgressValue.value),
+    strokeDashoffset: AUDIO_RING_CIRCUMFERENCE * (1 - audioProgressValue.get()),
   }));
 
   // Animated style for count text
   const countAnimatedStyle = useAnimatedStyle(() => {
     return {
-      opacity: countOpacity.value,
-      transform: [{ scale: countOpacity.value }],
+      opacity: countOpacity.get(),
+      transform: [{ scale: countOpacity.get() }],
     };
   });
 
@@ -457,15 +465,16 @@ const AthkarFocusScreen = () => {
 
       if (!reduceMotion) {
         // Animate circle scale for feedback
-        circleScale.value = withSequence(
-          withSpring(1.05, { damping: 20, stiffness: 300 }),
-          withSpring(1, { damping: 20, stiffness: 300 })
+        circleScale.set(
+          withSequence(
+            withSpring(1.05, { damping: 20, stiffness: 300 }),
+            withSpring(1, { damping: 20, stiffness: 300 })
+          )
         );
 
         // Animate count text
-        countOpacity.value = withSequence(
-          withTiming(0.7, { duration: 100 }),
-          withTiming(1, { duration: 100 })
+        countOpacity.set(
+          withSequence(withTiming(0.7, { duration: 100 }), withTiming(1, { duration: 100 }))
         );
       }
 
@@ -475,9 +484,11 @@ const AthkarFocusScreen = () => {
       if (currentCount + 1 === totalCount) {
         hapticSuccess();
         if (!reduceMotion) {
-          circleScale.value = withSequence(
-            withSpring(1.1, { damping: 15, stiffness: 200 }),
-            withSpring(1, { damping: 15, stiffness: 200 })
+          circleScale.set(
+            withSequence(
+              withSpring(1.1, { damping: 15, stiffness: 200 }),
+              withSpring(1, { damping: 15, stiffness: 200 })
+            )
           );
         }
       }
@@ -595,11 +606,11 @@ const AthkarFocusScreen = () => {
     .failOffsetY([-50, 50])
     .onStart(() => {
       scheduleOnRN(setShowSwipeIndicator, true);
-      swipeIndicatorOpacity.value = withTiming(1, { duration: 200 });
+      swipeIndicatorOpacity.set(withTiming(1, { duration: 200 }));
     })
     .onUpdate((event) => {
       // Show swipe indicator movement
-      swipeIndicatorTranslateX.value = event.translationX * 0.3;
+      swipeIndicatorTranslateX.set(event.translationX * 0.3);
     })
     .onEnd((event) => {
       const shouldDecrease = isRTL
@@ -610,23 +621,24 @@ const AthkarFocusScreen = () => {
         scheduleOnRN(hapticWarning);
 
         // Animate circle scale for decrement feedback
-        circleScale.value = withSequence(
-          withSpring(0.95, { damping: 20, stiffness: 300 }),
-          withSpring(1, { damping: 20, stiffness: 300 })
+        circleScale.set(
+          withSequence(
+            withSpring(0.95, { damping: 20, stiffness: 300 }),
+            withSpring(1, { damping: 20, stiffness: 300 })
+          )
         );
 
         // Animate count text
-        countOpacity.value = withSequence(
-          withTiming(0.7, { duration: 100 }),
-          withTiming(1, { duration: 100 })
+        countOpacity.set(
+          withSequence(withTiming(0.7, { duration: 100 }), withTiming(1, { duration: 100 }))
         );
 
         scheduleOnRN(handleSwipeDecrement, currentAthkar.id);
       }
 
       // Hide swipe indicator
-      swipeIndicatorOpacity.value = withTiming(0, { duration: 200 });
-      swipeIndicatorTranslateX.value = withTiming(0, { duration: 200 });
+      swipeIndicatorOpacity.set(withTiming(0, { duration: 200 }));
+      swipeIndicatorTranslateX.set(withTiming(0, { duration: 200 }));
       scheduleOnRN(setShowSwipeIndicator, false);
     });
 
@@ -636,21 +648,21 @@ const AthkarFocusScreen = () => {
     .failOffsetX([-50, 50])
     .onStart(() => {
       scheduleOnRN(setShowNavigationIndicator, true);
-      navigationIndicatorOpacity.value = withTiming(1, { duration: 200 });
+      navigationIndicatorOpacity.set(withTiming(1, { duration: 200 }));
       // Scale feedback during gesture start
-      slideScale.value = withTiming(0.98, { duration: 150 });
+      slideScale.set(withTiming(0.98, { duration: 150 }));
     })
     .onUpdate((event) => {
       // Navigation indicator movement
-      navigationIndicatorTranslateY.value = event.translationY * 0.4;
+      navigationIndicatorTranslateY.set(event.translationY * 0.4);
 
       // Content movement during swipe
       const dampenedTranslation = event.translationY * 0.15;
-      slideTranslateY.value = dampenedTranslation;
+      slideTranslateY.set(dampenedTranslation);
 
       // Dynamic opacity based on swipe distance
       const swipeProgress = Math.min(Math.abs(event.translationY) / 100, 1);
-      navigationBlur.value = swipeProgress * 0.3;
+      navigationBlur.set(swipeProgress * 0.3);
     })
     .onEnd((event) => {
       const NAVIGATION_THRESHOLD = 60;
@@ -658,29 +670,33 @@ const AthkarFocusScreen = () => {
       if (event.translationY < -NAVIGATION_THRESHOLD) {
         // Swipe up - Next athkar
         scheduleOnRN(hapticSelection);
-        slideScale.value = withSequence(
-          withSpring(1.02, { damping: 20, stiffness: 400 }),
-          withSpring(1, { damping: 15, stiffness: 300 })
+        slideScale.set(
+          withSequence(
+            withSpring(1.02, { damping: 20, stiffness: 400 }),
+            withSpring(1, { damping: 15, stiffness: 300 })
+          )
         );
         scheduleOnRN(handleSwipeToNext);
       } else if (event.translationY > NAVIGATION_THRESHOLD) {
         // Swipe down - Previous athkar
         scheduleOnRN(hapticSelection);
-        slideScale.value = withSequence(
-          withSpring(1.02, { damping: 20, stiffness: 400 }),
-          withSpring(1, { damping: 15, stiffness: 300 })
+        slideScale.set(
+          withSequence(
+            withSpring(1.02, { damping: 20, stiffness: 400 }),
+            withSpring(1, { damping: 15, stiffness: 300 })
+          )
         );
         scheduleOnRN(handleSwipeToPrevious);
       } else {
         // Return to original state if swipe wasn't strong enough
-        slideScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+        slideScale.set(withSpring(1, { damping: 15, stiffness: 300 }));
       }
 
       // Return animations
-      navigationIndicatorOpacity.value = withTiming(0, { duration: 250 });
-      navigationIndicatorTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-      slideTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-      navigationBlur.value = withTiming(0, { duration: 200 });
+      navigationIndicatorOpacity.set(withTiming(0, { duration: 250 }));
+      navigationIndicatorTranslateY.set(withSpring(0, { damping: 20, stiffness: 300 }));
+      slideTranslateY.set(withSpring(0, { damping: 20, stiffness: 300 }));
+      navigationBlur.set(withTiming(0, { duration: 200 }));
       scheduleOnRN(setShowNavigationIndicator, false);
     });
 
@@ -701,29 +717,29 @@ const AthkarFocusScreen = () => {
 
   const swipeIndicatorStyle = useAnimatedStyle(() => {
     return {
-      opacity: swipeIndicatorOpacity.value,
-      transform: [{ translateX: swipeIndicatorTranslateX.value }],
+      opacity: swipeIndicatorOpacity.get(),
+      transform: [{ translateX: swipeIndicatorTranslateX.get() }],
     };
   });
 
   const navigationIndicatorStyle = useAnimatedStyle(() => {
     return {
-      opacity: navigationIndicatorOpacity.value,
-      transform: [{ translateY: navigationIndicatorTranslateY.value }],
+      opacity: navigationIndicatorOpacity.get(),
+      transform: [{ translateY: navigationIndicatorTranslateY.get() }],
     };
   });
 
   const completionStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ scale: completionScale.value }],
-      opacity: completionScale.value,
+      transform: [{ scale: completionScale.get() }],
+      opacity: completionScale.get(),
     };
   });
 
   const slideStyle = useAnimatedStyle(() => {
     return {
-      opacity: slideOpacity.value,
-      transform: [{ translateY: slideTranslateY.value }, { scale: slideScale.value }],
+      opacity: slideOpacity.get(),
+      transform: [{ translateY: slideTranslateY.get() }, { scale: slideScale.get() }],
     };
   });
 
@@ -819,6 +835,8 @@ const AthkarFocusScreen = () => {
         {/* Main content area — tap zone (flex fills remaining space above audio controls) */}
         <GestureDetector gesture={combinedGestures}>
           <Pressable
+            // Holds text or a control the reader must reach; as one element iOS would hide them.
+            accessible={false}
             flex={1}
             accessibilityRole="button"
             accessibilityLabel={t("athkar.focus.tapToIncrement")}>

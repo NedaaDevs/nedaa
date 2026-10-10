@@ -1,9 +1,8 @@
 import { FC, useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { TextInput } from "react-native";
-import { useTheme } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 // Components
+import { SheetInput } from "@/components/ui/sheet-input";
 import {
   Actionsheet,
   ActionsheetBackdrop,
@@ -43,9 +42,8 @@ type Props = {
   onClose: () => void;
 };
 
-const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
+const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose: closeSheet }) => {
   const { t, i18n } = useTranslation();
-  const theme = useTheme();
   const { batchAddItems, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
   // Subscribed, so the checkmarks follow the collection; isSourceAdded is a stable
   // reference and reads through it would not recompute during render.
@@ -74,15 +72,16 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, categories.length]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setViewMode("categories");
-      setSearchQuery("");
-      setSearchResults([]);
-      setSelectedCategory(null);
-      setSelectedItems(new Map());
-    }
-  }, [isOpen]);
+  // Closing resets the sheet in the same call, so the next open starts fresh even
+  // when the parent keeps it mounted and only flips isOpen later.
+  const onClose = useCallback(() => {
+    setViewMode("categories");
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedCategory(null);
+    setSelectedItems(new Map());
+    closeSheet();
+  }, [closeSheet]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
@@ -266,18 +265,8 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose }) => {
           {/* Search Input */}
           <Card gap="$2" alignItems="center" flexDirection="row" paddingHorizontal="$3" height={44}>
             <Icon as={Search} size="sm" color="$typographySecondary" />
-            {/* Plain RN TextInput, not the styled Input: the styled wrapper's text
-                renders invisibly inside the sheet on Android. */}
-            <TextInput
-              style={{
-                flex: 1,
-                padding: 0,
-                color: theme.typography?.val,
-                textAlign: isRTL ? "right" : "left",
-                writingDirection: isRTL ? "rtl" : "ltr",
-              }}
+            <SheetInput
               placeholder={t("athkar.myAthkar.search")}
-              placeholderTextColor={theme.typographySecondary?.val}
               value={searchQuery}
               onChangeText={handleSearch}
               autoCapitalize="none"

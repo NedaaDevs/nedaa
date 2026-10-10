@@ -1,7 +1,33 @@
+import type { DocumentPickerAsset } from "expo-document-picker";
+
+import { ALARM_TYPE } from "@/constants/Alarm";
+import { PRAYER_ID } from "@/constants/Prayer";
+import { CUSTOM_SOUND_ERROR, CUSTOM_SOUND_MAX_BYTES } from "@/constants/CustomSound";
+import { AppLocale } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import type { NotificationSettings } from "@/types/notification";
 
+import {
+  getCustomSoundUsages,
+  replaceCustomSoundInSettings,
+  getAlarmUsagesForUri,
+  releaseCustomSoundFromAlarms,
+  CUSTOM_SOUND_REPLACEMENT,
+  describeCustomSoundUsages,
+  validateAudioFile,
+} from "@/utils/customSoundManager";
+
 jest.mock("expo-document-picker", () => ({}));
-jest.mock("expo-file-system", () => ({ File: class {}, Paths: { cache: "" } }));
+// The size a file read from disk reports, for a picked asset that carries none.
+let mockDiskSize = 0;
+jest.mock("expo-file-system", () => ({
+  File: class {
+    get size() {
+      return mockDiskSize;
+    }
+  },
+  Paths: { cache: "" },
+}));
 jest.mock("expo-notifications", () => ({ AndroidImportance: { HIGH: 6 } }));
 jest.mock("@/utils/sound", () => ({ getNotificationSound: () => undefined }));
 
@@ -10,6 +36,7 @@ jest.mock("@/utils/sound", () => ({ getNotificationSound: () => undefined }));
 const mockSetAlarmSettings = jest.fn();
 const mockGetAlarmSettings = jest.fn();
 jest.mock("expo-alarm", () => ({
+  ...jest.requireActual("expo-alarm"),
   setAlarmSettings: (...args: unknown[]) => mockSetAlarmSettings(...args),
   getAlarmSettings: (...args: unknown[]) => mockGetAlarmSettings(...args),
 }));
@@ -23,14 +50,6 @@ const mockAlarmState = {
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: { getState: () => mockAlarmState },
 }));
-
-import {
-  getCustomSoundUsages,
-  replaceCustomSoundInSettings,
-  getAlarmUsagesForUri,
-  releaseCustomSoundFromAlarms,
-  CUSTOM_SOUND_REPLACEMENT,
-} from "@/utils/customSoundManager";
 
 const CUSTOM_ID = "custom_1_abc";
 const URI = "content://media/external/audio/media/42";
@@ -186,5 +205,38 @@ describe("releaseCustomSoundFromAlarms", () => {
     // Third write is the rollback of the alarm that had already moved.
     expect(mockSetAlarmSettings).toHaveBeenNthCalledWith(3, "fajr", { sound: URI });
     expect(mockSetSound).not.toHaveBeenCalledWith("fajr", "beep");
+  });
+});
+
+describe("validateAudioFile", () => {
+  const asset = (size?: number) =>
+    ({ name: "athan.mp3", uri: "file:///cache/athan.mp3", size }) as DocumentPickerAsset;
+
+  it("accepts a file at the size limit", () => {
+    expect(validateAudioFile(asset(CUSTOM_SOUND_MAX_BYTES))).toEqual({ valid: true });
+  });
+
+  it("rejects a file over the size limit", () => {
+    expect(validateAudioFile(asset(CUSTOM_SOUND_MAX_BYTES + 1))).toEqual({
+      valid: false,
+      error: CUSTOM_SOUND_ERROR.TOO_LARGE,
+    });
+  });
+
+  it("measures the file on disk when the picker reports no size", () => {
+    mockDiskSize = CUSTOM_SOUND_MAX_BYTES + 1;
+    expect(validateAudioFile(asset()).valid).toBe(false);
+  });
+});
+
+describe("describeCustomSoundUsages", () => {
+  it("names each prayer and joins the list with the locale's comma", () => {
+    const label = describeCustomSoundUsages(
+      [{ type: "prayer", prayerId: PRAYER_ID.FAJR }, { type: "qada" }],
+      [ALARM_TYPE.FRIDAY],
+      i18n.getFixedT(AppLocale.AR)
+    );
+
+    expect(label).toBe("إشعارات صلاة الفجر، إشعارات القضاء الافتراضية، منبّه الجمعة");
   });
 });

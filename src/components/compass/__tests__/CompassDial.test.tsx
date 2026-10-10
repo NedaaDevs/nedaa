@@ -8,7 +8,17 @@ jest.mock("react-native-reanimated", () => {
   return {
     __esModule: true,
     default: { View },
-    useSharedValue: (value: unknown) => ({ value }),
+    // A shared value is a box with a getter and a setter; the setter accepts an updater.
+    useSharedValue: (value: unknown) => {
+      const sv = {
+        value,
+        get: () => sv.value,
+        set: (next: unknown) => {
+          sv.value = typeof next === "function" ? next(sv.value) : next;
+        },
+      };
+      return sv;
+    },
     useAnimatedStyle: () => ({}),
     withSpring: (value: unknown) => value,
     withTiming: (value: unknown) => value,
@@ -18,7 +28,7 @@ jest.mock("moti", () => {
   const { View } = jest.requireActual("react-native");
   return { MotiView: View };
 });
-jest.mock("tamagui", () => ({
+jest.mock("@/components/ui/theme-color", () => ({
   useTheme: () => new Proxy({}, { get: () => ({ val: "#123456" }) }),
 }));
 jest.mock("@/components/ui/box", () => {
@@ -33,6 +43,7 @@ const baseProps = {
   reduceMotion: true,
   accessibilityLabel: "dial",
   translateDirection: (key: string) => key,
+  fontFamily: "IBMPlexSansArabic-Regular",
 };
 
 const renderDial = (props: Partial<React.ComponentProps<typeof CompassDial>> = {}) => {

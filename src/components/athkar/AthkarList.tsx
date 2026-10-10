@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -153,9 +153,9 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
     cancelAnimation(backgroundProgress);
     cancelAnimation(scaleValue);
 
-    progress.value = withTiming(0, { duration: 200 });
-    backgroundProgress.value = withTiming(0, { duration: 200 });
-    scaleValue.value = withTiming(1, { duration: 100 });
+    progress.set(withTiming(0, { duration: 200 }));
+    backgroundProgress.set(withTiming(0, { duration: 200 }));
+    scaleValue.set(withTiming(1, { duration: 100 }));
   };
 
   // Handle completion - trigger reset
@@ -181,9 +181,9 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
     hapticSelection();
 
     // Start animations
-    progress.value = withTiming(100, { duration: 3000 });
-    backgroundProgress.value = withTiming(1, { duration: 3000 });
-    scaleValue.value = withTiming(0.95, { duration: 100 });
+    progress.set(withTiming(100, { duration: 3000 }));
+    backgroundProgress.set(withTiming(1, { duration: 3000 }));
+    scaleValue.set(withTiming(0.95, { duration: 100 }));
 
     // Use a ref to track if we should continue the animation
     const shouldContinue = { value: true };
@@ -232,12 +232,12 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
   const buttonAnimatedStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: resetButtonColor,
-      transform: [{ scale: scaleValue.value }],
+      transform: [{ scale: scaleValue.get() }],
     };
   });
 
   const progressOverlayStyle = useAnimatedStyle(() => {
-    const width = interpolate(progress.value, [0, 100], [0, 1]);
+    const width = interpolate(progress.get(), [0, 100], [0, 1]);
 
     return {
       position: "absolute" as const,

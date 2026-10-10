@@ -42,6 +42,7 @@ import { LocationMode } from "@/enums/location";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
+import { usePlace } from "@/hooks/usePlace";
 
 // Components
 import LocationUpdateProgress from "@/components/LocationUpdateProgress";
@@ -174,8 +175,8 @@ const KeepLocationUpdated = () => {
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
 
-  const { localizedLocation, locationDetails, autoUpdateLocation, setAutoUpdateLocation } =
-    useLocationStore();
+  const { locationDetails, autoUpdateLocation, setAutoUpdateLocation } = useLocationStore();
+  const place = usePlace();
   const locationMode = useLocationStore((state) => state.locationMode);
   const manualLocation = useLocationStore((state) => state.manualLocation);
   const clearManualLocation = useLocationStore((state) => state.clearManualLocation);
@@ -189,21 +190,21 @@ const KeepLocationUpdated = () => {
 
   // Re-check permission when app becomes active (user returns from settings)
   useEffect(() => {
+    const checkPermissionStatus = async () => {
+      setIsCheckingPermission(true);
+      try {
+        const { granted, canRequestAgain } = await checkLocationPermission();
+        setHasPermission(granted);
+        setCanAskPermission(canRequestAgain);
+      } catch (error) {
+        console.error("Failed to check permission:", error);
+      } finally {
+        setIsCheckingPermission(false);
+      }
+    };
+
     checkPermissionStatus();
   }, [becameActiveAt]);
-
-  const checkPermissionStatus = async () => {
-    setIsCheckingPermission(true);
-    try {
-      const { granted, canRequestAgain } = await checkLocationPermission();
-      setHasPermission(granted);
-      setCanAskPermission(canRequestAgain);
-    } catch (error) {
-      console.error("Failed to check permission:", error);
-    } finally {
-      setIsCheckingPermission(false);
-    }
-  };
 
   const handleRequestPermission = async () => {
     hapticMedium();
@@ -314,7 +315,7 @@ const KeepLocationUpdated = () => {
           <HStack alignItems="center" gap="$3" padding="$4">
             <Icon as={Info} color="$warning" size="md" />
             <Text size="sm" color="$typography" flex={1}>
-              {t("location.permission.deniedMessage")}
+              {t("today.defaultLocation.body")}
             </Text>
           </HStack>
         </Card>
@@ -331,8 +332,8 @@ const KeepLocationUpdated = () => {
           alignItems="center"
           accessibilityRole="button"
           accessibilityLabel={t("a11y.location.refresh", {
-            city: localizedLocation.city ?? locationDetails.address?.city,
-            country: localizedLocation.country ?? locationDetails.address?.country,
+            city: place.city,
+            country: place.country,
           })}
           accessibilityHint={t("a11y.location.refreshHint")}
           accessibilityState={{ disabled: updateState.isUpdating }}>
@@ -344,8 +345,7 @@ const KeepLocationUpdated = () => {
                   {t("location.current")}
                 </Text>
                 <Text size="xl" fontWeight="600" color="$typography">
-                  {localizedLocation.city ?? locationDetails.address?.city},{" "}
-                  {localizedLocation.country ?? locationDetails.address?.country}
+                  {place.name}
                 </Text>
               </VStack>
             </HStack>
@@ -424,7 +424,7 @@ const KeepLocationUpdated = () => {
             onPress={() => {
               useLocationStore.setState({
                 pendingCityChange: {
-                  currentCity: locationDetails.address?.city || "Current",
+                  currentCity: place.city ?? t("location.current"),
                   newCity: "Test City",
                 },
                 showCityChangeModal: true,

@@ -1,0 +1,277 @@
+name: Android Release Check
+
+# Validates the R8 release build; releases come from scripts/build-local.ts.
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to check
+        required: true
+        default: v3
+        type: string
+  pull_request:
+    paths: &paths
+      - ".github/workflows/android-release-check.yml"
+      - ".github/actions/setup-android-build/**"
+      - ".github/actions/setup-deps/**"
+      - ".maestro/ci/**"
+      - "!.maestro/ci/baselines/**"
+      - "android/**"
+      - "modules/**/android/**"
+      - "patches/**"
+      - "package.json"
+      - "bun.lock"
+      - ".bun-version"
+      - "app.json"
+      - "app.config.js"
+      - "scripts/ci/**"
+      - "scripts/check-16kb-alignment.ts"
+      - "scripts/elf-alignment.ts"
+      - "scripts/verify-hms-build.ts"
+      - "scripts/hms-artifact-markers.ts"
+      - "babel.config.js"
+      - "metro.config.js"
+      - "tsconfig.json"
+      - "src/constants/E2E.ts"
+  # A schedule fires only from the default branch; v3 pushes check v3 directly.
+  push:
+    branches: [v3]
+    paths: *paths
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.ref || (github.event_name == 'schedule' && 'v3') || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  # A schedule runs the default branch's copy of this file, so it names v3 itself.
+  CHECK_REF: ${{ inputs.ref || (github.event_name == 'schedule' && 'v3') || '' }}
+  ARTIFACT: android-release-check-${{ github.run_id }}-${{ github.run_attempt }}
+  # Pull request runs restore caches and never save them.
+  CACHE_READ_ONLY: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build GMS release (x86_64 + arm64-v8a)
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CHECK_REF }}
+          persist-credentials: false
+
+      - name: Set up the Android build
+        uses: ./.github/actions/setup-android-build # zizmor: ignore[self-repository] -- actionlint rejects $/
+        with:
+          ccache-variant: gms-x86_64-arm64-v8a
+          cache-read-only: ${{ env.CACHE_READ_ONLY }}
+
+      - name: Write public build config
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
+          EXPO_PUBLIC_TELEGRAM_USERNAME: ${{ vars.EXPO_PUBLIC_TELEGRAM_USERNAME }}
+          EXPO_PUBLIC_WHATSAPP_NUMBER: ${{ vars.EXPO_PUBLIC_WHATSAPP_NUMBER }}
+        run: bash scripts/ci/write-public-env.sh
+
+      - name: Build release APK
+        working-directory: android
+        run: >-
+          ./gradlew :app:assembleRelease
+          -PreactNativeArchitectures=x86_64,arm64-v8a
+          --build-cache --console=plain
+
+      # Without these rules ExpoAlarm.scheduleAlarm rejects with an NPE.
+      - name: Check R8 kept the Expo Record annotations
+        env:
+          MAPPING_DIR: android/app/build/outputs/mapping/release
+        run: |
+          test -s "$MAPPING_DIR/mapping.txt" || { echo "::error::R8 wrote no mapping.txt"; exit 1; }
+          status=0
+          for annotation in expo.modules.kotlin.records.Field expo.modules.kotlin.records.Required; do
+            grep -qxF -- "-keep @interface $annotation" "$MAPPING_DIR/configuration.txt" ||
+              { echo "::error::No keep rule for $annotation"; status=1; }
+            grep -qxF -- "$annotation" "$MAPPING_DIR/seeds.txt" ||
+              { echo "::error::R8 did not keep $annotation"; status=1; }
+            grep -qxF -- "$annotation -> $annotation:" "$MAPPING_DIR/mapping.txt" ||
+              { echo "::error::R8 renamed $annotation"; status=1; }
+          done
+          exit "$status"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  static-checks:
+    name: Static checks (16 KB pages)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BUILD_TOOLS: "36.0.0"
+      APK: release-check/app-release.apk
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CHECK_REF }}
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+
+      - name: Download APK
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: release-check
+
+      # Checks the stored .so offsets in the APK; -P 16 needs build-tools 35+.
+      - name: Check 16 KB zip alignment
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;$BUILD_TOOLS" >/dev/null
+          report="$RUNNER_TEMP/zipalign.txt"
+          if ! "$ANDROID_HOME/build-tools/$BUILD_TOOLS/zipalign" -c -P 16 -v 4 "$APK" > "$report"; then
+            grep -v "(OK" "$report"
+            exit 1
+          fi
+          tail -n 1 "$report"
+
+      - name: Check 16 KB ELF alignment
+        run: bun scripts/check-16kb-alignment.ts "$APK"
+
+  emulator:
+    name: Emulator (API 35 x86_64)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      API_LEVEL: 35
+      APK: release-check/app-release.apk
+      MAESTRO_VERSION: "2.11.0"
+      MAESTRO_SHA256: "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CHECK_REF }}
+          persist-credentials: false
+
+      - name: Download APK
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: release-check
+
+      - name: Set up Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Maestro
+        run: |
+          archive="$RUNNER_TEMP/maestro.zip"
+          curl -fsSL -o "$archive" "https://github.com/mobile-dev-inc/maestro/releases/download/cli-${MAESTRO_VERSION}/maestro.zip"
+          echo "${MAESTRO_SHA256}  ${archive}" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          echo "MAESTRO=$RUNNER_TEMP/maestro/bin/maestro" >> "$GITHUB_ENV"
+          echo "MAESTRO_CLI_NO_ANALYTICS=1" >> "$GITHUB_ENV"
+
+      - name: Check the release APK on the emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          target: google_apis
+          arch: x86_64
+          cores: 3
+          ram-size: 4096M
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash scripts/ci/android-emulator-check.sh "$APK" emulator-check
+
+      # Logcat, dumpsys and screens of a throwaway device; nothing secret.
+      - name: Upload emulator evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: emulator-check-${{ github.run_id }}-${{ github.run_attempt }}
+          path: emulator-check
+          if-no-files-found: ignore
+          retention-days: 7
+
+  hms:
+    name: Build HMS release (arm64-v8a)
+    # The AppGallery Connect secret never reaches pull request runs.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      BUILD_VARIANT: hms
+      AAB: android/app/build/outputs/bundle/release/app-release.aab
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CHECK_REF }}
+          persist-credentials: false
+
+      - name: Set up the Android build
+        uses: ./.github/actions/setup-android-build # zizmor: ignore[self-repository] -- actionlint rejects $/
+        with:
+          ccache-variant: hms-arm64-v8a
+          cache-read-only: ${{ env.CACHE_READ_ONLY }}
+          # The build cache would hold resources generated from agconnect-services.json.
+          gradle-cache-disabled: "true"
+
+      - name: Write public build config
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
+          EXPO_PUBLIC_TELEGRAM_USERNAME: ${{ vars.EXPO_PUBLIC_TELEGRAM_USERNAME }}
+          EXPO_PUBLIC_WHATSAPP_NUMBER: ${{ vars.EXPO_PUBLIC_WHATSAPP_NUMBER }}
+        run: bash scripts/ci/write-public-env.sh
+
+      # android/.gitignore keeps this file out of the tree.
+      - name: Write AppGallery Connect config
+        env:
+          AGCONNECT_SERVICES_JSON: ${{ secrets.AGCONNECT_SERVICES_JSON }}
+        run: |
+          if [ -z "$AGCONNECT_SERVICES_JSON" ]; then
+            echo "::error::The AGCONNECT_SERVICES_JSON secret is required for the HMS build."
+            exit 1
+          fi
+          install -m 600 /dev/null android/app/agconnect-services.json
+          printf '%s' "$AGCONNECT_SERVICES_JSON" > android/app/agconnect-services.json
+
+      - name: Build HMS release AAB
+        working-directory: android
+        run: >-
+          ./gradlew :app:bundleRelease
+          -PreactNativeArchitectures=arm64-v8a
+          --console=plain
+
+      - name: Verify HMS dependency graph and AAB
+        run: bun scripts/verify-hms-build.ts "$AAB"
+
+      # Huawei ships libTransform.so 4 KB-aligned; AppGallery accepts it.
+      - name: Check 16 KB ELF alignment
+        run: bun scripts/check-16kb-alignment.ts "$AAB" --allow arm64-v8a/libTransform.so

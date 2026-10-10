@@ -25,7 +25,8 @@ const mockHapticSelection = jest.fn();
 const mockHapticLight = jest.fn();
 const mockHapticMedium = jest.fn();
 
-jest.mock("expo-router/react-navigation", () => ({
+jest.mock("expo-router", () => ({
+  ...jest.requireActual("expo-router"),
   useIsFocused: () => true,
 }));
 
@@ -36,15 +37,22 @@ jest.mock("lucide-react-native", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, string>) => {
+    t: (key: string, options?: Record<string, unknown>) => {
+      // The dial label carries its options, so a test can read the count it was given.
+      if (key === "a11y.compass.dial") return JSON.stringify(options);
       if (key === "compass.accuracyDegrees") return `±${options?.degrees}°`;
       if (key === "compass.locationAccuracyMeters") return `±${options?.meters} m`;
       return key;
     },
   }),
+  // The screen reaches the i18n bootstrap through the font context.
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
-jest.mock("@/components/TopBar", () => () => null);
+// The font context reads the locale from the app store, which persists to SQLite.
+jest.mock("@/contexts/FontContext", () => ({ useFontFamily: () => "IBMPlexSansArabic-Regular" }));
+
+jest.mock("@/components/ui/screen-header", () => ({ ScreenHeader: () => null }));
 jest.mock("@/components/compass/CompassDial", () => ({
   CompassDial: (props: Record<string, unknown>) => mockCompassDial(props),
 }));
@@ -197,6 +205,17 @@ describe("CompassScreen Qibla reliability", () => {
       })
     );
     expect(hasEnableLocation).toBe(false);
+  });
+
+  // A numeric count lets each locale pick the plural form of "degree".
+  it("labels the dial with the heading as a count", async () => {
+    const tree = await renderScreen();
+    const dialProps = mockCompassDial.mock.calls[0]?.[0];
+    act(() => tree.unmount());
+
+    expect(JSON.parse(String(dialProps?.accessibilityLabel))).toEqual(
+      expect.objectContaining({ count: reliableCompass.heading })
+    );
   });
 
   it("falls back to a plain compass with an enable-location line when no fix exists", async () => {

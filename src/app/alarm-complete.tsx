@@ -18,6 +18,7 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 // Well-established morning adhkar, shown in Arabic across every locale with a
 // localized translation below it. Invariant scripture, so it lives here rather
@@ -135,13 +136,13 @@ export default function AlarmCompleteScreen() {
                     <Text textAlign="center" size="lg" fontWeight="600" color="$warning">
                       {t("alarm.complete.streak", { count: streak })}
                     </Text>
-                    <StreakShareButton variant="fajr" count={streak} />
+                    <StreakShareButton variant={PRAYER_ID.FAJR} count={streak} />
                   </HStack>
                 )}
 
                 {isFajr && sunriseMinutes != null && (
                   <Text textAlign="center" size="sm" color="$typographySecondary">
-                    {t("alarm.complete.sunriseIn", { minutes: sunriseMinutes })}
+                    {t("alarm.complete.sunriseIn", { count: sunriseMinutes })}
                   </Text>
                 )}
 
@@ -158,7 +159,7 @@ export default function AlarmCompleteScreen() {
                       lineHeight={34}
                       textAlign="center"
                       color="$typography"
-                      style={{ fontFamily: "IBMPlexSans-Regular" }}>
+                      style={{ fontFamily: "IBMPlexSansArabic-Regular" }}>
                       {MORNING_DHIKR_AR}
                     </Text>
                     <Text

@@ -6,9 +6,10 @@ import {
   Text as TamaguiText,
   createStyledContext,
   withStaticProperties,
-  useTheme,
 } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { useTextScale } from "@/hooks/useTextScale";
 
@@ -20,10 +21,10 @@ const BadgeContext = createStyledContext({
   size: "md" as BadgeSize,
 });
 
-const ICON_SIZE: Record<BadgeSize, number> = {
-  sm: 12,
-  md: 14,
-  lg: 16,
+const ICON_SIZE: Record<BadgeSize, IconSize> = {
+  sm: "2xs",
+  md: "xs",
+  lg: "sm",
 };
 
 const ACTION_THEME_KEY: Record<BadgeAction, string> = {
@@ -41,7 +42,7 @@ const BadgeFrame = styled(XStack, {
   name: "Badge",
   context: BadgeContext,
   alignItems: "center",
-  borderRadius: "$1",
+  borderRadius: "$chip",
 
   variants: {
     action: {
@@ -71,9 +72,9 @@ const BadgeFrame = styled(XStack, {
       outline: { borderWidth: 1 },
     },
     size: {
-      sm: { paddingHorizontal: "$1", paddingVertical: 2 },
-      md: { paddingHorizontal: "$2", paddingVertical: "$1" },
-      lg: { paddingHorizontal: "$3", paddingVertical: "$1" },
+      sm: { paddingHorizontal: "$tight", paddingVertical: "$0.5" },
+      md: { paddingHorizontal: "$inline", paddingVertical: "$tight" },
+      lg: { paddingHorizontal: "$stack", paddingVertical: "$tight" },
     },
   } as const,
 
@@ -92,7 +93,7 @@ const BadgeTextFrame = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "400",
   textTransform: "uppercase",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: "$tight" }),
 
   variants: {
     action: {
@@ -115,13 +116,12 @@ const BadgeTextFrame = styled(TamaguiText, {
 // Label font size per Badge size variant; the app text-scale multiplies it.
 const BADGE_FONT_SIZE: Record<string, number> = { sm: 10, md: 10, lg: 12 };
 
-type BadgeTextProps = GetProps<typeof BadgeTextFrame> & { scaleOverride?: number };
+type BadgeTextProps = GetProps<typeof BadgeTextFrame>;
 
 const BadgeText = React.forwardRef<React.ComponentRef<typeof BadgeTextFrame>, BadgeTextProps>(
-  ({ fontSize, scaleOverride, ...props }, ref) => {
+  ({ fontSize, ...props }, ref) => {
     const ctx = BadgeContext.useStyledContext();
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     const base =
       typeof fontSize === "number" ? fontSize : (BADGE_FONT_SIZE[ctx.size ?? "md"] ?? 10);
     return <BadgeTextFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
@@ -145,7 +145,7 @@ const BadgeIcon: React.FC<BadgeIconProps> = ({ as: IconComponent, size: sizeProp
   const resolvedColor =
     (theme as Record<string, { val: string }>)[key]?.val ?? theme.typography.val;
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
 };
 BadgeIcon.displayName = "BadgeIcon";
 

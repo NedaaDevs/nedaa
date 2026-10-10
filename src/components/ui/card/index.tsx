@@ -6,16 +6,17 @@ import type { GetProps } from "tamagui";
 const CardFrame = styled(YStack, {
   name: "Card",
   backgroundColor: "$backgroundSecondary",
-  borderRadius: "$6",
-  padding: "$4",
+  borderRadius: "$card",
+  padding: "$group",
 
   variants: {
-    // Radius climbs with padding so a card reads at the same "softness" at any
-    // size. md is the default and matches the grouped list radius.
+    // Size changes the inset, not the shape: a card is a card at any size. The
+    // small one reads as a chip, which is its own intent.
     size: {
-      sm: { padding: "$3", borderRadius: "$4" },
-      md: { padding: "$4", borderRadius: "$6" },
-      lg: { padding: "$6", borderRadius: "$7" },
+      sm: { padding: "$stack", borderRadius: "$chip" },
+      md: { padding: "$group", borderRadius: "$card" },
+      // 24 has no named step; the vocabulary stops at section (20).
+      lg: { padding: "$6", borderRadius: "$card" },
     },
     variant: {
       // Flat surface. The default: surfaces separate from the page by radius and
@@ -45,7 +46,7 @@ const CardFrame = styled(YStack, {
       // own padding, clipped so the first and last row inherit the corners.
       grouped: {
         padding: 0,
-        borderRadius: "$6",
+        borderRadius: "$card",
         overflow: "hidden",
       },
     },
@@ -61,9 +62,10 @@ const CardFrame = styled(YStack, {
 // hand-rolled `<Pressable>` surface swaps over without changing feel.
 const CardPressableFrame = styled(CardFrame, {
   name: "CardPressable",
-  role: "button",
-  minHeight: 44,
-  minWidth: 44,
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
+  minHeight: "$target",
+  minWidth: "$target",
   pressStyle: {
     opacity: 0.7,
   },
@@ -79,9 +81,11 @@ const CardPressableFrame = styled(CardFrame, {
 
 /** Same reason as the `Pressable` primitive: the `disabled` variant only dims. */
 const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
-  ({ onPress, onLongPress, disabled, accessibilityState, ...props }, ref) => (
+  ({ onPress, onLongPress, disabled, accessibilityState, role, ...props }, ref) => (
     <CardPressableFrame
       ref={ref}
+      // A button unless the caller names a role; `role` would override theirs.
+      role={role ?? (props.accessibilityRole ? undefined : "button")}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
       onLongPress={disabled ? undefined : onLongPress}

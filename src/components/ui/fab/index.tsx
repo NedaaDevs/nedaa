@@ -6,9 +6,10 @@ import {
   Text as TamaguiText,
   createStyledContext,
   withStaticProperties,
-  useTheme,
 } from "tamagui";
+import { useThemeColor } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { useTextScale } from "@/hooks/useTextScale";
 
@@ -20,10 +21,10 @@ const FabContext = createStyledContext({
   size: "md" as FabSize,
 });
 
-const ICON_SIZE: Record<FabSize, number> = {
-  sm: 18,
-  md: 20,
-  lg: 24,
+const ICON_SIZE: Record<FabSize, IconSize> = {
+  sm: "md",
+  md: "lg",
+  lg: "xl",
 };
 
 // --- FabFrame ---
@@ -35,7 +36,7 @@ const FabFrame = styled(View, {
   justifyContent: "center",
   flexDirection: "row",
   position: "absolute",
-  borderRadius: 999,
+  borderRadius: "$pill",
   backgroundColor: "$primary",
   shadowColor: "$typography",
   shadowOffset: { width: 0, height: 2 },
@@ -47,17 +48,17 @@ const FabFrame = styled(View, {
 
   variants: {
     size: {
-      sm: { width: 40, height: 40 },
-      md: { width: 48, height: 48 },
-      lg: { width: 56, height: 56 },
+      sm: { width: "$10", height: "$10" },
+      md: { width: "$12", height: "$12" },
+      lg: { width: "$14", height: "$14" },
     },
     placement: {
-      "top right": { top: 16, right: 16 },
-      "top left": { top: 16, left: 16 },
-      "bottom right": { bottom: 16, right: 16 },
-      "bottom left": { bottom: 16, left: 16 },
-      "top center": { top: 16, alignSelf: "center" },
-      "bottom center": { bottom: 16, alignSelf: "center" },
+      "top right": { top: "$group", right: "$group" },
+      "top left": { top: "$group", left: "$group" },
+      "bottom right": { bottom: "$group", right: "$group" },
+      "bottom left": { bottom: "$group", left: "$group" },
+      "top center": { top: "$group", alignSelf: "center" },
+      "bottom center": { bottom: "$group", alignSelf: "center" },
     },
   } as const,
 
@@ -78,19 +79,12 @@ type FabIconProps = {
 const FabIcon: React.FC<FabIconProps> = ({
   as: IconComponent,
   size: sizeProp,
-  color: colorProp,
+  color = "$typographyContrast",
 }) => {
   const ctx = FabContext.useStyledContext();
-  const theme = useTheme();
-
   const iconSize = sizeProp ?? ICON_SIZE[ctx.size ?? "md"];
-  const resolvedColor = colorProp
-    ? colorProp.startsWith("$")
-      ? ((theme as Record<string, { val: string }>)[colorProp.slice(1)]?.val ?? colorProp)
-      : colorProp
-    : theme.typographyContrast.val;
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={useThemeColor(color)} />;
 };
 FabIcon.displayName = "FabIcon";
 
@@ -102,7 +96,7 @@ const FabLabelFrame = styled(TamaguiText, {
   fontFamily: "$body",
   fontWeight: "600",
   color: "$typographyContrast",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 4 }),
+  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: "$tight" }),
 
   // Sizes carry no styles: FabLabel computes the fontSize from the size
   // context so the app text-scale can multiply it.
@@ -118,13 +112,12 @@ const FabLabelFrame = styled(TamaguiText, {
 // Label font size per Fab size variant; the app text-scale multiplies it.
 const FAB_FONT_SIZE: Record<string, number> = { sm: 10, md: 12, lg: 14 };
 
-type FabLabelWrapperProps = GetProps<typeof FabLabelFrame> & { scaleOverride?: number };
+type FabLabelWrapperProps = GetProps<typeof FabLabelFrame>;
 
 const FabLabel = React.forwardRef<React.ComponentRef<typeof FabLabelFrame>, FabLabelWrapperProps>(
-  ({ fontSize, scaleOverride, ...props }, ref) => {
+  ({ fontSize, ...props }, ref) => {
     const ctx = FabContext.useStyledContext();
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     const base = typeof fontSize === "number" ? fontSize : (FAB_FONT_SIZE[ctx.size ?? "md"] ?? 12);
     return <FabLabelFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
   }

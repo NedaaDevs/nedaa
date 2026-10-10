@@ -1,121 +1,45 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { parseISO, differenceInSeconds, formatDistance } from "date-fns";
-
-// Utils
-import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale } from "@/utils/date";
-
-// Stores
+import type { PrayerId } from "@/constants/Prayer";
+import { useBoundaryClock } from "@/hooks/useBoundaryClock";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
+import { useClockOverride } from "@/hooks/useTodayClock";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
-import { useAppStore } from "@/stores/app";
+import { focusCount, type CountSettings, type FocusCount } from "@/utils/focusCount";
+import type { StoredDays } from "@/utils/phase";
+import { prayerCount } from "@/utils/prayerCount";
 
-// Types
-import type { Prayer } from "@/types/prayerTimes";
+const SECOND_MS = 1000;
 
-type TimerMode = "general" | "countdown" | "iqama";
+/** Reads a figure at `now` from the stored days. */
+type Counter = (now: Date, days: StoredDays, settings: CountSettings) => FocusCount | null;
 
-type TimerResult = {
-  mode: TimerMode;
-  display: string;
-  iqamaPrayerName: string | null;
+/** A figure on Today's clock, ticking each second while it shows seconds. */
+const useFigure = (count: Counter): FocusCount | null => {
+  const yesterday = usePrayerTimesStore((state) => state.yesterdayTimings);
+  const today = usePrayerTimesStore((state) => state.todayTimings);
+  const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
+  const seconds = usePreferencesStore((state) => state.showSeconds);
+  const settings: CountSettings = {
+    seconds,
+  };
+  const days = { yesterday, today, tomorrow };
+
+  const override = useClockOverride();
+  const minute = useMinuteClock();
+  const coarse = count(override ?? minute, days, settings);
+  // Seconds matter only while the figure shows them; a pinned clock stays put.
+  const ticking = Boolean(coarse?.precise) && !override;
+  const second = useBoundaryClock(SECOND_MS, ticking);
+  // The second clock holds its last tick until the first new one; take the later.
+  const latest = second > minute ? second : minute;
+
+  return ticking ? count(latest, days, settings) : coarse;
 };
 
-export const useCountdownTimer = (
-  nextPrayer: Prayer | null,
-  previousPrayer: Prayer | null
-): TimerResult => {
-  // Real instant: stored times already carry the location's offset.
-  const [now, setNow] = useState(() => new Date());
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { locale } = useAppStore();
-  const { countdownEnabled, countdownMinutes, iqamaCountUpEnabled, iqamaCountUpMinutes } =
-    usePreferencesStore();
+/** The focus figure: until the next prayer, or since the last when flipped. */
+export const useCountdownTimer = (flipped: boolean): FocusCount | null =>
+  useFigure((now, days, settings) => focusCount(now, days, settings, flipped));
 
-  const timerMode = useMemo((): TimerMode => {
-    if (iqamaCountUpEnabled && previousPrayer) {
-      const prevTime = parseISO(previousPrayer.time);
-      const secsSince = differenceInSeconds(now, prevTime);
-      if (secsSince >= 0 && secsSince <= iqamaCountUpMinutes * 60) {
-        return "iqama";
-      }
-    }
-
-    if (countdownEnabled && nextPrayer) {
-      const nextTime = parseISO(nextPrayer.time);
-      const secsUntil = differenceInSeconds(nextTime, now);
-      if (secsUntil > 0 && secsUntil <= countdownMinutes * 60) {
-        return "countdown";
-      }
-    }
-
-    return "general";
-  }, [
-    now,
-    nextPrayer,
-    previousPrayer,
-    countdownEnabled,
-    countdownMinutes,
-    iqamaCountUpEnabled,
-    iqamaCountUpMinutes,
-  ]);
-
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    const intervalMs = timerMode === "general" ? 30_000 : 1_000;
-
-    intervalRef.current = setInterval(() => {
-      setNow(new Date());
-    }, intervalMs);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [timerMode]);
-
-  const formatMMSS = useCallback((totalSeconds: number): string => {
-    const absSeconds = Math.abs(Math.floor(totalSeconds));
-    const mins = Math.floor(absSeconds / 60);
-    const secs = absSeconds % 60;
-    const raw = `${mins}:${secs.toString().padStart(2, "0")}`;
-    return formatNumberToLocale(raw);
-  }, []);
-
-  const display = useMemo((): string => {
-    if (timerMode === "countdown" && nextPrayer) {
-      const nextTime = parseISO(nextPrayer.time);
-      const secsUntil = differenceInSeconds(nextTime, now);
-      return formatMMSS(secsUntil);
-    }
-
-    if (timerMode === "iqama" && previousPrayer) {
-      const prevTime = parseISO(previousPrayer.time);
-      const secsSince = differenceInSeconds(now, prevTime);
-      return formatMMSS(secsSince);
-    }
-
-    if (nextPrayer) {
-      const nextTime = parseISO(nextPrayer.time);
-      const timeRemaining = formatDistance(nextTime, now, {
-        addSuffix: false,
-        locale: getDateLocale(locale),
-      });
-      return formatNumberToLocale(timeRemaining);
-    }
-
-    return "";
-  }, [timerMode, now, nextPrayer, previousPrayer, locale, formatMMSS]);
-
-  const iqamaPrayerName = useMemo((): string | null => {
-    if (timerMode === "iqama" && previousPrayer) {
-      return previousPrayer.name;
-    }
-    return null;
-  }, [timerMode, previousPrayer]);
-
-  return { mode: timerMode, display, iqamaPrayerName };
-};
+/** One prayer's figure, to or from the time its Today card shows. */
+export const usePrayerCountdown = (id: PrayerId, flipped: boolean): FocusCount | null =>
+  useFigure((now, days, settings) => prayerCount(id, now, days, settings, flipped));

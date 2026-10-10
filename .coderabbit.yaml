@@ -1,0 +1,157 @@
+language: en-US
+tone_instructions: "Terse and technical. Lead with the defect and its fix; skip praise and restating the diff."
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  poem: false
+  in_progress_fortune: false
+  suggested_reviewers: false
+  related_issues: false
+  assess_linked_issues: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    # PRs here are small and single-author; pausing only hides reviews.
+    auto_pause_after_reviewed_commits: 0
+    base_branches:
+      - master
+      - v3
+
+  # Generated, binary or lock files: reviewing them costs time and finds nothing.
+  path_filters:
+    - "!**/bun.lock"
+    - "!ios/Podfile.lock"
+    - "!**/*.pbxproj"
+    - "!**/*.xcworkspace/**"
+    - "!ios/Pods/**"
+    - "!android/app/build/**"
+    - "!**/build/**"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.ttf"
+    - "!**/*.otf"
+    - "!**/*.mp3"
+    - "!**/*.db"
+    - "!assets/**"
+    - "!local-data/**"
+
+  path_instructions:
+    - path: "src/**/*.{ts,tsx}"
+      instructions: |
+        - Imports use the `@/` alias, never relative `./` paths.
+        - No magic strings: ids, storage keys, modes and types the code branches on live in
+          `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.
+          Flag a hand-written list beside such a constant, and unions built with `Exclude`.
+        - Prefer arrow-function expressions over function declarations.
+        - Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.
+        - Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole
+          component; flag it.
+        - A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with
+          try/finally instead.
+        - Comments describe the present code and its reason in one short clause. Flag comments that
+          narrate a change ("now", "no longer", "instead of"), cite plans or tasks, or state a
+          guarantee the code does not hold.
+    - path: "scripts/**/*.ts"
+      instructions: |
+        - Build and CI tooling, not app code: its constants live in the script module as
+          `const X = {...} as const` with a derived union, not in `src/constants`.
+        - Relative imports between scripts are fine; `@/` is only for reaching into `src/`.
+        - Prefer arrow-function expressions. Fail closed on malformed input.
+        - Comments describe the present code and its reason in one short clause.
+    - path: "src/components/**/*.tsx"
+      instructions: |
+        - Radius uses the five intents only: `$chip`, `$control`, `$card`, `$sheet`, `$pill`.
+          Space and size use tokens, not raw numbers. Colour comes from theme keys.
+        - A value shown on two surfaces is drawn by one component; flag a second renderer.
+        - Interactive elements need accessibilityRole, an accessibilityLabel from `t("a11y.*")`,
+          accessibilityState when stateful, and a 44pt minimum target.
+        - Inside `Sheet.ScrollView`, `gap` belongs on an inner stack, not `contentContainerStyle`.
+    - path: "src/app/**/*.tsx"
+      instructions: |
+        - Same accessibility rules as components. Route paths are frozen: flag a renamed or moved
+          route file.
+    - path: "src/localization/locales/*.json"
+      instructions: |
+        - All four locales (ar, en, ms, ur) must carry the same keys. A string with `{{count}}` in
+          Arabic needs all six plural forms (_zero, _one, _two, _few, _many, _other), each a full
+          sentence. Flag a count phrase slotted into a fixed sentence.
+        - The app name is reached through `$t(brand.name)`, never hand-written.
+        - Latin text inside Arabic is wrapped in U+2066…U+2069 isolates.
+        - Do not rewrite Quran text, hadith or du'a wording; flag only clear typos.
+    - path: "src/utils/readerSpread.ts"
+      instructions: "Protected Quran reader layout. Flag ANY change here as needing an explicit owner approval and a device test."
+    - path: "src/hooks/useReaderLayout.ts"
+      instructions: "Protected Quran reader layout. Flag ANY change here as needing an explicit owner approval and a device test."
+    - path: "**/__tests__/**"
+      instructions: |
+        - A test checks behaviour, not a copied constant. Two APIs that must agree get one test that
+          runs both over the same inputs.
+        - Prefer `userEvent` and role queries over `fireEvent` and testIDs.
+        - Domain strings in tests come from the same constants as production.
+    - path: "modules/**/*.{kt,swift}"
+      instructions: |
+        - Native alarm code: flag work done from the background that iOS forbids, missing exact-alarm
+          permission handling on Android 12+, and reflection or Expo Record classes that R8 could strip
+          without a keep rule.
+    - path: "ios/NedaaWidget/**"
+      instructions: "A widget must show an empty state, never invented prayer times, when its data row is missing."
+    - path: "package.json"
+      instructions: "bun is the only package manager. Flag npm/npx usage in scripts and any new dependency without a stated reason."
+    - path: ".github/workflows/**"
+      instructions: "Pin third-party actions by commit SHA, set least-privilege `permissions`, never use `pull_request_target` with checkout of PR code."
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: warning
+      requirements: "One line in the form `type(scope): summary`, lower case, no trailing period."
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+  tools:
+    eslint:
+      enabled: true
+    biome:
+      enabled: false
+    oxc:
+      enabled: false
+    languagetool:
+      enabled: false
+    swiftlint:
+      enabled: true
+    detekt:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    gitleaks:
+      enabled: true
+    markdownlint:
+      enabled: false
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: local
+  web_search:
+    enabled: true

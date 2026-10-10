@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 // Icons
 import { Play, Volume1, VolumeX } from "lucide-react-native";
@@ -39,7 +39,7 @@ const AthanPlaybackSettings = () => {
 
   return (
     <Background>
-      <TopBar title="notification.athanPlayback.title" backOnClick />
+      <ScreenHeader title={t("notification.athanPlayback.title")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

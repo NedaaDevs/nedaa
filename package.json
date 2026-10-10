@@ -17,7 +17,7 @@
     "verify:android:gms": "cd android && BUILD_VARIANT=gms ./gradlew :app:assembleDebug --no-daemon --console=plain",
     "verify:android:hms": "bun scripts/verify-hms-build.ts",
     "bu": "bun scripts/install-hms.ts",
-    "prepare": "husky",
+    "prepare": "lefthook install",
     "clean:cache": "./scripts/clean-cache.sh",
     "clean:derived": "./scripts/clean-derived.sh",
     "clean:pods": "./scripts/clean-pods.sh",
@@ -38,7 +38,9 @@
     "release:android:internal": "bun run build:android && bun run submit:android:internal",
     "release:android:production": "bun run build:android && bun run submit:android:production",
     "screenshots:verify": "cd scripts/screenshots && PATH=\"$HOME/.maestro/bin:$PATH\" bun run.ts verify",
-    "eas-build-pre-install": "if [ \"$BUILD_VARIANT\" = \"hms\" ]; then : \"${AGCONNECT_SERVICES_JSON:?AGCONNECT_SERVICES_JSON is required for HMS builds}\"; cp \"$AGCONNECT_SERVICES_JSON\" android/app/agconnect-services.json; fi"
+    "eas-build-pre-install": "if [ \"$BUILD_VARIANT\" = \"hms\" ]; then : \"${AGCONNECT_SERVICES_JSON:?AGCONNECT_SERVICES_JSON is required for HMS builds}\"; cp \"$AGCONNECT_SERVICES_JSON\" android/app/agconnect-services.json; fi",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p scripts/screenshots/tsconfig.json",
+    "format:check": "git ls-files -z '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.md' '*.yml' | xargs -0 prettier --check"
   },
   "jest": {
     "preset": "jest-expo",
@@ -49,21 +51,25 @@
     ],
     "moduleNameMapper": {
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|standard-navigation|tamagui|@tamagui|react-native-svg|@gorhom|moti|react-native-reanimated|react-native-worklets|yoga-layout))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ],
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ]
   },
   "dependencies": {
-    "@expo-google-fonts/asap": "^0.4.3",
+    "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
     "@expo/app-integrity": "^57.0.2",
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-community/datetimepicker": "9.1.0",
-    "@react-navigation/bottom-tabs": "7.15.2",
-    "@react-navigation/native": "7.1.31",
-    "@react-navigation/native-stack": "7.14.2",
     "@tamagui/animations-moti": "^2.7.7",
     "@tamagui/config": "^2.7.7",
-    "@tamagui/linear-gradient": "^2.7.7",
     "@tamagui/native": "^2.7.7",
     "axios": "^1.20.0",
     "date-fns": "^4.4.0",
@@ -135,6 +141,9 @@
   "devDependencies": {
     "@react-native/jest-preset": "0.86.2",
     "@tamagui/babel-plugin": "^2.7.7",
+    "@tamagui/cli": "^2.7.7",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/bun": "^1.4.2",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.18",
     "baseline-browser-mapping": "^2.11.19",
@@ -144,23 +153,19 @@
     "eslint-plugin-prettier": "^5.5.6",
     "expo-dev-client": "~57.0.19",
     "expo-drizzle-studio-plugin": "^0.2.1",
-    "husky": "^9.1.7",
     "jest": "~29.7.0",
     "jest-expo": "~57.0.5",
-    "lint-staged": "^17.3.0",
+    "lefthook": "^2.1.17",
     "metro-minify-terser": "^0.83.8",
     "prettier": "^3.9.6",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "yoga-layout": "^3.2.1"
   },
   "private": true,
   "patchedDependencies": {
     "react-native-worklets@0.10.1": "patches/react-native-worklets@0.10.1.patch",
-    "expo-modules-core@57.0.19": "patches/expo-modules-core@57.0.19.patch"
-  },
-  "overrides": {
-    "@react-navigation/native": "7.1.31",
-    "@react-navigation/bottom-tabs": "7.15.2",
-    "@react-navigation/native-stack": "7.14.2"
+    "expo-modules-core@57.0.19": "patches/expo-modules-core@57.0.19.patch",
+    "@react-native/gradle-plugin@0.86.3": "patches/@react-native%2Fgradle-plugin@0.86.3.patch"
   },
   "expo": {
     "install": {

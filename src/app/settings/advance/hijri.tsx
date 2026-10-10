@@ -1,191 +1,118 @@
-import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Stores
-import { useAppStore } from "@/stores/app";
-import { useLocationStore } from "@/stores/location";
-
-// Components
-import { Background } from "@/components/ui/background";
-import { Card } from "@/components/ui/card";
-import { Box } from "@/components/ui/box";
+import { HijriDateHero } from "@/components/settings/HijriDateHero";
 import { HStack } from "@/components/ui/hstack";
+import { Section } from "@/components/ui/section";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { SteppedSlider } from "@/components/ui/stepped-slider";
 import { Text } from "@/components/ui/text";
-import { Icon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { SECTION_KIND } from "@/constants/Section";
+import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
+import { LTR_ISOLATE, localizeDigits } from "@/utils/digits";
 import {
-  Actionsheet,
-  ActionsheetBackdrop,
-  ActionsheetContent,
-  ActionsheetDragIndicator,
-  ActionsheetDragIndicatorWrapper,
-  ActionsheetItem,
-  ActionsheetItemText,
-  ActionsheetScrollView,
-} from "@/components/ui/actionsheet";
-import TopBar from "@/components/TopBar";
+  HIJRI_NO_OFFSET,
+  HIJRI_OFFSET_LIMIT,
+  HIJRI_OFFSETS,
+  hijriAdjustmentLabel,
+} from "@/utils/hijriAdjustment";
 
-// Icons
-import { Calendar, ChevronDown } from "lucide-react-native";
+const SIGN = { MINUS: "−", PLUS: "+" } as const;
 
-// Hooks
-import { useHaptic } from "@/hooks/useHaptic";
-
-// Utils
-import { getDateLocale, HijriNative, timeZonedNow } from "@/utils/date";
-import { formatNumberToLocale } from "@/utils/number";
-
-type AdjustmentOption = {
-  value: number;
-  label: string;
-};
-
-const HijriSettings = () => {
+/** The screen over its sky: the hero follows a drag, the store a release. */
+const HijriContent = () => {
   const { t } = useTranslation();
-  const { locale, hijriDaysOffset, setHijirOffset } = useAppStore();
-  const { locationDetails } = useLocationStore();
+  const insets = useSafeAreaInsets();
+  const locale = useAppStore((state) => state.locale);
+  const hijriDaysOffset = useAppStore((state) => state.hijriDaysOffset);
+  const setHijirOffset = useAppStore((state) => state.setHijirOffset);
+  const useWesternNumerals = usePreferencesStore((state) => state.useWesternNumerals);
+  // The offset under a drag; null once the drag lands or comes back.
+  const [draft, setDraft] = useState<number | null>(null);
 
-  const hapticSelection = useHaptic("selection");
-  const [showActionSheet, setShowActionSheet] = useState(false);
-
-  const now = timeZonedNow(locationDetails.timezone);
-  const todayHijri = HijriNative.today(locationDetails.timezone);
-  const hijriDate =
-    hijriDaysOffset !== 0 ? HijriNative.addDays(todayHijri, hijriDaysOffset) : todayHijri;
-
-  const dayName = format(now, "EEEE", { locale: getDateLocale(locale) });
-
-  const hijriMonth = t(`hijriMonths.${hijriDate.month - 1}`);
-
-  const formattedDay = formatNumberToLocale(hijriDate.day.toString());
-  const formattedYear = formatNumberToLocale(hijriDate.year.toString());
-
-  const formattedDateDetails = `${formattedDay} ${hijriMonth} ${formattedYear}`;
-
-  const adjustmentOptions: AdjustmentOption[] = useMemo(() => {
-    const options: AdjustmentOption[] = [];
-
-    // Generate options from -5 to +5
-    for (let i = -5; i <= 5; i++) {
-      let label: string;
-
-      if (i === 0) {
-        label = t("settings.hijri.date.adjustments.noAdjustment");
-      } else {
-        const prefix =
-          i < 0
-            ? t("settings.hijri.date.adjustments.minus")
-            : t("settings.hijri.date.adjustments.plus");
-
-        const absCount = Math.abs(i);
-        const days = t("settings.hijri.date.adjustments.days", { count: absCount });
-        label = `${prefix} ${formatNumberToLocale(days)}`;
-      }
-
-      options.push({
-        value: i,
-        label,
-      });
-    }
-
-    return options;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale, t]);
-
-  const handleSelectAdjustment = (value: number) => {
-    hapticSelection();
-    setHijirOffset(value);
-    setShowActionSheet(false);
-  };
-
-  const currentAdjustmentLabel =
-    adjustmentOptions.find((opt) => opt.value === hijriDaysOffset)?.label || "";
+  const shown = draft ?? hijriDaysOffset;
+  const label = (offset: number) => hijriAdjustmentLabel(offset, t);
+  const title = t("settings.hijri.date.adjustmentTitle");
+  const limit = localizeDigits(String(HIJRI_OFFSET_LIMIT), locale, useWesternNumerals);
+  // Held left to right, so RTL text keeps the sign in front of the figure.
+  const end = (sign: string) => (
+    <Text size="sm" bold color="$fg">
+      {`${LTR_ISOLATE.OPEN}${sign}${limit}${LTR_ISOLATE.CLOSE}`}
+    </Text>
+  );
 
   return (
-    <Background>
-      <TopBar title={t("settings.hijri.date.title")} href="/settings/advance" backOnClick />
+    // The sky runs under the status bar; the content pads itself clear of it.
+    <SkyScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}>
+      <SkyOccluder>
+        <ScreenHeader
+          title={t("settings.hijri.date.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        />
+      </SkyOccluder>
 
-      <Box flex={1} padding="$4">
-        <Card padding="$6" marginBottom="$6">
-          <HStack
-            alignItems="center"
-            justifyContent="center"
-            width="100%"
-            marginBottom="$2"
-            gap="$3">
-            <Icon as={Calendar} color="$accentPrimary" size="md" />
-            <VStack alignItems="center" marginVertical="$3">
-              <Text size="lg" bold color="$typography">
-                {dayName}
-              </Text>
-              <Text size="lg" bold color="$typographySecondary">
-                {formattedDateDetails}
-              </Text>
+      <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+        <HijriDateHero offset={shown} />
+
+        <Section title={t("settings.hijri.date.sections.adjustment")} kind={SECTION_KIND.LABEL}>
+          <SkyOccluder>
+            <VStack
+              gap="$3"
+              padding="$4"
+              borderWidth={1}
+              borderColor="$border"
+              borderRadius="$card"
+              backgroundColor="$surface2">
+              {/* The slider speaks its name and value; this row is for the eye. */}
+              <HStack
+                {...HIDDEN_FROM_READER}
+                alignItems="baseline"
+                justifyContent="space-between"
+                gap="$3">
+                <Text flex={1} size="md" bold color="$fg">
+                  {t("settings.hijri.date.adjustmentHead")}
+                </Text>
+                <Text size="sm" bold color="$accent">
+                  {label(shown)}
+                </Text>
+              </HStack>
+              <SteppedSlider
+                stops={HIJRI_OFFSETS}
+                value={hijriDaysOffset}
+                fillFrom={HIJRI_NO_OFFSET}
+                onDraft={(offset) => setDraft(offset === hijriDaysOffset ? null : offset)}
+                onChange={(offset) => {
+                  setDraft(null);
+                  setHijirOffset(offset);
+                }}
+                formatValue={label}
+                accessibilityLabel={title}
+                startMark={end(SIGN.MINUS)}
+                endMark={end(SIGN.PLUS)}
+              />
             </VStack>
-          </HStack>
-        </Card>
-
-        <Text size="xl" fontWeight="600" color="$typography" marginBottom="$4">
-          {t("settings.hijri.date.adjustmentTitle")}
-        </Text>
-
-        <Card.Pressable
-          onPress={() => setShowActionSheet(true)}
-          flexDirection="row"
-          alignItems="center"
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.hijri.date.selectAdjustment")}>
-          <HStack justifyContent="space-between" alignItems="center" width="100%">
-            <VStack>
-              <Text size="sm" color="$typographySecondary" marginBottom="$1">
-                {t("settings.hijri.date.currentAdjustment")}
-              </Text>
-              <Text color="$typography" fontWeight="500">
-                {currentAdjustmentLabel}
-              </Text>
-            </VStack>
-            <Icon as={ChevronDown} color="$typographySecondary" size="lg" />
-          </HStack>
-        </Card.Pressable>
-      </Box>
-
-      <Actionsheet isOpen={showActionSheet} onClose={() => setShowActionSheet(false)}>
-        <ActionsheetBackdrop />
-        <ActionsheetContent>
-          <ActionsheetDragIndicatorWrapper>
-            <ActionsheetDragIndicator />
-          </ActionsheetDragIndicatorWrapper>
-
-          <Text
-            size="lg"
-            fontWeight="600"
-            color="$typography"
-            paddingHorizontal="$4"
-            paddingVertical="$3">
-            {t("settings.hijri.date.selectAdjustment")}
-          </Text>
-
-          <ActionsheetScrollView>
-            {adjustmentOptions.map((option) => {
-              const isSelected = option.value === hijriDaysOffset;
-              return (
-                <ActionsheetItem
-                  borderRadius="$6"
-                  backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
-                  key={option.value}
-                  onPress={() => handleSelectAdjustment(option.value)}>
-                  <ActionsheetItemText color="$typography" fontWeight="500">
-                    {option.label}
-                  </ActionsheetItemText>
-                </ActionsheetItem>
-              );
-            })}
-          </ActionsheetScrollView>
-        </ActionsheetContent>
-      </Actionsheet>
-    </Background>
+          </SkyOccluder>
+        </Section>
+      </VStack>
+    </SkyScrollView>
   );
 };
+
+const HijriSettings = () => (
+  <SkyBackground>
+    <HijriContent />
+  </SkyBackground>
+);
 
 export default HijriSettings;

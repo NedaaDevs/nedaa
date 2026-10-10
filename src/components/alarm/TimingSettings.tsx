@@ -1,4 +1,5 @@
 import { FC } from "react";
+import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
 
 import { VStack } from "@/components/ui/vstack";
@@ -10,8 +11,9 @@ import { Icon } from "@/components/ui/icon";
 
 import { Minus, Plus } from "lucide-react-native";
 
-import { TimingConfig, TimingMode, AlarmType } from "@/types/alarm";
+import { TimingConfig, TimingMode, AlarmType, DEFAULT_TIMING_CONFIG } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { ALARM_TIMING_CHOICES, ALARM_TIMING_MODE, timingForMode } from "@/constants/Alarm";
 
 type Props = {
   value: TimingConfig;
@@ -19,27 +21,24 @@ type Props = {
   onChange: (config: TimingConfig) => void;
 };
 
-const FAJR_MINUTE_STEPS = [0, 5, 10, 15, 20, 30, 45, 60, 90];
-const FRIDAY_MINUTE_STEPS = [15, 30, 45, 60, 90, 120];
-
-const DEFAULT_TIMING: TimingConfig = { mode: "atPrayerTime", minutesBefore: 0 };
+const MODE_LABEL: Record<TimingMode, ParseKeys> = {
+  [ALARM_TIMING_MODE.AT_PRAYER_TIME]: "alarm.settings.atPrayerTime",
+  [ALARM_TIMING_MODE.BEFORE_PRAYER_TIME]: "alarm.settings.beforePrayerTime",
+};
 
 const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic("selection");
   const hapticLight = useHaptic("light");
 
-  const timing = value ?? DEFAULT_TIMING;
+  const timing = value ?? DEFAULT_TIMING_CONFIG;
 
-  const showAtPrayerTimeOption = alarmType === "fajr";
-  const minuteSteps = alarmType === "fajr" ? FAJR_MINUTE_STEPS : FRIDAY_MINUTE_STEPS;
+  const { modes, minuteSteps } = ALARM_TIMING_CHOICES[alarmType];
+  const offersModeChoice = modes.length > 1;
 
   const handleModeChange = (mode: TimingMode) => {
     hapticSelection();
-    onChange({
-      mode,
-      minutesBefore: mode === "atPrayerTime" ? 0 : timing.minutesBefore || 15,
-    });
+    onChange(timingForMode(alarmType, mode));
   };
 
   const handleDecrease = () => {
@@ -76,55 +75,37 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
   return (
     <VStack gap="$3">
-      {showAtPrayerTimeOption && (
+      {offersModeChoice && (
         <HStack gap="$2">
-          <Pressable
-            accessibilityRole="radio"
-            accessibilityState={{ selected: timing.mode === "atPrayerTime" }}
-            accessibilityLabel={t("alarm.settings.atPrayerTime")}
-            flex={1}
-            padding="$3"
-            borderRadius="$4"
-            borderWidth={1}
-            backgroundColor={
-              timing.mode === "atPrayerTime" ? "$surfaceActive" : "$backgroundPrimary"
-            }
-            borderColor={timing.mode === "atPrayerTime" ? "$primary" : "$outlineSecondary"}
-            onPress={() => handleModeChange("atPrayerTime")}>
-            <Text
-              size="sm"
-              textAlign="center"
-              fontWeight="500"
-              color={timing.mode === "atPrayerTime" ? "$typography" : "$typographySecondary"}>
-              {t("alarm.settings.atPrayerTime")}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="radio"
-            accessibilityState={{ selected: timing.mode === "beforePrayerTime" }}
-            accessibilityLabel={t("alarm.settings.beforePrayerTime")}
-            flex={1}
-            padding="$3"
-            borderRadius="$4"
-            borderWidth={1}
-            backgroundColor={
-              timing.mode === "beforePrayerTime" ? "$surfaceActive" : "$backgroundPrimary"
-            }
-            borderColor={timing.mode === "beforePrayerTime" ? "$primary" : "$outlineSecondary"}
-            onPress={() => handleModeChange("beforePrayerTime")}>
-            <Text
-              size="sm"
-              textAlign="center"
-              fontWeight="500"
-              color={timing.mode === "beforePrayerTime" ? "$typography" : "$typographySecondary"}>
-              {t("alarm.settings.beforePrayerTime")}
-            </Text>
-          </Pressable>
+          {modes.map((mode) => {
+            const selected = timing.mode === mode;
+            return (
+              <Pressable
+                key={mode}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                accessibilityLabel={t(MODE_LABEL[mode])}
+                flex={1}
+                padding="$3"
+                borderRadius="$4"
+                borderWidth={1}
+                backgroundColor={selected ? "$surfaceActive" : "$backgroundPrimary"}
+                borderColor={selected ? "$primary" : "$outlineSecondary"}
+                onPress={() => handleModeChange(mode)}>
+                <Text
+                  size="sm"
+                  textAlign="center"
+                  fontWeight="500"
+                  color={selected ? "$typography" : "$typographySecondary"}>
+                  {t(MODE_LABEL[mode])}
+                </Text>
+              </Pressable>
+            );
+          })}
         </HStack>
       )}
 
-      {(timing.mode === "beforePrayerTime" || !showAtPrayerTimeOption) && (
+      {(timing.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME || !offersModeChoice) && (
         <VStack gap="$2">
           <HStack justifyContent="space-between" alignItems="center">
             <Text size="sm" color="$typographySecondary">
@@ -156,8 +137,9 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
             </Pressable>
 
             <HStack gap="$1" flex={1} justifyContent="center" flexWrap="wrap">
+              {/* A zero offset is the at-prayer mode, not a step. */}
               {minuteSteps
-                .filter((m) => (alarmType === "fajr" ? m > 0 : true))
+                .filter((m) => m > 0)
                 .map((minutes) => (
                   <Pressable
                     key={minutes}

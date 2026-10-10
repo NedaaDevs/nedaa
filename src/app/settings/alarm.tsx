@@ -15,9 +15,11 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
 import { Divider } from "@/components/ui/divider";
+import { ListRow } from "@/components/ui/list-row";
 import { Spinner } from "@/components/ui/spinner";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import ReportProblemModal from "@/components/ReportProblemModal";
 
 import {
@@ -36,6 +38,7 @@ import {
   ShieldAlert,
   CircleHelp,
   Layers,
+  Volume1,
 } from "lucide-react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
@@ -51,21 +54,18 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
 
 import {
-  isAlarmKitAvailable,
-  getAuthorizationStatus,
+  CHALLENGE_TYPE,
   requestAuthorization,
-  canScheduleExactAlarms,
   requestExactAlarmPermission,
-  canUseFullScreenIntent,
   requestFullScreenIntentPermission,
-  isBatteryOptimizationExempt,
   requestBatteryOptimizationExemption,
-  canDrawOverlays,
   requestDrawOverlaysPermission,
 } from "expo-alarm";
 
-import { checkPermissions, requestNotificationPermission } from "@/utils/notifications";
-import { PermissionStatus } from "expo-notifications";
+import { requestNotificationPermission } from "@/utils/notifications";
+import { ALARM_PERMISSION, type AlarmPermissionId } from "@/constants/Alarm";
+import { PRAYER_ID } from "@/constants/Prayer";
+import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
 
 import { PlatformType } from "@/enums/app";
 import {
@@ -74,16 +74,6 @@ import {
   copyAlarmReport,
   type IssueCategory,
 } from "@/utils/alarmReport";
-
-interface PermissionItem {
-  id: string;
-  icon: typeof Bell;
-  titleKey: string;
-  descriptionKey: string;
-  granted: boolean;
-  canRequestInApp: boolean;
-  onRequest: () => Promise<void> | void;
-}
 
 const openAppSettings = () => {
   if (Platform.OS === PlatformType.IOS) {
@@ -104,6 +94,66 @@ const openNotificationSettings = () => {
   } else {
     openAppSettings();
   }
+};
+
+const PERMISSION_COPY: Record<
+  AlarmPermissionId,
+  { icon: typeof Bell; titleKey: string; descriptionKey: string }
+> = {
+  [ALARM_PERMISSION.ALARMKIT]: {
+    icon: Bell,
+    titleKey: "alarm.permission.ios.alarmkit.title",
+    descriptionKey: "alarm.permission.ios.alarmkit.description",
+  },
+  [ALARM_PERMISSION.NOTIFICATIONS]: {
+    icon: Bell,
+    titleKey: "alarm.permission.android.notifications.title",
+    descriptionKey: "alarm.permission.android.notifications.description",
+  },
+  [ALARM_PERMISSION.EXACT_ALARM]: {
+    icon: Clock,
+    titleKey: "alarm.permission.android.exactAlarm.title",
+    descriptionKey: "alarm.permission.android.exactAlarm.description",
+  },
+  [ALARM_PERMISSION.FULL_SCREEN]: {
+    icon: Maximize,
+    titleKey: "alarm.permission.android.fullScreen.title",
+    descriptionKey: "alarm.permission.android.fullScreen.description",
+  },
+  [ALARM_PERMISSION.OVERLAY]: {
+    icon: Layers,
+    titleKey: "alarm.permission.android.overlay.title",
+    descriptionKey: "alarm.permission.android.overlay.description",
+  },
+  [ALARM_PERMISSION.BATTERY]: {
+    icon: BatteryCharging,
+    titleKey: "alarm.permission.android.battery.title",
+    descriptionKey: "alarm.permission.android.battery.description",
+  },
+};
+
+const REQUEST_PERMISSION: Record<
+  AlarmPermissionId,
+  (permission: AlarmPermission) => Promise<unknown> | void
+> = {
+  [ALARM_PERMISSION.ALARMKIT]: async ({ canRequestInApp }) => {
+    // Once denied, iOS stops prompting and only Settings can grant it.
+    if ((await requestAuthorization()) === "denied" && !canRequestInApp) openAppSettings();
+  },
+  [ALARM_PERMISSION.NOTIFICATIONS]: ({ canRequestInApp }) =>
+    canRequestInApp ? requestNotificationPermission() : openNotificationSettings(),
+  [ALARM_PERMISSION.EXACT_ALARM]: () => {
+    requestExactAlarmPermission();
+  },
+  [ALARM_PERMISSION.FULL_SCREEN]: () => {
+    requestFullScreenIntentPermission();
+  },
+  [ALARM_PERMISSION.OVERLAY]: () => {
+    requestDrawOverlaysPermission();
+  },
+  [ALARM_PERMISSION.BATTERY]: () => {
+    requestBatteryOptimizationExemption();
+  },
 };
 
 const formatAlarmTime = (
@@ -150,7 +200,8 @@ const formatConfigSummary = (
 ): string => {
   const { challenge, sound } = settings;
   const challengeLabel = t(`alarm.challenge.${challenge.type}`);
-  const countPart = challenge.type !== "none" && challenge.count > 1 ? ` ×${challenge.count}` : "";
+  const countPart =
+    challenge.type !== CHALLENGE_TYPE.NONE && challenge.count > 1 ? ` ×${challenge.count}` : "";
   const asset = SOUND_ASSETS[sound as keyof typeof SOUND_ASSETS];
   const soundName = asset ? t(asset.label) : t("alarm.settings.systemSound");
   return `${challengeLabel}${countPart} · ${soundName}`;
@@ -174,8 +225,7 @@ const AlarmSettings = () => {
   const hapticMedium = useHaptic("medium");
 
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
-  const [permissions, setPermissions] = useState<PermissionItem[]>([]);
-  const [skipGate, setSkipGate] = useState(false);
+  const [permissions, setPermissions] = useState<AlarmPermission[]>([]);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
@@ -214,143 +264,32 @@ const AlarmSettings = () => {
     await copyAlarmReport(selectedCategory ?? undefined);
   }, [selectedCategory]);
 
-  const allGranted = permissions.length === 0 || permissions.every((p) => p.granted);
-  const pendingPermissions = permissions.filter((p) => !p.granted);
-  const currentPermission = pendingPermissions[0];
+  const currentPermission = permissions.find((p) => !p.granted);
   const totalCount = permissions.length;
 
-  // Named function expression so the recursive onRequest rebuild resolves via
-  // the function's own binding, not the outer const (which is still
-  // initializing at that point in the closure).
-  const buildIOSPermission = useCallback(function buildIOSPermission(
-    granted: boolean,
-    isDenied: boolean
-  ): PermissionItem {
-    return {
-      id: "alarmkit",
-      icon: Bell,
-      titleKey: "alarm.permission.ios.alarmkit.title",
-      descriptionKey: "alarm.permission.ios.alarmkit.description",
-      granted,
-      canRequestInApp: !isDenied,
-      onRequest: async () => {
-        const result = await requestAuthorization();
-        const nowGranted = result === "authorized";
-        const nowDenied = result === "denied";
-        if (nowDenied && isDenied) {
-          openAppSettings();
-        }
-        setPermissions([buildIOSPermission(nowGranted, nowDenied)]);
-      },
-    };
-  }, []);
-
-  const checkAllPermissions = useCallback(async () => {
-    setIsCheckingPermissions(true);
-
-    if (Platform.OS === PlatformType.IOS) {
-      const alarmKitAvail = await isAlarmKitAvailable();
-      if (!alarmKitAvail) {
-        setSkipGate(true);
-        setIsCheckingPermissions(false);
-        return;
-      }
-
-      const status = await getAuthorizationStatus();
-      setPermissions([buildIOSPermission(status === "authorized", status === "denied")]);
-    } else {
-      const items: PermissionItem[] = [];
-
-      const { status: notifStatus } = await checkPermissions();
-      const notifGranted = notifStatus === PermissionStatus.GRANTED;
-      items.push({
-        id: "notifications",
-        icon: Bell,
-        titleKey: "alarm.permission.android.notifications.title",
-        descriptionKey: "alarm.permission.android.notifications.description",
-        granted: notifGranted,
-        canRequestInApp: notifStatus === PermissionStatus.UNDETERMINED,
-        onRequest:
-          notifStatus === PermissionStatus.UNDETERMINED
-            ? async () => {
-                await requestNotificationPermission();
-                await checkAllPermissions();
-              }
-            : openNotificationSettings,
-      });
-
-      const exactGranted = canScheduleExactAlarms();
-      items.push({
-        id: "exactAlarm",
-        icon: Clock,
-        titleKey: "alarm.permission.android.exactAlarm.title",
-        descriptionKey: "alarm.permission.android.exactAlarm.description",
-        granted: exactGranted,
-        canRequestInApp: false,
-        onRequest: () => {
-          requestExactAlarmPermission();
-        },
-      });
-
-      const fullScreenGranted = canUseFullScreenIntent();
-      items.push({
-        id: "fullScreen",
-        icon: Maximize,
-        titleKey: "alarm.permission.android.fullScreen.title",
-        descriptionKey: "alarm.permission.android.fullScreen.description",
-        granted: fullScreenGranted,
-        canRequestInApp: false,
-        onRequest: () => {
-          requestFullScreenIntentPermission();
-        },
-      });
-
-      // Without this the challenge overlay silently stops itself and the alarm falls back
-      // to a notification, so it belongs beside the other alarm permissions.
-      const overlayGranted = canDrawOverlays();
-      items.push({
-        id: "overlay",
-        icon: Layers,
-        titleKey: "alarm.permission.android.overlay.title",
-        descriptionKey: "alarm.permission.android.overlay.description",
-        granted: overlayGranted,
-        canRequestInApp: false,
-        onRequest: () => {
-          requestDrawOverlaysPermission();
-        },
-      });
-
-      const batteryGranted = isBatteryOptimizationExempt();
-      items.push({
-        id: "battery",
-        icon: BatteryCharging,
-        titleKey: "alarm.permission.android.battery.title",
-        descriptionKey: "alarm.permission.android.battery.description",
-        granted: batteryGranted,
-        canRequestInApp: false,
-        onRequest: () => {
-          requestBatteryOptimizationExemption();
-        },
-      });
-
-      setPermissions(items);
-    }
-
-    setIsCheckingPermissions(false);
-  }, [buildIOSPermission]);
-
+  // Re-read on every return to the app: most grants happen in system settings.
   useEffect(() => {
-    checkAllPermissions();
-  }, [becameActiveAt, checkAllPermissions]);
+    let active = true;
+    readAlarmPermissions().then((read) => {
+      if (!active) return;
+      setPermissions(read);
+      setIsCheckingPermissions(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [becameActiveAt]);
 
-  const handlePermissionRequest = async (item: PermissionItem) => {
+  const handlePermissionRequest = async (permission: AlarmPermission) => {
     hapticMedium();
-    await item.onRequest();
+    await REQUEST_PERMISSION[permission.id](permission);
+    // An in-app prompt answers here; a settings screen answers on return.
+    setPermissions(await readAlarmPermissions());
   };
 
   const alarmTypes = [
     {
-      type: "fajr",
+      type: PRAYER_ID.FAJR,
       title: t("alarm.settings.fajrAlarm"),
       description: t("alarm.settings.fajrDescription"),
       icon: Sun,
@@ -380,7 +319,10 @@ const AlarmSettings = () => {
   if (isCheckingPermissions) {
     return (
       <Background>
-        <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+        <ScreenHeader
+          title={t("alarm.settings.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        />
         <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
           <Spinner size="large" />
         </Box>
@@ -388,10 +330,14 @@ const AlarmSettings = () => {
     );
   }
 
-  if (!allGranted && !skipGate && currentPermission) {
+  if (currentPermission) {
+    const copy = PERMISSION_COPY[currentPermission.id];
     return (
       <Background>
-        <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+        <ScreenHeader
+          title={t("alarm.settings.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        />
         <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8">
           <VStack alignItems="center" width="100%" maxWidth={320} gap="$5">
             <Box
@@ -401,15 +347,15 @@ const AlarmSettings = () => {
               backgroundColor="$backgroundInfo"
               alignItems="center"
               justifyContent="center">
-              <Icon as={currentPermission.icon} size="xl" color="$info" />
+              <Icon as={copy.icon} size="xl" color="$info" />
             </Box>
 
             <VStack gap="$2" alignItems="center">
               <Text size="2xl" bold color="$typography" textAlign="center">
-                {t(currentPermission.titleKey)}
+                {t(copy.titleKey)}
               </Text>
               <Text size="md" color="$typographySecondary" textAlign="center" lineHeight={22}>
-                {t(currentPermission.descriptionKey)}
+                {t(copy.descriptionKey)}
               </Text>
             </VStack>
 
@@ -463,18 +409,16 @@ const AlarmSettings = () => {
 
   return (
     <Background>
-      <TopBar title="alarm.settings.title" href="/settings" backOnClick />
+      <ScreenHeader
+        title={t("alarm.settings.title")}
+        subtitle={t("alarm.settings.description")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS }}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1}>
-          <Box marginHorizontal="$4" marginTop="$4" marginBottom="$2">
-            <Text size="sm" color="$typographySecondary">
-              {t("alarm.settings.description")}
-            </Text>
-          </Box>
-
           <VStack marginHorizontal="$2">
             {alarmTypes.map((alarm, index) => (
               <Box key={alarm.type}>
@@ -545,6 +489,20 @@ const AlarmSettings = () => {
               </Box>
             ))}
           </VStack>
+
+          {/* Only Android plays sounds the user adds. */}
+          {Platform.OS === PlatformType.ANDROID && (
+            <Box marginHorizontal="$4" marginTop="$4">
+              <ListRow
+                icon={Volume1}
+                title={t("notification.customSound.manage")}
+                hint={t("a11y.opens", {
+                  name: t(BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.title),
+                })}
+                onPress={() => router.push(BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.href)}
+              />
+            </Box>
+          )}
 
           <Pressable
             accessibilityRole="button"

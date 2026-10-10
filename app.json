@@ -9,7 +9,7 @@
         "projectId": "d7241880-746c-4c73-9b54-56ce4a0861f1"
       }
     },
-    "name": "nedaa",
+    "name": "Nedaa",
     "slug": "nedaa",
     "version": "2.10.11",
     "orientation": "portrait",
@@ -100,6 +100,9 @@
       [
         "expo-build-properties",
         {
+          "android": {
+            "targetSdkVersion": 36
+          },
           "ios": {
             "deploymentTarget": "16.4",
             "enableSceneSupport": true
@@ -143,7 +146,8 @@
       "@react-native-community/datetimepicker",
       "expo-sharing",
       "expo-status-bar",
-      "./plugins/withIosAcknowledgements"
+      "./plugins/withIosAcknowledgements",
+      "./plugins/withTextViewBoundsForWidth"
     ],
     "experiments": {
       "typedRoutes": true,

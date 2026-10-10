@@ -1,3 +1,5 @@
+import { promptReviewIfEligible, trackAppSession } from "@/utils/reviewPrompt";
+
 let mockVersion = "2.10.5";
 const mockRequestReview = jest.fn(() => Promise.resolve());
 const mockHasAction = jest.fn(() => Promise.resolve(true));
@@ -26,8 +28,6 @@ jest.mock("expo-store-review", () => ({
   hasAction: () => mockHasAction(),
   requestReview: () => mockRequestReview(),
 }));
-
-import { promptReviewIfEligible, trackAppSession } from "@/utils/reviewPrompt";
 
 const SESSIONS_KEY = "review_app_sessions";
 const SESSIONS_VERSION_KEY = "review_app_sessions_version";

@@ -1,42 +1,38 @@
 import React from "react";
-import { View as RNView, type StyleProp, type ViewStyle } from "react-native";
-import { useTheme } from "tamagui";
+import { View as RNView, type ViewProps } from "react-native";
 import { Mail } from "lucide-react-native";
 
-type IconSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
-
-const SIZE_MAP: Record<IconSize, number> = {
-  "2xs": 12,
-  xs: 14,
-  sm: 16,
-  md: 18,
-  lg: 20,
-  xl: 24,
-};
+import { ICON_SIZES, resolveIconSize, type IconSize } from "@/components/ui/icon/sizing";
+import { useThemeColor } from "@/components/ui/theme-color";
 
 type IconProps = {
-  as: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  as: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; fill?: string }>;
   size?: IconSize | number;
   color?: string;
+  /** Paints the glyph's inside; a `$key` names a theme colour. */
+  fill?: string;
   strokeWidth?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
   accessibilityLabel?: string;
 };
 
 const Icon = React.forwardRef<any, IconProps>(
   (
-    { as: IconComponent, size = "md", color, strokeWidth, style, accessibilityLabel, ...props },
+    {
+      as: IconComponent,
+      size = "md",
+      color,
+      fill,
+      strokeWidth,
+      style,
+      accessibilityLabel,
+      ...props
+    },
     _ref
   ) => {
-    const theme = useTheme();
-
-    const resolvedSize = typeof size === "number" ? size : (SIZE_MAP[size] ?? 18);
-
-    const resolvedColor = color
-      ? color.startsWith("$")
-        ? ((theme as Record<string, { val: string }>)[color.slice(1)]?.val ?? color)
-        : color
-      : theme.typography.val;
+    const resolvedSize = resolveIconSize(size);
+    const resolvedColor = useThemeColor(color ?? "$typography");
+    const resolvedFill = useThemeColor(fill ?? "none");
 
     const isDecorative = !accessibilityLabel;
 
@@ -49,6 +45,7 @@ const Icon = React.forwardRef<any, IconProps>(
         size={resolvedSize}
         color={resolvedColor}
         strokeWidth={strokeWidth}
+        {...(fill ? { fill: resolvedFill } : null)}
         {...props}
       />
     );
@@ -70,4 +67,5 @@ Icon.displayName = "Icon";
 const MailIcon = Mail;
 
 export { Icon, MailIcon };
+export { ICON_SIZES, resolveIconSize };
 export type { IconProps, IconSize };

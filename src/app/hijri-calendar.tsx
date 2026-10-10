@@ -12,13 +12,13 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import HijriMonthGrid from "@/components/hijri/HijriMonthGrid";
 import DayObservanceSheet from "@/components/hijri/DayObservanceSheet";
 
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
-import usePreferencesStore from "@/stores/preferences";
+import { usePreferencesStore } from "@/stores/preferences";
 import { HijriNative, getDateLocale } from "@/utils/date";
 import { buildMonthGrid, stepMonth, type MonthCell } from "@/utils/hijriMonthGrid";
 import { MONTH_NOTES } from "@/constants/Observances";
@@ -101,7 +101,7 @@ const HijriCalendarScreen = () => {
 
   return (
     <Background>
-      <TopBar title="hijriCalendar.title" backOnClick />
+      <ScreenHeader title={t("hijriCalendar.title")} back />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           <HStack justifyContent="space-between" alignItems="center">

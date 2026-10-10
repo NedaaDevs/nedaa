@@ -30,6 +30,24 @@ export const SIZE_MAP: Record<string, string> = {
   "5xl": "$9",
 };
 
+/**
+ * Line box as a ratio of the font size. Arabic is cursive and carries diacritics,
+ * so 1.3 is the floor for display text and body wants 1.5 or looser. The size
+ * table runs as tight as 1.0 at $10, which clips those marks.
+ */
+export const ROLE_RATIO = {
+  display: 1.3,
+  title: 1.4,
+  helper: 1.5,
+  body: 1.6,
+} as const;
+
+export type TextRole = keyof typeof ROLE_RATIO;
+
+/** Undefined when no role is set, so the size table keeps its own line box. */
+export const roleLineHeight = (role: TextRole | undefined, fontSize: number): number | undefined =>
+  role == null ? undefined : Math.round(fontSize * ROLE_RATIO[role]);
+
 export const resolveFontSize = (value: unknown): number | undefined => {
   if (value == null) return undefined;
   if (typeof value === "number") return value;
@@ -40,11 +58,22 @@ export const resolveFontSize = (value: unknown): number | undefined => {
   return isNaN(num) ? undefined : num;
 };
 
+/** A token reads the line-height column, where resolveFontSize reads the font one. */
+export const resolveLineHeight = (value: unknown): number | undefined => {
+  if (value == null) return undefined;
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.startsWith("$")) {
+    return FONT_SIZES[value]?.lineHeight;
+  }
+  const num = Number(value);
+  return isNaN(num) ? undefined : num;
+};
+
 /**
  * Final font geometry for a Text instance: the app text-scale multiplier `m`
- * applied to either the caller's explicit fontSize or the size-token table.
- * Explicit line heights scale with the font. With only an explicit fontSize,
- * React Native derives the line box from the scaled font.
+ * applied to the caller's explicit values or the size-token table. An explicit
+ * line box wins and scales with the font. Without one, an explicit fontSize
+ * leaves the box undefined so React Native derives it from the scaled font.
  */
 export const resolveTextSizing = (
   m: number,
@@ -53,16 +82,11 @@ export const resolveTextSizing = (
   lineHeight?: unknown
 ): { fontSize: number | undefined; lineHeight: number | undefined } => {
   const base = fontSize != null ? resolveFontSize(fontSize) : sizeValues.fontSize;
-  const baseLineHeight =
-    lineHeight != null
-      ? typeof lineHeight === "string" && lineHeight.startsWith("$")
-        ? FONT_SIZES[lineHeight]?.lineHeight
-        : resolveFontSize(lineHeight)
-      : fontSize != null
-        ? undefined
-        : sizeValues.lineHeight;
+  const explicitBox = lineHeight != null ? resolveLineHeight(lineHeight) : undefined;
+  const box = explicitBox ?? (fontSize != null ? undefined : sizeValues.lineHeight);
+
   return {
     fontSize: base == null ? undefined : base * m,
-    lineHeight: baseLineHeight == null ? undefined : baseLineHeight * m,
+    lineHeight: box == null ? undefined : box * m,
   };
 };
