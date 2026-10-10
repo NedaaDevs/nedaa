@@ -51,8 +51,8 @@ jest.mock("expo-sqlite/kv-store", () => ({
     removeItem: async () => {},
   },
 }));
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
-jest.mock("../../../modules/expo-widgets/src", () => ({ refreshAllWidgets: jest.fn() }));
+jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
+jest.mock("expo-widgets", () => ({ refreshAllWidgets: jest.fn() }));
 jest.mock("@/utils/date", () => {
   const actual = jest.requireActual("@/utils/date");
   // The store reads the clock through `timeZonedNow`; a fixed instant keeps the
