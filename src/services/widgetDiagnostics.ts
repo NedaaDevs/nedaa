@@ -3,10 +3,7 @@ import { Platform } from "react-native";
 import { PlatformType } from "@/enums/app";
 import { AppLogger } from "@/utils/appLogger";
 
-import {
-  getPlacedWidgetCount,
-  isPersistentNotificationEnabled,
-} from "../../modules/expo-widgets/src";
+import { getPlacedWidgetCount, isPersistentNotificationEnabled } from "expo-widgets";
 
 const log = AppLogger.create("widgets");
 

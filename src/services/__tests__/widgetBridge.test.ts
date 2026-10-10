@@ -1,10 +1,10 @@
 import { triggerWidgetReload } from "@/services/widgetBridge";
 import { writeWidgetSnapshot } from "@/services/widgetSnapshot";
-import { refreshAllWidgets } from "../../../modules/expo-widgets/src";
+import { refreshAllWidgets } from "expo-widgets";
 
 jest.mock("@/services/widgetSnapshot", () => ({ writeWidgetSnapshot: jest.fn(async () => {}) }));
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadAllWidgets: jest.fn() }));
-jest.mock("../../../modules/expo-widgets/src", () => ({
+jest.mock("expo-widget", () => ({ reloadAllWidgets: jest.fn() }));
+jest.mock("expo-widgets", () => ({
   refreshAllWidgets: jest.fn(async () => {}),
 }));
 

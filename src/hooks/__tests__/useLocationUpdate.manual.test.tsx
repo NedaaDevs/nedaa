@@ -54,7 +54,7 @@ jest.mock("@/utils/alarmScheduler", () => ({
   rescheduleAllAlarms: (...args: unknown[]) => mockRescheduleAlarms(...args),
 }));
 
-jest.mock("../../../modules/expo-widget/src", () => ({
+jest.mock("expo-widget", () => ({
   reloadPrayerWidgets: (...args: unknown[]) => mockReloadPrayerWidgets(...args),
 }));
 
