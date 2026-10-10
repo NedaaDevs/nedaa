@@ -1,5 +1,4 @@
 Apa yang baharu?
 
-• Membaiki isu penggera tidak berbunyi selepas telefon dimulakan semula sehingga kunci dibuka
-• Butang dan pemberitahuan penggera mengikut bahasa aplikasi
+• Membaiki isu aplikasi tertutup apabila penggera ditunda
 • Pembaikan pepijat dan penambahbaikan
