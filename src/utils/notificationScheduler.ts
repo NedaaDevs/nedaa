@@ -292,6 +292,14 @@ const scheduleQuranReminderNotifications = async (
   }
 };
 
+/** Cancels every booked notification and, on Android, every native athan. */
+export const cancelAllAlerts = async (): Promise<void> => {
+  if (Platform.OS === PlatformType.ANDROID) {
+    await cancelAllAthans([]);
+  }
+  await cancelAllScheduledNotifications();
+};
+
 /**
  * Schedule all notifications based on settings and prayer times
  */
@@ -318,7 +326,7 @@ export const scheduleAllNotifications = async (
     };
   }
 
-  if (!data) {
+  if (!data || data.length === 0) {
     log.w("Scheduler", "no prayer times data — nothing scheduled");
     return {
       success: false,
@@ -355,24 +363,16 @@ export const scheduleAllNotifications = async (
       );
     }
 
-    // Cancel all pending athan service alarms (Android)
     const fullAthanEnabled =
       Platform.OS === PlatformType.ANDROID && (androidOptions.fullAthanPlayback ?? false);
     const fullIqamaEnabled =
       Platform.OS === PlatformType.ANDROID && (androidOptions.fullIqamaPlayback ?? false);
-    if (Platform.OS === PlatformType.ANDROID) {
-      await cancelAllAthans([]);
-    }
 
-    await cancelAllScheduledNotifications();
+    await cancelAllAlerts();
 
     const now = timeZonedNow(timezone);
 
     const daysPrayerTimes = data;
-
-    if (!daysPrayerTimes || daysPrayerTimes.length === 0) {
-      throw new Error("No prayer times available for scheduling");
-    }
 
     // Collect all notifications to schedule
     const notificationsToSchedule: NotificationScheduleItem[] = [];
