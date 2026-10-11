@@ -3,13 +3,12 @@ import { NOTIFICATION_FIELD, NOTIFICATION_TYPE } from "@/constants/Notification"
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import type { PrayerSoundKey } from "@/constants/sounds";
-import { scheduleAllNotifications } from "@/utils/notificationScheduler";
-import { cancelAllScheduledNotifications } from "@/utils/notifications";
+import { cancelAllAlerts, scheduleAllNotifications } from "@/utils/notificationScheduler";
 import { clearTransientSchedulingState } from "@/stores/notificationTransientState";
 
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
-jest.mock("@/utils/notifications", () => ({ cancelAllScheduledNotifications: jest.fn() }));
 jest.mock("@/utils/notificationScheduler", () => ({
+  cancelAllAlerts: jest.fn(),
   scheduleAllNotifications: jest.fn(() => Promise.resolve({ success: true, scheduledCount: 0 })),
   shouldReschedule: jest.fn(() => false),
 }));
@@ -34,7 +33,7 @@ const SOUND: PrayerSoundKey = "athan2";
 
 const store = () => useNotificationStore.getState();
 const scheduler = scheduleAllNotifications as jest.Mock;
-const cancelAll = cancelAllScheduledNotifications as jest.Mock;
+const cancelAll = cancelAllAlerts as jest.Mock;
 // Writes replace the settings object, so this stays the store's starting point.
 const INITIAL_SETTINGS = store().settings;
 
@@ -254,8 +253,8 @@ describe("batched writes", () => {
     expect(survivor.isScheduling).toBe(false);
     expect(survivor.pendingReschedule).toBe(true);
   });
-  // The scheduler cancels every pending notification before it can fail
-  // (notificationScheduler.ts:357 then :365), so a debt cleared on a failed flush
+  // The scheduler cancels every pending notification before it can fail,
+  // so a debt cleared on a failed flush
   // leaves nothing scheduled and nothing owed.
   it("keeps the debt when the flush fails", async () => {
     await store().withBatch(async () => {
