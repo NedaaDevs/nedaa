@@ -4,9 +4,12 @@ import Storage from "expo-sqlite/kv-store";
 import { openSettings } from "expo-linking";
 
 // Utils
-import { cancelAllScheduledNotifications } from "@/utils/notifications";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
-import { scheduleAllNotifications, shouldReschedule } from "@/utils/notificationScheduler";
+import {
+  cancelAllAlerts,
+  scheduleAllNotifications,
+  shouldReschedule,
+} from "@/utils/notificationScheduler";
 import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 import { singleFlight } from "@/utils/singleFlight";
 
@@ -366,7 +369,7 @@ export const useNotificationStore = create<NotificationStore>()(
             duhaTime,
           } = get();
           if (!settings.enabled) {
-            await cancelAllScheduledNotifications();
+            await cancelAllAlerts();
             return {
               success: true,
               scheduledCount: 0,
