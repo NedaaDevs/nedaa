@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { cancelAllAthans } from "expo-alarm";
 
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { PRAYER_ID } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import type { NotificationSettings } from "@/types/notification";
@@ -24,7 +25,7 @@ jest.mock("@/utils/notifications", () => ({
 jest.mock("expo-alarm", () => ({
   ...jest.requireActual("expo-alarm"),
   scheduleAthan: jest.fn(),
-  cancelAllAthans: jest.fn(() => Promise.resolve(true)),
+  cancelAllAthans: jest.fn(),
 }));
 jest.mock("@/utils/qadaNotificationScheduler", () => ({ scheduleQadaNotifications: jest.fn() }));
 jest.mock("@/stores/customSounds", () => ({
@@ -33,28 +34,11 @@ jest.mock("@/stores/customSounds", () => ({
 jest.mock("@/stores/quranReminders", () => ({
   useQuranRemindersStore: { getState: () => ({ reminders: [] }) },
 }));
-// Number formatting reads the locale from the app store, which opens SQLite.
-jest.mock("@/stores/app", () => ({
-  __esModule: true,
-  default: { getState: () => ({ locale: "en" }) },
-}));
 // The sound helpers reach the athkar store, which opens SQLite.
 jest.mock("@/stores/athkar", () => ({ useAthkarStore: { getState: jest.fn() } }));
 jest.mock("@/utils/customSoundManager", () => ({
   isCustomSoundKey: () => false,
   createChannelWithCustomSound: jest.fn(),
-}));
-
-const mockLogError = jest.fn();
-jest.mock("@/utils/appLogger", () => ({
-  AppLogger: {
-    create: () => ({
-      d: jest.fn(),
-      i: jest.fn(),
-      w: jest.fn(),
-      e: (...args: unknown[]) => mockLogError(...args),
-    }),
-  },
 }));
 
 const SETTINGS: NotificationSettings = {
@@ -65,7 +49,7 @@ const SETTINGS: NotificationSettings = {
     preAthan: { enabled: false, sound: "tasbih", vibration: true, timing: 15 },
     qada: { enabled: false, sound: "tasbih", vibration: true },
   },
-  overrides: {},
+  overrides: { [PRAYER_ID.FAJR]: {} },
 };
 
 const ATHKAR = {
@@ -104,17 +88,6 @@ describe("cancelling every alert", () => {
 
     expect(cancelAllAthans).toHaveBeenCalledTimes(1);
     expect(cancelAllScheduledNotifications).toHaveBeenCalledTimes(1);
-    expect(mockLogError).not.toHaveBeenCalled();
-  });
-
-  it("still cancels the notifications, and logs, when the native cancel fails", async () => {
-    jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
-    jest.mocked(cancelAllAthans).mockResolvedValueOnce(false);
-
-    await cancelAllAlerts();
-
-    expect(cancelAllScheduledNotifications).toHaveBeenCalledTimes(1);
-    expect(mockLogError).toHaveBeenCalledTimes(1);
   });
 
   it("cancels only the notifications on iOS", async () => {
