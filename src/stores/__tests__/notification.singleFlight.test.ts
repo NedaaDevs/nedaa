@@ -3,12 +3,11 @@ import { NOTIFICATION_FIELD, NOTIFICATION_TYPE } from "@/constants/Notification"
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
 import type { SchedulingResult } from "@/types/notification";
-import { scheduleAllNotifications } from "@/utils/notificationScheduler";
-import { cancelAllScheduledNotifications } from "@/utils/notifications";
+import { cancelAllAlerts, scheduleAllNotifications } from "@/utils/notificationScheduler";
 
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
-jest.mock("@/utils/notifications", () => ({ cancelAllScheduledNotifications: jest.fn() }));
 jest.mock("@/utils/notificationScheduler", () => ({
+  cancelAllAlerts: jest.fn(),
   scheduleAllNotifications: jest.fn(),
   shouldReschedule: jest.fn(() => false),
 }));
@@ -57,7 +56,7 @@ const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 const store = () => useNotificationStore.getState();
 const scheduler = scheduleAllNotifications as jest.Mock;
-const cancelAll = cancelAllScheduledNotifications as jest.Mock;
+const cancelAll = cancelAllAlerts as jest.Mock;
 
 beforeEach(() => {
   scheduler.mockReset();
