@@ -1,24 +1,18 @@
 import { Platform } from "react-native";
 import { requireNativeModule } from "expo-modules-core";
 
-import { AppLogger } from "@/utils/appLogger";
-
-const log = AppLogger.create("widgets");
-
 let ExpoWidget: any = null;
+let loadError: Error | null = null;
 if (Platform.OS === "ios") {
   try {
     ExpoWidget = requireNativeModule("ExpoWidget");
   } catch (error) {
-    // A missing module makes every reload a no-op, so widgets go stale after data
-    // changes with nothing visible in the app to explain it.
-    log.e(
-      "Module",
-      "expo-widget native module missing — widget reloads are no-ops",
-      error as Error
-    );
+    loadError = error instanceof Error ? error : new Error(String(error));
   }
 }
+
+// The app logs this; a local module cannot import app code.
+export const getWidgetModuleLoadError = (): Error | null => loadError;
 
 // Whether the native reload module is present (false → reloads are no-ops).
 export function isWidgetReloadAvailable(): boolean {
