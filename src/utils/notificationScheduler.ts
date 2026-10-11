@@ -294,10 +294,10 @@ const scheduleQuranReminderNotifications = async (
 
 /** Cancels every booked notification and, on Android, every native athan. */
 export const cancelAllAlerts = async (): Promise<void> => {
-  const athansCancelled = Platform.OS !== PlatformType.ANDROID || (await cancelAllAthans([]));
+  if (Platform.OS === PlatformType.ANDROID) {
+    await cancelAllAthans([]);
+  }
   await cancelAllScheduledNotifications();
-  // A failed native cancel leaves athans armed after their notifications are gone.
-  if (!athansCancelled) log.e("Scheduler", "native athan cancel failed; athans may still fire");
 };
 
 /**
