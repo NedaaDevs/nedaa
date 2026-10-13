@@ -190,8 +190,11 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               });
             }
 
-            const { currentProviderId, setInEffect } = providerSettingsStore.getState();
-            setInEffect(getAdapterByProviderId(currentProviderId).fromApplied(data.applied));
+            // Only the current year's fetch holds today, so only it reports on today.
+            if (yearOverride === undefined) {
+              const { currentProviderId, setInEffect } = providerSettingsStore.getState();
+              setInEffect(getAdapterByProviderId(currentProviderId).fromApplied(data.applied));
+            }
 
             reloadPrayerWidgets();
             await syncWidgetSnapshot();
