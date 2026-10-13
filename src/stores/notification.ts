@@ -4,8 +4,11 @@ import Storage from "expo-sqlite/kv-store";
 import { openSettings } from "expo-linking";
 
 // Utils
-import { cancelAllScheduledNotifications } from "@/utils/notifications";
-import { scheduleAllNotifications, shouldReschedule } from "@/utils/notificationScheduler";
+import {
+  cancelAllAlerts,
+  scheduleAllNotifications,
+  shouldReschedule,
+} from "@/utils/notificationScheduler";
 import { buildUsedSoundsSet } from "@/utils/customSoundManager";
 
 // Stores
@@ -169,7 +172,7 @@ export const useNotificationStore = create<NotificationStore>()(
 
           // If disabling, cancel all notifications
           if (!enabled) {
-            await cancelAllScheduledNotifications();
+            await cancelAllAlerts();
           } else {
             await get().scheduleAllNotifications();
           }
