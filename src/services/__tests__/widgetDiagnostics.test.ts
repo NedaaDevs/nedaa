@@ -85,7 +85,7 @@ describe("logWidgetAttachContext", () => {
   });
 });
 
-// A missing reload module leaves every widget stale with nothing else to explain it.
+// The load error is the only trace of a missing reload module.
 describe("logWidgetReloadModule", () => {
   test("records the error when the native module failed to load", () => {
     const loadError = new Error("Cannot find native module 'ExpoWidget'");
