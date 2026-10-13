@@ -1,18 +1,21 @@
-import { styled, Separator } from "tamagui";
+import { styled, View } from "tamagui";
 
-export const Divider = styled(Separator, {
+// A filled 1pt box, not a border on a zero-height one: only a box with its own
+// height counts toward its parent's size.
+export const Divider = styled(View, {
   name: "Divider",
-  borderColor: "$border",
+  backgroundColor: "$border",
+  flexShrink: 0,
 
   variants: {
     orientation: {
       horizontal: {
-        width: "100%",
-        borderBottomWidth: 1,
+        height: 1,
+        alignSelf: "stretch",
       },
       vertical: {
-        height: "100%",
-        borderRightWidth: 1,
+        width: 1,
+        alignSelf: "stretch",
       },
     },
   } as const,
