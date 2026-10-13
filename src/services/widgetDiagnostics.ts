@@ -39,7 +39,7 @@ export const logWidgetAttachContext = (deps: WidgetAttachContextDeps): void => {
   );
 };
 
-// Without the module every reload is a no-op and widgets go stale silently.
+// A missing module turns every reload into a no-op, so its load error is logged.
 export const logWidgetReloadModule = (loadError: Error | null): void => {
   if (!loadError) return;
   log.e("Module", "expo-widget native module missing — widget reloads are no-ops", loadError);
