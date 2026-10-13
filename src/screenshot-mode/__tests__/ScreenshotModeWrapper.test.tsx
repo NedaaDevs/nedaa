@@ -3,7 +3,7 @@ import { act, render, screen } from "@testing-library/react-native";
 
 import { E2E_ID, screenshotReadyId } from "@/constants/E2E";
 import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
-import { useAppStore } from "@/stores/app";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useScreenshotStore } from "@/stores/screenshotStore";
 
 const STATUS_BAR = 52;
@@ -32,7 +32,7 @@ const hidden = { includeHiddenElements: true } as const;
 describe("ScreenshotModeWrapper", () => {
   afterEach(() => {
     useScreenshotStore.getState().reset();
-    useAppStore.setState({ showLoadingOverlay: false });
+    usePrayerTimesStore.setState({ loadingTimes: false });
   });
 
   it("shows no readiness marker before a shot settles", async () => {
@@ -60,9 +60,9 @@ describe("ScreenshotModeWrapper", () => {
     expect(marker.props.collapsable).toBe(false);
   });
 
-  // A capture over the loading card would pass for a settled screen.
-  it("holds the marker while the app shows its loading overlay", async () => {
-    useAppStore.setState({ showLoadingOverlay: true });
+  // A capture before the times land would pass for a settled screen.
+  it("holds the marker while prayer times load", async () => {
+    usePrayerTimesStore.setState({ loadingTimes: true });
     await render(
       <ScreenshotModeWrapper>
         <Text>app</Text>
@@ -72,7 +72,7 @@ describe("ScreenshotModeWrapper", () => {
 
     expect(screen.queryByTestId(E2E_ID.SCREENSHOT_READY, hidden)).toBeNull();
 
-    await act(() => useAppStore.setState({ showLoadingOverlay: false }));
+    await act(() => usePrayerTimesStore.setState({ loadingTimes: false }));
 
     expect(screen.getByTestId(E2E_ID.SCREENSHOT_READY, hidden)).toBeTruthy();
   });

@@ -16,8 +16,8 @@ const log = AppLogger.create("location");
 // Constants
 export const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 export const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
-// Bounds a position read that blocks the launch: loadPrayerTimes holds a full-screen overlay
-// while it runs, so it stays short even though a cold fix can take longer than this.
+// Bounds a position read that blocks the launch fetch: Today shows its loading state
+// until it settles, so it stays short even though a cold fix can take longer.
 export const LOCATION_REQUEST_TIMEOUT = 10000; // 10 seconds
 // For a read the user asked for and is watching a spinner on. It sits above the native 30s
 // one-shot deadline, so the module settles first and its specific error survives the race.

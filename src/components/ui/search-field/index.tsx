@@ -45,7 +45,8 @@ export const SearchField = ({ value, onChangeText, placeholder }: Props) => {
           accessibilityLabel={placeholder}
           autoCorrect={false}
           autoCapitalize="none"
-          style={{ fontSize }}
+          // The whole pill takes the tap, as the plain field's does.
+          style={{ fontSize, height: "100%" }}
         />
       ) : (
         <Input

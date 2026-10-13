@@ -4,25 +4,25 @@
  */
 export type ApplyStep = "prayerTimes" | "notifications" | "alarms";
 
-export type ApplyProviderSettingsDeps = {
-  saveSettings: () => Promise<void>;
+export type ApplyProviderSettingsDeps<Saved> = {
+  saveSettings: () => Promise<Saved>;
   loadPrayerTimes: (forceGetAndStore: boolean) => Promise<void>;
   // Result intentionally unused here; the apply flow only needs completion.
   scheduleAllNotifications: () => Promise<unknown>;
   rescheduleAllAlarms: () => Promise<void>;
   reloadPrayerWidgets: () => void;
-  markSettingsApplied: () => void;
+  markSettingsApplied: (saved: Saved) => void;
 };
 
 /**
  * Every step must succeed before the edit counts as applied. Throws on the first
  * failure, leaving the settings dirty for a retry.
  */
-export const applyProviderSettings = async (
-  deps: ApplyProviderSettingsDeps,
+export const applyProviderSettings = async <Saved>(
+  deps: ApplyProviderSettingsDeps<Saved>,
   onStep: (step: ApplyStep) => void
 ): Promise<void> => {
-  await deps.saveSettings();
+  const saved = await deps.saveSettings();
 
   onStep("prayerTimes");
   await deps.loadPrayerTimes(true);
@@ -35,5 +35,5 @@ export const applyProviderSettings = async (
 
   deps.reloadPrayerWidgets();
 
-  deps.markSettingsApplied();
+  deps.markSettingsApplied(saved);
 };

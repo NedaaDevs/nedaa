@@ -2,7 +2,6 @@ import type { ParseKeys } from "i18next";
 import {
   AlarmClock,
   Bell,
-  CalendarDays,
   CirclePlus,
   FileText,
   Globe,
@@ -43,18 +42,10 @@ export const SETTINGS_ROWS: Record<SettingsRowId, SettingsRowTarget> = {
     destination: BACK_DESTINATION.SETTINGS_LOCATION,
     icon: MapPin,
   },
-  // The screen holds more, but the method is what the row reports. The glyph
-  // matches the prayer sheet's Adjustment row, which opens the same screen.
+  // Same glyph as the prayer sheet's Adjustment row, which opens this screen.
   [SETTINGS_ROW.CALCULATION]: {
     destination: BACK_DESTINATION.SETTINGS_PROVIDER,
     icon: SlidersHorizontal,
-    titleKey: "providers.aladhan.method.title",
-  },
-  [SETTINGS_ROW.HIJRI]: {
-    destination: BACK_DESTINATION.SETTINGS_HIJRI,
-    icon: CalendarDays,
-    // The offset is the summary, so the title names only the date.
-    titleKey: "settings.rows.hijri",
   },
   [SETTINGS_ROW.NOTIFICATIONS]: {
     destination: BACK_DESTINATION.SETTINGS_NOTIFICATION,

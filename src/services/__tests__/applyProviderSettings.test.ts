@@ -2,8 +2,10 @@ import { applyProviderSettings } from "@/services/applyProviderSettings";
 
 import type { ApplyStep } from "@/services/applyProviderSettings";
 
+const SAVED = { method: 4 };
+
 const makeDeps = () => ({
-  saveSettings: jest.fn(() => Promise.resolve()),
+  saveSettings: jest.fn(() => Promise.resolve(SAVED)),
   loadPrayerTimes: jest.fn(() => Promise.resolve()),
   scheduleAllNotifications: jest.fn(() => Promise.resolve()),
   rescheduleAllAlarms: jest.fn(() => Promise.resolve()),
@@ -28,12 +30,13 @@ describe("applyProviderSettings", () => {
     expect(deps.loadPrayerTimes).toHaveBeenCalledWith(true);
   });
 
-  test("marks the settings applied once every step has landed", async () => {
+  test("marks the saved settings applied once every step has landed", async () => {
     const deps = makeDeps();
 
     await applyProviderSettings(deps, () => {});
 
     expect(deps.markSettingsApplied).toHaveBeenCalledTimes(1);
+    expect(deps.markSettingsApplied).toHaveBeenCalledWith(SAVED);
   });
 
   test("reloads the widgets before marking applied", async () => {

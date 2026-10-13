@@ -34,7 +34,6 @@ jest.mock("@/utils/location", () => ({
 jest.mock("@/stores/app", () => ({
   __esModule: true,
   default: { getState: () => ({ locale: "en" }) },
-  useAppStore: { getState: () => ({ setLoadingState: jest.fn() }) },
 }));
 
 jest.mock("@/stores/providerSettings", () => ({

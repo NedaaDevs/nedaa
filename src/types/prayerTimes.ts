@@ -25,6 +25,8 @@ export type PrayerTimesResponse = {
   months: {
     [monthNumber: string]: PrayerMonthEntry[];
   };
+  /** The settings the provider used, in the app's names; the adapter reads it. */
+  applied?: unknown;
 };
 
 export type PrayerTimesParams = {

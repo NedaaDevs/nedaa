@@ -3,8 +3,6 @@ import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { addDays, format, subDays } from "date-fns";
 
-import i18n from "@/localization/i18n";
-
 // Types
 import {
   DayPrayerTimes,
@@ -26,7 +24,6 @@ import { PrayerTimesDB } from "@/services/db";
 // Stores
 import locationStore from "@/stores/location";
 import providerSettingsStore from "@/stores/providerSettings";
-import { useAppStore } from "@/stores/app";
 
 // Utils
 import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
@@ -56,6 +53,8 @@ export type PrayerTimesStore = {
   /** The times on screen were computed from the default coordinates, not the user's. */
   usingDefaultLocation: boolean;
   isLoading: boolean;
+  /** True while loadPrayerTimes runs, location read included. */
+  loadingTimes: boolean;
   isGettingProviders: boolean;
   hasError: boolean;
   errorMessage: string;
@@ -115,6 +114,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         didGetCurrentLocation: false,
         usingDefaultLocation: false,
         isLoading: false,
+        loadingTimes: false,
         isGettingProviders: false,
         hasError: false,
         errorMessage: "",
@@ -190,6 +190,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               });
             }
 
+            const { currentProviderId, setInEffect } = providerSettingsStore.getState();
+            setInEffect(getAdapterByProviderId(currentProviderId).fromApplied(data.applied));
+
             reloadPrayerWidgets();
             await syncWidgetSnapshot();
 
@@ -237,7 +240,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           try {
             // Clear any previous errors
             set({ hasError: false, errorMessage: "" });
-            useAppStore.getState().setLoadingState(true, i18n.t("common.loadingPrayerTimes"));
+            set({ loadingTimes: true });
 
             // If we haven't already got the current location, acquire it before reading prayer
             // data. A manual location is authoritative, so reading the device position would
@@ -321,7 +324,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           } finally {
             // Cached and offline launches still publish their stored days to widgets.
             await syncWidgetSnapshot();
-            useAppStore.getState().setLoadingState(false);
+            set({ loadingTimes: false });
           }
         },
         getNextPrayer: (now = new Date()) => {
@@ -397,5 +400,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
     { name: "PrayerTimesStores" }
   )
 );
+
+/** Whether today's times are on their way: a load or a fetch is running. */
+export const selectTimesLoading = (state: PrayerTimesStore) =>
+  state.isLoading || state.loadingTimes;
 
 export default usePrayerTimesStore;

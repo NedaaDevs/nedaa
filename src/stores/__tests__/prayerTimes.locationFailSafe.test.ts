@@ -35,9 +35,6 @@ jest.mock("@/stores/app", () => ({
   default: {
     getState: () => ({ locale: "en" }),
   },
-  useAppStore: {
-    getState: () => ({ setLoadingState: jest.fn() }),
-  },
 }));
 
 jest.mock("@/stores/providerSettings", () => ({

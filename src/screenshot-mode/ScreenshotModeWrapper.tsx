@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { initialWindowMetrics } from "react-native-safe-area-context";
 import { E2E_ID, screenshotReadyId } from "@/constants/E2E";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
-import { useAppStore } from "@/stores/app";
+import { selectTimesLoading, usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useScreenshotStore } from "@/stores/screenshotStore";
 
 export function ScreenshotModeWrapper({ children }: { children: ReactNode }) {
@@ -37,7 +37,7 @@ const Probe = ({ id, style }: { id: string; style: typeof MARKER_STYLE | typeof 
 function ScreenshotModeWrapperInner({ children }: { children: ReactNode }) {
   const screen = useScreenshotStore((s) => s.screen);
   const locale = useScreenshotStore((s) => s.locale);
-  const loading = useAppStore((s) => s.showLoadingOverlay);
+  const loading = usePrayerTimesStore(selectTimesLoading);
   return (
     <>
       <Probe id={E2E_ID.SCREENSHOT_FRAME} style={FRAME_STYLE} />

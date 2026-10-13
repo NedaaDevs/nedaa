@@ -22,19 +22,19 @@ jest.mock("@/utils/date", () => ({
   },
 }));
 
-/** Screens the Settings root links to straight, with no hub between. */
-const CHILDREN: readonly [BackDestination, ComponentType][] = [
-  [BACK_DESTINATION.SETTINGS_PROVIDER, ProviderSettings],
-  [BACK_DESTINATION.SETTINGS_HIJRI, HijriSettings],
+/** Each Settings child and the screen it leads back to with nothing behind. */
+const CHILDREN: readonly [BackDestination, ComponentType, BackDestination][] = [
+  [BACK_DESTINATION.SETTINGS_PROVIDER, ProviderSettings, BACK_DESTINATION.SETTINGS],
+  [BACK_DESTINATION.SETTINGS_HIJRI, HijriSettings, BACK_DESTINATION.SETTINGS_PROVIDER],
 ];
 
 beforeEach(() => {
   useAppStore.setState({ locale: AppLocale.EN, hijriDaysOffset: 0 });
 });
 
-// Opened cold, as from a link, each goes back to the Settings root.
-describe.each(CHILDREN)("$route opened with nothing behind", ({ route, href }, Screen) => {
-  it("goes back to Settings", async () => {
+// Opened cold, as from a link, each goes back to the screen that opens it.
+describe.each(CHILDREN)("$route opened with nothing behind", ({ route, href }, Screen, parent) => {
+  it("goes back to its parent", async () => {
     await renderRouter(
       { [route]: () => <Screen /> },
       {
@@ -45,7 +45,7 @@ describe.each(CHILDREN)("$route opened with nothing behind", ({ route, href }, S
 
     expect(
       screen.getByRole("button", {
-        name: i18n.t("a11y.backTo", { screen: i18n.t("settings.title") }),
+        name: i18n.t("a11y.backTo", { screen: i18n.t(parent.title) }),
       })
     ).toBeTruthy();
   });

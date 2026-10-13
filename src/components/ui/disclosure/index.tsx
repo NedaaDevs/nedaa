@@ -28,15 +28,17 @@ const TIMING = { duration: DISCLOSURE.ms, easing: Easing.out(Easing.cubic) };
 
 type Props = {
   title: string;
+  /** Starts open, e.g. so a changed value inside is never hidden. */
+  defaultOpen?: boolean;
   children: ReactNode;
 };
 
 /** A summary row that opens a body below it, the body growing to its height. */
-export const Disclosure = ({ title, children }: Props) => {
+export const Disclosure = ({ title, defaultOpen = false, children }: Props) => {
   const reduced = useReducedMotion();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [height, setHeight] = useState(0);
-  const progress = useSharedValue(0);
+  const progress = useSharedValue(defaultOpen ? 1 : 0);
 
   useEffect(() => {
     const target = open ? 1 : 0;

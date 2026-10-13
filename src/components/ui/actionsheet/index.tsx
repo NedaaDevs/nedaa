@@ -35,7 +35,10 @@ import {
   useBottomSheetTimingConfigs,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { X } from "lucide-react-native";
 import { useAppCovered, useCoverApp, useSheetLayer } from "@/components/ui/actionsheet/cover";
+import { Icon } from "@/components/ui/icon";
+import { Pressable, type PressableProps } from "@/components/ui/pressable";
 import { PlatformType } from "@/enums/app";
 import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -44,7 +47,10 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 const SHEET_RADIUS = 18;
 
 /** Test ids for the parts a test reaches. */
-export const ACTIONSHEET_PART = { LAYER: "actionsheet-layer" } as const;
+export const ACTIONSHEET_PART = {
+  LAYER: "actionsheet-layer",
+  CLOSE: "actionsheet-close",
+} as const;
 
 /** Moves screen-reader focus to a view, when there is one. */
 const focusOn = (node: HostInstance | null | undefined) => {
@@ -90,6 +96,8 @@ type ActionsheetProps = {
   fitContent?: boolean;
   /** Gets screen-reader focus back once the sheet closes: its opener. */
   finalFocusRef?: RefObject<HostInstance | null>;
+  /** Gets screen-reader focus once the sheet is up; the title when unset or empty. */
+  initialFocusRef?: RefObject<HostInstance | null>;
   children?: React.ReactNode;
 };
 
@@ -99,6 +107,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   snapPoints = [50],
   fitContent = false,
   finalFocusRef,
+  initialFocusRef,
   children,
 }) => {
   const theme = useTheme();
@@ -122,14 +131,14 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     [snapPoints]
   );
 
-  // Focus moves to the title once the sheet is up, and back out after.
+  // Focus moves into the sheet once it is up, and back out after.
   useEffect(() => {
     if (!shown) return;
-    focusOn(title.current);
+    focusOn(initialFocusRef?.current ?? title.current);
     return () => {
       leaving.current = true;
     };
-  }, [shown]);
+  }, [shown, initialFocusRef]);
 
   // Waits for the app to be uncovered: until then the opener is out of reach.
   useEffect(() => {
@@ -255,7 +264,9 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
   // BottomSheetScrollView nested inside a BottomSheetView. So the content IS the
   // scroll view; ActionsheetScrollView below is a passthrough.
   return (
+    // A tap on a row lands while the keyboard is up, not only closing it.
     <BottomSheetScrollView
+      keyboardShouldPersistTaps="handled"
       contentContainerStyle={
         unpadded
           ? undefined
@@ -280,6 +291,27 @@ const ActionsheetTitle: React.FC<{ children?: React.ReactNode }> = ({ children }
   </RNView>
 );
 ActionsheetTitle.displayName = "ActionsheetTitle";
+
+// --- ActionsheetCloseButton ---
+
+/** The sheet's own close control; the caller places it. */
+const ActionsheetCloseButton = ({ onPress, ...placement }: PressableProps) => {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      testID={ACTIONSHEET_PART.CLOSE}
+      accessibilityRole="button"
+      accessibilityLabel={t("common.close")}
+      onPress={onPress}
+      alignItems="center"
+      justifyContent="center"
+      borderRadius="$pill"
+      pressStyle={{ opacity: 1, backgroundColor: "$pressed" }}
+      {...placement}>
+      <Icon as={X} size="md" strokeWidth={1.8} color="$muted" />
+    </Pressable>
+  );
+};
 
 // --- ActionsheetDragIndicatorWrapper / ActionsheetDragIndicator ---
 // gorhom renders the drag handle, so these are no-ops kept for API compatibility.
@@ -371,6 +403,7 @@ type ActionsheetItemTextProps = ActionsheetItemTextWrapperProps;
 export {
   Actionsheet,
   ActionsheetBackdrop,
+  ActionsheetCloseButton,
   ActionsheetContent,
   ActionsheetOverlay,
   ActionsheetDragIndicatorWrapper,
