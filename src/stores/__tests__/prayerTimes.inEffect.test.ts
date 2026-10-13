@@ -69,6 +69,16 @@ describe("the settings the stored times came from", () => {
     expect(useProviderSettingsStore.getState().inEffect).toBeNull();
   });
 
+  // An adjacent year's fetch holds no part of today, so its report is not today's.
+  it("keeps the report when an adjacent year's fetch carries none", async () => {
+    useProviderSettingsStore.setState({ inEffect: { method: MAKKAH } });
+    mockGet.mockResolvedValue(response());
+
+    await usePrayerTimesStore.getState().getAndStorePrayerTimes(2027);
+
+    expect(useProviderSettingsStore.getState().inEffect).toEqual({ method: MAKKAH });
+  });
+
   it("keeps the last report when the times fail to store", async () => {
     useProviderSettingsStore.setState({ inEffect: { method: MWL } });
     mockGet.mockResolvedValue(response({ method: MAKKAH }));
