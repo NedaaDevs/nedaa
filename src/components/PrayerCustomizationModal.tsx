@@ -169,7 +169,7 @@ const PrayerCustomizationModal: FC<Props> = ({
               />
             </HStack>
 
-            <Divider backgroundColor="$outline" />
+            <Divider />
 
             {/* Timing (Iqama & PreAthan) */}
             {hasTiming && timingLabel && (
@@ -185,7 +185,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                     placeholder={t("notification.timing.selectPlaceholder")}
                   />
                 </HStack>
-                <Divider backgroundColor="$outline" />
+                <Divider />
               </>
             )}
 
@@ -212,7 +212,7 @@ const PrayerCustomizationModal: FC<Props> = ({
             {/* Vibration */}
             {supportsVibration && (
               <>
-                <Divider backgroundColor="$outline" />
+                <Divider />
                 <HStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
                   <Text fontWeight="500" color="$typography" flex={1}>
                     {t("notification.vibration")}
