@@ -1,54 +1,71 @@
-import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
-import ts from "typescript";
 
-const MODULES_DIR = path.resolve(__dirname, "../../modules");
-const SOURCE_FILE = /\.(ts|tsx|js|jsx)$/;
-const APP_ALIAS = "@/";
+const REPO_ROOT = path.resolve(__dirname, "../..");
+const ESLINT_BIN = path.join(REPO_ROOT, "node_modules/.bin/eslint");
+// A path inside a local module, so the module override applies.
+const MODULE_FILE = "modules/expo-widget/src/__boundary.ts";
+const BOUNDARY_RULES = new Set(["no-restricted-imports", "no-restricted-syntax"]);
 
-// The compiler's own scanner sees every import, require and dynamic import form.
-const importsAppAlias = (source: string): boolean =>
-  ts
-    .preProcessFile(source, true, true)
-    .importedFiles.some(({ fileName }) => fileName.startsWith(APP_ALIAS));
-
-const sourceFiles = (dir: string): string[] =>
-  fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) return entry.name === "node_modules" ? [] : sourceFiles(full);
-    return SOURCE_FILE.test(entry.name) ? [full] : [];
-  });
-
-const moduleSources = fs
-  .readdirSync(MODULES_DIR)
-  .map((name) => path.join(MODULES_DIR, name, "src"))
-  .filter((dir) => fs.existsSync(dir))
-  .flatMap(sourceFiles);
-
-// bun copies modules into node_modules, where Metro has no `@/` alias.
-it("keeps every local module free of app-alias imports", () => {
-  const offenders = moduleSources
-    .filter((file) => importsAppAlias(fs.readFileSync(file, "utf8")))
-    .map((file) => path.relative(MODULES_DIR, file));
-
-  expect(moduleSources.length).toBeGreaterThan(0);
-  expect(offenders).toEqual([]);
-});
-
-it.each([
+const REJECTED = [
   'import a from "@/a";',
   'import "@/b";',
-  'const c = require("@/c");',
-  'import ("@/d");',
-  "const e = import(`@/e`);",
-  'export * from "@/f";',
   'import type { G } from "@/g";',
-])("flags the app alias in %s", (source) => {
-  expect(importsAppAlias(source)).toBe(true);
-});
+  'export * from "@/f";',
+  'export { h } from "@/h";',
+  'const c = require("@/c");',
+  'const d = import("@/d");',
+  "const e = import(`@/e/${n}`);",
+  "const r = require(`@/r/${n}`);",
+];
+const ACCEPTED = ['import { Platform } from "react-native";', 'import x from "./x";'];
 
-it("passes a module that imports only packages and relative files", () => {
-  expect(importsAppAlias('import { Platform } from "react-native";\nimport x from "./x";')).toBe(
-    false
+type LintMessage = { line: number; ruleId: string | null };
+
+// ESLint loads its config with import(), which Jest's VM cannot run.
+const flaggedLines = (source: string): Set<number> => {
+  let output: string;
+  try {
+    output = execFileSync(
+      ESLINT_BIN,
+      ["--stdin", "--stdin-filename", MODULE_FILE, "--format", "json"],
+      { cwd: REPO_ROOT, input: source, encoding: "utf8", stdio: ["pipe", "pipe", "ignore"] }
+    );
+  } catch (error) {
+    // ESLint exits 1 when it reports errors; its JSON is still on stdout.
+    output = String((error as { stdout?: string }).stdout ?? "[]");
+  }
+  return lintedLines(output);
+};
+
+const lintedLines = (output: string): Set<number> => {
+  const [result] = JSON.parse(output) as [{ messages: LintMessage[] }];
+  return new Set(
+    result.messages
+      .filter((message) => BOUNDARY_RULES.has(message.ruleId ?? ""))
+      .map((message) => message.line)
   );
+};
+
+// bun copies modules into node_modules, where Metro has no `@/` alias.
+describe("the local-module lint boundary", () => {
+  // Line 1 declares `n`; each form then sits on its own line.
+  const lines = ["const n = 'x';", ...REJECTED, ...ACCEPTED];
+  let flagged: Set<number>;
+
+  beforeAll(() => {
+    flagged = flaggedLines(lines.join("\n"));
+  }, 60_000);
+
+  it.each(REJECTED.map((source, index) => [source, index + 2] as const))(
+    "rejects %s",
+    (_source, line) => {
+      expect(flagged.has(line)).toBe(true);
+    }
+  );
+
+  it("accepts packages and relative files", () => {
+    const firstAccepted = REJECTED.length + 2;
+    ACCEPTED.forEach((_source, index) => expect(flagged.has(firstAccepted + index)).toBe(false));
+  });
 });
