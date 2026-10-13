@@ -4,23 +4,13 @@ import { Disclosure } from "@/components/ui/disclosure";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { OTHER_TIMING, OTHER_TIMING_NAMES, type OtherTimingName } from "@/constants/Prayer";
+import { OTHER_TIME_LABEL_KEY, OTHER_TIMING_NAMES, type OtherTimingName } from "@/constants/Prayer";
 import { useShownDay } from "@/hooks/useShownDay";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatPrayerTime } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
 import { spokenClockTime } from "@/utils/spokenClockTime";
-
-/** Each other time's name; two of the keys spell their id in camel case. */
-export const OTHER_TIME_LABEL_KEY: Record<OtherTimingName, string> = {
-  [OTHER_TIMING.SUNRISE]: "otherTimings.sunrise",
-  [OTHER_TIMING.SUNSET]: "otherTimings.sunset",
-  [OTHER_TIMING.IMSAK]: "otherTimings.imsak",
-  [OTHER_TIMING.MIDNIGHT]: "otherTimings.midnight",
-  [OTHER_TIMING.FIRST_THIRD]: "otherTimings.firstThird",
-  [OTHER_TIMING.LAST_THIRD]: "otherTimings.lastThird",
-};
 
 /** The day's times beside the prayers, folded away under one row. */
 export const OtherTimes = () => {

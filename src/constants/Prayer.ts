@@ -12,6 +12,10 @@ export type PrayerId = (typeof PRAYER_ID)[keyof typeof PRAYER_ID];
 /** Chronological. Derived, so there is one list to keep correct. */
 export const PRAYER_IDS: readonly PrayerId[] = Object.values(PRAYER_ID);
 
+/** Whether a timing name is one of the five prayers. */
+export const isPrayerId = (value: string): value is PrayerId =>
+  PRAYER_IDS.some((prayer) => prayer === value);
+
 /**
  * Timings around the five prayers. Storage keys, same contract as PRAYER_ID.
  *
@@ -41,6 +45,16 @@ export const OTHER_TIMING_NAMES = [
 ] as const;
 
 export type OtherTimingName = (typeof OTHER_TIMING_NAMES)[number];
+
+/** Each other time's name; two of the keys spell their id in camel case. */
+export const OTHER_TIME_LABEL_KEY: Record<OtherTimingName, string> = {
+  [OTHER_TIMING.SUNRISE]: "otherTimings.sunrise",
+  [OTHER_TIMING.SUNSET]: "otherTimings.sunset",
+  [OTHER_TIMING.IMSAK]: "otherTimings.imsak",
+  [OTHER_TIMING.MIDNIGHT]: "otherTimings.midnight",
+  [OTHER_TIMING.FIRST_THIRD]: "otherTimings.firstThird",
+  [OTHER_TIMING.LAST_THIRD]: "otherTimings.lastThird",
+};
 
 /** What a user can switch a notification on for. */
 export const OTHER_TIMING_IDS = [

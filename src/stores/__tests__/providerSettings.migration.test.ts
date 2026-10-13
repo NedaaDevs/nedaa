@@ -23,6 +23,17 @@ describe("provider settings reapply migration", () => {
     expect(migrated.pendingReapply).toBe(true);
   });
 
+  // Version 3 stores what the provider used, which only a fetch can fill.
+  test("refetches once so an install learns what the provider used", () => {
+    const migrated = migrateProviderSettings(
+      { currentProviderId: "aladhan", allSettings: { aladhan: {} }, pendingReapply: false },
+      2
+    );
+
+    expect(useProviderSettingsStore.persist.getOptions().version).toBe(3);
+    expect(migrated.pendingReapply).toBe(true);
+  });
+
   test("flags a reapply for installs persisted at version 0", () => {
     const migrated = migrateProviderSettings(
       { currentProviderId: 1, allSettings: { "1": { method: 4 } } },

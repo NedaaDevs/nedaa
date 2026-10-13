@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
 
+import { methodName, resolvedMethod } from "@/components/calculation/calculationOptions";
+import { useTimesSource } from "@/hooks/useDraftTimes";
 import { PRAYER_IDS } from "@/constants/Prayer";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
@@ -12,7 +14,6 @@ import { useNotificationStore } from "@/stores/notification";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { getEffectiveConfig, type NotificationSettings } from "@/types/notification";
-import { hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
 
 const ALADHAN = PRAYER_TIME_PROVIDERS.ALADHAN;
 
@@ -35,19 +36,18 @@ export const useSettingsSummaries = (): Partial<Record<SettingsRowId, string>> =
   const { t } = useTranslation();
   const locale = useAppStore((state) => state.locale);
   const mode = useAppStore((state) => state.mode);
-  const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const use24Hour = usePreferencesStore((state) => state.use24HourTime);
   const textSize = usePreferencesStore((state) => state.textSize);
   const place = usePlace().name;
   const methodId = useProviderSettingsStore((state) =>
     state.currentProviderId === ALADHAN.id ? state.allSettings[ALADHAN.id]?.method : undefined
   );
+  const reported = useTimesSource()?.method;
   const notifications = useNotificationStore((state) => state.settings);
   const morning = useNotificationStore((state) => state.morningNotification.enabled);
   const evening = useNotificationStore((state) => state.eveningNotification.enabled);
   const alarmStatus = useAlarmStatus();
 
-  const method = ALADHAN.methods.find(({ id }) => id === methodId);
   const alerts = alertCount(notifications);
   // The scheduler sends no reminder while notifications are off.
   const athkarOn = (enabled: boolean) => notifications.enabled && enabled;
@@ -61,10 +61,7 @@ export const useSettingsSummaries = (): Partial<Record<SettingsRowId, string>> =
     [SETTINGS_ROW.LANGUAGE]: t(`settings.languages.${locale}.nativeTitle`),
     // The store always holds coordinates, so a place with no name has no summary.
     [SETTINGS_ROW.LOCATION]: place,
-    [SETTINGS_ROW.CALCULATION]: method
-      ? t(`providers.aladhan.methods.${method.nameKey}`)
-      : t("settings.summary.methodAuto"),
-    [SETTINGS_ROW.HIJRI]: hijriAdjustmentLabel(hijriOffset, t),
+    [SETTINGS_ROW.CALCULATION]: methodName(resolvedMethod(methodId, methodId, reported), t),
     [SETTINGS_ROW.NOTIFICATIONS]: !notifications.enabled
       ? t("settings.summary.notificationsOff")
       : alerts === PRAYER_IDS.length
