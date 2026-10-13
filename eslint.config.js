@@ -2,14 +2,18 @@
 const { defineConfig } = require("eslint/config");
 const expoConfig = require("eslint-config-expo/flat");
 
+const LOCAL_MODULE_ALIAS_MESSAGE =
+  "Local modules run from a copy in node_modules, where `@/` does not resolve; keep app code out of them.";
+
 module.exports = defineConfig([
   expoConfig,
   {
     // dist: build output. .expo, .tamagui: generated locally by the dev server
-    // and `tamagui generate-prompt`. scripts: standalone bun/node tooling
-    // (bun:sqlite, import.meta) outside the Expo app's tsconfig, so the app lint
-    // can't resolve their imports.
-    ignores: ["dist/*", ".expo/**", ".tamagui/**", "scripts/**"],
+    // and `tamagui generate-prompt`. docs/design, .agents: local design and agent
+    // files, not app code. scripts: standalone bun/node tooling (bun:sqlite,
+    // import.meta) outside the Expo app's tsconfig, so the app lint can't resolve
+    // their imports.
+    ignores: ["dist/*", ".expo/**", ".tamagui/**", "docs/design/**", ".agents/**", "scripts/**"],
   },
   {
     // Every React Compiler rule runs at the preset severity (error): a hit is a
@@ -70,6 +74,26 @@ module.exports = defineConfig([
     ],
     rules: {
       "no-restricted-syntax": "off",
+    },
+  },
+  {
+    // bun copies local modules into node_modules, where Metro has no `@/` alias.
+    files: ["modules/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [{ group: ["@/*"], message: LOCAL_MODULE_ALIAS_MESSAGE }] },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        ...["ImportExpression", "CallExpression[callee.name='require']"].flatMap((call) => [
+          { selector: `${call} > Literal[value=/^@\\//]`, message: LOCAL_MODULE_ALIAS_MESSAGE },
+          {
+            selector: `${call} > TemplateLiteral > TemplateElement:first-child[value.raw=/^@\\//]`,
+            message: LOCAL_MODULE_ALIAS_MESSAGE,
+          },
+        ]),
+      ],
     },
   },
 ]);
