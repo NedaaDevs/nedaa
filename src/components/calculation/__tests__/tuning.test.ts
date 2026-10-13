@@ -4,10 +4,14 @@ import {
   TUNING_LIMIT,
   TUNED_PRAYERS,
   clampTuning,
+  isTuned,
+  signedOffset,
+  spokenTuning,
   summarisePrayerTuning,
   summariseTuning,
-} from "@/components/AladhanSettings/tuning";
+} from "@/components/calculation/tuning";
 
+import { AppLocale } from "@/enums/app";
 import type { AladhanTuning } from "@/types/providers/aladhan";
 
 jest.mock("@/utils/number", () => ({ formatNumberToLocale: (value: string) => value }));
@@ -117,5 +121,64 @@ describe("TUNED_PRAYERS", () => {
       PRAYER_ID.ISHA,
       "midnight",
     ]);
+  });
+});
+
+describe("isTuned", () => {
+  test("is false with no tuning or only zeros", () => {
+    expect(isTuned(undefined)).toBe(false);
+    expect(isTuned(tuning())).toBe(false);
+  });
+
+  test("is true once any timing moves", () => {
+    expect(isTuned(tuning({ sunset: -1 }))).toBe(true);
+  });
+});
+
+describe("signedOffset", () => {
+  test("keeps the sign before the figure in the locale's digits", () => {
+    expect(signedOffset(2, AppLocale.AR, false)).toBe(ltr("+٢"));
+    expect(signedOffset(-3, AppLocale.EN, false)).toBe(ltr("-3"));
+  });
+});
+
+describe("spokenTuning", () => {
+  // Joins as the a11y.join copy does, and counts with the minute phrase.
+  const speak = (key: string, options?: Record<string, unknown>) =>
+    key === "a11y.join"
+      ? `${options?.first}, ${options?.second}`
+      : options?.count !== undefined
+        ? `${key.split(".").pop()} ${options.count}`
+        : (key.split(".").pop() ?? key);
+
+  test("says each moved timing with its minutes, in daily order", () => {
+    expect(spokenTuning(tuning({ [PRAYER_ID.ISHA]: -3, [PRAYER_ID.FAJR]: 2 }), speak)).toBe(
+      "fajr, later 2, isha, earlier 3"
+    );
+  });
+
+  test("is null when nothing moves", () => {
+    expect(spokenTuning(undefined, speak)).toBeNull();
+  });
+});
+
+describe("summariseTuning with more than two moved", () => {
+  // Counts with the key so the tail can be told from the names.
+  const tCount = (key: string, options?: { count?: number }) =>
+    options?.count === undefined ? (key.split(".").pop() ?? key) : `${key}:${options.count}`;
+
+  test("names the first two in the day's order and counts the rest", () => {
+    expect(
+      summariseTuning(
+        tuning({ [PRAYER_ID.ISHA]: -1, [PRAYER_ID.FAJR]: 2, [PRAYER_ID.ASR]: 3, sunrise: 1 }),
+        tCount
+      )
+    ).toBe(`fajr ${ltr("+2")} · sunrise ${ltr("+1")} · settings.calculation.tuning.more:2`);
+  });
+
+  test("names two without a count", () => {
+    expect(summariseTuning(tuning({ [PRAYER_ID.FAJR]: 2, [PRAYER_ID.ISHA]: -3 }), tCount)).toBe(
+      `fajr ${ltr("+2")} · isha ${ltr("-3")}`
+    );
   });
 });

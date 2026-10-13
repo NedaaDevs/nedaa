@@ -6,10 +6,7 @@ export type AppState = {
   locale: AppLocale;
   direction: AppDirection;
   mode: AppMode;
-  loadingMessage: string;
-  showLoadingOverlay: boolean;
   hijriDaysOffset: number;
-  setLoadingState: (loading: boolean, message?: string) => void;
   setIsFirstRun: (status: boolean) => void;
   setLocale: (lang: AppLocale) => void;
   setMode: (mode: AppMode) => void;

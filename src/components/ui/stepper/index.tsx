@@ -1,5 +1,5 @@
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
-import { type AccessibilityActionEvent } from "react-native";
+import { useEffect, useEffectEvent, useState, type ReactNode, type Ref } from "react";
+import { type AccessibilityActionEvent, type View as NativeView } from "react-native";
 import { Minus, Plus } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
@@ -34,6 +34,8 @@ type Props = {
   disabled?: boolean;
   /** The value as drawn between the buttons. */
   children: ReactNode;
+  /** The adjustable element, for moving reader focus to it. */
+  ref?: Ref<NativeView>;
 };
 
 export const Stepper = ({
@@ -45,6 +47,7 @@ export const Stepper = ({
   valueText,
   disabled,
   children,
+  ref,
 }: Props) => {
   const [held, setHeld] = useState<Direction | null>(null);
   const haptic = useHaptic("light");
@@ -112,6 +115,7 @@ export const Stepper = ({
 
   return (
     <HStack
+      ref={ref}
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={accessibilityLabel}

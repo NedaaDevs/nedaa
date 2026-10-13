@@ -33,15 +33,14 @@ jest.mock("@/stores/location", () => ({
 }));
 jest.mock("@/stores/providerSettings", () => ({
   __esModule: true,
-  default: { getState: () => ({ currentProviderId: "aladhan" }) },
+  default: { getState: () => ({ currentProviderId: "aladhan", setInEffect: () => {} }) },
   useProviderSettingsStore: { getState: () => ({ currentProviderId: "aladhan" }) },
-}));
-jest.mock("@/stores/app", () => ({
-  useAppStore: { getState: () => ({ setLoadingState: jest.fn() }) },
 }));
 jest.mock("@/localization/i18n", () => ({ __esModule: true, default: { t: (k: string) => k } }));
 jest.mock("@/api/prayerTimes.api", () => ({ prayerTimesApi: {} }));
-jest.mock("@/adapters/providers", () => ({ getAdapterByProviderId: jest.fn() }));
+jest.mock("@/adapters/providers", () => ({
+  getAdapterByProviderId: () => ({ fromApplied: () => null }),
+}));
 jest.mock("@/utils/location", () => ({ checkLocationPermission: jest.fn() }));
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,

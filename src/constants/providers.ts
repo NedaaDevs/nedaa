@@ -11,6 +11,14 @@ export const MIDNIGHT_MODE = {
   JAFARI: 1,
 } as const;
 
+/** AlAdhan's Asr schools; each sets the shadow length that starts Asr. */
+export const ASR_SCHOOL = {
+  /** A shadow equal to its object: Shafi'i, Maliki and Hanbali. */
+  SHAFI: 0,
+  /** A shadow twice its object. */
+  HANAFI: 1,
+} as const;
+
 export const PRAYER_TIME_PROVIDERS = {
   ALADHAN: {
     id: "aladhan",
@@ -20,7 +28,7 @@ export const PRAYER_TIME_PROVIDERS = {
     defaults: {
       method: undefined,
       shafaq: "general", // Defaults to general
-      school: 0, // Default to Shafi
+      school: ASR_SCHOOL.SHAFI,
       midnightMode: MIDNIGHT_MODE.STANDARD,
       calendarMethod: "HJCoSA", // Default: HJCoSA
       latitudeAdjustment: undefined,
@@ -62,8 +70,8 @@ export const PRAYER_TIME_PROVIDERS = {
       },
     ],
     schools: [
-      { id: 0, nameKey: "shafi" },
-      { id: 1, nameKey: "hanafi" },
+      { id: ASR_SCHOOL.SHAFI, nameKey: "shafi" },
+      { id: ASR_SCHOOL.HANAFI, nameKey: "hanafi" },
     ],
     midnightModes: [
       { id: MIDNIGHT_MODE.STANDARD, nameKey: "standard" },

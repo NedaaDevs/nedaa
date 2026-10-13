@@ -26,14 +26,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseAlarmStatus\(/,
     home: "hooks/useAlarmStatus.ts",
   },
-  // The Hijri screen and the Settings root both read the day offset.
+  // The Hijri screen and the Calculation screen both read the day offset.
   {
     concept: "a Hijri day offset",
     shows: /\bhijriAdjustmentLabel\b|settings\.hijri\.date\.adjustments\./,
     drawsWith: /\bhijriAdjustmentLabel\(/,
     home: "utils/hijriAdjustment.ts",
   },
-  // Today's header and the Hijri screen's hero both write today's dates.
+  // Today's header, the Hijri hero and Calculation all write today's dates.
   {
     concept: "today's Hijri and Gregorian dates",
     shows: /\btoday\.gregorianDate\b|\buseTodayDates\b/,

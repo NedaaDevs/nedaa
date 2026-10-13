@@ -1,3 +1,5 @@
+import type { Ref } from "react";
+import type { View as NativeView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react-native";
 
@@ -84,6 +86,8 @@ type BaseProps = {
   title: string;
   /** Live state, read with the title; on a static row, the full text. */
   status?: string;
+  /** The status as spoken, where its signs would not read aloud. */
+  spokenStatus?: string;
   variant?: ListRowVariant;
 };
 
@@ -93,10 +97,14 @@ type Props = BaseProps &
     | {
         onPress: () => void;
         hint?: string;
+        /** Holds the row still, such as while the value it opens is saved. */
+        disabled?: boolean;
+        /** The row's view, so a sheet it opens can hand focus back to it. */
+        ref?: Ref<NativeView>;
         /** Names a page outside the app; the row reads as a link and points outward. */
         linkLabel?: string;
       }
-    | { onPress?: never; hint?: never; linkLabel?: never }
+    | { onPress?: never; hint?: never; linkLabel?: never; disabled?: never; ref?: never }
   );
 
 /**
@@ -108,10 +116,13 @@ export const ListRow = ({
   tile = false,
   title,
   status,
+  spokenStatus,
   hint,
   linkLabel,
   variant = LIST_ROW_VARIANT.CARD,
   onPress,
+  disabled,
+  ref,
 }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
@@ -143,10 +154,13 @@ export const ListRow = ({
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole={linkLabel ? "link" : undefined}
       accessibilityLabel={
-        linkLabel ?? (status ? t("a11y.join", { first: title, second: status }) : title)
+        linkLabel ??
+        (status ? t("a11y.join", { first: title, second: spokenStatus ?? status }) : title)
       }
       accessibilityHint={hint}
       flexDirection="row"

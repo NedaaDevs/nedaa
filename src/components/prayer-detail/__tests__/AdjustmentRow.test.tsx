@@ -1,10 +1,11 @@
 import { Text } from "react-native";
-import { usePathname } from "expo-router";
+import { useLocalSearchParams, usePathname } from "expo-router";
 import { act, screen, userEvent } from "@testing-library/react-native";
 import { renderRouter } from "expo-router/testing-library";
 
 import { AdjustmentRow } from "@/components/prayer-detail/AdjustmentRow";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { CALCULATION_PARAM } from "@/constants/Calculation";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AppLocale } from "@/enums/app";
@@ -21,6 +22,9 @@ const ALADHAN_ID = PRAYER_TIME_PROVIDERS.ALADHAN.id;
 const OTHER_PROVIDER_ID = "other-provider";
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
+const TuneParam = () => (
+  <Text testID="tune-param">{String(useLocalSearchParams()[CALCULATION_PARAM.TUNE])}</Text>
+);
 
 const useTuning = (tune: Partial<AladhanTuning>, providerId: string = ALADHAN_ID) =>
   useProviderSettingsStore.setState({
@@ -39,7 +43,12 @@ const renderRow = () =>
           <Pathname />
         </>
       ),
-      [BACK_DESTINATION.SETTINGS_PROVIDER.route]: () => <Pathname />,
+      [BACK_DESTINATION.SETTINGS_PROVIDER.route]: () => (
+        <>
+          <Pathname />
+          <TuneParam />
+        </>
+      ),
     },
     {
       initialUrl: BACK_DESTINATION.HOME.href as string,
@@ -95,18 +104,29 @@ describe("AdjustmentRow", () => {
     expect(rowNamed(i18n.t("prayerDetail.adjustment.byProvider"))).toBeTruthy();
   });
 
-  it("opens the provider settings, and says so", async () => {
+  it("opens the adjustments, and says so", async () => {
     useTuning({ [PRAYER_ID.FAJR]: 5 });
     await renderRow();
 
     const row = rowNamed("5 minutes later");
-    expect(row.props.accessibilityHint).toBe(i18n.t("a11y.prayerDetail.adjustment.hint"));
+    expect(row.props.accessibilityHint).toBe(
+      i18n.t("a11y.opens", { name: i18n.t("settings.calculation.tuning.title") })
+    );
 
     await userEvent.press(row);
 
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       normalizeRoutePath(BACK_DESTINATION.SETTINGS_PROVIDER.href)
     );
+  });
+
+  it("opens the adjustment editor on this prayer", async () => {
+    useTuning({});
+    await renderRow();
+
+    await userEvent.press(rowNamed(i18n.t("prayerDetail.adjustment.none")));
+
+    expect(screen.getByTestId("tune-param")).toHaveTextContent(PRAYER_ID.FAJR);
   });
 
   // A row of the sheet, like the alert groups above it, not a card of its own.

@@ -2,14 +2,15 @@ import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { SlidersHorizontal } from "lucide-react-native";
 
-import { summarisePrayerTuning } from "@/components/AladhanSettings/tuning";
+import { summarisePrayerTuning } from "@/components/calculation/tuning";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { CALCULATION_PARAM } from "@/constants/Calculation";
 import type { PrayerId } from "@/constants/Prayer";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
-/** This prayer's offset from its calculated time; opens provider settings. */
+/** This prayer's offset from its calculated time; opens its adjustment. */
 export const AdjustmentRow = ({ prayerId }: { prayerId: PrayerId }) => {
   const { t } = useTranslation();
   const providerId = useProviderSettingsStore((state) => state.currentProviderId);
@@ -29,8 +30,13 @@ export const AdjustmentRow = ({ prayerId }: { prayerId: PrayerId }) => {
       icon={SlidersHorizontal}
       title={t("prayerDetail.adjustment.title")}
       status={status}
-      hint={t("a11y.prayerDetail.adjustment.hint")}
-      onPress={() => router.push(BACK_DESTINATION.SETTINGS_PROVIDER.href)}
+      hint={t("a11y.opens", { name: t("settings.calculation.tuning.title") })}
+      onPress={() =>
+        router.push({
+          pathname: BACK_DESTINATION.SETTINGS_PROVIDER.href,
+          params: { [CALCULATION_PARAM.TUNE]: prayerId },
+        })
+      }
     />
   );
 };

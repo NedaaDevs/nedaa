@@ -19,11 +19,11 @@ const CEILING = {
   /** Files importing any value from `tamagui` or `@tamagui/*`. */
   tamaguiValueImporters: 52,
   /** `useTheme()` calls on Tamagui's hook. */
-  useThemeCalls: 24,
+  useThemeCalls: 23,
   /** Radius props not set to a named token ($chip, $control, $card, $sheet, $pill). */
-  rawRadius: 378,
+  rawRadius: 377,
   /** Width, height and their bounds given a non-zero number. */
-  rawSize: 579,
+  rawSize: 569,
   /** `styled()` belongs in `ui/`, and nowhere else ever. */
   styledCalls: 0,
 } as const;

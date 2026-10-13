@@ -7,7 +7,6 @@ export const SETTINGS_ROW = {
   LANGUAGE: "language",
   LOCATION: "location",
   CALCULATION: "calculation",
-  HIJRI: "hijri",
   NOTIFICATIONS: "notifications",
   ALARMS: "alarms",
   ATHKAR: "athkar",
@@ -44,7 +43,7 @@ export const SETTINGS_LAYOUT: readonly SectionLayout[] = [
   {
     id: SETTINGS_SECTION.PLACE,
     labelKey: "settings.sections.place",
-    rows: [SETTINGS_ROW.LOCATION, SETTINGS_ROW.CALCULATION, SETTINGS_ROW.HIJRI],
+    rows: [SETTINGS_ROW.LOCATION, SETTINGS_ROW.CALCULATION],
   },
   {
     id: SETTINGS_SECTION.ALERTS,

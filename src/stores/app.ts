@@ -54,8 +54,6 @@ export const useAppStore = create<AppState>()(
           locale: initialLanguage,
           mode: AppMode.SYSTEM,
           direction: initialDirection,
-          loadingMessage: "",
-          showLoadingOverlay: false,
           hijriDaysOffset: 0,
           dismissedFeatureCards: [],
 
@@ -81,13 +79,6 @@ export const useAppStore = create<AppState>()(
             set({ mode });
           },
 
-          setLoadingState: (loading: boolean, message?: string) => {
-            set({
-              showLoadingOverlay: loading,
-              loadingMessage: message || "",
-            });
-          },
-
           setHijirOffset: (daysOffset) => {
             set({ hijriDaysOffset: daysOffset });
             void syncWidgetPayloads();
@@ -109,7 +100,6 @@ export const useAppStore = create<AppState>()(
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
             hijriDaysOffset: state.hijriDaysOffset,
-            // Exclude loading state from persistence
           }),
           merge: (persisted, current) => {
             const saved = (persisted ?? {}) as Partial<AppState>;

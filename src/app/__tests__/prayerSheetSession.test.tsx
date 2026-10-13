@@ -5,6 +5,7 @@ import { Component } from "react";
 import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 import { AccessibilityInfo, AppState, Text } from "react-native";
+import { ACTIONSHEET_PART } from "@/components/ui/actionsheet";
 
 import { APP_STATE } from "@/constants/AppState";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -141,9 +142,7 @@ describe("The prayer sheet's edit session", () => {
   it("reschedules once when the sheet closes", async () => {
     const user = await openAndEdit();
 
-    const [close] = screen
-      .getAllByRole("button", { name: i18n.t("common.close"), ...hidden })
-      .filter((each) => each.props.testID === undefined);
+    const close = screen.getByTestId(ACTIONSHEET_PART.CLOSE, hidden);
     await user.press(close);
     await settle();
 
@@ -192,9 +191,7 @@ describe("The prayer sheet's reader focus", () => {
     });
     await user.press(card);
 
-    const [close] = screen
-      .getAllByRole("button", { name: i18n.t("common.close"), ...hidden })
-      .filter((each) => each.props.testID === undefined);
+    const close = screen.getByTestId(ACTIONSHEET_PART.CLOSE, hidden);
     await user.press(close);
     await settle();
 
