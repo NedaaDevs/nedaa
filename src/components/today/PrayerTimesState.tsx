@@ -3,14 +3,14 @@ import { useTranslation } from "react-i18next";
 import { StatePanel } from "@/components/ui/state-panel";
 import { TimelineSkeleton } from "@/components/ui/timeline";
 import { useRetryPrayerTimes } from "@/hooks/useRetryPrayerTimes";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { selectTimesLoading, usePrayerTimesStore } from "@/stores/prayerTimes";
 
 /** Today before its times arrive: a placeholder, or a retry after a failure. */
 export const PrayerTimesState = () => {
   const { t } = useTranslation();
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const hasError = usePrayerTimesStore((state) => state.hasError);
-  const isLoading = usePrayerTimesStore((state) => state.isLoading);
+  const isLoading = usePrayerTimesStore(selectTimesLoading);
   const retry = useRetryPrayerTimes();
 
   if (today) return null;

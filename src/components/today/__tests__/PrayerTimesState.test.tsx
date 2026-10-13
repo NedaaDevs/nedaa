@@ -31,8 +31,9 @@ const renderState = (state: {
   todayTimings: DayPrayerTimes | null;
   hasError: boolean;
   isLoading: boolean;
+  loadingTimes?: boolean;
 }) => {
-  usePrayerTimesStore.setState({ ...state, loadPrayerTimes, clearError });
+  usePrayerTimesStore.setState({ loadingTimes: false, ...state, loadPrayerTimes, clearError });
   return renderWithTheme(<PrayerTimesState />);
 };
 
@@ -56,6 +57,18 @@ describe("PrayerTimesState", () => {
 
     expect(screen.getByTestId(TIMELINE_PART.SKELETON)).toBeTruthy();
     expect(screen.getByLabelText(i18n.t("common.loading"))).toBeTruthy();
+  });
+
+  // The load reads the location before it fetches; the wait shows the same.
+  it("holds the timeline's place while the load runs ahead of its fetch", async () => {
+    await renderState({
+      todayTimings: null,
+      hasError: false,
+      isLoading: false,
+      loadingTimes: true,
+    });
+
+    expect(screen.getByTestId(TIMELINE_PART.SKELETON)).toBeTruthy();
   });
 
   it("shows nothing once the day's times are here", async () => {
