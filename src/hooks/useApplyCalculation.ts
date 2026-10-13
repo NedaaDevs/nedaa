@@ -1,4 +1,3 @@
-import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MessageToast } from "@/components/feedback";
@@ -31,28 +30,29 @@ export const useApplyCalculation = () => {
   const isModified = useProviderSettingsStore((state) => state.isModified);
   const saveSettings = useProviderSettingsStore((state) => state.saveSettings);
   const markSettingsApplied = useProviderSettingsStore((state) => state.markSettingsApplied);
+  // In the store, so a screen reopened mid-apply finds it running.
+  const busy = useProviderSettingsStore((state) => state.applying);
+  const step = useProviderSettingsStore((state) => state.applyStep);
+  const runApply = useProviderSettingsStore((state) => state.runApply);
   const { loadPrayerTimes } = usePrayerTimesStore();
   const { scheduleAllNotifications } = useNotificationStore();
-  const [step, setStep] = useState<ApplyStep | null>(null);
-  // Held in the operation, not the button: the error toast's retry calls it too.
-  const running = useRef(false);
-
+  // The error toast's retry calls this too; the store's lock covers both.
   const apply = async () => {
-    if (running.current) return;
-    running.current = true;
     try {
-      await applyProviderSettings(
-        {
-          saveSettings,
-          loadPrayerTimes,
-          scheduleAllNotifications,
-          rescheduleAllAlarms,
-          reloadPrayerWidgets,
-          markSettingsApplied,
-        },
-        setStep
+      const ran = await runApply((onStep) =>
+        applyProviderSettings(
+          {
+            saveSettings,
+            loadPrayerTimes,
+            scheduleAllNotifications,
+            rescheduleAllAlarms,
+            reloadPrayerWidgets,
+            markSettingsApplied,
+          },
+          onStep
+        )
       );
-      hapticSuccess();
+      if (ran) hapticSuccess();
     } catch (error) {
       MessageToast.showError(t("providers.saveFailed"), {
         action: { label: t("common.retry"), onPress: apply },
@@ -62,13 +62,9 @@ export const useApplyCalculation = () => {
         "applying provider settings failed",
         error instanceof Error ? error : undefined
       );
-    } finally {
-      running.current = false;
-      setStep(null);
     }
   };
 
-  const busy = step !== null;
   const state: StickyActionState = busy
     ? STICKY_ACTION_STATE.BUSY
     : isModified
