@@ -268,8 +268,14 @@ ButtonGroup.displayName = "ButtonGroup";
 type ButtonFrameProps = GetProps<typeof ButtonFrame>;
 
 const ButtonRoot = React.forwardRef<React.ComponentRef<typeof ButtonFrame>, ButtonFrameProps>(
-  ({ hitSlop, ...props }, ref) => (
-    <ButtonFrame ref={ref} hitSlop={hitSlop ?? touchSlop(props.size ?? "md")} {...props} />
+  ({ hitSlop, accessibilityState, ...props }, ref) => (
+    <ButtonFrame
+      ref={ref}
+      hitSlop={hitSlop ?? touchSlop(props.size ?? "md")}
+      // The disabled variant only dims; the reader needs the state too.
+      accessibilityState={{ ...accessibilityState, disabled: Boolean(props.disabled) }}
+      {...props}
+    />
   )
 );
 ButtonRoot.displayName = "Button";
