@@ -32,7 +32,6 @@ import { ThemeTransitionProvider } from "@/components/ui/theme-transition";
 import { ToastHost } from "@/components/ToastHost";
 import { ActionsheetOverlay } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
-import { LoadingOverlay } from "@/components/feedback";
 import CityChangeModal from "@/components/CityChangeModal";
 import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 import PlayerBottomSheet from "@/components/athkar/PlayerBottomSheet";
@@ -70,7 +69,7 @@ SplashScreen.preventAutoHideAsync();
 function AppShell() {
   const theme = useTheme();
   const themeName = useThemeName();
-  const { showLoadingOverlay, loadingMessage, isFirstRun } = useAppStore();
+  const isFirstRun = useAppStore((state) => state.isFirstRun);
   const {
     showCityChangeModal,
     pendingCityChange,
@@ -115,7 +114,6 @@ function AppShell() {
             style={{ flex: 1, backgroundColor: safeAreaBg }}
             importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
             <StatusBar animated style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
-            <LoadingOverlay visible={showLoadingOverlay} message={loadingMessage} />
 
             {pendingCityChange && (
               <CityChangeModal

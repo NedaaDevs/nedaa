@@ -161,3 +161,9 @@ export type BackDestination = (typeof BACK_DESTINATION)[keyof typeof BACK_DESTIN
 /** The entry for a navigator route name, if a back control can name it. */
 export const findBackDestination = (route: string): BackDestination | undefined =>
   Object.values(BACK_DESTINATION).find((destination) => destination.route === route);
+
+/** The advanced settings path; its index opens the Calculation screen. */
+export const SETTINGS_ADVANCE = {
+  route: "settings/advance/index",
+  href: "/settings/advance",
+} as const;

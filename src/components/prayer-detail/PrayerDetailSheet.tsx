@@ -1,7 +1,6 @@
 import { useState, type RefObject } from "react";
 import type { HostInstance } from "react-native";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react-native";
 
 import { AdjustmentRow } from "@/components/prayer-detail/AdjustmentRow";
 import { AlarmDisclosure } from "@/components/prayer-detail/AlarmDisclosure";
@@ -16,9 +15,11 @@ import {
   SheetLoadingState,
   SheetUnavailableState,
 } from "@/components/prayer-detail/SheetStates";
-import { Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
-import { Icon } from "@/components/ui/icon";
-import { Pressable } from "@/components/ui/pressable";
+import {
+  Actionsheet,
+  ActionsheetCloseButton,
+  ActionsheetContent,
+} from "@/components/ui/actionsheet";
 import { Section } from "@/components/ui/section";
 import { SECTION_KIND } from "@/constants/Section";
 import { VStack } from "@/components/ui/vstack";
@@ -29,7 +30,7 @@ import { useNotificationSettingsHydrated } from "@/hooks/useNotificationSettings
 import { useRetryPrayerTimes } from "@/hooks/useRetryPrayerTimes";
 import { useShownDay } from "@/hooks/useShownDay";
 import { SimulatedClockContext, useClockOverride } from "@/hooks/useTodayClock";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { selectTimesLoading, usePrayerTimesStore } from "@/stores/prayerTimes";
 import { prayerDetailState } from "@/utils/prayerDetailState";
 
 type Props = {
@@ -54,7 +55,7 @@ type BodyProps = { prayerId: PrayerId; onClose: () => void };
 const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
   const { t } = useTranslation();
   const { day } = useShownDay();
-  const isLoading = usePrayerTimesStore((state) => state.isLoading);
+  const isLoading = usePrayerTimesStore(selectTimesLoading);
   const hasError = usePrayerTimesStore((state) => state.hasError);
   const settingsHydrated = useNotificationSettingsHydrated();
   const alarmType = useAlarmTypeFor(prayerId);
@@ -64,20 +65,7 @@ const PrayerDetailBody = ({ prayerId, onClose }: BodyProps) => {
   return (
     <VStack gap="$5">
       {/* Over the hero's end, first in reading order; the hero leaves it room. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("common.close")}
-        onPress={onClose}
-        position="absolute"
-        top={0}
-        end={0}
-        zIndex={1}
-        alignItems="center"
-        justifyContent="center"
-        borderRadius="$pill"
-        pressStyle={{ opacity: 1, backgroundColor: "$pressed" }}>
-        <Icon as={X} size="md" strokeWidth={1.8} color="$muted" />
-      </Pressable>
+      <ActionsheetCloseButton onPress={onClose} position="absolute" top={0} end={0} zIndex={1} />
       {state === PRAYER_DETAIL_STATE.READY ? (
         <>
           <PrayerDetailHero prayerId={prayerId} />
