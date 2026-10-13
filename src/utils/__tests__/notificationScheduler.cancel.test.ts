@@ -25,7 +25,7 @@ jest.mock("@/utils/notifications", () => ({
 jest.mock("expo-alarm", () => ({
   ...jest.requireActual("expo-alarm"),
   scheduleAthan: jest.fn(),
-  cancelAllAthans: jest.fn(),
+  cancelAllAthans: jest.fn(() => Promise.resolve(true)),
 }));
 jest.mock("@/utils/qadaNotificationScheduler", () => ({ scheduleQadaNotifications: jest.fn() }));
 jest.mock("@/stores/customSounds", () => ({
@@ -39,6 +39,18 @@ jest.mock("@/stores/athkar", () => ({ useAthkarStore: { getState: jest.fn() } })
 jest.mock("@/utils/customSoundManager", () => ({
   isCustomSoundKey: () => false,
   createChannelWithCustomSound: jest.fn(),
+}));
+
+const mockLogError = jest.fn();
+jest.mock("@/utils/appLogger", () => ({
+  AppLogger: {
+    create: () => ({
+      d: jest.fn(),
+      i: jest.fn(),
+      w: jest.fn(),
+      e: (...args: unknown[]) => mockLogError(...args),
+    }),
+  },
 }));
 
 const SETTINGS: NotificationSettings = {
@@ -88,6 +100,17 @@ describe("cancelling every alert", () => {
 
     expect(cancelAllAthans).toHaveBeenCalledTimes(1);
     expect(cancelAllScheduledNotifications).toHaveBeenCalledTimes(1);
+    expect(mockLogError).not.toHaveBeenCalled();
+  });
+
+  it("still cancels the notifications, and logs, when the native cancel fails", async () => {
+    jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
+    jest.mocked(cancelAllAthans).mockResolvedValueOnce(false);
+
+    await cancelAllAlerts();
+
+    expect(cancelAllScheduledNotifications).toHaveBeenCalledTimes(1);
+    expect(mockLogError).toHaveBeenCalledTimes(1);
   });
 
   it("cancels only the notifications on iOS", async () => {
