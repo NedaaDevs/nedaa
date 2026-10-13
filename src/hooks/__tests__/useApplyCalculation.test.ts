@@ -1,15 +1,14 @@
 import { act, renderHook } from "@testing-library/react-native";
 
 import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { useApplyCalculation } from "@/hooks/useApplyCalculation";
+import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 const mockLoadPrayerTimes = jest.fn<Promise<void>, [boolean?]>(() => Promise.resolve());
-const mockSaveSettings = jest.fn(() => Promise.resolve());
-const mockMarkSettingsApplied = jest.fn();
 const mockScheduleNotifications = jest.fn(() => Promise.resolve());
 const mockRescheduleAlarms = jest.fn(() => Promise.resolve());
 const mockShowError = jest.fn();
-let mockIsModified = true;
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -23,14 +22,6 @@ jest.mock("@/stores/prayerTimes", () => ({
     loadPrayerTimes: (force?: boolean) => mockLoadPrayerTimes(force),
   }),
 }));
-jest.mock("@/stores/providerSettings", () => ({
-  useProviderSettingsStore: (select: (state: object) => unknown) =>
-    select({
-      isModified: mockIsModified,
-      saveSettings: () => mockSaveSettings(),
-      markSettingsApplied: () => mockMarkSettingsApplied(),
-    }),
-}));
 jest.mock("@/stores/notification", () => ({
   useNotificationStore: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
 }));
@@ -43,15 +34,27 @@ jest.mock("@/utils/appLogger", () => ({
 }));
 
 const mount = () => renderHook(() => useApplyCalculation());
+const store = () => useProviderSettingsStore.getState();
+/** Applied: the draft is gone and the saved method is the applied one. */
+const applied = () => !store().isModified && store().getCurrentSettings()?.method === 4;
 
 describe("useApplyCalculation", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsModified = true;
+    useProviderSettingsStore.setState({
+      currentProviderId: PRAYER_TIME_PROVIDERS.ALADHAN.id,
+      allSettings: { [PRAYER_TIME_PROVIDERS.ALADHAN.id]: { method: 3 } },
+      draft: null,
+      isModified: false,
+      pendingReapply: false,
+      applying: false,
+      applyStep: null,
+    });
+    store().updateCurrentSettings({ method: 4 });
   });
 
   it("hides the action while there is nothing to apply", async () => {
-    mockIsModified = false;
+    store().updateCurrentSettings({ method: 3 });
 
     const { result } = await mount();
 
@@ -93,7 +96,23 @@ describe("useApplyCalculation", () => {
 
     await act(() => result.current.apply());
 
-    expect(mockMarkSettingsApplied).toHaveBeenCalledTimes(1);
+    expect(applied()).toBe(true);
+  });
+
+  // A screen reopened mid-apply mounts a fresh hook; the lock must reach it.
+  it("is busy on a second screen while the first one applies", async () => {
+    mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
+    const first = await mount();
+    await act(async () => {
+      void first.result.current.apply();
+      await Promise.resolve();
+    });
+
+    const second = await mount();
+    await act(() => second.result.current.apply());
+
+    expect(second.result.current.busy).toBe(true);
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
   });
 
   it("reports a failed refetch and stays ready to retry", async () => {
@@ -105,7 +124,7 @@ describe("useApplyCalculation", () => {
     expect(mockShowError).toHaveBeenCalledWith("providers.saveFailed", {
       action: { label: "common.retry", onPress: expect.any(Function) },
     });
-    expect(mockMarkSettingsApplied).not.toHaveBeenCalled();
+    expect(applied()).toBe(false);
     expect(result.current.state).toBe(STICKY_ACTION_STATE.READY);
   });
 
@@ -116,7 +135,7 @@ describe("useApplyCalculation", () => {
     await act(() => result.current.apply());
     const [, { action }] = mockShowError.mock.calls[0];
     mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
-    mockSaveSettings.mockClear();
+    mockLoadPrayerTimes.mockClear();
 
     await act(async () => {
       void result.current.apply();
@@ -124,7 +143,7 @@ describe("useApplyCalculation", () => {
     });
     await act(() => action.onPress());
 
-    expect(mockSaveSettings).toHaveBeenCalledTimes(1);
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
   });
 
   it("applies again from the toast's retry", async () => {
@@ -135,7 +154,7 @@ describe("useApplyCalculation", () => {
 
     await act(() => action.onPress());
 
-    expect(mockMarkSettingsApplied).toHaveBeenCalledTimes(1);
+    expect(applied()).toBe(true);
   });
 
   it("leaves the settings unapplied when rescheduling alarms fails", async () => {
@@ -144,6 +163,6 @@ describe("useApplyCalculation", () => {
 
     await act(() => result.current.apply());
 
-    expect(mockMarkSettingsApplied).not.toHaveBeenCalled();
+    expect(applied()).toBe(false);
   });
 });

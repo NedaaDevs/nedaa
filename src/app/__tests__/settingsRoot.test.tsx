@@ -42,7 +42,6 @@ const DESTINATIONS: readonly BackDestination[] = [
   BACK_DESTINATION.SETTINGS_LANGUAGE,
   BACK_DESTINATION.SETTINGS_LOCATION,
   BACK_DESTINATION.SETTINGS_PROVIDER,
-  BACK_DESTINATION.SETTINGS_HIJRI,
   BACK_DESTINATION.SETTINGS_NOTIFICATION,
   BACK_DESTINATION.SETTINGS_ALARM,
   BACK_DESTINATION.SETTINGS_ATHKAR,
@@ -93,8 +92,7 @@ const LAYOUT: readonly { labelKey: string; rows: readonly Row[] }[] = [
     labelKey: "settings.sections.place",
     rows: [
       ["settings.location.title", BACK_DESTINATION.SETTINGS_LOCATION],
-      ["providers.aladhan.method.title", BACK_DESTINATION.SETTINGS_PROVIDER],
-      ["settings.rows.hijri", BACK_DESTINATION.SETTINGS_HIJRI],
+      [BACK_DESTINATION.SETTINGS_PROVIDER.title, BACK_DESTINATION.SETTINGS_PROVIDER],
     ],
   },
   {
@@ -138,6 +136,7 @@ const initialAlarms = useAlarmSettingsStore.getState();
 const initialProvider = useProviderSettingsStore.getState();
 const initialLocation = useLocationStore.getState();
 const aladhanId = PRAYER_TIME_PROVIDERS.ALADHAN.id;
+const MAKKAH = PRAYER_TIME_PROVIDERS.ALADHAN.methods.find(({ nameKey }) => nameKey === "makkah")!;
 
 beforeEach(() => {
   jest.useRealTimers();
@@ -155,7 +154,7 @@ beforeEach(() => {
     eveningNotification: initialNotifications.eveningNotification,
   });
   useAlarmSettingsStore.setState({ fajr: initialAlarms.fajr, friday: initialAlarms.friday });
-  useProviderSettingsStore.setState({ allSettings: initialProvider.allSettings });
+  useProviderSettingsStore.setState({ allSettings: initialProvider.allSettings, inEffect: null });
   usePreferencesStore.setState({ use24HourTime: true, textSize: TextSize.DEFAULT });
   useToastStore.setState({ toast: null });
 });
@@ -217,7 +216,6 @@ describe("Settings root", () => {
   });
 
   it.each([
-    "settings.advance.title",
     "notification.customSound.title",
     "settings.help.title",
     "settings.acknowledgements.title",
@@ -323,26 +321,26 @@ describe("Settings root summaries", () => {
     });
     await renderSettings();
 
-    expect(summaryOf("providers.aladhan.method.title")).toBe(
+    expect(summaryOf(BACK_DESTINATION.SETTINGS_PROVIDER.title)).toBe(
       i18n.t("providers.aladhan.methods.mwl")
+    );
+  });
+
+  it("names the method the provider picked when none is chosen", async () => {
+    useProviderSettingsStore.setState({ inEffect: { method: MAKKAH.id } });
+    await renderSettings();
+
+    expect(summaryOf(BACK_DESTINATION.SETTINGS_PROVIDER.title)).toBe(
+      i18n.t(`providers.aladhan.methods.${MAKKAH.nameKey}`)
     );
   });
 
   it("says the method follows the place when none is chosen", async () => {
     await renderSettings();
 
-    expect(summaryOf("providers.aladhan.method.title")).toBe(i18n.t("settings.summary.methodAuto"));
-  });
-
-  it.each([
-    [0, "settings.hijri.date.adjustments.noAdjustment", {}],
-    [2, "settings.hijri.date.adjustments.plusDays", { count: 2 }],
-    [-1, "settings.hijri.date.adjustments.minusDays", { count: 1 }],
-  ])("reads a Hijri offset of %i", async (offset, key, options) => {
-    useAppStore.setState({ hijriDaysOffset: offset });
-    await renderSettings();
-
-    expect(summaryOf("settings.rows.hijri")).toBe(i18n.t(key, options));
+    expect(summaryOf(BACK_DESTINATION.SETTINGS_PROVIDER.title)).toBe(
+      i18n.t("settings.summary.methodAuto")
+    );
   });
 
   it("says when every notification is off", async () => {

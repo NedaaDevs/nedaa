@@ -1,7 +1,12 @@
 import { act, screen, userEvent } from "@testing-library/react-native";
 
-import { OTHER_TIME_LABEL_KEY, OtherTimes } from "@/components/today/OtherTimes";
-import { OTHER_TIMING, OTHER_TIMING_NAMES, PRAYER_ID } from "@/constants/Prayer";
+import { OtherTimes } from "@/components/today/OtherTimes";
+import {
+  OTHER_TIME_LABEL_KEY,
+  OTHER_TIMING,
+  OTHER_TIMING_NAMES,
+  PRAYER_ID,
+} from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";

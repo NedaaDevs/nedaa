@@ -5,12 +5,13 @@ import { PRAYER_TIME_PROVIDERS, ProviderKey } from "@/constants/providers";
 import type { AladhanApiParams } from "@/types/providers/aladhan";
 
 // Utils
-import { transformAladhanParams } from "@/utils/providers/aladhan";
+import { parseAladhanApplied, transformAladhanParams } from "@/utils/providers/aladhan";
 
 export const providerAdapters = {
   ALADHAN: {
     toParams: (yearOverride?: number, month?: number): AladhanApiParams =>
       transformAladhanParams(yearOverride, month),
+    fromApplied: parseAladhanApplied,
   },
 } as const;
 

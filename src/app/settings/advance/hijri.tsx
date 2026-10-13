@@ -58,7 +58,7 @@ const HijriContent = () => {
       <SkyOccluder>
         <ScreenHeader
           title={t("settings.hijri.date.title")}
-          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+          back={{ fallback: BACK_DESTINATION.SETTINGS_PROVIDER }}
         />
       </SkyOccluder>
 
