@@ -3,7 +3,8 @@ import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { usePreferencesStore } from "@/stores/preferences";
 
-type FeedbackType = "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error";
+export type FeedbackType =
+  "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error";
 
 const noop = () => Promise.resolve();
 

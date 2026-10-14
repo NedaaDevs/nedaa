@@ -20,6 +20,7 @@ import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/m
 import { ScreenHeader } from "@/components/ui/screen-header";
 import type { StateAction } from "@/components/ui/state-panel";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { E2E_ID } from "@/constants/E2E";
 import ReportProblemModal from "@/components/ReportProblemModal";
 
 import {
@@ -120,7 +121,8 @@ type GatePageProps = {
   icon: LucideIcon;
   title: string;
   body: string;
-  action: StateAction;
+  /** The way on; `testID` marks it for the CI flows. */
+  action: StateAction & { testID?: string };
   /** Passes the page for this visit; a page the alarm needs has none. */
   pass?: StateAction;
   /** Every permission, the one this page asks for marked. */
@@ -182,6 +184,7 @@ const GatePage = ({ icon, title, body, action, pass, steps }: GatePageProps) => 
 
           <VStack gap="$3" width="100%" alignItems="center">
             <Button
+              testID={action.testID}
               size="lg"
               variant="solid"
               width="100%"
@@ -390,6 +393,7 @@ const AlarmSettings = () => {
         action={{
           label: t("alarm.settings.cityNeeded.action"),
           hint: t("a11y.today.locationHint"),
+          testID: E2E_ID.ALARM_CHOOSE_CITY,
           onPress: () => router.push(BACK_DESTINATION.SETTINGS_LOCATION.href),
         }}
       />
