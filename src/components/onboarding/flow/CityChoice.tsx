@@ -1,0 +1,116 @@
+import { useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+
+import CityPicker from "@/components/location/CityPicker";
+import CoordinateEntry from "@/components/location/CoordinateEntry";
+import { StepHeading } from "@/components/onboarding/flow/StepHeading";
+import type { StepProps } from "@/components/onboarding/flow/types";
+import { useStepBack } from "@/components/onboarding/flow/useStepBack";
+import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
+import { Button } from "@/components/ui/button";
+import { SkyScrollView } from "@/components/ui/sky-background";
+import { VStack } from "@/components/ui/vstack";
+import { CITY_PICKER_VIEW, ONBOARDING_PART, type CityPickerView } from "@/constants/Onboarding";
+import { LocationMode } from "@/enums/location";
+import { useLocationStore } from "@/stores/location";
+
+/** Drops a manual city picked at or after `since`; one stored before stays. */
+export const dropCityTriedSince = (since: number) => {
+  const { locationMode, manualLocationChosenAt, clearManualLocation } = useLocationStore.getState();
+  const tried =
+    locationMode === LocationMode.MANUAL &&
+    manualLocationChosenAt !== null &&
+    manualLocationChosenAt >= since;
+  if (tried) clearManualLocation();
+};
+
+/** The way to a city by hand, when location is refused or the times fail. */
+export const ChooseCityButton = ({ onPress }: { onPress: () => void }) => {
+  const { t } = useTranslation();
+  // Only device mode shares a location; a chosen city's label is its words.
+  const manual = useLocationStore((state) => state.locationMode === LocationMode.MANUAL);
+  const words = t("onboarding.location.chooseCity");
+  return (
+    <Button
+      testID={ONBOARDING_PART.CHOOSE_CITY}
+      action="secondary"
+      variant="outline"
+      size="lg"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={manual ? words : t("a11y.onboarding.chooseCityManually")}>
+      <Button.Text>{words}</Button.Text>
+    </Button>
+  );
+};
+
+type PickerProps = Pick<StepProps, "headingRef" | "progress" | "setBack" | "setPrimaryHidden"> & {
+  /** The host's own success: its session write, then on. */
+  onDone: () => void;
+  /** Leaves the list for the host's view before it. */
+  onClose: () => void;
+};
+
+/** A step's city list or coordinate entry, drawn in place of its body. */
+export const StepCityPicker = ({
+  headingRef,
+  progress,
+  setBack,
+  setPrimaryHidden,
+  onDone,
+  onClose,
+}: PickerProps) => {
+  const { t } = useTranslation();
+  const [view, setView] = useState<CityPickerView>(CITY_PICKER_VIEW.LIST);
+  const coordinates = view === CITY_PICKER_VIEW.COORDINATES;
+
+  // Shown until it unmounts or its back leaves for the host's view.
+  const open = useRef(true);
+  const close = () => {
+    open.current = false;
+    onClose();
+  };
+  // A pick landing after the list closed counts only while its city is stored.
+  const done = () => {
+    if (open.current || useLocationStore.getState().locationMode === LocationMode.MANUAL) {
+      onDone();
+    }
+  };
+
+  // Back walks out one view at a time: coordinates, the list, then the host.
+  useStepBack(setBack, coordinates ? () => setView(CITY_PICKER_VIEW.LIST) : close);
+  useViewFocus(view, headingRef);
+
+  // A pick is the way on and Skip the way out: the frame's primary steps aside.
+  const hidePrimary = useEffectEvent((hidden: boolean) => setPrimaryHidden(hidden));
+  useLayoutEffect(() => {
+    open.current = true;
+    hidePrimary(true);
+    return () => {
+      open.current = false;
+      hidePrimary(false);
+    };
+  }, []);
+
+  return (
+    <VStack flex={1} paddingHorizontal="$4" paddingTop="$4" gap="$3">
+      <StepHeading
+        headingRef={headingRef}
+        progress={progress}
+        title={t(coordinates ? "location.coordinates.title" : "location.picker.title")}
+      />
+      {coordinates ? (
+        // The entry grows with the text size, so it scrolls under the heading.
+        <SkyScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <CoordinateEntry onDone={done} />
+        </SkyScrollView>
+      ) : (
+        // The city list scrolls itself.
+        <CityPicker
+          onDone={done}
+          onEnterCoordinates={() => setView(CITY_PICKER_VIEW.COORDINATES)}
+        />
+      )}
+    </VStack>
+  );
+};

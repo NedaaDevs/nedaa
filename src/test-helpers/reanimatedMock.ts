@@ -37,6 +37,7 @@ export const interpolate = (value: number, input: number[], output: number[]) =>
 };
 export const withSpring = jest.fn((value: unknown) => value);
 export const withSequence = (...steps: unknown[]) => steps[steps.length - 1];
+export const withDelay = jest.fn((_delay: number, animation: unknown) => animation);
 export const withRepeat = jest.fn((animation: unknown) => animation);
 export const cancelAnimation = jest.fn();
 export const ReduceMotion = { System: "system", Always: "always", Never: "never" } as const;
