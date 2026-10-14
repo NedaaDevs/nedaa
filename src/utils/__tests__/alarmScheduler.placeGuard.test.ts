@@ -7,6 +7,7 @@ import { useAlarmStore, type ScheduledAlarm } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { later, until } from "@/test-helpers/promises";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { alarmLog } from "@/utils/alarmReport";
 import {
@@ -18,6 +19,9 @@ import {
   schedulePrayerAlarm,
   schedulePreviewAlarm,
 } from "@/utils/alarmScheduler";
+
+// The load publishes to widgets when it ends; widgets are not under test here.
+jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
 
 const ZONE = "UTC";
 // A Wednesday noon: Fajr is next tomorrow, Jumuah on Friday.
@@ -263,5 +267,60 @@ describe("alarms armed before the place became the default one", () => {
       ([params]) => (params as { alarmType: string }).alarmType
     );
     expect(new Set(types)).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+  });
+});
+
+// The default place's days stay stored until the verified place's replace them.
+describe("a place verified while the default place's days are stored", () => {
+  const { refreshTimingsFromDb, cleanupOldData, getAndStorePrayerTimes } =
+    usePrayerTimesStore.getState();
+  afterEach(() =>
+    usePrayerTimesStore.setState({ refreshTimingsFromDb, cleanupOldData, getAndStorePrayerTimes })
+  );
+
+  /** Default rows for every day, a verified place, and `fetching` to fetch. */
+  const verifyWhileDefaultStored = (fetching: () => Promise<boolean>) => {
+    storeTimes(true);
+    usePrayerTimesStore.setState({
+      yesterdayTimings: day(-1),
+      refreshTimingsFromDb: jest.fn(async () => WEEK),
+      cleanupOldData: jest.fn(async () => true),
+      getAndStorePrayerTimes: jest.fn(fetching),
+      // The fix is in hand, so the load reads the place without taking one.
+      didGetCurrentLocation: true,
+    });
+    useLocationStore.setState({ lastKnownCoords: COORDS });
+  };
+  const fetchCalls = () =>
+    (usePrayerTimesStore.getState().getAndStorePrayerTimes as jest.Mock).mock.calls.length;
+
+  it("arms nothing while its refetch runs, and arms once the days land", async () => {
+    const fetch = later<boolean>();
+    verifyWhileDefaultStored(() => fetch.promise);
+
+    const load = usePrayerTimesStore.getState().loadPrayerTimes();
+    await until(() => fetchCalls() > 0);
+    expect(fetchCalls()).toBe(1);
+    await ensureAlarmsScheduled();
+    expect(mockSchedule).not.toHaveBeenCalled();
+
+    fetch.release(true);
+    await load;
+    await ensureAlarmsScheduled();
+
+    const types = mockSchedule.mock.calls.map(
+      ([params]) => (params as { alarmType: string }).alarmType
+    );
+    expect(new Set(types)).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+  });
+
+  it("arms nothing after its refetch fails", async () => {
+    verifyWhileDefaultStored(async () => false);
+
+    await usePrayerTimesStore.getState().loadPrayerTimes();
+    await ensureAlarmsScheduled();
+
+    expect(fetchCalls()).toBe(1);
+    expect(mockSchedule).not.toHaveBeenCalled();
   });
 });

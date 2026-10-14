@@ -12,6 +12,11 @@ export const later = <T = void>() => {
   return { promise, release, fail };
 };
 
+/** Lets pending promise steps run until `done` holds. */
+export const until = async (done: () => boolean) => {
+  for (let step = 0; step < 50 && !done(); step += 1) await Promise.resolve();
+};
+
 /** The promise's outcome as a mock call, with no rejection left unhandled. */
 export const outcomeOf = (promise: Promise<unknown>) => {
   const outcome = jest.fn();

@@ -41,15 +41,22 @@ const runForegroundWork = async (): Promise<void> => {
   await step("reschedule", () => useNotificationStore.getState().rescheduleIfNeeded(false));
 };
 
-// One attempt per process: a granted permission with no usable fix would
+// One attempt per process: a fix or a fetch that keeps failing would
 // otherwise refetch the year on every foreground.
 let locationRepairAttempted = false;
 
-/** Showing default-location times that a device fix could now replace. */
+/** Default-place times that a verified place or a device fix can replace. */
 const canRepairLocation = async (): Promise<boolean> => {
   if (locationRepairAttempted) return false;
-  if (usePrayerTimesStore.getState().didGetCurrentLocation) return false;
-  if (useLocationStore.getState().locationMode !== LocationMode.DEVICE) return false;
+  const { didGetCurrentLocation, usingDefaultLocation, loadingTimes } =
+    usePrayerTimesStore.getState();
+  // The running load owns the outcome; the retry stays for a later foreground.
+  if (loadingTimes) return false;
+  const { lastKnownCoords, locationMode } = useLocationStore.getState();
+  // A verified place whose own rows a failed fetch never stored.
+  if (usingDefaultLocation && lastKnownCoords !== null) return true;
+  if (didGetCurrentLocation) return false;
+  if (locationMode !== LocationMode.DEVICE) return false;
   return (await checkLocationPermission()).granted;
 };
 

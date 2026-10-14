@@ -15,10 +15,18 @@ const mockWaitForAlarmStores = jest.fn();
 const mockLogError = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
 const mockCheckPermission = jest.fn();
-const mockLocationState: { locationMode: LocationModeValue } = {
+const mockLocationState: {
+  locationMode: LocationModeValue;
+  lastKnownCoords: { latitude: number; longitude: number } | null;
+} = {
   locationMode: LocationMode.DEVICE,
+  lastKnownCoords: null,
 };
-const mockPrayerTimesState = { didGetCurrentLocation: true };
+const mockPrayerTimesState = {
+  didGetCurrentLocation: true,
+  usingDefaultLocation: false,
+  loadingTimes: false,
+};
 
 jest.mock("@/stores/notification", () => ({
   useNotificationStore: {
@@ -31,11 +39,13 @@ jest.mock("@/stores/prayerTimes", () => ({
       refreshTimingsFromDb: mockRefreshTimings,
       loadPrayerTimes: mockLoadPrayerTimes,
       didGetCurrentLocation: mockPrayerTimesState.didGetCurrentLocation,
+      usingDefaultLocation: mockPrayerTimesState.usingDefaultLocation,
+      loadingTimes: mockPrayerTimesState.loadingTimes,
     }),
   },
 }));
 jest.mock("@/stores/location", () => ({
-  useLocationStore: { getState: () => ({ locationMode: mockLocationState.locationMode }) },
+  useLocationStore: { getState: () => ({ ...mockLocationState }) },
 }));
 jest.mock("@/utils/location", () => ({ checkLocationPermission: mockCheckPermission }));
 jest.mock("@/utils/alarmScheduler", () => ({
@@ -75,13 +85,23 @@ beforeEach(() => {
   mockCheckPermission.mockClear().mockResolvedValue({ granted: true });
   // A verified fix in hand, so the repair gate is shut.
   mockPrayerTimesState.didGetCurrentLocation = true;
+  mockPrayerTimesState.usingDefaultLocation = false;
+  mockPrayerTimesState.loadingTimes = false;
   mockLocationState.locationMode = LocationMode.DEVICE;
+  mockLocationState.lastKnownCoords = { latitude: 24.7136, longitude: 46.6753 };
   mockSyncWidgetSnapshot.mockClear().mockResolvedValue(undefined);
 });
 
 /** The state a user leaves by granting location in the settings app. */
 const withDefaultLocationTimes = () => {
   mockPrayerTimesState.didGetCurrentLocation = false;
+  mockPrayerTimesState.usingDefaultLocation = true;
+  mockLocationState.lastKnownCoords = null;
+};
+
+/** A verified place whose fetch failed: the default rows still stand. */
+const withVerifiedPlaceAwaitingRows = () => {
+  mockPrayerTimesState.usingDefaultLocation = true;
 };
 
 describe("registerForegroundReschedule", () => {
@@ -227,6 +247,55 @@ describe("registerForegroundReschedule", () => {
     await settle();
 
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
+  });
+
+  it("refetches for a verified place whose own rows have not landed", async () => {
+    withVerifiedPlaceAwaitingRows();
+    mockLocationState.locationMode = LocationMode.MANUAL;
+    mockCheckPermission.mockResolvedValue({ granted: false });
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+
+    expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
+    expect(mockRefreshTimings).not.toHaveBeenCalled();
+  });
+
+  // A dead network would otherwise refetch the year on every foreground.
+  it("refetches for that place at most once per process", async () => {
+    withVerifiedPlaceAwaitingRows();
+    mockLoadPrayerTimes.mockRejectedValue(new Error("offline"));
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+    handler("active");
+    await settle();
+
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
+    expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
+  });
+
+  // The running load owns the outcome; a second one would only duplicate it.
+  it.each([
+    ["a verified place awaiting its rows", withVerifiedPlaceAwaitingRows],
+    ["default times a device fix can replace", withDefaultLocationTimes],
+  ])("skips the repair for %s while a load runs, keeping its retry", async (_name, arrange) => {
+    arrange();
+    mockPrayerTimesState.loadingTimes = true;
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+    expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
+    expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
+
+    mockPrayerTimesState.loadingTimes = false;
+    handler("active");
+    await settle();
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
+    expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
   });
 
   it("does nothing when the app backgrounds", async () => {
