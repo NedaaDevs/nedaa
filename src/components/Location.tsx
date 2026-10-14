@@ -35,7 +35,6 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { checkLocationPermission, requestLocationPermission } from "@/utils/location";
 import { formatCityLabel } from "@/utils/cities";
 
-// Constants
 import { E2E_ID } from "@/constants/E2E";
 
 // Enums
