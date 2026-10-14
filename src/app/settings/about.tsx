@@ -10,6 +10,7 @@ import {
   HeartHandshake,
   Layers,
   MessageSquareText,
+  RotateCcw,
   ShieldCheck,
 } from "lucide-react-native";
 
@@ -27,6 +28,7 @@ import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinat
 import { DEBUG_COPY, DEBUG_SCREEN, type DebugScreen } from "@/constants/DebugScreens";
 import { SECTION_KIND } from "@/constants/Section";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
 
 type AboutRow = {
@@ -79,10 +81,16 @@ export default function AboutScreen() {
   const insets = useSafeAreaInsets();
   const selectionHaptic = useHaptic("selection");
   const isDebugEnabled = useDebugModeStore((s) => s.isEnabled);
+  const restartOnboarding = useAppStore((s) => s.restartOnboarding);
 
   const open = async (href: Href) => {
     await selectionHaptic();
     router.push(href);
+  };
+
+  const restart = async () => {
+    await selectionHaptic();
+    restartOnboarding();
   };
 
   const rowsOf = (rows: readonly AboutRow[]) =>
@@ -146,6 +154,13 @@ export default function AboutScreen() {
                       onPress={() => open(href)}
                     />
                   ))}
+                  <ListRow
+                    variant={LIST_ROW_VARIANT.GROUPED}
+                    icon={RotateCcw}
+                    title={DEBUG_COPY.RESTART_ONBOARDING}
+                    hint={DEBUG_COPY.RESTART_ONBOARDING_HINT}
+                    onPress={restart}
+                  />
                 </ListGroup>
               </Section>
             ) : null}
