@@ -3,7 +3,7 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
 import type { NotificationType } from "@/types/notification";
-import type { SoundAssetsConfig, ExtractSoundKeys } from "@/types/sound";
+import type { SoundAsset, SoundAssetsConfig, ExtractSoundKeys } from "@/types/sound";
 
 // Hooks
 import { getPlatformSoundName } from "@/hooks/useSoundResolver";
@@ -101,6 +101,9 @@ export const SOUND_ASSETS = {
   },
 } as const satisfies SoundAssetsConfig;
 
+/** Bundled sounds by any stored key; a custom or system key reads undefined. */
+export const BUNDLED_SOUNDS: Readonly<Record<string, SoundAsset | undefined>> = SOUND_ASSETS;
+
 /** The bundled sounds an alarm offers, in the order a picker lists them. */
 export const ALARM_SOUND_KEYS = [
   "beep",
@@ -179,6 +182,5 @@ export function isSoundKeyValid<T extends NotificationType>(
   type: T,
   key: string
 ): key is ExtractSoundKeys<typeof SOUND_ASSETS, T> {
-  const asset = SOUND_ASSETS[key as keyof typeof SOUND_ASSETS];
-  return asset && (asset.availableFor as readonly NotificationType[]).includes(type);
+  return BUNDLED_SOUNDS[key]?.availableFor.includes(type) ?? false;
 }
