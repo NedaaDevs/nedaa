@@ -5,15 +5,18 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useLocationStore } from "@/stores/location";
+import { selectVerifiedPlace, usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
 import { pickNextTrigger } from "@/utils/alarmTrigger";
+import { toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import type { TimingConfig } from "@/types/alarm";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
+import { ALARM_TYPE } from "@/constants/Alarm";
 import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 
-const ALARM_HYDRATION_TIMEOUT_MS = 5000;
+export const ALARM_HYDRATION_TIMEOUT_MS = 5000;
 
 // Alarm stores rehydrate asynchronously; startup readers (scheduling, native
 // queue drain) must await this or they read defaults and lose recurrences.
@@ -72,12 +75,7 @@ export async function schedulePrayerAlarm(
 ): Promise<string | null> {
   const alarmSettings = useAlarmSettingsStore.getState();
 
-  const settingsType =
-    alarmType === ScheduledAlarmType.JUMMAH
-      ? "friday"
-      : alarmType === ScheduledAlarmType.FAJR
-        ? PRAYER_ID.FAJR
-        : null;
+  const settingsType = toSettingsAlarmType(alarmType);
   if (settingsType && !alarmSettings[settingsType].enabled) {
     return null;
   }
@@ -104,6 +102,14 @@ async function armNextOccurrences(
   alarmType: ScheduledAlarmType,
   title: string
 ): Promise<string | null> {
+  // The default place's times would ring at the wrong hour.
+  if (!selectVerifiedPlace(usePrayerTimesStore.getState())) {
+    alarmLog.w(
+      "Scheduler",
+      `${alarmType}: times are for the default location — alarm not scheduled`
+    );
+    return null;
+  }
   const next = pickNextTrigger(candidates, timing);
   if (!next) {
     alarmLog.w("Scheduler", `${alarmType}: no future trigger — alarm not scheduled`);
@@ -206,7 +212,47 @@ export async function completeAndRescheduleAlarm(
   }
 }
 
+/** True when both stores, once hydrated, agree no verified place exists. */
+const defaultPlaceConfirmed = async (): Promise<boolean> => {
+  const late: string[] = [];
+  const hydrated = (name: string, store: { persist: Parameters<typeof waitForHydration>[0] }) =>
+    waitForHydration(store.persist, {
+      timeoutMs: ALARM_HYDRATION_TIMEOUT_MS,
+      onTimeout: () => late.push(name),
+    });
+  await Promise.all([
+    hydrated("prayerTimes", usePrayerTimesStore),
+    hydrated("location", useLocationStore),
+  ]);
+  if (late.length > 0) {
+    alarmLog.w("Scheduler", `${late.join(", ")} not hydrated — default-place alarms kept`);
+    return false;
+  }
+  // The flag is written from the location store, so it alone never cancels.
+  if (useLocationStore.getState().lastKnownCoords !== null) {
+    alarmLog.w("Scheduler", "default-location flag with saved coordinates — alarms kept");
+    return false;
+  }
+  return !selectVerifiedPlace(usePrayerTimesStore.getState());
+};
+
+/** Cancels the prayer alarms armed for times the default place now holds. */
+const cancelDefaultPlaceAlarms = async (): Promise<void> => {
+  const alarmStore = useAlarmStore.getState();
+  const armed = Object.values(ALARM_TYPE)
+    .map(toScheduledAlarmType)
+    .filter((type) => alarmStore.getAlarmByType(type));
+  if (armed.length === 0 || !(await defaultPlaceConfirmed())) return;
+  for (const type of armed) await alarmStore.cancelAlarmsByType(type);
+  alarmLog.w("Scheduler", `${armed.join(", ")}: times are for the default location — cancelled`);
+};
+
 export async function ensureAlarmsScheduled(): Promise<void> {
+  // The switches stay on; a verified place arms them again on a later top-up.
+  if (!selectVerifiedPlace(usePrayerTimesStore.getState())) {
+    await cancelDefaultPlaceAlarms();
+    return;
+  }
   const alarmSettings = useAlarmSettingsStore.getState();
   const alarmStore = useAlarmStore.getState();
 

@@ -102,6 +102,13 @@ public class ExpoAlarmModule: Module {
             return false
         }
 
+        AsyncFunction("areLiveActivitiesEnabled") { () -> Bool in
+            if #available(iOS 16.1, *) {
+                return ActivityAuthorizationInfo().areActivitiesEnabled
+            }
+            return false
+        }
+
         Function("getBackgroundRefreshStatus") { () -> String in
             let status = UIApplication.shared.backgroundRefreshStatus
             switch status {
