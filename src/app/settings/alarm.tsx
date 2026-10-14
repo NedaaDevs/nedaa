@@ -53,11 +53,11 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { usePreferencesStore } from "@/stores/preferences";
-import { selectVerifiedPlace, usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
 
 import { CHALLENGE_TYPE } from "expo-alarm";
 
@@ -287,7 +287,7 @@ const AlarmSettings = () => {
   const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
-  const verifiedPlace = usePrayerTimesStore(selectVerifiedPlace);
+  const verifiedPlace = useVerifiedPlace();
 
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [permissions, setPermissions] = useState<AlarmPermission[]>([]);
