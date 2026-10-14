@@ -10,29 +10,17 @@ import {
 import { LocalPermissionStatus } from "@/enums/location";
 
 import { AppLogger } from "@/utils/appLogger";
+import { withDeadline } from "@/utils/withTimeout";
 
 const log = AppLogger.create("location");
 
 // Constants
-export const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 export const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
 // Bounds a position read that blocks the launch fetch: Today shows its loading state
 // until it settles, so it stays short even though a cold fix can take longer.
 export const LOCATION_REQUEST_TIMEOUT = 10000; // 10 seconds
-// For a read the user asked for and is watching a spinner on. It sits above the native 30s
-// one-shot deadline, so the module settles first and its specific error survives the race.
+// For a read behind a spinner; the permission check and the fix share it.
 export const LOCATION_REQUEST_TIMEOUT_EXTENDED = 35000; // 35 seconds
-
-export const mapToLocalStatus = (status: LocalPermissionStatus): LocalPermissionStatus => {
-  switch (status) {
-    case LocalPermissionStatus.GRANTED:
-      return LocalPermissionStatus.GRANTED;
-    case LocalPermissionStatus.DENIED:
-      return LocalPermissionStatus.DENIED;
-    default:
-      return LocalPermissionStatus.UNDETERMINED;
-  }
-};
 
 export const checkLocationPermission = async () => {
   try {
@@ -66,31 +54,30 @@ export class LocationPermissionError extends Error {
   }
 }
 
-// Get location with timeout protection(sometimes getting location get stuck)
-export const getLocationWithTimeout = async (
-  timeoutMs: number = LOCATION_REQUEST_TIMEOUT
-): Promise<LocationObject> => {
-  // Every position read funnels through here, so the permission gate lives here. Calling the
-  // native provider unpermitted rejects with "Not authorized to use location services", which
-  // reads as a hard failure in the logs even when the user simply declined.
+const TIMED_OUT = "Location request timed out";
+
+// One gate for every read: an unpermitted native read logs as a failure.
+const readPosition = async (inTime: () => boolean): Promise<LocationObject> => {
   const { granted } = await checkLocationPermission();
   if (!granted) {
     log.w("Position", "location request skipped; permission not granted");
     throw new LocationPermissionError();
   }
+  // A check that answers after the deadline starts no fix; nobody waits for it.
+  if (!inTime()) throw new Error(TIMED_OUT);
+  return getCurrentPositionAsync({ accuracy: LocationAccuracy.LOW });
+};
 
+// One deadline covers the permission check and the fix; either can stall.
+export const getLocationWithTimeout = async (
+  timeoutMs: number = LOCATION_REQUEST_TIMEOUT
+): Promise<LocationObject> => {
   try {
-    const locationPromise = getCurrentPositionAsync({
-      accuracy: LocationAccuracy.LOW,
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Location request timed out")), timeoutMs);
-    });
-
-    return await Promise.race([locationPromise, timeoutPromise]);
+    return await withDeadline(readPosition, timeoutMs, TIMED_OUT);
   } catch (error) {
-    log.e("Position", "location request failed", error instanceof Error ? error : undefined);
+    if (!(error instanceof LocationPermissionError)) {
+      log.e("Position", "location request failed", error instanceof Error ? error : undefined);
+    }
     throw error;
   }
 };
@@ -113,29 +100,4 @@ export const calculateDistance = (
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-};
-
-export const getCurrentLocation = async () => {
-  // First check permission
-  const { granted, canRequestAgain } = await checkLocationPermission();
-
-  if (!granted) {
-    // A blocked permission cannot be re-requested; only a trip to app settings clears it.
-    if (!canRequestAgain) {
-      return { error: "Location permission denied" };
-    }
-
-    const { granted: newPermission } = await requestLocationPermission();
-    if (!newPermission) {
-      return { error: "Location permission denied" };
-    }
-  }
-
-  // Now get location with timeout protection
-  try {
-    const location = await getLocationWithTimeout();
-    return { location };
-  } catch (error: any) {
-    return { error: error.message };
-  }
 };

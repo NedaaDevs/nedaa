@@ -286,8 +286,6 @@ describe("a place verified while the default place's days are stored", () => {
       refreshTimingsFromDb: jest.fn(async () => WEEK),
       cleanupOldData: jest.fn(async () => true),
       getAndStorePrayerTimes: jest.fn(fetching),
-      // The fix is in hand, so the load reads the place without taking one.
-      didGetCurrentLocation: true,
     });
     useLocationStore.setState({ lastKnownCoords: COORDS });
   };
@@ -298,7 +296,7 @@ describe("a place verified while the default place's days are stored", () => {
     const fetch = later<boolean>();
     verifyWhileDefaultStored(() => fetch.promise);
 
-    const load = usePrayerTimesStore.getState().loadPrayerTimes();
+    const load = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
     await until(() => fetchCalls() > 0);
     expect(fetchCalls()).toBe(1);
     await ensureAlarmsScheduled();
@@ -317,7 +315,7 @@ describe("a place verified while the default place's days are stored", () => {
   it("arms nothing after its refetch fails", async () => {
     verifyWhileDefaultStored(async () => false);
 
-    await usePrayerTimesStore.getState().loadPrayerTimes();
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
     await ensureAlarmsScheduled();
 
     expect(fetchCalls()).toBe(1);

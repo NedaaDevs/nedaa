@@ -145,4 +145,37 @@ describe("provider settings draft and apply", () => {
 
     expect(store().applying).toBe(false);
   });
+
+  describe("discarding the draft", () => {
+    beforeEach(() => {
+      // Earlier tests apply settings; start from a known method.
+      useProviderSettingsStore.setState({
+        allSettings: { [PRAYER_TIME_PROVIDERS.ALADHAN.id]: { method: 2 } },
+      });
+      store().updateCurrentSettings({ method: 3 });
+      expect(store().isModified).toBe(true);
+    });
+
+    test("leaves the applied settings as they were", () => {
+      useProviderSettingsStore.setState({ error: "stale" });
+
+      store().discardDraft();
+
+      expect(store().draft).toBeNull();
+      expect(store().isModified).toBe(false);
+      expect(store().error).toBeNull();
+      expect(store().getCurrentSettings()).toEqual({ method: 2 });
+      expect(store().getDraftSettings()).toEqual({ method: 2 });
+    });
+
+    // The running apply saves the draft; dropping it would lose that change.
+    test("keeps the draft while an apply runs", () => {
+      useProviderSettingsStore.setState({ applying: true });
+
+      store().discardDraft();
+
+      expect(store().getDraftSettings()).toMatchObject({ method: 3 });
+      expect(store().isModified).toBe(true);
+    });
+  });
 });
