@@ -9,6 +9,8 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { DEFAULT_VIBRATION_CONFIG, type AlarmType, type TimingConfig } from "@/types/alarm";
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
@@ -21,11 +23,15 @@ jest.mock("@/utils/alarmScheduler", () => ({
   scheduleFajrAlarm: jest.fn(),
   scheduleFridayAlarm: jest.fn(),
 }));
-jest.mock("@/utils/alarmReport", () => ({ alarmLog: { e: jest.fn() } }));
+jest.mock("@/utils/alarmReport", () => ({ alarmLog: { e: jest.fn(), w: jest.fn() } }));
 
 const mockCancel = jest.fn();
+const mockScheduleAlarm = jest.fn(async (_params: object) => true);
 jest.mock("@/stores/alarm", () => ({
-  useAlarmStore: { getState: () => ({ cancelAlarmsByType: mockCancel }) },
+  useAlarmStore: {
+    getState: () => ({ cancelAlarmsByType: mockCancel, scheduleAlarm: mockScheduleAlarm }),
+    persist: {},
+  },
 }));
 
 const setNative = jest.mocked(ExpoAlarm.setAlarmSettings);
@@ -55,6 +61,7 @@ describe("useAlarmTypeSettings", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useAlarmSettingsStore.setState(INITIAL, true);
+    usePrayerTimesStore.setState({ usingDefaultLocation: false });
     setNative.mockResolvedValue(true);
     scheduleFajr.mockResolvedValue(ALARM_ID);
     scheduleFriday.mockResolvedValue(ALARM_ID);
@@ -195,6 +202,28 @@ describe("useAlarmTypeSettings", () => {
 
     await act(() => result.current.setEnabled(true));
 
+    expect(result.current.settings.enabled).toBe(false);
+  });
+
+  // The scheduler refuses the default location's times; the switch follows it.
+  it("stays off at the default location's times, with the real scheduler", async () => {
+    const actual = jest.requireActual<{ scheduleFajrAlarm: typeof scheduleFajrAlarm }>(
+      "@/utils/alarmScheduler"
+    );
+    scheduleFajr.mockImplementation(actual.scheduleFajrAlarm);
+    const fajr = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+    const today = { timezone: "UTC", timings: { fajr } } as unknown as DayPrayerTimes;
+    usePrayerTimesStore.setState({
+      usingDefaultLocation: true,
+      todayTimings: today,
+      tomorrowTimings: null,
+      twoWeeksTimings: [today],
+    });
+    const { result } = await mount(ALARM_TYPE.FAJR);
+
+    await act(() => result.current.setEnabled(true));
+
+    expect(mockScheduleAlarm).not.toHaveBeenCalled();
     expect(result.current.settings.enabled).toBe(false);
   });
 

@@ -13,6 +13,7 @@ import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAppStore } from "@/stores/app";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { HIJRI_OFFSETS } from "@/utils/hijriAdjustment";
@@ -56,6 +57,7 @@ const initialAlarms = useAlarmSettingsStore.getState();
 beforeEach(() => {
   useAlarmSettingsStore.setState({ fajr: initialAlarms.fajr, friday: initialAlarms.friday });
   useAppStore.setState({ locale: AppLocale.EN, hijriDaysOffset: 0 });
+  usePrayerTimesStore.setState({ usingDefaultLocation: false });
 });
 
 afterAll(async () => {
@@ -93,6 +95,29 @@ describe("The alarms that are on", () => {
 
       expect(onMore).not.toBe("");
       expect(statusOf(i18n.t("alarm.settings.title"))).toBe(onMore);
+    }
+  );
+});
+
+// Nothing is armed at the default location's times, so no alarm reads On there.
+describe("An alarm that is on, by the place its times are for", () => {
+  it.each([
+    [true, "tools.alarm.statusOff"],
+    [false, "prayerTimes.fajr"],
+  ] as const)(
+    "reads alike on More and Settings with usingDefaultLocation=%s",
+    async (usingDefaultLocation, key) => {
+      usePrayerTimesStore.setState({ usingDefaultLocation });
+      useAlarmSettingsStore.setState({ fajr: { ...initialAlarms.fajr, enabled: true } });
+      await renderSideBySide(
+        <>
+          <ToolsScreen />
+          <SettingsScreen />
+        </>
+      );
+
+      expect(statusOf(i18n.t("tools.alarm.title"))).toBe(i18n.t(key));
+      expect(statusOf(i18n.t("alarm.settings.title"))).toBe(i18n.t(key));
     }
   );
 });

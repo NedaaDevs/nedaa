@@ -26,6 +26,13 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseAlarmStatus\(/,
     home: "hooks/useAlarmStatus.ts",
   },
+  // Tools, Settings, the prayer sheet and the alarm screen say if it reads On.
+  {
+    concept: "whether an alarm reads On",
+    shows: /\buseAlarmOn\b|\.enabled\s*&&\s*\w*[vV]erified|[vV]erified\w*\s*&&\s*[\w.]*\.enabled\b/,
+    drawsWith: /\buseAlarmOn\(/,
+    home: "hooks/useAlarmOn.ts",
+  },
   // The Hijri screen and the Calculation screen both read the day offset.
   {
     concept: "a Hijri day offset",
