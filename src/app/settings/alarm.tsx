@@ -45,16 +45,15 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 
-import { ScheduledAlarmType } from "@/enums/alarm";
 import { SOUND_ASSETS } from "@/constants/sounds";
 import { AlarmTypeSettings } from "@/types/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useAlarmArmed } from "@/hooks/useAlarmArmed";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
@@ -275,19 +274,15 @@ const AlarmSettings = () => {
   const fajrOn = useAlarmOn(ALARM_TYPE.FAJR);
   const fridayOn = useAlarmOn(ALARM_TYPE.FRIDAY);
   const fajrStreak = useAlarmStreakStore((s) => s.streak);
-  const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
-  const fajrAlarm = Object.values(scheduledAlarms).find(
-    (a) => a.alarmType === ScheduledAlarmType.FAJR
-  );
-  const jummahAlarm = Object.values(scheduledAlarms).find(
-    (a) => a.alarmType === ScheduledAlarmType.JUMMAH
-  );
   const { isRTL } = useRTL();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
   const verifiedPlace = useVerifiedPlace();
+  const fajrArmed = useAlarmArmed(ALARM_TYPE.FAJR);
+  const fridayArmed = useAlarmArmed(ALARM_TYPE.FRIDAY);
+  const onOff = (on: boolean) => (on ? t("common.on") : t("common.off"));
 
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [permissions, setPermissions] = useState<AlarmPermission[]>([]);
@@ -362,8 +357,8 @@ const AlarmSettings = () => {
       icon: Sun,
       enabled: fajrOn,
       firesAt:
-        fajrOn && fajrAlarm
-          ? formatAlarmTime(fajrAlarm.triggerTime, t, i18n.language, use24HourTime)
+        fajrOn && fajrArmed
+          ? formatAlarmTime(fajrArmed.triggerTime, t, i18n.language, use24HourTime)
           : null,
       configSummary: formatConfigSummary(fajr, t),
       streakLabel: fajrStreak >= 2 ? t("alarm.settings.streakStat", { count: fajrStreak }) : null,
@@ -375,16 +370,16 @@ const AlarmSettings = () => {
       icon: Calendar,
       enabled: fridayOn,
       firesAt:
-        fridayOn && jummahAlarm
-          ? formatAlarmTime(jummahAlarm.triggerTime, t, i18n.language, use24HourTime)
+        fridayOn && fridayArmed
+          ? formatAlarmTime(fridayArmed.triggerTime, t, i18n.language, use24HourTime)
           : null,
       configSummary: formatConfigSummary(friday, t),
       streakLabel: null,
     },
   ];
 
-  // The alarms ring at the city's times, so the city comes first.
-  if (!verifiedPlace) {
+  // Alarms ring at the city's times, so it comes first unless one is armed.
+  if (!verifiedPlace && !fajrArmed && !fridayArmed) {
     return (
       <GatePage
         icon={MapPin}
@@ -457,7 +452,7 @@ const AlarmSettings = () => {
               <Box key={alarm.type}>
                 <Card.Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${alarm.title}. ${alarm.configSummary}`}
+                  accessibilityLabel={`${alarm.title}, ${onOff(alarm.enabled)}. ${alarm.configSummary}`}
                   margin="$2"
                   onPress={() => router.push(alarmSettingsHref(alarm.type))}>
                   <HStack justifyContent="space-between" alignItems="center">
@@ -481,9 +476,7 @@ const AlarmSettings = () => {
                             action={alarm.enabled ? "success" : "muted"}
                             size="sm"
                             borderRadius={999}>
-                            <Badge.Text>
-                              {alarm.enabled ? t("common.on") : t("common.off")}
-                            </Badge.Text>
+                            <Badge.Text>{onOff(alarm.enabled)}</Badge.Text>
                           </Badge>
                         </HStack>
                         <Text size="sm" color="$typographySecondary" numberOfLines={2}>

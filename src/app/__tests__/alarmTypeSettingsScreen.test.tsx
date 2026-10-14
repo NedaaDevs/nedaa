@@ -14,8 +14,10 @@ import {
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import i18n from "@/localization/i18n";
+import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { armFajr } from "@/test-helpers/armedAlarm";
 import { later } from "@/test-helpers/promises";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
@@ -109,6 +111,7 @@ beforeEach(() => {
   missing();
   usePrayerTimesStore.setState({ usingDefaultLocation: false });
   useAlarmSettingsStore.setState(useAlarmSettingsStore.getInitialState());
+  useAlarmStore.setState({ scheduledAlarms: {} });
 });
 
 describe("the alarm's own switch", () => {
@@ -164,6 +167,24 @@ describe("the alarm's own switch", () => {
 
     expect(mockSetEnabled).toHaveBeenCalledWith(false);
     expect(readAlarmPermissions).not.toHaveBeenCalled();
+  });
+
+  // An armed alarm rings whatever the place reads, so the switch reads On.
+  it("reads On while armed at the default location's times, and turns off", async () => {
+    useAlarmSettingsStore.setState({
+      [ALARM_TYPE.FAJR]: { ...useAlarmSettingsStore.getState()[ALARM_TYPE.FAJR], enabled: true },
+    });
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    armFajr();
+    await renderScreen();
+
+    const toggle = await enableSwitch();
+    expect(toggle).toBeChecked();
+    await act(async () => fireEvent(toggle, "valueChange", false));
+
+    expect(mockSetEnabled).toHaveBeenCalledWith(false);
+    expect(readAlarmPermissions).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("pathname")).toBeNull();
   });
 
   // The stored switch is the user's choice; the shown one, whether it can ring.
