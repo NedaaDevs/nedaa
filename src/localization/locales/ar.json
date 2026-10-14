@@ -362,7 +362,7 @@
   "alarm.permission.android.overlay.title": "العرض فوق التطبيقات الأخرى",
   "alarm.permission.ios.alarmkit.description": "مطلوب لتشغيل المنبّهات حتى عندما يكون التطبيق مغلقًا",
   "alarm.permission.ios.alarmkit.title": "إذن المنبّه",
-  "alarm.permission.ios.liveActivities.description": "تظل المنبّهات صامتة في iOS ما دامت الأنشطة المباشرة متوقفة. فعّل الأنشطة المباشرة من الإعدادات.",
+  "alarm.permission.ios.liveActivities.description": "تظل المنبّهات صامتة في ⁦iOS⁩ ما دامت الأنشطة المباشرة متوقفة. فعّل الأنشطة المباشرة من الإعدادات.",
   "alarm.permission.ios.liveActivities.title": "الأنشطة المباشرة",
   "alarm.permission.openSettings": "الإعدادات",
   "alarm.permission.title": "الأذونات مطلوبة",
