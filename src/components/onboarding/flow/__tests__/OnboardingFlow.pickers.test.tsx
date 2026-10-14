@@ -73,6 +73,7 @@ const pressFrameBack = () => user.press(screen.getByTestId(ONBOARDING_PART.BACK)
 const pressHardwareBack = () => act(async () => void handlers.at(-1)?.());
 const escape = () =>
   act(async () => {
+    // userEvent has no accessibility actions, so the escape gesture is fired.
     fireEvent(screen.getByTestId(ONBOARDING_PART.FRAME), "accessibilityEscape");
   });
 const renderAt = async (step: OnboardingStepId) => {
