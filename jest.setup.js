@@ -6,6 +6,12 @@ jest.mock("@tamagui/animations-moti", () => ({
   createAnimations: (animations) => animations,
 }));
 
+// jest-expo's stub would read as Expo Go, which the app never runs in.
+jest.mock("expo/src/environment/ExpoGo", () => ({
+  isRunningInExpoGo: () => false,
+  getExpoGoProjectConfig: () => null,
+}));
+
 // The persisted stores write through expo-sqlite's kv-store, a native module absent
 // under jest. A suite that needs stored values mocks it again in its own file.
 jest.mock("expo-sqlite/kv-store", () => ({
