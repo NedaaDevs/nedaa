@@ -1,4 +1,8 @@
-import { ONBOARDING_STEP as S, type OnboardingStepId } from "@/constants/Onboarding";
+import {
+  ONBOARDING_STEP as S,
+  ONBOARDING_STEP_IDS,
+  type OnboardingStepId,
+} from "@/constants/Onboarding";
 
 /** What the column reads from the device and the session. */
 export type ColumnInput = {
@@ -16,11 +20,8 @@ export type ColumnInput = {
   fridayAlarmOn: boolean;
 };
 
-/** Every step in its fixed order; a column is a subsequence of it. */
-const STEP_ORDER: readonly OnboardingStepId[] = Object.values(S);
-
 /** A step's place in the fixed order. */
-export const stepRank = (id: OnboardingStepId) => STEP_ORDER.indexOf(id);
+export const stepRank = (id: OnboardingStepId) => ONBOARDING_STEP_IDS.indexOf(id);
 
 /** The steps this device still needs, in order. */
 export const onboardingColumn = (input: ColumnInput): OnboardingStepId[] => {
@@ -43,7 +44,7 @@ export const onboardingColumn = (input: ColumnInput): OnboardingStepId[] => {
     [S.FRIDAY_ALARM]: input.alarmsOffered && !input.fridayAlarmOn,
     [S.COMPLETE]: true,
   };
-  return STEP_ORDER.filter((id) => shows[id]);
+  return ONBOARDING_STEP_IDS.filter((id) => shows[id]);
 };
 
 /** A step's place in the count: `current` of `total`, from 1. */
@@ -58,7 +59,7 @@ export const countedPlace = (
   shown: ReadonlySet<OnboardingStepId>,
   id: OnboardingStepId
 ): CountedPlace | null => {
-  const counted = STEP_ORDER.filter(
+  const counted = ONBOARDING_STEP_IDS.filter(
     (step) => (shown.has(step) || column.includes(step)) && !UNCOUNTED.has(step)
   );
   const at = counted.indexOf(id);
