@@ -79,7 +79,8 @@ reviews:
           route file.
     - path: "src/localization/locales/*.json"
       instructions: |
-        - All four locales (ar, en, ms, ur) must carry the same keys. A string with `{{count}}` in
+        - en.json and ar.json carry every key. ms.json and ur.json come from Crowdin, which writes
+          them from en.json; they are not edited by hand. A string with `{{count}}` in
           Arabic needs all six plural forms (_zero, _one, _two, _few, _many, _other), each a full
           sentence. Flag a count phrase slotted into a fixed sentence.
         - The app name is reached through `$t(brand.name)`, never hand-written.
