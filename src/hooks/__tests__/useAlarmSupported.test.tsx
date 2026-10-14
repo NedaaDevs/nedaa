@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+import { later } from "@/test-helpers/promises";
+
 const mockIsAlarmKitAvailable = jest.fn();
 
 jest.mock("expo-alarm", () => ({
@@ -21,6 +23,7 @@ const setup = (platform: "ios" | "android") => {
   const React = require("react");
   const renderer = require("react-test-renderer");
   const { useAlarmSupported } = require("@/hooks/useAlarmSupported");
+  const { alarmSupport }: typeof import("@/utils/alarmSupport") = require("@/utils/alarmSupport");
 
   const Probe = () => {
     results.push(useAlarmSupported());
@@ -28,6 +31,7 @@ const setup = (platform: "ios" | "android") => {
   };
 
   return {
+    alarmSupport,
     render: () => {
       renderer.act(() => {
         renderer.create(React.createElement(Probe));
@@ -83,6 +87,34 @@ describe("useAlarmSupported", () => {
     results.length = 0;
     render();
 
+    expect(latest()).toBe(true);
+    expect(mockIsAlarmKitAvailable).toHaveBeenCalledTimes(1);
+  });
+
+  // The onboarding column reads the same source, so the device is asked once.
+  it("shares one native answer with alarmSupport()", async () => {
+    const { render, alarmSupport } = setup("ios");
+    mockIsAlarmKitAvailable.mockResolvedValue(true);
+
+    await expect(alarmSupport()).resolves.toBe(true);
+    render();
+
+    expect(latest()).toBe(true);
+    await expect(alarmSupport()).resolves.toBe(true);
+    expect(mockIsAlarmKitAvailable).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands every early reader the one pending answer", async () => {
+    const { render, flush, alarmSupport } = setup("ios");
+    const answer = later<boolean>();
+    mockIsAlarmKitAvailable.mockReturnValue(answer.promise);
+
+    const early = alarmSupport();
+    render();
+    answer.release(true);
+    await flush();
+
+    await expect(early).resolves.toBe(true);
     expect(latest()).toBe(true);
     expect(mockIsAlarmKitAvailable).toHaveBeenCalledTimes(1);
   });

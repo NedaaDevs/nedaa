@@ -59,6 +59,11 @@ class ExpoAlarmModule : Module() {
             promise.resolve(getAuthStatus())
         }
 
+        // Live Activities are iOS only; nothing here silences an alarm.
+        AsyncFunction("areLiveActivitiesEnabled") {
+            true
+        }
+
         AsyncFunction("getAuthorizationStatus") { promise: Promise ->
             promise.resolve(getAuthStatus())
         }
