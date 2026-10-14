@@ -10,6 +10,15 @@ export const CALCULATION_PICKER = {
 
 export type CalculationPicker = (typeof CALCULATION_PICKER)[keyof typeof CALCULATION_PICKER];
 
+/** The choices the onboarding step offers; tuning stays in Settings. */
+export const ONBOARDING_CALCULATION_PICKERS = [
+  CALCULATION_PICKER.METHOD,
+  CALCULATION_PICKER.ASR,
+  CALCULATION_PICKER.MIDNIGHT,
+] as const;
+
+export type OnboardingCalculationPicker = (typeof ONBOARDING_CALCULATION_PICKERS)[number];
+
 /** Each choice's name, on the row that opens it and atop its sheet. */
 export const CALCULATION_TITLE_KEY: Record<CalculationPicker, string> = {
   [CALCULATION_PICKER.METHOD]: "providers.aladhan.method.title",
