@@ -4,19 +4,24 @@ import AlarmSettings from "@/app/settings/alarm";
 import { Platform, Text } from "react-native";
 import { usePathname } from "expo-router";
 import { act, userEvent } from "@testing-library/react-native";
-import { renderRouter, screen } from "expo-router/testing-library";
+import { renderRouter, screen, within } from "expo-router/testing-library";
 
 import {
   ALARM_PERMISSION,
   ALARM_PERMISSION_TITLE_KEY,
+  ALARM_SETTINGS_ROUTE,
+  ALARM_TYPE,
   type AlarmPermissionId,
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { E2E_ID } from "@/constants/E2E";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { useAlarmStore } from "@/stores/alarm";
+import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { armFajr, fajrRecord } from "@/test-helpers/armedAlarm";
 import { holdHydration } from "@/test-helpers/hydration";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
@@ -40,6 +45,7 @@ const renderScreen = () =>
       [BACK_DESTINATION.SETTINGS_ALARM.route]: () => <AlarmSettings />,
       [BACK_DESTINATION.SETTINGS_CUSTOM_SOUNDS.route]: () => <Pathname />,
       [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => <Pathname />,
+      [ALARM_SETTINGS_ROUTE]: () => <Pathname />,
     },
     {
       initialUrl: BACK_DESTINATION.SETTINGS_ALARM.href as string,
@@ -74,10 +80,18 @@ const pageTitle = (id: AlarmPermissionId) => t(ALARM_PERMISSION_TITLE_KEY[id]);
 const reportProblem = () =>
   screen.findByRole("button", { name: t("alarm.settings.reportProblem") });
 const notNow = () => screen.queryByRole("button", { name: t("common.notNow") });
+/** `text` as a pattern that matches only itself. */
+const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** The list row that opens one alarm's page; its name starts with the title. */
+const alarmRow = (title: string) =>
+  screen.findByRole("button", { name: new RegExp(`^${literal(title)}, `) });
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 beforeEach(() => {
   jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
   usePrayerTimesStore.setState({ usingDefaultLocation: false });
+  useAlarmStore.setState({ scheduledAlarms: {} });
+  useAlarmSettingsStore.setState(useAlarmSettingsStore.getInitialState());
   // Every permission granted, so the screen draws its alarms.
   jest.mocked(readAlarmPermissions).mockReset().mockResolvedValue([]);
 });
@@ -147,12 +161,82 @@ describe("Alarm settings city gate", () => {
     }
   });
 
+  // An armed alarm rings whatever the place reads, so the list shows it On.
+  it("shows the alarms while one is armed at the default location's times", async () => {
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    armFajr();
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    expect(fajr).toHaveAccessibleName(
+      new RegExp(`^${literal(t("alarm.settings.fajrAlarm"))}, ${t("common.on")}\\. `)
+    );
+    expect(screen.queryByText(t("alarm.settings.cityNeeded.title"))).toBeNull();
+
+    // Its page holds the switch that turns it off.
+    await userEvent.press(fajr);
+    expect(screen.getByTestId("pathname")).toHaveTextContent(
+      `${BACK_DESTINATION.SETTINGS_ALARM.href}/${ALARM_TYPE.FAJR}`
+    );
+  });
+
+  it("asks for the city first when only a rehearsal is armed", async () => {
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    armFajr(true);
+    await renderScreen();
+
+    expect(await screen.findByText(t("alarm.settings.cityNeeded.title"))).toBeTruthy();
+  });
+
   it("shows the permissions at a verified place", async () => {
     missing(E);
     await renderScreen();
 
     expect(await screen.findByText(pageTitle(E))).toBeTruthy();
     expect(screen.queryByText(t("alarm.settings.cityNeeded.title"))).toBeNull();
+  });
+});
+
+describe("Alarm settings list", () => {
+  // The badge's On or Off reaches a screen reader through the row's own name.
+  it("names each alarm's status in its row", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    await renderScreen();
+
+    expect(await alarmRow(t("alarm.settings.fajrAlarm"))).toHaveAccessibleName(
+      new RegExp(`^${literal(t("alarm.settings.fajrAlarm"))}, ${t("common.on")}\\. `)
+    );
+    expect(await alarmRow(t("alarm.settings.fridayAlarm"))).toHaveAccessibleName(
+      new RegExp(`^${literal(t("alarm.settings.fridayAlarm"))}, ${t("common.off")}\\. `)
+    );
+  });
+
+  // A rehearsal a few seconds out is not when the alarm rings.
+  it("gives the real alarm's ring time while a rehearsal is pending", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    const rings = Date.now() + 2 * DAY_MS;
+    const rehearsal = fajrRecord("fajr-rehearsal", Date.now() + 30 * 1000, true);
+    const real = fajrRecord("fajr-real", rings);
+    useAlarmStore.setState({
+      scheduledAlarms: { [rehearsal.alarmId]: rehearsal, [real.alarmId]: real },
+    });
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    const weekday = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
+    expect(within(fajr).getByText(new RegExp(weekday))).toBeTruthy();
+    expect(within(fajr).queryByText(new RegExp(t("alarm.settings.today")))).toBeNull();
+  });
+
+  it("gives no ring time when only a rehearsal is pending", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    armFajr(true);
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    expect(within(fajr).queryByText(new RegExp(t("alarm.settings.today")))).toBeNull();
   });
 });
 
