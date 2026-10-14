@@ -35,4 +35,9 @@ export const DEBUG_SCREEN = {
 export type DebugScreen = (typeof DEBUG_SCREEN)[keyof typeof DEBUG_SCREEN];
 
 /** About's debug copy, in English like the screens it lists. */
-export const DEBUG_COPY = { SECTION: "Developer", ON: "Debug on" } as const;
+export const DEBUG_COPY = {
+  SECTION: "Developer",
+  ON: "Debug on",
+  RESTART_ONBOARDING: "Restart onboarding",
+  RESTART_ONBOARDING_HINT: "Shows the first-run screens again; your settings stay",
+} as const;

@@ -33,7 +33,7 @@ import { ToastHost } from "@/components/ToastHost";
 import { ActionsheetOverlay } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
 import CityChangeModal from "@/components/CityChangeModal";
-import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
+import { OnboardingGate } from "@/components/onboarding/flow/OnboardingGate";
 import PlayerBottomSheet from "@/components/athkar/PlayerBottomSheet";
 import CrashReportPrompt from "@/components/CrashReportPrompt";
 import WhatsNewSheet from "@/components/WhatsNewSheet";
@@ -50,6 +50,7 @@ import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { usePreferencesHydrated } from "@/hooks/usePreferencesHydrated";
 
 import { trackAppSession } from "@/utils/reviewPrompt";
+import { registerDevMenu } from "@/utils/devMenu";
 
 import "@/tasks/backgroundRefresh";
 
@@ -127,16 +128,14 @@ function AppShell() {
               />
             )}
 
-            {showOnboarding ? (
-              <OnboardingScreen />
-            ) : (
+            <OnboardingGate showOnboarding={showOnboarding}>
               <Stack
                 screenOptions={{
                   headerShown: false,
                 }}>
                 <Stack.Screen name="(tabs)" />
               </Stack>
-            )}
+            </OnboardingGate>
             <PlayerBottomSheet />
             <CrashReportPrompt />
             <WhatsNewSheet />
@@ -184,6 +183,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     trackAppSession();
+  }, []);
+
+  useEffect(() => {
+    registerDevMenu();
   }, []);
 
   useEffect(() => {

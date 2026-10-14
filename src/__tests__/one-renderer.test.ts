@@ -116,6 +116,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseCalculationChoices\(/,
     home: "components/calculation/useCalculationChoices.ts",
   },
+  // About, Welcome and the flow's loading state draw the theme's app icon.
+  {
+    concept: "the app icon",
+    shows: /<BrandIcon\b|assets\/images\/icon\.png/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<BrandIcon\b/,
+    home: "components/ui/brand-icon/index.tsx",
+  },
   // Settings and onboarding offer the same languages, chosen the same way.
   {
     concept: "the language list",
@@ -131,6 +139,14 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /\.tsx$/,
     drawsWith: /<AppearanceChoices\b/,
     home: "components/settings/AppearanceChoices.tsx",
+  },
+  // The location step, the prime and the fetch all open the same city picker.
+  {
+    concept: "the in-step city picker",
+    shows: /<StepCityPicker\b|from "@\/components\/location\/(CityPicker|CoordinateEntry)"/,
+    within: /^components\/onboarding\//,
+    drawsWith: /<StepCityPicker\b/,
+    home: "components/onboarding/flow/CityChoice.tsx",
   },
   // PrayerGrid (cards) and PrayerDetailHero (one prayer) draw their own rows.
   {
