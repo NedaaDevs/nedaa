@@ -29,14 +29,13 @@ describe("withTimeout", () => {
     expect(onTimeout).toHaveBeenCalledTimes(1);
   });
 
-  it("still resolves to the fallback when onTimeout throws", async () => {
+  it("resolves to the fallback and throws nothing when onTimeout throws", async () => {
     const settled = jest.fn();
     void withTimeout(never<boolean>(), LIMIT_MS, false, () => {
       throw new Error("logger failed");
     }).then(settled);
 
-    await expect(jest.advanceTimersByTimeAsync(LIMIT_MS)).rejects.toThrow("logger failed");
-    await jest.advanceTimersByTimeAsync(0);
+    await expect(jest.advanceTimersByTimeAsync(LIMIT_MS)).resolves.toBeUndefined();
 
     expect(settled).toHaveBeenCalledWith(false);
   });
@@ -119,5 +118,26 @@ describe("withDeadline", () => {
 
     await expect(result).rejects.toThrow("fix failed");
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it("rejects with the work's synchronous error and leaves no timer running", async () => {
+    const failure = new Error("fix threw");
+    const outcome = outcomeOf(
+      withDeadline(
+        () => {
+          throw failure;
+        },
+        LIMIT_MS,
+        REASON
+      )
+    );
+
+    await jest.advanceTimersByTimeAsync(0);
+    expect(outcome).toHaveBeenCalledTimes(1);
+    expect(outcome).toHaveBeenCalledWith({ error: failure });
+    expect(jest.getTimerCount()).toBe(0);
+
+    await jest.advanceTimersByTimeAsync(LIMIT_MS * 2);
+    expect(outcome).toHaveBeenCalledTimes(1);
   });
 });
