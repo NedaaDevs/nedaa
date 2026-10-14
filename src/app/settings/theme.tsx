@@ -1,22 +1,17 @@
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ChoiceGroup, ChoiceRow } from "@/components/ui/choice-row";
+import { AppearanceChoices } from "@/components/settings/AppearanceChoices";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { usePageSky } from "@/components/ui/sky-background/useLiveSky";
-import { SkyHero, SkySwatch } from "@/components/ui/sky-preview";
+import { SkyHero } from "@/components/ui/sky-preview";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { APPEARANCE_ORDER } from "@/constants/Appearance";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SECTION_KIND } from "@/constants/Section";
-import type { AppMode } from "@/enums/app";
-import { useChooseMode } from "@/hooks/useChooseMode";
-import { useHaptic } from "@/hooks/useHaptic";
 import { appearancePreview } from "@/utils/appearancePreview";
-import { skySwatchFor } from "@/utils/sky";
 
 export default function AppearanceScreen() {
   return (
@@ -30,15 +25,8 @@ export default function AppearanceScreen() {
 const AppearanceContent = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const hapticSelection = useHaptic("selection");
-  const chooseMode = useChooseMode();
   const sky = usePageSky();
   const { kicker, title, note } = appearancePreview(t, sky.mode, sky.scheme, sky.phase);
-
-  const choose = (mode: AppMode) => {
-    hapticSelection();
-    void chooseMode(mode);
-  };
 
   return (
     // The sky runs under the status bar; the content pads itself clear of it.
@@ -76,24 +64,7 @@ const AppearanceContent = () => {
         <SkyOccluder>
           <Section title={t("settings.themes.choose")} kind={SECTION_KIND.LABEL}>
             <VStack gap="$3">
-              <ChoiceGroup label={t("settings.appearance")}>
-                {APPEARANCE_ORDER.map((mode) => (
-                  <ChoiceRow
-                    key={mode}
-                    title={t(`settings.themes.${mode}.title`)}
-                    subtitle={t(`settings.themes.${mode}.description`)}
-                    selected={sky.mode === mode}
-                    onPress={() => choose(mode)}
-                    leading={
-                      <SkySwatch
-                        bands={skySwatchFor(mode)}
-                        hijriDay={sky.hijriDay}
-                        isRTL={sky.isRTL}
-                      />
-                    }
-                  />
-                ))}
-              </ChoiceGroup>
+              <AppearanceChoices />
             </VStack>
           </Section>
         </SkyOccluder>

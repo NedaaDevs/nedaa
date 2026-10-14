@@ -265,6 +265,10 @@ describe("Calculation screen", () => {
 
     expect(screen.queryByRole("radio")).toBeNull();
     expect(screen.getByText(t("settings.calculation.method.noMatch"))).toBeTruthy();
+    // Jest runs as iOS, which has no live regions.
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+      t("settings.calculation.method.noMatch")
+    );
   });
 
   it("drafts the Asr school from its sheet", async () => {
