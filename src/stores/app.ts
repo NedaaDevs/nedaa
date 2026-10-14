@@ -11,6 +11,7 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 
 // Constants
 import { RTL_LOCALES } from "@/constants/Locales";
+import { isOnboardingStepId } from "@/constants/Onboarding";
 import { ALL_WHATS_NEW_IDS } from "@/constants/WhatsNew";
 
 // Types
@@ -111,10 +112,12 @@ export const useAppStore = create<AppState>()(
           }),
           merge: (persisted, current) => {
             const saved = (persisted ?? {}) as Partial<AppState>;
-            return {
-              ...current,
-              ...saved,
-            };
+            // A missing saved step keeps the current one; an unknown one is dropped.
+            const onboardingStep =
+              saved.onboardingStep === undefined || isOnboardingStepId(saved.onboardingStep)
+                ? (saved.onboardingStep ?? current.onboardingStep)
+                : null;
+            return { ...current, ...saved, onboardingStep };
           },
           onRehydrateStorage: () => (state, error) => {
             if (error) {
