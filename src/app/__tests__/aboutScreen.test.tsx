@@ -2,6 +2,7 @@
 // screen must bind to the mock below, not to its empty one.
 import AboutScreen from "@/app/settings/about";
 import { Text } from "react-native";
+import * as Haptics from "expo-haptics";
 import { usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
@@ -10,10 +11,12 @@ import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { DEBUG_COPY, DEBUG_SCREEN } from "@/constants/DebugScreens";
+import { ONBOARDING_STEP } from "@/constants/Onboarding";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
+import { useLocationStore } from "@/stores/location";
 import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 import { APP_NAME_LATIN } from "@/constants/App";
 import { appVersionLabel } from "@/utils/appVersion";
@@ -214,6 +217,72 @@ describe("About", () => {
     await userEvent.press(screen.getByRole("button", { name: first.label }));
 
     expect(screen.getByTestId("pathname")).toHaveTextContent(normalizeRoutePath(first.href));
+  });
+
+  describe("restart onboarding row", () => {
+    const restartRow = () => screen.queryByRole("button", { name: DEBUG_COPY.RESTART_ONBOARDING });
+
+    beforeEach(() => {
+      useAppStore.setState({ isFirstRun: false, onboardingStep: ONBOARDING_STEP.FETCH });
+      useLocationStore.setState({ localizedLocation: { city: "Makkah", country: "Saudi Arabia" } });
+    });
+
+    it("hides the row while debug mode is off", async () => {
+      await renderAbout();
+
+      expect(restartRow()).toBeNull();
+    });
+
+    it("shows the row after the debug screens while debug mode is on", async () => {
+      useDebugModeStore.setState({ isEnabled: true });
+      await renderAbout();
+
+      const labels = screen.getAllByRole("button").map((node) => node.props.accessibilityLabel);
+      expect(labels.slice(-(DEBUG_SCREENS.length + 1))).toEqual([
+        ...DEBUG_SCREENS.map(({ label }) => label),
+        DEBUG_COPY.RESTART_ONBOARDING,
+      ]);
+    });
+
+    it("says what the row does", async () => {
+      useDebugModeStore.setState({ isEnabled: true });
+      await renderAbout();
+
+      expect(restartRow()?.props.accessibilityHint).toBe(DEBUG_COPY.RESTART_ONBOARDING_HINT);
+    });
+
+    it("starts the first run again from the first step when pressed", async () => {
+      useDebugModeStore.setState({ isEnabled: true });
+      await renderAbout();
+
+      await userEvent.press(restartRow()!);
+
+      expect(useAppStore.getState().isFirstRun).toBe(true);
+      expect(useAppStore.getState().onboardingStep).toBeNull();
+    });
+
+    it("keeps the saved city when pressed", async () => {
+      useDebugModeStore.setState({ isEnabled: true });
+      await renderAbout();
+
+      await userEvent.press(restartRow()!);
+
+      expect(useLocationStore.getState().localizedLocation).toEqual({
+        city: "Makkah",
+        country: "Saudi Arabia",
+      });
+    });
+
+    it("gives a selection haptic when pressed", async () => {
+      const selection = jest.spyOn(Haptics, "selectionAsync").mockResolvedValue();
+      useDebugModeStore.setState({ isEnabled: true });
+      await renderAbout();
+
+      await userEvent.press(restartRow()!);
+
+      expect(selection).toHaveBeenCalledTimes(1);
+      selection.mockRestore();
+    });
   });
 
   it("turns debug mode on after seven taps on the version", async () => {
