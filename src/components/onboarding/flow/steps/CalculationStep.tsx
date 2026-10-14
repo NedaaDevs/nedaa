@@ -15,17 +15,15 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { CALCULATION_PICKER, CALCULATION_TITLE_KEY } from "@/constants/Calculation";
+import {
+  CALCULATION_PICKER,
+  CALCULATION_TITLE_KEY,
+  type OnboardingCalculationPicker,
+} from "@/constants/Calculation";
 import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
 import { useApplyCalculation } from "@/hooks/useApplyCalculation";
 import { usePlace } from "@/hooks/usePlace";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
-
-/** The pickers this step offers; per-prayer tuning stays in Settings. */
-type StepPicker =
-  | typeof CALCULATION_PICKER.METHOD
-  | typeof CALCULATION_PICKER.ASR
-  | typeof CALCULATION_PICKER.MIDNIGHT;
 
 /** The provider's method for this city, changed through the Settings parts. */
 export const CalculationStep = ({
@@ -41,7 +39,7 @@ export const CalculationStep = ({
     useCalculationChoices();
   const { state, busy, apply } = useApplyCalculation();
   const discardDraft = useProviderSettingsStore((store) => store.discardDraft);
-  const [picker, setPicker] = useState<StepPicker>(CALCULATION_PICKER.METHOD);
+  const [picker, setPicker] = useState<OnboardingCalculationPicker>(CALCULATION_PICKER.METHOD);
   const [open, setOpen] = useState(false);
   // Top level: the compiler runs a hook inside a literal on first render only.
   const methodOpener = useRef<NativeView>(null);
@@ -75,11 +73,11 @@ export const CalculationStep = ({
       : { label: t("onboarding.calculation.apply"), onPress: () => void applyAndContinue() }
   );
 
-  const show = (next: StepPicker) => {
+  const show = (next: OnboardingCalculationPicker) => {
     setPicker(next);
     setOpen(true);
   };
-  const detailRow = (row: StepPicker, value: string | undefined) => (
+  const detailRow = (row: OnboardingCalculationPicker, value: string | undefined) => (
     <ListRow
       ref={openers[row]}
       variant={LIST_ROW_VARIANT.GROUPED}
