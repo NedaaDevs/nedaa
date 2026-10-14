@@ -1,10 +1,5 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
-import {
-  AccessibilityInfo,
-  Platform,
-  type HostInstance,
-  type View as NativeView,
-} from "react-native";
+import { useRef, useState, type RefObject } from "react";
+import type { HostInstance, View as NativeView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -32,8 +27,8 @@ import {
   CALCULATION_TITLE_KEY,
   type CalculationPicker,
 } from "@/constants/Calculation";
-import { PlatformType } from "@/enums/app";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import type {
   AladhanMethodId,
   AladhanPrayerTimeName,
@@ -102,11 +97,7 @@ const MethodChoices = ({ label, settings, inUse, onPick }: PickProps) => {
 const NoMatch = () => {
   const { t } = useTranslation();
   const message = t("settings.calculation.method.noMatch");
-
-  // Android speaks the live region below; iOS has no live regions.
-  useEffect(() => {
-    if (Platform.OS === PlatformType.IOS) AccessibilityInfo.announceForAccessibility(message);
-  }, [message]);
+  useIosAnnouncement(message);
 
   return (
     <Text

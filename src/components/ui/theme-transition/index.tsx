@@ -16,7 +16,7 @@ import {
   type WithThemeTransition,
 } from "@/components/ui/theme-transition/context";
 import { APP_STATE } from "@/constants/AppState";
-import { DISSOLVE_CURVE, DURATION_MS } from "@/constants/Motion";
+import { DURATION_MS, EASE_IN_OUT_CURVE } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { AppLogger } from "@/utils/appLogger";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
@@ -117,7 +117,7 @@ const fade = (h: DissolveHandles) =>
     Animated.timing(h.opacity, {
       toValue: 0,
       duration: DURATION_MS.DISSOLVE,
-      easing: Easing.bezier(...DISSOLVE_CURVE),
+      easing: Easing.bezier(...EASE_IN_OUT_CURVE),
       useNativeDriver: true,
     }).start(() => resolve());
   });
