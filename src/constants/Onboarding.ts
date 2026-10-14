@@ -17,6 +17,13 @@ export const ONBOARDING_STEP = {
 
 export type OnboardingStepId = (typeof ONBOARDING_STEP)[keyof typeof ONBOARDING_STEP];
 
+/** Every step id in the fixed order; a column is a subsequence of it. */
+export const ONBOARDING_STEP_IDS: readonly OnboardingStepId[] = Object.values(ONBOARDING_STEP);
+
+/** Whether a saved value names a step this build can show. */
+export const isOnboardingStepId = (value: unknown): value is OnboardingStepId =>
+  ONBOARDING_STEP_IDS.some((step) => step === value);
+
 /** testIDs of the flow's parts, for the Maestro flows and the tests. */
 export const ONBOARDING_PART = {
   FRAME: "onboarding-frame",
