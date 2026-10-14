@@ -1,5 +1,11 @@
-import { ALARM_PERMISSION, type AlarmPermissionId } from "@/constants/Alarm";
+import {
+  ALARM_HYDRATION_TIMEOUT_MS,
+  ALARM_PERMISSION,
+  type AlarmPermissionId,
+} from "@/constants/Alarm";
+import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { holdHydration } from "@/test-helpers/hydration";
 import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
 import { canTurnOnAlarm } from "@/utils/alarmReadiness";
 
@@ -45,6 +51,36 @@ describe("canTurnOnAlarm", () => {
 
     await expect(canTurnOnAlarm()).resolves.toBe(false);
     expect(read).not.toHaveBeenCalled();
+  });
+
+  it("waits for the stored place to load", async () => {
+    const held = holdHydration(useLocationStore);
+    try {
+      missing();
+      const ready = canTurnOnAlarm();
+      held.land();
+
+      await expect(ready).resolves.toBe(true);
+    } finally {
+      held.restore();
+    }
+  });
+
+  // Fail closed: a place that never loads is not a verified one.
+  it("is false when the stored place misses the load cap, before any read", async () => {
+    jest.useFakeTimers();
+    const held = holdHydration(useLocationStore);
+    try {
+      missing();
+      const ready = canTurnOnAlarm();
+      await jest.advanceTimersByTimeAsync(ALARM_HYDRATION_TIMEOUT_MS);
+
+      await expect(ready).resolves.toBe(false);
+      expect(read).not.toHaveBeenCalled();
+    } finally {
+      held.restore();
+      jest.useRealTimers();
+    }
   });
 
   it("is false while a needed item is missing", async () => {

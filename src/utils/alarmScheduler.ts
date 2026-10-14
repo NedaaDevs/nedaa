@@ -5,18 +5,17 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { useLocationStore } from "@/stores/location";
-import { selectVerifiedPlace, usePrayerTimesStore } from "@/stores/prayerTimes";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
 import { pickNextTrigger } from "@/utils/alarmTrigger";
 import { toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import type { TimingConfig } from "@/types/alarm";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
-import { ALARM_TYPE } from "@/constants/Alarm";
+import { readTimesPlace } from "@/utils/timesPlace";
+import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
+import { TIMES_PLACE, type TimesPlace } from "@/constants/Location";
 import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
-
-export const ALARM_HYDRATION_TIMEOUT_MS = 5000;
 
 // Alarm stores rehydrate asynchronously; startup readers (scheduling, native
 // queue drain) must await this or they read defaults and lose recurrences.
@@ -84,12 +83,14 @@ export async function schedulePrayerAlarm(
   // before-prayer alarm fires, today's prayer is still future but its trigger is past,
   // and the next occurrence must come from tomorrow's data.
   // Later days too: an offset can put tomorrow's trigger before midnight.
-  const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
   const timing = settingsType ? alarmSettings[settingsType]?.timing : null;
-  const candidates = [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].map((day) => {
-    const iso = day?.timings[prayerName];
-    return iso ? new Date(iso) : null;
-  });
+  const candidates = () => {
+    const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
+    return [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].map((day) => {
+      const iso = day?.timings[prayerName];
+      return iso ? new Date(iso) : null;
+    });
+  };
 
   return armNextOccurrences(candidates, timing, alarmType, i18next.t(`prayerTimes.${prayerName}`));
 }
@@ -97,19 +98,19 @@ export async function schedulePrayerAlarm(
 // Arms the next occurrence and the one after it. The second rings even when the
 // first one's completion never reaches JS, which is what schedules the next.
 async function armNextOccurrences(
-  candidates: (Date | null)[],
+  readCandidates: () => (Date | null)[],
   timing: TimingConfig | null | undefined,
   alarmType: ScheduledAlarmType,
   title: string
 ): Promise<string | null> {
-  // The default place's times would ring at the wrong hour.
-  if (!selectVerifiedPlace(usePrayerTimesStore.getState())) {
-    alarmLog.w(
-      "Scheduler",
-      `${alarmType}: times are for the default location — alarm not scheduled`
-    );
+  const place = await readTimesPlace();
+  // Only a verified place's times ring at the right hour.
+  if (place !== TIMES_PLACE.VERIFIED) {
+    alarmLog.w("Scheduler", `${alarmType}: place ${place}, not verified — alarm not scheduled`);
     return null;
   }
+  // Read after the place check, which waits for the stored times to load.
+  const candidates = readCandidates();
   const next = pickNextTrigger(candidates, timing);
   if (!next) {
     alarmLog.w("Scheduler", `${alarmType}: no future trigger — alarm not scheduled`);
@@ -144,7 +145,7 @@ export async function scheduleFridayAlarm(): Promise<string | null> {
   // Friday always uses beforePrayerTime; selecting by trigger lets a passed offset
   // roll over to the next Friday in the two-week window.
   return armNextOccurrences(
-    getFridayDhuhrCandidates(),
+    getFridayDhuhrCandidates,
     settings.timing,
     ScheduledAlarmType.JUMMAH,
     i18next.t("prayerTimes.jumuah")
@@ -212,45 +213,27 @@ export async function completeAndRescheduleAlarm(
   }
 }
 
-/** True when both stores, once hydrated, agree no verified place exists. */
-const defaultPlaceConfirmed = async (): Promise<boolean> => {
-  const late: string[] = [];
-  const hydrated = (name: string, store: { persist: Parameters<typeof waitForHydration>[0] }) =>
-    waitForHydration(store.persist, {
-      timeoutMs: ALARM_HYDRATION_TIMEOUT_MS,
-      onTimeout: () => late.push(name),
-    });
-  await Promise.all([
-    hydrated("prayerTimes", usePrayerTimesStore),
-    hydrated("location", useLocationStore),
-  ]);
-  if (late.length > 0) {
-    alarmLog.w("Scheduler", `${late.join(", ")} not hydrated — default-place alarms kept`);
-    return false;
-  }
-  // The flag is written from the location store, so it alone never cancels.
-  if (useLocationStore.getState().lastKnownCoords !== null) {
-    alarmLog.w("Scheduler", "default-location flag with saved coordinates — alarms kept");
-    return false;
-  }
-  return !selectVerifiedPlace(usePrayerTimesStore.getState());
-};
-
-/** Cancels the prayer alarms armed for times the default place now holds. */
-const cancelDefaultPlaceAlarms = async (): Promise<void> => {
+/** Cancels the prayer alarms armed for the default place's times. */
+const cancelDefaultPlaceAlarms = async (place: TimesPlace): Promise<void> => {
   const alarmStore = useAlarmStore.getState();
   const armed = Object.values(ALARM_TYPE)
     .map(toScheduledAlarmType)
     .filter((type) => alarmStore.getAlarmByType(type));
-  if (armed.length === 0 || !(await defaultPlaceConfirmed())) return;
+  if (armed.length === 0) return;
+  // Only both stores agreeing on the default place cancels.
+  if (place !== TIMES_PLACE.DEFAULT) {
+    alarmLog.w("Scheduler", `place ${place}, not the default one — alarms kept`);
+    return;
+  }
   for (const type of armed) await alarmStore.cancelAlarmsByType(type);
   alarmLog.w("Scheduler", `${armed.join(", ")}: times are for the default location — cancelled`);
 };
 
 export async function ensureAlarmsScheduled(): Promise<void> {
+  const place = await readTimesPlace();
   // The switches stay on; a verified place arms them again on a later top-up.
-  if (!selectVerifiedPlace(usePrayerTimesStore.getState())) {
-    await cancelDefaultPlaceAlarms();
+  if (place !== TIMES_PLACE.VERIFIED) {
+    await cancelDefaultPlaceAlarms(place);
     return;
   }
   const alarmSettings = useAlarmSettingsStore.getState();
