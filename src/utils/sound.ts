@@ -1,5 +1,10 @@
 // Constants
-import { ALARM_SOUND_KEYS, SOUND_ASSETS, isSoundKeyValid } from "@/constants/sounds";
+import {
+  ALARM_SOUND_KEYS,
+  BUNDLED_SOUNDS,
+  SOUND_ASSETS,
+  isSoundKeyValid,
+} from "@/constants/sounds";
 
 // Types
 import type { ConfigForType, NotificationType, PrayerNotificationType } from "@/types/notification";
@@ -15,14 +20,12 @@ import { useAthkarStore } from "@/stores/athkar";
 // Utils
 import { isCustomSoundKey } from "@/utils/customSoundHelpers";
 
-const BUNDLED_ASSETS: Readonly<Record<string, SoundAsset | undefined>> = SOUND_ASSETS;
-
 /** Whether a picked sound can be stored for this alert: bundled for it, or custom. */
 export const isNotificationSound = <T extends PrayerNotificationType>(
   type: T,
   value: string
 ): value is ConfigForType<T>["sound"] =>
-  isCustomSoundKey(value) || (BUNDLED_ASSETS[value]?.availableFor.includes(type) ?? false);
+  isCustomSoundKey(value) || (BUNDLED_SOUNDS[value]?.availableFor.includes(type) ?? false);
 
 // Type-safe helper to get available sounds
 export const getAvailableSounds = <T extends NotificationType>(type: T): SoundOption[] => {
@@ -42,8 +45,7 @@ export const getSoundAsset = <T extends NotificationType>(
   if (!isSoundKeyValid(type, soundKey)) {
     return null;
   }
-  const asset = SOUND_ASSETS[soundKey as keyof typeof SOUND_ASSETS];
-  return asset || null;
+  return BUNDLED_SOUNDS[soundKey] ?? null;
 };
 
 export const getNotificationSound = <T extends NotificationType>(
@@ -243,7 +245,7 @@ export const getSoundChoices = (
   customSounds: readonly CustomSound[],
   t: TFunction
 ): SoundChoice<string>[] => [
-  ...Object.entries(BUNDLED_ASSETS).flatMap(([key, asset]) =>
+  ...Object.entries(BUNDLED_SOUNDS).flatMap(([key, asset]) =>
     asset?.availableFor.includes(type)
       ? [{ value: key, label: t(asset.label), previewSource: asset.previewSource }]
       : []

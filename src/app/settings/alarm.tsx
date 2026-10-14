@@ -45,7 +45,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 
-import { SOUND_ASSETS } from "@/constants/sounds";
+import { BUNDLED_SOUNDS } from "@/constants/sounds";
 import { AlarmTypeSettings } from "@/types/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
@@ -263,7 +263,7 @@ const formatConfigSummary = (
   const challengeLabel = t(`alarm.challenge.${challenge.type}`);
   const countPart =
     challenge.type !== CHALLENGE_TYPE.NONE && challenge.count > 1 ? ` ×${challenge.count}` : "";
-  const asset = SOUND_ASSETS[sound as keyof typeof SOUND_ASSETS];
+  const asset = BUNDLED_SOUNDS[sound];
   const soundName = asset ? t(asset.label) : t("alarm.settings.systemSound");
   return `${challengeLabel}${countPart} · ${soundName}`;
 };
