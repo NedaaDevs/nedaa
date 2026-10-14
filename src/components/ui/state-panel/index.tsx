@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-import { AccessibilityInfo, Platform } from "react-native";
 import { CircleAlert, Clock, Hourglass, Info, type LucideIcon } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
@@ -13,7 +11,7 @@ import {
   type StatePanelKind,
   type StatePanelVariant,
 } from "@/constants/StatePanel";
-import { PlatformType } from "@/enums/app";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 
 /** What a panel or callout offers: a labelled press, hinted when unclear. */
 export type StateAction = { label: string; hint?: string; onPress: () => void };
@@ -94,11 +92,7 @@ export const StatePanel = ({
   const message = `${title}. ${body}`;
   const { icon, color } = KIND_ICON[variant][kind];
   const look = LOOK[variant];
-
-  // Android speaks the live region below; iOS has no live regions.
-  useEffect(() => {
-    if (Platform.OS === PlatformType.IOS) AccessibilityInfo.announceForAccessibility(message);
-  }, [message]);
+  useIosAnnouncement(message);
 
   return (
     <VStack testID={STATE_PANEL_ROOT_ID} alignItems="center" gap="$1.5" {...look.frame}>

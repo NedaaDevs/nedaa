@@ -100,6 +100,40 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /\.tsx$/,
     drawsWith: /<TextScaleContext\b/,
   },
+  // Settings and onboarding derive the method in effect from the same reads.
+  {
+    concept: "the calculation choices",
+    shows: /\bresolvedMethod\(|\buseCalculationChoices\(/,
+    within: /^(app|components)\//,
+    drawsWith: /\buseCalculationChoices\(/,
+    home: "components/calculation/useCalculationChoices.ts",
+  },
+  // Settings and onboarding offer the same languages, chosen the same way.
+  {
+    concept: "the language list",
+    shows: /\bLANGUAGE_ORDER\b|<LanguageChoices\b/,
+    within: /\.tsx$/,
+    drawsWith: /<LanguageChoices\b/,
+    home: "components/settings/LanguageChoices.tsx",
+  },
+  // Settings and onboarding offer the same appearance modes, each with its sky.
+  {
+    concept: "the appearance modes",
+    shows: /\bAPPEARANCE_ORDER\b|<AppearanceChoices\b/,
+    within: /\.tsx$/,
+    drawsWith: /<AppearanceChoices\b/,
+    home: "components/settings/AppearanceChoices.tsx",
+  },
+  // PrayerGrid (cards) and PrayerDetailHero (one prayer) draw their own rows.
+  {
+    concept: "a prayer's name and time in a row of times",
+    shows:
+      /\bprayerNameKey\([\s\S]*\b(useClockTime|formatPrayerTime)\(|\b(useClockTime|formatPrayerTime)\([\s\S]*\bprayerNameKey\(/,
+    within:
+      /^(app|components)\/(?!today\/PrayerGrid\.tsx$|prayer-detail\/PrayerDetailHero\.tsx$).*\.tsx$/,
+    drawsWith: /<PrayerTimeCell\b/,
+    home: "components/today/PrayerTimeCell.tsx",
+  },
   // A screen reader says «م» as morning, so a spoken time names its period.
   {
     concept: "a prayer time a screen reader speaks",

@@ -11,8 +11,8 @@ export const DURATION_MS = {
 /** iOS sheet curve, as cubic-bezier points: quick start, long settle. */
 export const SHEET_CURVE = [0.32, 0.72, 0, 1] as const;
 
-/** Ease-in-out for a dissolve: slow at both ends, so no frame jumps. */
-export const DISSOLVE_CURVE = [0.42, 0, 0.58, 1] as const;
+/** CSS ease-in-out: slow at both ends, so no frame jumps. */
+export const EASE_IN_OUT_CURVE = [0.42, 0, 0.58, 1] as const;
 
-/** The `Animated.loop` iteration count that repeats until stopped. */
+/** The count that repeats until stopped: `Animated.loop`, `withRepeat`. */
 export const LOOP_FOREVER = -1;
