@@ -1,5 +1,6 @@
 import { AppState, AppStateStatus } from "react-native";
 
+import { TIMES_PLACE } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 import { useNotificationStore } from "@/stores/notification";
@@ -8,6 +9,7 @@ import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { AppLogger } from "@/utils/appLogger";
 import { checkLocationPermission } from "@/utils/location";
+import { readTimesPlace } from "@/utils/timesPlace";
 
 const log = AppLogger.create("alarm");
 
@@ -48,15 +50,16 @@ let locationRepairAttempted = false;
 /** Default-place times that a verified place or a device fix can replace. */
 const canRepairLocation = async (): Promise<boolean> => {
   if (locationRepairAttempted) return false;
-  const { didGetCurrentLocation, usingDefaultLocation, loadingTimes } =
-    usePrayerTimesStore.getState();
+  const place = await readTimesPlace();
+  // Unloaded stores hold defaults, not the place; the retry stays for later.
+  if (place === TIMES_PLACE.UNKNOWN) return false;
+  const { didGetCurrentLocation, loadingTimes } = usePrayerTimesStore.getState();
   // The running load owns the outcome; the retry stays for a later foreground.
   if (loadingTimes) return false;
-  const { lastKnownCoords, locationMode } = useLocationStore.getState();
   // A verified place whose own rows a failed fetch never stored.
-  if (usingDefaultLocation && lastKnownCoords !== null) return true;
+  if (place === TIMES_PLACE.AWAITING_TIMES) return true;
   if (didGetCurrentLocation) return false;
-  if (locationMode !== LocationMode.DEVICE) return false;
+  if (useLocationStore.getState().locationMode !== LocationMode.DEVICE) return false;
   return (await checkLocationPermission()).granted;
 };
 

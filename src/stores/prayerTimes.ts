@@ -29,7 +29,9 @@ import providerSettingsStore from "@/stores/providerSettings";
 import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
 import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
+import { placeFromFacts } from "@/utils/placeFromFacts";
 import { LocationMode } from "@/enums/location";
+import { TIMES_PLACE } from "@/constants/Location";
 import { AppLogger } from "@/utils/appLogger";
 
 // Adapters
@@ -151,7 +153,9 @@ const loadTimes = async (
       log.w("Load", "no verified coordinates; using the default location");
     }
     // Rows carry no place, so the default place's rows stand until refetched.
-    const placeNewlyVerified = verified && get().usingDefaultLocation;
+    const placeNewlyVerified =
+      placeFromFacts({ usingDefaultLocation: get().usingDefaultLocation, hasCoords: verified }) ===
+      TIMES_PLACE.AWAITING_TIMES;
 
     set({
       didGetCurrentLocation: verified,
@@ -430,12 +434,5 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 /** Whether today's times are on their way: a load or a fetch is running. */
 export const selectTimesLoading = (state: PrayerTimesStore) =>
   state.isLoading || state.loadingTimes;
-
-/** The stored times are for a verified place, not the default one. */
-export const selectVerifiedPlace = (state: PrayerTimesStore) => !state.usingDefaultLocation;
-
-/** Today's times are stored for a verified place, not the default one. */
-export const selectTodayStored = (state: PrayerTimesStore) =>
-  state.todayTimings !== null && selectVerifiedPlace(state);
 
 export default usePrayerTimesStore;

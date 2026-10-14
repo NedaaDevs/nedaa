@@ -4,6 +4,9 @@ import type { DayPrayerTimes } from "@/types/prayerTimes";
 /** The zone of the test day's place. */
 export const RIYADH_ZONE = "Asia/Riyadh";
 
+/** The saved coordinates of the test day's place. */
+export const RIYADH_COORDS = { latitude: 24.7136, longitude: 46.6753 };
+
 /** An instant on the test day, as Riyadh's clock reads `time` (HH:mm). */
 export const riyadhAt = (time: string) => `2026-10-13T${time}:00+03:00`;
 

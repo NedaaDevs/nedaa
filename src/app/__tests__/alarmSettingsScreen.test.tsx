@@ -15,7 +15,9 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { E2E_ID } from "@/constants/E2E";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { holdHydration } from "@/test-helpers/hydration";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
@@ -128,6 +130,21 @@ describe("Alarm settings city gate", () => {
 
     expect(await reportProblem()).toBeTruthy();
     expect(screen.queryByText(t("alarm.settings.cityNeeded.title"))).toBeNull();
+  });
+
+  it("asks for the city until the stored place loads, then gives way", async () => {
+    const held = holdHydration(useLocationStore);
+    try {
+      await renderScreen();
+      expect(await screen.findByText(t("alarm.settings.cityNeeded.title"))).toBeTruthy();
+
+      await act(async () => held.land());
+
+      expect(await reportProblem()).toBeTruthy();
+      expect(screen.queryByText(t("alarm.settings.cityNeeded.title"))).toBeNull();
+    } finally {
+      held.restore();
+    }
   });
 
   it("shows the permissions at a verified place", async () => {

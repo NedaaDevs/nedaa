@@ -1,17 +1,18 @@
 import { addDays } from "date-fns";
 
-import { ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
+import { TIMES_PLACE } from "@/constants/Location";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore, type ScheduledAlarm } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { holdHydration } from "@/test-helpers/hydration";
 import { later, until } from "@/test-helpers/promises";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { alarmLog } from "@/utils/alarmReport";
 import {
-  ALARM_HYDRATION_TIMEOUT_MS,
   ensureAlarmsScheduled,
   rescheduleAllAlarms,
   scheduleFajrAlarm,
@@ -92,6 +93,8 @@ const storeTimes = (usingDefaultLocation: boolean) =>
     tomorrowTimings: WEEK[1],
     twoWeeksTimings: WEEK,
   });
+const scheduledTypes = () =>
+  new Set(mockSchedule.mock.calls.map(([params]) => (params as { alarmType: string }).alarmType));
 
 let warn: jest.SpyInstance;
 
@@ -136,7 +139,7 @@ describe("at the default location's times", () => {
 
     expect(warn).toHaveBeenCalledWith(
       "Scheduler",
-      `${ScheduledAlarmType.FAJR}: times are for the default location — alarm not scheduled`
+      `${ScheduledAlarmType.FAJR}: place ${TIMES_PLACE.DEFAULT}, not verified — alarm not scheduled`
     );
   });
 
@@ -208,6 +211,67 @@ describe("a city landing after the alarm was turned on", () => {
       ([params]) => (params as { alarmType: string }).alarmType
     );
     expect(new Set(types)).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+  });
+});
+
+// Both stores load from disk; until both have, the place is not known.
+describe("before the stores load", () => {
+  let held: ReturnType<typeof holdHydration>;
+  beforeEach(() => {
+    storeTimes(false);
+    held = holdHydration(usePrayerTimesStore);
+  });
+  afterEach(() => held.restore());
+
+  it.each(ARMING)("%s arms nothing when a store misses the cap", async (_name, arm) => {
+    const armed = arm();
+    await jest.advanceTimersByTimeAsync(ALARM_HYDRATION_TIMEOUT_MS);
+
+    await expect(armed).resolves.toBeNull();
+    expect(mockSchedule).not.toHaveBeenCalled();
+  });
+
+  it("ensureAlarmsScheduled arms and cancels nothing when a store misses the cap", async () => {
+    armBoth();
+    const run = ensureAlarmsScheduled();
+    await jest.advanceTimersByTimeAsync(ALARM_HYDRATION_TIMEOUT_MS);
+    await run;
+
+    expect(mockSchedule).not.toHaveBeenCalled();
+    expect(mockCancel).not.toHaveBeenCalled();
+  });
+
+  // The times are read once loaded, not before.
+  it.each(ARMING)("%s arms at the times that land with the store", async (_name, arm) => {
+    usePrayerTimesStore.setState({
+      todayTimings: null,
+      tomorrowTimings: null,
+      twoWeeksTimings: null,
+    });
+    const armed = arm();
+    storeTimes(false);
+    held.land();
+
+    await expect(armed).resolves.not.toBeNull();
+    expect(mockSchedule).toHaveBeenCalled();
+  });
+});
+
+// The flag alone is not the place: the coordinates must be saved too.
+// The flag marks the times as the user's; a place cleared since keeps them.
+describe("under a verified flag with no saved coordinates", () => {
+  beforeEach(() => storeTimes(false));
+
+  it.each(ARMING)("%s arms", async (_name, arm) => {
+    await expect(arm()).resolves.not.toBeNull();
+    expect(mockSchedule).toHaveBeenCalled();
+  });
+
+  it("ensureAlarmsScheduled arms both and cancels nothing", async () => {
+    await ensureAlarmsScheduled();
+
+    expect(scheduledTypes()).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+    expect(mockCancel).not.toHaveBeenCalled();
   });
 });
 
