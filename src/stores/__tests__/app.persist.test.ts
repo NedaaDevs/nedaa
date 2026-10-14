@@ -60,6 +60,12 @@ describe("app store persistence", () => {
       expect(await rehydrateWithStep(saved)).toBeNull();
     });
 
+    // A saved null means no step to resume; it is not a missing value.
+    it("takes a saved null over the current step", async () => {
+      useAppStore.setState({ onboardingStep: ONBOARDING_STEP.FETCH });
+      expect(await rehydrateWithStep(null)).toBeNull();
+    });
+
     it("keeps the current step when the saved state has none", async () => {
       useAppStore.setState({ onboardingStep: ONBOARDING_STEP.FETCH });
       mockSaved.set(STORAGE_KEY, JSON.stringify({ state: {}, version: 0 }));
