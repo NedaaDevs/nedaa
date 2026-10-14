@@ -270,6 +270,13 @@ describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
   it("names the app in the calculation intro through the brand key", () => {
     expect(String(lookup(bundle, "onboarding.calculation.intro"))).toContain("$t(brand.name)");
   });
+
+  it("counts the steps in the locale's own «N of M» form", () => {
+    const alarmCount = String(lookup(bundle, "onboarding.alarm.count"));
+    expect(lookup(bundle, "onboarding.progress")).toBe(
+      alarmCount.replace("{{granted}}", "{{current}}")
+    );
+  });
 });
 
 describe("the Arabic alarm copy", () => {
