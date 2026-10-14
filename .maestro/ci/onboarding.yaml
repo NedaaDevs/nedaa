@@ -1,6 +1,6 @@
 appId: dev.nedaa.android
 ---
-# A fresh install with -g has every runtime permission, so Welcome is the only step.
+# A -g install holds every permission: no location prompt, no notification step.
 - launchApp:
     clearState: false
 - extendedWaitUntil:
@@ -9,14 +9,14 @@ appId: dev.nedaa.android
     timeout: 60000
 - tapOn:
     id: "onboarding-get-started"
-# Play services asks to turn on location accuracy over the app; the wording varies by image.
-# The countdown renders only once prayer times have come back from the API.
+# The loop ends on the exit: the notification step draws the countdown row too.
 - repeat:
     while:
       notVisible:
-        id: "focus-countdown-row"
-    times: 30
+        id: "onboarding-complete-open"
+    times: 60
     commands:
+      # Play services asks to turn on location accuracy; the wording varies.
       - runFlow:
           when:
             visible:
@@ -31,8 +31,59 @@ appId: dev.nedaa.android
           commands:
             - tapOn:
                 text: "Turn on"
+      # A chosen city verifies the place, which the emulator's fix may not.
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-location-city"
+          commands:
+            - tapOn:
+                id: "onboarding-location-city"
+            - tapOn:
+                id: "onboarding-continue"
+            - extendedWaitUntil:
+                visible:
+                  id: "city-search-input"
+                timeout: 15000
+            - tapOn:
+                id: "city-search-input"
+            - inputText: "Riyadh"
+            - extendedWaitUntil:
+                visible:
+                  id: "city-result"
+                timeout: 15000
+            - tapOn:
+                id: "city-result"
+                index: 0
+            # The step moves on once the city's times are stored.
+            - extendedWaitUntil:
+                notVisible:
+                  id: "city-search-input"
+                timeout: 60000
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-alarm-later"
+          commands:
+            - tapOn:
+                id: "onboarding-alarm-later"
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-continue"
+            notVisible:
+              id: "onboarding-alarm-later"
+          commands:
+            - tapOn:
+                id: "onboarding-continue"
       - waitForAnimationToEnd:
           timeout: 3000
+- tapOn:
+    id: "onboarding-complete-open"
+- extendedWaitUntil:
+    visible:
+      id: "focus-countdown-row"
+    timeout: 30000
 - assertVisible:
-    id: "focus-countdown-row"
+    id: "tab-bar-frame"
 - takeScreenshot: today
