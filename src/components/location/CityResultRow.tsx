@@ -8,7 +8,6 @@ import { Pressable } from "@/components/ui/pressable";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 
-// Constants
 import { E2E_ID } from "@/constants/E2E";
 
 // Utils
