@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { methodName } from "@/components/calculation/calculationOptions";
 import { TUNED_PRAYERS } from "@/components/calculation/tuning";
+import { PrayerTimeCell } from "@/components/today/PrayerTimeCell";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { HStack } from "@/components/ui/hstack";
 import { SkyHero } from "@/components/ui/sky-preview";
@@ -72,14 +73,12 @@ export const TodayPreview = ({ draft }: Props) => {
         </HStack>
         <HStack gap="$2" marginTop="$3" paddingTop="$2.5" borderTopWidth={1} borderColor="$border">
           {prayers.map(({ prayer, name, shown }) => (
-            <VStack key={prayer} flex={1}>
-              <Text size="xs" color="$mutedSky">
-                {name}
-              </Text>
-              <Text testID={previewTimeId(prayer)} size="sm" fontWeight="600" numeric color="$fg">
-                {shown}
-              </Text>
-            </VStack>
+            <PrayerTimeCell
+              key={prayer}
+              name={name}
+              time={shown}
+              timeTestID={previewTimeId(prayer)}
+            />
           ))}
         </HStack>
         {pending ? (
