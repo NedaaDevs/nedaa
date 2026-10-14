@@ -9,7 +9,11 @@ export const withTimeout = <T>(
     const timer = setTimeout(() => {
       // Settled first, so a throwing callback cannot leave the caller waiting.
       resolve(fallback);
-      onTimeout?.();
+      try {
+        onTimeout?.();
+      } catch {
+        // The callback only observes the timeout; its failure changes nothing.
+      }
     }, ms);
     const settle = (value: T) => {
       clearTimeout(timer);
@@ -32,5 +36,13 @@ export const withDeadline = <T>(
       reject(new Error(reason));
     }, ms);
   });
-  return Promise.race([work(() => !expired), deadline]).finally(() => clearTimeout(timer));
+  let running: Promise<T>;
+  // A synchronous throw settles as a rejection and leaves no timer running.
+  try {
+    running = work(() => !expired);
+  } catch (error) {
+    clearTimeout(timer);
+    return Promise.reject(error);
+  }
+  return Promise.race([running, deadline]).finally(() => clearTimeout(timer));
 };
