@@ -4,18 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  ASR_OPTIONS,
-  MIDNIGHT_OPTIONS,
-  methodName,
-  methodNameKey,
-  optionNameKey,
-  resolvedMethod,
-} from "@/components/calculation/calculationOptions";
 import { CalculationSheet } from "@/components/calculation/CalculationSheet";
 import { MethodCard } from "@/components/calculation/MethodCard";
 import { TodayPreview } from "@/components/calculation/TodayPreview";
 import { isTunedTiming, spokenTuning, summariseTuning } from "@/components/calculation/tuning";
+import { useCalculationChoices } from "@/components/calculation/useCalculationChoices";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -31,20 +24,15 @@ import {
   CALCULATION_TITLE_KEY,
   type CalculationPicker,
 } from "@/constants/Calculation";
-import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { SECTION_KIND } from "@/constants/Section";
 import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
 import { useApplyCalculation } from "@/hooks/useApplyCalculation";
-import { useTimesSource } from "@/hooks/useDraftTimes";
 import { useHaptic } from "@/hooks/useHaptic";
 import { usePlace } from "@/hooks/usePlace";
-import { useAladhanSettings } from "@/hooks/useProviderSettings";
 import { useTodayDates } from "@/hooks/useTodayDates";
 import { useAppStore } from "@/stores/app";
-import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
 
-const ALADHAN = PRAYER_TIME_PROVIDERS.ALADHAN;
 const HIJRI = BACK_DESTINATION.SETTINGS_HIJRI;
 
 /** The screen over its sky: choices drafted, previewed, applied together. */
@@ -56,9 +44,8 @@ const CalculationContent = () => {
   const city = usePlace().city;
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const { hijri } = useTodayDates();
-  const { settings, updateSettings } = useAladhanSettings();
-  const applied = useProviderSettingsStore((state) => state.allSettings[ALADHAN.id]);
-  const reported = useTimesSource()?.method;
+  const { draft, updateSettings, methodLabel, auto, asrName, midnightName, inUse } =
+    useCalculationChoices();
   const { state, busy, status, apply } = useApplyCalculation();
   // A link from a prayer's sheet opens the adjustments on that prayer, once.
   const linked = useLocalSearchParams()[CALCULATION_PARAM.TUNE];
@@ -78,12 +65,6 @@ const CalculationContent = () => {
     [CALCULATION_PICKER.MIDNIGHT]: midnightOpener,
     [CALCULATION_PICKER.TUNING]: tuningOpener,
   };
-
-  const draft = settings ?? {};
-  const methodKey = methodNameKey(draft.method);
-  const method = resolvedMethod(draft.method, applied?.method, reported);
-  const asrKey = optionNameKey(ASR_OPTIONS, draft.madhab);
-  const midnightKey = optionNameKey(MIDNIGHT_OPTIONS, draft.midnightMode);
 
   const show = (next: CalculationPicker) => {
     setPicker(next);
@@ -134,8 +115,8 @@ const CalculationContent = () => {
               <Section title={t("settings.calculation.sections.method")} kind={SECTION_KIND.LABEL}>
                 <MethodCard
                   ref={openers[CALCULATION_PICKER.METHOD]}
-                  name={methodName(method, t)}
-                  auto={!methodKey}
+                  name={methodLabel}
+                  auto={auto}
                   disabled={busy}
                   onPress={() => show(CALCULATION_PICKER.METHOD)}
                 />
@@ -143,8 +124,8 @@ const CalculationContent = () => {
 
               <Section title={t("settings.calculation.sections.details")} kind={SECTION_KIND.LABEL}>
                 <ListGroup>
-                  {detailRow(CALCULATION_PICKER.ASR, asrKey ? t(asrKey) : undefined)}
-                  {detailRow(CALCULATION_PICKER.MIDNIGHT, midnightKey ? t(midnightKey) : undefined)}
+                  {detailRow(CALCULATION_PICKER.ASR, asrName)}
+                  {detailRow(CALCULATION_PICKER.MIDNIGHT, midnightName)}
                   {detailRow(
                     CALCULATION_PICKER.TUNING,
                     summariseTuning(draft.tune, t) ?? t("prayerDetail.adjustment.none"),
@@ -189,7 +170,7 @@ const CalculationContent = () => {
           setFocus(undefined);
         }}
         settings={draft}
-        inUse={methodKey ? undefined : method}
+        inUse={inUse}
         onChange={updateSettings}
         opener={openers[picker]}
         focus={focus}
