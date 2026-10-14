@@ -1,5 +1,6 @@
 import { AppState, AppStateStatus } from "react-native";
 
+import { ALARM_HYDRATION_TIMEOUT_MS } from "@/constants/Alarm";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 
 // The `mock` prefix satisfies the factory hoisting rule; the factories read these lazily.
@@ -27,6 +28,16 @@ const mockPrayerTimesState = {
   usingDefaultLocation: false,
   loadingTimes: false,
 };
+/** Both stores' disk read: whether it has landed, and who waits for it. */
+const mockHydration = { landed: true, listeners: [] as (() => void)[] };
+const mockPersist = {
+  hasHydrated: () => mockHydration.landed,
+  onHydrate: () => () => {},
+  onFinishHydration: (listener: () => void) => {
+    mockHydration.listeners.push(listener);
+    return () => {};
+  },
+};
 
 jest.mock("@/stores/notification", () => ({
   useNotificationStore: {
@@ -42,10 +53,11 @@ jest.mock("@/stores/prayerTimes", () => ({
       usingDefaultLocation: mockPrayerTimesState.usingDefaultLocation,
       loadingTimes: mockPrayerTimesState.loadingTimes,
     }),
+    persist: mockPersist,
   },
 }));
 jest.mock("@/stores/location", () => ({
-  useLocationStore: { getState: () => ({ ...mockLocationState }) },
+  useLocationStore: { getState: () => ({ ...mockLocationState }), persist: mockPersist },
 }));
 jest.mock("@/utils/location", () => ({ checkLocationPermission: mockCheckPermission }));
 jest.mock("@/utils/alarmScheduler", () => ({
@@ -53,6 +65,7 @@ jest.mock("@/utils/alarmScheduler", () => ({
   waitForAlarmStores: mockWaitForAlarmStores,
 }));
 jest.mock("@/utils/appLogger", () => ({ AppLogger: { create: () => ({ e: mockLogError }) } }));
+jest.mock("@/utils/alarmReport", () => ({ alarmLog: { w: jest.fn() } }));
 
 // The module's `registered` flag means each test needs its own copy.
 const loadFresh = (): (() => void) => {
@@ -90,6 +103,8 @@ beforeEach(() => {
   mockLocationState.locationMode = LocationMode.DEVICE;
   mockLocationState.lastKnownCoords = { latitude: 24.7136, longitude: 46.6753 };
   mockSyncWidgetSnapshot.mockClear().mockResolvedValue(undefined);
+  mockHydration.landed = true;
+  mockHydration.listeners = [];
 });
 
 /** The state a user leaves by granting location in the settings app. */
@@ -260,6 +275,48 @@ describe("registerForegroundReschedule", () => {
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
     expect(mockRefreshTimings).not.toHaveBeenCalled();
+  });
+
+  // Before the disk read lands, the stores hold their defaults, not the place.
+  it("reads the place once the stores load", async () => {
+    mockHydration.landed = false;
+    mockPrayerTimesState.usingDefaultLocation = false;
+    mockLocationState.lastKnownCoords = null;
+    mockLocationState.locationMode = LocationMode.MANUAL;
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+    withVerifiedPlaceAwaitingRows();
+    mockLocationState.lastKnownCoords = { latitude: 24.7136, longitude: 46.6753 };
+    mockHydration.landed = true;
+    mockHydration.listeners.forEach((listener) => listener());
+    await settle();
+
+    expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
+  });
+
+  // Unloaded stores hold defaults, not the place: no repair, and the retry stays.
+  it("repairs nothing while the stores have not loaded, keeping its retry", async () => {
+    jest.useFakeTimers({ doNotFake: ["nextTick"] });
+    try {
+      mockHydration.landed = false;
+      withDefaultLocationTimes();
+      const handler = registerFresh();
+
+      handler("active");
+      await jest.advanceTimersByTimeAsync(ALARM_HYDRATION_TIMEOUT_MS);
+      expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
+      expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
+
+      mockHydration.landed = true;
+      mockHydration.listeners.forEach((listener) => listener());
+      handler("active");
+      await jest.advanceTimersByTimeAsync(0);
+      expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   // A dead network would otherwise refetch the year on every foreground.

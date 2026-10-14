@@ -30,17 +30,18 @@ jest.mock("@/stores/alarmSettings", () => ({
     persist: {},
   },
 }));
-// Read only by the default-place cancel, which these tests never reach.
-jest.mock("@/stores/location", () => ({ useLocationStore: { getState: jest.fn(), persist: {} } }));
 jest.mock("@/stores/prayerTimes", () => ({
-  // The stored times are for a verified place.
-  selectVerifiedPlace: () => true,
   usePrayerTimesStore: {
     getState: () => ({
       tomorrowTimings: { timings: { fajr: new Date(Date.now() + 8 * 3600_000).toISOString() } },
     }),
   },
 }));
+// The stored times are for a verified place.
+jest.mock("@/utils/timesPlace", () => {
+  const { TIMES_PLACE } = jest.requireActual("@/constants/Location");
+  return { readTimesPlace: async () => TIMES_PLACE.VERIFIED };
+});
 
 const ALARM_ID = "11111111-1111-4111-8111-111111111111";
 
