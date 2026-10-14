@@ -1,6 +1,7 @@
+import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { initialLocationDetails } from "@/types/location";
+import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
 import { later, until } from "@/test-helpers/promises";
 import { AppLogger } from "@/utils/appLogger";
@@ -91,10 +92,13 @@ jest.mock("@/utils/date", () => ({
 jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
 jest.mock("expo-widgets", () => ({ refreshAllWidgets: jest.fn() }));
 
+const locationLog = AppLogger.create("location");
 const prayerTimesLog = AppLogger.create("prayertimes");
 
 const resetStores = () => {
   useLocationStore.setState({
+    locationMode: LocationMode.DEVICE,
+    manualLocation: null,
     locationDetails: initialLocationDetails,
     localizedLocation: { country: "", city: "" },
     isLocationPermissionGranted: false,
@@ -383,6 +387,17 @@ describe("prayer-time location fail-safe", () => {
   });
 });
 
+const LAHORE: ManualLocation = {
+  cityId: 1172451,
+  name: "Lahore",
+  names: { ar: "لاهور", ur: "لاھور", ms: "Lahore" },
+  region: { code: "04", name: "Punjab", names: { ar: "البنجاب", ur: "پنجاب", ms: null } },
+  countryCode: "PK",
+  country: { name: "Pakistan", names: { ar: "باكستان", ur: "پاکستان", ms: "Pakistan" } },
+  latitude: 31.558,
+  longitude: 74.35071,
+  timezone: "Asia/Karachi",
+};
 const DEVICE_FIX = {
   coords: { ...initialLocationDetails.coords, latitude: 24.7136, longitude: 46.6753, accuracy: 12 },
   timestamp: 1_750_000_000_000,
@@ -391,6 +406,141 @@ const RIYADH_GEOCODE = {
   success: true,
   data: { countryName: "Saudi Arabia", city: "Riyadh", timezone: "Asia/Riyadh" },
 };
+const expectChosenCity = () => {
+  const location = useLocationStore.getState();
+  expect(location.locationMode).toBe(LocationMode.MANUAL);
+  expect(location.lastKnownCoords).toEqual({
+    latitude: LAHORE.latitude,
+    longitude: LAHORE.longitude,
+  });
+  expect(location.localizedLocation).toEqual({ country: LAHORE.country.name, city: LAHORE.name });
+  expect(location.locationDetails).toMatchObject({
+    coords: { latitude: LAHORE.latitude, longitude: LAHORE.longitude },
+    address: { country: LAHORE.country.name, city: LAHORE.name },
+    timezone: LAHORE.timezone,
+    error: null,
+  });
+};
+
+describe("a device fix that lands after a city was chosen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetStores();
+    mockReverseGeocodeAsync.mockResolvedValue([]);
+    mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
+  });
+
+  it("leaves the chosen city when the city comes while the fix is pending", async () => {
+    const fix = later<typeof DEVICE_FIX>();
+    mockGetLocationWithTimeout.mockReturnValue(fix.promise);
+    const reading = useLocationStore.getState().initializeLocation();
+
+    useLocationStore.getState().setManualLocation(LAHORE);
+    fix.release(DEVICE_FIX);
+
+    await expect(reading).resolves.toBeUndefined();
+    expectChosenCity();
+  });
+
+  it("leaves the chosen city when the city comes while the place is looked up", async () => {
+    const geocode = later<typeof RIYADH_GEOCODE>();
+    mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
+    mockReverseGeocodeApi.mockReturnValue(geocode.promise);
+    const reading = useLocationStore.getState().initializeLocation();
+    await until(() => mockReverseGeocodeApi.mock.calls.length > 0);
+    expect(mockReverseGeocodeApi).toHaveBeenCalled();
+
+    useLocationStore.getState().setManualLocation(LAHORE);
+    geocode.release(RIYADH_GEOCODE);
+
+    await expect(reading).resolves.toBeUndefined();
+    expectChosenCity();
+  });
+
+  it("writes no device error into the chosen city when the fix then fails", async () => {
+    const fix = later<typeof DEVICE_FIX>();
+    mockGetLocationWithTimeout.mockReturnValue(
+      fix.promise.then(() => Promise.reject(new Error("Location request timed out")))
+    );
+    const reading = useLocationStore.getState().initializeLocation();
+
+    useLocationStore.getState().setManualLocation(LAHORE);
+    fix.release(DEVICE_FIX);
+
+    await expect(reading).rejects.toThrow("Location request timed out");
+    expectChosenCity();
+  });
+
+  it("logs the failure of a fix abandoned for a chosen city as info, not an error", async () => {
+    const fix = later<typeof DEVICE_FIX>();
+    mockGetLocationWithTimeout.mockReturnValue(
+      fix.promise.then(() => Promise.reject(new Error("Location request timed out")))
+    );
+    const reading = useLocationStore.getState().initializeLocation();
+
+    useLocationStore.getState().setManualLocation(LAHORE);
+    fix.release(DEVICE_FIX);
+
+    await expect(reading).rejects.toThrow("Location request timed out");
+    expect(locationLog.e).not.toHaveBeenCalled();
+    expect(locationLog.i).toHaveBeenCalledWith("Init", expect.stringContaining("abandoned fix"));
+  });
+
+  it("logs a failed fix as an error while the place stays automatic", async () => {
+    mockGetLocationWithTimeout.mockRejectedValue(new Error("Location request timed out"));
+
+    await expect(useLocationStore.getState().initializeLocation()).rejects.toThrow();
+
+    expect(locationLog.e).toHaveBeenCalledWith(
+      "Init",
+      "initialize location failed",
+      expect.any(Error)
+    );
+  });
+
+  it("still applies the fix while the place stays automatic", async () => {
+    mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
+
+    await useLocationStore.getState().initializeLocation();
+
+    expect(useLocationStore.getState().lastKnownCoords).toEqual({
+      latitude: DEVICE_FIX.coords.latitude,
+      longitude: DEVICE_FIX.coords.longitude,
+    });
+    expect(useLocationStore.getState().localizedLocation.city).toBe("Riyadh");
+  });
+});
+
+describe("one position read per fetch attempt", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetStores();
+    mockGetPrayerTimesByDateRange.mockResolvedValue([]);
+    mockGetPrayerTimesByDate.mockResolvedValue(null);
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
+    mockReverseGeocodeAsync.mockResolvedValue([]);
+    mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
+    usePrayerTimesStore.setState({ getAndStorePrayerTimes: jest.fn(() => Promise.resolve(true)) });
+  });
+
+  it("reads the position once when the caller has just applied a fix", async () => {
+    await useLocationStore.getState().initializeLocation();
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
+
+    expect(mockGetLocationWithTimeout).toHaveBeenCalledTimes(1);
+    expect(mockCheckLocationPermission).not.toHaveBeenCalled();
+    expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
+    expect(usePrayerTimesStore.getState().usingDefaultLocation).toBe(false);
+  });
+
+  it("still reads the position itself when no caller holds a fix", async () => {
+    await usePrayerTimesStore.getState().loadPrayerTimes(true);
+
+    expect(mockGetLocationWithTimeout).toHaveBeenCalledTimes(1);
+    expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
+  });
+});
 
 // The mocked clock's days, as `dateToInt` writes them.
 const [YESTERDAY, TODAY, TOMORROW] = [20260718, 20260719, 20260720];
@@ -475,6 +625,19 @@ describe("a place verified after the default place's days were stored", () => {
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).rejects.toThrow();
 
     expect(usingDefault()).toBe(true);
+  });
+
+  it("refetches the same way for a place the location store already holds", async () => {
+    verifyPlace();
+    const { fetch, flagAtFetch } = pendingFetch();
+
+    const load = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+    await until(() => flagAtFetch.length > 0);
+
+    expect(flagAtFetch).toEqual([true]);
+    fetch.release(true);
+    await load;
+    expect(usingDefault()).toBe(false);
   });
 
   it("does not refetch a verified place whose days are all stored", async () => {
