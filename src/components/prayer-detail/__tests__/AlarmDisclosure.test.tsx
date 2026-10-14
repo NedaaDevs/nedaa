@@ -21,6 +21,7 @@ import {
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SOUND_ASSETS } from "@/constants/sounds";
+import { ScheduledAlarmType } from "@/enums/alarm";
 import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
@@ -49,9 +50,13 @@ jest.mock("@/utils/alarmPermissions", () => ({
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 
 const mockCancel = jest.fn();
-jest.mock("@/stores/alarm", () => ({
-  useAlarmStore: { getState: () => ({ cancelAlarmsByType: mockCancel }) },
-}));
+/** The alarms the store holds; a test arms one here. */
+const mockAlarms: { scheduledAlarms: Record<string, object> } = { scheduledAlarms: {} };
+jest.mock("@/stores/alarm", () => {
+  const state = () => ({ ...mockAlarms, cancelAlarmsByType: mockCancel });
+  const useAlarmStore = (select: (alarms: object) => unknown) => select(state());
+  return { useAlarmStore: Object.assign(useAlarmStore, { getState: state }) };
+});
 
 const scheduleFajr = jest.mocked(scheduleFajrAlarm);
 const scheduleFriday = jest.mocked(scheduleFridayAlarm);
@@ -137,6 +142,7 @@ beforeEach(() => {
   missing();
   usePrayerTimesStore.setState({ usingDefaultLocation: false });
   mockCancel.mockResolvedValue(true);
+  mockAlarms.scheduledAlarms = {};
 });
 
 describe("AlarmDisclosure", () => {
@@ -402,6 +408,26 @@ describe("AlarmDisclosure", () => {
         name: `${TITLE.fajr}, ${i18n.t("prayerDetail.alarm.summary.atPrayer")}`,
       }).props.accessibilityState
     ).toMatchObject({ checked: true });
+  });
+
+  // An armed alarm rings whatever the place reads, so it shows On and turns off.
+  it("shows an alarm armed at the default location's times On, and turns it off", async () => {
+    const user = userEvent.setup();
+    setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    mockAlarms.scheduledAlarms = { [ALARM_ID]: { alarmType: ScheduledAlarmType.FAJR } };
+    await renderDisclosure(ALARM_TYPE.FAJR);
+    expect(alarmSwitch(ALARM_TYPE.FAJR).props.accessibilityState).toMatchObject({
+      checked: true,
+    });
+
+    await user.press(alarmSwitch(ALARM_TYPE.FAJR));
+
+    expect(mockCancel).toHaveBeenCalledWith(ScheduledAlarmType.FAJR);
+    expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(false);
+    expect(screen.getByTestId("pathname")).not.toHaveTextContent(
+      BACK_DESTINATION.SETTINGS_ALARM.href as string
+    );
   });
 
   it("turns off without asking for permissions", async () => {
