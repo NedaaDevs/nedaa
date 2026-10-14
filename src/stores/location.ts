@@ -105,11 +105,18 @@ export const useLocationStore = create<LocationStore>()(
                 lastKnownCoords: previousLastKnownCoords,
               }
             : null;
+          // A city chosen during the fix is the user's; the fix leaves it.
+          const stillAutomatic = () => {
+            if (get().locationMode === LocationMode.DEVICE) return true;
+            log.i("Init", "a city was chosen during the fix; the device place is not applied");
+            return false;
+          };
           set({ isGettingLocation: true });
           try {
             // Get initial location with timeout protection
             const location = await getLocationWithTimeout();
             log.i("Init", "initial location retrieved");
+            if (!stillAutomatic()) return;
 
             // Keep an accurate fix even when address services are unavailable.
             set((state) => ({
@@ -144,6 +151,7 @@ export const useLocationStore = create<LocationStore>()(
                 return null;
               });
 
+            if (!stillAutomatic()) return;
             const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
             if (!timezone) {
               if (previousVerifiedLocation) {
@@ -177,14 +185,19 @@ export const useLocationStore = create<LocationStore>()(
           } catch (error) {
             const cause =
               error instanceof Error ? error : new Error("Failed to initialize location");
-            log.e("Init", "initialize location failed", cause);
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                error: stripLocationDiagnostics(cause.message),
-                isLoading: false,
-              },
-            }));
+            // A chosen city abandons the fix: an info log, no device error.
+            if (get().locationMode !== LocationMode.DEVICE) {
+              log.i("Init", `abandoned fix failed: ${cause.message}`);
+            } else {
+              log.e("Init", "initialize location failed", cause);
+              set((state) => ({
+                locationDetails: {
+                  ...state.locationDetails,
+                  error: stripLocationDiagnostics(cause.message),
+                  isLoading: false,
+                },
+              }));
+            }
             throw cause;
           } finally {
             set({ isGettingLocation: false });

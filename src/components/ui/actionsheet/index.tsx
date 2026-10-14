@@ -16,7 +16,6 @@ import { useTheme, useThemeColor } from "@/components/ui/theme-color";
 import { useTextScale } from "@/hooks/useTextScale";
 import type { GetProps } from "tamagui";
 import {
-  AccessibilityInfo,
   BackHandler,
   FlatList,
   Platform,
@@ -42,6 +41,7 @@ import { Pressable, type PressableProps } from "@/components/ui/pressable";
 import { PlatformType } from "@/enums/app";
 import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { focusOn } from "@/utils/accessibilityFocus";
 
 /** The $sheet radius, as a number: gorhom styles take no theme tokens. */
 const SHEET_RADIUS = 18;
@@ -51,11 +51,6 @@ export const ACTIONSHEET_PART = {
   LAYER: "actionsheet-layer",
   CLOSE: "actionsheet-close",
 } as const;
-
-/** Moves screen-reader focus to a view, when there is one. */
-const focusOn = (node: HostInstance | null | undefined) => {
-  if (node) AccessibilityInfo.sendAccessibilityEvent(node, "focus");
-};
 
 /** Drawn in the top sheet's layer, where iOS lets a reader reach it. */
 const ActionsheetOverlay = createContext<ReactNode>(null);
