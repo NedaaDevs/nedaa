@@ -20,11 +20,12 @@ import {
   timingForMode,
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import type { AlarmType, TimingConfig, TimingMode } from "@/types/alarm";
-import { alarmPermissionsGranted } from "@/utils/alarmPermissions";
+import { canTurnOnAlarm } from "@/utils/alarmReadiness";
 import { getAlarmSoundChoices } from "@/utils/sound";
 
 const TITLE = {
@@ -51,6 +52,7 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
   const { t } = useTranslation();
   const { settings, update, setEnabled } = useAlarmTypeSettings(type);
   const customSounds = useCustomSoundsStore((state) => state.customSounds);
+  const shownOn = useAlarmOn(type);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -62,8 +64,8 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
   const toggle = async (enabled: boolean) => {
     setFailed(false);
     setPending(true);
-    // On a failed check the schedule runs and reports any failure itself.
-    if (enabled && !(await alarmPermissionsGranted().catch(() => true))) {
+    // The gate shows what is missing: the city first, then the permissions.
+    if (enabled && !(await canTurnOnAlarm())) {
       setPending(false);
       router.push(BACK_DESTINATION.SETTINGS_ALARM.href);
       return;
@@ -80,7 +82,7 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
     ? t("prayerDetail.alarm.summary.pending")
     : failed
       ? t("prayerDetail.alarm.summary.failed")
-      : !settings.enabled
+      : !shownOn
         ? t("common.off")
         : timingSummary(type, timing, t);
 
@@ -91,7 +93,7 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
       icon={AlarmClock}
       label={name}
       summary={summary}
-      value={settings.enabled}
+      value={shownOn}
       busy={pending}
       onValueChange={(enabled) => void toggle(enabled)}>
       <DetailPanel>

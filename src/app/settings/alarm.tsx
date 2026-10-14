@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { ScrollView, Platform, Linking, View } from "react-native";
+import { ScrollView, Platform, View } from "react-native";
 import { useState, useEffect, useCallback } from "react";
 import { router } from "expo-router";
-import * as Application from "expo-application";
 
 import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
@@ -19,6 +18,7 @@ import { ListRow } from "@/components/ui/list-row";
 import { Spinner } from "@/components/ui/spinner";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import type { StateAction } from "@/components/ui/state-panel";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import ReportProblemModal from "@/components/ReportProblemModal";
 
@@ -39,6 +39,9 @@ import {
   CircleHelp,
   Layers,
   Volume1,
+  Activity,
+  MapPin,
+  type LucideIcon,
 } from "lucide-react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
@@ -49,23 +52,27 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { usePreferencesStore } from "@/stores/preferences";
+import { selectVerifiedPlace, usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useHaptic } from "@/hooks/useHaptic";
 
-import {
-  CHALLENGE_TYPE,
-  requestAuthorization,
-  requestExactAlarmPermission,
-  requestFullScreenIntentPermission,
-  requestBatteryOptimizationExemption,
-  requestDrawOverlaysPermission,
-} from "expo-alarm";
+import { CHALLENGE_TYPE } from "expo-alarm";
 
-import { requestNotificationPermission } from "@/utils/notifications";
-import { ALARM_PERMISSION, type AlarmPermissionId } from "@/constants/Alarm";
-import { PRAYER_ID } from "@/constants/Prayer";
-import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
+import {
+  ALARM_PERMISSION,
+  ALARM_PERMISSION_TITLE_KEY,
+  ALARM_TYPE,
+  alarmSettingsHref,
+  isNeededPermission,
+  type AlarmPermissionId,
+} from "@/constants/Alarm";
+import {
+  readAlarmPermissions,
+  requestAlarmPermission,
+  type AlarmPermission,
+} from "@/utils/alarmPermissions";
 
 import { PlatformType } from "@/enums/app";
 import {
@@ -75,85 +82,137 @@ import {
   type IssueCategory,
 } from "@/utils/alarmReport";
 
-const openAppSettings = () => {
-  if (Platform.OS === PlatformType.IOS) {
-    Linking.openURL("app-settings:");
-  } else {
-    Linking.openSettings();
-  }
-};
-
-const openNotificationSettings = () => {
-  if (Platform.OS === PlatformType.ANDROID) {
-    Linking.sendIntent("android.settings.APP_NOTIFICATION_SETTINGS", [
-      {
-        key: "android.provider.extra.APP_PACKAGE",
-        value: Application.applicationId ?? "dev.nedaa.android",
-      },
-    ]).catch(() => Linking.openSettings());
-  } else {
-    openAppSettings();
-  }
-};
-
-const PERMISSION_COPY: Record<
-  AlarmPermissionId,
-  { icon: typeof Bell; titleKey: string; descriptionKey: string }
-> = {
+// Titles are ALARM_PERMISSION_TITLE_KEY's: one name per permission.
+const PERMISSION_COPY: Record<AlarmPermissionId, { icon: LucideIcon; descriptionKey: string }> = {
   [ALARM_PERMISSION.ALARMKIT]: {
     icon: Bell,
-    titleKey: "alarm.permission.ios.alarmkit.title",
     descriptionKey: "alarm.permission.ios.alarmkit.description",
+  },
+  [ALARM_PERMISSION.LIVE_ACTIVITIES]: {
+    icon: Activity,
+    descriptionKey: "alarm.permission.ios.liveActivities.description",
   },
   [ALARM_PERMISSION.NOTIFICATIONS]: {
     icon: Bell,
-    titleKey: "alarm.permission.android.notifications.title",
     descriptionKey: "alarm.permission.android.notifications.description",
   },
   [ALARM_PERMISSION.EXACT_ALARM]: {
     icon: Clock,
-    titleKey: "alarm.permission.android.exactAlarm.title",
     descriptionKey: "alarm.permission.android.exactAlarm.description",
   },
   [ALARM_PERMISSION.FULL_SCREEN]: {
     icon: Maximize,
-    titleKey: "alarm.permission.android.fullScreen.title",
     descriptionKey: "alarm.permission.android.fullScreen.description",
   },
   [ALARM_PERMISSION.OVERLAY]: {
     icon: Layers,
-    titleKey: "alarm.permission.android.overlay.title",
     descriptionKey: "alarm.permission.android.overlay.description",
   },
   [ALARM_PERMISSION.BATTERY]: {
     icon: BatteryCharging,
-    titleKey: "alarm.permission.android.battery.title",
     descriptionKey: "alarm.permission.android.battery.description",
   },
 };
 
-const REQUEST_PERMISSION: Record<
-  AlarmPermissionId,
-  (permission: AlarmPermission) => Promise<unknown> | void
-> = {
-  [ALARM_PERMISSION.ALARMKIT]: async ({ canRequestInApp }) => {
-    // Once denied, iOS stops prompting and only Settings can grant it.
-    if ((await requestAuthorization()) === "denied" && !canRequestInApp) openAppSettings();
-  },
-  [ALARM_PERMISSION.NOTIFICATIONS]: ({ canRequestInApp }) =>
-    canRequestInApp ? requestNotificationPermission() : openNotificationSettings(),
-  [ALARM_PERMISSION.EXACT_ALARM]: () => {
-    requestExactAlarmPermission();
-  },
-  [ALARM_PERMISSION.FULL_SCREEN]: () => {
-    requestFullScreenIntentPermission();
-  },
-  [ALARM_PERMISSION.OVERLAY]: () => {
-    requestDrawOverlaysPermission();
-  },
-  [ALARM_PERMISSION.BATTERY]: () => {
-    requestBatteryOptimizationExemption();
-  },
+type GateSteps = { items: readonly AlarmPermission[]; current: AlarmPermissionId };
+
+type GatePageProps = {
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  action: StateAction;
+  /** Passes the page for this visit; a page the alarm needs has none. */
+  pass?: StateAction;
+  /** Every permission, the one this page asks for marked. */
+  steps?: GateSteps;
+};
+
+/** One thing the alarms wait on, and the way to it. */
+const GatePage = ({ icon, title, body, action, pass, steps }: GatePageProps) => {
+  const { t } = useTranslation();
+  return (
+    <Background>
+      <ScreenHeader
+        title={t("alarm.settings.title")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS }}
+      />
+      <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8">
+        <VStack alignItems="center" width="100%" maxWidth={320} gap="$5">
+          <Box
+            width="$24"
+            height="$24"
+            borderRadius="$pill"
+            backgroundColor="$backgroundInfo"
+            alignItems="center"
+            justifyContent="center">
+            <Icon as={icon} size="xl" color="$info" />
+          </Box>
+
+          <VStack gap="$2" alignItems="center">
+            <Text size="2xl" bold color="$typography" textAlign="center">
+              {title}
+            </Text>
+            <Text size="md" color="$typographySecondary" textAlign="center" lineHeight={22}>
+              {body}
+            </Text>
+          </VStack>
+
+          {steps && steps.items.length > 1 && (
+            <HStack
+              gap="$1"
+              alignItems="center"
+              accessible={true}
+              accessibilityLabel={t("a11y.stepProgress", {
+                current: steps.items.findIndex(({ id }) => id === steps.current) + 1,
+                total: steps.items.length,
+              })}>
+              {steps.items.map(({ id, granted }) => (
+                <Box
+                  key={id}
+                  height="$1.5"
+                  borderRadius="$pill"
+                  backgroundColor={
+                    granted ? "$success" : id === steps.current ? "$primary" : "$outline"
+                  }
+                  width={granted || id === steps.current ? "$6" : "$3"}
+                />
+              ))}
+            </HStack>
+          )}
+
+          <VStack gap="$3" width="100%" alignItems="center">
+            <Button
+              size="lg"
+              variant="solid"
+              width="100%"
+              borderRadius="$pill"
+              backgroundColor="$primary"
+              onPress={action.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+              accessibilityHint={action.hint}>
+              <Button.Text fontWeight="600" fontSize={16} color="$typographyContrast">
+                {action.label}
+              </Button.Text>
+            </Button>
+            {pass && (
+              <Button
+                action="secondary"
+                variant="outline"
+                size="lg"
+                width="100%"
+                borderRadius="$pill"
+                onPress={pass.onPress}
+                accessibilityRole="button"
+                accessibilityLabel={pass.label}>
+                <Button.Text>{pass.label}</Button.Text>
+              </Button>
+            )}
+          </VStack>
+        </VStack>
+      </VStack>
+    </Background>
+  );
 };
 
 const formatAlarmTime = (
@@ -210,6 +269,8 @@ const formatConfigSummary = (
 const AlarmSettings = () => {
   const { t, i18n } = useTranslation();
   const { fajr, friday } = useAlarmSettingsStore();
+  const fajrOn = useAlarmOn(ALARM_TYPE.FAJR);
+  const fridayOn = useAlarmOn(ALARM_TYPE.FRIDAY);
   const fajrStreak = useAlarmStreakStore((s) => s.streak);
   const scheduledAlarms = useAlarmStore((s) => s.scheduledAlarms);
   const fajrAlarm = Object.values(scheduledAlarms).find(
@@ -223,9 +284,12 @@ const AlarmSettings = () => {
   const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic("medium");
+  const verifiedPlace = usePrayerTimesStore(selectVerifiedPlace);
 
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [permissions, setPermissions] = useState<AlarmPermission[]>([]);
+  // Improvements passed with Not now; this visit only, the next one asks again.
+  const [passed, setPassed] = useState<ReadonlySet<AlarmPermissionId>>(() => new Set());
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
@@ -264,8 +328,8 @@ const AlarmSettings = () => {
     await copyAlarmReport(selectedCategory ?? undefined);
   }, [selectedCategory]);
 
-  const currentPermission = permissions.find((p) => !p.granted);
-  const totalCount = permissions.length;
+  // A missing needed item blocks the alarms; only an improvement can be passed.
+  const currentPermission = permissions.find(({ id, granted }) => !granted && !passed.has(id));
 
   // Re-read on every return to the app: most grants happen in system settings.
   useEffect(() => {
@@ -282,39 +346,55 @@ const AlarmSettings = () => {
 
   const handlePermissionRequest = async (permission: AlarmPermission) => {
     hapticMedium();
-    await REQUEST_PERMISSION[permission.id](permission);
+    await requestAlarmPermission(permission);
     // An in-app prompt answers here; a settings screen answers on return.
     setPermissions(await readAlarmPermissions());
   };
 
   const alarmTypes = [
     {
-      type: PRAYER_ID.FAJR,
+      type: ALARM_TYPE.FAJR,
       title: t("alarm.settings.fajrAlarm"),
       description: t("alarm.settings.fajrDescription"),
       icon: Sun,
-      enabled: fajr.enabled,
+      enabled: fajrOn,
       firesAt:
-        fajr.enabled && fajrAlarm
+        fajrOn && fajrAlarm
           ? formatAlarmTime(fajrAlarm.triggerTime, t, i18n.language, use24HourTime)
           : null,
       configSummary: formatConfigSummary(fajr, t),
       streakLabel: fajrStreak >= 2 ? t("alarm.settings.streakStat", { count: fajrStreak }) : null,
     },
     {
-      type: "friday",
+      type: ALARM_TYPE.FRIDAY,
       title: t("alarm.settings.fridayAlarm"),
       description: t("alarm.settings.fridayDescription"),
       icon: Calendar,
-      enabled: friday.enabled,
+      enabled: fridayOn,
       firesAt:
-        friday.enabled && jummahAlarm
+        fridayOn && jummahAlarm
           ? formatAlarmTime(jummahAlarm.triggerTime, t, i18n.language, use24HourTime)
           : null,
       configSummary: formatConfigSummary(friday, t),
       streakLabel: null,
     },
   ];
+
+  // The alarms ring at the city's times, so the city comes first.
+  if (!verifiedPlace) {
+    return (
+      <GatePage
+        icon={MapPin}
+        title={t("alarm.settings.cityNeeded.title")}
+        body={t("alarm.settings.cityNeeded.body")}
+        action={{
+          label: t("alarm.settings.cityNeeded.action"),
+          hint: t("a11y.today.locationHint"),
+          onPress: () => router.push(BACK_DESTINATION.SETTINGS_LOCATION.href),
+        }}
+      />
+    );
+  }
 
   if (isCheckingPermissions) {
     return (
@@ -331,79 +411,28 @@ const AlarmSettings = () => {
   }
 
   if (currentPermission) {
-    const copy = PERMISSION_COPY[currentPermission.id];
+    const { id } = currentPermission;
     return (
-      <Background>
-        <ScreenHeader
-          title={t("alarm.settings.title")}
-          back={{ fallback: BACK_DESTINATION.SETTINGS }}
-        />
-        <VStack flex={1} alignItems="center" justifyContent="center" paddingHorizontal="$8">
-          <VStack alignItems="center" width="100%" maxWidth={320} gap="$5">
-            <Box
-              width={96}
-              height={96}
-              borderRadius={999}
-              backgroundColor="$backgroundInfo"
-              alignItems="center"
-              justifyContent="center">
-              <Icon as={copy.icon} size="xl" color="$info" />
-            </Box>
-
-            <VStack gap="$2" alignItems="center">
-              <Text size="2xl" bold color="$typography" textAlign="center">
-                {t(copy.titleKey)}
-              </Text>
-              <Text size="md" color="$typographySecondary" textAlign="center" lineHeight={22}>
-                {t(copy.descriptionKey)}
-              </Text>
-            </VStack>
-
-            {totalCount > 1 && (
-              <HStack
-                gap="$1"
-                alignItems="center"
-                accessible={true}
-                accessibilityLabel={t("a11y.stepProgress", {
-                  current: permissions.filter((p) => p.granted).length + 1,
-                  total: totalCount,
-                })}>
-                {permissions.map((p) => (
-                  <Box
-                    key={p.id}
-                    height={6}
-                    borderRadius={999}
-                    backgroundColor={
-                      p.granted
-                        ? "$success"
-                        : p.id === currentPermission.id
-                          ? "$primary"
-                          : "$outline"
-                    }
-                    width={p.granted || p.id === currentPermission.id ? 24 : 12}
-                  />
-                ))}
-              </HStack>
-            )}
-
-            <VStack gap="$3" width="100%" alignItems="center">
-              <Button
-                size="lg"
-                variant="solid"
-                width="100%"
-                borderRadius={999}
-                backgroundColor="$primary"
-                onPress={() => handlePermissionRequest(currentPermission)}>
-                <Button.Text fontWeight="600" fontSize={16} color="$typographyContrast">
-                  {currentPermission.canRequestInApp
-                    ? t("alarm.permission.allow")
-                    : t("alarm.permission.openSettings")}
-                </Button.Text>
-              </Button>
-            </VStack>
-          </VStack>
-        </VStack>
-      </Background>
+      <GatePage
+        icon={PERMISSION_COPY[id].icon}
+        title={t(ALARM_PERMISSION_TITLE_KEY[id])}
+        body={t(PERMISSION_COPY[id].descriptionKey)}
+        action={{
+          label: currentPermission.canRequestInApp
+            ? t("alarm.permission.allow")
+            : t("alarm.permission.openSettings"),
+          onPress: () => handlePermissionRequest(currentPermission),
+        }}
+        pass={
+          isNeededPermission(id)
+            ? undefined
+            : {
+                label: t("common.notNow"),
+                onPress: () => setPassed((before) => new Set(before).add(id)),
+              }
+        }
+        steps={{ items: permissions, current: id }}
+      />
     );
   }
 
@@ -426,7 +455,7 @@ const AlarmSettings = () => {
                   accessibilityRole="button"
                   accessibilityLabel={`${alarm.title}. ${alarm.configSummary}`}
                   margin="$2"
-                  onPress={() => router.push(`/settings/alarm/${alarm.type}` as any)}>
+                  onPress={() => router.push(alarmSettingsHref(alarm.type))}>
                   <HStack justifyContent="space-between" alignItems="center">
                     <HStack alignItems="center" flex={1} gap="$3">
                       <Box

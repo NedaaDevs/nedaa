@@ -408,4 +408,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 export const selectTimesLoading = (state: PrayerTimesStore) =>
   state.isLoading || state.loadingTimes;
 
+/** The stored times are for a verified place, not the default one. */
+export const selectVerifiedPlace = (state: PrayerTimesStore) => !state.usingDefaultLocation;
+
 export default usePrayerTimesStore;

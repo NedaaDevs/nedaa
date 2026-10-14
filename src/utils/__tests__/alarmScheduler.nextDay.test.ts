@@ -35,7 +35,11 @@ jest.mock("@/stores/alarmSettings", () => ({
   },
 }));
 // Fajr at 01:00 with a 90-minute offset triggers at 23:30 the day before.
+// Read only by the default-place cancel, which these tests never reach.
+jest.mock("@/stores/location", () => ({ useLocationStore: { getState: jest.fn(), persist: {} } }));
 jest.mock("@/stores/prayerTimes", () => ({
+  // The stored times are for a verified place.
+  selectVerifiedPlace: () => true,
   usePrayerTimesStore: {
     getState: () => ({
       todayTimings: dayTiming(-1),

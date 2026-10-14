@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Platform } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -27,11 +27,13 @@ import {
 
 import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
 
-import { ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_PREVIEW_STATE, ALARM_TYPE, type AlarmPreviewState } from "@/constants/Alarm";
 import { E2E_ID } from "@/constants/E2E";
 import { PlatformType } from "@/enums/app";
+import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { canTurnOnAlarm } from "@/utils/alarmReadiness";
 import { schedulePreviewAlarm } from "@/utils/alarmScheduler";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
 
@@ -72,9 +74,10 @@ const AlarmTypeSettingsScreen = () => {
   const hapticSelection = useHaptic("selection");
 
   const { settings, update, setEnabled } = useAlarmTypeSettings(alarmType);
+  const shownOn = useAlarmOn(alarmType);
 
   const PREVIEW_ALARM_SECONDS = 30;
-  const [previewState, setPreviewState] = useState<"idle" | "pending" | "failed">("idle");
+  const [previewState, setPreviewState] = useState<AlarmPreviewState>(ALARM_PREVIEW_STATE.IDLE);
   // Seconds left in the pending window, ticked down live for the button label.
   const [previewRemaining, setPreviewRemaining] = useState(PREVIEW_ALARM_SECONDS);
   const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,33 +91,51 @@ const AlarmTypeSettingsScreen = () => {
   useEffect(() => clearPreviewTimers, []);
 
   const handlePreviewAlarm = async () => {
-    if (previewState === "pending") return;
+    if (previewState === ALARM_PREVIEW_STATE.PENDING) return;
     hapticSelection();
     clearPreviewTimers();
 
     const id = await schedulePreviewAlarm(scheduledType, PREVIEW_ALARM_SECONDS);
     if (id) {
-      setPreviewState("pending");
+      setPreviewState(ALARM_PREVIEW_STATE.PENDING);
       setPreviewRemaining(PREVIEW_ALARM_SECONDS);
       const startedAt = Date.now();
       previewIntervalRef.current = setInterval(() => {
         const left = Math.round(PREVIEW_ALARM_SECONDS - (Date.now() - startedAt) / 1000);
         if (left <= 0) {
           clearPreviewTimers();
-          setPreviewState("idle");
+          setPreviewState(ALARM_PREVIEW_STATE.IDLE);
         } else {
           setPreviewRemaining(left);
         }
       }, 1000);
     } else {
-      setPreviewState("failed");
-      previewFailTimerRef.current = setTimeout(() => setPreviewState("idle"), 3000);
+      setPreviewState(ALARM_PREVIEW_STATE.FAILED);
+      previewFailTimerRef.current = setTimeout(
+        () => setPreviewState(ALARM_PREVIEW_STATE.IDLE),
+        3000
+      );
     }
   };
 
-  const handleEnabledToggle = (enabled: boolean) => {
+  // One readiness check at a time, so a quick second flip opens no second gate.
+  const checking = useRef(false);
+
+  const handleEnabledToggle = async (enabled: boolean) => {
+    if (checking.current) return;
     hapticSelection();
-    setEnabled(enabled);
+    if (enabled) {
+      checking.current = true;
+      // Never rejects: a failed read is a no.
+      const ready = await canTurnOnAlarm();
+      checking.current = false;
+      // The gate shows what is missing: the city first, then the permissions.
+      if (!ready) {
+        router.push(BACK_DESTINATION.SETTINGS_ALARM.href);
+        return;
+      }
+    }
+    await setEnabled(enabled);
   };
 
   const title =
@@ -143,15 +164,15 @@ const AlarmTypeSettingsScreen = () => {
               </VStack>
               <Switch
                 testID={E2E_ID.ALARM_ENABLE_SWITCH}
-                value={settings.enabled}
-                onValueChange={handleEnabledToggle}
+                value={shownOn}
+                onValueChange={(enabled) => void handleEnabledToggle(enabled)}
                 size="md"
                 accessibilityLabel={t("alarm.settings.enableAlarm")}
               />
             </HStack>
           </Card>
 
-          {settings.enabled && (
+          {shownOn && (
             <>
               {/* Timing Settings */}
               <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
@@ -229,19 +250,19 @@ const AlarmTypeSettingsScreen = () => {
                 <Button
                   size="lg"
                   minHeight={44}
-                  action={previewState === "failed" ? "negative" : "primary"}
-                  variant={previewState === "idle" ? "solid" : "outline"}
-                  disabled={previewState === "pending"}
+                  action={previewState === ALARM_PREVIEW_STATE.FAILED ? "negative" : "primary"}
+                  variant={previewState === ALARM_PREVIEW_STATE.IDLE ? "solid" : "outline"}
+                  disabled={previewState === ALARM_PREVIEW_STATE.PENDING}
                   onPress={handlePreviewAlarm}
                   accessibilityRole="button"
                   accessibilityLabel={t("a11y.alarm.previewAlarm", {
                     seconds: PREVIEW_ALARM_SECONDS,
                   })}
-                  accessibilityState={{ disabled: previewState === "pending" }}>
+                  accessibilityState={{ disabled: previewState === ALARM_PREVIEW_STATE.PENDING }}>
                   <Button.Text>
-                    {previewState === "pending"
+                    {previewState === ALARM_PREVIEW_STATE.PENDING
                       ? t("alarm.settings.previewAlarmPending", { seconds: previewRemaining })
-                      : previewState === "failed"
+                      : previewState === ALARM_PREVIEW_STATE.FAILED
                         ? t("alarm.settings.previewAlarmFailed")
                         : t("alarm.settings.previewAlarm")}
                   </Button.Text>

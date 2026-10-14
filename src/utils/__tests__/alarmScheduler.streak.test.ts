@@ -30,7 +30,11 @@ jest.mock("@/stores/alarmSettings", () => ({
     persist: {},
   },
 }));
+// Read only by the default-place cancel, which these tests never reach.
+jest.mock("@/stores/location", () => ({ useLocationStore: { getState: jest.fn(), persist: {} } }));
 jest.mock("@/stores/prayerTimes", () => ({
+  // The stored times are for a verified place.
+  selectVerifiedPlace: () => true,
   usePrayerTimesStore: {
     getState: () => ({
       tomorrowTimings: { timings: { fajr: new Date(Date.now() + 8 * 3600_000).toISOString() } },
