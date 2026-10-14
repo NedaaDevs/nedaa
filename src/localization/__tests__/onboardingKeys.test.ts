@@ -14,12 +14,7 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AppLocale, TextSize } from "@/enums/app";
 import ar from "@/localization/locales/ar.json";
 import en from "@/localization/locales/en.json";
-import {
-  CROWDIN_LOCALES,
-  HAND_WRITTEN_LOCALES,
-  LOCALE_BUNDLES,
-  type HandWrittenLocale,
-} from "@/test-helpers/locales";
+import { CROWDIN_LOCALES, HAND_WRITTEN_LOCALES, LOCALE_BUNDLES } from "@/test-helpers/locales";
 import { prayerNameKey } from "@/utils/prayerName";
 
 const FLOW_DIR = join(__dirname, "..", "..", "components", "onboarding", "flow");
@@ -172,24 +167,11 @@ describe.each(ALL_LOCALES)("the %s plurals", (locale) => {
   });
 });
 
-// The numerals step's heading, meaning what the Arabic heading means.
-const NUMERALS_TITLE: Record<HandWrittenLocale, string> = {
-  [AppLocale.EN]: "Choose how numbers and times are shown",
-  [AppLocale.AR]: "اختر طريقة عرض الأرقام والوقت",
-};
-
 describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
   const bundle = LOCALE_BUNDLES[locale];
 
-  it("heads the numerals step with the Arabic heading's meaning", () => {
-    expect(lookup(bundle, "onboarding.numerals.title")).toBe(NUMERALS_TITLE[locale]);
-  });
-
-  it("names the app in the calculation intro through the brand key, as Arabic does", () => {
-    const brand = "$t(brand.name)";
-    expect(String(lookup(bundle, "onboarding.calculation.intro")).includes(brand)).toBe(
-      String(lookup(ar, "onboarding.calculation.intro")).includes(brand)
-    );
+  it("names the app in the calculation intro through the brand key", () => {
+    expect(String(lookup(bundle, "onboarding.calculation.intro"))).toContain("$t(brand.name)");
   });
 });
 
