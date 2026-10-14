@@ -35,6 +35,9 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { checkLocationPermission, requestLocationPermission } from "@/utils/location";
 import { formatCityLabel } from "@/utils/cities";
 
+// Constants
+import { E2E_ID } from "@/constants/E2E";
+
 // Enums
 import { LocationMode } from "@/enums/location";
 
@@ -108,6 +111,7 @@ const PermissionRequestView = ({
 
           {/* The screen is otherwise a dead end for anyone who will not grant permission. */}
           <Pressable
+            testID={E2E_ID.LOCATION_CHOOSE_CITY}
             onPress={onChooseCity}
             minHeight={44}
             paddingHorizontal="$4"
@@ -403,6 +407,7 @@ const KeepLocationUpdated = () => {
           for anyone who wants times for a city other than the one they are in. */}
       <Card variant="grouped">
         <Pressable
+          testID={E2E_ID.LOCATION_CHOOSE_CITY}
           onPress={openCityPicker}
           minHeight={44}
           paddingVertical="$4"
