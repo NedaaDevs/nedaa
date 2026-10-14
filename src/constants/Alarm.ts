@@ -40,6 +40,7 @@ export const timingForMode = (type: AlarmType, mode: TimingMode): TimingConfig =
 /** The steps of the alarm permission gate. */
 export const ALARM_PERMISSION = {
   ALARMKIT: "alarmkit",
+  LIVE_ACTIVITIES: "liveActivities",
   NOTIFICATIONS: "notifications",
   EXACT_ALARM: "exactAlarm",
   FULL_SCREEN: "fullScreen",
@@ -49,9 +50,46 @@ export const ALARM_PERMISSION = {
 
 export type AlarmPermissionId = (typeof ALARM_PERMISSION)[keyof typeof ALARM_PERMISSION];
 
+/** Whether an alarm cannot ring without a permission, or only rings worse. */
+export const ALARM_PERMISSION_KIND = { NEEDED: "needed", IMPROVES: "improves" } as const;
+export type AlarmPermissionKind =
+  (typeof ALARM_PERMISSION_KIND)[keyof typeof ALARM_PERMISSION_KIND];
+
+export const ALARM_PERMISSION_KINDS: Record<AlarmPermissionId, AlarmPermissionKind> = {
+  [ALARM_PERMISSION.ALARMKIT]: ALARM_PERMISSION_KIND.NEEDED,
+  [ALARM_PERMISSION.LIVE_ACTIVITIES]: ALARM_PERMISSION_KIND.NEEDED,
+  [ALARM_PERMISSION.NOTIFICATIONS]: ALARM_PERMISSION_KIND.NEEDED,
+  [ALARM_PERMISSION.EXACT_ALARM]: ALARM_PERMISSION_KIND.NEEDED,
+  [ALARM_PERMISSION.FULL_SCREEN]: ALARM_PERMISSION_KIND.IMPROVES,
+  [ALARM_PERMISSION.OVERLAY]: ALARM_PERMISSION_KIND.IMPROVES,
+  [ALARM_PERMISSION.BATTERY]: ALARM_PERMISSION_KIND.IMPROVES,
+};
+
+/** True when an alarm cannot ring without the permission. */
+export const isNeededPermission = (id: AlarmPermissionId) =>
+  ALARM_PERMISSION_KINDS[id] === ALARM_PERMISSION_KIND.NEEDED;
+
+/** Each permission's one name, the title Settings › Alarms gives it. */
+export const ALARM_PERMISSION_TITLE_KEY: Record<AlarmPermissionId, string> = {
+  [ALARM_PERMISSION.ALARMKIT]: "alarm.permission.ios.alarmkit.title",
+  [ALARM_PERMISSION.LIVE_ACTIVITIES]: "alarm.permission.ios.liveActivities.title",
+  [ALARM_PERMISSION.NOTIFICATIONS]: "alarm.permission.android.notifications.title",
+  [ALARM_PERMISSION.EXACT_ALARM]: "alarm.permission.android.exactAlarm.title",
+  [ALARM_PERMISSION.FULL_SCREEN]: "alarm.permission.android.fullScreen.title",
+  [ALARM_PERMISSION.OVERLAY]: "alarm.permission.android.overlay.title",
+  [ALARM_PERMISSION.BATTERY]: "alarm.permission.android.battery.title",
+};
+
+/** The preview button: ready, counting down, or just failed. */
+export const ALARM_PREVIEW_STATE = { IDLE: "idle", PENDING: "pending", FAILED: "failed" } as const;
+export type AlarmPreviewState = (typeof ALARM_PREVIEW_STATE)[keyof typeof ALARM_PREVIEW_STATE];
+
+/** The route file of one alarm type's full settings, under src/app. */
+export const ALARM_SETTINGS_ROUTE = "settings/alarm/[type]";
+
 /** One alarm type's full settings screen. */
 export const alarmSettingsHref = (type: AlarmType): Href => ({
-  pathname: "/settings/alarm/[type]",
+  pathname: `/${ALARM_SETTINGS_ROUTE}`,
   params: { type },
 });
 

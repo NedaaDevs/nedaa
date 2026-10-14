@@ -1,12 +1,13 @@
 import { useTranslation } from "react-i18next";
 
-import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { ALARM_TYPE } from "@/constants/Alarm";
+import { useAlarmOn } from "@/hooks/useAlarmOn";
 
 /** The alarms that are on, by name, or that none is. */
 export const useAlarmStatus = (): string => {
   const { t } = useTranslation();
-  const fajrOn = useAlarmSettingsStore((state) => state.fajr.enabled);
-  const fridayOn = useAlarmSettingsStore((state) => state.friday.enabled);
+  const fajrOn = useAlarmOn(ALARM_TYPE.FAJR);
+  const fridayOn = useAlarmOn(ALARM_TYPE.FRIDAY);
 
   // Only two alarm types exist, so naming them is more useful than a count.
   const names = [
