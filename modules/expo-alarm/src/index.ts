@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import {
   requireOptionalNativeModule,
   EventEmitter,
@@ -67,6 +68,19 @@ export const requestAuthorization = async (): Promise<AuthorizationStatus> => {
 export const getAuthorizationStatus = async (): Promise<AuthorizationStatus> => {
   if (!isAvailable) return "denied";
   return NativeModule.getAuthorizationStatus();
+};
+
+// Only iOS needs Live Activities, so only iOS reads a failed check as "off".
+const liveActivitiesWhenUnknown = () => Platform.select({ ios: false, default: true });
+
+/** Whether Live Activities show; AlarmKit alarms are silent without them. */
+export const areLiveActivitiesEnabled = async (): Promise<boolean> => {
+  if (!isAvailable) return liveActivitiesWhenUnknown();
+  try {
+    return await NativeModule.areLiveActivitiesEnabled();
+  } catch {
+    return liveActivitiesWhenUnknown();
+  }
 };
 
 export const scheduleAlarm = async (params: ScheduleAlarmParams): Promise<boolean> => {
@@ -355,6 +369,8 @@ export const getNextAlarmTime = (): number | null => {
   return NativeModule.getNextAlarmTime();
 };
 
+// Android grant reads: one that cannot answer counts as not granted.
+
 // Android-specific: battery optimization exemption
 export const isBatteryOptimizationExempt = (): boolean => {
   if (!isAvailable) return false;
@@ -376,11 +392,11 @@ export const requestBatteryOptimizationExemption = (): boolean => {
 
 // Android-specific: exact alarm permission (API 31+)
 export const canScheduleExactAlarms = (): boolean => {
-  if (!isAvailable) return true;
+  if (!isAvailable) return false;
   try {
     return NativeModule.canScheduleExactAlarms();
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -395,11 +411,11 @@ export const requestExactAlarmPermission = (): boolean => {
 
 // Android-specific: full-screen intent permission (API 34+)
 export const canUseFullScreenIntent = (): boolean => {
-  if (!isAvailable) return true;
+  if (!isAvailable) return false;
   try {
     return NativeModule.canUseFullScreenIntent();
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -414,11 +430,11 @@ export const requestFullScreenIntentPermission = (): boolean => {
 
 // Android-specific: draw over apps (SYSTEM_ALERT_WINDOW)
 export const canDrawOverlays = (): boolean => {
-  if (!isAvailable) return true;
+  if (!isAvailable) return false;
   try {
     return NativeModule.canDrawOverlays();
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -643,6 +659,7 @@ export default {
   getBackgroundRefreshStatus,
   requestAuthorization,
   getAuthorizationStatus,
+  areLiveActivitiesEnabled,
   scheduleAlarm,
   cancelAlarm,
   cancelAllAlarms,

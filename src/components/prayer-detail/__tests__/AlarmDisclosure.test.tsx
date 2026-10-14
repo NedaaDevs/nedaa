@@ -10,22 +10,26 @@ import { renderRouter, within } from "expo-router/testing-library";
 import TimingSettings from "@/components/alarm/TimingSettings";
 import { DETAIL_PANEL_ID } from "@/components/prayer-detail/DetailPanel";
 import {
+  ALARM_PERMISSION,
+  ALARM_SETTINGS_ROUTE,
   ALARM_TIMING_CHOICES,
   ALARM_TIMING_MODE,
   ALARM_TYPE,
   alarmSettingsHref,
   timingForMode,
+  type AlarmPermissionId,
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SOUND_ASSETS } from "@/constants/sounds";
 import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useCustomSoundsStore } from "@/stores/customSounds";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme, ThemeProvider } from "@/test-helpers/theme";
 import type { AlarmType, TimingConfig } from "@/types/alarm";
 import type { CustomSound } from "@/types/customSound";
-import { alarmPermissionsGranted } from "@/utils/alarmPermissions";
+import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -38,7 +42,10 @@ jest.mock("@/utils/alarmScheduler", () => ({
   scheduleFridayAlarm: jest.fn(),
 }));
 jest.mock("@/utils/alarmReport", () => ({ alarmLog: { e: jest.fn() } }));
-jest.mock("@/utils/alarmPermissions", () => ({ alarmPermissionsGranted: jest.fn() }));
+jest.mock("@/utils/alarmPermissions", () => ({
+  ...jest.requireActual("@/utils/alarmPermissions"),
+  readAlarmPermissions: jest.fn(),
+}));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 
 const mockCancel = jest.fn();
@@ -48,7 +55,24 @@ jest.mock("@/stores/alarm", () => ({
 
 const scheduleFajr = jest.mocked(scheduleFajrAlarm);
 const scheduleFriday = jest.mocked(scheduleFridayAlarm);
-const permissionsGranted = jest.mocked(alarmPermissionsGranted);
+const readPermissions = jest.mocked(readAlarmPermissions);
+
+const {
+  NOTIFICATIONS: N,
+  EXACT_ALARM: E,
+  FULL_SCREEN: F,
+  OVERLAY: O,
+  BATTERY: B,
+} = ALARM_PERMISSION;
+/** An Android device's items, these ones still missing. */
+const missing = (...ids: AlarmPermissionId[]) =>
+  readPermissions.mockResolvedValue(
+    [N, E, F, O, B].map((id): AlarmPermission => ({
+      id,
+      granted: !ids.includes(id),
+      canRequestInApp: false,
+    }))
+  );
 const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
 
 const ALARM_ID = "alarm-id";
@@ -73,7 +97,7 @@ const renderDisclosure = (type: AlarmType) =>
         </>
       ),
       [BACK_DESTINATION.SETTINGS_ALARM.route]: () => <Pathname />,
-      "settings/alarm/[type]": () => <Pathname />,
+      [ALARM_SETTINGS_ROUTE]: () => <Pathname />,
     },
     {
       initialUrl: BACK_DESTINATION.HOME.href as string,
@@ -110,7 +134,8 @@ beforeEach(() => {
   jest.mocked(ExpoAlarm.setAlarmSettings).mockResolvedValue(true);
   scheduleFajr.mockResolvedValue(ALARM_ID);
   scheduleFriday.mockResolvedValue(ALARM_ID);
-  permissionsGranted.mockResolvedValue(true);
+  missing();
+  usePrayerTimesStore.setState({ usingDefaultLocation: false });
   mockCancel.mockResolvedValue(true);
 });
 
@@ -309,9 +334,9 @@ describe("AlarmDisclosure", () => {
     expect(announce).toHaveBeenCalledWith(i18n.t("prayerDetail.alarm.summary.failed"));
   });
 
-  it("opens the alarm permissions instead of turning on while one is missing", async () => {
+  /** Presses the off switch; the alarm must stay off, at the alarm gate. */
+  const expectGate = async () => {
     const user = userEvent.setup();
-    permissionsGranted.mockResolvedValue(false);
     await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
@@ -321,17 +346,73 @@ describe("AlarmDisclosure", () => {
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       BACK_DESTINATION.SETTINGS_ALARM.href as string
     );
+  };
+
+  it("opens the alarm gate instead of turning on while a needed item is missing", async () => {
+    missing(E, F);
+    await expectGate();
+  });
+
+  it("opens the alarm gate when the permission read fails", async () => {
+    readPermissions.mockRejectedValue(new Error("alarm module down"));
+    await expectGate();
+  });
+
+  // The alarm would ring at the default location's times, not the user's.
+  it("opens the alarm gate at the default location's times, before any read", async () => {
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    await expectGate();
+    expect(readPermissions).not.toHaveBeenCalled();
+  });
+
+  it("turns on with an improvement missing, every needed item granted", async () => {
+    const user = userEvent.setup();
+    missing(F, O, B);
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    await user.press(alarmSwitch(ALARM_TYPE.FAJR));
+
+    expect(scheduleFajr).toHaveBeenCalledTimes(1);
+    expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(true);
+  });
+
+  // The stored switch is the user's choice; the shown one, whether it can ring.
+  it("reads Off at the default location's times, keeping the stored choice", async () => {
+    setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    expect(
+      screen.getByRole("switch", { name: `${TITLE.fajr}, ${i18n.t("common.off")}` }).props
+        .accessibilityState
+    ).toMatchObject({ checked: false });
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(true);
+  });
+
+  it("reads On again once a city lands", async () => {
+    setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    await renderDisclosure(ALARM_TYPE.FAJR);
+
+    await act(async () => usePrayerTimesStore.setState({ usingDefaultLocation: false }));
+
+    expect(
+      screen.getByRole("switch", {
+        name: `${TITLE.fajr}, ${i18n.t("prayerDetail.alarm.summary.atPrayer")}`,
+      }).props.accessibilityState
+    ).toMatchObject({ checked: true });
   });
 
   it("turns off without asking for permissions", async () => {
     const user = userEvent.setup();
-    permissionsGranted.mockResolvedValue(false);
+    missing(N);
     setAlarm(ALARM_TYPE.FAJR, true, AT_PRAYER);
     await renderDisclosure(ALARM_TYPE.FAJR);
 
     await user.press(alarmSwitch(ALARM_TYPE.FAJR));
 
-    expect(permissionsGranted).not.toHaveBeenCalled();
+    expect(readPermissions).not.toHaveBeenCalled();
     expect(useAlarmSettingsStore.getState().fajr.enabled).toBe(false);
   });
 
@@ -404,9 +485,11 @@ describe("AlarmDisclosure", () => {
       screen.getByRole("button", { name: new RegExp(i18n.t("prayerDetail.alarm.more.title")) })
     );
 
-    expect(screen.getByTestId("pathname")).toHaveTextContent(`/settings/alarm/${type}`);
+    expect(screen.getByTestId("pathname")).toHaveTextContent(
+      `${BACK_DESTINATION.SETTINGS_ALARM.href}/${type}`
+    );
     expect(alarmSettingsHref(type)).toEqual({
-      pathname: "/settings/alarm/[type]",
+      pathname: `/${ALARM_SETTINGS_ROUTE}`,
       params: { type },
     });
   });
