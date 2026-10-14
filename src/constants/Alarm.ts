@@ -10,6 +10,9 @@ export const ALARM_TYPE = {
   FRIDAY: "friday",
 } as const;
 
+/** How long an alarm path waits for a store to load from disk. */
+export const ALARM_HYDRATION_TIMEOUT_MS = 5000;
+
 /** Persisted timing modes. */
 export const ALARM_TIMING_MODE = {
   AT_PRAYER_TIME: "atPrayerTime",
