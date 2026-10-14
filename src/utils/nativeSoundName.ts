@@ -1,7 +1,4 @@
-import { SOUND_ASSETS } from "@/constants/sounds";
-import type { SoundAsset } from "@/types/sound";
-
-const BUNDLED_SOUNDS: Readonly<Record<string, SoundAsset | undefined>> = SOUND_ASSETS;
+import { BUNDLED_SOUNDS } from "@/constants/sounds";
 
 // Settings hold camelCase keys; native code plays the bundled file's base name.
 // Custom sound keys have no asset and pass through unchanged.
