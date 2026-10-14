@@ -7,6 +7,13 @@ import {
   methodNameKey,
 } from "@/components/calculation/calculationOptions";
 import { APPEARANCE_ORDER } from "@/constants/Appearance";
+import {
+  ALARM_PERMISSION,
+  ALARM_PERMISSION_KIND,
+  ALARM_PERMISSION_KINDS,
+  ALARM_PERMISSION_TITLE_KEY,
+  ALARM_TYPE,
+} from "@/constants/Alarm";
 import { CALCULATION_PICKER, CALCULATION_TITLE_KEY } from "@/constants/Calculation";
 import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
 import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
@@ -14,7 +21,13 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AppLocale, TextSize } from "@/enums/app";
 import ar from "@/localization/locales/ar.json";
 import en from "@/localization/locales/en.json";
-import { CROWDIN_LOCALES, HAND_WRITTEN_LOCALES, LOCALE_BUNDLES } from "@/test-helpers/locales";
+import {
+  CROWDIN_LOCALES,
+  HAND_WRITTEN_LOCALES,
+  LOCALE_BUNDLES,
+  type HandWrittenLocale,
+} from "@/test-helpers/locales";
+import type { AlarmType } from "@/types/alarm";
 import { prayerNameKey } from "@/utils/prayerName";
 
 const FLOW_DIR = join(__dirname, "..", "..", "components", "onboarding", "flow");
@@ -70,10 +83,28 @@ const TEMPLATE_SHAPES = [
 const fill = (pattern: string, values: readonly string[]) =>
   values.map((value) => pattern.replace("*", value));
 
+const permissionsOfKind = (kind: string) =>
+  Object.values(ALARM_PERMISSION).filter((id) => ALARM_PERMISSION_KINDS[id] === kind);
+const ALARM_TYPES = Object.values(ALARM_TYPE);
 const ALL_LOCALES = Object.values(AppLocale);
 
 // Each template shape the flow uses, with the keys the constants fill into it.
 const TEMPLATED: Record<string, readonly string[]> = {
+  "onboarding.alarm.*.title": fill("onboarding.alarm.*.title", ALARM_TYPES),
+  "onboarding.alarm.*.body": fill("onboarding.alarm.*.body", ALARM_TYPES),
+  "onboarding.alarm.*.question": fill("onboarding.alarm.*.question", ALARM_TYPES),
+  "onboarding.alarm.note.*.done": fill(
+    "onboarding.alarm.note.*.done",
+    Object.values(ALARM_PERMISSION)
+  ),
+  "onboarding.alarm.note.*.needed": fill(
+    "onboarding.alarm.note.*.needed",
+    permissionsOfKind(ALARM_PERMISSION_KIND.NEEDED)
+  ),
+  "onboarding.alarm.note.*.recommended": fill(
+    "onboarding.alarm.note.*.recommended",
+    permissionsOfKind(ALARM_PERMISSION_KIND.IMPROVES)
+  ),
   "settings.languages.*.title": fill("settings.languages.*.title", ALL_LOCALES),
   "settings.languages.*.nativeTitle": fill("settings.languages.*.nativeTitle", ALL_LOCALES),
   "settings.themes.*.title": fill("settings.themes.*.title", APPEARANCE_ORDER),
@@ -112,6 +143,8 @@ const HELPER_KEYS = [
   // LanguageStep and AppearanceStep: the Settings lists they draw.
   "settings.languages.choose",
   "settings.appearance",
+  // AlarmStep: each permission by the one name Settings › Alarms gives it.
+  ...Object.values(ALARM_PERMISSION_TITLE_KEY),
   // spokenDuration: how a countdown is read aloud.
   "a11y.today.durationBoth",
 ];
@@ -119,12 +152,35 @@ const HELPER_KEYS = [
 // Counted by spokenDuration; the plural forms are keys `<base>_<category>`.
 const PLURAL_BASES = ["common.hour", "common.minute"];
 
-const KEYS = [...new Set([...LITERAL_KEYS, ...Object.values(TEMPLATED).flat(), ...HELPER_KEYS])];
+// Pages of the Settings alarm gate that an alarm step can lead to.
+const SETTINGS_KEYS = [
+  "alarm.permission.ios.liveActivities.description",
+  "alarm.settings.cityNeeded.title",
+  "alarm.settings.cityNeeded.body",
+  "alarm.settings.cityNeeded.action",
+  "common.notNow",
+];
+
+const KEYS = [
+  ...new Set([
+    ...LITERAL_KEYS,
+    ...Object.values(TEMPLATED).flat(),
+    ...HELPER_KEYS,
+    ...SETTINGS_KEYS,
+  ]),
+];
 
 const placeholders = (text: string) =>
   [...text.matchAll(/{{(\w+)}}/g)].map(([, name]) => name).sort();
 
 describe("the keys found in the flow", () => {
+  it("include keys outside onboarding", () => {
+    expect(LITERAL_KEYS).toEqual(
+      expect.arrayContaining(["common.retry", "today.failed.title", "a11y.join"])
+    );
+    expect(LITERAL_KEYS.filter((key) => key.startsWith("onboarding.")).length).toBeGreaterThan(40);
+  });
+
   it("leave no template shape unexpanded", () => {
     expect(TEMPLATE_SHAPES.filter((shape) => !(shape in TEMPLATED)).sort()).toEqual([]);
   });
@@ -167,6 +223,47 @@ describe.each(ALL_LOCALES)("the %s plurals", (locale) => {
   });
 });
 
+// What each locale asks before it turns an alarm on.
+const ALARM_QUESTIONS: Record<HandWrittenLocale, Record<AlarmType, string>> = {
+  [AppLocale.EN]: {
+    [ALARM_TYPE.FAJR]: "Turn on the Fajr alarm now?",
+    [ALARM_TYPE.FRIDAY]: "Turn on the Jummah alarm now?",
+  },
+  [AppLocale.AR]: {
+    [ALARM_TYPE.FAJR]: "هل تريد تشغيل منبّه الفجر الآن؟",
+    [ALARM_TYPE.FRIDAY]: "هل تريد تشغيل منبّه الجمعة الآن؟",
+  },
+};
+
+// Wording that calls the alarm reliable; the body may, the question only asks.
+const RELIABLE_WORDING: Record<HandWrittenLocale, RegExp> = {
+  [AppLocale.EN]: /reliab/i,
+  [AppLocale.AR]: /موثوق/,
+};
+
+// The city button's spoken name; it opens with the visible words.
+const CHOOSE_CITY_LABEL: Record<HandWrittenLocale, string> = {
+  [AppLocale.EN]: "Choose my city instead of sharing location",
+  [AppLocale.AR]: "اختيار المدينة يدويًا بدلًا من مشاركة الموقع",
+};
+
+describe.each(HAND_WRITTEN_LOCALES)("the alarm copy in %s", (locale) => {
+  const bundle = LOCALE_BUNDLES[locale];
+
+  it.each(ALARM_TYPES)("asks for the %s alarm without calling it reliable", (type) => {
+    const question = String(lookup(bundle, `onboarding.alarm.${type}.question`));
+    expect(question).toBe(ALARM_QUESTIONS[locale][type]);
+    expect(question).not.toMatch(RELIABLE_WORDING[locale]);
+  });
+
+  it("opens the choose-city label with the words on the button", () => {
+    const label = String(lookup(bundle, "a11y.onboarding.chooseCityManually"));
+    const visible = String(lookup(bundle, "onboarding.location.chooseCity"));
+    expect(label).toBe(CHOOSE_CITY_LABEL[locale]);
+    expect(label.startsWith(visible)).toBe(true);
+  });
+});
+
 describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
   const bundle = LOCALE_BUNDLES[locale];
 
@@ -175,8 +272,30 @@ describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
   });
 });
 
+describe("the Arabic alarm copy", () => {
+  it.each(ALARM_TYPES)("asks for the %s alarm with «هل تريد»", (type) => {
+    expect(String(lookup(ar, `onboarding.alarm.${type}.question`))).toMatch(/^هل تريد /);
+  });
+
+  it("calls the prayer alert «تنبيه», keeping «الإشعارات» for the system permission", () => {
+    const body = String(lookup(ar, "onboarding.alarm.fajr.body"));
+    expect(body).toContain("منفصل عن تنبيه الصلاة العادي");
+    expect(body).not.toContain("إشعار");
+    const notifications = ALARM_PERMISSION_TITLE_KEY[ALARM_PERMISSION.NOTIFICATIONS];
+    expect(lookup(ar, notifications)).toBe("الإشعارات");
+  });
+
+  it("tells the reader what stays to do in the way a person says it", () => {
+    expect(lookup(ar, "onboarding.alarm.resultBody")).toBe(
+      "أنجزنا ما أمكن الآن، ويمكنك إكمال الباقي من الإعدادات متى شئت."
+    );
+  });
+});
+
 // The flow's own copy; keys shared with other screens are judged there.
-const OWNED_KEYS = KEYS.filter((key) => /^(a11y\.)?onboarding\./.test(key));
+const OWNED_KEYS = KEYS.filter(
+  (key) => /^(a11y\.)?onboarding\./.test(key) || SETTINGS_KEYS.includes(key)
+);
 
 // Isolated runs, placeholders and nested keys are not bare text.
 const NOT_BARE = /[\u2066-\u2068][^\u2069]*\u2069|{{\w+}}|\$t\([^)]*\)/g;
