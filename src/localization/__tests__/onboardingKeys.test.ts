@@ -1,11 +1,25 @@
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 
+import {
+  ASR_OPTIONS,
+  MIDNIGHT_OPTIONS,
+  methodNameKey,
+} from "@/components/calculation/calculationOptions";
+import { APPEARANCE_ORDER } from "@/constants/Appearance";
+import { CALCULATION_PICKER, CALCULATION_TITLE_KEY } from "@/constants/Calculation";
 import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
-import { AppLocale } from "@/enums/app";
+import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
+import { AppLocale, TextSize } from "@/enums/app";
 import ar from "@/localization/locales/ar.json";
 import en from "@/localization/locales/en.json";
-import { CROWDIN_LOCALES, HAND_WRITTEN_LOCALES, LOCALE_BUNDLES } from "@/test-helpers/locales";
+import {
+  CROWDIN_LOCALES,
+  HAND_WRITTEN_LOCALES,
+  LOCALE_BUNDLES,
+  type HandWrittenLocale,
+} from "@/test-helpers/locales";
 import { prayerNameKey } from "@/utils/prayerName";
 
 const FLOW_DIR = join(__dirname, "..", "..", "components", "onboarding", "flow");
@@ -57,16 +71,52 @@ const TEMPLATE_SHAPES = [
   ),
 ];
 
+/** `pattern`'s `*` filled with each value. */
+const fill = (pattern: string, values: readonly string[]) =>
+  values.map((value) => pattern.replace("*", value));
+
 const ALL_LOCALES = Object.values(AppLocale);
 
 // Each template shape the flow uses, with the keys the constants fill into it.
-const TEMPLATED: Record<string, readonly string[]> = {};
+const TEMPLATED: Record<string, readonly string[]> = {
+  "settings.languages.*.title": fill("settings.languages.*.title", ALL_LOCALES),
+  "settings.languages.*.nativeTitle": fill("settings.languages.*.nativeTitle", ALL_LOCALES),
+  "settings.themes.*.title": fill("settings.themes.*.title", APPEARANCE_ORDER),
+  "settings.themes.*.description": fill("settings.themes.*.description", APPEARANCE_ORDER),
+  "settings.preferences.numerals.options.*": fill(
+    "settings.preferences.numerals.options.*",
+    Object.values(NUMERAL_STYLE)
+  ),
+  "settings.preferences.numerals.spoken.*": fill(
+    "settings.preferences.numerals.spoken.*",
+    Object.values(NUMERAL_STYLE)
+  ),
+  "settings.preferences.clock.options.*": fill(
+    "settings.preferences.clock.options.*",
+    Object.values(CLOCK_FORMAT)
+  ),
+  "settings.preferences.clock.spoken.*": fill(
+    "settings.preferences.clock.spoken.*",
+    Object.values(CLOCK_FORMAT)
+  ),
+  "settings.textSize.options.*": fill("settings.textSize.options.*", Object.values(TextSize)),
+};
 
 // Names the flow reads through helpers that live outside its folder.
 const HELPER_KEYS = [
   // OnboardingPreview: each prayer's name, Dhuhr as Jumuah on a Friday.
   ...PRAYER_IDS.map((id) => prayerNameKey(id, false)),
   prayerNameKey(PRAYER_ID.DHUHR, true),
+  // CalculationStep: the three pickers it offers and the choice on each row.
+  CALCULATION_TITLE_KEY[CALCULATION_PICKER.METHOD],
+  CALCULATION_TITLE_KEY[CALCULATION_PICKER.ASR],
+  CALCULATION_TITLE_KEY[CALCULATION_PICKER.MIDNIGHT],
+  ...[...ASR_OPTIONS, ...MIDNIGHT_OPTIONS].map(({ nameKey }) => nameKey),
+  ...PRAYER_TIME_PROVIDERS.ALADHAN.methods.flatMap(({ id }) => methodNameKey(id) ?? []),
+  "settings.summary.methodAuto",
+  // LanguageStep and AppearanceStep: the Settings lists they draw.
+  "settings.languages.choose",
+  "settings.appearance",
   // spokenDuration: how a countdown is read aloud.
   "a11y.today.durationBoth",
 ];
@@ -119,6 +169,27 @@ describe.each(ALL_LOCALES)("the %s plurals", (locale) => {
       expect(typeof value).toBe("string");
       expect(String(value).trim()).not.toBe("");
     });
+  });
+});
+
+// The numerals step's heading, meaning what the Arabic heading means.
+const NUMERALS_TITLE: Record<HandWrittenLocale, string> = {
+  [AppLocale.EN]: "Choose how numbers and times are shown",
+  [AppLocale.AR]: "اختر طريقة عرض الأرقام والوقت",
+};
+
+describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
+  const bundle = LOCALE_BUNDLES[locale];
+
+  it("heads the numerals step with the Arabic heading's meaning", () => {
+    expect(lookup(bundle, "onboarding.numerals.title")).toBe(NUMERALS_TITLE[locale]);
+  });
+
+  it("names the app in the calculation intro through the brand key, as Arabic does", () => {
+    const brand = "$t(brand.name)";
+    expect(String(lookup(bundle, "onboarding.calculation.intro")).includes(brand)).toBe(
+      String(lookup(ar, "onboarding.calculation.intro")).includes(brand)
+    );
   });
 });
 

@@ -82,6 +82,7 @@ type Props = {
   onPress: () => void;
   /** Drawn at the start of the row, such as a preview of the choice. */
   leading?: ReactNode;
+  testID?: string;
 };
 
 /** One option of several: a radio with its name, a line on it and a check. */
@@ -92,6 +93,7 @@ export const ChoiceRow = ({
   selected,
   onPress,
   leading,
+  testID,
 }: Props) => {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
@@ -99,6 +101,7 @@ export const ChoiceRow = ({
 
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
