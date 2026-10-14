@@ -265,35 +265,40 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             }
 
             const { locationDetails, lastKnownCoords } = locationStore.getState();
+            const verified = lastKnownCoords !== null;
             // No verified fix. coords default to Makkah so times still load, and
             // didGetCurrentLocation stays false so a real fix is retried later.
-            if (!lastKnownCoords) {
+            if (!verified) {
               log.w("Load", "no verified coordinates; using the default location");
             }
+            // Rows carry no place, so the default place's rows stand until refetched.
+            const placeNewlyVerified = verified && get().usingDefaultLocation;
 
             set({
-              didGetCurrentLocation: lastKnownCoords !== null,
+              didGetCurrentLocation: verified,
               // Surfaced in the UI: the times on screen are not for where the user is.
-              usingDefaultLocation: lastKnownCoords === null,
+              usingDefaultLocation: !verified || placeNewlyVerified,
             });
 
             await get().refreshTimingsFromDb();
             const { yesterdayTimings, todayTimings, tomorrowTimings } = get();
+            const missing = [
+              !yesterdayTimings && "yesterday",
+              !todayTimings && "today",
+              !tomorrowTimings && "tomorrow",
+            ].filter(Boolean);
+            // The load fails without this fetch; a newly verified place is best effort.
+            const required = forceGetAndStore || missing.length > 0;
 
-            // Check if we need to fetch fresh data
-            if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
+            if (required || placeNewlyVerified) {
               log.i(
                 "Load",
                 `refetching: ${
                   forceGetAndStore
                     ? "forced"
-                    : `missing ${[
-                        !yesterdayTimings && "yesterday",
-                        !todayTimings && "today",
-                        !tomorrowTimings && "tomorrow",
-                      ]
-                        .filter(Boolean)
-                        .join("+")}`
+                    : required
+                      ? `missing ${missing.join("+")}`
+                      : "place verified"
                 }`
               );
               const currentYear = getTimezoneYear(locationDetails.timezone);
@@ -302,18 +307,23 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               // Fetch from the current month onward for the current year
               const success = await get().getAndStorePrayerTimes(undefined, currentMonth);
 
-              if (!success) {
+              if (success) {
+                // Fetch adjacent year if at a year boundary
+                if (currentMonth === 1) {
+                  await get().getAndStorePrayerTimes(currentYear - 1);
+                } else if (currentMonth === 12) {
+                  await get().getAndStorePrayerTimes(currentYear + 1);
+                }
+
+                await get().refreshTimingsFromDb();
+                // After the refresh, so the old rows never read as verified.
+                set({ usingDefaultLocation: !verified });
+              } else if (required) {
                 throw new Error("Failed to fetch and store prayer times");
+              } else {
+                // The default place's rows and flag stand; the next load retries.
+                log.w("Load", "place-verified refetch failed; the default place's times stay");
               }
-
-              // Fetch adjacent year if at a year boundary
-              if (currentMonth === 1) {
-                await get().getAndStorePrayerTimes(currentYear - 1);
-              } else if (currentMonth === 12) {
-                await get().getAndStorePrayerTimes(currentYear + 1);
-              }
-
-              await get().refreshTimingsFromDb();
             }
 
             await get().cleanupOldData();
