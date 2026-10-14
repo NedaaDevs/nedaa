@@ -26,6 +26,7 @@ import { useCitiesPackStore } from "@/stores/citiesPack";
 
 // Constants
 import { CITIES_SEED_CITY_COUNT } from "@/constants/Cities";
+import { E2E_ID } from "@/constants/E2E";
 
 // Types
 import type { CitySearchResult } from "@/types/cities";
@@ -79,6 +80,7 @@ const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
           <HStack alignItems="center" gap="$2" paddingHorizontal="$3" height={44}>
             <Icon as={Search} size="sm" color="$typographySecondary" />
             <Input
+              testID={E2E_ID.CITY_SEARCH_INPUT}
               flex={1}
               value={query}
               onChangeText={setQuery}

@@ -12,6 +12,7 @@ import {
   type AlarmPermissionId,
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { E2E_ID } from "@/constants/E2E";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -101,6 +102,17 @@ describe("Alarm settings city gate", () => {
     });
     expect(button.props.accessibilityHint).toBe(t("a11y.today.locationHint"));
     await userEvent.press(button);
+
+    expect(screen.getByTestId("pathname")).toHaveTextContent(
+      normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION.href)
+    );
+  });
+
+  it("opens the location settings from the button the CI flow taps", async () => {
+    usePrayerTimesStore.setState({ usingDefaultLocation: true });
+    await renderScreen();
+
+    await userEvent.press(await screen.findByTestId(E2E_ID.ALARM_CHOOSE_CITY));
 
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION.href)
