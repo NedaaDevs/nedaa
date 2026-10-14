@@ -50,6 +50,7 @@ export const useAppStore = create<AppState>()(
       persist(
         (set) => ({
           isFirstRun: true,
+          onboardingStep: null,
           hasHydrated: false,
           locale: initialLanguage,
           mode: AppMode.SYSTEM,
@@ -63,11 +64,17 @@ export const useAppStore = create<AppState>()(
             // install never starts with an announcement backlog.
             set((state) => ({
               isFirstRun,
+              onboardingStep: isFirstRun ? state.onboardingStep : null,
               dismissedFeatureCards: isFirstRun
                 ? state.dismissedFeatureCards
                 : [...new Set([...state.dismissedFeatureCards, ...ALL_WHATS_NEW_IDS])],
             }));
           },
+
+          setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
+
+          // One write, so no state holds a first run with a stale saved step.
+          restartOnboarding: () => set({ isFirstRun: true, onboardingStep: null }),
 
           setLocale: (locale: AppLocale) => {
             i18n.changeLanguage(locale);
@@ -95,6 +102,7 @@ export const useAppStore = create<AppState>()(
           storage: createJSONStorage(() => Storage),
           partialize: (state) => ({
             isFirstRun: state.isFirstRun,
+            onboardingStep: state.onboardingStep,
             locale: state.locale,
             mode: state.mode,
             direction: state.direction,

@@ -78,6 +78,9 @@ interface ProviderSettingsActions {
   /** Edits the current provider's draft; the applied settings wait for Apply. */
   updateCurrentSettings: (updates: Partial<ProviderSettings>) => void;
 
+  /** Drops the unapplied draft; a no-op while an apply runs, which saves it. */
+  discardDraft: () => void;
+
   /** Promotes the draft to the applied settings, requests a refetch, returns them. */
   saveSettings: () => Promise<ProviderSettings>;
 
@@ -261,6 +264,11 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
               ? { draft: null, isModified: false, error: null }
               : { draft, isModified: true, error: null };
           });
+        },
+
+        discardDraft: () => {
+          if (get().applying) return;
+          set({ draft: null, isModified: false, error: null });
         },
 
         saveSettings: async () => {
