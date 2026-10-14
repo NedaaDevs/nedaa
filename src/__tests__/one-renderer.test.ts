@@ -33,6 +33,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\buseAlarmOn\(/,
     home: "hooks/useAlarmOn.ts",
   },
+  // The switch and the Settings › Alarms city gate both ask if one is armed.
+  {
+    concept: "whether a real alarm is armed",
+    shows: /\buseAlarmArmed\b|!\s*\w+\.isPreview\b/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\buseAlarmArmed\(/,
+    home: "hooks/useAlarmArmed.ts",
+  },
   // The Hijri screen and the Calculation screen both read the day offset.
   {
     concept: "a Hijri day offset",

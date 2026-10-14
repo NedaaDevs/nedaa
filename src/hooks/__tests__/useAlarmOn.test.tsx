@@ -6,6 +6,7 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { armFajr } from "@/test-helpers/armedAlarm";
 import { holdHydration } from "@/test-helpers/hydration";
 import { placeFacts } from "@/test-helpers/place";
 import { RIYADH_COORDS } from "@/test-helpers/prayerDay";
@@ -67,5 +68,54 @@ describe("useAlarmOn with nothing armed", () => {
     } finally {
       held.restore();
     }
+  });
+});
+
+// An armed alarm rings whatever the place reads, so it shows On.
+describe("useAlarmOn with the alarm armed", () => {
+  it.each<[string, boolean, typeof RIYADH_COORDS | null]>([
+    ["the default place's times", true, null],
+    ["saved coordinates while the default place's times stand", true, RIYADH_COORDS],
+  ])("reads On at %s", async (_, usingDefaultLocation, coords) => {
+    placeFacts(usingDefaultLocation, coords);
+    armFajr();
+    const { result } = await renderOn();
+    expect(result.current).toBe(true);
+  });
+
+  it("reads On before the stores load", async () => {
+    const held = holdHydration(useLocationStore);
+    try {
+      armFajr();
+      const { result } = await renderOn();
+      expect(result.current).toBe(true);
+    } finally {
+      held.restore();
+    }
+  });
+
+  it("reads Off once the alarm is cancelled", async () => {
+    placeFacts(true, null);
+    armFajr();
+    const { result } = await renderOn();
+
+    await act(async () => useAlarmStore.setState({ scheduledAlarms: {} }));
+
+    expect(result.current).toBe(false);
+  });
+
+  it("reads Off when turned off", async () => {
+    placeFacts(true, null);
+    armFajr();
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, false);
+    const { result } = await renderOn();
+    expect(result.current).toBe(false);
+  });
+
+  it("counts no rehearsal as armed", async () => {
+    placeFacts(true, null);
+    armFajr(true);
+    const { result } = await renderOn();
+    expect(result.current).toBe(false);
   });
 });
