@@ -24,18 +24,22 @@ start_device_log() {
   logcat_pids+=($!)
 }
 
-# Installs <apk> fresh with its permissions; logs the app to <out>.
+# Installs <apk> fresh, logging it to <out>/<log>; <grants> "none" grants none.
 install_fresh() {
-  local apk="$1" out="$2" app_uid
+  local apk="$1" out="$2" grants="${3:-all}" log="${4:-logcat-app.txt}" app_uid
   # Location off makes Play services prompt over the app; on, the fix is used.
   adb shell cmd location set-location-enabled true
   adb emu geo fix "${GEO_FIX[@]}"
   adb uninstall "$APP_ID" >/dev/null 2>&1 || true
-  adb install -g "$apk"
+  if [ "$grants" = none ]; then
+    adb install "$apk"
+  else
+    adb install -g "$apk"
+  fi
   app_uid="$(adb shell cmd package list packages -U "$APP_ID" | sed -n 's/.*uid:\([0-9]*\).*/\1/p' | tr -d '\r')"
   [ -n "$app_uid" ] || fail "$APP_ID is not installed"
   # Every process the app starts shares its uid, so restarts stay in this log.
-  adb logcat -v threadtime --uid="$app_uid" >"$out/logcat-app.txt" 2>&1 &
+  adb logcat -v threadtime --uid="$app_uid" >"$out/$log" 2>&1 &
   logcat_pids+=($!)
 }
 

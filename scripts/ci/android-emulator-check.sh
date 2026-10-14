@@ -24,10 +24,26 @@ step "Install"
 install_fresh "$apk" "$out"
 echo "::endgroup::"
 
+# Runs .maestro/ci/<flow>.yaml; any other argument goes to maestro test.
 run_flow() {
-  step "Maestro: $1"
+  local flow="$1"
+  shift
+  step "Maestro: $flow"
   ensure_device
-  "$maestro" test --test-output-dir "$out/maestro/$1" "$flows/$1.yaml"
+  "$maestro" test --test-output-dir "$out/maestro/$flow" "$@" "$flows/$flow.yaml"
+  echo "::endgroup::"
+}
+
+# Fails when the app stopped after <flow> or <log> holds a crash.
+expect_alive() {
+  local flow="$1" log="$2"
+  step "App is alive after $flow and logged no crash"
+  ensure_device
+  adb shell pidof "$APP_ID" >/dev/null || fail "$APP_ID is not running after the $flow flow"
+  sleep 2
+  if grep -E "$CRASH_PATTERN" "$out/$log"; then
+    fail "The app logged a crash or a rejected native call; see $log"
+  fi
   echo "::endgroup::"
 }
 
@@ -74,13 +90,13 @@ adb shell am force-stop "$APP_ID"
 echo "::endgroup::"
 
 run_flow smoke
+expect_alive smoke logcat-app.txt
 
-step "App is alive and logged no crash"
-ensure_device
-adb shell pidof "$APP_ID" >/dev/null || fail "$APP_ID is not running after the smoke flow"
-sleep 2
-if grep -E "$CRASH_PATTERN" "$out/logcat-app.txt"; then
-  fail "The app logged a crash or a rejected native call; see logcat-app.txt"
-fi
+step "Install with no permission granted"
+# The deny flow declines each system prompt itself.
+install_fresh "$apk" "$out" none logcat-app-denied.txt
 echo "::endgroup::"
+
+run_flow onboarding-denied -e "APP_ID=$APP_ID"
+expect_alive onboarding-denied logcat-app-denied.txt
 echo "Emulator checks passed."

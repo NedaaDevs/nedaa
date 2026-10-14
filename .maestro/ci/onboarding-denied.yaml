@@ -1,0 +1,101 @@
+# maestro test -e APP_ID=dev.nedaa.app .maestro/ci/onboarding-denied.yaml
+# Android: -e APP_ID=dev.nedaa.android on an install without -g.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+    permissions:
+      location: unset
+      notifications: unset
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-get-started"
+    timeout: 60000
+- tapOn:
+    id: "onboarding-get-started"
+# Continue to the prompt and decline its dialog, until it offers a city.
+- repeat:
+    while:
+      notVisible:
+        id: "onboarding-choose-city"
+    times: 12
+    commands:
+      - runFlow:
+          when:
+            visible:
+              text: "Don.t allow"
+          commands:
+            - tapOn:
+                text: "Don.t allow"
+            - extendedWaitUntil:
+                visible:
+                  id: "onboarding-choose-city"
+                timeout: 10000
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-continue"
+            notVisible:
+              id: "onboarding-choose-city"
+          commands:
+            - tapOn:
+                id: "onboarding-continue"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: "onboarding-choose-city"
+# Skip leaves the prompt for the notification step, which says it was declined.
+- tapOn:
+    id: "onboarding-skip"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "onboarding-continue"
+- repeat:
+    while:
+      notVisible:
+        id: "onboarding-notifications-denied"
+    times: 6
+    commands:
+      - runFlow:
+          when:
+            visible:
+              text: "Don.t allow"
+          commands:
+            - tapOn:
+                text: "Don.t allow"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- assertVisible:
+    id: "onboarding-notifications-denied"
+# Continue and «later» carry the rest; the exit lands on Today without a city.
+- repeat:
+    while:
+      notVisible:
+        id: "onboarding-complete-open"
+    times: 12
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-alarm-later"
+          commands:
+            - tapOn:
+                id: "onboarding-alarm-later"
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-continue"
+            notVisible:
+              id: "onboarding-alarm-later"
+          commands:
+            - tapOn:
+                id: "onboarding-continue"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn:
+    id: "onboarding-complete-open"
+- extendedWaitUntil:
+    visible:
+      id: "tab-bar-frame"
+    timeout: 15000

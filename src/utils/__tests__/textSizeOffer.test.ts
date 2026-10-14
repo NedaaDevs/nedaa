@@ -2,6 +2,8 @@ import { PixelRatio } from "react-native";
 
 import { isLargeOsTextActive } from "@/utils/textSizeOffer";
 
+afterEach(() => jest.restoreAllMocks());
+
 test.each([
   [1.0, false],
   [1.14, false],
