@@ -6,7 +6,12 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { scheduleFridayAlarm } from "@/utils/alarmScheduler";
-import { alarmTypeForPrayer, toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
+import {
+  alarmTypeForPrayer,
+  isScheduledAlarmType,
+  toScheduledAlarmType,
+  toSettingsAlarmType,
+} from "@/utils/alarmTypes";
 
 /** A stored day whose every time is `at`; only Dhuhr's weekday matters here. */
 const dayAt = (timezone: string, at: string): DayPrayerTimes => ({
@@ -59,6 +64,18 @@ describe("toSettingsAlarmType", () => {
 
   it("returns null for custom (no per-type user settings)", () => {
     expect(toSettingsAlarmType(ScheduledAlarmType.CUSTOM)).toBeNull();
+  });
+});
+
+// A route param arrives as a plain string.
+describe("isScheduledAlarmType", () => {
+  it.each(Object.values(ScheduledAlarmType))("accepts %s", (type) => {
+    expect(isScheduledAlarmType(type)).toBe(true);
+  });
+
+  it("rejects a settings key and an empty param", () => {
+    expect(isScheduledAlarmType(ALARM_TYPE.FRIDAY)).toBe(false);
+    expect(isScheduledAlarmType("")).toBe(false);
   });
 });
 
