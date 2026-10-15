@@ -167,6 +167,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\bspokenClockTime\(/,
     home: "utils/spokenClockTime.ts",
   },
+  // A file that calls playSource or names previewSource draws SoundPreview.
+  {
+    concept: "a sound's play and stop control",
+    shows: /\bsoundPreviewManager\.playSource\(|\bpreviewSource\b/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /<SoundPreview\b/,
+    home: "components/ui/sound-preview/index.tsx",
+  },
 ];
 
 const FILES = sources(SRC).map((path) => ({
