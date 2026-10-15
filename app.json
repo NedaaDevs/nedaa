@@ -67,10 +67,12 @@
       "infoPlist": {
         "CFBundleDisplayName": "Nedaa",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSMotionUsageDescription": "$(PRODUCT_NAME) does not require motion access.",
-        "NSLocationWhenInUseUsageDescription": "Nedaa uses your precise location while you use the app to calculate the Qibla direction and provide accurate prayer times and reminders. Your location is not shared with third parties.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used while you are using the app and may also be used in the background to send you notifications about upcoming prayers. Your location data will not be shared with any third parties.",
-        "NSLocationAlwaysUsageDescription": "This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only for this purpose and will not be shared with any third parties.",
+        "NSMotionUsageDescription": "Nedaa does not use motion data.",
+        "NSMicrophoneUsageDescription": "Nedaa does not use the microphone.",
+        "NSAlarmKitUsageDescription": "Nedaa needs alarm access to wake you for Fajr and Friday prayers.",
+        "NSLocationWhenInUseUsageDescription": "Nedaa uses your location while you use the app to find your city, its prayer times and the Qibla direction.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Nedaa uses your location to find your city and its prayer times.",
+        "NSLocationAlwaysUsageDescription": "Nedaa uses your location to find your city and its prayer times.",
         "UIBackgroundModes": ["audio", "fetch", "remote-notification"],
         "BGTaskSchedulerPermittedIdentifiers": [
           "dev.nedaa.app.background-refresh",
@@ -114,7 +116,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Nedaa uses your precise location while you use the app to calculate the Qibla direction and provide accurate prayer times and reminders. Your location is not shared with third parties.",
+          "locationWhenInUsePermission": "Nedaa uses your location while you use the app to find your city, its prayer times and the Qibla direction.",
           "isAndroidForegroundServiceEnabled": false
         }
       ],
