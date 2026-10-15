@@ -15,13 +15,18 @@ import { soundPreviewManager } from "@/utils/sound";
 
 const mockPlay = jest.fn<Promise<void>, [string | number]>(() => Promise.resolve());
 const mockStop = jest.fn(() => Promise.resolve());
+let mockPlayId: number | undefined;
 let mockFinish: (() => void) | null = null;
 
 jest.mock("@/services/audio/previewPlayer", () => ({
-  playPreview: (source: string | number) => mockPlay(source),
+  playPreview: (source: string | number, playId?: number) => {
+    mockPlayId = playId;
+    return mockPlay(source);
+  },
   stopPreview: () => mockStop(),
-  addPreviewListener: (listener: (status: { didJustFinish: boolean }) => void) => {
-    mockFinish = () => listener({ didJustFinish: true });
+  addPreviewListener: (listener: (status: { didJustFinish: boolean; playId?: number }) => void) => {
+    // A finish names the latest play.
+    mockFinish = () => listener({ didJustFinish: true, playId: mockPlayId });
     return () => {
       mockFinish = null;
     };

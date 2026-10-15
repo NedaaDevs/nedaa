@@ -64,11 +64,20 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
+const PREVIEW_URL = "https://example.com/preview.mp3";
+const OLDER_PLAYLIST = "older-playlist";
+const NEWER_PLAYLIST = "newer-playlist";
+const OLDER_PLAY = 1;
+const NEWER_PLAY = 2;
+
 type PreviewPlayerModule = typeof import("@/services/audio/previewPlayer");
 
 // CommonJS keeps the module load after Jest registers the native dependency mocks.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const previewPlayer = require("@/services/audio/previewPlayer") as PreviewPlayerModule;
+const { NITRO_REASON, NITRO_STATE } =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@/services/audio/nitroSession") as typeof import("@/services/audio/nitroSession");
 
 const flushPromises = async (): Promise<void> => {
   await new Promise<void>((resolve) => setImmediate(resolve));
@@ -177,6 +186,43 @@ describe("previewPlayer", () => {
     expect(mockPlayerQueue.deletePlaylist).toHaveBeenCalledWith("preview-playlist");
     expect(mockNitroSession.release).toHaveBeenCalledWith("preview");
     unsubscribe();
+  });
+
+  it("names the play that finished", async () => {
+    const listener = jest.fn();
+    const unsubscribe = previewPlayer.addPreviewListener(listener);
+    await previewPlayer.playPreview(PREVIEW_URL, OLDER_PLAY);
+    mockHandlers.onPlaybackStateChange?.(NITRO_STATE.PLAYING);
+
+    mockHandlers.onPlaybackStateChange?.(NITRO_STATE.STOPPED, NITRO_REASON.END);
+
+    expect(listener).toHaveBeenLastCalledWith(
+      expect.objectContaining({ didJustFinish: true, playId: OLDER_PLAY })
+    );
+    unsubscribe();
+  });
+
+  it("keeps a newer preview loaded when an older one ends during its load", async () => {
+    mockPlayerQueue.createPlaylist
+      .mockResolvedValueOnce(OLDER_PLAYLIST)
+      .mockResolvedValueOnce(NEWER_PLAYLIST);
+    await previewPlayer.playPreview(PREVIEW_URL, OLDER_PLAY);
+    mockHandlers.onPlaybackStateChange?.(NITRO_STATE.PLAYING);
+    let grant = () => {};
+    mockNitroSession.acquire.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (grant = resolve))
+    );
+    const newer = previewPlayer.playPreview(PREVIEW_URL, NEWER_PLAY);
+    await flushPromises();
+
+    mockHandlers.onPlaybackStateChange?.(NITRO_STATE.STOPPED, NITRO_REASON.END);
+    grant();
+    await newer;
+    await flushPromises();
+
+    expect(mockPlayerQueue.deletePlaylist).toHaveBeenCalledWith(OLDER_PLAYLIST);
+    expect(mockPlayerQueue.deletePlaylist).not.toHaveBeenCalledWith(NEWER_PLAYLIST);
+    expect(mockNitroSession.release).not.toHaveBeenCalled();
   });
 
   it("stops and releases only the preview-owned player", async () => {
