@@ -102,6 +102,7 @@ const expectEntry = (ms: number) =>
 /** VoiceOver's escape gesture on the frame. */
 const escape = () =>
   act(async () => {
+    // userEvent has no accessibility actions, so the escape gesture is fired.
     fireEvent(
       screen.getByTestId(ONBOARDING_PART.FRAME, { includeHiddenElements: true }),
       "accessibilityEscape"
