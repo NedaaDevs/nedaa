@@ -19,6 +19,7 @@ import { APP_STATE } from "@/constants/AppState";
 import { DURATION_MS, EASE_IN_OUT_CURVE } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { AppLogger } from "@/utils/appLogger";
+import { withDeadline } from "@/utils/withTimeout";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("app");
@@ -68,28 +69,22 @@ const isActive = () => AppState.currentState === APP_STATE.ACTIVE;
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-/** `work`, or a rejection with `reason` once `ms` pass first. */
-const withinLimit = <T,>(work: Promise<T>, ms: number, reason: string): Promise<T> => {
-  let limit: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    limit = setTimeout(() => reject(new Error(reason)), ms);
-  });
-  return Promise.race([work, timeout]).finally(() => clearTimeout(limit));
-};
-
 /** Lays the old screen over the app; its file, or null when it cannot. */
 const cover = async (h: DissolveHandles, away: Promise<never>): Promise<string | null> => {
   const capture = captureRef(h.root, SNAPSHOT);
   let uri: string | null = null;
   try {
-    uri = await Promise.race([withinLimit(capture, CAPTURE_LIMIT_MS, "capture timed out"), away]);
+    uri = await Promise.race([
+      withDeadline(() => capture, CAPTURE_LIMIT_MS, "capture timed out"),
+      away,
+    ]);
     h.opacity.setValue(1);
     const showing = new Promise<void>((resolve, reject) => {
       h.shown.current = { resolve, reject };
     });
     h.setSnapshot(uri);
     await Promise.race([
-      withinLimit(showing, SNAPSHOT_SHOW_LIMIT_MS, "snapshot never showed"),
+      withDeadline(() => showing, SNAPSHOT_SHOW_LIMIT_MS, "snapshot never showed"),
       away,
     ]);
     await Promise.race([nextFrame(), away]);
