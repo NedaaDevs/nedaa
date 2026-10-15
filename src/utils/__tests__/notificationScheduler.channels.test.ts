@@ -149,7 +149,7 @@ describe("the scheduler and the iOS Time Sensitive mark", () => {
     scheduled.mockClear();
   });
 
-  // Only the per-prayer athan breaks through a Focus.
+  // Only the per-prayer athan asks to come through a Focus.
   it.each([
     {
       group: "the athan",
