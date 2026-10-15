@@ -1,6 +1,6 @@
 import { addDays } from "date-fns";
 
-import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_DEFAULTS, ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
 import { TIMES_PLACE } from "@/constants/Location";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
@@ -63,14 +63,15 @@ const mockCancel = jest.fn(async (type: ScheduledAlarmType) => {
 });
 
 const COORDS = { latitude: 21.42, longitude: 39.83 };
+const HOUR_MS = 60 * 60 * 1000;
 
 /** A Fajr and a Jummah record, as an earlier schedule left them. */
-const armBoth = () => {
+const armBoth = (triggerTime = NOW.getTime() + HOUR_MS) => {
   const record = (alarmType: ScheduledAlarmType): ScheduledAlarm => ({
     alarmId: alarmType,
     alarmType,
     title: alarmType,
-    triggerTime: NOW.getTime() + 60 * 60 * 1000,
+    triggerTime,
     liveActivityId: null,
     snoozeCount: 0,
   });
@@ -194,6 +195,71 @@ describe("at a verified place's times", () => {
   it("schedulePreviewAlarm arms", async () => {
     await expect(schedulePreviewAlarm(ScheduledAlarmType.FAJR)).resolves.not.toBeNull();
     expect(mockSchedule).toHaveBeenCalledTimes(1);
+  });
+});
+
+// A record past the stale limit never rings, so its type counts as unarmed.
+describe("a stored record at a verified place's times", () => {
+  const STALE_AT = NOW.getTime() - ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS - 1;
+  beforeEach(() => storeTimes(false));
+
+  it("past the stale limit, lets ensureAlarmsScheduled arm the next occurrence", async () => {
+    armBoth(STALE_AT);
+
+    await ensureAlarmsScheduled();
+
+    expect(scheduledTypes()).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+  });
+
+  it.each([
+    ["still ahead", NOW.getTime() + HOUR_MS],
+    ["due an hour ago", NOW.getTime() - HOUR_MS],
+    ["exactly at the stale limit", NOW.getTime() - ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS],
+  ])("%s, keeps ensureAlarmsScheduled from arming another", async (_name, triggerTime) => {
+    armBoth(triggerTime);
+
+    await ensureAlarmsScheduled();
+
+    expect(mockSchedule).not.toHaveBeenCalled();
+  });
+
+  // Two occurrences are armed; the second still rings once the first is stale.
+  it("past the stale limit beside a later one, arms nothing", async () => {
+    armBoth(STALE_AT);
+    const { scheduledAlarms } = useAlarmStore.getState();
+    const following = Object.values(scheduledAlarms).map((alarm) => ({
+      ...alarm,
+      alarmId: `${alarm.alarmId}-following`,
+      triggerTime: NOW.getTime() + HOUR_MS,
+    }));
+    useAlarmStore.setState({
+      scheduledAlarms: {
+        ...scheduledAlarms,
+        ...Object.fromEntries(following.map((alarm) => [alarm.alarmId, alarm])),
+      },
+    });
+
+    await ensureAlarmsScheduled();
+
+    expect(mockSchedule).not.toHaveBeenCalled();
+  });
+
+  // A rehearsal rings once for practice; the real alarm still needs arming.
+  it("a pending rehearsal, lets ensureAlarmsScheduled arm the real alarm", async () => {
+    const rehearsal: ScheduledAlarm = {
+      alarmId: "fajr-rehearsal",
+      alarmType: ScheduledAlarmType.FAJR,
+      title: ScheduledAlarmType.FAJR,
+      triggerTime: NOW.getTime() + 30 * 1000,
+      liveActivityId: null,
+      snoozeCount: 0,
+      isPreview: true,
+    };
+    useAlarmStore.setState({ scheduledAlarms: { [rehearsal.alarmId]: rehearsal } });
+
+    await ensureAlarmsScheduled();
+
+    expect(scheduledTypes()).toContain(ScheduledAlarmType.FAJR);
   });
 });
 
