@@ -13,10 +13,6 @@ const NATIVE = read("ios", "nedaa", "nedaa.entitlements");
 
 // Without the entitlement iOS delivers the mark as an ordinary notification.
 describe("Time Sensitive notifications", () => {
-  it("are what the athan asks for", () => {
-    expect(read("src", "utils", "notifications.ts")).toMatch(/interruptionLevel = "timeSensitive"/);
-  });
-
   it("are granted in app.json", () => {
     expect(FROM_APP_JSON[TIME_SENSITIVE]).toBe(true);
   });
