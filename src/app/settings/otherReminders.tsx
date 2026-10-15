@@ -17,6 +17,7 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Constants
 import { MIDNIGHT_MODE } from "@/constants/providers";
@@ -66,7 +67,7 @@ const MINUTE_OPTIONS = [0, 15, 30, 45] as const;
 
 const OtherRemindersSettings = () => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const { otherTimingNotifications, duhaTime, updateOtherTimingNotification, updateDuhaTime } =
     useNotificationSettings();
 

@@ -2,6 +2,7 @@ import React from "react";
 import { AccessibilityInfo } from "react-native";
 import renderer, { act } from "react-test-renderer";
 
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   CompassLocationPermissionAccuracy,
   CompassLocationSource,
@@ -10,6 +11,7 @@ import {
 import { LocalPermissionStatus } from "@/enums/location";
 import type { CompassData } from "@/hooks/useCompass";
 import type { CompassLocationResult } from "@/hooks/useCompassLocation";
+import { HAPTIC } from "@/test-helpers/hapticMock";
 import type { CompassLocationFix } from "@/types/compass";
 import { calculateQiblaDirection } from "@/utils/compass";
 
@@ -21,9 +23,6 @@ const mockCompassIssueCard = jest.fn<null, [Record<string, unknown>]>(() => null
 const mockCompassDetailsSheet = jest.fn<null, [Record<string, unknown>]>(() => null);
 const mockUseCompass = jest.fn<CompassData, [unknown]>();
 const mockUseCompassLocation = jest.fn<CompassLocationResult, [unknown]>();
-const mockHapticSelection = jest.fn();
-const mockHapticLight = jest.fn();
-const mockHapticMedium = jest.fn();
 
 jest.mock("expo-router", () => ({
   ...jest.requireActual("expo-router"),
@@ -95,10 +94,7 @@ jest.mock("@/hooks/useCompassLocation", () => ({
 jest.mock("@/hooks/useDelayedFlag", () => ({
   useDelayedFlag: (value: boolean) => value,
 }));
-jest.mock("@/hooks/useHaptic", () => ({
-  useHaptic: (kind: string) =>
-    kind === "medium" ? mockHapticMedium : kind === "light" ? mockHapticLight : mockHapticSelection,
-}));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 jest.mock("@/screenshot-mode/useScreenshotSeed", () => ({
   useScreenshotSeed: () => null,
 }));
@@ -301,9 +297,9 @@ describe("CompassScreen Qibla reliability", () => {
     await rotateTo(tree, 150);
     act(() => tree.unmount());
 
-    expect(mockHapticSelection).toHaveBeenCalled();
-    expect(mockHapticLight).not.toHaveBeenCalled();
-    expect(mockHapticMedium).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).not.toHaveBeenCalled();
   });
 
   it("escalates with a light approach cue and a medium lock at the Qibla", async () => {
@@ -312,15 +308,15 @@ describe("CompassScreen Qibla reliability", () => {
     const tree = await renderScreen();
 
     await rotateTo(tree, qibla - 6);
-    expect(mockHapticLight).toHaveBeenCalledTimes(1);
-    expect(mockHapticMedium).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).not.toHaveBeenCalled();
 
     await rotateTo(tree, qibla);
     act(() => tree.unmount());
 
-    expect(mockHapticMedium).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).toHaveBeenCalledTimes(1);
     // The approach and lock own the feel near the target; detents stay silent there.
-    expect(mockHapticSelection).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 
   it("keeps a blocking card for a dead sensor", async () => {

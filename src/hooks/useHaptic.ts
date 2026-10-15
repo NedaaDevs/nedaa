@@ -1,14 +1,12 @@
 import { useCallback, useMemo } from "react";
 import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
+import { HAPTIC_FEEDBACK, type HapticFeedback } from "@/constants/Haptics";
 import { usePreferencesStore } from "@/stores/preferences";
-
-export type FeedbackType =
-  "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error";
 
 const noop = () => Promise.resolve();
 
-export const useHaptic = (feedbackType: FeedbackType = "selection") => {
+export const useHaptic = (feedbackType: HapticFeedback = HAPTIC_FEEDBACK.SELECTION) => {
   const hapticsEnabled = usePreferencesStore((s) => s.hapticsEnabled);
 
   const createHapticHandler = useCallback(
@@ -32,14 +30,19 @@ export const useHaptic = (feedbackType: FeedbackType = "selection") => {
   );
 
   const hapticHandlers = useMemo(
-    () => ({
-      light: createHapticHandler(Haptics.ImpactFeedbackStyle.Light),
-      medium: createHapticHandler(Haptics.ImpactFeedbackStyle.Medium),
-      heavy: createHapticHandler(Haptics.ImpactFeedbackStyle.Heavy),
-      selection: Platform.OS === "web" || !hapticsEnabled ? noop : Haptics.selectionAsync,
-      success: createNotificationFeedback(Haptics.NotificationFeedbackType.Success),
-      warning: createNotificationFeedback(Haptics.NotificationFeedbackType.Warning),
-      error: createNotificationFeedback(Haptics.NotificationFeedbackType.Error),
+    (): Record<HapticFeedback, () => Promise<void>> => ({
+      [HAPTIC_FEEDBACK.LIGHT]: createHapticHandler(Haptics.ImpactFeedbackStyle.Light),
+      [HAPTIC_FEEDBACK.MEDIUM]: createHapticHandler(Haptics.ImpactFeedbackStyle.Medium),
+      [HAPTIC_FEEDBACK.HEAVY]: createHapticHandler(Haptics.ImpactFeedbackStyle.Heavy),
+      [HAPTIC_FEEDBACK.SELECTION]:
+        Platform.OS === "web" || !hapticsEnabled ? noop : Haptics.selectionAsync,
+      [HAPTIC_FEEDBACK.SUCCESS]: createNotificationFeedback(
+        Haptics.NotificationFeedbackType.Success
+      ),
+      [HAPTIC_FEEDBACK.WARNING]: createNotificationFeedback(
+        Haptics.NotificationFeedbackType.Warning
+      ),
+      [HAPTIC_FEEDBACK.ERROR]: createNotificationFeedback(Haptics.NotificationFeedbackType.Error),
     }),
     [createHapticHandler, createNotificationFeedback, hapticsEnabled]
   );

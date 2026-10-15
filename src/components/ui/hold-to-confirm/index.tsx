@@ -11,6 +11,7 @@ import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
 import { PlatformType } from "@/enums/app";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 /** The default hold, and the haptic tick while it runs. */
 export const HOLD = { DEFAULT_MS: 3000, TICK_MS: 500 } as const;
@@ -51,8 +52,8 @@ export const HoldToConfirm = ({
   screenReaderConfirm,
 }: Props) => {
   const [holding, setHolding] = useState(false);
-  const warn = useHaptic("warning");
-  const tick = useHaptic("light");
+  const warn = useHaptic(HAPTIC_FEEDBACK.WARNING);
+  const tick = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const fillColor = useThemeColor("$typographyContrast");
 
   const onTick = useEffectEvent(() => tick());

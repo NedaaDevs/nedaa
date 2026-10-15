@@ -23,6 +23,7 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { AUDIO_UI, DEFAULT_PLAYBACK_RATE, PLAYBACK_RATE_OPTIONS } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const DISMISS_THRESHOLD = 60;
@@ -44,7 +45,7 @@ const MiniPlayerBar: FC = () => {
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
   const playbackRate = useAthkarAudioStore((s) => s.playbackRate);
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const isActive =
     playerState === "playing" || playerState === "paused" || playerState === "loading";

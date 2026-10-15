@@ -28,6 +28,7 @@ import {
   type CalculationPicker,
 } from "@/constants/Calculation";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import type {
   AladhanMethodId,
@@ -169,7 +170,7 @@ export const CalculationSheet = ({
 }: Props) => {
   const { t } = useTranslation();
   const focused = useRef<NativeView>(null);
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const title = t(CALCULATION_TITLE_KEY[picker]);
 
   const pick = (patch: Partial<AladhanSettings>) => {

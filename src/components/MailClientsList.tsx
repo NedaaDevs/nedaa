@@ -6,6 +6,7 @@ import { getEmailClients, openComposer } from "react-native-email-link";
 import * as Application from "expo-application";
 import * as Device from "expo-device";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -32,8 +33,8 @@ type Props = {
 
 const MailClientsList = ({ onClose }: Props) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const [mailClients, setMailClients] = useState<MailClient[]>([]);
   const [loading, setLoading] = useState(true);
 

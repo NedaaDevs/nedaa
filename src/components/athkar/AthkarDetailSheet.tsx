@@ -26,6 +26,7 @@ import { useMyAthkarStore } from "@/stores/my-athkar";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -56,8 +57,8 @@ const AthkarDetailSheet: FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const { incrementCount, decrementCount } = useMyAthkarStore();
-  const hapticSelection = useHaptic("selection");
-  const hapticSuccess = useHaptic("success");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
   if (!myAthkarId || !progress) return null;
 

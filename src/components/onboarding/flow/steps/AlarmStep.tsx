@@ -40,6 +40,7 @@ import {
 } from "@/constants/Onboarding";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import type { AlarmType } from "@/types/alarm";
@@ -220,7 +221,7 @@ export const AlarmStep = ({
 }: Props) => {
   const { t } = useTranslation();
   const { becameActiveAt } = useAppVisibility();
-  const haptic = useHaptic("light");
+  const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   // An alarm already on shows its result, read again, not the question.
   const [phase, setPhase] = useState<AlarmStepPhase>(() =>
     useAlarmSettingsStore.getState()[type].enabled ? ALARM_STEP_PHASE.CHECK : ALARM_STEP_PHASE.ASK
