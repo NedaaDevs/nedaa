@@ -328,7 +328,7 @@ const cancelDefaultPlaceAlarms = async (place: TimesPlace): Promise<void> => {
   alarmLog.w("Scheduler", `${armed.join(", ")}: times are for the default location — cancelled`);
 };
 
-/** Whether a real alarm of this type can still ring; a rehearsal is not one. */
+/** Whether a non-rehearsal record of this type is not yet stale. */
 const hasLiveAlarm = (type: ScheduledAlarmType): boolean => {
   const now = Date.now();
   return Object.values(useAlarmStore.getState().scheduledAlarms).some(
