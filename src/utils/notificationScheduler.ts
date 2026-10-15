@@ -84,6 +84,8 @@ type NotificationScheduleItem = {
   vibration: boolean;
   categoryId: string;
   channelId?: string;
+  // iOS delivers it through a Focus; set only on the per-prayer athan.
+  timeSensitive?: boolean;
 };
 
 const MAX_IOS_NOTIFICATIONS = 63;
@@ -503,6 +505,7 @@ export const scheduleAllNotifications = async (
         vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
         categoryId: notification.categoryId,
         channelId: notification.channelId,
+        timeSensitive: notification.timeSensitive,
       });
 
       if (result.success) {
@@ -712,6 +715,7 @@ const generatePrayerNotifications = (
         vibration: prayerConfig.vibration,
         sound: prayerSound,
         soundKey: prayerConfig.sound,
+        timeSensitive: true,
       });
     }
   }
