@@ -36,6 +36,36 @@
         }
       }
     },
+    "NSAlarmKitUsageDescription" : {
+      "comment" : "Privacy - AlarmKit Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتاج نِداء إلى إذن المنبّهات ليوقظك لصلاة الفجر وينبّهك لصلاة الجمعة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Nedaa needs alarm access to wake you for Fajr and Friday prayers."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa memerlukan akses penggera untuk membangunkan anda bagi solat Subuh dan solat Jumaat."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نِداء کو الارم کی اجازت چاہیے تاکہ آپ کو فجر اور جمعہ کی نماز کے لیے جگا سکے۔"
+          }
+        }
+      }
+    },
     "NSHumanReadableCopyright" : {
       "comment" : "Copyright (human-readable)",
       "extractionState" : "extracted_with_value",
@@ -52,10 +82,28 @@
       "comment" : "Privacy - Location Always and When In Use Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحدد نِداء مدينتك ومواقيت الصلاة فيها من موقعك."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "This app uses your location to provide accurate prayer times and reminders based on your\n      current location. Your location data will be used while you are using the app and may also be\n      used in the background to send you notifications about upcoming prayers. Your location data\n      will not be shared with any third parties."
+            "value" : "Nedaa uses your location to find your city and its prayer times."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa menggunakan lokasi anda untuk mencari bandar anda dan waktu solatnya."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نِداء آپ کا مقام استعمال کرتا ہے تاکہ آپ کا شہر اور اس کے نماز کے اوقات معلوم کر سکے۔"
           }
         }
       }
@@ -64,10 +112,28 @@
       "comment" : "Privacy - Location Always Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحدد نِداء مدينتك ومواقيت الصلاة فيها من موقعك."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "This app uses your location to provide accurate prayer times and reminders based on your\n      current location. Your location data will be used only for this purpose and will not be shared\n      with any third parties."
+            "value" : "Nedaa uses your location to find your city and its prayer times."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa menggunakan lokasi anda untuk mencari bandar anda dan waktu solatnya."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نِداء آپ کا مقام استعمال کرتا ہے تاکہ آپ کا شہر اور اس کے نماز کے اوقات معلوم کر سکے۔"
           }
         }
       }
@@ -76,16 +142,28 @@
       "comment" : "Privacy - Location When In Use Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Nedaa uses your precise location while you use the app to calculate the Qibla direction and provide accurate prayer times and reminders. Your location is not shared with third parties."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يستخدم نِداء موقعك الدقيق أثناء استخدام التطبيق لحساب اتجاه القبلة وتقديم أوقات صلاة وتذكيرات دقيقة. لا تتم مشاركة موقعك مع أي طرف ثالث."
+            "value" : "يحدد نِداء مدينتك ومواقيت الصلاة فيها واتجاه القبلة من موقعك أثناء استخدام التطبيق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Nedaa uses your location while you use the app to find your city, its prayer times and the Qibla direction."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa menggunakan lokasi anda semasa anda menggunakan aplikasi untuk mencari bandar anda, waktu solatnya dan arah kiblat."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نِداء ایپ کے استعمال کے دوران آپ کا مقام استعمال کرتا ہے تاکہ آپ کا شہر، اس کے نماز کے اوقات اور قبلہ کی سمت معلوم کر سکے۔"
           }
         }
       }
@@ -94,10 +172,58 @@
       "comment" : "Privacy - Microphone Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستخدم نِداء الميكروفون."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "This app does not require microphone access."
+            "value" : "Nedaa does not use the microphone."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa tidak menggunakan mikrofon."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نِداء مائیکروفون استعمال نہیں کرتا۔"
+          }
+        }
+      }
+    },
+    "NSMotionUsageDescription" : {
+      "comment" : "Privacy - Motion Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستخدم نِداء بيانات الحركة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Nedaa does not use motion data."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedaa tidak menggunakan data gerakan."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نِداء حرکت کا ڈیٹا استعمال نہیں کرتا۔"
           }
         }
       }
