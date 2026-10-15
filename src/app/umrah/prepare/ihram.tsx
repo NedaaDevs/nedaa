@@ -15,12 +15,13 @@ import IhramFemale from "@/components/umrah/illustrations/IhramFemale";
 import { NumberBadge } from "@/components/ui/number-badge";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import type { Gender } from "@/types/umrah";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export default function IhramScreen() {
   const { t } = useTranslation();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const { selectedGender, setSelectedGender } = useUmrahGuideStore();
   const reduceMotion = useReducedMotion();
 

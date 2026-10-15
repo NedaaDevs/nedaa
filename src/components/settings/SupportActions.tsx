@@ -10,6 +10,7 @@ import { VStack } from "@/components/ui/vstack";
 import { STORE_LINKS } from "@/constants/StoreLinks";
 import { PlatformType } from "@/enums/app";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useOnReturn } from "@/hooks/useOnReturn";
 import { useThankYou } from "@/hooks/useThankYou";
 
@@ -26,7 +27,7 @@ const openStore = () =>
 /** Rate and Share, each thanking the user once the action is done. */
 export const SupportActions = () => {
   const { t } = useTranslation();
-  const hapticMedium = useHaptic("medium");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const onReturn = useOnReturn();
   const [rateThanked, thankRate] = useThankYou();
   const [shareThanked, thankShare] = useThankYou();

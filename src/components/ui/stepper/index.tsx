@@ -9,6 +9,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { usePressRetention } from "@/components/ui/pressable/retention";
 import { A11Y_ACTION, adjustActions, HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 /** Repeat delays while held: slow at first, faster once the hold is clearly deliberate. */
 export const REPEAT = { SLOW_MS: 200, FAST_MS: 100, SLOW_STEPS: 5 } as const;
@@ -50,7 +51,7 @@ export const Stepper = ({
   ref,
 }: Props) => {
   const [held, setHeld] = useState<Direction | null>(null);
-  const haptic = useHaptic("light");
+  const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const retention = usePressRetention(() => setHeld(null));
 
   // Returns where it landed, so a hold counts on from there without waiting for a render.

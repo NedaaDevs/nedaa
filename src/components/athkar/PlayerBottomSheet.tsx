@@ -17,6 +17,7 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { PLAYBACK_RATE_OPTIONS, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -42,7 +43,7 @@ const PlayerBottomSheet: FC = () => {
   const position = useAthkarAudioStore((s) => s.position);
   const duration = useAthkarAudioStore((s) => s.duration);
   const playbackRate = useAthkarAudioStore((s) => s.playbackRate);
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const cycleRate = useCallback(() => {
     const idx = PLAYBACK_RATE_OPTIONS.indexOf(

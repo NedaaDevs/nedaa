@@ -28,6 +28,7 @@ import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinat
 import { DEBUG_COPY, DEBUG_SCREEN, type DebugScreen } from "@/constants/DebugScreens";
 import { SECTION_KIND } from "@/constants/Section";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
 
@@ -79,7 +80,7 @@ export default function AboutScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const isDebugEnabled = useDebugModeStore((s) => s.isEnabled);
   const restartOnboarding = useAppStore((s) => s.restartOnboarding);
 

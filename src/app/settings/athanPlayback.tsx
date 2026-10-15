@@ -20,11 +20,12 @@ import { Play, Volume1, VolumeX } from "lucide-react-native";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 const AthanPlaybackSettings = () => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
 
   const {
     fullAthanPlayback,

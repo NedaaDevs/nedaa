@@ -21,6 +21,7 @@ import { A11Y_ACTION, adjustActions, HIDDEN_FROM_READER } from "@/constants/Acce
 import { DURATION_MS } from "@/constants/Motion";
 import { useRTL } from "@/contexts/RTLContext";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Test ids for the parts that move or take touches. */
@@ -95,7 +96,7 @@ export const SteppedSlider = <V extends string | number>({
 }: SteppedSliderProps<V>) => {
   const { isRTL, direction } = useRTL();
   const reduced = useReducedMotion();
-  const tick = useHaptic("selection");
+  const tick = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [width, setWidth] = useState(0);
   // The stop under a drag, drawn while the finger is down.
   const [dragged, setDragged] = useState<number | null>(null);

@@ -61,6 +61,7 @@ import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useIsCellular } from "@/hooks/useIsCellular";
 import { useAthkarFocusScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 
@@ -95,9 +96,9 @@ const AthkarFocusScreen = () => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  const hapticSelection = useHaptic("selection");
-  const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
 
   const {
     morningAthkarList,

@@ -13,11 +13,12 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 
 import { Shirt, MapPin, ShieldAlert } from "lucide-react-native";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 export default function PrepareIndexScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const cards = [
     {

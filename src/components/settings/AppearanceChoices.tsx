@@ -7,12 +7,13 @@ import { APPEARANCE_ORDER } from "@/constants/Appearance";
 import type { AppMode } from "@/enums/app";
 import { useChooseMode } from "@/hooks/useChooseMode";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { skySwatchFor } from "@/utils/sky";
 
 /** The appearance modes, each with its sky; a choice applies at once. */
 export const AppearanceChoices = () => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const chooseMode = useChooseMode();
   const sky = usePageSky();
 

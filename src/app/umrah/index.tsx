@@ -29,6 +29,7 @@ import PrepareCard from "@/components/umrah/PrepareCard";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
 import { getMinistryLink } from "@/constants/UmrahChecklist";
 
@@ -44,7 +45,7 @@ const formatDuration = (minutes: number, t: (key: string) => string): string => 
 export default function UmrahOverviewScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const insets = useSafeAreaInsets();
   const { activeProgress, history, startUmrah, resetProgress, seedScreenshotProgress } =
     useUmrahGuideStore();

@@ -4,16 +4,15 @@ import { act, fireEvent, render, screen, userEvent } from "@testing-library/reac
 
 import { HOLD, HoldToConfirm } from "@/components/ui/hold-to-confirm";
 import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { PlatformType } from "@/enums/app";
+import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 // The fill is reanimated, which cannot load under jest; it is drawing only.
 jest.mock("@/components/ui/hold-to-confirm/Fill", () => ({ Fill: () => null }));
 
-const mockHaptics = { warning: jest.fn(), light: jest.fn() };
-jest.mock("@/hooks/useHaptic", () => ({
-  useHaptic: (type: keyof typeof mockHaptics) => mockHaptics[type],
-}));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 
 const LABEL = "Reset all data";
 const DIALOG = {
@@ -45,7 +44,7 @@ const control = () => screen.getByRole("button", { name: LABEL });
 describe("HoldToConfirm", () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    Object.values(mockHaptics).forEach((haptic) => haptic.mockClear());
+    clearHaptics();
   });
   afterEach(() => jest.useRealTimers());
 
@@ -91,19 +90,19 @@ describe("HoldToConfirm", () => {
 
       await hold(HOLD.TICK_MS * 3 + HOLD.TICK_MS / 2);
 
-      expect(mockHaptics.warning).toHaveBeenCalledTimes(1);
-      expect(mockHaptics.light).toHaveBeenCalledTimes(3);
+      expect(HAPTIC[HAPTIC_FEEDBACK.WARNING]).toHaveBeenCalledTimes(1);
+      expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(3);
     });
 
     it("stops ticking when let go", async () => {
       const { view } = renderHold();
       await view;
       await hold(HOLD.TICK_MS + HOLD.TICK_MS / 2);
-      const ticks = mockHaptics.light.mock.calls.length;
+      const ticks = HAPTIC[HAPTIC_FEEDBACK.LIGHT].mock.calls.length;
 
       await act(() => jest.advanceTimersByTime(HOLD.TICK_MS * 4));
 
-      expect(mockHaptics.light).toHaveBeenCalledTimes(ticks);
+      expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(ticks);
     });
 
     it("ignores a hold while busy", async () => {
@@ -123,7 +122,7 @@ describe("HoldToConfirm", () => {
       await hold(HOLD.DEFAULT_MS + HOLD.TICK_MS * 4);
 
       expect(onConfirm).toHaveBeenCalledTimes(1);
-      expect(mockHaptics.light.mock.calls.length).toBeLessThanOrEqual(
+      expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT].mock.calls.length).toBeLessThanOrEqual(
         HOLD.DEFAULT_MS / HOLD.TICK_MS
       );
     });

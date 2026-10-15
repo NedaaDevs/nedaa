@@ -7,6 +7,7 @@ import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import { stepProps } from "@/test-helpers/onboardingStepProps";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
@@ -84,7 +85,7 @@ it("plays the success haptic once on arrival", async () => {
   await view.rerender(<CompleteStep {...stepProps()} />);
 
   expect(HAPTIC.success).toHaveBeenCalledTimes(1);
-  expect(firedHaptics()).toEqual(["success"]);
+  expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SUCCESS]);
 });
 
 it("hands reader focus a heading of the title alone, and labels its button", async () => {

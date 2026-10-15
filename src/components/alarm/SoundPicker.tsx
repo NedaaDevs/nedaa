@@ -10,6 +10,7 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { ALARM_SOUND_KEYS, SOUND_ASSETS } from "@/constants/sounds";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useCustomSoundsStore } from "@/stores/customSounds";
 import * as ExpoAlarm from "expo-alarm";
 
@@ -32,8 +33,8 @@ type Props = {
 
 const SoundPicker: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
   // Alarms store the content:// URI itself, never the custom_* id: no JS runs when an
   // alarm fires, so the native database value has to be playable on its own.
