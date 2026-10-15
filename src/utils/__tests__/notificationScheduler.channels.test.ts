@@ -6,7 +6,8 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
-import type { NotificationSettings } from "@/types/notification";
+import { PlatformType } from "@/enums/app";
+import type { NotificationSettings, OtherTimingNotifications } from "@/types/notification";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { scheduleNotification } from "@/utils/notifications";
 import { scheduleAllNotifications } from "@/utils/notificationScheduler";
@@ -98,6 +99,20 @@ const dayOfPrayers = (): DayPrayerTimes => {
 const runScheduler = (playback: { fullAthanPlayback: boolean; fullIqamaPlayback: boolean }) =>
   scheduleAllNotifications(SETTINGS, ATHKAR, [dayOfPrayers()], TIMEZONE, null, playback);
 
+const OTHER_TIMINGS_ON: OtherTimingNotifications = {
+  [OTHER_TIMING.ISHRAQ]: true,
+  [OTHER_TIMING.DUHA]: true,
+  [OTHER_TIMING.MIDNIGHT]: true,
+  [OTHER_TIMING.FIRST_THIRD]: true,
+  [OTHER_TIMING.LAST_THIRD]: true,
+  [OTHER_TIMING.IMSAK]: true,
+};
+
+// The "open the app" reminder is built with type PRAYER and this category.
+const REMINDER_CATEGORY = "reminder";
+
+type ScheduledData = { type: string; categoryId: string };
+
 // Android posts a notification on a missing channel to its fallback channel.
 describe("the scheduler and the channels it creates", () => {
   beforeEach(() => {
@@ -126,4 +141,60 @@ describe("the scheduler and the channels it creates", () => {
       }
     }
   );
+});
+
+describe("the scheduler and the iOS Time Sensitive mark", () => {
+  beforeEach(() => {
+    jest.replaceProperty(Platform, "OS", PlatformType.IOS);
+    scheduled.mockClear();
+  });
+
+  // Only the per-prayer athan breaks through a Focus.
+  it.each([
+    {
+      group: "the athan",
+      marked: true,
+      pick: ({ type, categoryId }: ScheduledData) =>
+        type === NOTIFICATION_TYPE.PRAYER && categoryId !== REMINDER_CATEGORY,
+    },
+    {
+      group: "the iqama",
+      marked: false,
+      pick: ({ type }: ScheduledData) => type === NOTIFICATION_TYPE.IQAMA,
+    },
+    {
+      group: "the before-athan alert",
+      marked: false,
+      pick: ({ type }: ScheduledData) => type === NOTIFICATION_TYPE.PRE_ATHAN,
+    },
+    {
+      group: "the other timings",
+      marked: false,
+      pick: ({ type }: ScheduledData) => type === NOTIFICATION_TYPE.OTHER_TIMING,
+    },
+    {
+      group: "the open-the-app reminder",
+      marked: false,
+      pick: ({ type, categoryId }: ScheduledData) =>
+        type === NOTIFICATION_TYPE.PRAYER && categoryId === REMINDER_CATEGORY,
+    },
+  ])("asks for time-sensitive delivery for $group: $marked", async ({ pick, marked }) => {
+    const result = await scheduleAllNotifications(
+      SETTINGS,
+      ATHKAR,
+      [dayOfPrayers()],
+      TIMEZONE,
+      null,
+      {},
+      {},
+      OTHER_TIMINGS_ON
+    );
+    expect(result.success).toBe(true);
+
+    const picked = scheduled.mock.calls.filter(([, input]) => pick(input.data));
+    expect(picked.length).toBeGreaterThan(0);
+    for (const [, , options] of picked) {
+      expect(options.timeSensitive === true).toBe(marked);
+    }
+  });
 });
