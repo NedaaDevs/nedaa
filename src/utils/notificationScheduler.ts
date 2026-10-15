@@ -88,7 +88,7 @@ type NotificationScheduleItem = {
   vibration: boolean;
   categoryId: string;
   channelId?: string;
-  // iOS delivers it through a Focus; set only on the per-prayer athan.
+  // iOS: asks to come through a Focus; set only on the per-prayer athan.
   timeSensitive?: boolean;
 };
 
