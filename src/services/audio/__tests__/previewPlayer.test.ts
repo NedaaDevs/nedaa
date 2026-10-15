@@ -69,6 +69,7 @@ const OLDER_PLAYLIST = "older-playlist";
 const NEWER_PLAYLIST = "newer-playlist";
 const OLDER_PLAY = 1;
 const NEWER_PLAY = 2;
+const PREVIEW_OWNER = "settings.athan";
 
 type PreviewPlayerModule = typeof import("@/services/audio/previewPlayer");
 
@@ -247,5 +248,34 @@ describe("previewPlayer", () => {
 
     expect(mockPlayerQueue.deletePlaylist).toHaveBeenCalledWith("preview-playlist");
     expect(mockNitroSession.release).toHaveBeenCalledWith("preview");
+  });
+
+  it("reports the play finished when another Nitro owner evicts it", async () => {
+    const listener = jest.fn();
+    const unsubscribe = previewPlayer.addPreviewListener(listener);
+    await previewPlayer.playPreview(PREVIEW_URL, OLDER_PLAY);
+    mockHandlers.onPlaybackStateChange?.(NITRO_STATE.PLAYING);
+    listener.mockClear();
+
+    await mockHandlers.onEvict?.();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ playing: false, didJustFinish: true, playId: OLDER_PLAY })
+    );
+    unsubscribe();
+  });
+
+  // Athkar or Quran audio takes the player through an eviction.
+  it("clears the sound preview when another Nitro owner evicts it", async () => {
+    const { soundPreviewManager } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("@/utils/sound") as typeof import("@/utils/sound");
+    await soundPreviewManager.playSource(PREVIEW_OWNER, PREVIEW_URL);
+    mockHandlers.onPlaybackStateChange?.(NITRO_STATE.PLAYING);
+
+    await mockHandlers.onEvict?.();
+
+    expect(soundPreviewManager.isCurrentlyPlaying()).toBe(false);
   });
 });
