@@ -1,5 +1,5 @@
 import { AccessibilityInfo, Platform } from "react-native";
-import { act, screen } from "@testing-library/react-native";
+import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { PermissionStatus } from "expo-notifications";
 
 import { NotificationsStep } from "@/components/onboarding/flow/steps/NotificationsStep";
@@ -14,6 +14,7 @@ import { RIYADH_DAY, riyadhAt } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { AppLogger } from "@/utils/appLogger";
 import { requestNotificationPermission } from "@/utils/notifications";
+import { soundPreviewManager } from "@/utils/sound";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => false }));
@@ -22,12 +23,28 @@ jest.mock("@/utils/notifications", () => ({
   requestNotificationPermission: jest.fn(),
 }));
 
+// jest-expo gives every audio file the value 1, so only a distinct value for
+// this file shows which sound the step plays.
+jest.mock("@/assets/sounds/makkah_athan1.mp3", () => 4242);
+const MAKKAH_ATHAN_SAMPLE = jest.requireMock<number>("@/assets/sounds/makkah_athan1.mp3");
+
+const mockPlay = jest.fn<Promise<void>, [string | number]>(() => Promise.resolve());
+const mockStop = jest.fn(() => Promise.resolve());
+jest.mock("@/services/audio/previewPlayer", () => ({
+  playPreview: (source: string | number) => mockPlay(source),
+  stopPreview: () => mockStop(),
+  addPreviewListener: () => () => {},
+}));
+
 const t = i18n.t.bind(i18n);
 const mockRequest = jest.mocked(requestNotificationPermission);
 
 beforeEach(async () => {
   await act(() => i18n.changeLanguage(AppLocale.EN));
   mockRequest.mockReset().mockResolvedValue({ status: PermissionStatus.DENIED });
+  soundPreviewManager.forceReset();
+  mockPlay.mockClear();
+  mockStop.mockClear();
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
     todayTimings: null,
@@ -166,4 +183,58 @@ it("asks once on a double tap", async () => {
   });
 
   expect(mockRequest).toHaveBeenCalledTimes(1);
+});
+
+describe("the Focus line", () => {
+  const PLATFORM = Platform.OS;
+  afterEach(() => {
+    Platform.OS = PLATFORM;
+  });
+
+  it("tells iOS users the athan comes through a Focus", async () => {
+    Platform.OS = PlatformType.IOS;
+    await renderWithTheme(<NotificationsStep {...stepProps()} />);
+
+    expect(screen.getByText(t("onboarding.notifications.focusNote"))).toBeOnTheScreen();
+  });
+
+  it("is not shown on Android", async () => {
+    Platform.OS = PlatformType.ANDROID;
+    await renderWithTheme(<NotificationsStep {...stepProps()} />);
+
+    expect(screen.queryByText(t("onboarding.notifications.focusNote"))).toBeNull();
+  });
+});
+
+describe("the athan sample", () => {
+  const user = userEvent.setup();
+  const hear = () => screen.getByRole("button", { name: t("onboarding.notifications.hearAthan") });
+  const stop = () => screen.getByRole("button", { name: t("onboarding.notifications.stopAthan") });
+
+  it("waits to be asked", async () => {
+    await renderWithTheme(<NotificationsStep {...stepProps()} />);
+
+    expect(hear()).toBeOnTheScreen();
+    expect(mockPlay).not.toHaveBeenCalled();
+  });
+
+  it("plays the athan a new install uses, and stops on a second press", async () => {
+    await renderWithTheme(<NotificationsStep {...stepProps()} />);
+
+    await user.press(hear());
+    expect(mockPlay).toHaveBeenCalledWith(MAKKAH_ATHAN_SAMPLE);
+
+    await user.press(stop());
+    expect(mockStop).toHaveBeenCalledTimes(1);
+    expect(hear()).toBeOnTheScreen();
+  });
+
+  it("stops when the step is left", async () => {
+    await renderWithTheme(<NotificationsStep {...stepProps()} />);
+    await user.press(hear());
+
+    await screen.unmount();
+
+    await waitFor(() => expect(mockStop).toHaveBeenCalledTimes(1));
+  });
 });
