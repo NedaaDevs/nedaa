@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Platform } from "react-native";
 import { PermissionStatus } from "expo-notifications";
 import { Bell } from "lucide-react-native";
 
@@ -13,14 +14,19 @@ import { FocusCountdown } from "@/components/today/FocusCountdown";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { SkyOccluder } from "@/components/ui/sky-background";
+import { SoundPreview } from "@/components/ui/sound-preview";
 import { Text } from "@/components/ui/text";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
+import { DEFAULT_ATHAN_SOUND, SOUND_ASSETS } from "@/constants/sounds";
+import { PlatformType } from "@/enums/app";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
 import { requestNotificationPermission } from "@/utils/notifications";
 
 const log = AppLogger.create("notifications");
+
+const ATHAN_SAMPLE = SOUND_ASSETS[DEFAULT_ATHAN_SOUND].previewSource;
 
 /** Whether notifications were granted; a failed request counts as denied. */
 const requestGranted = async () => {
@@ -75,6 +81,18 @@ export const NotificationsStep = ({
               {t("onboarding.notifications.card")}
             </Text>
           </HStack>
+          {/* Only iOS marks the athan time-sensitive, which a Focus lets through. */}
+          {Platform.OS === PlatformType.IOS ? (
+            <Text size="sm" color="$mutedSky">
+              {t("onboarding.notifications.focusNote")}
+            </Text>
+          ) : null}
+          <SoundPreview
+            source={ATHAN_SAMPLE}
+            playLabel={t("onboarding.notifications.hearAthan")}
+            stopLabel={t("onboarding.notifications.stopAthan")}
+            showLabel
+          />
           {denied ? (
             <Text
               testID={ONBOARDING_PART.NOTIFICATIONS_DENIED}

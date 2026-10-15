@@ -144,6 +144,9 @@ export type PreAthanSoundKey = ExtractSoundKeys<
 >;
 export type QadaSoundKey = ExtractSoundKeys<typeof SOUND_ASSETS, typeof NOTIFICATION_TYPE.QADA>;
 
+/** The athan a new install plays for each prayer. */
+export const DEFAULT_ATHAN_SOUND = "makkahAthan1" satisfies PrayerSoundKey;
+
 /**
  * Sound keys that are full athan recitations (long audio).
  * These need the Android foreground service to avoid interruption.
