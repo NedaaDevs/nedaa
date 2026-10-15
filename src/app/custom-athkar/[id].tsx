@@ -16,6 +16,7 @@ import { Plus, Trash2, Check, Minus } from "lucide-react-native";
 
 import { useCustomAthkarStore } from "@/stores/custom-athkar";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 import type { CustomAthkarItemDraft } from "@/types/athkar";
 
@@ -38,8 +39,8 @@ export default function EditCustomAthkarScreen() {
   const getGroupItems = useCustomAthkarStore((s) => s.getGroupItems);
   const updateGroup = useCustomAthkarStore((s) => s.updateGroup);
   const deleteGroup = useCustomAthkarStore((s) => s.deleteGroup);
-  const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
 
   const group = groups.find((g) => g.id === groupId);
 

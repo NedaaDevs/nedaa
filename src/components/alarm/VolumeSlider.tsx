@@ -11,6 +11,7 @@ import { Box } from "@/components/ui/box";
 import { Volume2, Volume1, Minus, Plus } from "lucide-react-native";
 
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useRTL } from "@/contexts/RTLContext";
 import { MIN_ALARM_VOLUME } from "@/types/alarm";
 
@@ -23,7 +24,7 @@ const VOLUME_STEPS = [MIN_ALARM_VOLUME, 0.5, 0.75, 1.0];
 
 const VolumeSlider: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const hapticLight = useHaptic("light");
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const { isRTL } = useRTL();
 
   const volumePercentage = Math.round(value * 100);

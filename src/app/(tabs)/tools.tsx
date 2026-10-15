@@ -26,6 +26,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { useAlarmStatus } from "@/hooks/useAlarmStatus";
 import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePlace } from "@/hooks/usePlace";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useQuranAudioStore } from "@/stores/quranAudio";
@@ -87,7 +88,7 @@ const TOOLS: readonly ToolItem[] = [
 export default function ToolsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const alarmSupported = useAlarmSupported();
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();

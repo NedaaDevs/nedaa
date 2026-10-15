@@ -13,13 +13,14 @@ import CompletionSummary from "@/components/umrah/CompletionSummary";
 
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { UmrahRecord } from "@/types/umrah";
 
 export default function CompleteScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const successHaptic = useHaptic("success");
+  const successHaptic = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const insets = useSafeAreaInsets();
   const { completeUmrah, startUmrah } = useUmrahGuideStore();
   const [record, setRecord] = useState<UmrahRecord | null>(null);
