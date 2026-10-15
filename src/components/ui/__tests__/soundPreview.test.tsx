@@ -135,6 +135,36 @@ it("stops when its sound changes, and does not mark the new one playing", async 
   expect(control(PLAY)).toBeOnTheScreen();
 });
 
+it("keeps a newer sound playing when an older stop settles", async () => {
+  let release = () => {};
+  mockStop.mockReturnValueOnce(new Promise<void>((resolve) => (release = resolve)));
+  await renderPreview();
+  await user.press(control(PLAY));
+  await screen.rerender(<SoundPreview source={OTHER_SOURCE} playLabel={PLAY} stopLabel={STOP} />);
+  await waitFor(() => expect(mockStop).toHaveBeenCalledTimes(1));
+
+  await user.press(control(PLAY));
+  await act(async () => release());
+
+  expect(mockPlay).toHaveBeenLastCalledWith(OTHER_SOURCE);
+  expect(control(STOP)).toBeOnTheScreen();
+  await screen.unmount();
+  await waitFor(() => expect(mockStop).toHaveBeenCalledTimes(2));
+});
+
+it("keeps a newer sound playing when an older one fails to start", async () => {
+  jest.spyOn(console, "error").mockImplementation(() => {});
+  let fail = (_error: Error) => {};
+  mockPlay.mockReturnValueOnce(new Promise<void>((_resolve, reject) => (fail = reject)));
+  await renderPreview();
+  await user.press(control(PLAY));
+  await act(() => soundPreviewManager.playSource(OTHER_OWNER, OTHER_SOURCE));
+
+  await act(async () => fail(new Error("no audio session")));
+
+  expect(soundPreviewManager.getCurrentSound()).toBe(OTHER_OWNER);
+});
+
 // A system dialog makes the app inactive; going home backgrounds it.
 it.each<AppStateStatus>([APP_STATE.INACTIVE, APP_STATE.BACKGROUND])(
   "stops when the app turns %s",
