@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { addHours } from "date-fns";
 
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { NOTIFICATION_TYPE, OPEN_APP_REMINDER_ID } from "@/constants/Notification";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
 import { PlatformType } from "@/enums/app";
@@ -108,9 +108,6 @@ const OTHER_TIMINGS_ON: OtherTimingNotifications = {
   [OTHER_TIMING.IMSAK]: true,
 };
 
-// The "open the app" reminder is built with type PRAYER and this category.
-const REMINDER_CATEGORY = "reminder";
-
 type ScheduledData = { type: string; categoryId: string };
 
 // Android posts a notification on a missing channel to its fallback channel.
@@ -155,7 +152,7 @@ describe("the scheduler and the iOS Time Sensitive mark", () => {
       group: "the athan",
       marked: true,
       pick: ({ type, categoryId }: ScheduledData) =>
-        type === NOTIFICATION_TYPE.PRAYER && categoryId !== REMINDER_CATEGORY,
+        type === NOTIFICATION_TYPE.PRAYER && categoryId !== OPEN_APP_REMINDER_ID,
     },
     {
       group: "the iqama",
@@ -176,7 +173,7 @@ describe("the scheduler and the iOS Time Sensitive mark", () => {
       group: "the open-the-app reminder",
       marked: false,
       pick: ({ type, categoryId }: ScheduledData) =>
-        type === NOTIFICATION_TYPE.PRAYER && categoryId === REMINDER_CATEGORY,
+        type === NOTIFICATION_TYPE.PRAYER && categoryId === OPEN_APP_REMINDER_ID,
     },
   ])("asks for time-sensitive delivery for $group: $marked", async ({ pick, marked }) => {
     const result = await scheduleAllNotifications(
