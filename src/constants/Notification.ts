@@ -26,6 +26,9 @@ export const NOTIFICATION_CHANNEL_ID = {
   ATHKAR_EVENING: `${NOTIFICATION_TYPE.ATHKAR}_${ATHKAR_TYPE.EVENING}`,
 } as const;
 
+/** The id and category of the "open the app" reminder. */
+export const OPEN_APP_REMINDER_ID = "reminder";
+
 /** Every qada channel id starts with this; the rest names its sound. */
 export const QADA_CHANNEL_PREFIX = "qada_reminder";
 

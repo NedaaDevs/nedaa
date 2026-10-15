@@ -35,7 +35,11 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 import { calculateIshraq, calculateDuha } from "@/utils/otherTimingCalculations";
 
 // Constants
-import { NOTIFICATION_CHANNEL_ID, NOTIFICATION_TYPE } from "@/constants/Notification";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  OPEN_APP_REMINDER_ID,
+} from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
@@ -510,13 +514,13 @@ export const scheduleAllNotifications = async (
       const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
 
       notificationsToProcess.push({
-        id: "reminder",
+        id: OPEN_APP_REMINDER_ID,
         time: reminderTime,
         title: t("notification.reminder.title"),
         body: t("notification.reminder.body"),
         type: NOTIFICATION_TYPE.PRAYER,
         prayerId: PRAYER_ID.FAJR,
-        categoryId: "reminder",
+        categoryId: OPEN_APP_REMINDER_ID,
         vibration: true,
         sound: "default",
       });
