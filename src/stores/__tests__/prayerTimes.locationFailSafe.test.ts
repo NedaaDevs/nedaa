@@ -1,5 +1,7 @@
+import Storage from "expo-sqlite/kv-store";
+
 import { LocationMode } from "@/enums/location";
-import { useLocationStore } from "@/stores/location";
+import { useLocationStore, type LocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
@@ -659,5 +661,101 @@ describe("a place verified after the default place's days were stored", () => {
 
     expect(getAndStorePrayerTimes).not.toHaveBeenCalled();
     expect(usingDefault()).toBe(true);
+  });
+});
+
+// A kill while the timezone is looked up keeps what reached disk.
+describe("a device fix over a verified saved place", () => {
+  const SAVED_COORDS = {
+    ...initialLocationDetails.coords,
+    latitude: 51.5072,
+    longitude: -0.1276,
+    accuracy: 16,
+  };
+  const SAVED_PLACE = {
+    locationDetails: {
+      ...initialLocationDetails,
+      coords: SAVED_COORDS,
+      address: { country: "United Kingdom", city: "London" },
+      timezone: "Europe/London",
+    },
+    localizedLocation: { country: "United Kingdom", city: "London" },
+    lastKnownCoords: { latitude: SAVED_COORDS.latitude, longitude: SAVED_COORDS.longitude },
+  };
+  const FIX_COORDS = {
+    latitude: DEVICE_FIX.coords.latitude,
+    longitude: DEVICE_FIX.coords.longitude,
+  };
+
+  /** The location store's last write to disk. */
+  const onDisk = () => {
+    const { name } = useLocationStore.persist.getOptions();
+    const writes = jest.mocked(Storage.setItem).mock.calls.filter(([key]) => key === name);
+    return JSON.parse(String(writes.at(-1)?.[1])).state;
+  };
+  const expectSavedPlace = (state: Partial<LocationStore>) =>
+    expect(state).toMatchObject({
+      lastKnownCoords: SAVED_PLACE.lastKnownCoords,
+      localizedLocation: SAVED_PLACE.localizedLocation,
+      locationDetails: {
+        coords: SAVED_COORDS,
+        address: SAVED_PLACE.locationDetails.address,
+        timezone: SAVED_PLACE.locationDetails.timezone,
+      },
+    });
+
+  /** Starts a fix whose timezone lookup the test settles. */
+  const startLookup = async () => {
+    const lookup = later<typeof RIYADH_GEOCODE>();
+    mockReverseGeocodeApi.mockReturnValue(lookup.promise);
+    const reading = useLocationStore.getState().initializeLocation();
+    await until(() => mockReverseGeocodeApi.mock.calls.length > 0);
+    expect(mockReverseGeocodeApi).toHaveBeenCalled();
+    return { lookup, reading };
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetStores();
+    useLocationStore.setState(SAVED_PLACE);
+    mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
+    mockReverseGeocodeAsync.mockResolvedValue([]);
+    jest.spyOn(console, "error").mockImplementation();
+  });
+
+  it("keeps the saved place, in memory and on disk, while the timezone is looked up", async () => {
+    const { lookup, reading } = await startLookup();
+
+    expectSavedPlace(useLocationStore.getState());
+    expectSavedPlace(onDisk());
+
+    lookup.release(RIYADH_GEOCODE);
+    await reading;
+  });
+
+  it("writes the new place once its timezone resolves", async () => {
+    const { lookup, reading } = await startLookup();
+
+    lookup.release(RIYADH_GEOCODE);
+    await expect(reading).resolves.toBeUndefined();
+
+    const location = useLocationStore.getState();
+    expect(location.lastKnownCoords).toEqual(FIX_COORDS);
+    expect(location.localizedLocation.city).toBe(RIYADH_GEOCODE.data.city);
+    expect(location.locationDetails).toMatchObject({
+      coords: DEVICE_FIX.coords,
+      timezone: RIYADH_GEOCODE.data.timezone,
+    });
+    expect(onDisk().lastKnownCoords).toEqual(FIX_COORDS);
+  });
+
+  it("keeps the saved place when the timezone does not resolve", async () => {
+    const { lookup, reading } = await startLookup();
+
+    lookup.fail(new Error("API geocoder unavailable"));
+    await expect(reading).rejects.toThrow();
+
+    expectSavedPlace(useLocationStore.getState());
+    expectSavedPlace(onDisk());
   });
 });
