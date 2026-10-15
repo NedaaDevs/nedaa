@@ -62,7 +62,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "dev.nedaa.app",
       "entitlements": {
-        "com.apple.security.application-groups": ["group.dev.nedaa.app"]
+        "com.apple.security.application-groups": ["group.dev.nedaa.app"],
+        "com.apple.developer.usernotifications.time-sensitive": true
       },
       "infoPlist": {
         "CFBundleDisplayName": "Nedaa",
