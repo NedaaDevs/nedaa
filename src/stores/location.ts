@@ -96,15 +96,6 @@ export const useLocationStore = create<LocationStore>()(
         manualLocationChosenAt: null,
         // Initialize location when permission is granted
         initializeLocation: async () => {
-          const previousState = get();
-          const previousLastKnownCoords = previousState.lastKnownCoords;
-          const previousVerifiedLocation = previousLastKnownCoords
-            ? {
-                locationDetails: previousState.locationDetails,
-                localizedLocation: previousState.localizedLocation,
-                lastKnownCoords: previousLastKnownCoords,
-              }
-            : null;
           // A city chosen during the fix is the user's; the fix leaves it.
           const stillAutomatic = () => {
             if (get().locationMode === LocationMode.DEVICE) return true;
@@ -118,18 +109,21 @@ export const useLocationStore = create<LocationStore>()(
             log.i("Init", "initial location retrieved");
             if (!stillAutomatic()) return;
 
-            // Keep an accurate fix even when address services are unavailable.
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                coords: location.coords,
-                error: null,
-                isLoading: false,
-              },
-              // A coordinate becomes prayer-ready only after its timezone is resolved.
-              lastKnownCoords: null,
-              isLocationPermissionGranted: true,
-            }));
+            // A saved place stands until the fix's timezone resolves; with none, the
+            // fix is kept even when address services are unavailable.
+            set((state) =>
+              state.lastKnownCoords
+                ? { isLocationPermissionGranted: true }
+                : {
+                    locationDetails: {
+                      ...state.locationDetails,
+                      coords: location.coords,
+                      error: null,
+                      isLoading: false,
+                    },
+                    isLocationPermissionGranted: true,
+                  }
+            );
 
             const [geocodedAddress] = await Location.reverseGeocodeAsync({
               latitude: location.coords.latitude,
@@ -153,12 +147,7 @@ export const useLocationStore = create<LocationStore>()(
 
             if (!stillAutomatic()) return;
             const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
-            if (!timezone) {
-              if (previousVerifiedLocation) {
-                set(previousVerifiedLocation);
-              }
-              throw new Error(i18n.t("location.update.error"));
-            }
+            if (!timezone) throw new Error(i18n.t("location.update.error"));
 
             set({
               locationDetails: {
