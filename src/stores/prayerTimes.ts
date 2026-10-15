@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { addDays, format, subDays } from "date-fns";
+import { addDays, format, getMonth, getYear, subDays } from "date-fns";
 
 // Types
 import {
@@ -26,7 +26,7 @@ import locationStore from "@/stores/location";
 import providerSettingsStore from "@/stores/providerSettings";
 
 // Utils
-import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
+import { dateToInt, timeZonedNow } from "@/utils/date";
 import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
 import { placeFromFacts } from "@/utils/placeFromFacts";
@@ -41,6 +41,9 @@ import { getAdapterByProviderId } from "@/adapters/providers";
 import { reloadPrayerWidgets } from "expo-widget";
 
 const log = AppLogger.create("prayertimes");
+
+/** Days before today the table keeps. */
+const KEPT_PAST_DAYS = 2;
 
 // Snapshot inputs include qada, whose notification actions depend on this store.
 // Resolve the writer after initialization to keep that dependency out of startup.
@@ -180,11 +183,15 @@ const loadTimes = async (
           forceGetAndStore ? "forced" : required ? `missing ${missing.join("+")}` : "place verified"
         }`
       );
-      const currentYear = getTimezoneYear(locationDetails.timezone);
-      const currentMonth = getTimezoneMonth(locationDetails.timezone);
+      const now = timeZonedNow(locationDetails.timezone);
+      const currentYear = getYear(now);
+      const currentMonth = getMonth(now) + 1;
+      // Every kept day is refetched; near the 1st some are last month's.
+      const oldestKept = subDays(now, KEPT_PAST_DAYS);
+      const firstMonth =
+        getYear(oldestKept) === currentYear ? getMonth(oldestKept) + 1 : currentMonth;
 
-      // Fetch from the current month onward for the current year
-      const success = await get().getAndStorePrayerTimes(undefined, currentMonth);
+      const success = await get().getAndStorePrayerTimes(undefined, firstMonth);
 
       if (success) {
         // Fetch adjacent year if at a year boundary
@@ -409,7 +416,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           // zero countdown beside an elapsed timestamp.
           return null;
         },
-        cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {
+        cleanupOldData: async (olderThanDays = KEPT_PAST_DAYS): Promise<boolean> => {
           try {
             const timezone = locationStore.getState().locationDetails.timezone;
             const now = timeZonedNow(timezone);
