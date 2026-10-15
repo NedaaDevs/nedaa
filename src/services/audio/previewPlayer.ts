@@ -12,6 +12,7 @@ const PREVIEW_TRACK_ID = "preview-track";
 
 type PreviewStatus = {
   playing: boolean;
+  /** The play ended without a stop: it played out or lost the player. */
   didJustFinish: boolean;
   currentTime: number;
   duration: number;
@@ -78,6 +79,15 @@ const teardown = async (notifyStopped: boolean): Promise<void> => {
   nitroSession.release(PREVIEW_OWNER);
 };
 
+// Another owner took the player, so the play ends as if it played out.
+const evict = async (): Promise<void> => {
+  if (playlistId && !finishing) {
+    playing = false;
+    emitStatus(true);
+  }
+  await teardown(false);
+};
+
 const onPlaybackStateChange = (state: TrackPlayerState, reason?: Reason): void => {
   if (!playlistId || finishing) return;
 
@@ -141,7 +151,7 @@ const ensureInitialized = async (): Promise<void> => {
     nitroSession.register(PREVIEW_OWNER, {
       onPlaybackStateChange,
       onProgress,
-      onEvict: () => runCommand(() => teardown(true)),
+      onEvict: () => runCommand(evict),
     });
     initializationPromise = nitroSession
       .ensureStarted()
