@@ -19,6 +19,7 @@ import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { armFajr, fajrRecord } from "@/test-helpers/armedAlarm";
@@ -92,6 +93,7 @@ beforeEach(() => {
   usePrayerTimesStore.setState({ usingDefaultLocation: false });
   useAlarmStore.setState({ scheduledAlarms: {} });
   useAlarmSettingsStore.setState(useAlarmSettingsStore.getInitialState());
+  useAlarmStreakStore.setState({ streak: 0 });
   // Every permission granted, so the screen draws its alarms.
   jest.mocked(readAlarmPermissions).mockReset().mockResolvedValue([]);
 });
@@ -228,6 +230,53 @@ describe("Alarm settings list", () => {
     const weekday = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
     expect(within(fajr).getByText(new RegExp(weekday))).toBeTruthy();
     expect(within(fajr).queryByText(new RegExp(t("alarm.settings.today")))).toBeNull();
+  });
+
+  // The description is the row's standing text, so the name leaves it out.
+  it("speaks every other line the row draws, in reading order", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    useAlarmStreakStore.setState({ streak: 3 });
+    const rings = Date.now() + 2 * DAY_MS;
+    const real = fajrRecord("fajr-real", rings);
+    useAlarmStore.setState({ scheduledAlarms: { [real.alarmId]: real } });
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    const weekday = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
+    const streak = t("alarm.settings.streakStat", { count: 3 });
+    expect(within(fajr).getByText(new RegExp(weekday))).toBeTruthy();
+    expect(within(fajr).getByText(streak)).toBeTruthy();
+    const description = t("alarm.settings.fajrDescription");
+    const [title, status, ...lines] = within(fajr)
+      .getAllByText(/./)
+      .map((node) => String(node.props.children))
+      .filter((text) => text !== description);
+    expect(lines).toHaveLength(3);
+    expect(fajr).toHaveAccessibleName([`${title}, ${status}`, ...lines].join(". "));
+  });
+
+  it("says that each row opens its alarm's page", async () => {
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    expect(fajr.props.accessibilityHint).toBe(
+      t("a11y.opens", { name: t("alarm.settings.fajrAlarm") })
+    );
+  });
+
+  // A one-day streak is not drawn, so the name ends at the ring time.
+  it("leaves out a streak the row does not draw", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    useAlarmStreakStore.setState({ streak: 1 });
+    const rings = Date.now() + 2 * DAY_MS;
+    const real = fajrRecord("fajr-real", rings);
+    useAlarmStore.setState({ scheduledAlarms: { [real.alarmId]: real } });
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    const weekday = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
+    const ringTime = String(within(fajr).getByText(new RegExp(weekday)).props.children);
+    expect(fajr).toHaveAccessibleName(new RegExp(`\\. ${literal(ringTime)}$`));
   });
 
   it("gives no ring time when only a rehearsal is pending", async () => {

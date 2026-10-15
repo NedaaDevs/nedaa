@@ -452,7 +452,15 @@ const AlarmSettings = () => {
               <Box key={alarm.type}>
                 <Card.Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${alarm.title}, ${onOff(alarm.enabled)}. ${alarm.configSummary}`}
+                  accessibilityLabel={[
+                    `${alarm.title}, ${onOff(alarm.enabled)}`,
+                    alarm.configSummary,
+                    alarm.firesAt,
+                    alarm.streakLabel,
+                  ]
+                    .filter(Boolean)
+                    .join(". ")}
+                  accessibilityHint={t("a11y.opens", { name: alarm.title })}
                   margin="$2"
                   onPress={() => router.push(alarmSettingsHref(alarm.type))}>
                   <HStack justifyContent="space-between" alignItems="center">
