@@ -51,7 +51,9 @@ export const scheduleNotification = async (
       }
     } else if (Platform.OS === PlatformType.IOS) {
       // iOS specific settings
-      content.interruptionLevel = "timeSensitive";
+      if (options?.timeSensitive) {
+        content.interruptionLevel = "timeSensitive";
+      }
 
       // iOS always needs sound in content
       if (notificationInput.sound) {
@@ -142,7 +144,9 @@ export const scheduleRecurringNotification = async (
       }
     } else if (Platform.OS === PlatformType.IOS) {
       // iOS specific settings
-      content.interruptionLevel = "timeSensitive";
+      if (options?.timeSensitive) {
+        content.interruptionLevel = "timeSensitive";
+      }
 
       // iOS always needs sound in content
       if (notificationInput.sound) {
