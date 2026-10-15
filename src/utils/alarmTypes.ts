@@ -13,6 +13,10 @@ export const toScheduledAlarmType = (
 ): ScheduledAlarmType.FAJR | ScheduledAlarmType.JUMMAH =>
   alarmType === ALARM_TYPE.FAJR ? ScheduledAlarmType.FAJR : ScheduledAlarmType.JUMMAH;
 
+/** Whether a route param names a scheduled alarm type. */
+export const isScheduledAlarmType = (value: string): value is ScheduledAlarmType =>
+  Object.values(ScheduledAlarmType).some((type) => type === value);
+
 // Inverse of toScheduledAlarmType; CUSTOM has no per-type settings, so null.
 export const toSettingsAlarmType = (scheduledType: ScheduledAlarmType): AlarmType | null => {
   if (scheduledType === ScheduledAlarmType.FAJR) return ALARM_TYPE.FAJR;
