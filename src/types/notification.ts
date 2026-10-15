@@ -66,6 +66,8 @@ export type NotificationOptions = {
   vibrate?: boolean;
   categoryId?: string;
   channelId?: string;
+  /** iOS: delivers through a Focus; only the athan sets it. */
+  timeSensitive?: boolean;
 };
 
 export type NotificationState = {
