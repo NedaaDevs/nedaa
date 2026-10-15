@@ -81,7 +81,14 @@ const daysRead = () => {
   return [yesterdayTimings, todayTimings, tomorrowTimings, ...(twoWeeksTimings ?? [])];
 };
 
-const { getPrayerTimes } = usePrayerTimesStore.getState();
+/** The new place's API, with every fetch of `failingYear` offline. */
+const serveNewPlaceExcept = (failingYear: number) =>
+  jest.fn(async (yearOverride?: number, month?: number) => {
+    if (yearOverride === failingYear) throw new Error("offline");
+    return serveNewPlace(yearOverride, month);
+  });
+
+const { getPrayerTimes, usingDefaultLocation } = usePrayerTimesStore.getState();
 
 /** The old place's days, from two days before `today` to two weeks on. */
 const storeOldPlace = (today: Date) => {
@@ -92,7 +99,7 @@ const storeOldPlace = (today: Date) => {
   }
 };
 
-afterEach(() => usePrayerTimesStore.setState({ getPrayerTimes }));
+afterEach(() => usePrayerTimesStore.setState({ getPrayerTimes, usingDefaultLocation }));
 
 /** The dates of stored days that still hold the old place's times. */
 const oldPlaceDates = () =>
@@ -138,5 +145,58 @@ describe("a forced refetch after a place change", () => {
 
     expect(daysRead()).not.toContain(null);
     expect(mockTable).toEqual(stored);
+  });
+});
+
+// The table keeps two days back and a load reads 13 days on; near New Year
+// some of those days are in the adjacent year.
+describe("a refetch at a year boundary", () => {
+  it.each([
+    ["the 1st of January", new Date(2027, 0, 1, 12), 2026],
+    ["the 2nd of January", new Date(2027, 0, 2, 12), 2026],
+    ["the 19th of December", new Date(2026, 11, 19, 12), 2027],
+    ["late December", new Date(2026, 11, 25, 12), 2027],
+  ])("on %s, fails when the adjacent year fails", async (_name, today, failingYear) => {
+    mockNow = today;
+    storeOldPlace(today);
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(failingYear) as never });
+
+    await expect(
+      usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
+    ).rejects.toThrow();
+  });
+
+  it.each([
+    ["the 3rd of January", new Date(2027, 0, 3, 12), 2026],
+    ["mid-January", new Date(2027, 0, 15, 12), 2026],
+    ["early December", new Date(2026, 11, 5, 12), 2027],
+    ["the 18th of December", new Date(2026, 11, 18, 12), 2027],
+  ])("on %s, succeeds without the adjacent year", async (_name, today, failingYear) => {
+    mockNow = today;
+    storeOldPlace(today);
+    const api = serveNewPlaceExcept(failingYear);
+    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
+
+    expect(api.mock.calls.map(([year]) => year)).toContain(failingYear);
+    const read = daysRead();
+    expect(read).not.toContain(null);
+    expect(read.map((day) => day?.timezone)).toEqual(read.map(() => NEW_ZONE));
+    expect(oldPlaceDates()).toEqual([]);
+  });
+
+  // A newly verified place is best effort; the flag waits for a full refetch.
+  it("keeps the default-place flag when a needed adjacent year fails", async () => {
+    mockNow = new Date(2027, 0, 1, 12);
+    storeOldPlace(mockNow);
+    usePrayerTimesStore.setState({
+      usingDefaultLocation: true,
+      getPrayerTimes: serveNewPlaceExcept(2026) as never,
+    });
+
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+
+    expect(usePrayerTimesStore.getState().usingDefaultLocation).toBe(true);
   });
 });
