@@ -56,6 +56,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useAlarmArmed } from "@/hooks/useAlarmArmed";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
 
 import { CHALLENGE_TYPE } from "expo-alarm";
@@ -278,7 +279,7 @@ const AlarmSettings = () => {
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
   const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
   const { becameActiveAt } = useAppVisibility();
-  const hapticMedium = useHaptic("medium");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const verifiedPlace = useVerifiedPlace();
   const fajrArmed = useAlarmArmed(ALARM_TYPE.FAJR);
   const fridayArmed = useAlarmArmed(ALARM_TYPE.FRIDAY);

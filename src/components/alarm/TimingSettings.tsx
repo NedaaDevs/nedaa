@@ -13,6 +13,7 @@ import { Minus, Plus } from "lucide-react-native";
 
 import { TimingConfig, TimingMode, AlarmType, DEFAULT_TIMING_CONFIG } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ALARM_TIMING_CHOICES, ALARM_TIMING_MODE, timingForMode } from "@/constants/Alarm";
 
 type Props = {
@@ -28,8 +29,8 @@ const MODE_LABEL: Record<TimingMode, ParseKeys> = {
 
 const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const timing = value ?? DEFAULT_TIMING_CONFIG;
 

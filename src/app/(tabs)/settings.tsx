@@ -22,6 +22,7 @@ import {
 import { PlatformType } from "@/enums/app";
 import { useAlarmSupported } from "@/hooks/useAlarmSupported";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useSettingsSummaries } from "@/hooks/useSettingsSummaries";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAppStore } from "@/stores/app";
@@ -32,7 +33,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const alarmSupported = useAlarmSupported();
   const locale = useAppStore((state) => state.locale);
   const summaries = useSettingsSummaries();

@@ -11,6 +11,7 @@ import { SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { VStack } from "@/components/ui/vstack";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePlace } from "@/hooks/usePlace";
 import { useTodayStored } from "@/hooks/useTodayStored";
 
@@ -21,7 +22,7 @@ export const CompleteStep = ({ onNext, headingRef, progress }: StepProps) => {
   const { t } = useTranslation();
   const city = usePlace().city;
   const todayStored = useTodayStored();
-  const success = useHaptic("success");
+  const success = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
   const arrive = useEffectEvent(() => {
     void success();

@@ -8,6 +8,7 @@ import { VStack } from "@/components/ui/vstack";
 import { APP_NAME_LATIN } from "@/constants/App";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { appVersionLabel } from "@/utils/appVersion";
 import { LTR_ISOLATE } from "@/utils/digits";
@@ -20,7 +21,7 @@ export const VersionLine = () => {
   const { t } = useTranslation();
   const isDebugEnabled = useDebugModeStore((s) => s.isEnabled);
   const toggleDebugMode = useDebugModeStore((s) => s.toggle);
-  const hapticSuccess = useHaptic("success");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const taps = useRef({ count: 0, last: 0 });
 
   const label = appVersionLabel();

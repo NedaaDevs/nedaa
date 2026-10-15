@@ -16,6 +16,7 @@ import NoneChallenge from "./NoneChallenge";
 
 import { ChallengeConfig, GRACE_PERIOD_SECONDS } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   config: ChallengeConfig;
@@ -55,7 +56,7 @@ type GraceState = "idle" | "active" | "expired";
 
 const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGraceExpire }) => {
   const { t } = useTranslation();
-  const hapticWarning = useHaptic("warning");
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
   const [started, setStarted] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [challengeKey, setChallengeKey] = useState(0);
