@@ -44,6 +44,8 @@ const log = AppLogger.create("prayertimes");
 
 /** Days before today the table keeps. */
 const KEPT_PAST_DAYS = 2;
+/** Days after today the load reads. */
+const READ_AHEAD_DAYS = 13;
 
 // Snapshot inputs include qada, whose notification actions depend on this store.
 // Resolve the writer after initialization to keep that dependency out of startup.
@@ -107,8 +109,8 @@ const getTwoWeeksDateRange = (timezone: string) => {
   // Today as integer (YYYYMMDD)
   const today = parseInt(format(now, "yyyyMMdd"));
 
-  // End date (today + 13 days)
-  const endDate = parseInt(format(addDays(now, 13), "yyyyMMdd"));
+  // End date (today + READ_AHEAD_DAYS)
+  const endDate = parseInt(format(addDays(now, READ_AHEAD_DAYS), "yyyyMMdd"));
 
   return { startDate: today, endDate };
 };
@@ -133,6 +135,23 @@ const takeDeviceFixOnce = async (get: GetTimes): Promise<void> => {
       );
     }
   }
+};
+
+/** False if the adjacent year holds a kept or read day and its fetch fails. */
+const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<boolean> => {
+  const year = getYear(now);
+  const month = getMonth(now) + 1;
+  if (month === 1) {
+    const needed = getYear(subDays(now, KEPT_PAST_DAYS)) < year;
+    const stored = await get().getAndStorePrayerTimes(year - 1);
+    return stored || !needed;
+  }
+  if (month === 12) {
+    const needed = getYear(addDays(now, READ_AHEAD_DAYS)) > year;
+    const stored = await get().getAndStorePrayerTimes(year + 1);
+    return stored || !needed;
+  }
+  return true;
 };
 
 /** The body of both load verbs; `takeFix` runs before the place is read. */
@@ -186,21 +205,16 @@ const loadTimes = async (
       const now = timeZonedNow(locationDetails.timezone);
       const currentYear = getYear(now);
       const currentMonth = getMonth(now) + 1;
-      // Every kept day is refetched; near the 1st some are last month's.
+      // This year's fetch starts at the month of its oldest kept day.
       const oldestKept = subDays(now, KEPT_PAST_DAYS);
       const firstMonth =
         getYear(oldestKept) === currentYear ? getMonth(oldestKept) + 1 : currentMonth;
 
-      const success = await get().getAndStorePrayerTimes(undefined, firstMonth);
+      const stored =
+        (await get().getAndStorePrayerTimes(undefined, firstMonth)) &&
+        (await storeAdjacentYear(get, now));
 
-      if (success) {
-        // Fetch adjacent year if at a year boundary
-        if (currentMonth === 1) {
-          await get().getAndStorePrayerTimes(currentYear - 1);
-        } else if (currentMonth === 12) {
-          await get().getAndStorePrayerTimes(currentYear + 1);
-        }
-
+      if (stored) {
         await get().refreshTimingsFromDb();
         // After the refresh, so the old rows never read as verified.
         set({ usingDefaultLocation: !verified });
