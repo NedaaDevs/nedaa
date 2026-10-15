@@ -95,6 +95,8 @@ class SoundPreviewManager {
   private static instance: SoundPreviewManager;
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
+  /** Counts plays; a stop or a failed play never clears a newer play. */
+  private playGeneration = 0;
   private listeners: Set<SoundPreviewListener> = new Set();
   private watchingPlayer = false;
 
@@ -152,6 +154,7 @@ class SoundPreviewManager {
   async playSource(soundId: string, source: PreviewSource): Promise<void> {
     if (isAthkarAudioActive()) return;
 
+    const generation = ++this.playGeneration;
     this.isPlaying = true;
     this.currentSoundId = soundId;
     this.notifyListeners();
@@ -162,7 +165,7 @@ class SoundPreviewManager {
       await player.playPreview(source);
     } catch (error) {
       console.error("[SoundPreview] Play failed:", error);
-      this.forceReset();
+      if (generation === this.playGeneration) this.forceReset();
       throw error;
     }
   }
@@ -177,18 +180,14 @@ class SoundPreviewManager {
   }
 
   async stopPreview(): Promise<void> {
+    const generation = this.playGeneration;
     try {
       const { stopPreview } = await loadAudioPreview();
       await stopPreview();
-      this.isPlaying = false;
-      this.currentSoundId = null;
-      this.notifyListeners();
     } catch (error) {
       console.error("Error stopping sound preview:", error);
-      this.isPlaying = false;
-      this.currentSoundId = null;
-      this.notifyListeners();
     }
+    if (generation === this.playGeneration) this.forceReset();
   }
 
   isCurrentlyPlaying(soundId?: string): boolean {
