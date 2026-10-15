@@ -5,6 +5,9 @@ import { Mail } from "lucide-react-native";
 import { ICON_SIZES, resolveIconSize, type IconSize } from "@/components/ui/icon/sizing";
 import { useThemeColor } from "@/components/ui/theme-color";
 
+/** The design's hairline stroke; the Icon scale has no stroke tokens. */
+const HAIRLINE_STROKE = 1.7;
+
 type IconProps = {
   as: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; fill?: string }>;
   size?: IconSize | number;
@@ -66,6 +69,6 @@ Icon.displayName = "Icon";
 
 const MailIcon = Mail;
 
-export { Icon, MailIcon };
+export { HAIRLINE_STROKE, Icon, MailIcon };
 export { ICON_SIZES, resolveIconSize };
 export type { IconProps, IconSize };

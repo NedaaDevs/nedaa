@@ -198,6 +198,10 @@ describe("SoundPicker", () => {
     await user.press(trigger());
 
     await user.press(screen.getByRole("radio", { name: "Takbir" }));
+    // The parent applies the pick through onChange.
+    await screen.rerender(
+      <SoundPicker label={LABEL} options={OPTIONS} value={SOUND.TAKBIR} onChange={onChange} />
+    );
 
     expect(mockStop).toHaveBeenCalled();
     expect(soundPreviewManager.isCurrentlyPlaying()).toBe(false);
