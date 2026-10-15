@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { MessageToast } from "@/components/feedback";
 import { STICKY_ACTION_STATE, type StickyActionState } from "@/constants/StickyActionBar";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { applyProviderSettings, type ApplyStep } from "@/services/applyProviderSettings";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -26,7 +27,7 @@ const STEP_KEYS: Record<ApplyStep, string> = {
  */
 export const useApplyCalculation = () => {
   const { t } = useTranslation();
-  const hapticSuccess = useHaptic("success");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const isModified = useProviderSettingsStore((state) => state.isModified);
   const saveSettings = useProviderSettingsStore((state) => state.saveSettings);
   const markSettingsApplied = useProviderSettingsStore((state) => state.markSettingsApplied);

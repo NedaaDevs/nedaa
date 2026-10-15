@@ -26,6 +26,7 @@ import { ObservanceClass } from "@/enums/observances";
 import { formatNumberToLocale } from "@/utils/number";
 import { useRTL } from "@/contexts/RTLContext";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 const LEGEND_LABEL: Record<string, string> = {
   [ObservanceClass.RECOMMENDED_FAST]: "hijriCalendar.legend.recommendedFast",
@@ -43,7 +44,7 @@ const LEGEND_COLOR: Record<string, "$success" | "$error" | "$accentPrimary"> = {
 const HijriCalendarScreen = () => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const hijriDaysOffset = useAppStore((s) => s.hijriDaysOffset);
   const locale = useAppStore((s) => s.locale);

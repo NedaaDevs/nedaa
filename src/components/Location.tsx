@@ -44,6 +44,7 @@ import { LocationMode } from "@/enums/location";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePlace } from "@/hooks/usePlace";
 
 // Components
@@ -130,7 +131,7 @@ const PermissionRequestView = ({
 
 const InfoModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) => {
   const { t } = useTranslation();
-  const hapticLight = useHaptic("light");
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   return (
     <Modal isOpen={isVisible} onClose={onClose} size="md">
@@ -174,9 +175,9 @@ const KeepLocationUpdated = () => {
   const { becameActiveAt } = useAppVisibility();
   const { t, i18n } = useTranslation();
   const usingDefaultLocation = usePrayerTimesStore((state) => state.usingDefaultLocation);
-  const hapticMedium = useHaptic("medium");
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const { locationDetails, autoUpdateLocation, setAutoUpdateLocation } = useLocationStore();
   const place = usePlace();

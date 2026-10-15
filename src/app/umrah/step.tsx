@@ -21,6 +21,7 @@ import StageChecklist from "@/components/umrah/StageChecklist";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useRTL } from "@/contexts/RTLContext";
 
 export default function StepScreen() {
@@ -28,8 +29,8 @@ export default function StepScreen() {
   const router = useRouter();
   const { isRTL } = useRTL();
   const { stageIndex: stageIndexParam } = useLocalSearchParams<{ stageIndex: string }>();
-  const selectionHaptic = useHaptic("selection");
-  const successHaptic = useHaptic("success");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const successHaptic = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const insets = useSafeAreaInsets();
 
   const {

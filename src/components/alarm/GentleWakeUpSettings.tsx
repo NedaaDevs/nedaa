@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 
 import { GentleWakeUpConfig, GentleWakeUpDuration, GENTLE_WAKEUP_DURATIONS } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   value: GentleWakeUpConfig;
@@ -17,7 +18,7 @@ type Props = {
 
 const GentleWakeUpSettings: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const handleToggle = (enabled: boolean) => {
     hapticSelection();

@@ -29,6 +29,7 @@ import { PlatformType } from "@/enums/app";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 // Utils
@@ -57,8 +58,8 @@ import { scheduleAthan, stopAthan, isAthanPlaying } from "expo-alarm";
 const NotificationSettings = () => {
   const { t } = useTranslation();
   const { becameActiveAt } = useAppVisibility();
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
 
   const {
     settings,

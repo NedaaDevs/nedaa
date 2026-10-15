@@ -8,6 +8,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 import { BookOpen, ChevronDown, ChevronUp } from "lucide-react-native";
 
@@ -19,7 +20,7 @@ type Props = {
 const HadithReference = ({ hadithSource, hadithTranslation }: Props) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const handleToggle = async () => {
     await selectionHaptic();

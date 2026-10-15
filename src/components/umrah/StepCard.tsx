@@ -21,6 +21,7 @@ import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import FlipHint from "@/components/umrah/FlipHint";
 import HadithReference from "@/components/umrah/HadithReference";
 
@@ -40,7 +41,7 @@ const StepCardContent = ({ step }: Props) => {
   const router = useRouter();
   const { locale } = useAppStore();
   const { hasSeenFlipHint } = useUmrahGuideStore();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [isFlipped, setIsFlipped] = useState(false);
   const reduceMotion = useReducedMotion();
   const flipValue = useSharedValue(0);

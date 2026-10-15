@@ -7,6 +7,7 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Utils
 import { getAvailableSoundsWithCustom, isNotificationSound } from "@/utils/sound";
@@ -46,9 +47,9 @@ const NotificationQuickSetup: FC<Props> = ({
   supportsVibration = true,
 }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticSuccess = useHaptic("success");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
   const { customSounds } = useCustomSoundsStore();
