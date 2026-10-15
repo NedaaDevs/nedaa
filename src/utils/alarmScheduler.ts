@@ -13,7 +13,7 @@ import type { TimingConfig } from "@/types/alarm";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
 import { readTimesPlace } from "@/utils/timesPlace";
-import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_DEFAULTS, ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
 import { TIMES_PLACE, type TimesPlace } from "@/constants/Location";
 import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 
@@ -229,6 +229,17 @@ const cancelDefaultPlaceAlarms = async (place: TimesPlace): Promise<void> => {
   alarmLog.w("Scheduler", `${armed.join(", ")}: times are for the default location — cancelled`);
 };
 
+/** Whether a real alarm of this type can still ring; a rehearsal is not one. */
+const hasLiveAlarm = (type: ScheduledAlarmType): boolean => {
+  const now = Date.now();
+  return Object.values(useAlarmStore.getState().scheduledAlarms).some(
+    (alarm) =>
+      alarm.alarmType === type &&
+      !alarm.isPreview &&
+      now - alarm.triggerTime <= ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS
+  );
+};
+
 export async function ensureAlarmsScheduled(): Promise<void> {
   const place = await readTimesPlace();
   // The switches stay on; a verified place arms them again on a later top-up.
@@ -237,12 +248,11 @@ export async function ensureAlarmsScheduled(): Promise<void> {
     return;
   }
   const alarmSettings = useAlarmSettingsStore.getState();
-  const alarmStore = useAlarmStore.getState();
 
-  if (alarmSettings.fajr.enabled && !alarmStore.getAlarmByType(ScheduledAlarmType.FAJR)) {
+  if (alarmSettings.fajr.enabled && !hasLiveAlarm(ScheduledAlarmType.FAJR)) {
     await scheduleFajrAlarm();
   }
-  if (alarmSettings.friday.enabled && !alarmStore.getAlarmByType(ScheduledAlarmType.JUMMAH)) {
+  if (alarmSettings.friday.enabled && !hasLiveAlarm(ScheduledAlarmType.JUMMAH)) {
     await scheduleFridayAlarm();
   }
 }
