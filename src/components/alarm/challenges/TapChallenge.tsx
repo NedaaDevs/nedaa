@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { ChallengeDifficulty, CHALLENGE_DIFFICULTY_CONFIG } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   difficulty: ChallengeDifficulty;
@@ -16,8 +17,8 @@ type Props = {
 
 const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const { t } = useTranslation();
-  const hapticLight = useHaptic("light");
-  const hapticSuccess = useHaptic("success");
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const completedRef = useRef(false);
 
   const requiredTaps = CHALLENGE_DIFFICULTY_CONFIG.tap[difficulty].taps;

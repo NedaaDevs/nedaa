@@ -11,6 +11,7 @@ import { Box } from "@/components/ui/box";
 import { ChallengeDifficulty, DhikrPhrase } from "@/types/alarm";
 import { matchesDhikr, pickDhikrPhrase } from "@/utils/dhikrChallenge";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Wrong submissions before the phrase resets — lets a typo be fixed in place
 // instead of losing the attempt on every miss. Mirrored in the Android
@@ -30,8 +31,8 @@ let lastDhikrPhrase: DhikrPhrase | null = null;
 const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const hapticSuccess = useHaptic("success");
-  const hapticError = useHaptic("error");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticError = useHaptic(HAPTIC_FEEDBACK.ERROR);
 
   const [phrase, setPhrase] = useState<DhikrPhrase>(() => {
     const picked = pickDhikrPhrase(difficulty, lastDhikrPhrase);

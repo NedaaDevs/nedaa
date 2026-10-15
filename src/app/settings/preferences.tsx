@@ -24,6 +24,7 @@ import { tabItem } from "@/constants/TabBar";
 import { OpeningTab } from "@/enums/app";
 import { useBarTabs } from "@/hooks/useBarTabs";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 
@@ -61,7 +62,7 @@ const PreferencesContent = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const locale = useAppStore((state) => state.locale);
   const tabs = useBarTabs();
   const preferences = usePreferencesStore(

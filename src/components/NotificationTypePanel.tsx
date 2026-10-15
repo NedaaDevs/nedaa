@@ -26,6 +26,7 @@ import {
 // Components
 import PrayerCustomizationModal from "@/components/PrayerCustomizationModal";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
@@ -96,9 +97,9 @@ const NotificationTypePanel: FC<Props> = ({
     return { isCustom: true, label };
   };
 
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const handleToggle = () => {
     hapticSelection();

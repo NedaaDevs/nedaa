@@ -28,6 +28,7 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { SECTION_KIND } from "@/constants/Section";
 import { SETTINGS_ROW } from "@/constants/SettingsRoot";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePreferencesStore } from "@/stores/preferences";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -53,7 +54,7 @@ export default function PrivacyScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const shareUsageStats = usePreferencesStore((s) => s.shareUsageStats);
 
   /** A row closing a group, leading to where its topic is controlled. */

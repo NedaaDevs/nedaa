@@ -12,6 +12,7 @@ import { localizedSurahName, metadataFontFamily } from "@/utils/surahName";
 import { formatNumberToLocale } from "@/utils/number";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { Text } from "@/components/ui/text";
 
 interface PageSliderProps {
@@ -36,7 +37,7 @@ const PageSlider = ({ currentPage, quranTheme, onPageChange }: PageSliderProps) 
   const { t } = useTranslation();
   const themeColors = QURAN_THEME_COLORS[quranTheme];
   const isDark = isDarkPaper(quranTheme);
-  const haptic = useHaptic("light");
+  const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const [trackWidth, setTrackWidth] = useState(0);
   const slidableWidth = Math.max(0, trackWidth - HANDLE);

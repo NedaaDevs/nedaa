@@ -33,6 +33,7 @@ import { PlatformType } from "@/enums/app";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { canTurnOnAlarm } from "@/utils/alarmReadiness";
 import { schedulePreviewAlarm } from "@/utils/alarmScheduler";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
@@ -71,7 +72,7 @@ const AlarmTypeSettingsScreen = () => {
   const alarmType = type === ALARM_TYPE.FAJR ? ALARM_TYPE.FAJR : ALARM_TYPE.FRIDAY;
   // Previews fire by scheduled type ("jummah"), not the settings key ("friday").
   const scheduledType = toScheduledAlarmType(alarmType);
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const { settings, update, setEnabled } = useAlarmTypeSettings(alarmType);
   const shownOn = useAlarmOn(alarmType);

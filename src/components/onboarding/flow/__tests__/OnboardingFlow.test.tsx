@@ -19,6 +19,7 @@ import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { controlProblems } from "@/test-helpers/controls";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import {
   currentStep,
@@ -432,7 +433,7 @@ describe("OnboardingFlow", () => {
     await press(ONBOARDING_PART.CONTINUE);
     expect(currentStep()).toBe(S.COMPLETE);
     expect(HAPTIC.success).toHaveBeenCalledTimes(1);
-    expect(firedHaptics()).toEqual(["success"]);
+    expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SUCCESS]);
   });
 
   it("lets Android back through while it is leaving", async () => {

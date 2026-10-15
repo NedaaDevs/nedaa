@@ -31,6 +31,7 @@ import { useMyAthkarStore } from "@/stores/my-athkar";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Types
 import type { HisnCategory, HisnSearchResult, HisnAthkar } from "@/types/hisnMuslim";
@@ -48,8 +49,8 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose: closeSheet }) => {
   // Subscribed, so the checkmarks follow the collection; isSourceAdded is a stable
   // reference and reads through it would not recompute during render.
   const myAthkarItems = useMyAthkarStore((state) => state.items);
-  const hapticSuccess = useHaptic("success");
-  const hapticSelection = useHaptic("selection");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const [viewMode, setViewMode] = useState<ViewMode>("categories");
   const [searchQuery, setSearchQuery] = useState("");

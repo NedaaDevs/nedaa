@@ -14,6 +14,7 @@ import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
 import { AppLocale } from "@/enums/app";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 
@@ -23,7 +24,7 @@ const NUMERAL_STYLES = Object.values(NUMERAL_STYLE);
 /** The digits and the clock, the Settings controls, with a sample time. */
 export const NumeralsStep = ({ headingRef, progress }: StepProps) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const locale = useAppStore((state) => state.locale);
   const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
   const setUse24HourTime = usePreferencesStore((state) => state.setUse24HourTime);

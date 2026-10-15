@@ -27,6 +27,7 @@ import { formatNumberToLocale } from "@/utils/number";
 import { ArrowUpDown, TriangleAlert, Copy, Check, Info } from "lucide-react-native";
 
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Direction = "gregorianToHijri" | "hijriToGregorian";
 
@@ -35,7 +36,7 @@ const HijriConverterScreen = () => {
 
   const { locale, hijriDaysOffset } = useAppStore();
   const { locationDetails } = useLocationStore();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const [direction, setDirection] = useState<Direction>("hijriToGregorian");
   const [copied, setCopied] = useState(false);

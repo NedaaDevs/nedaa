@@ -28,6 +28,7 @@ import { useRTL } from "@/contexts/RTLContext";
 import { AUDIO_UI, PLAYBACK_RATE_OPTIONS, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Props = {
@@ -56,7 +57,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const theme = useTheme();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const playerState = useAthkarStore((s) => s.playerState);
   const repeatProgress = useAthkarStore((s) => s.repeatProgress);

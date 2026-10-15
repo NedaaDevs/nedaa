@@ -41,6 +41,7 @@ import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useRTL } from "@/contexts/RTLContext";
 import type { SurahMeta } from "@/types/quran";
 
@@ -92,7 +93,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const { isRTL } = useRTL();
     const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
     const setFlashAyah = useQuranStore((s) => s.setFlashAyah);
-    const selectHaptic = useHaptic("light");
+    const selectHaptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
     const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
     const [query, setQuery] = useState("");

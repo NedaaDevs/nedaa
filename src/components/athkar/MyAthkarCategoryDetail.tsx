@@ -16,6 +16,7 @@ import { useMyAthkarStore } from "@/stores/my-athkar";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Components
 import MyAthkarCard from "@/components/athkar/MyAthkarCard";
@@ -46,7 +47,7 @@ const MyAthkarCategoryDetail: FC<Props> = ({
   const displayData = useMyAthkarStore((s) => s.displayData);
   const progress = useMyAthkarStore((s) => s.progress);
   const removeItem = useMyAthkarStore((s) => s.removeItem);
-  const hapticWarning = useHaptic("warning");
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
 
   const [showDetail, setShowDetail] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);

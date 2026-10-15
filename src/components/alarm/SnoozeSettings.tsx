@@ -15,6 +15,7 @@ import {
   SNOOZE_MAX_COUNTS,
 } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   value: SnoozeConfig;
@@ -23,7 +24,7 @@ type Props = {
 
 const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const handleToggle = (enabled: boolean) => {
     hapticSelection();

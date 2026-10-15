@@ -30,6 +30,7 @@ import { useCompass } from "@/hooks/useCompass";
 import { useCompassLocation } from "@/hooks/useCompassLocation";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useLocationStore } from "@/stores/location";
 import type { CompassLocationFix } from "@/types/compass";
@@ -95,9 +96,9 @@ const CompassScreen = () => {
   const location = useCompassLocation({
     active: isFocused && isAppActive && !isScreenshotMode,
   });
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
-  const hapticMedium = useHaptic("medium");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const reduceMotion = useReducedMotion();
   const [sensorRestartKey, setSensorRestartKey] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);

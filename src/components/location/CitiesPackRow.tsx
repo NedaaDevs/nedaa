@@ -20,6 +20,7 @@ import { CITIES_FULL_CITY_COUNT, CITIES_PACK_BYTES } from "@/constants/Cities";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 export const formatMegabytes = (bytes: number): string => `${(bytes / 1_000_000).toFixed(1)} MB`;
 
@@ -30,7 +31,7 @@ export const formatMegabytes = (bytes: number): string => `${(bytes / 1_000_000)
  */
 const CitiesPackRow = () => {
   const { t } = useTranslation();
-  const hapticMedium = useHaptic("medium");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const { isDownloading, receivedBytes, totalBytes, error, download, cancel } =
     useCitiesPackStore();
 

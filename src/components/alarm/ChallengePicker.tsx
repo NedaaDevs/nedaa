@@ -16,6 +16,7 @@ import {
   CHALLENGE_TYPES,
 } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   value: ChallengeConfig;
@@ -37,7 +38,7 @@ const CHALLENGE_DIFFICULTY_LABEL: Record<ChallengeDifficulty, string> = {
 
 const ChallengePicker: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const handleTypeChange = (type: string) => {
     hapticSelection();

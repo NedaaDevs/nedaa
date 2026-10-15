@@ -17,6 +17,7 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 import { MapPin, Plane, ChevronRight } from "lucide-react-native";
 import { MIQAT_POINTS } from "@/constants/UmrahMiqat";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import type { MiqatPoint } from "@/types/umrah";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -37,7 +38,7 @@ const DIRECTION_KEYS: Record<string, string> = {
 export default function MiqatScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [step, setStep] = useState<Step>("origin");
   const [selectedMiqat, setSelectedMiqat] = useState<MiqatPoint | null>(null);
   const reduceMotion = useReducedMotion();

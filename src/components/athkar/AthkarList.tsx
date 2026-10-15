@@ -38,6 +38,7 @@ import { formatNumberToLocale } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
@@ -85,9 +86,9 @@ const AthkarList = ({ type, onRequestOnboarding }: Props) => {
   }, [type, initializeSession]);
 
   // Haptic feedback hooks
-  const hapticLight = useHaptic("light");
-  const hapticSuccess = useHaptic("success");
-  const hapticSelection = useHaptic("selection");
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   // Press and hold state
   const [isPressing, setIsPressing] = useState(false);

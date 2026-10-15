@@ -34,6 +34,7 @@ import { formatNumberToLocale, normalizeNumber } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Icons
@@ -54,8 +55,8 @@ import {
 const QadaSettings = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   // Stores

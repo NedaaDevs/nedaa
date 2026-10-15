@@ -30,6 +30,7 @@ import ReportThisButton from "@/components/ReportThisButton";
 import { formatNumberToLocale } from "@/utils/number";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   MushafVersion,
   QuranTheme,
@@ -81,7 +82,7 @@ const DownloadProgressScreen = ({
   const { isRTL } = useRTL();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const insets = useSafeAreaInsets();
-  const hapticSuccess = useHaptic("success");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const chrome = useQuranChromeColors();
   const reduceMotion = useReducedMotion();
 

@@ -28,6 +28,7 @@ import { SECTION_KIND } from "@/constants/Section";
 import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
 import { useApplyCalculation } from "@/hooks/useApplyCalculation";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePlace } from "@/hooks/usePlace";
 import { useTodayDates } from "@/hooks/useTodayDates";
 import { useAppStore } from "@/stores/app";
@@ -40,7 +41,7 @@ const CalculationContent = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const city = usePlace().city;
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
   const { hijri } = useTodayDates();
