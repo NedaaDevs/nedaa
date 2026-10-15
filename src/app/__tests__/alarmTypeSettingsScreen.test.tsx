@@ -88,6 +88,7 @@ const missing = (...ids: AlarmPermissionId[]) =>
 
 const enableSwitch = () =>
   screen.findByRole("switch", { name: i18n.t("alarm.settings.enableAlarm") });
+// A native switch has no press responder in tests, so its change is fired.
 const turnOn = async () => {
   const toggle = await enableSwitch();
   await act(async () => fireEvent(toggle, "valueChange", true));
