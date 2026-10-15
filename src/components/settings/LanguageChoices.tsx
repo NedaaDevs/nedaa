@@ -6,12 +6,13 @@ import { LANGUAGE_ORDER } from "@/constants/Locales";
 import type { AppLocale } from "@/enums/app";
 import { useChooseLanguage } from "@/hooks/useChooseLanguage";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 
 /** The app's languages, each also in its own name; a choice applies at once. */
 export const LanguageChoices = () => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const locale = useAppStore((state) => state.locale);
   const chooseLanguage = useChooseLanguage();
 

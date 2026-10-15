@@ -41,6 +41,7 @@ import {
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Constants
@@ -52,9 +53,9 @@ import type { AddCustomSoundResult, CustomSound } from "@/types/customSound";
 
 export default function CustomSoundsScreen() {
   const { t } = useTranslation();
-  const hapticMedium = useHaptic("medium");
-  const hapticSuccess = useHaptic("success");
-  const hapticLight = useHaptic("light");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   const { customSounds, isInitialized, initialize, addCustomSound, deleteCustomSound } =

@@ -42,6 +42,7 @@ import { Plus, Check, X, CalendarDays, Settings } from "lucide-react-native";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 
 // Utils
@@ -86,9 +87,9 @@ const QadaScreen = () => {
   const [notes, setNotes] = useState("");
 
   const { isRTL } = useRTL();
-  const hapticSelection = useHaptic("selection");
-  const hapticSuccess = useHaptic("success");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const remaining = getRemaining();
   const completionPercentage = getCompletionPercentage();

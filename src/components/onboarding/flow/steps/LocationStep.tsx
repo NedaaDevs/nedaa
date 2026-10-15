@@ -17,6 +17,7 @@ import {
   type LocationStepView,
 } from "@/constants/Onboarding";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 /** Automatic location or a city; the city picker opens in place. */
 export const LocationStep = ({
@@ -30,7 +31,7 @@ export const LocationStep = ({
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [choice, setChoice] = useState<LocationChoice>(LOCATION_CHOICE.AUTOMATIC);
   const [view, setView] = useState<LocationStepView>(LOCATION_STEP_VIEW.CHOICE);
   useViewFocus(view, headingRef);

@@ -26,6 +26,7 @@ import {
 } from "@/constants/Onboarding";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { focusOn } from "@/utils/accessibilityFocus";
 
@@ -50,7 +51,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   const saved = useAppStore((state) => state.onboardingStep);
   const setOnboardingStep = useAppStore((state) => state.setOnboardingStep);
   const setIsFirstRun = useAppStore((state) => state.setIsFirstRun);
-  const haptic = useHaptic("light");
+  const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const [session, setSession] = useState<OnboardingSession>(() => resumedSession(saved));
   const column = useOnboardingColumn(session);
   const showLoading = useDelayedFlag(column === null, ONBOARDING_LOADING_DELAY_MS);
