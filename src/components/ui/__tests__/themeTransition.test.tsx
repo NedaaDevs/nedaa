@@ -371,6 +371,20 @@ describe("ThemeTransitionProvider", () => {
     expect(releaseCapture).toHaveBeenCalledWith(SNAPSHOT_URI);
   });
 
+  it("runs the change uncovered when the snapshot never shows, and logs it", async () => {
+    await renderProvider();
+    const fn = jest.fn();
+
+    await begin(fn);
+    await waitFor(() => expect(snapshot()).not.toBeNull());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(snapshot()).toBeNull();
+    expect(releaseCapture).toHaveBeenCalledWith(SNAPSHOT_URI);
+    expect(mockWarn).toHaveBeenCalledWith(expect.any(String), expect.stringContaining("snapshot"));
+  });
+
   it("runs a call at once while the app is away, even with a dissolve open", async () => {
     await renderProvider();
     const first = jest.fn();
