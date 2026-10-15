@@ -9,13 +9,18 @@ import { soundPreviewManager } from "@/utils/sound";
 
 const mockPlay = jest.fn<Promise<void>, [string | number]>(() => Promise.resolve());
 const mockStop = jest.fn(() => Promise.resolve());
-let mockFinish: (() => void) | null = null;
+let mockPlayId: number | undefined;
+let mockFinish: ((playId?: number) => void) | null = null;
 
 jest.mock("@/services/audio/previewPlayer", () => ({
-  playPreview: (source: string | number) => mockPlay(source),
+  playPreview: (source: string | number, playId?: number) => {
+    mockPlayId = playId;
+    return mockPlay(source);
+  },
   stopPreview: () => mockStop(),
-  addPreviewListener: (listener: (status: { didJustFinish: boolean }) => void) => {
-    mockFinish = () => listener({ didJustFinish: true });
+  addPreviewListener: (listener: (status: { didJustFinish: boolean; playId?: number }) => void) => {
+    // A finish names the latest play unless the test names another.
+    mockFinish = (playId = mockPlayId) => listener({ didJustFinish: true, playId });
     return () => {
       mockFinish = null;
     };
@@ -98,6 +103,19 @@ it("falls back to play when the sound ends", async () => {
 
   await act(async () => mockFinish?.());
 
+  expect(control(PLAY)).toBeOnTheScreen();
+});
+
+it("keeps a newer sound playing when an older one ends", async () => {
+  await renderPreview();
+  await act(() => soundPreviewManager.playSource(OTHER_OWNER, OTHER_SOURCE));
+  const olderPlay = mockPlayId;
+  await user.press(control(PLAY));
+
+  await act(async () => mockFinish?.(olderPlay));
+  expect(control(STOP)).toBeOnTheScreen();
+
+  await act(async () => mockFinish?.());
   expect(control(PLAY)).toBeOnTheScreen();
 });
 
