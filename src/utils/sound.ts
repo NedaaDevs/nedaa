@@ -95,7 +95,7 @@ class SoundPreviewManager {
   private static instance: SoundPreviewManager;
   private isPlaying: boolean = false;
   private currentSoundId: string | null = null;
-  /** Counts plays; a stop or a failed play never clears a newer play. */
+  /** Counts plays; an old play's stop, failure or end leaves a newer one. */
   private playGeneration = 0;
   private listeners: Set<SoundPreviewListener> = new Set();
   private watchingPlayer = false;
@@ -162,7 +162,7 @@ class SoundPreviewManager {
     try {
       const player = await loadAudioPreview();
       this.watchPlayer(player);
-      await player.playPreview(source);
+      await player.playPreview(source, generation);
     } catch (error) {
       console.error("[SoundPreview] Play failed:", error);
       if (generation === this.playGeneration) this.forceReset();
@@ -170,12 +170,12 @@ class SoundPreviewManager {
     }
   }
 
-  // A preview that plays to its end sends no stop; its finish clears it.
+  // A preview that plays to its end sends no stop; its own finish clears it.
   private watchPlayer(player: typeof import("@/services/audio/previewPlayer")): void {
     if (this.watchingPlayer) return;
     this.watchingPlayer = true;
-    player.addPreviewListener(({ didJustFinish }) => {
-      if (didJustFinish && this.isPlaying) this.forceReset();
+    player.addPreviewListener(({ didJustFinish, playId }) => {
+      if (didJustFinish && playId === this.playGeneration && this.isPlaying) this.forceReset();
     });
   }
 
