@@ -3,14 +3,14 @@ import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 
-import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
-import { PRAYER_ID } from "@/constants/Prayer";
+import { ALARM_TYPE } from "@/constants/Alarm";
+import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 
 export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [isSnoozed, setIsSnoozed] = useState(false);
@@ -29,7 +29,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   // Selected so the snooze count on screen follows the store.
   const alarm = useAlarmStore((state) => state.scheduledAlarms[activeAlarmId]);
 
-  const settingsType = alarmType === ScheduledAlarmType.JUMMAH ? "friday" : PRAYER_ID.FAJR;
+  // A custom or unknown alarm rings with the Fajr settings.
+  const settingsType =
+    (isScheduledAlarmType(alarmType) && toSettingsAlarmType(alarmType)) || ALARM_TYPE.FAJR;
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
   const snoozeCount = alarm?.snoozeCount ?? 0;

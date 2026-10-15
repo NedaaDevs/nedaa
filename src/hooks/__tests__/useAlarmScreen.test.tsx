@@ -16,6 +16,8 @@ const mockSettings = {
   vibration: { enabled: false, pattern: "default" },
   challenge: undefined,
 };
+// Friday allows fewer snoozes, so the count shows whose settings were read.
+const mockFridaySettings = { ...mockSettings, snooze: { ...mockSettings.snooze, maxCount: 1 } };
 
 jest.mock("react-native", () => ({
   Platform: { OS: "ios" },
@@ -44,7 +46,7 @@ jest.mock("@/stores/alarm", () => ({
 }));
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: (select: (state: object) => unknown) =>
-    select({ fajr: mockSettings, friday: mockSettings }),
+    select({ fajr: mockSettings, friday: mockFridaySettings }),
 }));
 jest.mock("@/utils/alarmScheduler", () => ({
   completeAndRescheduleAlarm: (id: string) => mockCompleteAndReschedule(id),
@@ -62,14 +64,14 @@ const IOS_DIR = path.join(__dirname, "../../../ios");
 
 const renders: ReturnType<typeof useAlarmScreen>[] = [];
 const latest = () => renders[renders.length - 1];
-const Probe = () => {
-  renders.push(useAlarmScreen(ALARM_ID, ScheduledAlarmType.FAJR));
+const Probe = ({ alarmType }: { alarmType: string }) => {
+  renders.push(useAlarmScreen(ALARM_ID, alarmType));
   return null;
 };
 
-const mount = async () => {
+const mount = async (alarmType: string = ScheduledAlarmType.FAJR) => {
   await act(async () => {
-    renderer.create(<Probe />);
+    renderer.create(<Probe alarmType={alarmType} />);
   });
 };
 
@@ -115,5 +117,15 @@ describe("useAlarmScreen", () => {
 
     expect(mockStartAlarmSound).toHaveBeenCalled();
     expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [ScheduledAlarmType.FAJR, mockSettings],
+    [ScheduledAlarmType.JUMMAH, mockFridaySettings],
+    [ScheduledAlarmType.CUSTOM, mockSettings],
+  ])("reads the settings that a %s alarm rings with", async (alarmType, settings) => {
+    await mount(alarmType);
+
+    expect(latest().remainingSnoozes).toBe(settings.snooze.maxCount);
   });
 });
