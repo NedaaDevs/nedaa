@@ -41,6 +41,7 @@ import { Platform } from "react-native";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { DEFAULT_ATHAN_SOUND } from "@/constants/sounds";
 import { PlatformType } from "@/enums/app";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -103,7 +104,7 @@ const defaultSettings: NotificationSettings = {
   defaults: {
     prayer: {
       enabled: true,
-      sound: "makkahAthan1",
+      sound: DEFAULT_ATHAN_SOUND,
       vibration: true,
     },
     iqama: {
