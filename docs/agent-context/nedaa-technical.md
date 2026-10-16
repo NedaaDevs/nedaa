@@ -8,11 +8,11 @@
 
 ## Stack snapshot
 
-- **Runtime:** Expo SDK 57, React Native 0.86, React 19.2, **New Architecture mandatory**.
+- **Runtime:** Expo SDK 58, React Native 0.88, React 19.3, Gesture Handler 3, **New Architecture mandatory**.
 - **Language:** TypeScript strict. Path alias `@/*` → `./src/*` (always use the alias, not relative `./` paths).
-- **UI:** Tamagui 2.1.0 (all packages pinned exactly, bumped as one family) + Moti animations. Custom config in `tamagui.config.ts`. Locale-aware font swap (Asap for Latin, IBM Plex Sans Arabic for Arabic).
+- **UI:** Tamagui 2.7 (every package on the same `^` range, bumped as one family) + Moti animations. Custom config in `tamagui.config.ts`. Locale-aware font swap (Asap for Latin, IBM Plex Sans Arabic for Arabic).
 - **State:** Zustand 5 with `persist` middleware, one store per domain in `src/stores/`.
-- **Routing:** Expo Router 6, file-based, in `src/app/`. Tabs + nested settings sub-routes. Typed routes enabled.
+- **Routing:** Expo Router 58, file-based, in `src/app/`. Tabs + nested settings sub-routes. Typed routes enabled.
 - **Local persistence:** `expo-sqlite`. Per-domain DB service files in `src/services/` (one per feature: athkar, qada, umrah, hisn-muslim, quran).
 - **Audio:** `react-native-nitro-player` — one global player for everything that makes sound (athkar sessions, Quran recitation, short sound previews). Access goes through `services/audio/nitroSession.ts`, a process-wide arbiter that hands ownership between callers so two features never drive the player at once.
 - **Localization:** `i18next` + `react-i18next`. Locales: **en, ar, ms, ur**. Full RTL support. `expo-localization` for device locale detection.
