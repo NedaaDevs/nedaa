@@ -162,7 +162,7 @@ describe("FocusCountdown", () => {
     });
     await renderWithTheme(<FocusCountdown />);
 
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.root).toBeEmptyElement();
   });
 
   it("whirls the figure when flipped", async () => {

@@ -113,7 +113,7 @@ describe("useRootAppearance", () => {
     jest.spyOn(Appearance, "setColorScheme").mockImplementation((next) => {
       const before = effective();
       mockPhone.pin = next as NativeScheme;
-      if (next !== NATIVE_SCHEME.UNSPECIFIED) mockPhone.reported = mockPhone.pin;
+      if (mockPhone.pin !== NATIVE_SCHEME.UNSPECIFIED) mockPhone.reported = mockPhone.pin;
       if (effective() === before && mockPhone.reported === before) return;
       setTimeout(() => {
         mockPhone.reported = effective();

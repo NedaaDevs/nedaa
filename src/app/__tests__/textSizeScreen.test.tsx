@@ -1,7 +1,6 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import TextSizeScreen from "@/app/settings/textSize";
-import "react-native-gesture-handler/jestSetup";
 import { StyleSheet } from "react-native";
 import { State } from "react-native-gesture-handler";
 import { fireGestureHandler, getByGestureTestId } from "react-native-gesture-handler/jest-utils";

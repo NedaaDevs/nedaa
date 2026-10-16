@@ -6,7 +6,7 @@ This file covers what you need to write code here. For setup, see [docs/DEV-READ
 
 ## Stack
 
-Expo SDK 57 and React Native 0.86 with the New Architecture (mandatory), React 19, TypeScript in strict mode, React Compiler enabled. Tamagui for UI with Moti animations, Zustand for state, Expo Router for navigation, expo-sqlite for local data, i18next for translations. Package manager is **bun**, not npm or yarn; the version is pinned in `.bun-version`.
+Expo and React Native with the New Architecture (mandatory), React, TypeScript in strict mode, React Compiler enabled. Tamagui for UI with Moti animations, Zustand for state, Expo Router for navigation, expo-sqlite for local data, i18next for translations. Package manager is **bun**, not npm or yarn; the version is pinned in `.bun-version`.
 
 Read `package.json` for versions rather than assuming — this file deliberately doesn't repeat them.
 

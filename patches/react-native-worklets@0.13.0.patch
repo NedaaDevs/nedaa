@@ -1,8 +1,8 @@
 diff --git a/apple/worklets/apple/AnimationFrameQueue.mm b/apple/worklets/apple/AnimationFrameQueue.mm
-index b93cd2c625ef8a03415ce23c6fc584e51d3696a9..e373061ff58970c4a676e9d62a4cfc7f9f7fe168 100644
+index c0640301c9adc6484798267b790a02a5a1a78042..fec835c64ad61f96b4a832b39947b58427a590fc 100644
 --- a/apple/worklets/apple/AnimationFrameQueue.mm
 +++ b/apple/worklets/apple/AnimationFrameQueue.mm
-@@ -79,7 +79,19 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
+@@ -87,7 +87,19 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
  
  - (void)scheduleQueueExecution
  {
@@ -23,7 +23,7 @@ index b93cd2c625ef8a03415ce23c6fc584e51d3696a9..e373061ff58970c4a676e9d62a4cfc7f
  }
  
  - (void)executeQueue:(WorkletsDisplayLink *)displayLink
-@@ -87,7 +99,6 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
+@@ -95,7 +107,6 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
    RCTAssertMainQueue();
  
    auto frameCallbacks = [self pullCallbacks];
@@ -31,7 +31,7 @@ index b93cd2c625ef8a03415ce23c6fc584e51d3696a9..e373061ff58970c4a676e9d62a4cfc7f
  
  #if TARGET_OS_OSX
    auto targetTimestamp = displayLink.timestamp + displayLink.duration;
-@@ -98,6 +109,12 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
+@@ -106,6 +117,12 @@ typedef void (^AnimationFrameCallback)(WorkletsDisplayLink *displayLink);
    for (const auto &callback : frameCallbacks) {
      callback(targetTimestamp);
    }
