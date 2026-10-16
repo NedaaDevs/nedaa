@@ -26,6 +26,7 @@ import { formatNumberToLocale } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
 import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
@@ -55,10 +56,10 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
   const isThisPaused = currentAthkarId === athkar.id && playerState === "paused";
   const isThisLoading = loadingAthkarId === athkar.id;
 
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
-  const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
 
   const isRTL = i18n.dir() === "rtl";
 
@@ -95,6 +96,8 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
 
   return (
     <Pressable
+      // Holds text or a control the reader must reach; as one element iOS would hide them.
+      accessible={false}
       onPress={handleIncrement}
       onLongPress={handleLongPress}
       delayLongPress={400}

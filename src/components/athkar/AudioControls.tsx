@@ -1,6 +1,6 @@
-import { FC, useState, useCallback, useEffect, useRef } from "react";
+import { FC, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, LayoutChangeEvent, View } from "react-native";
+import { LayoutChangeEvent, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -10,7 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -28,6 +28,8 @@ import { useRTL } from "@/contexts/RTLContext";
 import { AUDIO_UI, PLAYBACK_RATE_OPTIONS, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Props = {
   onPlayPause: () => void;
@@ -48,6 +50,16 @@ const TRACK_HEIGHT_SEEKING = 8;
 const THUMB_SIZE = 16;
 const TOUCH_TARGET_HEIGHT = 44;
 
+/** Test ids for the seek bar's parts. */
+export const AUDIO_SEEK_PART = {
+  TOUCH: "audio-seek-touch",
+  FILL: "audio-seek-fill",
+  THUMB: "audio-seek-thumb",
+} as const;
+
+/** Test id for the seek gesture, for Gesture Handler's jest utils. */
+export const AUDIO_SEEK_GESTURE = { PAN: "audio-seek-pan" } as const;
+
 const EASE_OUT = Easing.out(Easing.cubic);
 const EASE_IN = Easing.in(Easing.cubic);
 
@@ -55,7 +67,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const theme = useTheme();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const playerState = useAthkarStore((s) => s.playerState);
   const repeatProgress = useAthkarStore((s) => s.repeatProgress);
@@ -89,10 +101,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const NextIcon = isRTL ? SkipBack : SkipForward;
 
   // Reduce motion
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   // Seek state
   const [trackWidth, setTrackWidth] = useState(0);
@@ -135,18 +144,21 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const animDuration = reduceMotion ? 0 : 150;
 
   const seekGesture = Gesture.Pan()
+    .withTestId(AUDIO_SEEK_GESTURE.PAN)
     .activateAfterLongPress(250)
     .onStart((e) => {
       const x = isRTL ? trackWidth - e.x : e.x;
       const progress = trackWidth > 0 ? x / trackWidth : 0;
       const clamped = Math.max(0, Math.min(1, progress));
-      seekProgress.value = clamped;
-      isSeeking_.value = true;
-      trackScale.value = withTiming(TRACK_HEIGHT_SEEKING / TRACK_HEIGHT, {
-        duration: animDuration,
-        easing: EASE_OUT,
-      });
-      thumbOpacity.value = withTiming(1, { duration: animDuration, easing: EASE_OUT });
+      seekProgress.set(clamped);
+      isSeeking_.set(true);
+      trackScale.set(
+        withTiming(TRACK_HEIGHT_SEEKING / TRACK_HEIGHT, {
+          duration: animDuration,
+          easing: EASE_OUT,
+        })
+      );
+      thumbOpacity.set(withTiming(1, { duration: animDuration, easing: EASE_OUT }));
       scheduleOnRN(enterSeekMode);
       scheduleOnRN(updateSeekDisplay, clamped);
     })
@@ -154,20 +166,20 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
       const x = isRTL ? trackWidth - e.x : e.x;
       const progress = trackWidth > 0 ? x / trackWidth : 0;
       const clamped = Math.max(0, Math.min(1, progress));
-      seekProgress.value = clamped;
+      seekProgress.set(clamped);
       scheduleOnRN(updateSeekDisplay, clamped);
     })
     .onEnd(() => {
-      const finalProgress = seekProgress.value;
-      trackScale.value = withTiming(1, { duration: animDuration, easing: EASE_IN });
-      thumbOpacity.value = withTiming(0, { duration: animDuration, easing: EASE_IN });
-      isSeeking_.value = false;
+      const finalProgress = seekProgress.get();
+      trackScale.set(withTiming(1, { duration: animDuration, easing: EASE_IN }));
+      thumbOpacity.set(withTiming(0, { duration: animDuration, easing: EASE_IN }));
+      isSeeking_.set(false);
       scheduleOnRN(commitSeek, finalProgress);
     })
     .onFinalize(() => {
-      trackScale.value = withTiming(1, { duration: animDuration, easing: EASE_IN });
-      thumbOpacity.value = withTiming(0, { duration: animDuration, easing: EASE_IN });
-      isSeeking_.value = false;
+      trackScale.set(withTiming(1, { duration: animDuration, easing: EASE_IN }));
+      thumbOpacity.set(withTiming(0, { duration: animDuration, easing: EASE_IN }));
+      isSeeking_.set(false);
     });
 
   // Swipe-down-to-collapse gesture
@@ -176,44 +188,44 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const swipeGesture = Gesture.Pan()
     .activeOffsetY(20)
     .onUpdate((e) => {
-      if (isSeeking_.value) return;
+      if (isSeeking_.get()) return;
       if (e.translationY > 0) {
-        swipeTranslateY.value = e.translationY;
+        swipeTranslateY.set(e.translationY);
       }
     })
     .onEnd((e) => {
-      if (isSeeking_.value) {
-        swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
+      if (isSeeking_.get()) {
+        swipeTranslateY.set(withTiming(0, { duration: reduceMotion ? 0 : 250 }));
         return;
       }
       if (e.translationY > 50 && e.velocityY > 300) {
         scheduleOnRN(onCollapse);
       }
-      swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
+      swipeTranslateY.set(withTiming(0, { duration: reduceMotion ? 0 : 250 }));
     })
     .onFinalize(() => {
-      swipeTranslateY.value = withTiming(0, { duration: reduceMotion ? 0 : 250 });
+      swipeTranslateY.set(withTiming(0, { duration: reduceMotion ? 0 : 250 }));
     });
 
   const swipeAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: swipeTranslateY.value }],
-    opacity: 1 - swipeTranslateY.value / 200,
+    transform: [{ translateY: swipeTranslateY.get() }],
+    opacity: 1 - swipeTranslateY.get() / 200,
   }));
 
   const trackAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleY: trackScale.value }],
+    transform: [{ scaleY: trackScale.get() }],
   }));
 
   const filledTrackStyle = useAnimatedStyle(() => {
-    const percent = isSeeking_.value ? seekProgress.value : progressPercent;
+    const percent = isSeeking_.get() ? seekProgress.get() : progressPercent;
     return {
       width: `${percent * 100}%`,
     };
   });
 
   const thumbStyle = useAnimatedStyle(() => ({
-    opacity: thumbOpacity.value,
-    left: `${seekProgress.value * 100}%`,
+    opacity: thumbOpacity.get(),
+    start: `${seekProgress.get() * 100}%`,
   }));
 
   const trackVerticalPad = (TOUCH_TARGET_HEIGHT - TRACK_HEIGHT) / 2;
@@ -267,6 +279,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
             <VStack gap="$1">
               <GestureDetector gesture={seekGesture}>
                 <View
+                  testID={AUDIO_SEEK_PART.TOUCH}
                   onLayout={onTrackLayout}
                   onTouchStart={() => {
                     if (!seekHintShown.current && !isSeeking) {
@@ -302,6 +315,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
                     ]}>
                     {/* Filled track */}
                     <Animated.View
+                      testID={AUDIO_SEEK_PART.FILL}
                       style={[
                         {
                           position: "absolute",
@@ -324,6 +338,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
 
                   {/* Thumb */}
                   <Animated.View
+                    testID={AUDIO_SEEK_PART.THUMB}
                     style={[
                       {
                         position: "absolute",

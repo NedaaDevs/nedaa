@@ -20,12 +20,10 @@ type PreferencesState = {
   weekStartsOn: number;
   // Tab the app lands on at launch.
   openingTab: OpeningTabValue;
-  countdownEnabled: boolean;
-  countdownMinutes: number;
-  iqamaCountUpEnabled: boolean;
-  iqamaCountUpMinutes: number;
+  // Today's focus figure counts to the second; off counts in minutes, calmer.
+  showSeconds: boolean;
   hapticsEnabled: boolean;
-  // Home shows the Important Days pager card. The Tools screen is always available.
+  // Today lists the two nearest occasions below the prayer times.
   showImportantDaysOnHome: boolean;
   // Accessibility: render bigger buttons/text where controls support it (default off).
   largeControls: boolean;
@@ -41,10 +39,7 @@ type PreferencesState = {
   setUse24HourTime: (value: boolean) => void;
   setWeekStartsOn: (value: number) => void;
   setOpeningTab: (value: OpeningTabValue) => void;
-  setCountdownEnabled: (value: boolean) => void;
-  setCountdownMinutes: (value: number) => void;
-  setIqamaCountUpEnabled: (value: boolean) => void;
-  setIqamaCountUpMinutes: (value: number) => void;
+  setShowSeconds: (value: boolean) => void;
   setHapticsEnabled: (value: boolean) => void;
   setShowImportantDaysOnHome: (value: boolean) => void;
   setLargeControls: (value: boolean) => void;
@@ -60,10 +55,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       use24HourTime: deviceUses24HourClock(),
       weekStartsOn: deviceWeekStartsOn(),
       openingTab: OpeningTab.HOME,
-      countdownEnabled: false,
-      countdownMinutes: 60,
-      iqamaCountUpEnabled: false,
-      iqamaCountUpMinutes: 30,
+      showSeconds: true,
       hapticsEnabled: true,
       showImportantDaysOnHome: false,
       largeControls: false,
@@ -75,10 +67,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setUse24HourTime: (value) => set({ use24HourTime: value }),
       setWeekStartsOn: (value) => set({ weekStartsOn: value }),
       setOpeningTab: (value) => set({ openingTab: value }),
-      setCountdownEnabled: (value) => set({ countdownEnabled: value }),
-      setCountdownMinutes: (value) => set({ countdownMinutes: value }),
-      setIqamaCountUpEnabled: (value) => set({ iqamaCountUpEnabled: value }),
-      setIqamaCountUpMinutes: (value) => set({ iqamaCountUpMinutes: value }),
+      setShowSeconds: (value) => set({ showSeconds: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
       setLargeControls: (value) => set({ largeControls: value }),

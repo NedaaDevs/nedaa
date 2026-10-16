@@ -12,14 +12,18 @@ const PREVIEW_TRACK_ID = "preview-track";
 
 type PreviewStatus = {
   playing: boolean;
+  /** The play ended without a stop: it played out or lost the player. */
   didJustFinish: boolean;
   currentTime: number;
   duration: number;
+  /** The caller's id for the play this status describes. */
+  playId?: number;
 };
 
 const listeners = new Set<(status: PreviewStatus) => void>();
 
 let playlistId: string | null = null;
+let loadedPlayId: number | undefined;
 let playing = false;
 let currentTime = 0;
 let duration = 0;
@@ -31,7 +35,13 @@ let commandTail: Promise<void> = Promise.resolve();
 let latestRequest = 0;
 
 const emitStatus = (didJustFinish = false): void => {
-  const status: PreviewStatus = { playing, didJustFinish, currentTime, duration };
+  const status: PreviewStatus = {
+    playing,
+    didJustFinish,
+    currentTime,
+    duration,
+    playId: loadedPlayId,
+  };
   listeners.forEach((listener) => {
     try {
       listener(status);
@@ -58,6 +68,7 @@ const teardown = async (notifyStopped: boolean): Promise<void> => {
   const id = playlistId;
   const hadPreview = id !== null || playing || currentTime > 0 || duration > 0;
   playlistId = null;
+  loadedPlayId = undefined;
   playing = false;
   currentTime = 0;
   duration = 0;
@@ -66,6 +77,15 @@ const teardown = async (notifyStopped: boolean): Promise<void> => {
   if (notifyStopped && hadPreview) emitStatus();
   await deletePlaylist(id);
   nitroSession.release(PREVIEW_OWNER);
+};
+
+// Another owner took the player, so the play ends as if it played out.
+const evict = async (): Promise<void> => {
+  if (playlistId && !finishing) {
+    playing = false;
+    emitStatus(true);
+  }
+  await teardown(false);
 };
 
 const onPlaybackStateChange = (state: TrackPlayerState, reason?: Reason): void => {
@@ -105,7 +125,11 @@ const onPlaybackStateChange = (state: TrackPlayerState, reason?: Reason): void =
     reachedPlaying = false;
     playing = false;
     emitStatus(true);
-    void runCommand(() => teardown(false));
+    // A newer preview can load before this runs; its playlist stays.
+    const ended = playlistId;
+    void runCommand(async () => {
+      if (playlistId === ended) await teardown(false);
+    });
     return;
   }
 
@@ -127,7 +151,7 @@ const ensureInitialized = async (): Promise<void> => {
     nitroSession.register(PREVIEW_OWNER, {
       onPlaybackStateChange,
       onProgress,
-      onEvict: () => runCommand(() => teardown(true)),
+      onEvict: () => runCommand(evict),
     });
     initializationPromise = nitroSession
       .ensureStarted()
@@ -148,7 +172,11 @@ const resolveSourceUri = async (source: string | number): Promise<string> => {
   return asset.localUri ?? asset.uri;
 };
 
-const loadPreview = async (url: string, request: number): Promise<void> => {
+const loadPreview = async (
+  url: string,
+  request: number,
+  playId: number | undefined
+): Promise<void> => {
   await ensureInitialized();
   if (request !== latestRequest) return;
 
@@ -170,6 +198,7 @@ const loadPreview = async (url: string, request: number): Promise<void> => {
 
   const id = await PlayerQueue.createPlaylist("preview");
   playlistId = id;
+  loadedPlayId = playId;
   const track: TrackItem = {
     id: PREVIEW_TRACK_ID,
     title: "Preview",
@@ -186,12 +215,13 @@ const loadPreview = async (url: string, request: number): Promise<void> => {
   await TrackPlayer.play();
 };
 
-export const playPreview = async (source: string | number): Promise<void> => {
+/** Plays `source`; its statuses carry `playId` to name this play. */
+export const playPreview = async (source: string | number, playId?: number): Promise<void> => {
   const request = ++latestRequest;
   try {
     const url = await resolveSourceUri(source);
     if (request !== latestRequest) return;
-    await runCommand(() => loadPreview(url, request));
+    await runCommand(() => loadPreview(url, request, playId));
   } catch (error) {
     if (request === latestRequest) {
       reachedPlaying = false;
@@ -219,14 +249,7 @@ export const stopPreview = async (): Promise<void> => {
   }
 };
 
-export const addPreviewListener = (
-  cb: (status: {
-    playing: boolean;
-    didJustFinish: boolean;
-    currentTime: number;
-    duration: number;
-  }) => void
-): (() => void) => {
+export const addPreviewListener = (cb: (status: PreviewStatus) => void): (() => void) => {
   listeners.add(cb);
   return () => {
     listeners.delete(cb);

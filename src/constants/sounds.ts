@@ -3,7 +3,7 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
 import type { NotificationType } from "@/types/notification";
-import type { SoundAssetsConfig, ExtractSoundKeys } from "@/types/sound";
+import type { SoundAsset, SoundAssetsConfig, ExtractSoundKeys } from "@/types/sound";
 
 // Hooks
 import { getPlatformSoundName } from "@/hooks/useSoundResolver";
@@ -101,6 +101,22 @@ export const SOUND_ASSETS = {
   },
 } as const satisfies SoundAssetsConfig;
 
+/** Bundled sounds by any stored key; a custom or system key reads undefined. */
+export const BUNDLED_SOUNDS: Readonly<Record<string, SoundAsset | undefined>> = SOUND_ASSETS;
+
+/** The bundled sounds an alarm offers, in the order a picker lists them. */
+export const ALARM_SOUND_KEYS = [
+  "beep",
+  "tasbih",
+  "takbir",
+  "knock",
+  "makkahAthan1",
+  "medinaAthan",
+  "athan2",
+  "athan3",
+  "yasserAldosari",
+] as const satisfies readonly (keyof typeof SOUND_ASSETS)[];
+
 // Helper function to create sound mappings with proper typing
 const createSoundMapping = <T extends NotificationType>(type: T): Record<string, string> => {
   const mapping: Record<string, string> = {};
@@ -127,6 +143,9 @@ export type PreAthanSoundKey = ExtractSoundKeys<
   typeof NOTIFICATION_TYPE.PRE_ATHAN
 >;
 export type QadaSoundKey = ExtractSoundKeys<typeof SOUND_ASSETS, typeof NOTIFICATION_TYPE.QADA>;
+
+/** The athan a new install plays for each prayer. */
+export const DEFAULT_ATHAN_SOUND = "makkahAthan1" satisfies PrayerSoundKey;
 
 /**
  * Sound keys that are full athan recitations (long audio).
@@ -166,6 +185,5 @@ export function isSoundKeyValid<T extends NotificationType>(
   type: T,
   key: string
 ): key is ExtractSoundKeys<typeof SOUND_ASSETS, T> {
-  const asset = SOUND_ASSETS[key as keyof typeof SOUND_ASSETS];
-  return asset && (asset.availableFor as readonly NotificationType[]).includes(type);
+  return BUNDLED_SOUNDS[key]?.availableFor.includes(type) ?? false;
 }

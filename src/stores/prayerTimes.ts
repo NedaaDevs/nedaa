@@ -1,9 +1,7 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { addDays, format, subDays } from "date-fns";
-
-import i18n from "@/localization/i18n";
+import { addDays, format, getMonth, getYear, subDays } from "date-fns";
 
 // Types
 import {
@@ -26,22 +24,28 @@ import { PrayerTimesDB } from "@/services/db";
 // Stores
 import locationStore from "@/stores/location";
 import providerSettingsStore from "@/stores/providerSettings";
-import { useAppStore } from "@/stores/app";
 
 // Utils
-import { dateToInt, getTimezoneMonth, getTimezoneYear, timeZonedNow } from "@/utils/date";
+import { dateToInt, timeZonedNow } from "@/utils/date";
 import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
+import { placeFromFacts } from "@/utils/placeFromFacts";
 import { LocationMode } from "@/enums/location";
+import { TIMES_PLACE } from "@/constants/Location";
 import { AppLogger } from "@/utils/appLogger";
 
 // Adapters
 import { getAdapterByProviderId } from "@/adapters/providers";
 
 // Widget
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { reloadPrayerWidgets } from "expo-widget";
 
 const log = AppLogger.create("prayertimes");
+
+/** Days before today the table keeps. */
+const KEPT_PAST_DAYS = 2;
+/** Days after today the load reads. */
+const READ_AHEAD_DAYS = 13;
 
 // Snapshot inputs include qada, whose notification actions depend on this store.
 // Resolve the writer after initialization to keep that dependency out of startup.
@@ -56,6 +60,8 @@ export type PrayerTimesStore = {
   /** The times on screen were computed from the default coordinates, not the user's. */
   usingDefaultLocation: boolean;
   isLoading: boolean;
+  /** True while either load verb runs. */
+  loadingTimes: boolean;
   isGettingProviders: boolean;
   hasError: boolean;
   errorMessage: string;
@@ -69,6 +75,8 @@ export type PrayerTimesStore = {
   getProviders: () => Promise<Provider[]>;
   getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<boolean>;
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
+  /** Loads for the place the location store holds; takes no device fix. */
+  loadPrayerTimesAtCurrentPlace: (forceGetAndStore?: boolean) => Promise<void>;
   /** Re-reads the two-week window from the database and resets the projections. */
   refreshTimingsFromDb: () => Promise<DayPrayerTimes[]>;
   // `now` is a parameter so callers that re-render on a clock tick recompute; without
@@ -101,10 +109,136 @@ const getTwoWeeksDateRange = (timezone: string) => {
   // Today as integer (YYYYMMDD)
   const today = parseInt(format(now, "yyyyMMdd"));
 
-  // End date (today + 13 days)
-  const endDate = parseInt(format(addDays(now, 13), "yyyyMMdd"));
+  // End date (today + READ_AHEAD_DAYS)
+  const endDate = parseInt(format(addDays(now, READ_AHEAD_DAYS), "yyyyMMdd"));
 
   return { startDate: today, endDate };
+};
+
+type SetTimes = (partial: Partial<PrayerTimesStore>) => void;
+type GetTimes = () => PrayerTimesStore;
+
+/** Takes the device fix until one lands: automatic mode, permission granted. */
+const takeDeviceFixOnce = async (get: GetTimes): Promise<void> => {
+  // A manual place is the user's: no device read, and no permission check.
+  if (
+    !get().didGetCurrentLocation &&
+    locationStore.getState().locationMode === LocationMode.DEVICE &&
+    (await checkLocationPermission()).granted
+  ) {
+    try {
+      await locationStore.getState().initializeLocation();
+    } catch (error) {
+      log.w(
+        "Load",
+        `current location failed; falling back to saved or default coordinates: ${(error as Error)?.message ?? error}`
+      );
+    }
+  }
+};
+
+/** False if the adjacent year holds a kept or read day and its fetch fails. */
+const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<boolean> => {
+  const year = getYear(now);
+  const month = getMonth(now) + 1;
+  if (month === 1) {
+    const needed = getYear(subDays(now, KEPT_PAST_DAYS)) < year;
+    const stored = await get().getAndStorePrayerTimes(year - 1);
+    return stored || !needed;
+  }
+  if (month === 12) {
+    const needed = getYear(addDays(now, READ_AHEAD_DAYS)) > year;
+    const stored = await get().getAndStorePrayerTimes(year + 1);
+    return stored || !needed;
+  }
+  return true;
+};
+
+/** The body of both load verbs; `takeFix` runs before the place is read. */
+const loadTimes = async (
+  set: SetTimes,
+  get: GetTimes,
+  forceGetAndStore: boolean,
+  takeFix: () => Promise<void>
+): Promise<void> => {
+  try {
+    // Clear any previous errors
+    set({ hasError: false, errorMessage: "" });
+    set({ loadingTimes: true });
+
+    await takeFix();
+
+    const { locationDetails, lastKnownCoords } = locationStore.getState();
+    const verified = lastKnownCoords !== null;
+    // No verified fix: Makkah stands in; loadPrayerTimes retries the fix later.
+    if (!verified) {
+      log.w("Load", "no verified coordinates; using the default location");
+    }
+    // Rows carry no place, so the default place's rows stand until refetched.
+    const placeNewlyVerified =
+      placeFromFacts({ usingDefaultLocation: get().usingDefaultLocation, hasCoords: verified }) ===
+      TIMES_PLACE.AWAITING_TIMES;
+
+    set({
+      didGetCurrentLocation: verified,
+      // Surfaced in the UI: the times on screen are not for where the user is.
+      usingDefaultLocation: !verified || placeNewlyVerified,
+    });
+
+    await get().refreshTimingsFromDb();
+    const { yesterdayTimings, todayTimings, tomorrowTimings } = get();
+    const missing = [
+      !yesterdayTimings && "yesterday",
+      !todayTimings && "today",
+      !tomorrowTimings && "tomorrow",
+    ].filter(Boolean);
+    // The load fails without this fetch; a newly verified place is best effort.
+    const required = forceGetAndStore || missing.length > 0;
+
+    if (required || placeNewlyVerified) {
+      log.i(
+        "Load",
+        `refetching: ${
+          forceGetAndStore ? "forced" : required ? `missing ${missing.join("+")}` : "place verified"
+        }`
+      );
+      const now = timeZonedNow(locationDetails.timezone);
+      const currentYear = getYear(now);
+      const currentMonth = getMonth(now) + 1;
+      // This year's fetch starts at the month of its oldest kept day.
+      const oldestKept = subDays(now, KEPT_PAST_DAYS);
+      const firstMonth =
+        getYear(oldestKept) === currentYear ? getMonth(oldestKept) + 1 : currentMonth;
+
+      const stored =
+        (await get().getAndStorePrayerTimes(undefined, firstMonth)) &&
+        (await storeAdjacentYear(get, now));
+
+      if (stored) {
+        await get().refreshTimingsFromDb();
+        // After the refresh, so the old rows never read as verified.
+        set({ usingDefaultLocation: !verified });
+      } else if (required) {
+        throw new Error("Failed to fetch and store prayer times");
+      } else {
+        // The default place's rows and flag stand; the next load retries.
+        log.w("Load", "place-verified refetch failed; the default place's times stay");
+      }
+    }
+
+    await get().cleanupOldData();
+  } catch (error: any) {
+    log.e("Load", "loadPrayerTimes failed", error instanceof Error ? error : undefined);
+    set({
+      hasError: true,
+      errorMessage: error.message || "Failed to load prayer times",
+    });
+    throw error;
+  } finally {
+    // Cached and offline launches still publish their stored days to widgets.
+    await syncWidgetSnapshot();
+    set({ loadingTimes: false });
+  }
 };
 
 export const usePrayerTimesStore = create<PrayerTimesStore>()(
@@ -115,6 +249,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         didGetCurrentLocation: false,
         usingDefaultLocation: false,
         isLoading: false,
+        loadingTimes: false,
         isGettingProviders: false,
         hasError: false,
         errorMessage: "",
@@ -190,6 +325,12 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
               });
             }
 
+            // Only the current year's fetch holds today, so only it reports on today.
+            if (yearOverride === undefined) {
+              const { currentProviderId, setInEffect } = providerSettingsStore.getState();
+              setInEffect(getAdapterByProviderId(currentProviderId).fromApplied(data.applied));
+            }
+
             reloadPrayerWidgets();
             await syncWidgetSnapshot();
 
@@ -233,97 +374,10 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           return twoWeeksTimings;
         },
 
-        loadPrayerTimes: async (forceGetAndStore = false): Promise<void> => {
-          try {
-            // Clear any previous errors
-            set({ hasError: false, errorMessage: "" });
-            useAppStore.getState().setLoadingState(true, i18n.t("common.loadingPrayerTimes"));
-
-            // If we haven't already got the current location, acquire it before reading prayer
-            // data. A manual location is authoritative, so reading the device position would
-            // override the user's choice — and the permission is not even consulted, which is
-            // what lets the app run without ever touching location services.
-            if (
-              !get().didGetCurrentLocation &&
-              locationStore.getState().locationMode === LocationMode.DEVICE &&
-              (await checkLocationPermission()).granted
-            ) {
-              try {
-                await locationStore.getState().initializeLocation();
-              } catch (error) {
-                log.w(
-                  "Load",
-                  `current location failed; falling back to saved or default coordinates: ${(error as Error)?.message ?? error}`
-                );
-              }
-            }
-
-            const { locationDetails, lastKnownCoords } = locationStore.getState();
-            // No verified fix. coords default to Makkah so times still load, and
-            // didGetCurrentLocation stays false so a real fix is retried later.
-            if (!lastKnownCoords) {
-              log.w("Load", "no verified coordinates; using the default location");
-            }
-
-            set({
-              didGetCurrentLocation: lastKnownCoords !== null,
-              // Surfaced in the UI: the times on screen are not for where the user is.
-              usingDefaultLocation: lastKnownCoords === null,
-            });
-
-            await get().refreshTimingsFromDb();
-            const { yesterdayTimings, todayTimings, tomorrowTimings } = get();
-
-            // Check if we need to fetch fresh data
-            if (forceGetAndStore || !yesterdayTimings || !todayTimings || !tomorrowTimings) {
-              log.i(
-                "Load",
-                `refetching: ${
-                  forceGetAndStore
-                    ? "forced"
-                    : `missing ${[
-                        !yesterdayTimings && "yesterday",
-                        !todayTimings && "today",
-                        !tomorrowTimings && "tomorrow",
-                      ]
-                        .filter(Boolean)
-                        .join("+")}`
-                }`
-              );
-              const currentYear = getTimezoneYear(locationDetails.timezone);
-              const currentMonth = getTimezoneMonth(locationDetails.timezone);
-
-              // Fetch from the current month onward for the current year
-              const success = await get().getAndStorePrayerTimes(undefined, currentMonth);
-
-              if (!success) {
-                throw new Error("Failed to fetch and store prayer times");
-              }
-
-              // Fetch adjacent year if at a year boundary
-              if (currentMonth === 1) {
-                await get().getAndStorePrayerTimes(currentYear - 1);
-              } else if (currentMonth === 12) {
-                await get().getAndStorePrayerTimes(currentYear + 1);
-              }
-
-              await get().refreshTimingsFromDb();
-            }
-
-            await get().cleanupOldData();
-          } catch (error: any) {
-            log.e("Load", "loadPrayerTimes failed", error instanceof Error ? error : undefined);
-            set({
-              hasError: true,
-              errorMessage: error.message || "Failed to load prayer times",
-            });
-            throw error;
-          } finally {
-            // Cached and offline launches still publish their stored days to widgets.
-            await syncWidgetSnapshot();
-            useAppStore.getState().setLoadingState(false);
-          }
-        },
+        loadPrayerTimes: (forceGetAndStore = false) =>
+          loadTimes(set, get, forceGetAndStore, () => takeDeviceFixOnce(get)),
+        loadPrayerTimesAtCurrentPlace: (forceGetAndStore = false) =>
+          loadTimes(set, get, forceGetAndStore, async () => {}),
         getNextPrayer: (now = new Date()) => {
           const state = get();
           // Real instant: stored times already carry the location's offset.
@@ -376,7 +430,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           // zero countdown beside an elapsed timestamp.
           return null;
         },
-        cleanupOldData: async (olderThanDays = 2): Promise<boolean> => {
+        cleanupOldData: async (olderThanDays = KEPT_PAST_DAYS): Promise<boolean> => {
           try {
             const timezone = locationStore.getState().locationDetails.timezone;
             const now = timeZonedNow(timezone);
@@ -397,5 +451,9 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
     { name: "PrayerTimesStores" }
   )
 );
+
+/** Whether today's times are on their way: a load or a fetch is running. */
+export const selectTimesLoading = (state: PrayerTimesStore) =>
+  state.isLoading || state.loadingTimes;
 
 export default usePrayerTimesStore;

@@ -4,9 +4,21 @@
     "strict": true,
     // TS 6 no longer auto-includes @types packages; jest supplies the test globals.
     "types": ["jest"],
+    // RN's legacy types; moti's types and our View refs fail the strict API.
+    "customConditions": ["react-native", "react-native-legacy-deep-imports"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  // Replaces the base list; scripts/ runs under Bun and has its own project.
+  "exclude": [
+    "${configDir}/node_modules",
+    "${configDir}/babel.config.js",
+    "${configDir}/metro.config.js",
+    "${configDir}/jest.config.js",
+    "${configDir}/android",
+    "${configDir}/ios",
+    "${configDir}/scripts"
+  ]
 }

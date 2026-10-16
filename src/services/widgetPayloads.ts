@@ -10,8 +10,8 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
-import { refreshAllWidgets } from "../../modules/expo-widgets/src";
-import { reloadAllWidgets } from "../../modules/expo-widget/src";
+import { refreshAllWidgets } from "expo-widgets";
+import { reloadAllWidgets } from "expo-widget";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("widgets");

@@ -1,0 +1,42 @@
+name: Workflow Lint
+
+# Build workflows only run on master or by hand, so this is the check a PR gets.
+on:
+  pull_request:
+    paths: &workflow-paths
+      - ".github/**"
+  push:
+    branches: [master, v3]
+    paths: *workflow-paths
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: "1.7.12"
+      ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The runner's shellcheck lints every run: script as well.
+      - name: Install actionlint
+        run: |
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$archive" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" actionlint
+
+      - name: Lint workflows
+        run: ./actionlint -color

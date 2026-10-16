@@ -1,8 +1,8 @@
 import { FC, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
 import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Select } from "@/components/ui/select";
 
@@ -12,30 +12,33 @@ import {
   ChallengeDifficulty,
   ChallengeCount,
   CHALLENGE_COUNTS,
+  CHALLENGE_DIFFICULTIES,
+  CHALLENGE_TYPES,
 } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   value: ChallengeConfig;
   onChange: (config: ChallengeConfig) => void;
 };
 
-const CHALLENGE_TYPES: { value: ChallengeType; label: string }[] = [
-  { value: "none", label: "alarm.challenge.none" },
-  { value: "tap", label: "alarm.challenge.tap" },
-  { value: "math", label: "alarm.challenge.math" },
-  { value: "dhikr", label: "alarm.challenge.dhikr" },
-];
+const CHALLENGE_TYPE_LABEL: Record<ChallengeType, string> = {
+  [CHALLENGE_TYPE.NONE]: "alarm.challenge.none",
+  [CHALLENGE_TYPE.TAP]: "alarm.challenge.tap",
+  [CHALLENGE_TYPE.MATH]: "alarm.challenge.math",
+  [CHALLENGE_TYPE.DHIKR]: "alarm.challenge.dhikr",
+};
 
-const CHALLENGE_DIFFICULTIES: { value: ChallengeDifficulty; label: string }[] = [
-  { value: "easy", label: "alarm.challenge.easy" },
-  { value: "medium", label: "alarm.challenge.medium" },
-  { value: "hard", label: "alarm.challenge.hard" },
-];
+const CHALLENGE_DIFFICULTY_LABEL: Record<ChallengeDifficulty, string> = {
+  [CHALLENGE_DIFFICULTY.EASY]: "alarm.challenge.easy",
+  [CHALLENGE_DIFFICULTY.MEDIUM]: "alarm.challenge.medium",
+  [CHALLENGE_DIFFICULTY.HARD]: "alarm.challenge.hard",
+};
 
 const ChallengePicker: FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const handleTypeChange = (type: string) => {
     hapticSelection();
@@ -53,12 +56,16 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
   };
 
   const typeItems = useMemo(
-    () => CHALLENGE_TYPES.map((c) => ({ label: t(c.label), value: c.value })),
+    () => CHALLENGE_TYPES.map((value) => ({ label: t(CHALLENGE_TYPE_LABEL[value]), value })),
     [t]
   );
 
   const difficultyItems = useMemo(
-    () => CHALLENGE_DIFFICULTIES.map((d) => ({ label: t(d.label), value: d.value })),
+    () =>
+      CHALLENGE_DIFFICULTIES.map((value) => ({
+        label: t(CHALLENGE_DIFFICULTY_LABEL[value]),
+        value,
+      })),
     [t]
   );
 
@@ -81,7 +88,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
         />
       </VStack>
 
-      {value.type !== "none" && (
+      {value.type !== CHALLENGE_TYPE.NONE && (
         <>
           <VStack gap="$0.5">
             <Text size="sm" color="$typographySecondary">

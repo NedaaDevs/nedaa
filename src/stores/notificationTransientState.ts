@@ -1,6 +1,7 @@
 /** The slice of the notification store that describes work in progress rather than settings. */
 type TransientSchedulingState = {
   isScheduling?: boolean;
+  batchDepth?: number;
 };
 
 /**
@@ -11,8 +12,15 @@ type TransientSchedulingState = {
  * and the lock is persisted with the rest of the store, so it returns as `true`. While it is set,
  * `rescheduleIfNeeded` returns early and the foreground reschedule stops running. A cold launch
  * schedules directly and clears it either way, so the reset is what covers the launches in between.
+ *
+ * `batchDepth` is reset for the same reason: nothing closes a batch whose screen is gone.
+ * `pendingReschedule` is kept rather than cleared: it records that a batch's writes
+ * still owe a reschedule. Nothing reads it at launch — `setup.ts` reschedules
+ * unconditionally on a cold start — so a debt that outlives a process death is paid
+ * either way.
  */
 export const clearTransientSchedulingState = <T extends TransientSchedulingState>(state: T): T => {
   state.isScheduling = false;
+  state.batchDepth = 0;
   return state;
 };

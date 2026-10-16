@@ -1,0 +1,32 @@
+appId: dev.nedaa.android
+name: Visual ${SHOT}
+---
+# One shot, opened cold so the link is the initial URL. MODE comes from
+# scripts/ci/visual-check.sh: prime, record or assert.
+- stopApp
+- openLink: "myapp://screenshot/${SCREEN}?locale=${LOCALE}&seed=${SEED}&theme=${THEME}"
+# Shown once the screen has had time to mount and no loading card is up.
+- extendedWaitUntil:
+    visible:
+      id: "shot-ready-${SCREEN}-${LOCALE}"
+    timeout: 120000
+# Data and seeded stores can land after the marker; wait for a still frame.
+- waitForAnimationToEnd:
+    timeout: 15000
+# The crop leaves out the status bar, which the app does not draw.
+- runFlow:
+    when:
+      true: ${MODE == 'record'}
+    commands:
+      - takeScreenshot:
+          path: ${SHOT}
+          cropOn:
+            id: "screenshot-frame"
+- runFlow:
+    when:
+      true: ${MODE == 'assert'}
+    commands:
+      - assertScreenshot:
+          path: "baselines/${SHOT}.png"
+          cropOn:
+            id: "screenshot-frame"

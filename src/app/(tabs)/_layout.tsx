@@ -1,52 +1,120 @@
-import { useEffect } from "react";
-import { Tabs, router, type Href } from "expo-router";
+import { useContext, useEffect } from "react";
+import { router, type Href } from "expo-router";
+import {
+  Tabs,
+  BottomTabBarHeightCallbackContext,
+  type BottomTabBarProps,
+} from "expo-router/js-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTextScale } from "@/hooks/useTextScale";
-import { BottomTabBar, BottomTabBarProps } from "expo-router/js-tabs";
 import { useTranslation } from "react-i18next";
 
 // Stores
-import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { usePreferencesStore } from "@/stores/preferences";
+import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 
 // Enums
-import { OpeningTab, type OpeningTabValue } from "@/enums/app";
+import { HiddenTab, OpeningTab, type OpeningTabValue } from "@/enums/app";
+import { isSkyTab } from "@/constants/SkyTabs";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { TAB_ITEMS, type TabItem } from "@/constants/TabBar";
 
-// Icons
-import { Home, Settings, BookOpenText, BookOpen, Wrench } from "lucide-react-native";
+// Hooks
+import { useBarTabs } from "@/hooks/useBarTabs";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { TabBarItem } from "@/components/ui/tab-bar-item";
 import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 
-// Utils
-import { isAthkarSupported } from "@/utils/athkar";
+/** Where each bar tab lives; the opening-tab preference lands there too. */
+const TAB_HREF = {
+  [OpeningTab.HOME]: BACK_DESTINATION.HOME.href,
+  [OpeningTab.QURAN]: BACK_DESTINATION.QURAN.href,
+  [OpeningTab.ATHKAR]: BACK_DESTINATION.ATHKAR.href,
+  [OpeningTab.TOOLS]: BACK_DESTINATION.TOOLS.href,
+} as const satisfies Record<OpeningTabValue, Href>;
 
-// Hooks
-import { useTheme } from "tamagui";
+/** Every route the tabs declare: the bar's tabs, then the ones it hides. */
+export const TAB_ROUTES = [...TAB_ITEMS.map((tab) => tab.name), ...Object.values(HiddenTab)];
 
-const OPENING_TAB_ROUTE: Record<Exclude<OpeningTabValue, "index">, Href> = {
-  [OpeningTab.ATHKAR]: "/(tabs)/athkar",
-  [OpeningTab.QURAN]: "/(tabs)/quran",
-  [OpeningTab.TOOLS]: "/(tabs)/tools",
+export const TAB_BAR_PART = { FRAME: "tab-bar-frame" } as const;
+
+// Reads only the tab state; a press switches tabs by href through the router.
+type AppTabBarProps = Pick<BottomTabBarProps, "state"> & {
+  tabs: readonly TabItem[];
+  readerActive: boolean;
 };
 
-// Honoured once per app launch. This layout remounts whenever the theme changes
-// (key={`tabs-${mode}`}), and re-navigating then would yank the user out of
-// whatever tab they were on.
+const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  // The tab view gives each screen this height, so a screen under a floating bar
+  // knows how much room to leave.
+  const reportHeight = useContext(BottomTabBarHeightCallbackContext);
+  const setFrameHeight = useTabBarFrameStore((state) => state.setHeight);
+  const focused = state.routes[state.index].name;
+  // Quran is full screen, so the mini player pads the bottom inset.
+  const tabBarHidden = focused === OpeningTab.QURAN;
+  // The bar floats over a sky tab so the sky shows through it.
+  const floating = isSkyTab(focused);
+
+  return (
+    <Box
+      testID={TAB_BAR_PART.FRAME}
+      onLayout={({ nativeEvent }) => {
+        reportHeight?.(nativeEvent.layout.height);
+        setFrameHeight(nativeEvent.layout.height);
+      }}
+      {...(floating
+        ? { position: "absolute", start: 0, end: 0, bottom: 0 }
+        : { backgroundColor: "$backgroundSecondary" })}>
+      {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
+      <MiniPlayerBar />
+      {!tabBarHidden && (
+        <HStack
+          accessibilityRole="tablist"
+          gap="$0.5"
+          paddingTop="$1.5"
+          paddingHorizontal="$2.5"
+          paddingBottom={insets.bottom}
+          borderTopWidth={1}
+          borderColor="$border"
+          backgroundColor="$bar">
+          {tabs.map((tab) => {
+            const route = state.routes.find((candidate) => candidate.name === tab.name);
+            if (!route) return null;
+            const selected = focused === tab.name;
+            return (
+              <TabBarItem
+                key={route.key}
+                label={t(tab.title)}
+                icon={tab.icon}
+                selected={selected}
+                onPress={() => {
+                  if (!selected) router.navigate(TAB_HREF[tab.name]);
+                }}
+              />
+            );
+          })}
+        </HStack>
+      )}
+    </Box>
+  );
+};
+
+// Honoured once per app launch: the effect below runs again when the bar changes, and
+// re-navigating then would yank the user out of whatever tab they were on.
 let openingTabApplied = false;
 
 const TabsLayout = () => {
-  const { locale, mode } = useAppStore();
   // The immersive reader owns the whole screen — the global Listen mini-player
   // would overlay the page and disrupt reading, so suppress it there.
   const readerActive = useQuranStore((s) => s.readerActive);
   const { t } = useTranslation();
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
-  const textScale = useTextScale();
+  const tabs = useBarTabs();
 
   // Land on the user's chosen tab. The preference is persisted, so wait for
   // rehydration or the stored choice is missed on a cold start.
@@ -57,13 +125,12 @@ const TabsLayout = () => {
       if (openingTabApplied) return;
       openingTabApplied = true;
 
-      const tab = usePreferencesStore.getState().openingTab;
-      if (tab === OpeningTab.HOME) return;
-      // A tab can become unreachable after it was chosen — the locale no longer
-      // supports it. Fall back to home rather than a hidden route.
-      if (tab === OpeningTab.ATHKAR && !isAthkarSupported(locale)) return;
+      const stored = usePreferencesStore.getState().openingTab;
+      if (stored === OpeningTab.HOME) return;
+      // A tab chosen in another locale may be off the bar; home stands in for it.
+      if (!tabs.some((tab) => tab.name === stored)) return;
 
-      router.replace(OPENING_TAB_ROUTE[tab]);
+      router.replace(TAB_HREF[stored]);
     };
 
     if (usePreferencesStore.persist.hasHydrated()) {
@@ -71,97 +138,19 @@ const TabsLayout = () => {
       return;
     }
     return usePreferencesStore.persist.onFinishHydration(apply);
-  }, [locale]);
+  }, [tabs]);
 
+  const renderTabBar = ({ state }: BottomTabBarProps) => (
+    <AppTabBar state={state} tabs={tabs} readerActive={readerActive} />
+  );
+
+  // Every tab route is declared; the bar shows TAB_ITEMS alone.
   return (
-    <Tabs
-      key={`tabs-${mode}`}
-      tabBar={(props: BottomTabBarProps) => {
-        // The quran tab hides the tab bar (display: none), leaving the mini
-        // player as the bottom-most element — it must pad the bottom inset then.
-        const tabBarHidden = props.state.routes[props.state.index].name === "quran";
-        return (
-          <Box backgroundColor="$backgroundSecondary">
-            {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
-            <MiniPlayerBar />
-            <BottomTabBar {...props} />
-          </Box>
-        );
-      }}
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.primary.val,
-        tabBarInactiveTintColor: theme.typographySecondary.val,
-        tabBarAllowFontScaling: false,
-        tabBarLabelStyle: {
-          // react-navigation's default label is ~12px; the app preset scales it.
-          fontSize: 12 * textScale,
-        },
-        tabBarStyle: {
-          // The vendored bar sizes itself from a numeric height only, so the
-          // label's extra line height is added here rather than via minHeight.
-          height: 60 + Math.ceil(16 * (textScale - 1)) + insets.bottom,
-          paddingBottom: insets.bottom,
-          paddingTop: 5,
-          backgroundColor: theme.backgroundSecondary.val,
-          borderTopColor: theme.outline.val,
-        },
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t("a11y.tab.home"),
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="athkar"
-        options={{
-          title: t("a11y.tab.athkar"),
-          href: isAthkarSupported(locale) ? "/(tabs)/athkar" : null,
-          tabBarIcon: ({ color, size }) => <BookOpenText color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="quran"
-        options={{
-          title: t("a11y.tab.quran"),
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
-          tabBarStyle: { display: "none" },
-        }}
-      />
-
-      <Tabs.Screen
-        name="qada"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="tools"
-        options={{
-          title: t("a11y.tab.tools"),
-          tabBarIcon: ({ color, size }) => <Wrench color={color} size={size} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="compass"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t("a11y.tab.settings"),
-          tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
-        }}
-      />
+    <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
+      {TAB_ROUTES.map((name) => {
+        const item = TAB_ITEMS.find((tab) => tab.name === name);
+        return <Tabs.Screen key={name} name={name} options={item && { title: t(item.title) }} />;
+      })}
     </Tabs>
   );
 };

@@ -4,6 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Sunrise, Sparkles } from "lucide-react-native";
 
 import { Text } from "@/components/ui/text";
+import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
+import { TextSize } from "@/enums/app";
+import { TextScaleContext } from "@/hooks/useTextScale";
 import { formatNumberToLocale } from "@/utils/number";
 
 export type StreakVariant = "fajr" | "athkar";
@@ -43,70 +46,64 @@ const StreakShareCard = ({ variant, count }: StreakShareCardProps) => {
 
   return (
     <Theme name="dark">
-      <YStack
-        width={CARD_WIDTH}
-        height={CARD_HEIGHT}
-        backgroundColor={BG}
-        paddingHorizontal={28}
-        paddingVertical={30}
-        alignItems="center"
-        justifyContent="space-between">
-        {/* Streak headline */}
-        <YStack flex={1} alignItems="center" justifyContent="center" gap={10}>
-          <YStack
-            width={60}
-            height={60}
-            borderRadius={999}
-            backgroundColor={GOLD_SOFT}
-            alignItems="center"
-            justifyContent="center">
-            <VariantIcon size={30} color={GOLD} />
+      {/* A fixed-size PNG: its pixels ignore the sender's text size. */}
+      <TextScaleContext value={TEXT_SIZE_MULTIPLIERS[TextSize.DEFAULT]}>
+        <YStack
+          width={CARD_WIDTH}
+          height={CARD_HEIGHT}
+          backgroundColor={BG}
+          paddingHorizontal={28}
+          paddingVertical={30}
+          alignItems="center"
+          justifyContent="space-between">
+          {/* Streak headline */}
+          <YStack flex={1} alignItems="center" justifyContent="center" gap={10}>
+            <YStack
+              width={60}
+              height={60}
+              borderRadius={999}
+              backgroundColor={GOLD_SOFT}
+              alignItems="center"
+              justifyContent="center">
+              <VariantIcon size={30} color={GOLD} />
+            </YStack>
+
+            <Text
+              fontSize={13}
+              fontWeight="700"
+              letterSpacing={2}
+              color={GOLD}
+              textAlign="center"
+              style={{ textTransform: "uppercase" }}>
+              {t(`streakShare.${variant}.title`)}
+            </Text>
+
+            <Text fontSize={84} fontWeight="800" color={TEXT} textAlign="center">
+              {formattedCount}
+            </Text>
+
+            <Text fontSize={16} fontWeight="600" color={TEXT_MUTED} textAlign="center">
+              {t("streakShare.daysUnit", { count })}
+            </Text>
           </YStack>
 
-          {/* The card is a fixed-size PNG capture; exported pixels must not
-              vary with the sender's text-size preset. */}
-          <Text
-            fontSize={13}
-            fontWeight="700"
-            letterSpacing={2}
-            color={GOLD}
-            textAlign="center"
-            scaleOverride={1}
-            style={{ textTransform: "uppercase" }}>
-            {t(`streakShare.${variant}.title`)}
-          </Text>
-
-          <Text fontSize={84} fontWeight="800" color={TEXT} textAlign="center" scaleOverride={1}>
-            {formattedCount}
-          </Text>
-
-          <Text
-            fontSize={16}
-            fontWeight="600"
-            color={TEXT_MUTED}
-            textAlign="center"
-            scaleOverride={1}>
-            {t("streakShare.daysUnit", { count })}
-          </Text>
+          {/* Branded footer: hairline, logomark, tagline */}
+          <YStack alignItems="center" gap={10} width="100%">
+            <YStack width={44} height={1} backgroundColor={HAIRLINE} />
+            <XStack alignItems="center" gap={7}>
+              <Image source={LOGO} style={{ width: 18, height: 18 }} resizeMode="contain" />
+              <Text
+                fontSize={10}
+                fontWeight="700"
+                letterSpacing={1.4}
+                color={TEXT_MUTED}
+                style={{ textTransform: "uppercase" }}>
+                {t("streakShare.tagline")}
+              </Text>
+            </XStack>
+          </YStack>
         </YStack>
-
-        {/* Branded footer: hairline, logomark, tagline */}
-        <YStack alignItems="center" gap={10} width="100%">
-          <YStack width={44} height={1} backgroundColor={HAIRLINE} />
-          <XStack alignItems="center" gap={7}>
-            <Image source={LOGO} style={{ width: 18, height: 18 }} resizeMode="contain" />
-            <Text
-              fontSize={10}
-              fontWeight="700"
-              letterSpacing={1.4}
-              color={TEXT_MUTED}
-              scaleOverride={1}
-              style={{ textTransform: "uppercase" }}>
-              {t("streakShare.tagline")}
-            </Text>
-          </XStack>
-        </YStack>
-      </YStack>
+      </TextScaleContext>
     </Theme>
   );
 };

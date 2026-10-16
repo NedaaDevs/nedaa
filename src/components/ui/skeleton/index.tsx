@@ -1,6 +1,9 @@
-import React, { useRef, useEffect, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, type ViewProps } from "react-native";
-import { styled, YStack, useTheme } from "tamagui";
+import React, { useRef, useEffect } from "react";
+import { Animated, Easing, type ViewProps } from "react-native";
+import { styled, YStack } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
+
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type SkeletonVariant = "sharp" | "circular" | "rounded";
 
@@ -26,10 +29,7 @@ const Skeleton = React.forwardRef<React.ComponentRef<typeof Animated.View>, Skel
     const resolvedColor = startColor ?? theme.backgroundMuted.val;
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
-    const [reduceMotion, setReduceMotion] = useState(false);
-    useEffect(() => {
-      AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    }, []);
+    const reduceMotion = useReducedMotion();
 
     useEffect(() => {
       if (isLoaded) return;

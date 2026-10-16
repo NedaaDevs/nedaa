@@ -75,6 +75,9 @@ const AthkarTabs = () => {
   useEffect(() => {
     if (!screenshotPeriod) return;
     const period = screenshotPeriod === "evening" ? ATHKAR_TYPE.EVENING : ATHKAR_TYPE.MORNING;
+    // Reachable only in screenshot-capture builds: useAthkarLandingScreenshotSeed
+    // returns null otherwise, so the seeded period is applied once and never again.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab(period);
     setCurrentType(period);
   }, [screenshotPeriod, setCurrentType]);
@@ -227,7 +230,7 @@ const AthkarTabs = () => {
         <Fab
           onPress={() => router.push("/athkar-focus")}
           size="lg"
-          placement="bottom right"
+          placement="bottom end"
           bottom={16}
           accessibilityLabel={t("athkar.focus.title")}>
           <FabIcon as={Focus} color="$typographyContrast" />

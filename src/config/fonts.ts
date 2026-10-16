@@ -6,19 +6,26 @@ import {
   IBMPlexSansArabic_700Bold,
 } from "@expo-google-fonts/ibm-plex-sans-arabic";
 import {
-  Asap_400Regular,
-  Asap_500Medium,
-  Asap_600SemiBold,
-  Asap_700Bold,
-} from "@expo-google-fonts/asap";
+  IBMPlexSans_400Regular,
+  IBMPlexSans_500Medium,
+  IBMPlexSans_600SemiBold,
+  IBMPlexSans_700Bold,
+} from "@expo-google-fonts/ibm-plex-sans";
 
-// Font family constants
 export const FontFamily = {
-  IBM: "IBM",
-  Asap: "Asap",
+  Arabic: "IBMPlexSansArabic",
+  Latin: "IBMPlexSans",
 };
 
-// IBMPlexSans font weights
+/** Arabic script: Arabic, Urdu. */
+export const IBMPlexSansArabicFonts = {
+  400: "IBMPlexSansArabic-Regular",
+  500: "IBMPlexSansArabic-Medium",
+  600: "IBMPlexSansArabic-SemiBold",
+  700: "IBMPlexSansArabic-Bold",
+};
+
+/** Latin script: English, Malay. */
 export const IBMPlexSansFonts = {
   400: "IBMPlexSans-Regular",
   500: "IBMPlexSans-Medium",
@@ -26,27 +33,17 @@ export const IBMPlexSansFonts = {
   700: "IBMPlexSans-Bold",
 };
 
-// Asap font weights
-export const AsapFonts = {
-  400: "Asap-Regular",
-  500: "Asap-Medium",
-  600: "Asap-SemiBold",
-  700: "Asap-Bold",
-};
-
 export const useLoadFonts = () => {
   return useFonts({
-    // IBM Plex Sans Arabic fonts
-    "IBMPlexSans-Regular": IBMPlexSansArabic_400Regular,
-    "IBMPlexSans-Medium": IBMPlexSansArabic_500Medium,
-    "IBMPlexSans-SemiBold": IBMPlexSansArabic_600SemiBold,
-    "IBMPlexSans-Bold": IBMPlexSansArabic_700Bold,
+    "IBMPlexSansArabic-Regular": IBMPlexSansArabic_400Regular,
+    "IBMPlexSansArabic-Medium": IBMPlexSansArabic_500Medium,
+    "IBMPlexSansArabic-SemiBold": IBMPlexSansArabic_600SemiBold,
+    "IBMPlexSansArabic-Bold": IBMPlexSansArabic_700Bold,
 
-    // Asap fonts
-    "Asap-Regular": Asap_400Regular,
-    "Asap-Medium": Asap_500Medium,
-    "Asap-SemiBold": Asap_600SemiBold,
-    "Asap-Bold": Asap_700Bold,
+    "IBMPlexSans-Regular": IBMPlexSans_400Regular,
+    "IBMPlexSans-Medium": IBMPlexSans_500Medium,
+    "IBMPlexSans-SemiBold": IBMPlexSans_600SemiBold,
+    "IBMPlexSans-Bold": IBMPlexSans_700Bold,
 
     // Ornamental ayah/page markers + image-mushaf overlays (FD50 digit glyphs).
     UthmanicHafs: require("@/../assets/fonts/UthmanicHafs_V22.ttf"),

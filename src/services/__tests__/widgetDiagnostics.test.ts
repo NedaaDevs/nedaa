@@ -1,5 +1,5 @@
 import { AppLogger } from "@/utils/appLogger";
-import { logWidgetAttachContext } from "@/services/widgetDiagnostics";
+import { logWidgetAttachContext, logWidgetReloadModule } from "@/services/widgetDiagnostics";
 
 import type { WidgetAttachContextDeps } from "@/services/widgetDiagnostics";
 
@@ -16,7 +16,8 @@ const mockLog = AppLogger.create("widgets") as unknown as {
   e: jest.Mock;
 };
 
-jest.mock("../../../modules/expo-widgets/src", () => ({
+jest.mock("expo-widget", () => ({ getWidgetModuleLoadError: jest.fn(() => null) }));
+jest.mock("expo-widgets", () => ({
   getPlacedWidgetCount: jest.fn(() => 0),
   isPersistentNotificationEnabled: jest.fn(() => false),
 }));
@@ -30,6 +31,7 @@ const makeDeps = (overrides: Partial<WidgetAttachContextDeps> = {}): WidgetAttac
 beforeEach(() => {
   mockLog.i.mockClear();
   mockLog.w.mockClear();
+  mockLog.e.mockClear();
 });
 
 describe("logWidgetAttachContext", () => {
@@ -80,5 +82,26 @@ describe("logWidgetAttachContext", () => {
 
     // The shade card attaches without a placed widget, so the flag is not conditional.
     expect(deps.isPersistentNotificationEnabled).toHaveBeenCalledTimes(1);
+  });
+});
+
+// The load error is the only trace of a missing reload module.
+describe("logWidgetReloadModule", () => {
+  test("records the error when the native module failed to load", () => {
+    const loadError = new Error("Cannot find native module 'ExpoWidget'");
+
+    logWidgetReloadModule(loadError);
+
+    expect(mockLog.e).toHaveBeenCalledWith(
+      "Module",
+      "expo-widget native module missing — widget reloads are no-ops",
+      loadError
+    );
+  });
+
+  test("stays silent when the module loaded", () => {
+    logWidgetReloadModule(null);
+
+    expect(mockLog.e).not.toHaveBeenCalled();
   });
 });

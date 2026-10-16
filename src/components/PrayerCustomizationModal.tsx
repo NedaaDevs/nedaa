@@ -25,6 +25,9 @@ import SoundPreviewButton from "@/components/SoundPreviewButton";
 // Icons
 import { X } from "lucide-react-native";
 
+// Constants
+import { NOTIFICATION_TIMING_CHOICES } from "@/constants/Notification";
+
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
 import { NotificationSoundKey } from "@/types/sound";
@@ -97,7 +100,7 @@ const PrayerCustomizationModal: FC<Props> = ({
 
   const timingItems = useMemo(
     () =>
-      [5, 10, 15, 20, 30].map((min) => ({
+      NOTIFICATION_TIMING_CHOICES.map((min) => ({
         label: t("common.minute", { count: min }),
         value: min.toString(),
       })),
@@ -166,7 +169,7 @@ const PrayerCustomizationModal: FC<Props> = ({
               />
             </HStack>
 
-            <Divider backgroundColor="$outline" />
+            <Divider />
 
             {/* Timing (Iqama & PreAthan) */}
             {hasTiming && timingLabel && (
@@ -182,7 +185,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                     placeholder={t("notification.timing.selectPlaceholder")}
                   />
                 </HStack>
-                <Divider backgroundColor="$outline" />
+                <Divider />
               </>
             )}
 
@@ -209,7 +212,7 @@ const PrayerCustomizationModal: FC<Props> = ({
             {/* Vibration */}
             {supportsVibration && (
               <>
-                <Divider backgroundColor="$outline" />
+                <Divider />
                 <HStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
                   <Text fontWeight="500" color="$typography" flex={1}>
                     {t("notification.vibration")}

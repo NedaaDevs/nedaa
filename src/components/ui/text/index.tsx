@@ -1,9 +1,18 @@
 import React from "react";
 import { Platform } from "react-native";
-import { Text as TamaguiText, type TextProps as TamaguiTextProps, useTheme } from "tamagui";
+import { Text as TamaguiText, type TextProps as TamaguiTextProps } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { AppLocale, PlatformType } from "@/enums/app";
-import { FONT_SIZES, SIZE_MAP, resolveTextSizing } from "@/components/ui/text/sizing";
+import {
+  FONT_SIZES,
+  SIZE_MAP,
+  resolveFontSize,
+  resolveTextSizing,
+  roleLineHeight,
+  type TextRole,
+} from "@/components/ui/text/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
+import { getDirection, useAppStore } from "@/stores/app";
 import i18n from "@/localization/i18n";
 
 type TextSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
@@ -35,8 +44,10 @@ type TextProps = TamaguiTextProps & {
   size?: TextSize;
   /** Tabular figures, so digits keep a fixed advance width in aligned columns. */
   numeric?: boolean;
-  /** Fixed multiplier for this instance, replacing the app preset (previews, share captures). */
-  scaleOverride?: number;
+  /** A lone character, measured exactly: no room added on Android. */
+  glyph?: boolean;
+  /** Line box as a ratio of the font size. Not `role`, which is accessibility. */
+  typography?: TextRole;
 };
 
 const resolveFontWeight = (
@@ -57,6 +68,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       fontWeight,
       fontSize,
       lineHeight,
+      typography,
       isTruncated,
       underline,
       strikeThrough,
@@ -65,20 +77,23 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
       highlight,
       size = "md",
       numeric,
-      scaleOverride,
+      glyph,
       style,
       ...props
     },
     ref
   ) => {
     const theme = useTheme();
-    // The hook always runs (hooks-order safety); the override only replaces its value.
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    // iOS aligns unmarked text by the phone's language, not the app's.
+    const writingDirection = getDirection(useAppStore((state) => state.locale));
+    const m = useTextScale();
     const resolvedWeight = resolveFontWeight(bold, fontWeight);
     const tokenKey = SIZE_MAP[size] ?? "$3";
     const sizeValues = FONT_SIZES[tokenKey] ?? FONT_SIZES["$3"];
-    const sized = resolveTextSizing(m, fontSize, sizeValues, lineHeight);
+    // A role states the line box as a ratio, so it reaches the same path an
+    // explicit lineHeight does. An explicit value still wins.
+    const roleBox = roleLineHeight(typography, resolveFontSize(fontSize) ?? sizeValues.fontSize);
+    const sized = resolveTextSizing(m, fontSize, sizeValues, lineHeight ?? roleBox);
 
     return (
       <TamaguiText
@@ -94,9 +109,9 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         allowFontScaling={false}
         // Android mismeasures Arabic glyph widths; "simple" break strategy
         // uses a more generous width calculation in StaticLayout.
-        {...(IS_ANDROID && { textBreakStrategy: "simple", paddingEnd: 8 })}
+        {...(IS_ANDROID && !glyph && { textBreakStrategy: "simple", paddingEnd: 8 })}
         style={[
-          !IS_ANDROID && i18n.language === "ar" && { writingDirection: "rtl" as const },
+          !IS_ANDROID && { writingDirection },
           underline && { textDecorationLine: "underline" as const },
           strikeThrough && { textDecorationLine: "line-through" as const },
           italic && { fontStyle: "italic" as const },

@@ -23,6 +23,7 @@ import { trackDownload } from "@/services/quran-download-stats";
 import { useQuranStore } from "@/stores/quran";
 import { AppLogger } from "@/utils/appLogger";
 import { getUserAgent } from "@/utils/userAgent";
+import { writeFileSync } from "@/utils/writeFileSync";
 import type { DownloadProgress, QuranManifestVersion } from "@/types/quran";
 
 const log = AppLogger.create("quran-download");
@@ -49,7 +50,7 @@ const persistResume = (version: MushafVersion, state: DownloadPauseState): void 
     const file = resumeFile(version);
     if (file.exists) file.delete();
     file.create();
-    file.write(JSON.stringify(state));
+    writeFileSync(file, JSON.stringify(state));
   } catch {
     log.e("Download", `Failed to persist resume state for ${version}`);
   }
@@ -96,7 +97,7 @@ const writeInstalled = (version: MushafVersion, patch: InstalledVersions): void 
     const file = installedFile(version);
     if (file.exists) file.delete();
     file.create();
-    file.write(JSON.stringify(next));
+    writeFileSync(file, JSON.stringify(next));
   } catch {
     log.e("Download", `Failed to write installed versions for ${version}`);
   }

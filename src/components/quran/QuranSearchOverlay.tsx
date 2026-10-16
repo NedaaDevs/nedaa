@@ -18,7 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, LegacyScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View, XStack, YStack } from "tamagui";
 import { ArrowLeft, ArrowRight, Search, X } from "lucide-react-native";
@@ -41,6 +41,7 @@ import { useHighlightStore } from "@/stores/quranHighlights";
 import { useBookmarkStore } from "@/stores/quranBookmarks";
 import { useQuranChromeColors } from "@/hooks/useQuranChromeColors";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useRTL } from "@/contexts/RTLContext";
 import type { SurahMeta } from "@/types/quran";
 
@@ -92,7 +93,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const { isRTL } = useRTL();
     const setCurrentPage = useQuranStore((s) => s.setCurrentPage);
     const setFlashAyah = useQuranStore((s) => s.setFlashAyah);
-    const selectHaptic = useHaptic("light");
+    const selectHaptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
     const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
     const [query, setQuery] = useState("");
@@ -100,7 +101,9 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const [hits, setHits] = useState<AyahSearchHit[]>([]);
     const [open, setOpen] = useState(false);
 
-    const scrollRef = useRef<ScrollView>(null);
+    // Only the legacy list's ref carries the handlerTag the close-pan relates to.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    const scrollRef = useRef<LegacyScrollView>(null);
     const inputRef = useRef<TextInput>(null);
 
     const progress = useSharedValue(0); // 0 closed → 1 open
@@ -452,7 +455,8 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                 </XStack>
               </XStack>
 
-              <ScrollView
+              {/* eslint-disable-next-line @typescript-eslint/no-deprecated */}
+              <LegacyScrollView
                 ref={scrollRef}
                 style={{ flex: 1 }}
                 scrollEventThrottle={16}
@@ -529,7 +533,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                     )}
                   </>
                 )}
-              </ScrollView>
+              </LegacyScrollView>
             </YStack>
           </GestureDetector>
         </Animated.View>
@@ -707,8 +711,7 @@ const SurahRow = ({
             {localizedSurahName(surah.number)}
           </Text>
           <Text fontSize={12} color={chrome.subtleText}>
-            {place} ·{" "}
-            {t("quran.surah.ayahCount", { n: formatNumberToLocale(String(surah.ayahCount)) })}
+            {place} · {t("quran.surah.ayahCount", { count: surah.ayahCount })}
           </Text>
         </YStack>
       </XStack>

@@ -1,0 +1,67 @@
+name: HMS Android Source Gate
+
+on:
+  pull_request:
+    paths: &hms-paths
+      - "android/**"
+      - "modules/**"
+      - "plugins/**"
+      - "patches/**"
+      - "package.json"
+      - "bun.lock"
+      - ".bun-version"
+      - "app.json"
+      - "app.config.js"
+      - "scripts/verify-hms-build.ts"
+      - "scripts/install-hms.ts"
+      - ".github/actions/setup-deps/**"
+      - ".github/workflows/hms-android.yml"
+  push:
+    branches: [master, v3]
+    paths: *hms-paths
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-hms-android:
+    name: HMS Android Source Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Set up Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: "17"
+          distribution: temurin
+          cache: gradle
+
+      - name: Set up dependencies
+        uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
+
+      - name: Verify HMS dependency graph
+        run: bun run verify:android:hms
+
+      - name: Compile HMS native replacements
+        working-directory: android
+        env:
+          BUILD_VARIANT: hms
+        run: |
+          ./gradlew \
+            :expo-hms-notifications:assembleRelease \
+            :expo-hms-compat:assembleRelease \
+            :expo-hms-location:assembleRelease
