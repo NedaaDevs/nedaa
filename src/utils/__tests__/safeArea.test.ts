@@ -2,9 +2,12 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { TOAST_GAP } from "@/constants/Toast";
 import { SAFE_EDGE, isSkySegments, rootSafeAreaEdges, toastBottom } from "@/utils/safeArea";
 
+/** A routed screen: no onboarding flow over it, no immersive reader. */
+const ROUTE = { onboarding: false, immersiveReader: false };
+
 describe("rootSafeAreaEdges", () => {
   it("pads the top of an ordinary screen", () => {
-    expect(rootSafeAreaEdges({ sky: false, immersiveReader: false, android: false })).toEqual([
+    expect(rootSafeAreaEdges({ ...ROUTE, sky: false, android: false })).toEqual([
       SAFE_EDGE.TOP,
       SAFE_EDGE.RIGHT,
       SAFE_EDGE.LEFT,
@@ -13,18 +16,23 @@ describe("rootSafeAreaEdges", () => {
 
   // A sky screen draws under the status bar and pads its own content instead.
   it.each([true, false])("leaves the top of a sky screen open (android: %s)", (android) => {
-    expect(rootSafeAreaEdges({ sky: true, immersiveReader: false, android })).not.toContain(
+    expect(rootSafeAreaEdges({ ...ROUTE, sky: true, android })).not.toContain(SAFE_EDGE.TOP);
+  });
+
+  // The flow draws on the sky over any route, so it pads its own top.
+  it.each([true, false])("leaves the top open under the onboarding flow (sky: %s)", (sky) => {
+    expect(rootSafeAreaEdges({ ...ROUTE, sky, onboarding: true, android: true })).not.toContain(
       SAFE_EDGE.TOP
     );
   });
 
   it("opens the top for the immersive reader on Android only", () => {
-    expect(rootSafeAreaEdges({ sky: false, immersiveReader: true, android: true })).not.toContain(
-      SAFE_EDGE.TOP
-    );
-    expect(rootSafeAreaEdges({ sky: false, immersiveReader: true, android: false })).toContain(
-      SAFE_EDGE.TOP
-    );
+    expect(
+      rootSafeAreaEdges({ ...ROUTE, sky: false, immersiveReader: true, android: true })
+    ).not.toContain(SAFE_EDGE.TOP);
+    expect(
+      rootSafeAreaEdges({ ...ROUTE, sky: false, immersiveReader: true, android: false })
+    ).toContain(SAFE_EDGE.TOP);
   });
 });
 
