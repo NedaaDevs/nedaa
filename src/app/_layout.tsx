@@ -90,13 +90,13 @@ function AppShell() {
   const safeAreaBg = readerImmersive
     ? QURAN_THEME_COLORS[quranTheme].background
     : theme.background.val;
+  const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
   const safeAreaEdges = rootSafeAreaEdges({
     sky: isSkySegments(segments),
+    onboarding: showOnboarding,
     immersiveReader: readerImmersive,
     android: Platform.OS === PlatformType.ANDROID,
   });
-
-  const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
   const appCovered = useAppCovered();
   const sheetLayerUp = useSheetLayerUp();
 
