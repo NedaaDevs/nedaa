@@ -74,7 +74,7 @@ describe("PrayerTimesState", () => {
   it("shows nothing once the day's times are here", async () => {
     await renderState({ todayTimings: DAY, hasError: true, isLoading: true });
 
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.root).toBeEmptyElement();
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

@@ -18,7 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, LegacyScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View, XStack, YStack } from "tamagui";
 import { ArrowLeft, ArrowRight, Search, X } from "lucide-react-native";
@@ -101,7 +101,9 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     const [hits, setHits] = useState<AyahSearchHit[]>([]);
     const [open, setOpen] = useState(false);
 
-    const scrollRef = useRef<ScrollView>(null);
+    // Only the legacy list's ref carries the handlerTag the close-pan relates to.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    const scrollRef = useRef<LegacyScrollView>(null);
     const inputRef = useRef<TextInput>(null);
 
     const progress = useSharedValue(0); // 0 closed → 1 open
@@ -453,7 +455,8 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                 </XStack>
               </XStack>
 
-              <ScrollView
+              {/* eslint-disable-next-line @typescript-eslint/no-deprecated */}
+              <LegacyScrollView
                 ref={scrollRef}
                 style={{ flex: 1 }}
                 scrollEventThrottle={16}
@@ -530,7 +533,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                     )}
                   </>
                 )}
-              </ScrollView>
+              </LegacyScrollView>
             </YStack>
           </GestureDetector>
         </Animated.View>

@@ -1,4 +1,3 @@
-import "react-native-gesture-handler/jestSetup";
 import { useState } from "react";
 import { Platform, StyleSheet, Text } from "react-native";
 import { State } from "react-native-gesture-handler";

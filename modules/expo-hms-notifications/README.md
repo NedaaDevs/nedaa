@@ -1,8 +1,9 @@
 # expo-hms-notifications
 
 This Android-only module is Nedaa's GMS-free local-notification fork of
-`expo-notifications` 57.0.3. It compiles the installed upstream Android sources after a
-deterministic transform removes Firebase Cloud Messaging code. Nedaa keeps the upstream JavaScript
+`expo-notifications`, at the version `upstreamVersion` names in `android/build.gradle`. It
+compiles the installed upstream Android sources after a deterministic transform removes Firebase
+Cloud Messaging code. Nedaa keeps the upstream JavaScript
 package and native module names, so the app's scheduling, channel, permission, and notification
 response APIs remain unchanged.
 
