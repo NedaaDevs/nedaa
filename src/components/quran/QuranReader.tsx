@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useWindowDimensions, StyleSheet, View, ScrollView, I18nManager } from "react-native";
+import { useWindowDimensions, StyleSheet, View, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
@@ -487,10 +487,8 @@ const PageSlot = ({
   });
 
   const turnShadows = turnShadow ? (
-    <>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.turnShadow, styles.turnShadowLeft, leftShadowStyle]}>
+    <View pointerEvents="none" style={styles.turnShadowLayer}>
+      <Animated.View style={[styles.turnShadow, styles.turnShadowLeft, leftShadowStyle]}>
         <LinearGradient
           colors={["rgba(0,0,0,0.45)", "transparent"]}
           start={{ x: 0, y: 0.5 }}
@@ -498,9 +496,7 @@ const PageSlot = ({
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.turnShadow, styles.turnShadowRight, rightShadowStyle]}>
+      <Animated.View style={[styles.turnShadow, styles.turnShadowRight, rightShadowStyle]}>
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.45)"]}
           start={{ x: 0, y: 0.5 }}
@@ -508,7 +504,7 @@ const PageSlot = ({
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
-    </>
+    </View>
   ) : null;
 
   const pageBoxStyle = (w: number, h: number) => ({ width: w, height: h });
@@ -598,16 +594,14 @@ const PageSlot = ({
   }
 
   // pagesOfSpread = [earlier, later]. The mushaf is an Arabic book in every
-  // interface language: the earlier page is always the right leaf. RN flips a
-  // "row" under RTL, so LTR locales need the reversed row to land it there.
+  // interface language: the earlier page is always the right leaf.
   const pages = pagesOfSpread(unit);
 
   // Height-fit pair, both full pages visible at once (dense pack, no scroll).
   const box = fitPageBox((width - SPREAD_GUTTER) / 2, availPageHeight);
   return (
     <Animated.View style={[styles.page, animatedStyle]}>
-      <View
-        style={[styles.spreadRow, { flexDirection: I18nManager.isRTL ? "row" : "row-reverse" }]}>
+      <View style={styles.spreadRow}>
         {pages.map((p, i) => (
           <View key={p} style={pageBoxStyle(box.w, box.h)}>
             <QuranPage
@@ -636,16 +630,21 @@ const styles = StyleSheet.create({
   page: {
     ...StyleSheet.absoluteFill,
   },
-  // flexDirection is set per-render: the earlier page must land on the right in
-  // both interface directions.
+  // Pinned LTR, so row-reverse puts the earlier page right in every language.
   spreadRow: {
+    direction: "ltr",
+    flexDirection: "row-reverse",
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingTop: SPREAD_TOP_PAD,
     gap: SPREAD_GUTTER,
   },
-  // SCROLL-fit spread: the two independently-scrolling panes sit side by side.
+  // Pinned LTR so the shadows' left/right stay physical, like the drag.
+  turnShadowLayer: {
+    ...StyleSheet.absoluteFill,
+    direction: "ltr",
+  },
   turnShadow: {
     position: "absolute",
     top: 0,

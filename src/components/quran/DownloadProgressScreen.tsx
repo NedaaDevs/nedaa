@@ -202,7 +202,7 @@ const DownloadProgressScreen = ({
           style={{
             position: "absolute",
             top: insets.top + 12,
-            ...(isRTL ? { right: 16 } : { left: 16 }),
+            start: 16,
             zIndex: 10,
           }}>
           <BackIcon size={24} color={chrome.subtleText} />

@@ -55,6 +55,12 @@ const MODE_ICON: Record<QuranListenMode, LucideIcon> = {
 };
 const TIMER_MINUTES = [5, 10, 15, 30, 45, 60, 90, 120];
 
+/** Test ids for the seek bar's parts. */
+export const QURAN_SEEK_PART = {
+  FILL: "quran-seek-fill",
+  THUMB: "quran-seek-thumb",
+} as const;
+
 // Seconds → "m:ss", or "h:mm:ss" past an hour, in the app's numerals.
 const formatTime = (sec: number): string => {
   const s = Math.max(0, Math.floor(sec));
@@ -266,6 +272,7 @@ export const QuranMiniPlayer = ({ padBottomInset = false }: { padBottomInset?: b
                 backgroundColor: theme.backgroundInteractive.val,
               }}>
               <View
+                testID={QURAN_SEEK_PART.FILL}
                 style={{
                   height: 4,
                   borderRadius: 2,
@@ -274,6 +281,7 @@ export const QuranMiniPlayer = ({ padBottomInset = false }: { padBottomInset?: b
                 }}
               />
               <View
+                testID={QURAN_SEEK_PART.THUMB}
                 style={{
                   position: "absolute",
                   top: -5,
@@ -281,9 +289,8 @@ export const QuranMiniPlayer = ({ padBottomInset = false }: { padBottomInset?: b
                   height: 14,
                   borderRadius: 7,
                   backgroundColor: theme.accentPrimary.val,
-                  ...(isRTL
-                    ? { right: `${displayFrac * 100}%`, marginRight: -7 }
-                    : { left: `${displayFrac * 100}%`, marginLeft: -7 }),
+                  start: `${displayFrac * 100}%`,
+                  marginStart: -7,
                 }}
               />
             </View>
