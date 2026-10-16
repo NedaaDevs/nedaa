@@ -440,15 +440,16 @@ const QuranScreen = () => {
             </YStack>
           )}
 
-          {/* Reading-size rocker: down the side, clear of the centred controls.
-              Rides the chrome, and shows itself once on entry so it's findable. */}
+          {/* Reading-size rocker: down the end side, clear of the centred
+              controls. Rides the chrome, and shows itself once on entry so
+              it's findable. */}
           {readerMode === ReaderViewMode.TEXT &&
             !actionAyah &&
             infoSurah == null &&
             !guideSheet && (
               <YStack
                 position="absolute"
-                right={12}
+                end={12}
                 bottom={insets.bottom + 148}
                 zIndex={12}
                 pointerEvents="box-none">
