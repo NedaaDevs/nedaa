@@ -1,5 +1,5 @@
 import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { render, screen } from "@testing-library/react-native";
 
 import TimePicker from "@/components/TimePicker";
 
@@ -20,51 +20,38 @@ jest.mock("@/components/TimePickerBody", () => ({
 
 const noop = () => {};
 
-const render = (props: Partial<React.ComponentProps<typeof TimePicker>>) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(
-      <TimePicker
-        isVisible
-        currentHour={7}
-        currentMinute={30}
-        onTimeChange={noop}
-        onClose={noop}
-        {...props}
-      />
-    );
-  });
-  return tree;
-};
+const show = (props: Partial<React.ComponentProps<typeof TimePicker>>) =>
+  render(
+    <TimePicker
+      isVisible
+      currentHour={7}
+      currentMinute={30}
+      onTimeChange={noop}
+      onClose={noop}
+      {...props}
+    />
+  );
 
 beforeEach(() => {
   mockMounts.length = 0;
 });
 
 describe("TimePicker", () => {
-  it("renders nothing while hidden", () => {
-    const tree = render({ isVisible: false });
-    expect(tree.toJSON()).toBeNull();
+  it("renders nothing while hidden", async () => {
+    await show({ isVisible: false });
+    expect(screen.toJSON()).toBeNull();
     expect(mockMounts).toHaveLength(0);
   });
 
-  it("mounts the body with the caller's time when shown", () => {
-    render({});
+  it("mounts the body with the caller's time when shown", async () => {
+    await show({});
     expect(mockMounts).toEqual([{ currentHour: 7, currentMinute: 30 }]);
   });
 
-  it("restarts the body when the caller supplies a new time while open", () => {
-    const tree = render({});
-    act(() =>
-      tree.update(
-        <TimePicker
-          isVisible
-          currentHour={9}
-          currentMinute={15}
-          onTimeChange={noop}
-          onClose={noop}
-        />
-      )
+  it("restarts the body when the caller supplies a new time while open", async () => {
+    await show({});
+    await screen.rerender(
+      <TimePicker isVisible currentHour={9} currentMinute={15} onTimeChange={noop} onClose={noop} />
     );
     expect(mockMounts).toEqual([
       { currentHour: 7, currentMinute: 30 },
@@ -72,19 +59,17 @@ describe("TimePicker", () => {
     ]);
   });
 
-  it("keeps the body mounted when an unrelated prop changes", () => {
-    const tree = render({});
-    act(() =>
-      tree.update(
-        <TimePicker
-          isVisible
-          currentHour={7}
-          currentMinute={30}
-          onTimeChange={noop}
-          onClose={noop}
-          isPM
-        />
-      )
+  it("keeps the body mounted when an unrelated prop changes", async () => {
+    await show({});
+    await screen.rerender(
+      <TimePicker
+        isVisible
+        currentHour={7}
+        currentMinute={30}
+        onTimeChange={noop}
+        onClose={noop}
+        isPM
+      />
     );
     expect(mockMounts).toHaveLength(1);
   });

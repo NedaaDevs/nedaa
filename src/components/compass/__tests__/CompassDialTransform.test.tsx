@@ -1,5 +1,5 @@
 import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { render, screen } from "@testing-library/react-native";
 
 import { CompassDial } from "@/components/compass/CompassDial";
 
@@ -36,9 +36,8 @@ jest.mock("@/components/ui/box", () => {
   return { Box: View };
 });
 
-// The host component react-native-svg renders a <G> as. react-test-renderer
-// types a node's `type` as ElementType, which does not admit a host string.
-const SVG_GROUP = "RNSVGGroup" as unknown as React.ElementType;
+// The host component react-native-svg renders a <G> as.
+const SVG_GROUP = "RNSVGGroup";
 
 const baseProps = {
   heading: 0,
@@ -54,23 +53,19 @@ const baseProps = {
 // the native element (extractProps). Reading it back is the drawing itself, as
 // six numbers, so a change in transform syntax or in the library's composition
 // order fails here instead of silently moving the Kaaba marker on screen.
-const markerMatrices = (heading: number) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<CompassDial {...baseProps} heading={heading} />);
-  });
-  const marker = tree.root.findAll(
-    (node) => node.type === SVG_GROUP && node.props?.testID === "kaaba-ring-marker"
-  )[0];
+const markerMatrices = async (heading: number) => {
+  await render(<CompassDial {...baseProps} heading={heading} />);
+  // The dial face is hidden from accessibility.
+  const marker = screen.getByTestId("kaaba-ring-marker", { includeHiddenElements: true });
   // Outer group first, then the counter-rotating inner group.
-  const matrices = marker
-    .findAllByType(SVG_GROUP)
-    .map((node) => node.props?.matrix as number[] | undefined)
-    .filter((matrix): matrix is number[] => Array.isArray(matrix))
-    // `+ 0` folds the -0 that Math.sin/Math.cos produce at the axes onto 0.
-    .map((matrix) => matrix.map((value) => value + 0));
-  act(() => tree.unmount());
-  return matrices;
+  return (
+    marker
+      .queryAll((node) => node.type === SVG_GROUP, { includeSelf: true })
+      .map((node) => node.props.matrix as number[] | undefined)
+      .filter((matrix): matrix is number[] => Array.isArray(matrix))
+      // `+ 0` folds the -0 that Math.sin/Math.cos produce at the axes onto 0.
+      .map((matrix) => matrix.map((value) => value + 0))
+  );
 };
 
 // [a, b, c, d, tx, ty], column-major. The outer group only positions the marker
@@ -98,8 +93,8 @@ const EXPECTED: Record<number, number[][]> = {
 };
 
 describe("CompassDial ring-marker transform", () => {
-  it.each([0, 123, 359])("composes the same matrix at heading %i", (heading) => {
-    const actual = markerMatrices(heading);
+  it.each([0, 123, 359])("composes the same matrix at heading %i", async (heading) => {
+    const actual = await markerMatrices(heading);
     const expected = EXPECTED[heading];
     expect(actual).toHaveLength(expected.length);
     actual.forEach((matrix, group) => {
