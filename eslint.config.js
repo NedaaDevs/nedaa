@@ -5,6 +5,28 @@ const expoConfig = require("eslint-config-expo/flat");
 const LOCAL_MODULE_ALIAS_MESSAGE =
   "Local modules run from a copy in node_modules, where `@/` does not resolve; keep app code out of them.";
 
+// Gesture Handler 3 marks its `Gesture` builder and factories @deprecated.
+const GESTURE_BUILDER_DEPRECATIONS = {
+  from: "package",
+  package: "react-native-gesture-handler",
+  name: [
+    "Gesture",
+    "Tap",
+    "Pan",
+    "Pinch",
+    "Rotation",
+    "Fling",
+    "LongPress",
+    "ForceTouch",
+    "Native",
+    "Manual",
+    "Hover",
+    "Race",
+    "Simultaneous",
+    "Exclusive",
+  ],
+};
+
 module.exports = defineConfig([
   expoConfig,
   {
@@ -33,7 +55,15 @@ module.exports = defineConfig([
       },
     },
     rules: {
-      "@typescript-eslint/no-deprecated": "warn",
+      "@typescript-eslint/no-deprecated": ["warn", { allow: [GESTURE_BUILDER_DEPRECATIONS] }],
+    },
+  },
+  {
+    // tsc checks namespace members. The rule's ESM sniff misses Expo 58's
+    // compiled files, where `export` follows a comment on the same line.
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "import/namespace": "off",
     },
   },
   {

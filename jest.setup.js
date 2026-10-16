@@ -1,4 +1,7 @@
 /* global jest */
+// jest-expo's RNGestureHandlerModule stub lacks Gesture Handler 3's methods.
+import "react-native-gesture-handler/jestSetup";
+
 // The Tamagui animation driver reaches moti -> reanimated -> react-native-worklets,
 // whose native module is absent under jest. Tests assert layout and accessibility,
 // not motion, so the driver is stubbed rather than the whole chain mocked.
