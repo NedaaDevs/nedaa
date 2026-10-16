@@ -50,6 +50,16 @@ const TRACK_HEIGHT_SEEKING = 8;
 const THUMB_SIZE = 16;
 const TOUCH_TARGET_HEIGHT = 44;
 
+/** Test ids for the seek bar's parts. */
+export const AUDIO_SEEK_PART = {
+  TOUCH: "audio-seek-touch",
+  FILL: "audio-seek-fill",
+  THUMB: "audio-seek-thumb",
+} as const;
+
+/** Test id for the seek gesture, for Gesture Handler's jest utils. */
+export const AUDIO_SEEK_GESTURE = { PAN: "audio-seek-pan" } as const;
+
 const EASE_OUT = Easing.out(Easing.cubic);
 const EASE_IN = Easing.in(Easing.cubic);
 
@@ -134,6 +144,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
   const animDuration = reduceMotion ? 0 : 150;
 
   const seekGesture = Gesture.Pan()
+    .withTestId(AUDIO_SEEK_GESTURE.PAN)
     .activateAfterLongPress(250)
     .onStart((e) => {
       const x = isRTL ? trackWidth - e.x : e.x;
@@ -214,7 +225,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
 
   const thumbStyle = useAnimatedStyle(() => ({
     opacity: thumbOpacity.get(),
-    left: `${seekProgress.get() * 100}%`,
+    start: `${seekProgress.get() * 100}%`,
   }));
 
   const trackVerticalPad = (TOUCH_TARGET_HEIGHT - TRACK_HEIGHT) / 2;
@@ -268,6 +279,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
             <VStack gap="$1">
               <GestureDetector gesture={seekGesture}>
                 <View
+                  testID={AUDIO_SEEK_PART.TOUCH}
                   onLayout={onTrackLayout}
                   onTouchStart={() => {
                     if (!seekHintShown.current && !isSeeking) {
@@ -303,6 +315,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
                     ]}>
                     {/* Filled track */}
                     <Animated.View
+                      testID={AUDIO_SEEK_PART.FILL}
                       style={[
                         {
                           position: "absolute",
@@ -325,6 +338,7 @@ const AudioControls: FC<Props> = ({ onPlayPause, onNext, onPrevious, onCollapse,
 
                   {/* Thumb */}
                   <Animated.View
+                    testID={AUDIO_SEEK_PART.THUMB}
                     style={[
                       {
                         position: "absolute",

@@ -576,7 +576,7 @@ const FeedbackScreen = () => {
                   <>
                     <Box
                       position="absolute"
-                      left={0}
+                      start={0}
                       top={0}
                       bottom={0}
                       width={`${Math.round(progress * 100)}%`}

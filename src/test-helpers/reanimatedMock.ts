@@ -42,6 +42,7 @@ export const withRepeat = jest.fn((animation: unknown) => animation);
 export const cancelAnimation = jest.fn();
 export const ReduceMotion = { System: "system", Always: "always", Never: "never" } as const;
 export const Easing = {
+  in: (easing: unknown) => easing,
   out: (easing: unknown) => easing,
   inOut: (easing: unknown) => easing,
   cubic: (t: number) => t,
