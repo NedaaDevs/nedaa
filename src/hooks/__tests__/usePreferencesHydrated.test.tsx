@@ -1,6 +1,4 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
-import { Text as RNText } from "react-native";
+import { renderHook } from "@testing-library/react-native";
 
 import { usePreferencesHydrated } from "@/hooks/usePreferencesHydrated";
 
@@ -13,13 +11,8 @@ jest.mock("expo-sqlite/kv-store", () => ({
   },
 }));
 
-const Probe = () => <RNText>{usePreferencesHydrated() ? "yes" : "no"}</RNText>;
-
 test("reports true once the preferences store finishes hydration", async () => {
-  let tree: renderer.ReactTestRenderer;
-  await act(async () => {
-    tree = renderer.create(<Probe />);
-  });
-  // act flushed the async kv-store hydration.
-  expect(tree!.root.findByType(RNText).props.children).toBe("yes");
+  const { result } = await renderHook(() => usePreferencesHydrated());
+  // Rendering flushes the async kv-store hydration.
+  expect(result.current).toBe(true);
 });

@@ -1,4 +1,3 @@
-import type { ReactTestRendererJSON } from "react-test-renderer";
 import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
@@ -9,17 +8,7 @@ const LIGHT = config.themes.light;
 const CIRCLE = "RNSVGCircle";
 
 /** The host circles in paint order: the track, then the arc. */
-const circles = () => {
-  const found: ReactTestRendererJSON[] = [];
-  const walk = (node: ReturnType<typeof screen.toJSON>) => {
-    if (!node) return;
-    if (Array.isArray(node)) return node.forEach(walk);
-    if (node.type === CIRCLE) found.push(node);
-    node.children?.forEach((child) => typeof child !== "string" && walk(child));
-  };
-  walk(screen.toJSON());
-  return found;
-};
+const circles = () => screen.container.queryAll((node) => node.type === CIRCLE);
 
 /** The share of the circumference the arc paints. */
 const drawnFraction = () => {
@@ -49,6 +38,7 @@ describe("Ring", () => {
     const strokes = circles().map((circle) => circle.props.stroke);
 
     // Two circles per ring: the explicit ring's pair, then the default's.
+    expect(strokes).toHaveLength(4);
     expect(strokes.slice(2)).toEqual(strokes.slice(0, 2));
   });
 });

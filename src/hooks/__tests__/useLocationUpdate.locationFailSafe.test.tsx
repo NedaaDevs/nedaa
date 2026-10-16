@@ -1,5 +1,4 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
@@ -63,20 +62,9 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
-type HookValue = ReturnType<typeof useLocationUpdate>;
-const results: HookValue[] = [];
-
-const Probe = () => {
-  results.push(useLocationUpdate());
-  return null;
-};
-
-const latest = () => results[results.length - 1];
-
 describe("useLocationUpdate location fail-safe", () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    results.length = 0;
     jest.clearAllMocks();
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
     mockLoadPrayerTimes.mockResolvedValue(undefined);
@@ -97,16 +85,13 @@ describe("useLocationUpdate location fail-safe", () => {
   });
 
   it("stops the refresh pipeline when current location acquisition fails", async () => {
-    await act(async () => {
-      renderer.create(<Probe />);
-      await Promise.resolve();
-    });
+    const { result } = await renderHook(() => useLocationUpdate());
 
     await act(async () => {
-      await latest().executeUpdate();
+      await result.current.executeUpdate();
     });
 
-    expect(latest().updateState.error).toEqual({
+    expect(result.current.updateState.error).toEqual({
       step: "location",
       message: "HMS location unavailable",
     });
