@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
-import React, { act } from "react";
-import renderer from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmScreen } from "@/hooks/useAlarmScreen";
@@ -62,22 +61,11 @@ const ALARM_ID = "11111111-1111-4111-8111-111111111111";
 const SNOOZE_ID = "22222222-2222-4222-8222-222222222222";
 const IOS_DIR = path.join(__dirname, "../../../ios");
 
-const renders: ReturnType<typeof useAlarmScreen>[] = [];
-const latest = () => renders[renders.length - 1];
-const Probe = ({ alarmType }: { alarmType: string }) => {
-  renders.push(useAlarmScreen(ALARM_ID, alarmType));
-  return null;
-};
-
-const mount = async (alarmType: string = ScheduledAlarmType.FAJR) => {
-  await act(async () => {
-    renderer.create(<Probe alarmType={alarmType} />);
-  });
-};
+const mount = (alarmType: string = ScheduledAlarmType.FAJR) =>
+  renderHook(() => useAlarmScreen(ALARM_ID, alarmType));
 
 beforeEach(() => {
   jest.clearAllMocks();
-  renders.length = 0;
 });
 
 describe("useAlarmScreen", () => {
@@ -94,13 +82,13 @@ describe("useAlarmScreen", () => {
       snoozeEndTime: new Date(Date.now() + 5 * 60_000),
       snoozeCount: 1,
     });
-    await mount();
+    const { result } = await mount();
 
     await act(async () => {
-      await latest().handleSnooze();
+      await result.current.handleSnooze();
     });
     await act(async () => {
-      await latest().handleChallengeComplete();
+      await result.current.handleChallengeComplete();
     });
 
     expect(mockCompleteAndReschedule).toHaveBeenCalledWith(SNOOZE_ID);
@@ -108,11 +96,11 @@ describe("useAlarmScreen", () => {
 
   it("rings again and stays unhandled when the snooze fails", async () => {
     mockSnoozeAlarm.mockResolvedValue(null);
-    await mount();
+    const { result } = await mount();
     mockStartAlarmSound.mockClear();
 
     await act(async () => {
-      await latest().handleSnooze();
+      await result.current.handleSnooze();
     });
 
     expect(mockStartAlarmSound).toHaveBeenCalled();
@@ -124,8 +112,8 @@ describe("useAlarmScreen", () => {
     [ScheduledAlarmType.JUMMAH, mockFridaySettings],
     [ScheduledAlarmType.CUSTOM, mockSettings],
   ])("reads the settings that a %s alarm rings with", async (alarmType, settings) => {
-    await mount(alarmType);
+    const { result } = await mount(alarmType);
 
-    expect(latest().remainingSnoozes).toBe(settings.snooze.maxCount);
+    expect(result.current.remainingSnoozes).toBe(settings.snooze.maxCount);
   });
 });

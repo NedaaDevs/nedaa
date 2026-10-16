@@ -1,5 +1,4 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 
@@ -23,17 +22,7 @@ jest.mock("@/stores/location", () => ({
   }),
 }));
 
-const renderHandler = () => {
-  let handler!: ReturnType<typeof useCityChangeHandler>;
-  const Probe = () => {
-    handler = useCityChangeHandler();
-    return null;
-  };
-  act(() => {
-    renderer.create(<Probe />);
-  });
-  return handler;
-};
+const renderHandler = () => renderHook(() => useCityChangeHandler());
 
 // The update reports failure by resolving false; the modal holds the retry UI.
 describe.each([
@@ -44,22 +33,18 @@ describe.each([
 
   it("keeps the modal open when the update fails", async () => {
     mockExecuteUpdate.mockResolvedValue(false);
-    const handler = renderHandler();
+    const { result } = await renderHandler();
 
-    await act(async () => {
-      await handler[action]();
-    });
+    await act(() => result.current[action]());
 
     expect(mockDismiss).not.toHaveBeenCalled();
   });
 
   it("closes the modal once the update succeeds", async () => {
     mockExecuteUpdate.mockResolvedValue(true);
-    const handler = renderHandler();
+    const { result } = await renderHandler();
 
-    await act(async () => {
-      await handler[action]();
-    });
+    await act(() => result.current[action]());
 
     expect(mockDismiss).toHaveBeenCalledTimes(1);
   });

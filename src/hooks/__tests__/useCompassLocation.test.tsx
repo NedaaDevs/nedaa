@@ -1,5 +1,4 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { CompassLocationSource, CompassReliabilityIssue } from "@/enums/compass";
 import {
@@ -39,24 +38,10 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
-type HookValue = ReturnType<typeof useCompassLocation>;
-const results: HookValue[] = [];
-
-const Probe = ({ active = true }: { active?: boolean }) => {
-  results.push(useCompassLocation({ active }));
-  return null;
-};
-
-const latest = () => results[results.length - 1];
-
-const renderHook = async (active = true) => {
-  let tree!: renderer.ReactTestRenderer;
-  await act(async () => {
-    tree = renderer.create(<Probe active={active} />);
-    await Promise.resolve();
+const renderLocation = (active = true) =>
+  renderHook((props: { active: boolean }) => useCompassLocation(props), {
+    initialProps: { active },
   });
-  return tree;
-};
 
 const flush = async () => {
   await act(async () => {
@@ -108,7 +93,6 @@ const useSuccessfulPosition = (position = precisePosition) => {
 
 describe("useCompassLocation", () => {
   beforeEach(() => {
-    results.length = 0;
     jest.clearAllMocks();
     useCompassStore.setState({ lastVerifiedFix: null });
   });
@@ -120,14 +104,12 @@ describe("useCompassLocation", () => {
 
   it("silently checks permission on mount without prompting", async () => {
     mockGetForegroundPermissionsAsync.mockResolvedValue(undeterminedPermission);
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
 
-    expect(latest().source).toBe(CompassLocationSource.NONE);
+    expect(result.current.source).toBe(CompassLocationSource.NONE);
     expect(mockGetForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
-
-    act(() => tree.unmount());
   });
 
   it("hydrates a valid saved fix as source saved without a silent fetch replacing it", async () => {
@@ -141,16 +123,12 @@ describe("useCompassLocation", () => {
     useCompassStore.setState({ lastVerifiedFix: savedFix });
     mockGetForegroundPermissionsAsync.mockResolvedValue(deniedPermission);
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
 
-    const result = latest();
-    const persistedFix = useCompassStore.getState().lastVerifiedFix;
-    act(() => tree.unmount());
-
-    expect(result.fix).toEqual(savedFix);
-    expect(result.source).toBe(CompassLocationSource.SAVED);
-    expect(persistedFix).toEqual(savedFix);
+    expect(result.current.fix).toEqual(savedFix);
+    expect(result.current.source).toBe(CompassLocationSource.SAVED);
+    expect(useCompassStore.getState().lastVerifiedFix).toEqual(savedFix);
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
   });
@@ -160,11 +138,11 @@ describe("useCompassLocation", () => {
     mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedPermission);
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition();
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
 
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
-    await act(async () => latest().refresh());
+    await act(() => result.current.refresh());
     await flush();
 
     expect(mockRequestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
@@ -172,14 +150,13 @@ describe("useCompassLocation", () => {
       accuracy: 4,
       mayShowUserSettingsDialog: true,
     });
-    expect(latest().source).toBe(CompassLocationSource.FRESH);
-    expect(latest().fix).toMatchObject({
+    expect(result.current.source).toBe(CompassLocationSource.FRESH);
+    expect(result.current.fix).toMatchObject({
       latitude: 24.7136,
       longitude: 46.6753,
       accuracyMeters: 8,
     });
     expect(useCompassStore.getState().lastVerifiedFix).toMatchObject({ accuracyMeters: 8 });
-    act(() => tree.unmount());
   });
 
   it("acquires a location fix only while the compass feature is active", async () => {
@@ -187,26 +164,25 @@ describe("useCompassLocation", () => {
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition();
 
-    const tree = await renderHook(false);
+    const { result, rerender } = await renderLocation(false);
     await flush();
 
     expect(mockGetForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
 
-    await act(async () => tree.update(<Probe active />));
+    await rerender({ active: true });
     await flush();
 
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).toHaveBeenCalledTimes(1);
-    expect(latest().source).toBe(CompassLocationSource.FRESH);
+    expect(result.current.source).toBe(CompassLocationSource.FRESH);
 
-    await act(async () => tree.update(<Probe active={false} />));
-    await act(async () => tree.update(<Probe active />));
+    await rerender({ active: false });
+    await rerender({ active: true });
     await flush();
 
     expect(mockWatchPositionAsync).toHaveBeenCalledTimes(1);
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
-    act(() => tree.unmount());
   });
 
   it("falls back to a still-reliable saved fix while exposing the fresh failure", async () => {
@@ -222,13 +198,12 @@ describe("useCompassLocation", () => {
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockRejectedValue(new Error("Location request timed out"));
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
 
-    expect(latest().source).toBe(CompassLocationSource.SAVED);
-    expect(latest().fix).toEqual(savedFix);
-    expect(latest().issue).toBe(CompassReliabilityIssue.LOCATION_TIMEOUT);
-    act(() => tree.unmount());
+    expect(result.current.source).toBe(CompassLocationSource.SAVED);
+    expect(result.current.fix).toEqual(savedFix);
+    expect(result.current.issue).toBe(CompassReliabilityIssue.LOCATION_TIMEOUT);
   });
 
   it("requires settings when the location provider fails with a saved fallback", async () => {
@@ -244,14 +219,13 @@ describe("useCompassLocation", () => {
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockRejectedValue(new Error("Location provider is disabled"));
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
 
-    expect(latest().source).toBe(CompassLocationSource.SAVED);
-    expect(latest().fix).toEqual(savedFix);
-    expect(latest().issue).toBe(CompassReliabilityIssue.LOCATION_SERVICES_DISABLED);
-    expect(latest().needsSettings).toBe(true);
-    act(() => tree.unmount());
+    expect(result.current.source).toBe(CompassLocationSource.SAVED);
+    expect(result.current.fix).toEqual(savedFix);
+    expect(result.current.issue).toBe(CompassReliabilityIssue.LOCATION_SERVICES_DISABLED);
+    expect(result.current.needsSettings).toBe(true);
   });
 
   it("withholds location and requires settings for reduced accuracy permission", async () => {
@@ -260,15 +234,14 @@ describe("useCompassLocation", () => {
       ios: { scope: "whenInUse", accuracy: "reduced" },
     });
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
 
-    expect(latest().source).toBe(CompassLocationSource.NONE);
-    expect(latest().fix).toBeNull();
-    expect(latest().issue).toBe(CompassReliabilityIssue.LOCATION_REDUCED_ACCURACY);
-    expect(latest().needsSettings).toBe(true);
+    expect(result.current.source).toBe(CompassLocationSource.NONE);
+    expect(result.current.fix).toBeNull();
+    expect(result.current.issue).toBe(CompassReliabilityIssue.LOCATION_REDUCED_ACCURACY);
+    expect(result.current.needsSettings).toBe(true);
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
-    act(() => tree.unmount());
   });
 
   it("rejects an inaccurate fresh result instead of persisting or displaying it", async () => {
@@ -280,7 +253,7 @@ describe("useCompassLocation", () => {
       coords: { ...precisePosition.coords, accuracy: 250 },
     });
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
     await act(async () => {
       jest.advanceTimersByTime(COMPASS_LOCATION_REQUEST_TIMEOUT_MS);
@@ -288,10 +261,9 @@ describe("useCompassLocation", () => {
       await Promise.resolve();
     });
 
-    expect(latest().source).toBe(CompassLocationSource.NONE);
-    expect(latest().issue).toBe(CompassReliabilityIssue.LOCATION_TOO_INACCURATE);
+    expect(result.current.source).toBe(CompassLocationSource.NONE);
+    expect(result.current.issue).toBe(CompassReliabilityIssue.LOCATION_TOO_INACCURATE);
     expect(useCompassStore.getState().lastVerifiedFix).toBeNull();
-    act(() => tree.unmount());
   });
 
   it("downgrades a fresh fix and removes it when the saved fallback expires", async () => {
@@ -302,26 +274,25 @@ describe("useCompassLocation", () => {
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     useSuccessfulPosition({ ...precisePosition, timestamp: now });
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
-    expect(latest().source).toBe(CompassLocationSource.FRESH);
+    expect(result.current.source).toBe(CompassLocationSource.FRESH);
 
     await act(async () => {
       jest.advanceTimersByTime(MAX_FRESH_LOCATION_AGE_MS + 1);
       await Promise.resolve();
     });
-    expect(latest().source).toBe(CompassLocationSource.SAVED);
-    expect(latest().fix).not.toBeNull();
+    expect(result.current.source).toBe(CompassLocationSource.SAVED);
+    expect(result.current.fix).not.toBeNull();
 
     await act(async () => {
       jest.advanceTimersByTime(MAX_SAVED_LOCATION_AGE_MS - MAX_FRESH_LOCATION_AGE_MS);
       await Promise.resolve();
     });
-    expect(latest().source).toBe(CompassLocationSource.NONE);
-    expect(latest().fix).toBeNull();
-    expect(latest().issue).toBe(CompassReliabilityIssue.LOCATION_STALE);
+    expect(result.current.source).toBe(CompassLocationSource.NONE);
+    expect(result.current.fix).toBeNull();
+    expect(result.current.issue).toBe(CompassReliabilityIssue.LOCATION_STALE);
     expect(useCompassStore.getState().lastVerifiedFix).toBeNull();
-    act(() => tree.unmount());
   });
 
   it("stops the native location watch when the foreground fix times out", async () => {
@@ -330,7 +301,7 @@ describe("useCompassLocation", () => {
     mockHasServicesEnabledAsync.mockResolvedValue(true);
     mockWatchPositionAsync.mockResolvedValue({ remove: mockRemoveLocationWatch });
 
-    const tree = await renderHook();
+    const { result } = await renderLocation();
     await flush();
     expect(mockWatchPositionAsync).toHaveBeenCalledTimes(1);
 
@@ -341,8 +312,7 @@ describe("useCompassLocation", () => {
     });
 
     expect(mockRemoveLocationWatch).toHaveBeenCalledTimes(1);
-    expect(latest().issue).toBe(CompassReliabilityIssue.LOCATION_TIMEOUT);
-    act(() => tree.unmount());
+    expect(result.current.issue).toBe(CompassReliabilityIssue.LOCATION_TIMEOUT);
   });
 
   it("cancels an in-flight location fetch when the compass feature becomes inactive", async () => {
@@ -362,11 +332,11 @@ describe("useCompassLocation", () => {
       }
     );
 
-    const tree = await renderHook();
+    const { result, rerender } = await renderLocation();
     await flush();
     expect(mockWatchPositionAsync).toHaveBeenCalledTimes(1);
 
-    await act(async () => tree.update(<Probe active={false} />));
+    await rerender({ active: false });
     expect(mockRemoveLocationWatch).not.toHaveBeenCalled();
     resolveSubscription({ remove: mockRemoveLocationWatch });
     await flush();
@@ -375,10 +345,9 @@ describe("useCompassLocation", () => {
     locationCallback(precisePosition);
     await flush();
 
-    expect(latest().source).toBe(CompassLocationSource.NONE);
-    expect(latest().fix).toBeNull();
+    expect(result.current.source).toBe(CompassLocationSource.NONE);
+    expect(result.current.fix).toBeNull();
     expect(useCompassStore.getState().lastVerifiedFix).toBeNull();
-    act(() => tree.unmount());
   });
 
   it("does not start location acquisition when deactivated during a refresh's permission prompt", async () => {
@@ -388,22 +357,21 @@ describe("useCompassLocation", () => {
     });
     mockGetForegroundPermissionsAsync.mockResolvedValue(undeterminedPermission);
     mockRequestForegroundPermissionsAsync.mockReturnValue(permissionPromise);
-    const tree = await renderHook();
+    const { result, rerender } = await renderLocation();
     await flush();
 
     let refreshPromise!: Promise<void>;
-    act(() => {
-      refreshPromise = latest().refresh();
+    await act(() => {
+      refreshPromise = result.current.refresh();
     });
     await flush();
     expect(mockRequestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
 
-    await act(async () => tree.update(<Probe active={false} />));
+    await rerender({ active: false });
     resolvePermission(grantedPermission);
     await act(async () => refreshPromise);
 
     expect(mockHasServicesEnabledAsync).not.toHaveBeenCalled();
     expect(mockWatchPositionAsync).not.toHaveBeenCalled();
-    act(() => tree.unmount());
   });
 });
