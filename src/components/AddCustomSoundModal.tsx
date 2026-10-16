@@ -207,7 +207,7 @@ export default function AddCustomSoundModal({
       <ModalContent>
         {/* Header with gradient accent */}
         <ModalHeader>
-          <HStack gap="$3" alignItems="center" flex={1} paddingRight="$8">
+          <HStack gap="$3" alignItems="center" flex={1} paddingEnd="$8">
             <Icon as={Speaker} size="xl" color="$primary" />
             <Text size="xl" bold color="$typography" flex={1}>
               {t("notification.customSound.add")}
