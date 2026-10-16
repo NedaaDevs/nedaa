@@ -150,7 +150,7 @@ describe("PrayerGrid", () => {
     });
     await renderWithTheme(<PrayerGrid onSelect={jest.fn()} />);
 
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.root).toBeEmptyElement();
   });
 
   // The wide card and a half-width one share the stacked layout.
