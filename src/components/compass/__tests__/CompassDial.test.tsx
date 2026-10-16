@@ -1,5 +1,5 @@
 import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { render, screen } from "@testing-library/react-native";
 
 import { CompassDial } from "@/components/compass/CompassDial";
 
@@ -46,42 +46,33 @@ const baseProps = {
   fontFamily: "IBMPlexSansArabic-Regular",
 };
 
-const renderDial = (props: Partial<React.ComponentProps<typeof CompassDial>> = {}) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<CompassDial {...baseProps} {...props} />);
-  });
-  return tree;
-};
+const renderDial = (props: Partial<React.ComponentProps<typeof CompassDial>> = {}) =>
+  render(<CompassDial {...baseProps} {...props} />);
 
-const findByTestID = (tree: renderer.ReactTestRenderer, testID: string) =>
-  tree.root.findAllByProps({ testID }).length > 0;
+// The dial face is hidden from accessibility; queries include hidden nodes.
+const hasTestID = (testID: string) =>
+  screen.queryAllByTestId(testID, { includeHiddenElements: true }).length > 0;
 
 describe("CompassDial", () => {
-  it("renders the Kaaba ring marker when a qibla direction exists", () => {
-    const tree = renderDial();
-    expect(findByTestID(tree, "kaaba-ring-marker")).toBe(true);
-    act(() => tree.unmount());
+  it("renders the Kaaba ring marker when a qibla direction exists", async () => {
+    await renderDial();
+    expect(hasTestID("kaaba-ring-marker")).toBe(true);
   });
 
-  it("hides qibla visuals in compass-only fallback", () => {
-    const tree = renderDial({ qiblaDirection: null });
-    expect(findByTestID(tree, "kaaba-ring-marker")).toBe(false);
-    expect(findByTestID(tree, "kaaba-hero")).toBe(false);
-    act(() => tree.unmount());
+  it("hides qibla visuals in compass-only fallback", async () => {
+    await renderDial({ qiblaDirection: null });
+    expect(hasTestID("kaaba-ring-marker")).toBe(false);
+    expect(hasTestID("kaaba-hero")).toBe(false);
   });
 
-  it("shows the hero Kaaba and path line only when aligned", () => {
-    const tree = renderDial();
-    expect(findByTestID(tree, "kaaba-hero")).toBe(false);
-    expect(findByTestID(tree, "qibla-path-line")).toBe(false);
+  it("shows the hero Kaaba and path line only when aligned", async () => {
+    await renderDial();
+    expect(hasTestID("kaaba-hero")).toBe(false);
+    expect(hasTestID("qibla-path-line")).toBe(false);
 
-    act(() => {
-      tree.update(<CompassDial {...baseProps} heading={150} proximityState="aligned" />);
-    });
-    expect(findByTestID(tree, "kaaba-hero")).toBe(true);
-    expect(findByTestID(tree, "qibla-path-line")).toBe(true);
-    expect(findByTestID(tree, "kaaba-ring-marker")).toBe(false);
-    act(() => tree.unmount());
+    await screen.rerender(<CompassDial {...baseProps} heading={150} proximityState="aligned" />);
+    expect(hasTestID("kaaba-hero")).toBe(true);
+    expect(hasTestID("qibla-path-line")).toBe(true);
+    expect(hasTestID("kaaba-ring-marker")).toBe(false);
   });
 });

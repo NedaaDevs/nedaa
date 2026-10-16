@@ -1,5 +1,4 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
@@ -64,16 +63,6 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
-type HookValue = ReturnType<typeof useLocationUpdate>;
-const results: HookValue[] = [];
-
-const Probe = () => {
-  results.push(useLocationUpdate());
-  return null;
-};
-
-const latest = () => results[results.length - 1];
-
 const RIYADH: ManualLocation = {
   cityId: 108410,
   name: "Riyadh",
@@ -86,31 +75,11 @@ const RIYADH: ManualLocation = {
   timezone: "Asia/Riyadh",
 };
 
-let root: renderer.ReactTestRenderer | null = null;
-
-// useLocationUpdate subscribes to the location store, so a Probe left mounted from an
-// earlier test re-renders on every store write and appends its own stale state to
-// `results`. Each test therefore mounts one Probe and unmounts it afterwards.
-const mountProbe = async () => {
-  await act(async () => {
-    root = renderer.create(<Probe />);
-    await Promise.resolve();
-  });
-};
-
-const unmountProbe = async () => {
-  if (!root) return;
-  const current = root;
-  root = null;
-  await act(async () => {
-    current.unmount();
-  });
-};
+const mountHook = () => renderHook(() => useLocationUpdate());
 
 describe("applyManualLocation", () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    results.length = 0;
     jest.clearAllMocks();
     mockLoadPrayerTimes.mockResolvedValue(undefined);
     mockScheduleNotifications.mockResolvedValue(undefined);
@@ -124,16 +93,15 @@ describe("applyManualLocation", () => {
     });
   });
 
-  afterEach(async () => {
-    await unmountProbe();
+  afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
   it("stores the chosen city without reading the device position", async () => {
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      await latest().applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH);
     });
 
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
@@ -142,9 +110,9 @@ describe("applyManualLocation", () => {
   });
 
   it("refreshes prayer times, notifications, alarms and widgets", async () => {
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      await latest().applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH);
     });
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
@@ -156,23 +124,23 @@ describe("applyManualLocation", () => {
   it("reports success so the caller can dismiss the picker", async () => {
     let applied: boolean | undefined;
 
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      applied = await latest().applyManualLocation(RIYADH);
+      applied = await result.current.applyManualLocation(RIYADH);
     });
 
     expect(applied).toBe(true);
-    expect(latest().updateState.error).toBeNull();
-    expect(latest().updateState.currentStep).toBe("done");
+    expect(result.current.updateState.error).toBeNull();
+    expect(result.current.updateState.currentStep).toBe("done");
   });
 
   it("reports failure so the caller keeps the picker open", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
     let applied: boolean | undefined;
 
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      applied = await latest().applyManualLocation(RIYADH);
+      applied = await result.current.applyManualLocation(RIYADH);
     });
 
     expect(applied).toBe(false);
@@ -181,12 +149,12 @@ describe("applyManualLocation", () => {
   it("reports the failing step when the prayer-times refresh throws", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
 
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      await latest().applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH);
     });
 
-    expect(latest().updateState.error).toEqual({
+    expect(result.current.updateState.error).toEqual({
       step: "prayerTimes",
       message: "network down",
     });
@@ -195,9 +163,9 @@ describe("applyManualLocation", () => {
   it("stops the pipeline after a failing step rather than half-applying the change", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
 
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      await latest().applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH);
     });
 
     expect(mockScheduleNotifications).not.toHaveBeenCalled();
@@ -208,9 +176,9 @@ describe("applyManualLocation", () => {
   it("keeps the chosen city even when a later step fails, so a retry does not lose it", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
 
-    await mountProbe();
+    const { result } = await mountHook();
     await act(async () => {
-      await latest().applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH);
     });
 
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);

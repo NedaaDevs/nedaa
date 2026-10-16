@@ -1,5 +1,4 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { renderHook } from "@testing-library/react-native";
 
 import { useNotificationResponses } from "@/hooks/useNotificationResponses";
 
@@ -22,17 +21,10 @@ jest.mock("expo-notifications", () => ({
 }));
 
 // Mounts the hook as the app shell does; `ready` means "can navigate".
-const Probe = ({ ready }: { ready: boolean }) => {
-  useNotificationResponses(ready);
-  return null;
-};
-const mount = (ready: boolean) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(React.createElement(Probe, { ready }));
+const mount = (ready: boolean) =>
+  renderHook((props: { ready: boolean }) => useNotificationResponses(props.ready), {
+    initialProps: { ready },
   });
-  return tree;
-};
 
 describe("useNotificationResponses", () => {
   beforeEach(() => {
@@ -41,30 +33,30 @@ describe("useNotificationResponses", () => {
     mockListener = null;
   });
 
-  it("acts on the tap that launched the app", () => {
+  it("acts on the tap that launched the app", async () => {
     mockLastResponse = LAUNCH_TAP;
-    mount(true);
+    await mount(true);
 
     expect(mockHandle).toHaveBeenCalledWith(LAUNCH_TAP);
   });
 
-  it("acts on later taps until it unmounts", () => {
-    const tree = mount(true);
+  it("acts on later taps until it unmounts", async () => {
+    const { unmount } = await mount(true);
     const tap = { notification: { request: { identifier: "later" } } };
     mockListener?.(tap);
 
     expect(mockHandle).toHaveBeenCalledWith(tap);
-    act(() => tree.unmount());
+    await unmount();
     expect(mockRemove).toHaveBeenCalled();
   });
 
   // Onboarding has no tabs to open; the tap waits until it finishes.
-  it("waits while the app cannot navigate", () => {
+  it("waits while the app cannot navigate", async () => {
     mockLastResponse = LAUNCH_TAP;
-    const tree = mount(false);
+    const { rerender } = await mount(false);
     expect(mockHandle).not.toHaveBeenCalled();
 
-    act(() => tree.update(React.createElement(Probe, { ready: true })));
+    await rerender({ ready: true });
     expect(mockHandle).toHaveBeenCalledWith(LAUNCH_TAP);
   });
 });

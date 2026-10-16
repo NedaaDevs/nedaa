@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, render } from "@testing-library/react-native";
 
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 
@@ -12,13 +12,7 @@ const Probe = ({ value }: { value: boolean }) => {
 
 const latest = () => results[results.length - 1];
 
-const renderProbe = (value: boolean) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<Probe value={value} />);
-  });
-  return tree;
-};
+const renderProbe = (value: boolean) => render(<Probe value={value} />);
 
 describe("useDelayedFlag", () => {
   beforeEach(() => {
@@ -27,36 +21,36 @@ describe("useDelayedFlag", () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it("stays false until the delay elapses", () => {
-    const tree = renderProbe(false);
+  it("stays false until the delay elapses", async () => {
+    const tree = await renderProbe(false);
     expect(latest()).toBe(false);
 
-    act(() => tree.update(<Probe value />));
+    await tree.rerender(<Probe value />);
     expect(latest()).toBe(false);
 
-    act(() => jest.advanceTimersByTime(499));
+    await act(() => jest.advanceTimersByTime(499));
     expect(latest()).toBe(false);
 
-    act(() => jest.advanceTimersByTime(1));
+    await act(() => jest.advanceTimersByTime(1));
     expect(latest()).toBe(true);
 
-    act(() => tree.unmount());
+    await tree.unmount();
   });
 
-  it("resets immediately when the value drops", () => {
-    const tree = renderProbe(true);
-    act(() => jest.advanceTimersByTime(500));
+  it("resets immediately when the value drops", async () => {
+    const tree = await renderProbe(true);
+    await act(() => jest.advanceTimersByTime(500));
     expect(latest()).toBe(true);
 
-    act(() => tree.update(<Probe value={false} />));
+    await tree.rerender(<Probe value={false} />);
     expect(latest()).toBe(false);
 
-    act(() => tree.unmount());
+    await tree.unmount();
   });
 
   // A layout effect fires only for a render that commits, so this sees every painted
   // frame and nothing that React threw away.
-  it("never commits a true frame once the value has dropped", () => {
+  it("never commits a true frame once the value has dropped", async () => {
     const committed: boolean[] = [];
     const CommitProbe = ({ value }: { value: boolean }) => {
       const flag = useDelayedFlag(value, 500);
@@ -66,31 +60,28 @@ describe("useDelayedFlag", () => {
       return null;
     };
 
-    let tree!: renderer.ReactTestRenderer;
-    act(() => {
-      tree = renderer.create(<CommitProbe value />);
-    });
-    act(() => jest.advanceTimersByTime(500));
+    const tree = await render(<CommitProbe value />);
+    await act(() => jest.advanceTimersByTime(500));
     expect(committed[committed.length - 1]).toBe(true);
     const dropAt = committed.length;
 
-    act(() => tree.update(<CommitProbe value={false} />));
+    await tree.rerender(<CommitProbe value={false} />);
     expect(committed.slice(dropAt)).toEqual([false]);
 
-    act(() => tree.unmount());
+    await tree.unmount();
   });
 
-  it("restarts the delay on a bounce", () => {
-    const tree = renderProbe(true);
-    act(() => jest.advanceTimersByTime(300));
-    act(() => tree.update(<Probe value={false} />));
-    act(() => tree.update(<Probe value />));
-    act(() => jest.advanceTimersByTime(300));
+  it("restarts the delay on a bounce", async () => {
+    const tree = await renderProbe(true);
+    await act(() => jest.advanceTimersByTime(300));
+    await tree.rerender(<Probe value={false} />);
+    await tree.rerender(<Probe value />);
+    await act(() => jest.advanceTimersByTime(300));
     expect(latest()).toBe(false);
 
-    act(() => jest.advanceTimersByTime(200));
+    await act(() => jest.advanceTimersByTime(200));
     expect(latest()).toBe(true);
 
-    act(() => tree.unmount());
+    await tree.unmount();
   });
 });

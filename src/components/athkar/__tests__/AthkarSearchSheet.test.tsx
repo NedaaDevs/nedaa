@@ -1,6 +1,5 @@
 import React from "react";
-import { TextInput } from "react-native";
-import renderer, { act } from "react-test-renderer";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
 
@@ -35,19 +34,22 @@ jest.mock("@/components/ui/actionsheet", () => {
 });
 
 // A function declaration hoists, so the mock factories above can call it before this line runs.
+// The text slots render a host Text, the only host that may hold a string.
 function mockPassthrough() {
   const React = jest.requireActual<typeof import("react")>("react");
-  const { View } = jest.requireActual<typeof import("react-native")>("react-native");
+  const { View, Text } = jest.requireActual<typeof import("react-native")>("react-native");
   const Pass = ({ children }: { children?: React.ReactNode }) =>
     React.createElement(View, null, children);
-  Pass.Text = Pass;
+  const PassText = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(Text, null, children);
+  Pass.Text = PassText;
   Pass.Pressable = Pass;
   Pass.Icon = Pass;
   return Pass;
 }
 jest.mock("@/components/ui/box", () => ({ Box: mockPassthrough() }));
 jest.mock("@/components/ui/card", () => ({ Card: mockPassthrough() }));
-jest.mock("@/components/ui/text", () => ({ Text: mockPassthrough() }));
+jest.mock("@/components/ui/text", () => ({ Text: mockPassthrough().Text }));
 jest.mock("@/components/ui/hstack", () => ({ HStack: mockPassthrough() }));
 jest.mock("@/components/ui/vstack", () => ({ VStack: mockPassthrough() }));
 jest.mock("@/components/ui/pressable", () => ({ Pressable: mockPassthrough() }));
@@ -89,16 +91,13 @@ jest.mock("@/stores/my-athkar", () => {
   };
 });
 
-const flush = () => act(async () => {});
+const SEARCH_PLACEHOLDER = "athkar.myAthkar.search";
 
 const open = async (onClose: () => void) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<AthkarSearchSheet isOpen onClose={onClose} />);
-  });
-  await flush();
-  return tree;
+  await render(<AthkarSearchSheet isOpen onClose={onClose} />);
 };
+
+const input = () => screen.getByPlaceholderText(SEARCH_PLACEHOLDER);
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -109,26 +108,23 @@ afterEach(() => jest.useRealTimers());
 describe("AthkarSearchSheet", () => {
   it("hands a close from the sheet to the parent", async () => {
     const onClose = jest.fn();
-    const tree = await open(onClose);
+    await open(onClose);
 
-    act(() => mockSheetClose?.());
+    await act(() => mockSheetClose?.());
 
     expect(onClose).toHaveBeenCalledTimes(1);
-    act(() => tree.unmount());
   });
 
   // The parent may keep the sheet mounted and only flip isOpen later, so the reset
   // cannot wait for a re-render; it happens in the close itself.
   it("clears the search as part of closing, before the parent reacts", async () => {
-    const tree = await open(() => {});
-    const input = () => tree.root.findByType(TextInput);
+    await open(() => {});
 
-    act(() => input().props.onChangeText("dua"));
+    await fireEvent.changeText(input(), "dua");
     expect(input().props.value).toBe("dua");
 
-    act(() => mockSheetClose?.());
+    await act(() => mockSheetClose?.());
 
     expect(input().props.value).toBe("");
-    act(() => tree.unmount());
   });
 });

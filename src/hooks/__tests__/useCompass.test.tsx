@@ -1,9 +1,8 @@
-import React, { act } from "react";
-import renderer from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import type { OrientationData } from "expo-orientation";
 
-import { useCompass, type CompassData } from "@/hooks/useCompass";
+import { useCompass } from "@/hooks/useCompass";
 import type { CompassLocationFix } from "@/types/compass";
 import {
   DECLINATION_DRIFT_DEGREES,
@@ -36,31 +35,18 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
-const results: CompassData[] = [];
-
-const Probe = ({
-  location = null,
-  locationFromProvider = true,
-  paused = false,
-}: {
+type CompassProps = {
   location?: CompassLocationFix | null;
   locationFromProvider?: boolean;
   paused?: boolean;
-}) => {
-  results.push(useCompass({ location, locationFromProvider, paused }));
-  return null;
 };
 
-const latest = () => results[results.length - 1];
-
-const renderHook = async (location: CompassLocationFix | null = null) => {
-  let tree!: renderer.ReactTestRenderer;
-  await act(async () => {
-    tree = renderer.create(<Probe location={location} />);
-    await Promise.resolve();
-  });
-  return tree;
-};
+const renderCompass = (props: CompassProps = {}) =>
+  renderHook(
+    ({ location = null, locationFromProvider = true, paused = false }: CompassProps) =>
+      useCompass({ location, locationFromProvider, paused }),
+    { initialProps: props }
+  );
 
 const reliableEvent = (timestamp: number): OrientationData => ({
   heading: 127,
@@ -79,7 +65,6 @@ describe("useCompass", () => {
     jest.setSystemTime(now);
     jest.clearAllMocks();
     mockHeadingListener = null;
-    results.length = 0;
   });
 
   afterEach(() => {
@@ -90,50 +75,45 @@ describe("useCompass", () => {
     ["stale", now - MAX_HEADING_AGE_MS - 1, "stale_heading"],
     ["future-dated", now + MAX_HEADING_FUTURE_SKEW_MS + 1, "invalid_timestamp"],
   ])("withholds an already %s native sample", async (_name, timestamp, error) => {
-    const tree = await renderHook();
+    const { result } = await renderCompass();
 
-    act(() => mockHeadingListener?.(reliableEvent(timestamp)));
+    await act(() => mockHeadingListener?.(reliableEvent(timestamp)));
 
-    expect(latest().isValid).toBe(false);
-    expect(latest().error).toBe(error);
-    act(() => tree.unmount());
+    expect(result.current.isValid).toBe(false);
+    expect(result.current.error).toBe(error);
   });
 
   it("expires a fresh sample based on its native timestamp", async () => {
-    const tree = await renderHook();
+    const { result } = await renderCompass();
 
-    act(() => mockHeadingListener?.(reliableEvent(now - 1_000)));
-    expect(latest().isValid).toBe(true);
+    await act(() => mockHeadingListener?.(reliableEvent(now - 1_000)));
+    expect(result.current.isValid).toBe(true);
 
-    act(() => jest.advanceTimersByTime(MAX_HEADING_AGE_MS - 1_000 + 1));
+    await act(() => jest.advanceTimersByTime(MAX_HEADING_AGE_MS - 1_000 + 1));
 
-    expect(latest().isValid).toBe(false);
-    expect(latest().error).toBe("stale_heading");
-    act(() => tree.unmount());
+    expect(result.current.isValid).toBe(false);
+    expect(result.current.error).toBe("stale_heading");
   });
 
   it("passes a finite tilt through", async () => {
-    const tree = await renderHook();
+    const { result } = await renderCompass();
 
-    act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: 32.5 }));
+    await act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: 32.5 }));
 
-    expect(latest().tiltDegrees).toBe(32.5);
-    act(() => tree.unmount());
+    expect(result.current.tiltDegrees).toBe(32.5);
   });
 
   it("normalizes missing or invalid tilt to null", async () => {
-    const tree = await renderHook();
+    const { result } = await renderCompass();
 
-    act(() => mockHeadingListener?.(reliableEvent(now)));
-    expect(latest().tiltDegrees).toBeNull();
+    await act(() => mockHeadingListener?.(reliableEvent(now)));
+    expect(result.current.tiltDegrees).toBeNull();
 
-    act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: Number.NaN }));
-    expect(latest().tiltDegrees).toBeNull();
+    await act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: Number.NaN }));
+    expect(result.current.tiltDegrees).toBeNull();
 
-    act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: -3 }));
-    expect(latest().tiltDegrees).toBeNull();
-
-    act(() => tree.unmount());
+    await act(() => mockHeadingListener?.({ ...reliableEvent(now), tiltDegrees: -3 }));
+    expect(result.current.tiltDegrees).toBeNull();
   });
 
   it("keeps the sensor running through fixes that cannot change declination", async () => {
@@ -144,7 +124,7 @@ describe("useCompass", () => {
       altitude: 612,
       timestamp: now,
     };
-    const tree = await renderHook(fix);
+    const { rerender } = await renderCompass({ location: fix });
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
 
     const drifted: CompassLocationFix = {
@@ -154,14 +134,10 @@ describe("useCompass", () => {
       altitude: 615,
       timestamp: now + 30_000,
     };
-    await act(async () => {
-      tree.update(<Probe location={drifted} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: drifted });
 
     expect(mockStopWatching).not.toHaveBeenCalled();
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
-    act(() => tree.unmount());
   });
 
   it("restarts the sensor once the position can carry a different declination", async () => {
@@ -172,7 +148,7 @@ describe("useCompass", () => {
       altitude: 612,
       timestamp: now,
     };
-    const tree = await renderHook(fix);
+    const { rerender } = await renderCompass({ location: fix });
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
 
     const moved: CompassLocationFix = {
@@ -180,17 +156,13 @@ describe("useCompass", () => {
       latitude: fix.latitude + DECLINATION_DRIFT_DEGREES * 2,
       timestamp: now + 30_000,
     };
-    await act(async () => {
-      tree.update(<Probe location={moved} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: moved });
 
     expect(mockStopWatching).toHaveBeenCalledTimes(1);
     expect(mockStartWatching).toHaveBeenCalledTimes(2);
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.objectContaining({ latitude: moved.latitude, locationTimestamp: moved.timestamp })
     );
-    act(() => tree.unmount());
   });
 
   it("hands the newest fix to a session that outlived it", async () => {
@@ -201,23 +173,16 @@ describe("useCompass", () => {
       altitude: 612,
       timestamp: now,
     };
-    const tree = await renderHook(fix);
+    const { rerender } = await renderCompass({ location: fix });
 
     // A drifting fix leaves the session alone, so the far move that follows must start
     // from the newest position rather than the one the previous session was anchored to.
-    await act(async () => {
-      tree.update(<Probe location={{ ...fix, latitude: 24.72, timestamp: now + 10_000 }} />);
-      await Promise.resolve();
-    });
-    await act(async () => {
-      tree.update(<Probe location={{ ...fix, latitude: 25.5, timestamp: now + 20_000 }} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: { ...fix, latitude: 24.72, timestamp: now + 10_000 } });
+    await rerender({ location: { ...fix, latitude: 25.5, timestamp: now + 20_000 } });
 
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.objectContaining({ latitude: 25.5, locationTimestamp: now + 20_000 })
     );
-    act(() => tree.unmount());
   });
 
   const staleFix: CompassLocationFix = {
@@ -229,53 +194,36 @@ describe("useCompass", () => {
   };
 
   it("restarts once so a fresh fix can reach the fused provider", async () => {
-    const tree = await renderHook(staleFix);
+    const { rerender } = await renderCompass({ location: staleFix });
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
 
     // Same place, so only the fix becoming fresh can justify the restart.
-    await act(async () => {
-      tree.update(<Probe location={{ ...staleFix, timestamp: now }} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: { ...staleFix, timestamp: now } });
 
     expect(mockStartWatching).toHaveBeenCalledTimes(2);
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.objectContaining({ locationTimestamp: now })
     );
-    act(() => tree.unmount());
   });
 
   it("retries again after a resume that restarted on a fix gone stale", async () => {
-    const tree = await renderHook(staleFix);
-    await act(async () => {
-      tree.update(<Probe location={{ ...staleFix, timestamp: now }} />);
-      await Promise.resolve();
-    });
+    const { rerender } = await renderCompass({ location: staleFix });
+    await rerender({ location: { ...staleFix, timestamp: now } });
     expect(mockStartWatching).toHaveBeenCalledTimes(2);
 
     // Backgrounded long enough for the unlocking fix to age out, then resumed.
     const aged = { ...staleFix, timestamp: now };
-    await act(async () => {
-      tree.update(<Probe location={aged} paused />);
-      await Promise.resolve();
-    });
-    act(() => jest.advanceTimersByTime(MAX_FRESH_LOCATION_AGE_MS + 1));
-    await act(async () => {
-      tree.update(<Probe location={aged} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: aged, paused: true });
+    await act(() => jest.advanceTimersByTime(MAX_FRESH_LOCATION_AGE_MS + 1));
+    await rerender({ location: aged });
 
     const afterResume = mockStartWatching.mock.calls.length;
-    await act(async () => {
-      tree.update(<Probe location={{ ...staleFix, timestamp: Date.now() }} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: { ...staleFix, timestamp: Date.now() } });
 
     expect(mockStartWatching.mock.calls.length).toBe(afterResume + 1);
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.objectContaining({ locationTimestamp: Date.now() })
     );
-    act(() => tree.unmount());
   });
 
   it("never sends a chosen city's pick time as a fix time", async () => {
@@ -286,60 +234,44 @@ describe("useCompass", () => {
       altitude: null,
       timestamp: now,
     };
-    let tree!: renderer.ReactTestRenderer;
-    await act(async () => {
-      tree = renderer.create(<Probe location={city} locationFromProvider={false} />);
-      await Promise.resolve();
-    });
+    const { rerender } = await renderCompass({ location: city, locationFromProvider: false });
 
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ locationTimestamp: expect.anything() })
     );
 
-    await act(async () => {
-      tree.update(
-        <Probe location={{ ...city, timestamp: now + 1_000 }} locationFromProvider={false} />
-      );
-      await Promise.resolve();
-    });
+    await rerender({ location: { ...city, timestamp: now + 1_000 }, locationFromProvider: false });
 
     expect(mockStopWatching).not.toHaveBeenCalled();
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
-    act(() => tree.unmount());
   });
 
   it("holds the session when the fix that reached the fused provider ages out", async () => {
     const fix: CompassLocationFix = { ...staleFix, timestamp: now };
-    const tree = await renderHook(fix);
+    const { rerender } = await renderCompass({ location: fix });
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
 
-    act(() => jest.advanceTimersByTime(MAX_FRESH_LOCATION_AGE_MS + 1));
-    await act(async () => {
-      tree.update(<Probe location={{ ...fix, timestamp: now + 1_000 }} />);
-      await Promise.resolve();
-    });
+    await act(() => jest.advanceTimersByTime(MAX_FRESH_LOCATION_AGE_MS + 1));
+    await rerender({ location: { ...fix, timestamp: now + 1_000 } });
 
     expect(mockStopWatching).not.toHaveBeenCalled();
     expect(mockStartWatching).toHaveBeenCalledTimes(1);
-    act(() => tree.unmount());
   });
 
   it("keeps a non-finite fix from stranding the session without a reference", async () => {
-    const tree = await renderHook({ ...staleFix, latitude: Number.NaN, timestamp: now });
+    const { rerender } = await renderCompass({
+      location: { ...staleFix, latitude: Number.NaN, timestamp: now },
+    });
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ latitude: expect.anything() })
     );
 
-    await act(async () => {
-      tree.update(<Probe location={{ ...staleFix, timestamp: now }} />);
-      await Promise.resolve();
-    });
+    await rerender({ location: { ...staleFix, timestamp: now } });
 
     expect(mockStartWatching).toHaveBeenLastCalledWith(
       expect.objectContaining({ latitude: staleFix.latitude })
     );
-    act(() => tree.unmount());
   });
 
   it("withholds the previous mode's sample while the native sensor restarts", async () => {
@@ -350,15 +282,14 @@ describe("useCompass", () => {
       altitude: 612,
       timestamp: now,
     };
-    const tree = await renderHook(fix);
+    const { result, rerender } = await renderCompass({ location: fix });
 
-    act(() => mockHeadingListener?.(reliableEvent(now)));
-    expect(latest().isValid).toBe(true);
+    await act(() => mockHeadingListener?.(reliableEvent(now)));
+    expect(result.current.isValid).toBe(true);
 
-    act(() => tree.update(<Probe location={null} />));
+    await rerender({ location: null });
 
-    expect(latest().isActive).toBe(false);
-    expect(latest().isValid).toBe(false);
-    act(() => tree.unmount());
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.isValid).toBe(false);
   });
 });
