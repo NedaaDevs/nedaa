@@ -1,7 +1,6 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import HijriSettings from "@/app/settings/advance/hijri";
-import "react-native-gesture-handler/jestSetup";
 import { State } from "react-native-gesture-handler";
 import { fireGestureHandler, getByGestureTestId } from "react-native-gesture-handler/jest-utils";
 import { act, fireEvent, within } from "@testing-library/react-native";

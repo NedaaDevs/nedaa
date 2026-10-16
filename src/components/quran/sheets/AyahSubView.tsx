@@ -1,6 +1,6 @@
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable } from "react-native";
-import { GestureDetector, type PanGesture } from "react-native-gesture-handler";
+import { GestureDetector, type Gesture } from "react-native-gesture-handler";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
@@ -31,7 +31,7 @@ interface AyahSubViewProps {
   onBack: () => void;
   onGoTo: (surah: number, ayah: number, page: number) => void;
   // Drives the panel's drag-to-go-back; attached to the header (a non-scroll zone).
-  dragGesture: PanGesture;
+  dragGesture: ReturnType<typeof Gesture.Pan>;
 }
 
 // The ayah sub-views (similar verses, tajweed, sajda) rendered as the action sheet's

@@ -4,6 +4,8 @@
     "strict": true,
     // TS 6 no longer auto-includes @types packages; jest supplies the test globals.
     "types": ["jest"],
+    // RN's legacy types; moti's types and our View refs fail the strict API.
+    "customConditions": ["react-native", "react-native-legacy-deep-imports"],
     "paths": {
       "@/*": ["./src/*"]
     }
