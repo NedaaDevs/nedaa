@@ -55,7 +55,7 @@ export const OnboardingFrame = ({
     // VoiceOver's escape gesture moves back, as the back control does.
     <View
       testID={ONBOARDING_PART.FRAME}
-      style={{ flex: 1, paddingBottom: insets.bottom }}
+      style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
       onAccessibilityEscape={onBack}>
       {chrome ? (
         <SkyOccluder>
