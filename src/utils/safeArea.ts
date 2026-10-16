@@ -20,13 +20,24 @@ export const isSkySegments = (segments: readonly string[]) =>
     ? isSkyTab(segments[1] ?? OpeningTab.HOME)
     : SKY_STACK_ROUTES.includes(segments.join("/"));
 
-type Screen = { sky: boolean; immersiveReader: boolean; android: boolean };
+type Screen = {
+  sky: boolean;
+  /** The flow covers the router and draws on the sky, whatever the route. */
+  onboarding: boolean;
+  immersiveReader: boolean;
+  android: boolean;
+};
 
 // A sky screen draws under the status bar and pads its own content. Android's
 // reader goes full-bleed so hiding the bar never reflows the page; iOS keeps
 // the top edge, since the notch inset stays whether the bar shows or not.
-export const rootSafeAreaEdges = ({ sky, immersiveReader, android }: Screen): SafeEdge[] =>
-  sky || (immersiveReader && android)
+export const rootSafeAreaEdges = ({
+  sky,
+  onboarding,
+  immersiveReader,
+  android,
+}: Screen): SafeEdge[] =>
+  sky || onboarding || (immersiveReader && android)
     ? [SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT]
     : [SAFE_EDGE.TOP, SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT];
 
