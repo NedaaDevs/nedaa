@@ -1,15 +1,7 @@
-import React from "react";
 import { AppState, AppStateStatus } from "react-native";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { useAppVisibility } from "@/hooks/useAppVisibility";
-
-// Captures the hook's output across renders via a probe component.
-const results: { isActive: boolean; becameActiveAt: number }[] = [];
-const Probe = () => {
-  results.push(useAppVisibility());
-  return null;
-};
 
 type Listener = (state: AppStateStatus) => void;
 
@@ -18,7 +10,6 @@ describe("useAppVisibility", () => {
   let nowSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    results.length = 0;
     listeners = [];
     let t = 1000;
     nowSpy = jest.spyOn(Date, "now").mockImplementation(() => ++t);
@@ -36,41 +27,32 @@ describe("useAppVisibility", () => {
     (AppState.addEventListener as jest.Mock).mockRestore();
   });
 
-  const latest = () => results[results.length - 1];
-  // Deliver to whatever is subscribed right now (the hook may resubscribe between acts).
+  // Reaches whoever is subscribed now; the hook may resubscribe between acts.
   const emit = (state: AppStateStatus) => [...listeners].forEach((l) => l(state));
 
-  it("records a foreground return when events arrive in separate batches", () => {
-    let tree!: renderer.ReactTestRenderer;
-    act(() => {
-      tree = renderer.create(<Probe />);
-    });
-    const initial = latest().becameActiveAt;
+  it("records a foreground return when events arrive in separate batches", async () => {
+    const { result } = await renderHook(() => useAppVisibility());
+    const initial = result.current.becameActiveAt;
 
-    act(() => emit("background"));
-    act(() => emit("active"));
+    await act(() => emit("background"));
+    await act(() => emit("active"));
 
-    expect(latest().isActive).toBe(true);
-    expect(latest().becameActiveAt).toBeGreaterThan(initial);
-    act(() => tree.unmount());
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.becameActiveAt).toBeGreaterThan(initial);
   });
 
-  it("records a foreground return when background->active arrive in one batch", () => {
-    // React batches both events' state updates into one render pass — the exact
-    // shape of a quick system-dialog dismiss or a queued event burst on resume.
-    let tree!: renderer.ReactTestRenderer;
-    act(() => {
-      tree = renderer.create(<Probe />);
-    });
-    const initial = latest().becameActiveAt;
+  it("records a foreground return when background->active arrive in one batch", async () => {
+    // Both events' state updates land in one render pass, as on a quick
+    // system-dialog dismiss or a queued event burst on resume.
+    const { result } = await renderHook(() => useAppVisibility());
+    const initial = result.current.becameActiveAt;
 
-    act(() => {
+    await act(() => {
       emit("background");
       emit("active");
     });
 
-    expect(latest().isActive).toBe(true);
-    expect(latest().becameActiveAt).toBeGreaterThan(initial);
-    act(() => tree.unmount());
+    expect(result.current.isActive).toBe(true);
+    expect(result.current.becameActiveAt).toBeGreaterThan(initial);
   });
 });

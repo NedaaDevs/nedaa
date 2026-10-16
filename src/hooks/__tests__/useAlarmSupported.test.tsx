@@ -8,37 +8,35 @@ jest.mock("expo-alarm", () => ({
   isAlarmKitAvailable: () => mockIsAlarmKitAvailable(),
 }));
 
+type TestingLibrary = typeof import("@testing-library/react-native/pure");
+
 const results: boolean[] = [];
 const latest = () => results[results.length - 1];
+// What the mount itself rendered, before any native answer reached the hook.
+const firstRender = () => results[0];
 
-// The hook caches its answer at module scope, so every case needs its own module
-// registry. React and the renderer come from that same registry: two copies of
-// React in one tree would leave the hook dispatcher unset.
+// The hook caches at module scope, so each case gets its own registry; the
+// test library loads from it too, or React's hook dispatcher stays unset.
 const setup = (platform: "ios" | "android") => {
   jest.resetModules();
   results.length = 0;
   mockIsAlarmKitAvailable.mockReset();
   jest.doMock("react-native", () => ({ Platform: { OS: platform } }));
 
-  const React = require("react");
-  const renderer = require("react-test-renderer");
+  // `pure`: the main entry calls afterEach, which jest rejects inside a test.
+  const { act, renderHook }: TestingLibrary = require("@testing-library/react-native/pure");
   const { useAlarmSupported } = require("@/hooks/useAlarmSupported");
   const { alarmSupport }: typeof import("@/utils/alarmSupport") = require("@/utils/alarmSupport");
 
-  const Probe = () => {
-    results.push(useAlarmSupported());
-    return null;
-  };
-
   return {
     alarmSupport,
-    render: () => {
-      renderer.act(() => {
-        renderer.create(React.createElement(Probe));
+    render: async () => {
+      await renderHook(() => {
+        results.push(useAlarmSupported());
       });
     },
     flush: async () => {
-      await renderer.act(async () => {});
+      await act(async () => {});
     },
   };
 };
@@ -48,11 +46,13 @@ describe("useAlarmSupported", () => {
 
   it("reports false until AlarmKit answers, then true", async () => {
     const { render, flush } = setup("ios");
-    mockIsAlarmKitAvailable.mockResolvedValue(true);
+    const answer = later<boolean>();
+    mockIsAlarmKitAvailable.mockReturnValue(answer.promise);
 
-    render();
-    expect(latest()).toBe(false);
+    await render();
+    expect(results).not.toContain(true);
 
+    answer.release(true);
     await flush();
     expect(latest()).toBe(true);
   });
@@ -61,7 +61,7 @@ describe("useAlarmSupported", () => {
     const { render, flush } = setup("ios");
     mockIsAlarmKitAvailable.mockResolvedValue(false);
 
-    render();
+    await render();
     await flush();
 
     expect(latest()).toBe(false);
@@ -71,7 +71,7 @@ describe("useAlarmSupported", () => {
     const { render, flush } = setup("ios");
     mockIsAlarmKitAvailable.mockRejectedValue(new Error("bridge down"));
 
-    render();
+    await render();
     await flush();
 
     expect(latest()).toBe(false);
@@ -81,13 +81,13 @@ describe("useAlarmSupported", () => {
     const { render, flush } = setup("ios");
     mockIsAlarmKitAvailable.mockResolvedValue(true);
 
-    render();
+    await render();
     await flush();
 
     results.length = 0;
-    render();
+    await render();
 
-    expect(latest()).toBe(true);
+    expect(firstRender()).toBe(true);
     expect(mockIsAlarmKitAvailable).toHaveBeenCalledTimes(1);
   });
 
@@ -97,9 +97,9 @@ describe("useAlarmSupported", () => {
     mockIsAlarmKitAvailable.mockResolvedValue(true);
 
     await expect(alarmSupport()).resolves.toBe(true);
-    render();
+    await render();
 
-    expect(latest()).toBe(true);
+    expect(firstRender()).toBe(true);
     await expect(alarmSupport()).resolves.toBe(true);
     expect(mockIsAlarmKitAvailable).toHaveBeenCalledTimes(1);
   });
@@ -110,7 +110,7 @@ describe("useAlarmSupported", () => {
     mockIsAlarmKitAvailable.mockReturnValue(answer.promise);
 
     const early = alarmSupport();
-    render();
+    await render();
     answer.release(true);
     await flush();
 
@@ -119,12 +119,12 @@ describe("useAlarmSupported", () => {
     expect(mockIsAlarmKitAvailable).toHaveBeenCalledTimes(1);
   });
 
-  it("reports true on Android without a native call", () => {
+  it("reports true on Android without a native call", async () => {
     const { render } = setup("android");
 
-    render();
+    await render();
 
-    expect(latest()).toBe(true);
+    expect(firstRender()).toBe(true);
     expect(mockIsAlarmKitAvailable).not.toHaveBeenCalled();
   });
 });
