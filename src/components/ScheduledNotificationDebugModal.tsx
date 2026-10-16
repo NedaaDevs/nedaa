@@ -162,7 +162,7 @@ const NotificationDebugModalBody: FC<Pick<Props, "onClose">> = ({ onClose }) => 
 
           {/* Filter Chips */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
-            <HStack gap="$1" paddingRight="$2">
+            <HStack gap="$1" paddingEnd="$2">
               {filterButtons.map((btn) => (
                 <Pressable
                   key={btn.key}

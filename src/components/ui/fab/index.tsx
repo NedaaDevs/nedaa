@@ -15,7 +15,13 @@ import { useTextScale } from "@/hooks/useTextScale";
 
 type FabSize = "sm" | "md" | "lg";
 type FabPlacement =
-  "top right" | "top left" | "bottom right" | "bottom left" | "top center" | "bottom center";
+  | "top right"
+  | "top left"
+  | "bottom right"
+  | "bottom left"
+  | "bottom end"
+  | "top center"
+  | "bottom center";
 
 const FabContext = createStyledContext({
   size: "md" as FabSize,
@@ -57,6 +63,8 @@ const FabFrame = styled(View, {
       "top left": { top: "$group", left: "$group" },
       "bottom right": { bottom: "$group", right: "$group" },
       "bottom left": { bottom: "$group", left: "$group" },
+      // The cross-axis end of a column: right in English, left in Arabic.
+      "bottom end": { bottom: "$group", alignSelf: "flex-end", marginEnd: "$group" },
       "top center": { top: "$group", alignSelf: "center" },
       "bottom center": { bottom: "$group", alignSelf: "center" },
     },
