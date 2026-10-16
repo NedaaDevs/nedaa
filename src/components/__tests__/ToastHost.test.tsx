@@ -16,17 +16,6 @@ import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
-// The gesture runs only on a device; here the detector renders its child.
-jest.mock("react-native-gesture-handler", () => {
-  const chain: Record<string, unknown> = {};
-  const self = () => chain;
-  for (const name of ["runOnJS", "activeOffsetY", "failOffsetX", "onChange", "onEnd"])
-    chain[name] = self;
-  return {
-    Gesture: { Pan: () => chain },
-    GestureDetector: ({ children }: { children: React.ReactNode }) => children,
-  };
-});
 
 const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
 const label = (kind: string, message: string) => `${i18n.t(`a11y.toast.${kind}`)}: ${message}`;

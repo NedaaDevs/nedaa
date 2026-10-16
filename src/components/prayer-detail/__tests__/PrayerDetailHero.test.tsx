@@ -9,6 +9,7 @@ import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
@@ -204,6 +205,12 @@ describe("PrayerDetailHero", () => {
     await renderWithTheme(<PrayerDetailHero prayerId={PRAYER_ID.ASR} />);
 
     expect(screen.queryByRole("header")).not.toBeOnTheScreen();
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.root).toBeEmptyElement();
+  });
+
+  it("gives every control a role, a name and a 44pt target", async () => {
+    await renderAt("2026-09-23", "14:02", PRAYER_ID.ASR);
+
+    expect(controlProblems()).toEqual([]);
   });
 });

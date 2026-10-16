@@ -1,11 +1,12 @@
 import type { ReactElement, ReactNode } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { render } from "@testing-library/react-native";
 import { TamaguiProvider } from "tamagui";
 
 import config from "../../tamagui.config";
 import { RTLContext } from "@/contexts/RTLContext";
 
-/** The app's Tamagui config in the light theme, read in one direction. */
+/** The app root's providers: light theme, one direction, gesture root. */
 export const ThemeProvider = ({
   children,
   isRTL = false,
@@ -14,7 +15,9 @@ export const ThemeProvider = ({
   isRTL?: boolean;
 }) => (
   <TamaguiProvider config={config} defaultTheme="light">
-    <RTLContext value={{ isRTL, direction: isRTL ? "rtl" : "ltr" }}>{children}</RTLContext>
+    <RTLContext value={{ isRTL, direction: isRTL ? "rtl" : "ltr" }}>
+      <GestureHandlerRootView>{children}</GestureHandlerRootView>
+    </RTLContext>
   </TamaguiProvider>
 );
 
