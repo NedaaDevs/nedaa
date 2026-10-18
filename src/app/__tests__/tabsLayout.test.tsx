@@ -12,6 +12,7 @@ import { AppLocale, AppMode, HiddenTab } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAppStore } from "@/stores/app";
+import { useQuranStore } from "@/stores/quran";
 import { normalizeRoutePath, REPO_ROOT } from "@/test-helpers/routeTree";
 import config from "../../../tamagui.config";
 import { isDarkMode } from "@/utils/appearance";
@@ -22,7 +23,11 @@ import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 
 // The players reach native audio modules that jest does not load; the bar's frame is what matters.
 jest.mock("@/components/athkar/MiniPlayerBar", () => ({ __esModule: true, default: () => null }));
-jest.mock("@/components/quran/listen/QuranMiniPlayer", () => ({ QuranMiniPlayer: () => null }));
+const mockMiniPlayerId = "quran-mini-player-stand-in";
+jest.mock("@/components/quran/listen/QuranMiniPlayer", () => {
+  const { View } = jest.requireActual<typeof import("react-native")>("react-native");
+  return { QuranMiniPlayer: () => <View testID={mockMiniPlayerId} /> };
+});
 
 const TABS_GROUP = "(tabs)";
 const LAYOUT = "_layout";
@@ -94,6 +99,7 @@ describe("tabs layout", () => {
   beforeEach(() => {
     toolsMounts = 0;
     useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN });
+    useQuranStore.setState({ readerActive: false });
   });
 
   // A new appearance restyles the tabs in place; rebuilding them reran every screen.
@@ -191,6 +197,18 @@ describe("tabs layout", () => {
     await act(() => router.navigate(BACK_DESTINATION.QURAN.href));
 
     expect(screen.queryAllByRole("tab")).toEqual([]);
+  });
+
+  // An open reader hides the mini player on its own tab only; Listen plays on.
+  it("shows the Quran mini player on another tab while the reader is open", async () => {
+    useQuranStore.setState({ readerActive: true });
+    await renderTabs();
+
+    await act(() => router.navigate(BACK_DESTINATION.QURAN.href));
+    expect(screen.queryByTestId(mockMiniPlayerId)).toBeNull();
+
+    await act(() => router.navigate(BACK_DESTINATION.HOME.href));
+    expect(screen.getByTestId(mockMiniPlayerId)).toBeOnTheScreen();
   });
 
   const frameStyle = () =>
