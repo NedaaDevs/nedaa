@@ -52,9 +52,9 @@ jest.mock("@/utils/measureInWindow", () => ({
 }));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
-const Sky = ({ phase }: { phase: Phase | undefined }) => (
+const Sky = ({ phase, paused }: { phase: Phase | undefined; paused?: boolean }) => (
   <PhaseContext value={phase}>
-    <SkyBackground>
+    <SkyBackground paused={paused}>
       <Text>Today</Text>
     </SkyBackground>
   </PhaseContext>
@@ -220,6 +220,13 @@ describe("SkyBackground", () => {
       await renderWithTheme(<Sky phase={PHASE.DAY} />, { isRTL: true });
 
       expect(part(SKY_PART.SUN)[0]).toHaveStyle({ direction: "ltr" });
+    });
+
+    // A screen out of focus stays mounted under a tab or a pushed screen.
+    it("holds its rays still while paused", async () => {
+      await renderWithTheme(<Sky phase={PHASE.DAY} paused />);
+
+      expect(raysTurn()).toBe(false);
     });
 
     it("holds its rays still under reduced motion", async () => {

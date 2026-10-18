@@ -25,11 +25,16 @@ export const FOCUS_COUNTDOWN_PART = {
   FIGURE: "focus-countdown-figure",
 } as const;
 
+type Props = {
+  /** Holds the second clock while its screen is out of focus. */
+  paused?: boolean;
+};
+
 /** The next prayer by name, and how long until it or since the last one. */
-export const FocusCountdown = () => {
+export const FocusCountdown = ({ paused = false }: Props) => {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
-  const focus = useFocusPrayer(flipped);
+  const focus = useFocusPrayer(flipped, paused);
   const locale = useAppStore((state) => state.locale);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
 
