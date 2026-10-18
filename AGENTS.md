@@ -93,3 +93,4 @@ The `BUILD_VARIANT` env var (`gms` by default, `hms` for Huawei devices without 
 - **`ios/` and `android/` are committed.** This project doesn't regenerate them on every build, and both contain hand-written code that `expo prebuild` will silently destroy — the widget extension target, alarm intent handling in `MainActivity.kt`. After changing a native dependency, run `pod install`. Don't reach for `prebuild`.
 - **Native modules are autolinked** through each module's `expo-module.config.json`, not through `app.json` plugins.
 - **`react-native-worklets` is patched** via bun `patchedDependencies` (`patches/`). Don't bump it without re-checking the patch.
+- **`moti` and `@tamagui/web` carry type-only patches** so their `.d.ts` files compile under React Native's strict TypeScript API. Drop each patch once its package ships strict-compatible types.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LayoutChangeEvent, Pressable, View } from "react-native";
+import { LayoutChangeEvent, Pressable, View, type ViewInstance } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -131,7 +131,7 @@ const QuranPage = ({
   // the real onLayout height — they're all guarded by `lineHeight > 0`. Seeding an
   // estimate here made them render once at the wrong position then snap on measure.
   const [linesAreaHeight, setLinesAreaHeight] = useState(0);
-  const pressableRef = useRef<View>(null);
+  const pressableRef = useRef<ViewInstance>(null);
 
   const {
     pageAvailable,

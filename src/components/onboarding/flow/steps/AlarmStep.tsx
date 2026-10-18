@@ -6,7 +6,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import type { View } from "react-native";
+import type { ViewInstance } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react-native";
@@ -161,7 +161,7 @@ type ResultProps = {
   line: string;
   /** The whole result as one sentence; the step moves reader focus here. */
   label: string;
-  cardRef: RefObject<View | null>;
+  cardRef: RefObject<ViewInstance | null>;
 };
 
 /** How far it got: N of this device's M items, then what that means. */
@@ -231,7 +231,7 @@ export const AlarmStep = ({
   const { request, requesting } = useBusyRequest(setBusy);
   // Aborts when the step leaves: a run in flight stops acting, a wait ends.
   const leave = useRef<AbortController | null>(null);
-  const resultRef = useRef<View>(null);
+  const resultRef = useRef<ViewInstance>(null);
 
   const settle = (items: AlarmPermission[]) => {
     const ringable = canRing(items);

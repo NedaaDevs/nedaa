@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { View as NativeView } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react-native";
 
@@ -100,7 +100,7 @@ type Props = BaseProps &
         /** Holds the row still, such as while the value it opens is saved. */
         disabled?: boolean;
         /** The row's view, so a sheet it opens can hand focus back to it. */
-        ref?: Ref<NativeView>;
+        ref?: Ref<ViewInstance>;
         /** Names a page outside the app; the row reads as a link and points outward. */
         linkLabel?: string;
       }

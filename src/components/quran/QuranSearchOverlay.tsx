@@ -7,7 +7,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Pressable, StyleSheet, TextInput, useWindowDimensions } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  type TextInputInstance,
+} from "react-native";
 import Animated, {
   Easing,
   Extrapolation,
@@ -104,7 +110,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
     // Only the legacy list's ref carries the handlerTag the close-pan relates to.
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     const scrollRef = useRef<LegacyScrollView>(null);
-    const inputRef = useRef<TextInput>(null);
+    const inputRef = useRef<TextInputInstance>(null);
 
     const progress = useSharedValue(0); // 0 closed → 1 open
     const selectFade = useSharedValue(1); // 1 visible → 0 dissolved (select close)
