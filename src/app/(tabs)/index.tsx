@@ -1,4 +1,5 @@
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useIsFocused } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -23,6 +24,7 @@ import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { usePreferencesStore } from "@/stores/preferences";
 
 export default function MainScreen() {
+  const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const showOccasions = usePreferencesStore((state) => state.showImportantDaysOnHome);
@@ -31,7 +33,7 @@ export default function MainScreen() {
 
   return (
     <DaySimulator>
-      <SkyBackground>
+      <SkyBackground paused={!focused}>
         {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
         <Box flex={1} paddingTop={insets.top}>
           <ActiveAlarmBanner />
@@ -40,7 +42,7 @@ export default function MainScreen() {
             showsVerticalScrollIndicator={false}>
             <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
               <TodayHeader />
-              <FocusCountdown />
+              <FocusCountdown paused={!focused} />
               <SkyOccluder>
                 <CelestialRhythm selected={detail.prayerId} />
               </SkyOccluder>

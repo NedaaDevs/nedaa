@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useRouter, type Href } from "expo-router";
+import { useIsFocused, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isPinningSupported } from "expo-widgets";
 
@@ -31,6 +31,7 @@ import { isAthkarSupported } from "@/utils/athkar";
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
@@ -69,7 +70,7 @@ export default function SettingsScreen() {
 
   return (
     // The sky runs under both bars; the content scrolls clear of the tab bar.
-    <SkyBackground>
+    <SkyBackground paused={!focused}>
       <SkyScrollView
         contentContainerStyle={{
           flexGrow: 1,

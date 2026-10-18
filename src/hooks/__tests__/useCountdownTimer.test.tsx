@@ -63,6 +63,17 @@ describe("useCountdownTimer", () => {
     expect(result.current!.seconds).toBe(before - 1);
   });
 
+  it("holds the second clock while paused", async () => {
+    usePreferencesStore.setState({ showSeconds: true });
+    jest.useFakeTimers({ now: new Date("2026-09-23T15:10:00.000Z") });
+    const { result } = await renderHook(() => useCountdownTimer(false, true));
+    const before = result.current!.seconds;
+
+    await act(() => jest.advanceTimersByTime(1000));
+
+    expect(result.current!.seconds).toBe(before);
+  });
+
   it("follows Today's clock while a simulated day plays", async () => {
     jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
     const wrapper = ({ children }: { children: ReactNode }) => (
