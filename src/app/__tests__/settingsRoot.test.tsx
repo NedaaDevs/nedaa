@@ -432,8 +432,10 @@ describe("Rate and Share", () => {
   const thanks = () => screen.queryAllByRole("button", { name: i18n.t("settings.thankYou") });
 
   beforeEach(() => {
-    jest.spyOn(Linking, "openURL").mockResolvedValue(true);
-    jest.spyOn(Share, "share").mockResolvedValue({ action: Share.sharedAction });
+    jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+    jest
+      .spyOn(Share, "share")
+      .mockResolvedValue({ action: Share.sharedAction, activityType: undefined });
   });
 
   it("opens the store to rate, and thanks on the way back", async () => {
@@ -450,8 +452,10 @@ describe("Rate and Share", () => {
   });
 
   it("waits for the way back only once the store has opened", async () => {
-    let opened = (_: boolean) => {};
-    jest.spyOn(Linking, "openURL").mockReturnValue(new Promise((resolve) => (opened = resolve)));
+    let opened = () => {};
+    jest
+      .spyOn(Linking, "openURL")
+      .mockReturnValue(new Promise<void>((resolve) => (opened = resolve)));
     const appState = appStateListeners();
     await renderSettings();
     const before = appState.live.size;
@@ -459,7 +463,7 @@ describe("Rate and Share", () => {
     await userEvent.press(rate());
     expect(appState.live.size).toBe(before);
 
-    await act(async () => opened(true));
+    await act(async () => opened());
 
     expect(appState.live.size).toBe(before + 1);
   });
@@ -481,7 +485,7 @@ describe("Rate and Share", () => {
     jest
       .spyOn(Linking, "openURL")
       .mockRejectedValueOnce(new Error("no Play Store"))
-      .mockResolvedValueOnce(true);
+      .mockResolvedValueOnce(undefined);
     const appState = appStateListeners();
     await renderSettings();
     const before = appState.live.size;
@@ -536,7 +540,9 @@ describe("Rate and Share", () => {
   });
 
   it("does not thank a dismissed share", async () => {
-    jest.mocked(Share.share).mockResolvedValue({ action: Share.dismissedAction });
+    jest
+      .mocked(Share.share)
+      .mockResolvedValue({ action: Share.dismissedAction, activityType: undefined });
     await renderSettings();
 
     await userEvent.press(share());

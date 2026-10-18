@@ -7,7 +7,15 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import { Animated, AppState, Easing, Image, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  AppState,
+  Easing,
+  Image,
+  StyleSheet,
+  View,
+  type ViewInstance,
+} from "react-native";
 import { captureRef, releaseCapture, type CaptureOptions } from "react-native-view-shot";
 
 import {
@@ -53,7 +61,7 @@ type Flight = { changes: Promise<void> | null; done: Promise<void> };
 
 /** The provider's refs, setters and opacity, which a dissolve drives. */
 type DissolveHandles = {
-  root: RefObject<View | null>;
+  root: RefObject<ViewInstance | null>;
   opacity: Animated.Value;
   flight: RefObject<Flight | null>;
   shown: RefObject<Shown | null>;
@@ -189,7 +197,7 @@ const runDissolve = async (h: DissolveHandles, fn: Change): Promise<void> => {
 
 /** Holds the whole UI so a theme change shows as the old screen fading off. */
 export const ThemeTransitionProvider = ({ children }: { children: ReactNode }) => {
-  const root = useRef<View>(null);
+  const root = useRef<ViewInstance>(null);
   // A screenshot build captures settled screens, so it never dissolves.
   const reduced = useReducedMotion() || IS_SCREENSHOT_MODE;
   const [snapshot, setSnapshot] = useState<string | null>(null);

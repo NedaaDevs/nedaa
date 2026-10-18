@@ -1,5 +1,6 @@
-import { act, renderHook } from "@testing-library/react-native";
-import { View } from "react-native";
+import { act, render, renderHook } from "@testing-library/react-native";
+import { createRef } from "react";
+import { View, type ViewInstance } from "react-native";
 
 import { PRAYER_ID } from "@/constants/Prayer";
 import { usePrayerDetail } from "@/hooks/usePrayerDetail";
@@ -59,7 +60,10 @@ describe("usePrayerDetail", () => {
   // The card can re-render without its node; focus still needs it after close.
   it("keeps the card that opened the sheet after it closes", async () => {
     const { result } = await renderHook(() => usePrayerDetail());
-    const card = new View({});
+    const cardRef = createRef<ViewInstance>();
+    await render(<View ref={cardRef} />);
+    const card = cardRef.current;
+    expect(card).not.toBeNull();
     await act(() => result.current.open(PRAYER_ID.ASR, card));
 
     await act(() => result.current.close());
