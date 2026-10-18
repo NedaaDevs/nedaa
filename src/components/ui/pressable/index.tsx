@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import type { View as NativeView } from "react-native";
+import type { ViewInstance } from "react-native";
 import { styled, View } from "tamagui";
 import type { GetProps } from "tamagui";
 
@@ -35,7 +35,7 @@ type PressableProps = GetProps<typeof PressableFrame> & { delayLongPress?: numbe
  * still responds to touch.
  */
 // The ref is the native view, so a sheet can hand reader focus back to it.
-const Pressable = forwardRef<NativeView, PressableProps>(
+const Pressable = forwardRef<ViewInstance, PressableProps>(
   ({ onPress, onLongPress, disabled, accessibilityState, role, ...props }, ref) => (
     <PressableFrame
       ref={ref}

@@ -1,5 +1,5 @@
 import { Component, createRef } from "react";
-import { AccessibilityInfo, Text, View } from "react-native";
+import { AccessibilityInfo, Text, View, type ViewInstance } from "react-native";
 import { act, fireEvent, screen, within } from "@testing-library/react-native";
 import { Easing, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,7 +42,7 @@ const hidden = { includeHiddenElements: true };
 /** Whether the app behind is covered, as the root layout reads it. */
 const CoverProbe = () => <Text testID={COVER}>{String(useAppCovered())}</Text>;
 
-const opener = createRef<View>();
+const opener = createRef<ViewInstance>();
 
 const Screen = ({ open, onClose = jest.fn() }: { open: boolean; onClose?: () => void }) => (
   <>

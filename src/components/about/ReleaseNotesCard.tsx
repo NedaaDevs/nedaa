@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { View } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { Pressable } from "@/components/ui/pressable";
@@ -14,7 +14,7 @@ export const ReleaseNotesCard = () => {
   const { t } = useTranslation();
   const requestOpen = useWhatsNewSheetStore((s) => s.requestOpen);
   const version = appVersion();
-  const card = useRef<View>(null);
+  const card = useRef<ViewInstance>(null);
   return (
     <Pressable
       ref={card}

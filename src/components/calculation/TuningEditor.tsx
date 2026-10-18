@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { View as NativeView } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react-native";
 
@@ -49,7 +49,7 @@ type Props = {
   /** The timing the sheet opened on, marked and given reader focus. */
   focus?: AladhanPrayerTimeName;
   /** Takes the focused timing's control, for the sheet to focus. */
-  focusRef?: Ref<NativeView>;
+  focusRef?: Ref<ViewInstance>;
 };
 
 /** A line under the controls, saying why the times are missing. */

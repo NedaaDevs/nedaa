@@ -16,6 +16,8 @@ const SNAPSHOT_URI = "file:///tmp/snapshot.jpg";
 const DISSOLVING_ID = "dissolving";
 const WARM_UP_TIMEOUT_MS = 30_000;
 
+type EndCallback = NonNullable<Parameters<Animated.CompositeAnimation["start"]>[0]>;
+
 jest.mock("react-native-view-shot", () => ({
   captureRef: jest.fn(),
   releaseCapture: jest.fn(),
@@ -327,7 +329,7 @@ describe("ThemeTransitionProvider", () => {
 
   it("covers a call made during the fade with a dissolve of its own", async () => {
     // The first fade ends when the test says so; later ones run for real.
-    let endFade: Animated.EndCallback = () => {};
+    let endFade: EndCallback = () => {};
     const timing = jest.spyOn(Animated, "timing").mockReturnValueOnce({
       start: (callback) => {
         endFade = callback ?? endFade;

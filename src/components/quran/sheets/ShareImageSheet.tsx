@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, useWindowDimensions } from "react-native";
+import { View, useWindowDimensions, type ViewInstance } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { captureRef } from "react-native-view-shot";
@@ -54,7 +54,7 @@ const ShareImageSheet = ({
   // No edition image for this page → force the text card.
   const style = imageAvailable ? storedStyle : ShareCardStyle.TEXT;
 
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<ViewInstance>(null);
   const [busy, setBusy] = useState(false);
 
   const cardWidth = Math.min(width - 64, 360);

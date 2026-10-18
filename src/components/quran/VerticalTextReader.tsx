@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { View, ViewToken } from "react-native";
+import { View, type ListViewToken } from "react-native";
 import Animated, { useSharedValue } from "react-native-reanimated";
 import { scheduleOnUI } from "react-native-worklets";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -147,7 +147,7 @@ const VerticalTextReader = ({
   }, [onPageChange]);
   const onViewableItemsChanged = useMemo(
     () =>
-      ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
         const top = viewableItems[0]?.index;
         if (top != null) {
           visiblePageRef.current = top + 1;

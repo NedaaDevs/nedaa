@@ -143,7 +143,7 @@ describe("Live Activities on iOS", () => {
   });
 
   it("opens the app's Settings page for Live Activities", async () => {
-    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 
     await requestAlarmPermission({
       id: ALARM_PERMISSION.LIVE_ACTIVITIES,
@@ -244,7 +244,7 @@ describe("requestAlarmPermission over what the reader reports", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     jest.spyOn(Linking, "openSettings").mockResolvedValue(undefined);
     jest.spyOn(Linking, "sendIntent").mockResolvedValue(undefined);
   });

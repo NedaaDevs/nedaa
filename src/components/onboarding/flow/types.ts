@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import type { View } from "react-native";
+import type { ViewInstance } from "react-native";
 
 import {
   LOCATION_CHOICE,
@@ -53,7 +53,7 @@ export type StepProps = {
   /** Clears a manual city picked in this run; one stored before it stays. */
   dropTriedCity: () => void;
   /** The step's heading view; it takes reader focus when the step arrives. */
-  headingRef: RefObject<View | null>;
+  headingRef: RefObject<ViewInstance | null>;
   /** "N of M", read with the heading; empty on Welcome and Completion. */
   progress: string;
 };

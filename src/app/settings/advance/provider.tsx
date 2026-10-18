@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { View as NativeView } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,10 +56,10 @@ const CalculationContent = () => {
   );
   const [open, setOpen] = useState(Boolean(focus));
   // Top level: the compiler runs a hook inside a literal on first render only.
-  const methodOpener = useRef<NativeView>(null);
-  const asrOpener = useRef<NativeView>(null);
-  const midnightOpener = useRef<NativeView>(null);
-  const tuningOpener = useRef<NativeView>(null);
+  const methodOpener = useRef<ViewInstance>(null);
+  const asrOpener = useRef<ViewInstance>(null);
+  const midnightOpener = useRef<ViewInstance>(null);
+  const tuningOpener = useRef<ViewInstance>(null);
   const openers = {
     [CALCULATION_PICKER.METHOD]: methodOpener,
     [CALCULATION_PICKER.ASR]: asrOpener,

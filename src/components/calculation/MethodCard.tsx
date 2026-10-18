@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { View as NativeView } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
@@ -17,7 +17,7 @@ type Props = {
   auto: boolean;
   onPress: () => void;
   disabled?: boolean;
-  ref?: Ref<NativeView>;
+  ref?: Ref<ViewInstance>;
 };
 
 /** The method in effect, leading to the list of methods. */
