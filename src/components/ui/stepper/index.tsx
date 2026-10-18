@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState, type ReactNode, type Ref } from "react";
-import { type AccessibilityActionEvent, type View as NativeView } from "react-native";
+import { type AccessibilityActionEvent, type ViewInstance } from "react-native";
 import { Minus, Plus } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
@@ -36,7 +36,7 @@ type Props = {
   /** The value as drawn between the buttons. */
   children: ReactNode;
   /** The adjustable element, for moving reader focus to it. */
-  ref?: Ref<NativeView>;
+  ref?: Ref<ViewInstance>;
 };
 
 export const Stepper = ({
