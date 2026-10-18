@@ -1,0 +1,13 @@
+diff --git a/types/types.d.ts b/types/types.d.ts
+index 28fb92c45be7325468c214b9819db78bb24c0052..362bdd4bcf3b1e9b966a87f40c850ae07ad61e72 100644
+--- a/types/types.d.ts
++++ b/types/types.d.ts
+@@ -246,7 +246,7 @@ export interface TamaguiElementMethods {
+  * (measure, focus, blur) which Tamagui adds at runtime. On native, View
+  * already has these via NativeMethods.
+  */
+-export type TamaguiElement = (HTMLElement & TamaguiElementMethods) | View;
++export type TamaguiElement = (HTMLElement & TamaguiElementMethods) | import('react-native').ViewInstance;
+ export type TamaguiTextElement = (HTMLElement & TamaguiElementMethods) | RNText;
+ /**
+  * Web-specific element type for platform-specific .tsx files.

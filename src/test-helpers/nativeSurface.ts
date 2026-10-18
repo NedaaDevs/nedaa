@@ -13,10 +13,13 @@ const SWAPS = [
   ["paddingRight", "paddingEnd"],
 ] as const;
 
+// ViewStyle is readonly; the swap rewrites a copy.
+type MutableViewStyle = { -readonly [K in keyof ViewStyle]: ViewStyle[K] };
+
 /** A style as React Native hands it to Yoga on a phone read in `phone`. */
 export const onPhone = (style: ViewStyle, phone: AppDirection): ViewStyle => {
   if (phone === AppDirection.LTR) return style;
-  const swapped: ViewStyle = { ...style };
+  const swapped: MutableViewStyle = { ...style };
   SWAPS.forEach(([physical, logical]) => {
     if (style[physical] === undefined) return;
     swapped[logical] = style[physical];
