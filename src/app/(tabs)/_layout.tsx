@@ -71,7 +71,7 @@ const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
       {...(floating
         ? { position: "absolute", start: 0, end: 0, bottom: 0 }
         : { backgroundColor: "$backgroundSecondary" })}>
-      {!readerActive && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
+      {!(readerActive && tabBarHidden) && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
       <MiniPlayerBar />
       {!tabBarHidden && (
         <HStack
