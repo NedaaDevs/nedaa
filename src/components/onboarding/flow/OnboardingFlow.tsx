@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { BackHandler, type View } from "react-native";
+import { BackHandler, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { countedPlace, resolveIndex, stepRank } from "@/components/onboarding/column";
@@ -70,7 +70,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   );
   const primaryPress = useRef<(() => void) | null>(null);
   const backPress = useRef<(() => void) | null>(null);
-  const headingRef = useRef<View>(null);
+  const headingRef = useRef<ViewInstance>(null);
   const shown = useRef<OnboardingStepId | null>(null);
   const lockUntil = useRef(0);
   const ending = useRef(false);

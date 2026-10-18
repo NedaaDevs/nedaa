@@ -176,7 +176,7 @@ describe("Privacy", () => {
 
   // The provider that gets the coordinates is one press from its own site.
   it("links the prayer-times provider's website", async () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     await renderPrivacy();
     const site = i18n.t("settings.privacy.providerSite");
     const row = screen.getByRole("link", { name: site });

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { View } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { parseISO } from "date-fns";
 
@@ -28,14 +28,14 @@ type CardProps = {
   time: string;
   spoken: string;
   selected: boolean;
-  onPress: (opener: View | null) => void;
+  onPress: (opener: ViewInstance | null) => void;
 };
 
 /** One prayer: quiet once passed, accented when next, ringed when chosen. */
 const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardProps) => {
   const { t } = useTranslation();
   // Held from mount: a ref handed over later is never attached.
-  const self = useRef<View>(null);
+  const self = useRef<ViewInstance>(null);
   const current = card.state === PRAYER_CARD_STATE.CURRENT;
   // The one gold card: the prayer just come in, else the next.
   const next = current || card.state === PRAYER_CARD_STATE.NEXT;
@@ -89,7 +89,7 @@ type Props = {
   /** The prayer chosen on Today, ringed here and lit on the day's line. */
   selected?: PrayerId;
   /** Gets the pressed card too, where reader focus returns after its sheet. */
-  onSelect: (id: PrayerId, opener: View | null) => void;
+  onSelect: (id: PrayerId, opener: ViewInstance | null) => void;
   /** Only the wide card for the next prayer, as a short preview. */
   nextOnly?: boolean;
 };

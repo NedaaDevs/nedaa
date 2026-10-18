@@ -1,5 +1,5 @@
 import { Component, createRef } from "react";
-import { AccessibilityInfo, View } from "react-native";
+import { AccessibilityInfo, View, type ViewInstance } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
@@ -56,7 +56,7 @@ const day = (date: string): DayPrayerTimes => ({
   } as DayPrayerTimes["otherTimings"],
 });
 
-const opener = createRef<View>();
+const opener = createRef<ViewInstance>();
 
 const renderOn = (date: string, prayerId?: PrayerId, onClose = jest.fn()) => {
   jest.useFakeTimers({ now: new Date(`${date}T10:00:00.000Z`) });

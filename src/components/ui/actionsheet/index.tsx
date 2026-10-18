@@ -23,6 +23,7 @@ import {
   View as RNView,
   type FlatListProps,
   type HostInstance,
+  type ViewInstance,
 } from "react-native";
 import { Easing, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,7 +57,7 @@ export const ACTIONSHEET_PART = {
 const ActionsheetOverlay = createContext<ReactNode>(null);
 
 /** Where ActionsheetTitle registers its view for the sheet to focus. */
-const TitleContext = createContext<RefObject<RNView | null> | null>(null);
+const TitleContext = createContext<RefObject<ViewInstance | null> | null>(null);
 
 // The app's sibling holding backdrop and sheet: VoiceOver stays inside it,
 // and the escape gesture closes the top sheet.
@@ -114,7 +115,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   });
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
-  const title = useRef<RNView>(null);
+  const title = useRef<ViewInstance>(null);
   const hasPresented = useRef(false);
   const leaving = useRef(false);
   // Up from its first settle until gorhom reports it dismissed.

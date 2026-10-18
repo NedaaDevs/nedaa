@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import type { View as NativeView } from "react-native";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { CalculationSheet } from "@/components/calculation/CalculationSheet";
@@ -42,9 +42,9 @@ export const CalculationStep = ({
   const [picker, setPicker] = useState<OnboardingCalculationPicker>(CALCULATION_PICKER.METHOD);
   const [open, setOpen] = useState(false);
   // Top level: the compiler runs a hook inside a literal on first render only.
-  const methodOpener = useRef<NativeView>(null);
-  const asrOpener = useRef<NativeView>(null);
-  const midnightOpener = useRef<NativeView>(null);
+  const methodOpener = useRef<ViewInstance>(null);
+  const asrOpener = useRef<ViewInstance>(null);
+  const midnightOpener = useRef<ViewInstance>(null);
   const openers = {
     [CALCULATION_PICKER.METHOD]: methodOpener,
     [CALCULATION_PICKER.ASR]: asrOpener,

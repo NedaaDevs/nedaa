@@ -1,5 +1,5 @@
 import { createRef } from "react";
-import type { View } from "react-native";
+import type { ViewInstance } from "react-native";
 
 import { NEW_SESSION, type StepPrimary, type StepProps } from "@/components/onboarding/flow/types";
 
@@ -14,7 +14,7 @@ export const stepProps = (overrides: Partial<StepProps> = {}): StepProps => ({
   setPrimaryHidden: jest.fn(),
   setBack: jest.fn(),
   dropTriedCity: jest.fn(),
-  headingRef: createRef<View>(),
+  headingRef: createRef<ViewInstance>(),
   progress: "",
   ...overrides,
 });

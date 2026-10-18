@@ -1,5 +1,5 @@
 import { useRef, useState, type RefObject } from "react";
-import type { HostInstance, View as NativeView } from "react-native";
+import type { HostInstance, ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -169,7 +169,7 @@ export const CalculationSheet = ({
   focus,
 }: Props) => {
   const { t } = useTranslation();
-  const focused = useRef<NativeView>(null);
+  const focused = useRef<ViewInstance>(null);
   const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const title = t(CALCULATION_TITLE_KEY[picker]);
 
