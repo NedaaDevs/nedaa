@@ -33,8 +33,7 @@ const mockPhone = {
   reported: NATIVE_SCHEME.LIGHT as ColorSchemeName,
   listeners: new Set<(preferences: { colorScheme: ColorSchemeName }) => void>(),
 };
-const effective = () =>
-  mockPhone.pin === NATIVE_SCHEME.UNSPECIFIED ? mockPhone.own : mockPhone.pin;
+const effective = () => (mockPhone.pin === NATIVE_SCHEME.AUTO ? mockPhone.own : mockPhone.pin);
 
 // React Native's hook, read from the fake phone.
 jest.mock("react-native/Libraries/Utilities/useColorScheme", () => ({
@@ -113,7 +112,7 @@ describe("useRootAppearance", () => {
     jest.spyOn(Appearance, "setColorScheme").mockImplementation((next) => {
       const before = effective();
       mockPhone.pin = next as NativeScheme;
-      if (mockPhone.pin !== NATIVE_SCHEME.UNSPECIFIED) mockPhone.reported = mockPhone.pin;
+      if (mockPhone.pin !== NATIVE_SCHEME.AUTO) mockPhone.reported = mockPhone.pin;
       if (effective() === before && mockPhone.reported === before) return;
       setTimeout(() => {
         mockPhone.reported = effective();
