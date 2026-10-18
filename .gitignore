@@ -81,3 +81,6 @@ scripts/qul-metadata/
 # Local Crowdin CLI config (may hold a token) — never commit
 crowdin-cli.yml
 .superpowers/
+# @generated expo skills start
+.claude/skills/expo-sqlite
+# @generated expo skills end
