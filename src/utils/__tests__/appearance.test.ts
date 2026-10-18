@@ -10,7 +10,7 @@ describe("nativeColorSchemeFor", () => {
   });
 
   it("hands control back to the OS for system mode", () => {
-    expect(nativeColorSchemeFor(AppMode.SYSTEM)).toBe(NATIVE_SCHEME.UNSPECIFIED);
+    expect(nativeColorSchemeFor(AppMode.SYSTEM)).toBe(NATIVE_SCHEME.AUTO);
   });
 });
 
@@ -50,6 +50,6 @@ describe("Adaptive", () => {
     expect(isDarkMode(AppMode.ADAPTIVE, scheme, undefined)).toBe(
       isDarkMode(AppMode.SYSTEM, scheme)
     );
-    expect(nativeColorSchemeFor(AppMode.ADAPTIVE, undefined)).toBe(NATIVE_SCHEME.UNSPECIFIED);
+    expect(nativeColorSchemeFor(AppMode.ADAPTIVE, undefined)).toBe(NATIVE_SCHEME.AUTO);
   });
 });
