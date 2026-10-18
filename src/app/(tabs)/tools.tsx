@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useRouter, type Href } from "expo-router";
+import { useIsFocused, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlarmClock,
@@ -88,6 +88,7 @@ const TOOLS: readonly ToolItem[] = [
 export default function ToolsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const focused = useIsFocused();
   const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const alarmSupported = useAlarmSupported();
   const insets = useSafeAreaInsets();
@@ -112,7 +113,7 @@ export default function ToolsScreen() {
 
   return (
     // The sky runs under both bars; the content scrolls clear of the tab bar.
-    <SkyBackground>
+    <SkyBackground paused={!focused}>
       <SkyScrollView
         contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarInset }}>
         <SkyOccluder>

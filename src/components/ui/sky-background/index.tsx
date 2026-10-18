@@ -16,10 +16,14 @@ import type { WindowRect } from "@/utils/sky";
 
 export { SKY_PART, SkyOccluder, SkyScrollView };
 
-type Props = { children?: ReactNode };
+type Props = {
+  children?: ReactNode;
+  /** Holds the sky still while its screen is out of focus. */
+  paused?: boolean;
+};
 
 /** The screen surface: the sky for the current brightness, phase and hour. */
-export const SkyBackground = ({ children }: Props) => {
+export const SkyBackground = ({ children, paused = false }: Props) => {
   const window = useWindowDimensions();
   const [size, setSize] = useState({ width: window.width, height: window.height });
   const sky = useLiveSky();
@@ -68,7 +72,7 @@ export const SkyBackground = ({ children }: Props) => {
         celestial={celestial}
         hijriDay={hijriDay}
         isRTL={isRTL}
-        reduced={reduced}
+        reduced={reduced || paused}
         {...size}
         bodyOpacity={bodyOpacity}
       />

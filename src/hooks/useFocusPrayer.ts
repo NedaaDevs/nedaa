@@ -16,9 +16,9 @@ export type FocusPrayerView = {
 };
 
 /** Today's focus prayer by name; null with no later prayer stored. */
-export const useFocusPrayer = (flipped = false): FocusPrayerView | null => {
+export const useFocusPrayer = (flipped = false, paused = false): FocusPrayerView | null => {
   const { t } = useTranslation();
-  const count = useCountdownTimer(flipped);
+  const count = useCountdownTimer(flipped, paused);
   if (!count) return null;
 
   // Friday's Dhuhr is Jumuah, by the day in the prayer's own timezone.
