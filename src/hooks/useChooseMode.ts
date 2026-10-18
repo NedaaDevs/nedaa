@@ -10,7 +10,7 @@ import { nativeColorSchemeFor } from "@/utils/appearance";
 /** Pins the native scheme; settles once the phone reports it, or at the limit. */
 const pinNativeScheme = (next: NativeScheme): Promise<void> => {
   // A fixed pin the phone already reports has nothing to report.
-  if (next !== NATIVE_SCHEME.UNSPECIFIED && next === Appearance.getColorScheme()) {
+  if (next !== NATIVE_SCHEME.AUTO && next === Appearance.getColorScheme()) {
     Appearance.setColorScheme(next);
     return Promise.resolve();
   }
