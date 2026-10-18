@@ -34,11 +34,15 @@ export const SkyBackground = ({ children }: Props) => {
   const [report] = useState(
     () => (id: string, box: WindowRect | null) =>
       setBoxes((current) => {
-        const { [id]: old, ...rest } = current;
-        if (!box) return old ? rest : current;
+        const old = current[id];
+        if (!box) {
+          return old
+            ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== id))
+            : current;
+        }
         const same =
           old && (Object.keys(box) as (keyof WindowRect)[]).every((k) => old[k] === box[k]);
-        return same ? current : { ...rest, [id]: box };
+        return same ? current : { ...current, [id]: box };
       })
   );
   const registry = { report, epoch, remeasure: () => setEpoch((value) => value + 1) };
