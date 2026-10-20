@@ -4,7 +4,7 @@ import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
 import { initialLocationDetails } from "@/types/location";
 
-const mockGetLocationWithTimeout = jest.fn();
+const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
 const mockScheduleNotifications = jest.fn();
 const mockRescheduleAlarms = jest.fn();
@@ -24,9 +24,8 @@ jest.mock("expo-sqlite/kv-store", () => ({
 }));
 
 jest.mock("@/utils/location", () => ({
-  CITY_CHANGE_THRESHOLD: 10,
-  calculateDistance: jest.fn(),
-  getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
+  ...jest.requireActual("@/utils/location"),
+  readLocation: (...args: unknown[]) => mockReadLocation(...args),
 }));
 
 jest.mock("@/stores/app", () => ({
@@ -66,7 +65,7 @@ describe("useLocationUpdate location fail-safe", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
+    mockReadLocation.mockRejectedValue(new Error("HMS location unavailable"));
     mockLoadPrayerTimes.mockResolvedValue(undefined);
     mockScheduleNotifications.mockResolvedValue(undefined);
     mockRescheduleAlarms.mockResolvedValue(undefined);
@@ -99,5 +98,18 @@ describe("useLocationUpdate location fail-safe", () => {
     expect(mockScheduleNotifications).not.toHaveBeenCalled();
     expect(mockRescheduleAlarms).not.toHaveBeenCalled();
     expect(mockReloadPrayerWidgets).not.toHaveBeenCalled();
+  });
+
+  it("retries a failed device update with the device", async () => {
+    const { result } = await renderHook(() => useLocationUpdate());
+    await act(async () => {
+      await result.current.executeUpdate();
+    });
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(mockReadLocation).toHaveBeenCalledTimes(2);
   });
 });

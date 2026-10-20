@@ -29,11 +29,16 @@ jest.mock("expo-sqlite/kv-store", () => ({
   },
 }));
 
+// The store reads a fix with its source; these tests drive the position alone.
 jest.mock("@/utils/location", () => ({
-  CITY_CHANGE_THRESHOLD: 10,
+  ...jest.requireActual("@/utils/location"),
   calculateDistance: jest.fn(),
   checkLocationPermission: (...args: unknown[]) => mockCheckLocationPermission(...args),
   getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
+  readLocation: async (...args: unknown[]) => ({
+    location: await mockGetLocationWithTimeout(...args),
+    source: jest.requireActual("@/constants/Location").FIX_SOURCE.FRESH,
+  }),
 }));
 
 jest.mock("@/stores/app", () => ({

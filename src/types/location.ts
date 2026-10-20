@@ -2,6 +2,7 @@
 import type { LocalPermissionStatus } from "@/enums/location";
 import { KAABA_COORDINATES } from "@/utils/compass";
 import type { CityCountry, CityRegion, LocalizedNames } from "@/types/cities";
+import type { FixSource, LocationFailure } from "@/constants/Location";
 
 export type LocationObjectCoords = {
   latitude: number;
@@ -72,7 +73,10 @@ export type LocationDetails = {
   coords: LocationObjectCoords;
   address: Address | null;
   timezone: string;
-  error: string | null;
+  /** Why the last device read failed; null after a success. */
+  error: LocationFailure | null;
+  /** Where the stored device position came from; null for a chosen city. */
+  fixSource: FixSource | null;
   isLoading: boolean;
 };
 
@@ -91,6 +95,7 @@ export const initialLocationDetails: LocationDetails = {
   address: null,
   timezone: "Asia/Riyadh",
   error: null,
+  fixSource: null,
   isLoading: false,
 };
 
