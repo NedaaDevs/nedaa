@@ -63,6 +63,10 @@ export const ExpoHmsLocationModule = {
     return requireHmsLocation().getCurrentPositionAsync(options);
   },
 
+  getLastKnownPositionAsync(): Promise<HmsLocationObject | null> {
+    return requireHmsLocation().getLastKnownPositionAsync();
+  },
+
   reverseGeocodeAsync(location: HmsReverseGeocodeInput): Promise<HmsGeocodedAddress[]> {
     return requireHmsLocation().reverseGeocodeAsync(location);
   },
