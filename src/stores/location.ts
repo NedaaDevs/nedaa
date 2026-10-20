@@ -9,7 +9,7 @@ import {
   type LocationDetails,
   type ManualLocation,
 } from "@/types/location";
-import { PLACE_UNKNOWN } from "@/constants/Location";
+import { LOCATION_FAILURE, PLACE_UNKNOWN, type LocationFailure } from "@/constants/Location";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
@@ -29,15 +29,40 @@ import {
   CITY_CHANGE_THRESHOLD,
   LOCATION_REQUEST_TIMEOUT_EXTENDED,
   LocationPermissionError,
+  locationFailureOf,
+  readLocation,
 } from "@/utils/location";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("location");
 
-// The HMS module appends a counter group to its rejection messages so the log records why a
-// request ended. The Location screen renders this text, so it is dropped before display.
-const stripLocationDiagnostics = (message: string): string =>
-  message.replace(/\s*\(availability=[^)]*\)\s*$/, "");
+const FAILURE_KINDS: readonly unknown[] = Object.values(LOCATION_FAILURE);
+const isLocationFailure = (value: unknown): value is LocationFailure =>
+  FAILURE_KINDS.includes(value);
+
+// An older saved record may hold free-text errors or lack newer fields.
+const withKnownError = (details: LocationDetails): LocationDetails => ({
+  ...initialLocationDetails,
+  ...details,
+  error: isLocationFailure(details.error) ? details.error : null,
+});
+
+type Coords = { latitude: number; longitude: number };
+
+// City-change checks compare names from this one geocoder, so every stored
+// device address comes from it.
+const deviceAddressAt = async ({
+  latitude,
+  longitude,
+}: Coords): Promise<Location.LocationGeocodedAddress | null> => {
+  const addresses = await Location.reverseGeocodeAsync({ latitude, longitude }).catch(
+    (error: unknown) => {
+      log.w("Geocode", `device address failed: ${(error as Error)?.message ?? error}`);
+      return [];
+    }
+  );
+  return addresses[0] ?? null;
+};
 
 export type LocationStore = {
   locationDetails: LocationDetails;
@@ -105,8 +130,8 @@ export const useLocationStore = create<LocationStore>()(
           set({ isGettingLocation: true });
           try {
             // Get initial location with timeout protection
-            const location = await getLocationWithTimeout();
-            log.i("Init", "initial location retrieved");
+            const { location, source } = await readLocation();
+            log.i("Init", `initial location retrieved (${source})`);
             if (!stillAutomatic()) return;
 
             // A saved place stands until the fix's timezone resolves; with none, the
@@ -119,19 +144,14 @@ export const useLocationStore = create<LocationStore>()(
                       ...state.locationDetails,
                       coords: location.coords,
                       error: null,
+                      fixSource: source,
                       isLoading: false,
                     },
                     isLocationPermissionGranted: true,
                   }
             );
 
-            const [geocodedAddress] = await Location.reverseGeocodeAsync({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }).catch((error) => {
-              log.w("Geocode", `device address failed: ${(error as Error)?.message ?? error}`);
-              return [];
-            });
+            const geocodedAddress = await deviceAddressAt(location.coords);
 
             // Get localized version
             const localizedGeocode = await get()
@@ -159,6 +179,7 @@ export const useLocationStore = create<LocationStore>()(
                 },
                 timezone,
                 error: null,
+                fixSource: source,
                 isLoading: false,
               },
               localizedLocation: {
@@ -182,7 +203,7 @@ export const useLocationStore = create<LocationStore>()(
               set((state) => ({
                 locationDetails: {
                   ...state.locationDetails,
-                  error: stripLocationDiagnostics(cause.message),
+                  error: locationFailureOf(cause),
                   isLoading: false,
                 },
               }));
@@ -196,16 +217,21 @@ export const useLocationStore = create<LocationStore>()(
         updateCurrentLocation: async () => {
           set({ isGettingLocation: true });
           try {
-            const location = await getLocationWithTimeout(LOCATION_REQUEST_TIMEOUT_EXTENDED);
-            console.log(
-              `Location updated to: ${location.coords.latitude}, ${location.coords.longitude}`
-            );
+            const { location, source } = await readLocation(LOCATION_REQUEST_TIMEOUT_EXTENDED);
+            log.i("Update", `location updated (${source})`);
+            const geocodedAddress = await deviceAddressAt(location.coords);
 
+            // An unnamed fix clears the address; an old city name would hide a move.
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
                 coords: location.coords,
+                address: geocodedAddress && {
+                  country: geocodedAddress.country ?? PLACE_UNKNOWN,
+                  city: geocodedAddress.city ?? PLACE_UNKNOWN,
+                },
                 error: null,
+                fixSource: source,
               },
               lastKnownCoords: {
                 latitude: location.coords.latitude,
@@ -228,7 +254,7 @@ export const useLocationStore = create<LocationStore>()(
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
-                error: stripLocationDiagnostics(cause.message),
+                error: locationFailureOf(cause),
               },
             }));
             throw cause;
@@ -266,10 +292,8 @@ export const useLocationStore = create<LocationStore>()(
 
             if (distance > CITY_CHANGE_THRESHOLD) {
               // Get new city name to confirm it's actually different
-              const [geocodedAddress] = await Location.reverseGeocodeAsync({
-                latitude: currentLocation.coords.latitude,
-                longitude: currentLocation.coords.longitude,
-              });
+              const geocodedAddress = await deviceAddressAt(currentLocation.coords);
+              if (!geocodedAddress) return false;
 
               const currentCity = get().locationDetails.address?.city;
               const newCity = geocodedAddress.city ?? PLACE_UNKNOWN;
@@ -378,10 +402,12 @@ export const useLocationStore = create<LocationStore>()(
 
             if (distance > CITY_CHANGE_THRESHOLD) {
               // Get city names for comparison and display
-              const [newGeocodedAddress] = await Location.reverseGeocodeAsync({
-                latitude: currentLocation.coords.latitude,
-                longitude: currentLocation.coords.longitude,
-              });
+              // With no name for the new place there is nothing to offer.
+              const newGeocodedAddress = await deviceAddressAt(currentLocation.coords);
+              if (!newGeocodedAddress) {
+                log.i("CityChange", "new place has no device address; no prompt");
+                return;
+              }
 
               const currentCity = get().locationDetails.address?.city || "Unknown";
               const newCity = newGeocodedAddress.city ?? "Unknown";
@@ -437,6 +463,7 @@ export const useLocationStore = create<LocationStore>()(
               address: { country: location.country.name, city: location.name },
               timezone: location.timezone,
               error: null,
+              fixSource: null,
               isLoading: false,
             },
             localizedLocation: { country: location.country.name, city: location.name },
@@ -469,11 +496,16 @@ export const useLocationStore = create<LocationStore>()(
           manualLocationChosenAt: state.manualLocationChosenAt,
         }),
         // A saved DEVICE mode would read the device position in a screenshot build.
-        merge: (persisted, current) => ({
-          ...current,
-          ...(typeof persisted === "object" && persisted !== null ? persisted : {}),
-          ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
-        }),
+        merge: (persisted, current) => {
+          const saved: Partial<LocationStore> =
+            typeof persisted === "object" && persisted !== null ? persisted : {};
+          return {
+            ...current,
+            ...saved,
+            locationDetails: withKnownError(saved.locationDetails ?? current.locationDetails),
+            ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
+          };
+        },
       }
     ),
     { name: "LocationStore" }
