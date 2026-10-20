@@ -82,14 +82,11 @@ describe("location adapter", () => {
     expect(expoGetForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
   });
 
-  // Android 13+ can drop a geocoder error unanswered, so the call has a limit.
-  describe("reverseGeocodeAsync", () => {
-    const POINT = { latitude: 24.7136, longitude: 46.6753 };
-    const ADDRESS = { city: "Riyadh" };
+  describe("getLastKnownPositionAsync", () => {
+    const MAX_AGE_MS = 60_000;
+    const NOW = 1_750_000_000_000;
 
-    const loadWithGeocoder = (geocode: () => Promise<unknown>) => {
-      jest.doMock("expo-hms-location", () => ({ ExpoHmsLocationModule: { isAvailable: false } }));
-      jest.doMock("expo-location", () => ({ reverseGeocodeAsync: jest.fn(geocode) }));
+    const loadAdapter = () => {
       let isolated: typeof import("@/adapters/location") | undefined;
       jest.isolateModules(() => {
         isolated = jest.requireActual<typeof import("@/adapters/location")>("@/adapters/location");
@@ -97,33 +94,53 @@ describe("location adapter", () => {
       return isolated!;
     };
 
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
+    const mockHms = (lastKnown: unknown) => {
+      jest.doMock("expo-hms-location", () => ({
+        ExpoHmsLocationModule: {
+          isAvailable: true,
+          getLastKnownPositionAsync: jest.fn().mockResolvedValue(lastKnown),
+        },
+      }));
+      jest.doMock("expo-location", () => {
+        throw new Error("GMS location must not load in an HMS build");
+      });
+    };
 
-    it("passes on the geocoder's answer", async () => {
-      const Location = loadWithGeocoder(() => Promise.resolve([ADDRESS]));
-
-      await expect(Location.reverseGeocodeAsync(POINT)).resolves.toEqual([ADDRESS]);
+    beforeEach(() => {
+      jest.spyOn(Date, "now").mockReturnValue(NOW);
+    });
+    afterEach(() => {
+      jest.restoreAllMocks();
     });
 
-    it("rejects once the geocoder gives no answer within the limit", async () => {
-      const Location = loadWithGeocoder(() => new Promise(() => {}));
-      const geocode = Location.reverseGeocodeAsync(POINT);
+    it("asks Expo Location for a fix no older than the max age", async () => {
+      const expoGetLastKnown = jest.fn().mockResolvedValue(mockLocation);
+      jest.doMock("expo-hms-location", () => ({ ExpoHmsLocationModule: { isAvailable: false } }));
+      jest.doMock("expo-location", () => ({ getLastKnownPositionAsync: expoGetLastKnown }));
 
-      jest.advanceTimersByTime(Location.REVERSE_GEOCODE_TIMEOUT_MS);
-
-      await expect(geocode).rejects.toThrow();
+      await expect(loadAdapter().getLastKnownPositionAsync(MAX_AGE_MS)).resolves.toEqual(
+        mockLocation
+      );
+      expect(expoGetLastKnown).toHaveBeenCalledWith({ maxAge: MAX_AGE_MS });
     });
 
-    it("takes an answer that arrives just inside the limit", async () => {
-      let answer: (addresses: unknown) => void = () => {};
-      const Location = loadWithGeocoder(() => new Promise((resolve) => (answer = resolve)));
-      const geocode = Location.reverseGeocodeAsync(POINT);
+    it("keeps a Huawei fix within the max age", async () => {
+      const recent = { ...mockLocation, timestamp: NOW - MAX_AGE_MS };
+      mockHms(recent);
 
-      jest.advanceTimersByTime(Location.REVERSE_GEOCODE_TIMEOUT_MS - 1);
-      answer([ADDRESS]);
+      await expect(loadAdapter().getLastKnownPositionAsync(MAX_AGE_MS)).resolves.toEqual(recent);
+    });
 
-      await expect(geocode).resolves.toEqual([ADDRESS]);
+    it("drops a Huawei fix older than the max age", async () => {
+      mockHms({ ...mockLocation, timestamp: NOW - MAX_AGE_MS - 1 });
+
+      await expect(loadAdapter().getLastKnownPositionAsync(MAX_AGE_MS)).resolves.toBeNull();
+    });
+
+    it("passes on a missing Huawei fix as null", async () => {
+      mockHms(null);
+
+      await expect(loadAdapter().getLastKnownPositionAsync(MAX_AGE_MS)).resolves.toBeNull();
     });
   });
 });

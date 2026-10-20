@@ -36,6 +36,7 @@ import { checkLocationPermission, requestLocationPermission } from "@/utils/loca
 import { formatCityLabel } from "@/utils/cities";
 
 import { E2E_ID } from "@/constants/E2E";
+import { LOCATION_FAILURE, type LocationFailure } from "@/constants/Location";
 
 // Enums
 import { LocationMode } from "@/enums/location";
@@ -49,6 +50,22 @@ import { usePlace } from "@/hooks/usePlace";
 
 // Components
 import LocationUpdateProgress from "@/components/LocationUpdateProgress";
+
+// Locale key for each failure kind.
+const failureCopyKey = (kind: LocationFailure) => {
+  switch (kind) {
+    case LOCATION_FAILURE.DENIED:
+      return "location.permission.deniedMessage";
+    case LOCATION_FAILURE.SERVICES_OFF:
+    case LOCATION_FAILURE.TIMEOUT:
+    case LOCATION_FAILURE.UNAVAILABLE:
+      return "location.update.error";
+    default: {
+      const unhandled: never = kind;
+      return unhandled;
+    }
+  }
+};
 
 const LoadingView = () => (
   <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
@@ -367,7 +384,7 @@ const KeepLocationUpdated = () => {
         {locationDetails.error && (
           <Box paddingHorizontal="$5" paddingBottom="$3">
             <Text size="sm" color="$error">
-              {locationDetails.error}
+              {t(failureCopyKey(locationDetails.error))}
             </Text>
           </Box>
         )}
