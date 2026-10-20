@@ -11,6 +11,10 @@ import { E2E_ID } from "@/constants/E2E";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { checkLocationPermission } from "@/utils/location";
+import i18n from "@/localization/i18n";
+import { LOCATION_FAILURE } from "@/constants/Location";
+import { useLocationStore } from "@/stores/location";
+import { initialLocationDetails } from "@/types/location";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
@@ -51,4 +55,27 @@ describe("Settings › Location's choose-city control", () => {
       expect(screen.getByTestId("pathname")).toHaveTextContent(normalizeRoutePath(PICKER_HREF));
     }
   );
+});
+
+describe("Settings › Location's failure line", () => {
+  afterEach(() => {
+    useLocationStore.setState({ locationDetails: initialLocationDetails });
+  });
+
+  it.each([
+    [LOCATION_FAILURE.TIMEOUT, "location.update.error"],
+    [LOCATION_FAILURE.UNAVAILABLE, "location.update.error"],
+    [LOCATION_FAILURE.SERVICES_OFF, "location.update.error"],
+    [LOCATION_FAILURE.DENIED, "location.permission.deniedMessage"],
+  ])("shows the %s failure as locale copy", async (kind, key) => {
+    jest.mocked(checkLocationPermission).mockResolvedValue({
+      granted: true,
+      canRequestAgain: true,
+    });
+    useLocationStore.setState({ locationDetails: { ...initialLocationDetails, error: kind } });
+    await renderScreen();
+
+    expect(await screen.findByText(i18n.t(key))).toBeOnTheScreen();
+    expect(screen.queryByText(kind)).toBeNull();
+  });
 });

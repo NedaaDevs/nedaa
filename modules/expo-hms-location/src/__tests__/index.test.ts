@@ -5,6 +5,7 @@ type Listener = (event: unknown) => void;
 type MockNativeModule = {
   addListener: jest.Mock;
   getCurrentPositionAsync: jest.Mock;
+  getLastKnownPositionAsync: jest.Mock;
   getForegroundPermissionsAsync: jest.Mock;
   requestForegroundPermissionsAsync: jest.Mock;
   hasServicesEnabledAsync: jest.Mock;
@@ -23,6 +24,7 @@ const loadSubject = () => {
       return { remove: () => eventListeners.delete(listener) };
     }),
     getCurrentPositionAsync: jest.fn(),
+    getLastKnownPositionAsync: jest.fn(),
     getForegroundPermissionsAsync: jest.fn(),
     requestForegroundPermissionsAsync: jest.fn(),
     hasServicesEnabledAsync: jest.fn(),
@@ -84,6 +86,33 @@ describe("ExpoHmsLocationModule", () => {
       position
     );
     expect(nativeModule.getCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 2 });
+  });
+
+  it("delegates last-known position requests to the native module", async () => {
+    const { ExpoHmsLocationModule, nativeModule } = loadSubject();
+    const position = {
+      coords: {
+        latitude: 24.7136,
+        longitude: 46.6753,
+        altitude: null,
+        accuracy: 15,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: 1_750_000_000_000,
+      mocked: false,
+    };
+    nativeModule.getLastKnownPositionAsync.mockResolvedValue(position);
+
+    await expect(ExpoHmsLocationModule.getLastKnownPositionAsync()).resolves.toEqual(position);
+  });
+
+  it("passes on a missing last-known position as null", async () => {
+    const { ExpoHmsLocationModule, nativeModule } = loadSubject();
+    nativeModule.getLastKnownPositionAsync.mockResolvedValue(null);
+
+    await expect(ExpoHmsLocationModule.getLastKnownPositionAsync()).resolves.toBeNull();
   });
 
   it("routes watch events by id and removes the native watch", async () => {

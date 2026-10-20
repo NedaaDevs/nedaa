@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -23,6 +23,8 @@ const initialState: UpdateState = {
 
 export const useLocationUpdate = () => {
   const [updateState, setUpdateState] = useState<UpdateState>(initialState);
+  // The first step of the last pipeline run, so a retry repeats that action.
+  const lastSetCoordinates = useRef<(() => Promise<void>) | null>(null);
 
   const locationStore = useLocationStore();
   const prayerTimesStore = usePrayerTimesStore();
@@ -50,6 +52,7 @@ export const useLocationUpdate = () => {
    */
   const runPipeline = useCallback(
     async (setCoordinates: () => Promise<void>): Promise<boolean> => {
+      lastSetCoordinates.current = setCoordinates;
       setUpdateState({ isUpdating: true, currentStep: null, error: null });
 
       try {
@@ -86,9 +89,10 @@ export const useLocationUpdate = () => {
     [runPipeline, locationStore]
   );
 
-  const retry = useCallback(() => {
-    executeUpdate();
-  }, [executeUpdate]);
+  const retry = useCallback(
+    () => (lastSetCoordinates.current ? runPipeline(lastSetCoordinates.current) : executeUpdate()),
+    [runPipeline, executeUpdate]
+  );
 
   return { updateState, executeUpdate, applyManualLocation, retry };
 };

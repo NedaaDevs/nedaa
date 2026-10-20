@@ -5,7 +5,7 @@ import { useLocationStore } from "@/stores/location";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
 
-const mockGetLocationWithTimeout = jest.fn();
+const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
 const mockScheduleNotifications = jest.fn();
 const mockRescheduleAlarms = jest.fn();
@@ -25,9 +25,8 @@ jest.mock("expo-sqlite/kv-store", () => ({
 }));
 
 jest.mock("@/utils/location", () => ({
-  CITY_CHANGE_THRESHOLD: 10,
-  calculateDistance: jest.fn(),
-  getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
+  ...jest.requireActual("@/utils/location"),
+  readLocation: (...args: unknown[]) => mockReadLocation(...args),
 }));
 
 jest.mock("@/stores/app", () => ({
@@ -106,7 +105,7 @@ describe("applyManualLocation", () => {
 
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
     expect(useLocationStore.getState().locationMode).toBe(LocationMode.MANUAL);
-    expect(mockGetLocationWithTimeout).not.toHaveBeenCalled();
+    expect(mockReadLocation).not.toHaveBeenCalled();
   });
 
   it("refreshes prayer times, notifications, alarms and widgets", async () => {
@@ -182,5 +181,22 @@ describe("applyManualLocation", () => {
     });
 
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+  });
+
+  it("retries a failed manual apply with the same city, not the device", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
+    const { result } = await mountHook();
+    await act(async () => {
+      await result.current.applyManualLocation(RIYADH);
+    });
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(mockReadLocation).not.toHaveBeenCalled();
+    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(2);
+    expect(result.current.updateState.currentStep).toBe("done");
   });
 });

@@ -1,6 +1,7 @@
 import { useLocationStore } from "@/stores/location";
 import { LocationMode } from "@/enums/location";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
+import { LOCATION_FAILURE } from "@/constants/Location";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -66,7 +67,7 @@ describe("manual location", () => {
 
   test("setManualLocation clears any previous location error", () => {
     useLocationStore.setState({
-      locationDetails: { ...initialLocationDetails, error: "Location request timed out" },
+      locationDetails: { ...initialLocationDetails, error: LOCATION_FAILURE.TIMEOUT },
     });
 
     useLocationStore.getState().setManualLocation(LAHORE);
