@@ -21,12 +21,14 @@ export type {
 type LocationCallback = (location: LocationObject) => void;
 type LocationErrorCallback = (reason: string) => void;
 type ReverseGeocodeInput = Pick<LocationObject["coords"], "latitude" | "longitude">;
+type LastKnownOptions = { maxAge?: number };
 
 type LocationProvider = {
   getForegroundPermissionsAsync(): Promise<LocationPermissionResponse>;
   requestForegroundPermissionsAsync(): Promise<LocationPermissionResponse>;
   hasServicesEnabledAsync(): Promise<boolean>;
   getCurrentPositionAsync(options?: LocationOptions): Promise<LocationObject>;
+  getLastKnownPositionAsync(options?: LastKnownOptions): Promise<LocationObject | null>;
   watchPositionAsync(
     options: LocationOptions,
     callback: LocationCallback,
@@ -60,6 +62,18 @@ export const hasServicesEnabledAsync = (): Promise<boolean> =>
 
 export const getCurrentPositionAsync = (options: LocationOptions = {}): Promise<LocationObject> =>
   getLocationProvider().getCurrentPositionAsync(options);
+
+/** The cached fix no older than `maxAgeMs`, or null. */
+export const getLastKnownPositionAsync = async (
+  maxAgeMs: number
+): Promise<LocationObject | null> => {
+  if (!ExpoHmsLocationModule.isAvailable) {
+    return getExpoLocation().getLastKnownPositionAsync({ maxAge: maxAgeMs });
+  }
+  // Location Kit takes no age limit, so the age is checked here.
+  const fix = await getLocationProvider().getLastKnownPositionAsync();
+  return fix && Date.now() - fix.timestamp <= maxAgeMs ? fix : null;
+};
 
 export const watchPositionAsync = (
   options: LocationOptions,
