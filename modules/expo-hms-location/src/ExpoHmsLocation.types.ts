@@ -83,6 +83,8 @@ export type ExpoHmsLocationNativeModule = {
   requestForegroundPermissionsAsync(): Promise<HmsLocationPermissionResponse>;
   hasServicesEnabledAsync(): Promise<boolean>;
   getCurrentPositionAsync(options: HmsLocationOptions): Promise<HmsLocationObject>;
+  /** The provider's cached fix of any age, or null when it holds none. */
+  getLastKnownPositionAsync(): Promise<HmsLocationObject | null>;
   reverseGeocodeAsync(location: HmsReverseGeocodeInput): Promise<HmsGeocodedAddress[]>;
   startWatchingAsync(watchId: number, options: HmsLocationOptions): Promise<void>;
   stopWatchingAsync(watchId: number): Promise<void>;
