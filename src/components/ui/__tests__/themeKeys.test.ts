@@ -1,6 +1,8 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
+import { COLOR_TOKENS, NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
+
 // Importing tamagui.config.ts runs createTamagui(), so the keys are read from source.
 const source = () => readFileSync(join(__dirname, "../../../../tamagui.config.ts"), "utf8");
 
@@ -27,6 +29,8 @@ const themeKeys = (name: string): string[] => {
 };
 
 const THEMES = ["lightTheme", "darkTheme"];
+
+const PALETTE_BY_THEME = { lightTheme: NEDAA_LIGHT, darkTheme: NEDAA_DARK } as const;
 
 describe("theme keys", () => {
   // Without a floor on each scale, a reformat that breaks a regex passes vacuously.
@@ -63,6 +67,25 @@ describe("theme keys", () => {
     expect(repeated).toEqual([]);
   });
 
+  // The config copies each palette entry by hand, so a token added to Palette.ts
+  // and missed here would resolve to nothing at runtime.
+  it.each(THEMES)("%s carries every palette token, from its own palette", (theme) => {
+    const keys = new Set(themeKeys(theme));
+    const missing = COLOR_TOKENS.filter((token) => !keys.has(token));
+    const palette = PALETTE_BY_THEME[theme as keyof typeof PALETTE_BY_THEME];
+    const wired = [
+      ...source().matchAll(
+        new RegExp(
+          `^\\s{2}(\\w+): ${palette === NEDAA_LIGHT ? "NEDAA_LIGHT" : "NEDAA_DARK"}\\.(\\w+)\\.hex,`,
+          "gm"
+        )
+      ),
+    ];
+
+    expect(missing).toEqual([]);
+    expect(wired.filter((m) => m[1] !== m[2])).toEqual([]);
+  });
+
   // `size` and `space` resolve by the same lookup, so a theme key named for one
   // of their steps would answer a width or a padding.
   it.each(THEMES)("%s shares no name with a size or space step", (theme) => {
@@ -87,18 +110,34 @@ describe("touch target tokens", () => {
   });
 });
 
-/** The five intents a stack chooses between, by what the gap separates. */
-const SPACING = { tight: 4, inline: 8, stack: 12, group: 16, section: 20 } as const;
+/** The intents a stack or a screen chooses between, by what the gap separates. */
+const SPACING = {
+  tight: 4,
+  inline: 8,
+  stack: 12,
+  group: 16,
+  section: 24,
+  screen: 20,
+  cardPad: 16,
+  heroGap: 22,
+} as const;
 
 describe("spacing vocabulary", () => {
   it.each(Object.entries(SPACING))("$%s is %ipx", (name, px) => {
     expect(tokenBlock("space")).toMatch(new RegExp(`\\b${name}: ${px},`));
   });
 
-  // A sixth name is a design decision, so it fails here first.
-  it("carries no intent beyond the five", () => {
+  // A new name is a design decision, so it fails here first.
+  it("carries no intent beyond the eight", () => {
     const named = blockKeys("space").filter((k) => !/^-?\d/.test(k) && k !== "true");
 
     expect(named.sort()).toEqual(Object.keys(SPACING).sort());
+  });
+
+  // Space and radius resolve through one lookup, so a shared name is ambiguous.
+  it("shares no name with a radius step", () => {
+    const radius = new Set(blockKeys("radius"));
+
+    expect(Object.keys(SPACING).filter((name) => radius.has(name))).toEqual([]);
   });
 });

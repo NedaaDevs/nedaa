@@ -8,13 +8,20 @@ import { PHASE } from "@/constants/Phase";
 
 export type PaletteEntry = { readonly oklch: string; readonly hex: string };
 
+const LIGHT_SURFACE2 = { oklch: "oklch(95% 0.032 225 / .6)", hex: "#D9F4FF99" } as const;
+
+/** The bar, toast, floating control and glass sheet header share one material. */
+const LIGHT_SURFACE_FLOAT = { oklch: "oklch(97% 0.02 222 / .84)", hex: "#E7F9FFD6" } as const;
+
+const DARK_SURFACE_FLOAT = { oklch: "oklch(23% 0.065 258 / .84)", hex: "#071C3BD6" } as const;
+
 /** From the prototype's phone-frame override, not its `:root`. */
 export const NEDAA_LIGHT = {
   bg: { oklch: "oklch(93% 0.025 230)", hex: "#D8EBF6" },
   surface: { oklch: "oklch(97% 0.02 222 / .9)", hex: "#E7F9FFE6" },
-  surface2: { oklch: "oklch(95% 0.032 225 / .72)", hex: "#D9F4FFB8" },
-  /** `surface2` at .6, for a row or field lifted inside a sheet. */
-  surface2Soft: { oklch: "oklch(95% 0.032 225 / .6)", hex: "#D9F4FF99" },
+  surface2: LIGHT_SURFACE2,
+  /** A row or field lifted inside a sheet; the same value as `surface2`. */
+  surface2Soft: LIGHT_SURFACE2,
   /** `surface2` thinned for a panel nested inside a sheet. */
   panel: { oklch: "oklch(95% 0.032 225 / .42)", hex: "#D9F4FF6B" },
   /** A surface lifted over any sky, e.g. a toast; nearly opaque. */
@@ -24,6 +31,17 @@ export const NEDAA_LIGHT = {
   muted: { oklch: "oklch(45% 0.05 240)", hex: "#3B596E" },
   /** Muted text on the deeper day sky, where `muted` falls to 3:1. */
   mutedSky: { oklch: "oklch(35% 0.05 240)", hex: "#203E52" },
+  /** Row separators and inset rings; resting surfaces draw this, not `border`. */
+  hairline: { oklch: "oklch(23% 0.055 254 / .08)", hex: "#081D3614" },
+  /** A resting card or list group. */
+  surfaceGlass: { oklch: "oklch(97% 0.02 222 / .66)", hex: "#E7F9FFA8" },
+  /** Tab bar, toast, floating control and sheet header. */
+  surfaceFloat: LIGHT_SURFACE_FLOAT,
+  /** The 1px inner top edge that catches light. */
+  highlight: { oklch: "oklch(100% 0 0 / .55)", hex: "#FFFFFF8C" },
+  /** Shadow colour of the next-prayer card and the primary button. */
+  accentGlow: { oklch: "oklch(41.5% 0.09 232 / .18)", hex: "#0053722E" },
+  /** Inputs, the compact segmented choice and focus rings. */
   border: { oklch: "oklch(80% 0.045 230)", hex: "#A1C4D5" },
   accent: { oklch: "oklch(41.5% 0.09 232)", hex: "#005372" },
   accentSoft: { oklch: "oklch(93% 0.03 220)", hex: "#D3EDF6" },
@@ -36,13 +54,13 @@ export const NEDAA_LIGHT = {
   success: { oklch: "oklch(47% 0.105 155)", hex: "#196C40" },
   warn: { oklch: "oklch(57% 0.11 72)", hex: "#9F6B1E" },
   danger: { oklch: "oklch(50% 0.14 26)", hex: "#A43B36" },
-  bar: { oklch: "oklch(96% 0.03 225 / .8)", hex: "#E1F6FFCC" },
+  bar: LIGHT_SURFACE_FLOAT,
   // Switch track while off, sheet handle, switch thumb: tints of the ink.
   track: { oklch: "oklch(23% 0.055 254 / .18)", hex: "#081D362E" },
   handle: { oklch: "oklch(23% 0.055 254 / .28)", hex: "#081D3647" },
   thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
   /** A pressed row's wash: a faint tint of the ink. */
-  pressed: { oklch: "oklch(23% 0.055 254 / .05)", hex: "#081D360D" },
+  pressed: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
   /** The tinted square behind a row's accent glyph. */
   tile: { oklch: "oklch(91% 0.042 223)", hex: "#C4E8F6" },
 } as const satisfies Record<string, PaletteEntry>;
@@ -59,6 +77,11 @@ export const NEDAA_DARK = {
   fg: { oklch: "oklch(93% 0.018 230)", hex: "#DCEAF2" },
   muted: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
   mutedSky: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
+  hairline: { oklch: "oklch(93% 0.018 230 / .10)", hex: "#DCEAF21A" },
+  surfaceGlass: { oklch: "oklch(26% 0.072 260 / .62)", hex: "#0D23469E" },
+  surfaceFloat: DARK_SURFACE_FLOAT,
+  highlight: { oklch: "oklch(100% 0 0 / .08)", hex: "#FFFFFF14" },
+  accentGlow: { oklch: "oklch(80% 0.125 92 / .16)", hex: "#DBBB5629" },
   border: { oklch: "oklch(37% 0.055 257)", hex: "#2D415D" },
   accent: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
   accentSoft: { oklch: "oklch(33% 0.055 85)", hex: "#423310" },
@@ -68,11 +91,11 @@ export const NEDAA_DARK = {
   success: { oklch: "oklch(72% 0.11 175)", hex: "#4ABBA1" },
   warn: { oklch: "oklch(77% 0.11 80)", hex: "#D9AC5E" },
   danger: { oklch: "oklch(74% 0.12 28)", hex: "#ED8C80" },
-  bar: { oklch: "oklch(19% 0.055 256 / .8)", hex: "#03132CCC" },
+  bar: DARK_SURFACE_FLOAT,
   track: { oklch: "oklch(93% 0.018 230 / .18)", hex: "#DCEAF22E" },
   handle: { oklch: "oklch(93% 0.018 230 / .28)", hex: "#DCEAF247" },
   thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
-  pressed: { oklch: "oklch(93% 0.018 230 / .05)", hex: "#DCEAF20D" },
+  pressed: { oklch: "oklch(93% 0.018 230 / .08)", hex: "#DCEAF214" },
   tile: { oklch: "oklch(33% 0.058 258)", hex: "#223653" },
 } as const satisfies Record<string, PaletteEntry>;
 
@@ -107,7 +130,7 @@ export const PHASE_GRADIENTS: Record<TintedPhase, Record<Brightness, PhaseGradie
       base: "surface2",
       tint: "#EAD095",
       percent: 22,
-      to: "#C5F1F0C8",
+      to: "#C2F0EFAF",
     },
     dark: null,
   },

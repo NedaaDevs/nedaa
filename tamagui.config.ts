@@ -1,6 +1,6 @@
 import { createFont, createTamagui, createTokens } from "tamagui";
 
-import { DURATION_MS } from "./src/constants/Motion";
+import { DURATION_MS, SPRING } from "./src/constants/Motion";
 import { NEDAA_DARK, NEDAA_LIGHT } from "./src/constants/Palette";
 import { createAnimations } from "@tamagui/animations-moti";
 import { defaultConfig } from "@tamagui/config/v5";
@@ -13,27 +13,35 @@ const latinFont = createFont({
   size: {
     1: 10, // 2xs, xs
     2: 12, // sm
+    2.75: 13,
     3: 14, // md
+    3.75: 15,
     4: 16, // lg
     5: 18, // xl
     6: 20, // 2xl
     7: 24, // 3xl
+    7.5: 26,
     8: 30, // 4xl
     9: 36, // 5xl
     10: 48,
+    10.5: 40,
     true: 16, // default
   },
   lineHeight: {
     1: 14,
     2: 16,
+    2.75: 20,
     3: 20,
+    3.75: 21,
     4: 24,
     5: 28,
     6: 28,
     7: 32,
+    7.5: 34,
     8: 36,
     9: 40,
     10: 48,
+    10.5: 52,
     true: 24,
   },
   weight: {
@@ -63,27 +71,35 @@ const arabicFont = createFont({
   size: {
     1: 10,
     2: 12,
+    2.75: 13,
     3: 14,
+    3.75: 15,
     4: 16,
     5: 18,
     6: 20,
     7: 24,
+    7.5: 26,
     8: 30,
     9: 36,
     10: 48,
+    10.5: 40,
     true: 16,
   },
   lineHeight: {
     1: 14,
     2: 16,
+    2.75: 20,
     3: 20,
+    3.75: 21,
     4: 24,
     5: 28,
     6: 28,
     7: 32,
+    7.5: 34,
     8: 36,
     9: 40,
     10: 48,
+    10.5: 52,
     true: 24,
   },
   weight: {
@@ -178,7 +194,10 @@ const tokens = createTokens({
     inline: 8,
     stack: 12,
     group: 16,
-    section: 20,
+    section: 24,
+    screen: 20,
+    cardPad: 16,
+    heroGap: 22,
     "-0.5": -2,
     "-1": -4,
     "-1.5": -6,
@@ -197,6 +216,7 @@ const tokens = createTokens({
     control: 12,
     card: 16,
     sheet: 18,
+    hero: 24,
     pill: 999,
 
     0: 0,
@@ -357,6 +377,11 @@ const lightTheme = {
   fg: NEDAA_LIGHT.fg.hex,
   muted: NEDAA_LIGHT.muted.hex,
   mutedSky: NEDAA_LIGHT.mutedSky.hex,
+  hairline: NEDAA_LIGHT.hairline.hex,
+  surfaceGlass: NEDAA_LIGHT.surfaceGlass.hex,
+  surfaceFloat: NEDAA_LIGHT.surfaceFloat.hex,
+  highlight: NEDAA_LIGHT.highlight.hex,
+  accentGlow: NEDAA_LIGHT.accentGlow.hex,
   border: NEDAA_LIGHT.border.hex,
   accent: NEDAA_LIGHT.accent.hex,
   accentSoft: NEDAA_LIGHT.accentSoft.hex,
@@ -442,6 +467,11 @@ const darkTheme = {
   fg: NEDAA_DARK.fg.hex,
   muted: NEDAA_DARK.muted.hex,
   mutedSky: NEDAA_DARK.mutedSky.hex,
+  hairline: NEDAA_DARK.hairline.hex,
+  surfaceGlass: NEDAA_DARK.surfaceGlass.hex,
+  surfaceFloat: NEDAA_DARK.surfaceFloat.hex,
+  highlight: NEDAA_DARK.highlight.hex,
+  accentGlow: NEDAA_DARK.accentGlow.hex,
   border: NEDAA_DARK.border.hex,
   accent: NEDAA_DARK.accent.hex,
   accentSoft: NEDAA_DARK.accentSoft.hex,
@@ -504,6 +534,9 @@ const animations = createAnimations({
   quick: { type: "timing", duration: DURATION_MS.QUICK },
   settle: { type: "timing", duration: DURATION_MS.SETTLE },
   gentle: { type: "timing", duration: DURATION_MS.GENTLE },
+  // The shared springs; Reanimated reads the same numbers from `SPRING`.
+  springSettle: { type: "spring", ...SPRING.SETTLE },
+  springSnap: { type: "spring", ...SPRING.SNAP },
   // The sky crossfades across a prayer phase change.
   sky: { type: "timing", duration: DURATION_MS.SKY },
 });
