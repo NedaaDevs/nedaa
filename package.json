@@ -79,6 +79,7 @@
     "expo-application": "~58.1.1",
     "expo-asset": "~58.0.16",
     "expo-background-task": "~58.0.11",
+    "expo-blur": "~58.0.5",
     "expo-build-properties": "~58.0.10",
     "expo-clipboard": "~58.0.3",
     "expo-constants": "~58.0.12",
