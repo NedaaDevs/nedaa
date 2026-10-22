@@ -1,9 +1,13 @@
 import {
   FONT_SIZES,
   ROLE_RATIO,
+  SIZE_MAP,
   resolveTextSizing,
   roleLineHeight,
 } from "@/components/ui/text/sizing";
+import { readFileSync } from "fs";
+import { join } from "path";
+
 import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
 import { TextSize } from "@/enums/app";
 
@@ -108,5 +112,79 @@ describe("token line heights", () => {
 
   test("an unknown line-height token falls back to the size table", () => {
     expect(resolveTextSizing(1, undefined, MD, "$99")).toEqual({ fontSize: 14, lineHeight: 20 });
+  });
+});
+
+describe("premium type steps", () => {
+  const STEPS = {
+    "$10.5": { fontSize: 40, lineHeight: 52 },
+    "$7.5": { fontSize: 26, lineHeight: 34 },
+    "$3.75": { fontSize: 15, lineHeight: 21 },
+    "$2.75": { fontSize: 13, lineHeight: 20 },
+  } as const;
+
+  it.each(Object.entries(STEPS))("%s is %j", (step, values) => {
+    expect(FONT_SIZES[step]).toEqual(values);
+  });
+
+  it.each([
+    ["display", "$10.5"],
+    ["heading", "$7.5"],
+    ["label", "$3.75"],
+    ["helper", "$2.75"],
+  ] as const)("size %s maps to %s", (name, step) => {
+    expect(SIZE_MAP[name]).toBe(step);
+  });
+
+  // The config and FONT_SIZES are two copies of one table; compare both over every step.
+  describe.each(["latinFont", "arabicFont"])("%s", (font) => {
+    const block = (key: "size" | "lineHeight") => {
+      const source = readFileSync(join(__dirname, "../../../tamagui.config.ts"), "utf8");
+      const font$ = source.match(
+        new RegExp(`const ${font} = createFont\\(\\{([\\s\\S]*?)\\n\\}\\);`)
+      );
+      const table = font$?.[1].match(new RegExp(`\\n  ${key}: \\{([\\s\\S]*?)\\n  \\},`));
+      if (!table) throw new Error(`${font} ${key} not found`);
+      return Object.fromEntries(
+        [...table[1].matchAll(/^\s*"?([\d.]+)"?:\s*(\d+),/gm)].map((m) => [
+          `$${m[1]}`,
+          Number(m[2]),
+        ])
+      );
+    };
+
+    it("matches FONT_SIZES at every step", () => {
+      const size = block("size");
+      const lineHeight = block("lineHeight");
+
+      expect(Object.keys(size).sort()).toEqual(Object.keys(FONT_SIZES).sort());
+      for (const [step, values] of Object.entries(FONT_SIZES)) {
+        expect([step, size[step], lineHeight[step]]).toEqual([
+          step,
+          values.fontSize,
+          values.lineHeight,
+        ]);
+      }
+    });
+  });
+});
+
+describe("title role", () => {
+  test("opens to 1.3 above 24pt", () => {
+    expect(roleLineHeight("title", 30)).toBe(39);
+  });
+
+  test("stays at 1.4 at 24pt and below", () => {
+    expect(roleLineHeight("title", 24)).toBe(34);
+    expect(roleLineHeight("title", 16)).toBe(22);
+  });
+
+  test("titleLoose keeps 1.4 at every size", () => {
+    expect(roleLineHeight("titleLoose", 30)).toBe(42);
+    expect(roleLineHeight("titleLoose", 36)).toBe(50);
+  });
+
+  test("display holds 1.3 at the 40pt step", () => {
+    expect(roleLineHeight("display", 40)).toBe(52);
   });
 });

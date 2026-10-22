@@ -85,7 +85,7 @@ export const FocusCountdown = ({ paused = false }: Props) => {
             gap="$2"
             paddingEnd="$2.5"
             borderRadius="$control">
-            <Text size="5xl" bold typography="title" color="$fg" flexShrink={1}>
+            <Text size="5xl" bold typography="titleLoose" color="$fg" flexShrink={1}>
               {name}
             </Text>
             <Icon as={ArrowDownUp} size="lg" color={until ? "$mutedSky" : "$accent"} />

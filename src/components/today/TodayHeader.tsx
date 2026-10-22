@@ -39,7 +39,7 @@ export const TodayHeader = () => {
         gap="$3">
         <SkyOccluder testID={TODAY_HEADER_PART.DATES} style={styles.whole}>
           <VStack gap="$1">
-            <Text accessibilityRole="header" size="4xl" bold typography="title" color="$fg">
+            <Text accessibilityRole="header" size="4xl" bold typography="titleLoose" color="$fg">
               {hijri}
             </Text>
             <Text size="md" typography="helper" color="$mutedSky">

@@ -76,6 +76,52 @@ describe("palette", () => {
   });
 });
 
+describe("premium surface tokens", () => {
+  const NEW_TOKENS = {
+    light: {
+      hairline: "#081D3614",
+      surfaceGlass: "#E7F9FFA8",
+      surfaceFloat: "#E7F9FFD6",
+      highlight: "#FFFFFF8C",
+      accentGlow: "#0053722E",
+    },
+    dark: {
+      hairline: "#DCEAF21A",
+      surfaceGlass: "#0D23469E",
+      surfaceFloat: "#071C3BD6",
+      highlight: "#FFFFFF14",
+      accentGlow: "#DBBB5629",
+    },
+  } as const;
+
+  it.each(Object.entries(NEW_TOKENS.light))("light %s is %s", (token, hex) => {
+    expect(NEDAA_LIGHT[token as keyof typeof NEDAA_LIGHT].hex).toBe(hex);
+  });
+
+  it.each(Object.entries(NEW_TOKENS.dark))("dark %s is %s", (token, hex) => {
+    expect(NEDAA_DARK[token as keyof typeof NEDAA_DARK].hex).toBe(hex);
+  });
+
+  it.each(PALETTES)("$name bar is the surfaceFloat value", ({ tokens }) => {
+    expect(tokens.bar).toEqual(tokens.surfaceFloat);
+  });
+
+  it("light surface2Soft is the surface2 value", () => {
+    expect(NEDAA_LIGHT.surface2Soft).toEqual(NEDAA_LIGHT.surface2);
+  });
+
+  it("light surface2 runs at .60 alpha", () => {
+    expect(NEDAA_LIGHT.surface2.oklch).toBe("oklch(95% 0.032 225 / .6)");
+  });
+
+  it.each([
+    ["light", NEDAA_LIGHT, "#081D3612"],
+    ["dark", NEDAA_DARK, "#DCEAF214"],
+  ] as const)("%s pressed wash is %s", (_name, tokens, hex) => {
+    expect(tokens.pressed.hex).toBe(hex);
+  });
+});
+
 describe("phase gradients", () => {
   const entries = Object.entries(PHASE_GRADIENTS).flatMap(([phase, byBrightness]) =>
     Object.entries(byBrightness)
