@@ -135,6 +135,8 @@ PODS:
   - ExpoBackgroundTask (58.0.11):
     - ExpoModulesCore
     - ExpoTaskManager
+  - ExpoBlur (58.0.5):
+    - ExpoModulesCore
   - ExpoClipboard (58.0.3):
     - ExpoModulesCore
   - ExpoDevice (58.0.5):
@@ -2551,6 +2553,7 @@ DEPENDENCIES:
   - ExpoApplication (from `../node_modules/expo-application/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoBackgroundTask (from `../node_modules/expo-background-task/ios`)
+  - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoDevice (from `../node_modules/expo-device/ios`)
   - ExpoDiagnostics (from `../modules/expo-diagnostics/ios`)
@@ -2721,6 +2724,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-asset/ios"
   ExpoBackgroundTask:
     :path: "../node_modules/expo-background-task/ios"
+  ExpoBlur:
+    :path: "../node_modules/expo-blur/ios"
   ExpoClipboard:
     :path: "../node_modules/expo-clipboard/ios"
   ExpoDevice:
@@ -3005,6 +3010,7 @@ SPEC CHECKSUMS:
   ExpoApplication: a7a10b2d646701cadd8160cb1dbd2ea98e10ab42
   ExpoAsset: 7c69bf16ddb143a238c9d6a55b9f699cc60b72cf
   ExpoBackgroundTask: 58850693ca813a3da1f5410ad3dd5e2ef07e2a75
+  ExpoBlur: 68f7f85ae6584f0bec52a0a42ee5088b093d1473
   ExpoClipboard: 4fe2f488588bef9708f9b7a9aacf11aa2c312300
   ExpoDevice: 77a9816436a09a0bfc00f5ace649c6ccb219b96d
   ExpoDiagnostics: 49654a614074dab798674313908949496ca74971

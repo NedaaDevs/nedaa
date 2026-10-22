@@ -6,6 +6,7 @@ import { PlatformType } from "@/enums/app";
 export const A11Y_FLAG_EVENT = {
   SCREEN_READER: "screenReaderChanged",
   REDUCE_MOTION: "reduceMotionChanged",
+  REDUCE_TRANSPARENCY: "reduceTransparencyChanged",
 } as const;
 
 export type A11yFlagEvent = (typeof A11Y_FLAG_EVENT)[keyof typeof A11Y_FLAG_EVENT];
