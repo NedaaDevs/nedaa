@@ -8,6 +8,17 @@ export const DURATION_MS = {
   SKY: 720,
 } as const;
 
+/**
+ * Spring presets as Reanimated `withSpring` configs. The Tamagui config spreads
+ * the same objects, so a spring is tuned in one place.
+ */
+export const SPRING = {
+  /** A surface settling into place: sheets, indicators, switch thumbs. */
+  SETTLE: { stiffness: 300, damping: 30, mass: 1 },
+  /** A quick, firm response to a touch. */
+  SNAP: { stiffness: 500, damping: 32, mass: 0.8 },
+} as const;
+
 /** iOS sheet curve, as cubic-bezier points: quick start, long settle. */
 export const SHEET_CURVE = [0.32, 0.72, 0, 1] as const;
 
