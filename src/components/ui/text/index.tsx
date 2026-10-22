@@ -15,7 +15,7 @@ import { useTextScale } from "@/hooks/useTextScale";
 import { getDirection, useAppStore } from "@/stores/app";
 import i18n from "@/localization/i18n";
 
-type TextSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
+type TextSize = keyof typeof SIZE_MAP;
 
 // Arabic-script locales. Tracking these breaks cursive joins (CSS Text 3 §7.2.1),
 // and React Native spaces glyphs uniformly with no cursive-elongation fallback.

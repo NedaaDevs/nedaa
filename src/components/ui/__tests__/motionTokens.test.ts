@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { DURATION_MS } from "@/constants/Motion";
+import { DURATION_MS, SPRING } from "@/constants/Motion";
 
 // Importing tamagui.config.ts runs createTamagui(), so the durations are read from source.
 const source = () => readFileSync(join(__dirname, "../../../../tamagui.config.ts"), "utf8");
@@ -16,6 +16,34 @@ const timing = (name: string) => {
 
 /** The four steps a screen picks between. */
 const DURATIONS = { quick: 160, settle: 220, gentle: 280, sky: 720 } as const;
+
+/** The config's spring preset, read from source like the timings. */
+const spring = (name: string) => {
+  const match = source().match(new RegExp(`\\b${name}:\\s*\\{([^}]*type:\\s*"spring"[^}]*)\\}`));
+  return match ? match[1] : null;
+};
+
+describe("spring presets", () => {
+  it("settle is 300 / 30 / 1", () => {
+    expect(SPRING.SETTLE).toEqual({ stiffness: 300, damping: 30, mass: 1 });
+  });
+
+  it("snap is 500 / 32 / 0.8", () => {
+    expect(SPRING.SNAP).toEqual({ stiffness: 500, damping: 32, mass: 0.8 });
+  });
+
+  // Reanimated and Tamagui must agree, so the config reads the same constants.
+  it.each([
+    ["springSettle", "SETTLE"],
+    ["springSnap", "SNAP"],
+  ] as const)("%s is fed by SPRING.%s", (name, key) => {
+    expect(spring(name)).toMatch(new RegExp(`\\.\\.\\.SPRING\\.${key}\\b`));
+  });
+
+  it("keeps settle as the 220ms timing", () => {
+    expect(timing("settle")).toBe(220);
+  });
+});
 
 describe("motion tokens", () => {
   it.each(Object.entries(DURATIONS))("%s runs %ims", (name, ms) => {
