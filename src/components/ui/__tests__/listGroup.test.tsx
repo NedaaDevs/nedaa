@@ -3,6 +3,7 @@ import { Text } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import { LIST_GROUP_PART, ListGroup } from "@/components/ui/list-group";
+import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -18,17 +19,18 @@ const dividers = () =>
   screen.queryAllByTestId(LIST_GROUP_PART.DIVIDER, { includeHiddenElements: true });
 
 describe("ListGroup", () => {
-  it("draws one bordered card round its rows", async () => {
+  it("draws one resting surface round its rows, with no border", async () => {
     await renderWithTheme(
       <ListGroup testID="group">
         <Text>one</Text>
       </ListGroup>
     );
 
-    expect(screen.getByTestId("group")).toHaveStyle({
-      borderTopWidth: 1,
-      borderTopColor: NEDAA_LIGHT.border.hex,
-      backgroundColor: NEDAA_LIGHT.surface2.hex,
+    const group = screen.getByTestId("group");
+    expect(group).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(group).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.surfaceGlass.hex,
+      boxShadow: ELEVATION.e1.boxShadow.light,
       overflow: "hidden",
     });
   });

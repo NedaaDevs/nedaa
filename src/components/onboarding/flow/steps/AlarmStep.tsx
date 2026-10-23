@@ -127,7 +127,7 @@ const PermissionRow = ({ item: { id, granted }, asking, failed }: RowProps) => {
       alignItems="center"
       borderRadius="$control"
       borderWidth={asking ? 2 : 1}
-      borderColor={asking ? "$accent" : "$border"}
+      borderColor={asking ? "$accent" : "transparent"}
       backgroundColor="$surface2">
       <Box
         testID={`${ONBOARDING_PART.ALARM_TICK}-${id}`}
@@ -180,7 +180,7 @@ const ResultCard = ({ items, on, line, label, cardRef }: ResultProps) => {
       padding="$4"
       borderRadius="$card"
       borderWidth={1}
-      borderColor={on ? "$accent" : "$border"}
+      borderColor={on ? "$accent" : "transparent"}
       backgroundColor={on ? "$accentSoft" : undefined}>
       {items.length > 0 ? (
         <Text size="lg" bold color="$fg">
