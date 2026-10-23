@@ -7,11 +7,11 @@ import { renderWithTheme } from "@/test-helpers/theme";
 const RULE = "rule";
 
 describe("Divider", () => {
-  it("draws in the palette's border colour", async () => {
+  it("draws in the palette's hairline colour", async () => {
     await renderWithTheme(<Divider testID={RULE} />);
 
     expect(screen.getByTestId(RULE)).toHaveStyle({
-      backgroundColor: config.themes.light.border.val,
+      backgroundColor: config.themes.light.hairline.val,
     });
   });
 

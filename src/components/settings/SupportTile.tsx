@@ -10,7 +10,7 @@ import Animated, {
 import { Heart } from "lucide-react-native";
 
 import { Icon, type IconProps } from "@/components/ui/icon";
-import { Pressable } from "@/components/ui/pressable";
+import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -93,7 +93,7 @@ export const SupportTile = ({
   const pop = useAnimatedStyle(() => ({ transform: [{ scale: heart.get() }] }));
 
   return (
-    <Pressable
+    <Card.Pressable
       onPress={thanked ? undefined : onPress}
       onLongPress={thanked ? undefined : onLongPress}
       accessibilityLabel={thanked ? thanksLabel : label}
@@ -103,10 +103,7 @@ export const SupportTile = ({
       paddingHorizontal="$1.5"
       alignItems="center"
       justifyContent="center"
-      borderWidth={1}
-      borderColor="$border"
       borderRadius="$control"
-      backgroundColor="$surface2"
       pressStyle={{ backgroundColor: "$tile" }}
       overflow="hidden">
       {/* The action sets the tile's size; the thanks lies over it. */}
@@ -128,7 +125,7 @@ export const SupportTile = ({
           </Text>
         </VStack>
       </Animated.View>
-    </Pressable>
+    </Card.Pressable>
   );
 };
 

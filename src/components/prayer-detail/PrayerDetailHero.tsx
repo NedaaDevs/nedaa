@@ -99,8 +99,6 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
           paddingHorizontal="$3.5"
           paddingVertical="$2.5"
           borderRadius="$card"
-          borderWidth={1}
-          borderColor="$border"
           backgroundColor="$surface2Soft">
           <Countdown
             value={digits(formatCount(count.seconds, count.precise, count.axis))}
