@@ -1,9 +1,14 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
-import { act, userEvent } from "@testing-library/react-native";
+import { readdirSync, readFileSync } from "fs";
+import { join } from "path";
+import { act, fireEvent, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
+import { BOWL_PART } from "@/components/today/Bowl";
+import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
+import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { AppLocale, AppMode } from "@/enums/app";
@@ -57,6 +62,17 @@ const DAY: DayPrayerTimes = {
     [OTHER_TIMING.LAST_THIRD]: "2026-09-24T01:55:00.000Z",
   },
 };
+
+const hidden = { includeHiddenElements: true };
+const SRC = join(__dirname, "../..");
+
+/** Every .tsx under src/, tests excluded. */
+const skySources = (dir = SRC): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return entry.name === "__tests__" ? [] : skySources(path);
+    return entry.name.endsWith(".tsx") ? [readFileSync(path, "utf8")] : [];
+  });
 
 const renderToday = () =>
   renderRouter(
@@ -158,13 +174,45 @@ describe("Today", () => {
     expect(screen.getByTestId(TODAY_SCREEN_PART.DAY)).toHaveStyle({ gap: space["3.5"].val });
   });
 
-  // The arc reads as the countdown's own line, so it sits close under it.
-  it("sets the arc 10 under the countdown", async () => {
+  // The countdown and the arc are one hero: the countdown sits in the bowl.
+  it("sets the countdown inside the bowl, first in the day", async () => {
     await renderToday();
+    const day = screen.getByTestId(TODAY_SCREEN_PART.DAY);
+    const bowl = screen.getByTestId(BOWL_FRAME_PART.INSIDE);
 
-    expect(screen.getByTestId(TODAY_SCREEN_PART.FOCUS)).toHaveStyle({
-      gap: config.tokens.space["2.5"].val,
+    expect(day.children[0]).toBe(screen.getByTestId(TODAY_SCREEN_PART.FOCUS));
+    expect(within(bowl).getByText(i18n.t("today.focus.next"))).toBeTruthy();
+    expect(within(bowl).getByTestId(FOCUS_COUNTDOWN_PART.ROOT)).toHaveStyle({
+      alignItems: "center",
     });
+  });
+
+  // One sun: the sky draws no body on Today; the bowl draws it on its rim.
+  it("draws one sun, on the bowl", async () => {
+    await renderToday();
+    await act(() =>
+      fireEvent(screen.getByTestId(BOWL_FRAME_PART.FRAME), "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 160 } },
+      })
+    );
+
+    expect(screen.queryAllByTestId(SKY_PART.BODIES, hidden)).toHaveLength(0);
+    expect(screen.getAllByTestId(SKY_PART.SUN, hidden)).toHaveLength(1);
+    expect(
+      within(screen.getByTestId(BOWL_PART.ROOT, hidden)).getAllByTestId(SKY_PART.SUN, hidden)
+    ).toHaveLength(1);
+  });
+
+  // Every other sky screen keeps the sky's own sun and moon.
+  it("is the only screen that hides the sky's bodies", () => {
+    const hiding = skySources().filter((text) =>
+      /<SkyBackground\b[^>]*bodies=\{false\}/.test(text)
+    );
+
+    expect(hiding).toHaveLength(1);
+    expect(readFileSync(join(SRC, "app/(tabs)/index.tsx"), "utf8")).toMatch(
+      /<SkyBackground\b[^>]*bodies=\{false\}/
+    );
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

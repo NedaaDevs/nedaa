@@ -52,9 +52,11 @@ jest.mock("@/utils/measureInWindow", () => ({
 }));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
-const Sky = ({ phase, paused }: { phase: Phase | undefined; paused?: boolean }) => (
+type SkyProps = { phase: Phase | undefined; paused?: boolean; bodies?: boolean };
+
+const Sky = ({ phase, paused, bodies }: SkyProps) => (
   <PhaseContext value={phase}>
-    <SkyBackground paused={paused}>
+    <SkyBackground paused={paused} bodies={bodies}>
       <Text>Today</Text>
     </SkyBackground>
   </PhaseContext>
@@ -180,6 +182,42 @@ describe("SkyBackground", () => {
 
     expect(paints()[0].experimental_backgroundImage).not.toBe(morning);
     jest.useRealTimers();
+  });
+
+  // Today draws its sun and moon on its bowl; the sky draws neither.
+  describe("without its bodies", () => {
+    afterEach(() => jest.useRealTimers());
+    beforeEach(() => {
+      mockReduced = true;
+      clockAt("10:00");
+      usePrayerTimesStore.setState({
+        todayTimings: TODAY,
+        yesterdayTimings: null,
+        tomorrowTimings: null,
+      });
+    });
+
+    it("draws no sun or moon", async () => {
+      await renderWithTheme(<Sky phase={PHASE.DAY} bodies={false} />);
+
+      expect(part(SKY_PART.BODIES)).toHaveLength(0);
+      expect(part(SKY_PART.SUN)).toHaveLength(0);
+    });
+
+    it("rests the glow in its corner while the hour moves", async () => {
+      await renderWithTheme(<Sky phase={PHASE.DAY} bodies={false} />);
+      const morning = paints()[0].experimental_backgroundImage;
+
+      await act(() => jest.advanceTimersByTime(4 * 60 * 60_000));
+
+      expect(paints()[0].experimental_backgroundImage).toBe(morning);
+    });
+
+    it("draws its bodies by default", async () => {
+      await renderWithTheme(<Sky phase={PHASE.DAY} />);
+
+      expect(part(SKY_PART.SUN)).toHaveLength(1);
+    });
   });
 
   describe("sun", () => {

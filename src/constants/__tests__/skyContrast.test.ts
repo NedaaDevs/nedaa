@@ -1,5 +1,6 @@
 import { BRIGHTNESS, NEDAA_DARK, NEDAA_LIGHT, type Brightness } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
+import { BODY_BEHIND_TEXT, MOON_GLYPH, SUN_GLYPH } from "@/constants/Sky";
 import { flattenOver, skyScene } from "@/utils/sky";
 
 /** Relative luminance, then the WCAG ratio. */
@@ -36,6 +37,17 @@ const skyStops = (brightness: Brightness, phase: Phase) => {
 /** The least contrast `ink` reaches on any of `grounds`. */
 const worst = (ink: string, grounds: string[]) =>
   Math.min(...grounds.map((ground) => contrast(ink, ground)));
+
+/** A colour at `alpha`, as an 8-digit hex. */
+const withAlpha = (hex: string, alpha: number) =>
+  `${hex.slice(0, 7)}${Math.round(alpha * 255)
+    .toString(16)
+    .padStart(2, "0")
+    .toUpperCase()}`;
+
+/** One colour laid over each sky stop. */
+const flattenOverAll = (top: string, grounds: string[]) =>
+  grounds.map((ground) => flattenOver(top, ground));
 
 /** A translucent card laid over each sky stop. */
 const cardOver = (card: string, grounds: string[]) =>
@@ -79,5 +91,40 @@ describe.each(CASES)("%s sky", (_name, brightness, phase) => {
 
   it("keeps accent text readable on the accent's soft fill", () => {
     expect(contrast(palette.accentText.hex, palette.accentSoft.hex)).toBeGreaterThanOrEqual(AA);
+  });
+});
+
+// The bowl's text sits under its crest and over its feet, where the body
+// rides. The sun only lightens the light sky; the moon fades as behind text.
+describe.each(CASES)("%s sky under the bowl's body", (_name, brightness, phase) => {
+  const palette = PALETTE[brightness];
+  const sky = skyStops(brightness, phase);
+  const white = SUN_GLYPH.colour.hex;
+  const bloom = Math.max(...SUN_GLYPH.bloomStops.map(([, alpha]) => alpha));
+  const halo = MOON_GLYPH.halo.bright * BODY_BEHIND_TEXT.opacity;
+  const lights = [
+    ...(brightness === BRIGHTNESS.LIGHT
+      ? ([
+          ["the sun's core", flattenOverAll(withAlpha(white, 1), sky)],
+          [
+            "the sun's bloom",
+            flattenOverAll(withAlpha(white, bloom * SUN_GLYPH.bloomStrength), sky),
+          ],
+        ] as const)
+      : []),
+    ["the moon's halo", flattenOverAll(withAlpha(MOON_GLYPH.halo.colour.hex, halo), sky)],
+  ] as const;
+  // From Maghrib to Isha the moon nears the Isha foot, whose name is then in
+  // the accent; the muted Fajr name sits under it only after Isha.
+  const inks = [
+    palette.fg.hex,
+    palette.accentText.hex,
+    ...(phase === PHASE.MAGHRIB ? [] : [palette.mutedSky.hex]),
+  ];
+
+  it.each(lights)("keeps the bowl's text readable on %s", (_light, grounds) => {
+    for (const ink of inks) {
+      expect(worst(ink, [...grounds])).toBeGreaterThanOrEqual(AA);
+    }
   });
 });
