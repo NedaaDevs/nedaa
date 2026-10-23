@@ -1,5 +1,6 @@
 import { screen } from "@testing-library/react-native";
 
+import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SunGlyph } from "@/components/ui/sky-background/SunGlyph";
 import { SUN_GLYPH } from "@/constants/Sky";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -29,5 +30,26 @@ describe("SunGlyph", () => {
     await renderWithTheme(<SunGlyph cx={50} cy={50} width={300} height={200} reduced />);
 
     expect(alphasOf("core").slice(0, 2)).toEqual([1, 1]);
+  });
+
+  // The bowl draws the same sun small: one renderer, two sizes.
+  it("draws its core, bloom and rays at a scale", async () => {
+    const scale = 0.4;
+    await renderWithTheme(
+      <SunGlyph cx={50} cy={50} width={300} height={200} reduced scale={scale} />
+    );
+    const circles = screen.container.queryAll((node) => node.type === "RNSVGCircle");
+    const radii = circles.map((node) => node.props.r);
+    const reach = Math.max(...SUN_GLYPH.rays.lengths) * scale;
+
+    expect(radii).toEqual([SUN_GLYPH.bloom * scale, SUN_GLYPH.core * scale]);
+    expect(screen.getByTestId(SKY_PART.SUN_RAYS)).toHaveStyle({ width: reach * 2 });
+  });
+
+  it("draws at full size by default", async () => {
+    await renderWithTheme(<SunGlyph cx={50} cy={50} width={300} height={200} reduced />);
+    const circles = screen.container.queryAll((node) => node.type === "RNSVGCircle");
+
+    expect(circles.map((node) => node.props.r)).toEqual([SUN_GLYPH.bloom, SUN_GLYPH.core]);
   });
 });

@@ -7,6 +7,7 @@ import config from "../../../../tamagui.config";
 import { ROLE_RATIO } from "@/components/ui/text/sizing";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { APP_STATE } from "@/constants/AppState";
+import { FOCUS_LAYOUT, type FocusLayout } from "@/constants/Countdown";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -33,14 +34,14 @@ const day = (date: string): DayPrayerTimes => ({
   } as DayPrayerTimes["otherTimings"],
 });
 
-const renderAt = (date: string, time: string) => {
+const renderAt = (date: string, time: string, layout?: FocusLayout) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
     todayTimings: day(date),
     tomorrowTimings: null,
   });
-  return renderWithTheme(<FocusCountdown />);
+  return renderWithTheme(<FocusCountdown layout={layout} />);
 };
 const name = (key: string) => i18n.t(key);
 
@@ -275,5 +276,61 @@ describe("FocusCountdown", () => {
     await renderAt("2026-09-23", "14:02");
 
     expect(controlProblems()).toEqual([]);
+  });
+
+  // In the bowl the block stands centred: label, name, figure, caption.
+  describe("centred, in the bowl", () => {
+    it("stacks and centres its four lines", async () => {
+      await renderAt("2026-09-23", "14:02", FOCUS_LAYOUT.CENTRED);
+
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROOT)).toHaveStyle({ alignItems: "center" });
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({
+        flexDirection: "column",
+        alignItems: "center",
+      });
+      expect(screen.getByLabelText(untilAsr())).toHaveStyle({ alignItems: "center" });
+      expect(screen.getByText(i18n.t("today.focus.next"))).toHaveStyle({ textAlign: "center" });
+      expect(screen.getByText(name("prayerTimes.asr"))).toHaveStyle({ textAlign: "center" });
+    });
+
+    it("keeps the row everywhere else", async () => {
+      await renderAt("2026-09-23", "14:02");
+
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({ flexDirection: "row" });
+    });
+
+    it("flips the figure from a tap and from the screen reader", async () => {
+      await renderAt("2026-09-23", "14:10", FOCUS_LAYOUT.CENTRED);
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const since = i18n.t("today.focus.since", { prayer: name("prayerTimes.dhuhr") });
+
+      await user.press(screen.getByRole("togglebutton", { name: name("prayerTimes.asr") }));
+      expect(screen.getAllByText(since, hidden).length).toBeGreaterThan(0);
+
+      await act(() =>
+        fireEvent(
+          screen.getByRole("togglebutton", { name: name("prayerTimes.asr") }),
+          "accessibilityAction",
+          { nativeEvent: { actionName: A11Y_ACTION.ACTIVATE } }
+        )
+      );
+      expect(screen.queryAllByText(since, hidden)).toHaveLength(0);
+    });
+
+    // A long name wraps under itself; neither it nor the figure shrinks away.
+    it.each(Object.values(TextSize))("at text size %s never clips the name", async (textSize) => {
+      usePreferencesStore.setState({ textSize });
+      await renderAt("2026-09-23", "14:02", FOCUS_LAYOUT.CENTRED);
+      const named = screen.getByText(name("prayerTimes.asr"));
+
+      expect(named.props.numberOfLines).toBeUndefined();
+      expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.FIGURE)).toHaveStyle({ flexShrink: 0 });
+    });
+
+    it("gives every control a role, a name and a 44pt target", async () => {
+      await renderAt("2026-09-23", "14:02", FOCUS_LAYOUT.CENTRED);
+
+      expect(controlProblems()).toEqual([]);
+    });
   });
 });
