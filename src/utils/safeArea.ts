@@ -1,5 +1,6 @@
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { isSkyTab } from "@/constants/SkyTabs";
+import { TAB_BAR_EDGE_GAP } from "@/constants/TabBar";
 import { TOAST_GAP } from "@/constants/Toast";
 import { OpeningTab } from "@/enums/app";
 
@@ -47,3 +48,10 @@ type ToastPlacement = { segments: readonly string[]; tabBarHeight: number; inset
 // inset its floor; elsewhere that measurement is stale.
 export const toastBottom = ({ segments, tabBarHeight, insetBottom }: ToastPlacement) =>
   (segments[0] === TAB_GROUP ? Math.max(tabBarHeight, insetBottom) : insetBottom) + TOAST_GAP;
+
+type TabBarEdge = { android: boolean; insetBottom: number };
+
+// iOS's bottom inset is the home indicator, which the gap holds; Android's is
+// a navigation bar, which the bar must clear.
+export const tabBarEdgeGap = ({ android, insetBottom }: TabBarEdge) =>
+  android ? Math.max(TAB_BAR_EDGE_GAP, insetBottom) : TAB_BAR_EDGE_GAP;

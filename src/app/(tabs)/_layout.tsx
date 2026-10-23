@@ -1,4 +1,5 @@
 import { useContext, useEffect } from "react";
+import { Platform } from "react-native";
 import { router, type Href } from "expo-router";
 import {
   Tabs,
@@ -14,18 +15,21 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 
 // Enums
-import { HiddenTab, OpeningTab, type OpeningTabValue } from "@/enums/app";
-import { isSkyTab } from "@/constants/SkyTabs";
+import { HiddenTab, OpeningTab, PlatformType, type OpeningTabValue } from "@/enums/app";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { TAB_ITEMS, type TabItem } from "@/constants/TabBar";
 
 // Hooks
 import { useBarTabs } from "@/hooks/useBarTabs";
+import { useHaptic } from "@/hooks/useHaptic";
+
+// Utils
+import { tabBarEdgeGap } from "@/utils/safeArea";
 
 // Components
 import { Box } from "@/components/ui/box";
-import { HStack } from "@/components/ui/hstack";
-import { TabBarItem } from "@/components/ui/tab-bar-item";
+import { TabBar, TabBarItem } from "@/components/ui/tab-bar-item";
 import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 
@@ -51,36 +55,37 @@ type AppTabBarProps = Pick<BottomTabBarProps, "state"> & {
 const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  // The tab view gives each screen this height, so a screen under a floating bar
-  // knows how much room to leave.
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  // The tab view gives each screen this height, so a screen under the floating
+  // bar knows how much room to leave.
   const reportHeight = useContext(BottomTabBarHeightCallbackContext);
   const setFrameHeight = useTabBarFrameStore((state) => state.setHeight);
   const focused = state.routes[state.index].name;
   // Quran is full screen, so the mini player pads the bottom inset.
   const tabBarHidden = focused === OpeningTab.QURAN;
-  // The bar floats over a sky tab so the sky shows through it.
-  const floating = isSkyTab(focused);
 
   return (
     <Box
       testID={TAB_BAR_PART.FRAME}
+      // The frame spans the screen; the gaps beside the pill stay the screen's.
+      pointerEvents="box-none"
       onLayout={({ nativeEvent }) => {
         reportHeight?.(nativeEvent.layout.height);
         setFrameHeight(nativeEvent.layout.height);
       }}
-      {...(floating
-        ? { position: "absolute", start: 0, end: 0, bottom: 0 }
-        : { backgroundColor: "$backgroundSecondary" })}>
+      {...(tabBarHidden
+        ? { backgroundColor: "$backgroundSecondary" }
+        : { position: "absolute", start: 0, end: 0, bottom: 0 })}>
       {!(readerActive && tabBarHidden) && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
       <MiniPlayerBar />
       {!tabBarHidden && (
-        <HStack
-          accessibilityRole="tablist"
-          gap="$0.5"
-          paddingTop="$1.5"
-          paddingHorizontal="$2.5"
-          paddingBottom={insets.bottom}
-          backgroundColor="$bar">
+        <TabBar
+          selectedIndex={tabs.findIndex((tab) => tab.name === focused)}
+          count={tabs.length}
+          edgeGap={tabBarEdgeGap({
+            android: Platform.OS === PlatformType.ANDROID,
+            insetBottom: insets.bottom,
+          })}>
           {tabs.map((tab) => {
             const route = state.routes.find((candidate) => candidate.name === tab.name);
             if (!route) return null;
@@ -92,12 +97,14 @@ const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
                 icon={tab.icon}
                 selected={selected}
                 onPress={() => {
-                  if (!selected) router.navigate(TAB_HREF[tab.name]);
+                  if (selected) return;
+                  void selectionHaptic();
+                  router.navigate(TAB_HREF[tab.name]);
                 }}
               />
             );
           })}
-        </HStack>
+        </TabBar>
       )}
     </Box>
   );

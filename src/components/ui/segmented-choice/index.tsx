@@ -1,17 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { StyleSheet, type LayoutChangeEvent } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { useState } from "react";
+import type { LayoutChangeEvent } from "react-native";
 import { getTokenValue } from "tamagui";
 
 import { HStack } from "@/components/ui/hstack";
 import { Icon, type IconProps } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
+import { SlidingIndicator } from "@/components/ui/sliding-indicator";
 import { Text } from "@/components/ui/text";
 import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
 import { CONTACT_SHADOW } from "@/constants/Elevation";
-import { SPRING } from "@/constants/Motion";
 import { useRTL } from "@/contexts/RTLContext";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { isolateLatinNumbers, localizeDigits } from "@/utils/digits";
@@ -51,49 +49,25 @@ export type SegmentedChoiceProps<V extends string | number> = {
 
 type IndicatorProps = { index: number; count: number; trackWidth: number };
 
-/** The raised mark under the chosen segment, placed from the start edge. */
+/** The raised mark under the chosen segment. */
 const Indicator = ({ index, count, trackWidth }: IndicatorProps) => {
-  const { isRTL } = useRTL();
-  const reduced = useReducedMotion();
   const raised = useThemeColor("$raised");
   const shadow = CONTACT_SHADOW[useIsDarkTheme() ? "dark" : "light"];
   const inset = getTokenValue(TRACK_INSET, "space");
-  const width = (trackWidth - inset * (count + 1)) / count;
-  const offset = index * (width + inset);
-  // Subtracting from 0 keeps the first segment at 0, never -0.
-  const target = isRTL ? 0 - offset : offset;
-  const x = useSharedValue(target);
-  // Null until first placed, so the first placement jumps.
-  const placedWidth = useRef<number | null>(null);
-
-  useEffect(() => {
-    // A new width places the mark at once; only a new choice slides it.
-    const resized = placedWidth.current !== width;
-    placedWidth.current = width;
-    x.set(reduced || resized ? target : withSpring(target, SPRING.SNAP));
-  }, [target, width, reduced, x]);
-
-  const slide = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
 
   return (
-    <Animated.View
+    <SlidingIndicator
       testID={SEGMENTED_PART.INDICATOR}
-      pointerEvents="none"
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={[
-        styles.indicator,
-        {
-          top: inset,
-          bottom: inset,
-          start: inset,
-          width,
-          borderRadius: getTokenValue("$chip", "radius"),
-          backgroundColor: raised,
-          boxShadow: shadow,
-        },
-        slide,
-      ]}
+      index={index}
+      count={count}
+      trackWidth={trackWidth}
+      inset={inset}
+      gap={inset}
+      style={{
+        borderRadius: getTokenValue("$chip", "radius"),
+        backgroundColor: raised,
+        boxShadow: shadow,
+      }}
     />
   );
 };
@@ -186,5 +160,3 @@ export const SegmentedChoice = <V extends string | number>({
     </HStack>
   );
 };
-
-const styles = StyleSheet.create({ indicator: { position: "absolute" } });
