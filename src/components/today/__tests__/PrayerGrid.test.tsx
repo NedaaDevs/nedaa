@@ -174,15 +174,16 @@ describe("PrayerGrid", () => {
     expect(screen.root).toBeEmptyElement();
   });
 
-  // One line: icon, name, then the time at the line's end.
-  it.each([PRAYER_ID.ASR, PRAYER_ID.FAJR])("sets %s's time beside its name", async (id) => {
+  // A half-width cell cannot hold a name beside its time, so they stack.
+  it.each([PRAYER_ID.ASR, PRAYER_ID.FAJR])("stacks %s's name over its time", async (id) => {
     await renderAt("2026-09-23", "14:02").rendered;
     const named = screen.getByText(i18n.t(`prayerTimes.${id}`));
     const time = screen.getByText(timeOf("2026-09-23", id));
-    const row = named.parent;
+    const column = named.parent;
 
-    expect(row).toHaveStyle({ flexDirection: "row" });
-    expect(row?.children.indexOf(named)).toBeLessThan(row?.children.indexOf(time) ?? -1);
+    expect(time.parent).toBe(column);
+    expect(column).not.toHaveStyle({ flexDirection: "row" });
+    expect(column?.children.indexOf(named)).toBeLessThan(column?.children.indexOf(time) ?? -1);
     expect(named).toHaveStyle({ fontSize: fontSizeOf("md") });
     expect(time).toHaveStyle({ fontSize: fontSizeOf("label") });
   });
@@ -194,19 +195,22 @@ describe("PrayerGrid", () => {
     for (const id of [PRAYER_ID.ASR, PRAYER_ID.FAJR]) {
       const named = screen.getByText(i18n.t(`prayerTimes.${id}`));
       expect(named.props.numberOfLines).toBeUndefined();
-      expect(named).toHaveStyle({ flexShrink: 1 });
+      expect(named.parent).toHaveStyle({ flex: 1 });
     }
-    expect(screen.getByText(timeOf("2026-09-23", PRAYER_ID.ASR))).toHaveStyle({ flexShrink: 0 });
   });
 
-  it("gives each card the cell height, room for its one line", async () => {
+  it("gives each card the cell height, room for its name and time", async () => {
     await renderAt("2026-09-23", "14:02").rendered;
     const card = styleOf(screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.FAJR) }));
     const named = styleOf(screen.getByText(i18n.t(`prayerTimes.${PRAYER_ID.FAJR}`)));
+    const time = styleOf(screen.getByText(timeOf("2026-09-23", PRAYER_ID.FAJR)));
 
     expect(card.minHeight).toBe(PRAYER_CELL_HEIGHT);
     expect(card.minHeight).toBeGreaterThanOrEqual(
-      Number(card.paddingTop) + Number(named.lineHeight) + Number(card.paddingBottom)
+      Number(card.paddingTop) +
+        Number(named.lineHeight) +
+        Number(time.lineHeight) +
+        Number(card.paddingBottom)
     );
   });
 

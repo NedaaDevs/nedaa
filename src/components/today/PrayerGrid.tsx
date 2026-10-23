@@ -13,6 +13,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
+import { VStack } from "@/components/ui/vstack";
 import { accentGlowShadow } from "@/constants/Elevation";
 import { PRAYER_CARD_STATE, PRAYER_CELL_HEIGHT } from "@/constants/PrayerCard";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
@@ -40,7 +41,7 @@ type CardProps = {
   onPress: (opener: ViewInstance | null) => void;
 };
 
-/** One prayer on one line: quiet, or tinted, ringed and glowing when next. */
+/** One prayer, name over time: quiet, or tinted, ringed and lit when next. */
 const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardProps) => {
   const { t } = useTranslation();
   // Held from mount: a ref handed over later is never attached.
@@ -78,7 +79,7 @@ const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardPro
       gap="$2.5"
       minHeight={PRAYER_CELL_HEIGHT}
       paddingHorizontal="$3.5"
-      paddingVertical="$2.5"
+      paddingVertical="$2"
       borderRadius="$card"
       backgroundColor={next ? "$accentSoft" : "$surfaceQuiet"}
       style={next ? { boxShadow: glow } : undefined}>
@@ -101,19 +102,15 @@ const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardPro
       <Box opacity={past ? 0.6 : 1}>
         <Icon as={PRAYER_ICONS[card.id]} size="md" color={next ? "$accent" : "$muted"} />
       </Box>
-      {/* A long name wraps and the card grows; the time stays whole. */}
-      <Text size="md" fontWeight="600" flexShrink={1} color={past ? "$mutedSky" : "$fg"}>
-        {name}
-      </Text>
-      <Text
-        size="label"
-        fontWeight="600"
-        numeric
-        flexShrink={0}
-        marginStart="auto"
-        color={past ? "$mutedSky" : "$fg"}>
-        {time}
-      </Text>
+      {/* Stacked, so a half-width cell fits any name beside its time. */}
+      <VStack flex={1}>
+        <Text size="md" fontWeight="600" color={past ? "$mutedSky" : "$fg"}>
+          {name}
+        </Text>
+        <Text size="label" fontWeight="600" numeric color={past ? "$mutedSky" : "$fg"}>
+          {time}
+        </Text>
+      </VStack>
     </Pressable>
   );
 };
