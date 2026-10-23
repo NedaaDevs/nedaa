@@ -78,7 +78,7 @@ describe("primitive accessibility contract", () => {
       <Pressable accessibilityLabel="Athkar" target="tab" onPress={() => {}} />
     );
 
-    expect(screen.getByRole("button", { name: "Athkar" })).toHaveStyle({ minHeight: 50 });
+    expect(screen.getByRole("button", { name: "Athkar" })).toHaveStyle({ minHeight: 56 });
   });
 });
 

@@ -102,7 +102,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
               accessibilityLabel={backLabel}
               alignItems="center"
               justifyContent="center">
-              <Icon as={Chevron} size="lg" color="$fg" />
+              <Icon as={Chevron} size="lg" color="$accent" />
             </Pressable>
           )}
         </Box>
@@ -122,7 +122,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
   }
 
   return (
-    <VStack spacing="tight" paddingHorizontal="$group" paddingTop="$inline" paddingBottom="$stack">
+    <VStack gap="$0.5" paddingHorizontal="$group" paddingTop="$1" paddingBottom="$3.5">
       {(plan || action) && (
         <HStack alignItems="center">
           {plan && (
@@ -131,10 +131,12 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
               accessibilityLabel={backLabel}
               flexDirection="row"
               alignItems="center"
-              gap="$tight">
-              <Icon as={Chevron} size="md" color="$fg" />
+              gap="$0.5"
+              // The chevron's side bearing hangs outside the title's column.
+              marginStart="$-1.5">
+              <Icon as={Chevron} size="lg" color="$accent" />
               {destinationName && (
-                <Text size="sm" fontWeight="600" color="$fg">
+                <Text size="label" fontWeight="600" color="$accent">
                   {destinationName}
                 </Text>
               )}
@@ -143,7 +145,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
           {actionButton && <Box marginStart="auto">{actionButton}</Box>}
         </HStack>
       )}
-      <Text size="3xl" bold typography="title" color="$fg" accessibilityRole="header">
+      <Text size="4xl" bold typography="title" color="$fg" accessibilityRole="header">
         {title}
       </Text>
       {subtitle && (

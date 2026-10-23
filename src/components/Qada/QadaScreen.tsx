@@ -36,6 +36,7 @@ import { useQadaStore } from "@/stores/qada";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
 
 // Icons
 import { Plus, Check, X, CalendarDays, Settings } from "lucide-react-native";
@@ -54,6 +55,7 @@ const MAX_CUSTOM_DAYS = 999;
 
 const QadaScreen = () => {
   const { t } = useTranslation();
+  const tabBarInset = useTabBarInset();
   const theme = useTheme();
   const {
     totalMissed,
@@ -152,7 +154,7 @@ const QadaScreen = () => {
 
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: totalMissed > 0 || totalCompleted > 0 ? 160 : 100,
+          paddingBottom: tabBarInset + (totalMissed > 0 || totalCompleted > 0 ? 160 : 100),
         }}
         showsVerticalScrollIndicator={false}>
         {/* Progress Dashboard */}

@@ -11,6 +11,9 @@ import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { NEDAA_LIGHT } from "@/constants/Palette";
+import { ROLE_RATIO } from "@/components/ui/text/sizing";
+import { lineRatioOf, styleOf } from "@/test-helpers/text";
 
 const TITLE = "Alarm settings";
 const ACTION_LABEL = "Open alarm settings";
@@ -319,6 +322,49 @@ describe("ScreenHeader", () => {
       expect(
         within(screen.getByRole("button", { name: backTo("TOOLS") })).queryByText(/./)
       ).toBeNull();
+    });
+  });
+
+  describe("look", () => {
+    it("sets the stacked title at 30 on the title line box", async () => {
+      await renderApp(<ScreenHeader title={TITLE} />, BACK_DESTINATION.SETTINGS_ALARM.href);
+      const title = screen.getByRole("header", { name: TITLE });
+
+      expect(title).toHaveStyle({ fontSize: 30 });
+      expect(lineRatioOf(title)).toBeCloseTo(ROLE_RATIO.title, 1);
+    });
+
+    it("draws the back control in the accent, its name at 15", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+      const name = within(screen.getByRole("button", { name: backTo("TOOLS") })).getByText(
+        i18n.t(BACK_DESTINATION.TOOLS.title)
+      );
+
+      expect(name).toHaveStyle({ color: NEDAA_LIGHT.accent.hex, fontSize: 15 });
+    });
+
+    // The chevron's own side bearing sits outside the text column.
+    it("pulls the back control to the start edge", async () => {
+      await renderApp(<ScreenHeader title={TITLE} back />);
+      await go(BACK_DESTINATION.TOOLS.href);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      expect(styleOf(screen.getByRole("button", { name: backTo("TOOLS") }))).toMatchObject({
+        marginStart: -6,
+        gap: 2,
+      });
+    });
+
+    it("spaces the stacked header 4 above, 14 below and 2 between", async () => {
+      await renderApp(
+        <ScreenHeader title={TITLE} subtitle={SUBTITLE} />,
+        BACK_DESTINATION.SETTINGS_ALARM.href
+      );
+      const stack = screen.getByRole("header", { name: TITLE }).parent;
+
+      expect(stack && styleOf(stack)).toMatchObject({ paddingTop: 4, paddingBottom: 14, gap: 2 });
     });
   });
 });
