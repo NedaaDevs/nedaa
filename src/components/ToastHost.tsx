@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { Toast, toastLabel } from "@/components/ui/toast";
+import { SPRING } from "@/constants/Motion";
 import { TOAST_EDGE, TOAST_MOTION, TOAST_SWIPE } from "@/constants/Toast";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScreenReader } from "@/hooks/useScreenReader";
@@ -30,6 +31,8 @@ const easeOut = (duration: number) => ({
   easing: Easing.out(Easing.cubic),
   reduceMotion: ReduceMotion.Never,
 });
+
+const SETTLE = { ...SPRING.SETTLE, reduceMotion: ReduceMotion.Never };
 
 /** The one toast over every screen, clear of the tab bar and home indicator. */
 export const ToastHost = () => {
@@ -49,13 +52,13 @@ export const ToastHost = () => {
   if (toast && toast.id !== shown?.id) setShown(toast);
 
   // A new toast arrives in place of any other, is spoken, and leaves on time.
+  // It rises on the settle spring; under Reduce Motion it only fades.
   useEffect(() => {
     if (!toast) return;
     opacity.set(0);
     offset.set(reduced ? 0 : TOAST_MOTION.rise);
-    const arrive = easeOut(reduced ? TOAST_MOTION.reducedMs : TOAST_MOTION.enterMs);
-    opacity.set(withTiming(1, arrive));
-    if (!reduced) offset.set(withTiming(0, arrive));
+    opacity.set(withTiming(1, easeOut(reduced ? TOAST_MOTION.reducedMs : TOAST_MOTION.enterMs)));
+    if (!reduced) offset.set(withSpring(0, SETTLE));
     AccessibilityInfo.announceForAccessibilityWithOptions(
       toastLabel(t, toast.kind, toast.message),
       announcementFor(toast.kind)

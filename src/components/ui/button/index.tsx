@@ -30,13 +30,16 @@ const ButtonContext = createStyledContext({
 /** No size step is 50; the default button stands this high. */
 const DEFAULT_HEIGHT = 50;
 
-/** Each size's drawn height; below `$target`, a touch area makes up the rest. */
+/**
+ * Each size's drawn height, rising with the name; below `$target`, a touch area
+ * makes up the rest. Sticky action bars and footers carry `lg`.
+ */
 const MIN_HEIGHT = {
   xs: "$8",
   sm: "$9",
   md: DEFAULT_HEIGHT,
-  lg: "$target",
-  xl: "$12",
+  lg: "$14",
+  xl: "$16",
 } as const satisfies Record<ButtonSize, string | number>;
 
 const heightOf = (size: ButtonSize): number => {

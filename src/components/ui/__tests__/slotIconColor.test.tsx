@@ -30,7 +30,7 @@ describe("Slot icon colour", () => {
   it.each([
     ["a token", "$accentPrimary", LIGHT.accentPrimary.val],
     ["a raw colour", RAW, RAW],
-    ["nothing", undefined, LIGHT.typographyContrast.val],
+    ["nothing", undefined, LIGHT.accent.val],
   ])("resolves a floating button icon given %s", async (_, color, expected) => {
     await renderWithTheme(<FabIcon as={Glyph} color={color} />);
 

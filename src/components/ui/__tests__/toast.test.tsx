@@ -1,7 +1,9 @@
-import { AccessibilityInfo } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { fireEvent, screen, userEvent } from "@testing-library/react-native";
 
 import { Toast, TOAST_A11Y_ACTION, TOAST_PART } from "@/components/ui/toast";
+import { ELEVATION } from "@/constants/Elevation";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { TOAST_KIND } from "@/constants/Toast";
 import i18n from "@/localization/i18n";
 import { controlProblems } from "@/test-helpers/controls";
@@ -9,7 +11,49 @@ import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 
+const BLUR_VIEW = "blur-view";
+jest.mock("expo-blur", () => {
+  const { createElement } = jest.requireActual("react");
+  const { View } = jest.requireActual("react-native");
+  return { BlurView: (props: object) => createElement(View, { testID: "blur-view", ...props }) };
+});
+
+const originalOS = Platform.OS;
+const originalVersion = Platform.Version;
+const setPlatform = (os: string, version: string | number) => {
+  Object.defineProperty(Platform, "OS", { configurable: true, get: () => os });
+  Object.defineProperty(Platform, "Version", { configurable: true, get: () => version });
+};
+
 const MESSAGE = "Couldn't update prayer times.";
+
+describe("Toast surface", () => {
+  afterEach(() => setPlatform(originalOS, originalVersion));
+
+  const frame = () => StyleSheet.flatten(screen.getByTestId(TOAST_PART.FRAME).props.style);
+
+  it("floats on the blurred float material, lifted by e2", async () => {
+    await renderWithTheme(
+      <Toast kind={TOAST_KIND.SUCCESS} message={MESSAGE} onDismiss={jest.fn()} />
+    );
+
+    expect(screen.getByTestId(BLUR_VIEW)).toBeTruthy();
+    expect(frame().backgroundColor).toBe(NEDAA_LIGHT.surfaceFloat.hex);
+    expect(frame().boxShadow).toBe(ELEVATION.e2.boxShadow.light);
+    expect(frame().borderTopWidth ?? 0).toBe(0);
+  });
+
+  // Blurring the screen behind would mean wrapping every screen in a target.
+  it("keeps the opaque float colour on Android", async () => {
+    setPlatform("android", 34);
+    await renderWithTheme(
+      <Toast kind={TOAST_KIND.SUCCESS} message={MESSAGE} onDismiss={jest.fn()} />
+    );
+
+    expect(screen.queryByTestId(BLUR_VIEW)).toBeNull();
+    expect(frame().backgroundColor).toBe(`${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`);
+  });
+});
 
 describe("Toast", () => {
   it.each(Object.values(TOAST_KIND))(

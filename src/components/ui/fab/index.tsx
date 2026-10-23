@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import {
   styled,
   View,
@@ -10,8 +10,14 @@ import {
 import { useThemeColor } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
 import { resolveIconSize, type IconSize } from "@/components/ui/icon";
+import { Material, MATERIAL } from "@/components/ui/material";
+import { usePressScale } from "@/components/ui/pressable/pressScale";
+import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { PlatformType } from "@/enums/app";
 import { useTextScale } from "@/hooks/useTextScale";
+
+/** Test ids for the parts a test reaches. */
+export const FAB_PART = { SURFACE: "fab-surface" } as const;
 
 type FabSize = "sm" | "md" | "lg";
 type FabPlacement =
@@ -43,14 +49,6 @@ const FabFrame = styled(View, {
   flexDirection: "row",
   position: "absolute",
   borderRadius: "$pill",
-  backgroundColor: "$primary",
-  shadowColor: "$typography",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 4,
-  pressStyle: {
-    opacity: 0.8,
-  },
 
   variants: {
     size: {
@@ -87,7 +85,7 @@ type FabIconProps = {
 const FabIcon: React.FC<FabIconProps> = ({
   as: IconComponent,
   size: sizeProp,
-  color = "$typographyContrast",
+  color = "$accent",
 }) => {
   const ctx = FabContext.useStyledContext();
   const iconSize = sizeProp ?? ICON_SIZE[ctx.size ?? "md"];
@@ -103,7 +101,7 @@ const FabLabelFrame = styled(TamaguiText, {
   context: FabContext,
   fontFamily: "$body",
   fontWeight: "600",
-  color: "$typographyContrast",
+  color: "$fg",
   ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: "$tight" }),
 
   // Sizes carry no styles: FabLabel computes the fontSize from the size
@@ -134,12 +132,32 @@ FabLabel.displayName = "FabLabel";
 
 // --- Compound export ---
 
-const Fab = withStaticProperties(FabFrame, {
+type FabProps = GetProps<typeof FabFrame>;
+
+/** A round control on the float material; it shrinks under the finger. */
+const FabRoot = ({ children, ...props }: FabProps) => {
+  const pressScale = usePressScale();
+  return (
+    <FabFrame {...pressScale} {...props}>
+      {/* No blur target, so Android draws the float colour opaque. */}
+      <Material
+        testID={FAB_PART.SURFACE}
+        material={MATERIAL.FLOAT}
+        elevation={ELEVATION_LEVEL.E2}
+        radius="pill"
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {children}
+    </FabFrame>
+  );
+};
+
+const Fab = withStaticProperties(FabRoot, {
   Icon: FabIcon,
   Label: FabLabel,
 });
 
-type FabProps = GetProps<typeof FabFrame>;
 type FabLabelProps = FabLabelWrapperProps;
 
 export { Fab, FabIcon, FabLabel };
