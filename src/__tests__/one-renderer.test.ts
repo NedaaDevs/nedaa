@@ -158,13 +158,29 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<PrayerTimeCell\b/,
     home: "components/today/PrayerTimeCell.tsx",
   },
-  // The day's timings placed by rhythmLine are drawn on the one arc.
+  // The day's timings placed by rhythmLine are drawn on the one bowl.
   {
     concept: "the day's rhythm",
     shows: /\brhythmLine\(/,
     within: /^(app|components)\/.*\.tsx$/,
-    drawsWith: /<RhythmArc\b/,
-    home: "components/today/RhythmArc.tsx",
+    drawsWith: /<Bowl\b/,
+    home: "components/today/Bowl.tsx",
+  },
+  // The sky and Today's bowl draw the one sun, each at its own scale.
+  {
+    concept: "the sun",
+    shows: /<SunGlyph\b|\bSUN_GLYPH\b/,
+    within: /\.tsx$/,
+    drawsWith: /<SunGlyph\b/,
+    home: "components/ui/sky-background/SunGlyph.tsx",
+  },
+  // The sky and Today's bowl draw the one moon, in tonight's phase.
+  {
+    concept: "the moon",
+    shows: /<MoonGlyph\b|\bMOON_GLYPH\b/,
+    within: /\.tsx$/,
+    drawsWith: /<MoonGlyph\b/,
+    home: "components/ui/sky-background/MoonGlyph.tsx",
   },
   // A screen reader says «م» as morning, so a spoken time names its period.
   {

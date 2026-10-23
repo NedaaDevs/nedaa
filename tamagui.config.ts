@@ -409,6 +409,7 @@ const lightTheme = {
   surfaceQuiet: NEDAA_LIGHT.surfaceQuiet.hex,
   accentRing: NEDAA_LIGHT.accentRing.hex,
   accentText: NEDAA_LIGHT.accentText.hex,
+  trail: NEDAA_LIGHT.trail.hex,
   warnTint: NEDAA_LIGHT.warnTint.hex,
 };
 
@@ -505,6 +506,7 @@ const darkTheme = {
   surfaceQuiet: NEDAA_DARK.surfaceQuiet.hex,
   accentRing: NEDAA_DARK.accentRing.hex,
   accentText: NEDAA_DARK.accentText.hex,
+  trail: NEDAA_DARK.trail.hex,
   warnTint: NEDAA_DARK.warnTint.hex,
 };
 

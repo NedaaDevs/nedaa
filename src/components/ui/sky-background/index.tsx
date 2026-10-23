@@ -20,10 +20,12 @@ type Props = {
   children?: ReactNode;
   /** Holds the sky still while its screen is out of focus. */
   paused?: boolean;
+  /** Draws the sun and moon; without them the glow rests in its corner. */
+  bodies?: boolean;
 };
 
 /** The screen surface: the sky for the current brightness, phase and hour. */
-export const SkyBackground = ({ children, paused = false }: Props) => {
+export const SkyBackground = ({ children, paused = false, bodies = true }: Props) => {
   const window = useWindowDimensions();
   const [size, setSize] = useState({ width: window.width, height: window.height });
   const sky = useLiveSky();
@@ -69,11 +71,12 @@ export const SkyBackground = ({ children, paused = false }: Props) => {
       <SkyPaint
         ref={canvas}
         scene={scene}
-        celestial={celestial}
+        celestial={bodies ? celestial : undefined}
         hijriDay={hijriDay}
         isRTL={isRTL}
         reduced={reduced || paused}
         {...size}
+        bodies={bodies}
         bodyOpacity={bodyOpacity}
       />
       <LiveSkyContext value={sky}>
