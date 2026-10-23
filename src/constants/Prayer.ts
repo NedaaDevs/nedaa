@@ -46,6 +46,9 @@ export const OTHER_TIMING_NAMES = [
 
 export type OtherTimingName = (typeof OTHER_TIMING_NAMES)[number];
 
+/** The other times Today lists; sunrise has its own cell among the prayers. */
+export const TODAY_OTHER_TIMES = OTHER_TIMING_NAMES.filter((name) => name !== OTHER_TIMING.SUNRISE);
+
 /** Each other time's name; two of the keys spell their id in camel case. */
 export const OTHER_TIME_LABEL_KEY: Record<OtherTimingName, string> = {
   [OTHER_TIMING.SUNRISE]: "otherTimings.sunrise",

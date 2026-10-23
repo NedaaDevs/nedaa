@@ -38,8 +38,7 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
   const western = usePreferencesStore((state) => state.useWesternNumerals);
 
   if (!day) return null;
-  const { wide, rest } = prayerCards(day, now, following);
-  const card = [wide, ...rest].find((each) => each.id === prayerId);
+  const card = prayerCards(day, now, following).cards.find((each) => each.id === prayerId);
   if (!card) return null;
 
   const name = t(prayerNameKey(prayerId, isFridayInTimeZone(parseISO(card.time), day.timezone)));

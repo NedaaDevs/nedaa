@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
 
+import { Box } from "@/components/ui/box";
 import { Disclosure } from "@/components/ui/disclosure";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { OTHER_TIME_LABEL_KEY, OTHER_TIMING_NAMES, type OtherTimingName } from "@/constants/Prayer";
+import { OTHER_TIME_LABEL_KEY, TODAY_OTHER_TIMES, type OtherTimingName } from "@/constants/Prayer";
 import { useShownDay } from "@/hooks/useShownDay";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -55,14 +56,18 @@ export const OtherTimes = () => {
     );
   };
 
-  // Two columns, three rows, in the order the day brings them.
-  const rows = [0, 2, 4].map((start) => OTHER_TIMING_NAMES.slice(start, start + 2));
+  // Two columns, in the order the day brings them.
+  const rows = Array.from({ length: Math.ceil(TODAY_OTHER_TIMES.length / 2) }, (_, i) =>
+    TODAY_OTHER_TIMES.slice(i * 2, i * 2 + 2)
+  );
   return (
-    <Disclosure title={t("otherTimings.title")}>
+    <Disclosure title={t("otherTimings.title")} quiet>
       <VStack paddingBottom="$2">
         {rows.map((row) => (
           <HStack key={row[0]} gap="$3">
             {row.map(item)}
+            {/* A lone last time keeps its column's width. */}
+            {row.length < 2 ? <Box flex={1} /> : null}
           </HStack>
         ))}
       </VStack>
