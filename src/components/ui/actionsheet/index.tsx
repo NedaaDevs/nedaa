@@ -3,9 +3,11 @@ import React, {
   use,
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
+  type ComponentRef,
   type PropsWithChildren,
   type ReactNode,
   type RefObject,
@@ -25,32 +27,57 @@ import {
   type HostInstance,
   type ViewInstance,
 } from "react-native";
-import { Easing, ReduceMotion } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetBackdrop,
   useBottomSheetModal,
-  useBottomSheetTimingConfigs,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { BlurTargetView } from "expo-blur";
 import { X } from "lucide-react-native";
 import { useAppCovered, useCoverApp, useSheetLayer } from "@/components/ui/actionsheet/cover";
 import { Icon } from "@/components/ui/icon";
+import { Material, MATERIAL } from "@/components/ui/material";
+import { useElevationShadow } from "@/components/ui/material/edge";
 import { Pressable, type PressableProps } from "@/components/ui/pressable";
+import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { PlatformType } from "@/enums/app";
-import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
+import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { focusOn } from "@/utils/accessibilityFocus";
 
-/** The $sheet radius, as a number: gorhom styles take no theme tokens. */
-const SHEET_RADIUS = 18;
+/** The space step a tall sheet keeps below the status bar. */
+const SHEET_TOP_GAP = "$5";
+
+/** No size token sits at 5. */
+const GRABBER_HEIGHT = 5;
+
+/** The header's height: grabber plus the space above and below it. */
+const headerHeight = () =>
+  getTokenValue("$2", "space") + GRABBER_HEIGHT + getTokenValue("$3.5", "space");
+
+/** Leaving: a timing on the iOS sheet curve. */
+const LEAVE = { duration: SHEET_MOTION.DISMISS_MS, easing: Easing.bezier(...SHEET_CURVE) };
+
+const REDUCED_FADE = { duration: SHEET_MOTION.REDUCED_FADE_MS };
 
 /** Test ids for the parts a test reaches. */
 export const ACTIONSHEET_PART = {
   LAYER: "actionsheet-layer",
   CLOSE: "actionsheet-close",
+  HEADER: "actionsheet-header",
+  GRABBER: "actionsheet-grabber",
+  BODY: "actionsheet-body",
 } as const;
 
 /** Drawn in the top sheet's layer, where iOS lets a reader reach it. */
@@ -59,22 +86,58 @@ const ActionsheetOverlay = createContext<ReactNode>(null);
 /** Where ActionsheetTitle registers its view for the sheet to focus. */
 const TitleContext = createContext<RefObject<ViewInstance | null> | null>(null);
 
+type BlurTarget = RefObject<ComponentRef<typeof RNView> | null>;
+
+/** The content view whose pixels the header blurs on Android. */
+const BlurTargetContext = createContext<BlurTarget | null>(null);
+
+/**
+ * gorhom's handle, drawn as the blurred header with the grabber. Its negative
+ * margin gives it no room of its own, so it lies over the content's top.
+ */
+const SheetHeader = ({ blurTarget }: { blurTarget: BlurTarget }) => (
+  <Material
+    testID={ACTIONSHEET_PART.HEADER}
+    material={MATERIAL.SHEET_HEADER}
+    elevation={ELEVATION_LEVEL.E0}
+    radius="sheet"
+    blurTarget={blurTarget}
+    height={headerHeight()}
+    marginBottom={-headerHeight()}
+    alignItems="center"
+    paddingTop="$2"
+    paddingBottom="$3.5"
+    accessibilityElementsHidden
+    importantForAccessibility="no-hide-descendants">
+    <View
+      testID={ACTIONSHEET_PART.GRABBER}
+      width="$9"
+      height={GRABBER_HEIGHT}
+      borderRadius="$pill"
+      backgroundColor="$handle"
+    />
+  </Material>
+);
+
+type ModalLayerProps = PropsWithChildren<{ fade: SharedValue<number> }>;
+
 // The app's sibling holding backdrop and sheet: VoiceOver stays inside it,
 // and the escape gesture closes the top sheet.
-const ModalLayer = ({ children }: PropsWithChildren) => {
+const ModalLayer = ({ fade, children }: ModalLayerProps) => {
   const { dismiss } = useBottomSheetModal();
   const top = useSheetLayer();
   const overlay = use(ActionsheetOverlay);
+  const faded = useAnimatedStyle(() => ({ opacity: fade.get() }));
   return (
-    <RNView
+    <Animated.View
       testID={ACTIONSHEET_PART.LAYER}
-      style={StyleSheet.absoluteFill}
+      style={[StyleSheet.absoluteFill, faded]}
       pointerEvents="box-none"
       accessibilityViewIsModal
       onAccessibilityEscape={() => dismiss()}>
       {children}
       {top ? overlay : null}
-    </RNView>
+    </Animated.View>
   );
 };
 
@@ -109,13 +172,13 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   const theme = useTheme();
   const { t } = useTranslation();
   const reduced = useReducedMotion();
-  const slide = useBottomSheetTimingConfigs({
-    duration: DURATION_MS.GENTLE,
-    easing: Easing.bezier(...SHEET_CURVE),
-  });
+  const shadow = useElevationShadow(ELEVATION_LEVEL.E3);
+  // The whole layer's opacity; it moves only under Reduce Motion.
+  const fade = useSharedValue(1);
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<ViewInstance>(null);
+  const blurTarget = useRef<ComponentRef<typeof RNView>>(null);
   const hasPresented = useRef(false);
   const leaving = useRef(false);
   // Up from its first settle until gorhom reports it dismissed.
@@ -143,17 +206,32 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     focusOn(finalFocusRef?.current);
   }, [shown, covered, finalFocusRef]);
 
+  // Under Reduce Motion the sheet fades in where it stands.
+  const present = useEffectEvent(() => {
+    hasPresented.current = true;
+    fade.set(reduced ? 0 : 1);
+    if (reduced) fade.set(withTiming(1, REDUCED_FADE));
+    ref.current?.present();
+  });
+
+  // Under Reduce Motion the sheet fades out, then goes at once.
+  const leave = useEffectEvent(() => {
+    if (!reduced) {
+      ref.current?.dismiss(LEAVE);
+      return;
+    }
+    fade.set(withTiming(0, REDUCED_FADE));
+    const timer = setTimeout(() => ref.current?.dismiss(), SHEET_MOTION.REDUCED_FADE_MS);
+    return () => clearTimeout(timer);
+  });
+
   // Present on open; dismiss on a programmatic close only. hasPresented guards both
   // the never-dismiss-before-present case and the reopen case: gorhom's onDismiss
   // resets it, so a gorhom-initiated close (swipe/backdrop) doesn't trigger a
   // redundant dismiss() that would wedge the next present().
   useEffect(() => {
-    if (isOpen) {
-      hasPresented.current = true;
-      ref.current?.present();
-    } else if (hasPresented.current) {
-      ref.current?.dismiss();
-    }
+    if (isOpen) return present();
+    if (hasPresented.current) return leave();
   }, [isOpen]);
 
   const handleChange = useCallback((index: number) => {
@@ -169,11 +247,18 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      ref.current?.dismiss();
+      ref.current?.dismiss(LEAVE);
       return true;
     });
     return () => sub.remove();
   }, [isOpen]);
+
+  const renderHandle = useCallback(() => <SheetHeader blurTarget={blurTarget} />, []);
+
+  const renderLayer = useCallback(
+    ({ children: layer }: PropsWithChildren) => <ModalLayer fade={fade}>{layer}</ModalLayer>,
+    [fade]
+  );
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -197,38 +282,29 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       snapPoints={fitContent ? undefined : points}
       enableDynamicSizing={fitContent}
       // A tall body stops below the status bar and scrolls.
-      topInset={fitContent ? insets.top + getTokenValue("$section", "space") : undefined}
+      topInset={fitContent ? insets.top + getTokenValue(SHEET_TOP_GAP, "space") : undefined}
       enablePanDownToClose
       onChange={handleChange}
       onDismiss={handleDismiss}
-      animationConfigs={slide}
+      animationConfigs={SPRING.SETTLE}
       overrideReduceMotion={reduced ? ReduceMotion.Always : ReduceMotion.Never}
       // gorhom's defaults make the content one "Bottom Sheet" element.
       accessible={false}
       accessibilityLabel={null}
       accessibilityRole={null}
-      containerComponent={ModalLayer}
+      containerComponent={renderLayer}
       backdropComponent={renderBackdrop}
+      handleComponent={renderHandle}
       backgroundStyle={{
         backgroundColor: theme.raised.val,
-        // $sheet. Set explicitly, or gorhom's own default applies.
-        borderTopLeftRadius: SHEET_RADIUS,
-        borderTopRightRadius: SHEET_RADIUS,
-        // No shadow token exists; offset and blur are the design's.
-        boxShadow: `0 -16px 44px ${theme.shadow.val}`,
-      }}
-      handleStyle={{
-        paddingTop: getTokenValue("$2.5", "space"),
-        paddingBottom: getTokenValue("$1", "space"),
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: theme.handle.val,
-        width: getTokenValue("$10", "size"),
-        // No size token sits at 5.
-        height: 5,
-        borderRadius: getTokenValue("$pill", "radius"),
+        // Set explicitly, or gorhom's own default applies.
+        borderTopLeftRadius: getTokenValue("$sheet", "radius"),
+        borderTopRightRadius: getTokenValue("$sheet", "radius"),
+        boxShadow: shadow,
       }}>
-      <TitleContext value={title}>{children}</TitleContext>
+      <TitleContext value={title}>
+        <BlurTargetContext value={blurTarget}>{children}</BlurTargetContext>
+      </TitleContext>
     </BottomSheetModal>
   );
 };
@@ -251,6 +327,8 @@ type ActionsheetContentProps = {
 
 const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpadded }) => {
   const insets = useSafeAreaInsets();
+  // Android blurs only this view's pixels under the header.
+  const blurTarget = use(BlurTargetContext);
   // The last control sits a step above the home indicator, never on it.
   const paddingBottom = Math.max(
     getTokenValue("$6", "space"),
@@ -261,18 +339,19 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
   // scroll view; ActionsheetScrollView below is a passthrough.
   return (
     // A tap on a row lands while the keyboard is up, not only closing it.
-    <BottomSheetScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={
-        unpadded
-          ? undefined
-          : {
-              paddingHorizontal: getTokenValue("$group", "space"),
-              paddingTop: getTokenValue("$2", "space"),
-              paddingBottom,
-            }
-      }>
-      {children}
+    <BottomSheetScrollView keyboardShouldPersistTaps="handled">
+      <BlurTargetView
+        ref={blurTarget}
+        testID={ACTIONSHEET_PART.BODY}
+        style={[
+          // Starts at the header's foot and scrolls under it.
+          { paddingTop: headerHeight() },
+          unpadded
+            ? undefined
+            : { paddingHorizontal: getTokenValue("$group", "space"), paddingBottom },
+        ]}>
+        {children}
+      </BlurTargetView>
     </BottomSheetScrollView>
   );
 };

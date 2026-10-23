@@ -233,7 +233,7 @@ const AthkarTabs = () => {
           placement="bottom end"
           bottom={16}
           accessibilityLabel={t("athkar.focus.title")}>
-          <FabIcon as={Focus} color="$typographyContrast" />
+          <FabIcon as={Focus} />
         </Fab>
       )}
 
