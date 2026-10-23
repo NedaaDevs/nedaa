@@ -19,3 +19,6 @@ export const TAB_ITEMS: readonly TabItem[] = Object.values(TAB_ITEM);
 
 /** A tab's entry by its route name. */
 export const tabItem = (name: OpeningTabValue): TabItem => TAB_ITEM[name];
+
+/** The floating bar's gap above the bottom edge; no space token is 18. */
+export const TAB_BAR_EDGE_GAP = 18;
