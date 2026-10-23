@@ -133,17 +133,17 @@ describe("Actionsheet accessibility", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("names the backdrop in the app's language", async () => {
+  it("names the scrim in the app's language", async () => {
     await renderWithTheme(<Screen open />);
 
-    const backdrop = screen.getByTestId(BOTTOM_SHEET_PART.BACKDROP);
+    const backdrop = screen.getByTestId(ACTIONSHEET_PART.SCRIM);
     expect(backdrop.props.accessibilityLabel).toBe(i18n.t("common.close"));
   });
 
   it("tints the scrim navy, at the strength its colour carries", async () => {
     await renderWithTheme(<Screen open />);
 
-    expect(screen.getByTestId(BOTTOM_SHEET_PART.BACKDROP)).toHaveStyle({
+    expect(screen.getByTestId(ACTIONSHEET_PART.SCRIM)).toHaveStyle({
       backgroundColor: NEDAA_LIGHT.scrim.hex,
       opacity: 1,
     });

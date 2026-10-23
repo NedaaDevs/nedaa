@@ -20,10 +20,10 @@ import { VersionLine } from "@/components/about/VersionLine";
 import type { IconProps } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
-import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { DEBUG_COPY, DEBUG_SCREEN, type DebugScreen } from "@/constants/DebugScreens";
 import { SECTION_KIND } from "@/constants/Section";
@@ -126,7 +126,7 @@ export default function AboutScreen() {
         </SkyOccluder>
 
         <SkyOccluder>
-          <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+          <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$section">
             <AboutBrand />
 
             <Section title={t("settings.about.latest")} kind={SECTION_KIND.LABEL}>
@@ -165,7 +165,7 @@ export default function AboutScreen() {
                 </ListGroup>
               </Section>
             ) : null}
-          </VStack>
+          </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
     </SkyBackground>

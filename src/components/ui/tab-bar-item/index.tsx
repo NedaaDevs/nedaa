@@ -78,6 +78,7 @@ export const TabBar = ({
       material={MATERIAL.FLOAT}
       elevation={ELEVATION_LEVEL.E2}
       radius="pill"
+      ring
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
       onLayout={({ nativeEvent }: LayoutChangeEvent) => setTrackWidth(nativeEvent.layout.width)}
@@ -107,7 +108,7 @@ type Props = {
 };
 
 export const TabBarItem = ({ label, icon, selected, onPress }: Props) => {
-  const colour = selected ? "$accent" : "$muted";
+  const colour = selected ? "$accentText" : "$muted";
   const reduced = useReducedMotion();
   const scale = useSharedValue(1);
   const wasSelected = useRef(selected);

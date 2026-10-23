@@ -7,6 +7,7 @@ import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
+import { SCREEN_GUTTER } from "@/components/ui/screen-content";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -60,7 +61,7 @@ export const OnboardingFrame = ({
       {chrome ? (
         <SkyOccluder>
           <HStack
-            paddingHorizontal="$4"
+            paddingHorizontal={SCREEN_GUTTER}
             minHeight="$target"
             alignItems="center"
             justifyContent="space-between">
@@ -83,7 +84,7 @@ export const OnboardingFrame = ({
               </Text>
             </Pressable>
           </HStack>
-          <VStack paddingHorizontal="$4" gap="$1.5" {...HIDDEN_FROM_READER}>
+          <VStack paddingHorizontal={SCREEN_GUTTER} gap="$1.5" {...HIDDEN_FROM_READER}>
             <Text testID={ONBOARDING_PART.PROGRESS} size="xs" numeric color="$mutedSky">
               {progress}
             </Text>
@@ -104,7 +105,7 @@ export const OnboardingFrame = ({
 
       {chrome ? (
         <HStack
-          paddingHorizontal="$4"
+          paddingHorizontal={SCREEN_GUTTER}
           paddingTop="$2"
           paddingBottom="$2"
           gap="$3"

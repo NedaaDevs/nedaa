@@ -34,8 +34,8 @@ const GLYPH_STROKE = 1.7;
 
 type Ink = "$accent" | "$warn";
 
-/** `$warn` clears only the 3:1 floor for glyphs, so its label takes `$fg`. */
-const LABEL_INK: Record<Ink, "$accent" | "$fg"> = { $accent: "$accent", $warn: "$fg" };
+/** A label takes ink made for text; `$warn` clears only the glyph floor. */
+const LABEL_INK: Record<Ink, "$accentText" | "$fg"> = { $accent: "$accentText", $warn: "$fg" };
 
 type Props = {
   icon: IconProps["as"];

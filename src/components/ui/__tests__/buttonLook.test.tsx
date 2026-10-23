@@ -110,7 +110,7 @@ describe("Button look", () => {
 
     expect(frame()).toMatchObject({ minHeight: 44, paddingLeft: 8, paddingRight: 8 });
     expect(frame().backgroundColor).toBe("transparent");
-    expect(label().color).toBe(NEDAA_LIGHT.accent.hex);
+    expect(label().color).toBe(NEDAA_LIGHT.accentText.hex);
   });
 
   // Only the primary call to action glows; a status button stays flat.

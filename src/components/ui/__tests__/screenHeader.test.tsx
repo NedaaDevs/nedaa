@@ -7,6 +7,8 @@ import { act, renderRouter, screen, within } from "expo-router/testing-library";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { ScreenContent } from "@/components/ui/screen-content";
+import { SkyScrollView } from "@/components/ui/sky-background";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -14,6 +16,7 @@ import { ThemeProvider } from "@/test-helpers/theme";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { ROLE_RATIO } from "@/components/ui/text/sizing";
 import { lineRatioOf, styleOf } from "@/test-helpers/text";
+import { getTokenValue } from "tamagui";
 
 const TITLE = "Alarm settings";
 const ACTION_LABEL = "Open alarm settings";
@@ -342,7 +345,7 @@ describe("ScreenHeader", () => {
         i18n.t(BACK_DESTINATION.TOOLS.title)
       );
 
-      expect(name).toHaveStyle({ color: NEDAA_LIGHT.accent.hex, fontSize: 15 });
+      expect(name).toHaveStyle({ color: NEDAA_LIGHT.accentText.hex, fontSize: 15 });
     });
 
     // The chevron's own side bearing sits outside the text column.
@@ -365,6 +368,40 @@ describe("ScreenHeader", () => {
       const stack = screen.getByRole("header", { name: TITLE }).parent;
 
       expect(stack && styleOf(stack)).toMatchObject({ paddingTop: 4, paddingBottom: 14, gap: 2 });
+    });
+  });
+
+  describe("gutter", () => {
+    const CONTENT = "screen-content";
+    const edges = (style: object) => {
+      const { paddingLeft, paddingRight } = style as Record<string, unknown>;
+      return { paddingLeft, paddingRight };
+    };
+    const headerEdges = () => {
+      const stack = screen.getByRole("header", { name: TITLE }).parent;
+      return stack ? edges(styleOf(stack)) : undefined;
+    };
+
+    // The header and the column under it start at one edge.
+    it("keeps one edge with its content on a sky screen", async () => {
+      await renderApp(
+        <SkyScrollView>
+          <ScreenHeader title={TITLE} />
+          <ScreenContent testID={CONTENT} />
+        </SkyScrollView>,
+        BACK_DESTINATION.SETTINGS_ALARM.href
+      );
+      const screenGutter = getTokenValue("$screen", "space");
+
+      expect(headerEdges()).toEqual({ paddingLeft: screenGutter, paddingRight: screenGutter });
+      expect(edges(styleOf(screen.getByTestId(CONTENT)))).toEqual(headerEdges());
+    });
+
+    it("keeps the group gutter on a screen off the sky", async () => {
+      await renderApp(<ScreenHeader title={TITLE} />, BACK_DESTINATION.SETTINGS_ALARM.href);
+      const group = getTokenValue("$group", "space");
+
+      expect(headerEdges()).toEqual({ paddingLeft: group, paddingRight: group });
     });
   });
 });

@@ -8,8 +8,8 @@ import type { StepProps } from "@/components/onboarding/flow/types";
 import { useStepBack } from "@/components/onboarding/flow/useStepBack";
 import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
 import { Button } from "@/components/ui/button";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyScrollView } from "@/components/ui/sky-background";
-import { VStack } from "@/components/ui/vstack";
 import { CITY_PICKER_VIEW, ONBOARDING_PART, type CityPickerView } from "@/constants/Onboarding";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
@@ -93,7 +93,7 @@ export const StepCityPicker = ({
   }, []);
 
   return (
-    <VStack flex={1} paddingHorizontal="$4" paddingTop="$4" gap="$3">
+    <ScreenContent flex={1} paddingTop="$4" gap="$3">
       <StepHeading
         headingRef={headingRef}
         progress={progress}
@@ -111,6 +111,6 @@ export const StepCityPicker = ({
           onEnterCoordinates={() => setView(CITY_PICKER_VIEW.COORDINATES)}
         />
       )}
-    </VStack>
+    </ScreenContent>
   );
 };

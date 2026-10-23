@@ -41,7 +41,7 @@ const Figure = ({ value, unit }: DayFigure) => (
   <HStack testID={OCCASIONS_PART.FIGURE} flexShrink={0} alignItems="baseline" gap="$1">
     {unit ? (
       <>
-        <Text size="3xl" fontWeight="600" numeric color="$accent">
+        <Text size="3xl" fontWeight="600" numeric color="$accentText">
           {value}
         </Text>
         <Text size="sm" typography="helper" color="$muted">
@@ -49,7 +49,7 @@ const Figure = ({ value, unit }: DayFigure) => (
         </Text>
       </>
     ) : (
-      <Text size="xl" fontWeight="600" color="$accent">
+      <Text size="xl" fontWeight="600" color="$accentText">
         {value}
       </Text>
     )}
@@ -102,11 +102,11 @@ export const UpcomingOccasions = () => {
           gap="$1"
           paddingHorizontal="$2"
           borderRadius="$control">
-          <Text size="sm" fontWeight="600" typography="helper" color="$accent">
+          <Text size="sm" fontWeight="600" typography="helper" color="$accentText">
             {t("importantDays.seeAll")}
           </Text>
           <Box testID={isRTL ? OCCASIONS_PART.CHEVRON_LEFT : OCCASIONS_PART.CHEVRON_RIGHT}>
-            <Icon as={isRTL ? ChevronLeft : ChevronRight} size="sm" color="$accent" />
+            <Icon as={isRTL ? ChevronLeft : ChevronRight} size="sm" color="$accentText" />
           </Box>
         </Pressable>
       </HStack>

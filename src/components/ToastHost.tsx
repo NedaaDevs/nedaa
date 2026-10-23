@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, StyleSheet } from "react-native";
 import { useSegments } from "expo-router";
@@ -14,8 +14,16 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { Toast, toastLabel } from "@/components/ui/toast";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { SPRING } from "@/constants/Motion";
-import { TOAST_EDGE, TOAST_MOTION, TOAST_SWIPE } from "@/constants/Toast";
+import {
+  TOAST_EDGE,
+  TOAST_HAPTIC,
+  TOAST_MOTION,
+  TOAST_SWIPE,
+  type ToastKind,
+} from "@/constants/Toast";
+import { useHaptic } from "@/hooks/useHaptic";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScreenReader } from "@/hooks/useScreenReader";
 import { useTabBarFrameStore } from "@/stores/tabBarFrame";
@@ -25,6 +33,9 @@ import { announcementFor, SWIPE, swipeOutcome, toastDwellMs } from "@/utils/toas
 
 export const TOAST_HOST_PART = { FRAME: "toast-frame" } as const;
 
+/** Test ids for the host's gestures. */
+export const TOAST_HOST_GESTURE = { SWIPE: "toast-swipe" } as const;
+
 // The host plays its own Reduce Motion fade; Reanimated's rule would snap it.
 const easeOut = (duration: number) => ({
   duration,
@@ -33,6 +44,9 @@ const easeOut = (duration: number) => ({
 });
 
 const SETTLE = { ...SPRING.SETTLE, reduceMotion: ReduceMotion.Never };
+
+/** A short drag lets go and the toast springs back into place. */
+const SNAP_BACK = { ...SPRING.SNAP, reduceMotion: ReduceMotion.Never };
 
 /** The one toast over every screen, clear of the tab bar and home indicator. */
 export const ToastHost = () => {
@@ -46,6 +60,15 @@ export const ToastHost = () => {
   const screenReader = useScreenReader();
   const opacity = useSharedValue(0);
   const offset = useSharedValue(0);
+  const feedback = {
+    [HAPTIC_FEEDBACK.SUCCESS]: useHaptic(HAPTIC_FEEDBACK.SUCCESS),
+    [HAPTIC_FEEDBACK.WARNING]: useHaptic(HAPTIC_FEEDBACK.WARNING),
+    [HAPTIC_FEEDBACK.ERROR]: useHaptic(HAPTIC_FEEDBACK.ERROR),
+  };
+  const arriveHaptic = useEffectEvent((kind: ToastKind) => {
+    const haptic = TOAST_HAPTIC[kind];
+    if (haptic) void feedback[haptic]();
+  });
 
   // The toast on screen; it outlives the store's while it plays its exit.
   const [shown, setShown] = useState<ShownToast | null>(toast);
@@ -59,6 +82,7 @@ export const ToastHost = () => {
     offset.set(reduced ? 0 : TOAST_MOTION.rise);
     opacity.set(withTiming(1, easeOut(reduced ? TOAST_MOTION.reducedMs : TOAST_MOTION.enterMs)));
     if (!reduced) offset.set(withSpring(0, SETTLE));
+    arriveHaptic(toast.kind);
     AccessibilityInfo.announceForAccessibilityWithOptions(
       toastLabel(t, toast.kind, toast.message),
       announcementFor(toast.kind)
@@ -96,6 +120,7 @@ export const ToastHost = () => {
 
   // Down only: a drag follows the finger and fades; past the threshold it leaves.
   const swipe = Gesture.Pan()
+    .withTestId(TOAST_HOST_GESTURE.SWIPE)
     .runOnJS(true)
     .activeOffsetY(TOAST_SWIPE.startAt)
     .failOffsetX([-TOAST_SWIPE.dismissAt, TOAST_SWIPE.dismissAt])
@@ -106,7 +131,7 @@ export const ToastHost = () => {
     })
     .onEnd(({ translationY }) => {
       if (swipeOutcome(translationY) === SWIPE.DISMISS) return dismiss();
-      offset.set(withSpring(0, { reduceMotion: ReduceMotion.Never }));
+      offset.set(reduced ? 0 : withSpring(0, SNAP_BACK));
       opacity.set(withTiming(1, easeOut(TOAST_MOTION.enterMs)));
     });
 

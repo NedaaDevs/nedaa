@@ -69,7 +69,7 @@ export const WelcomeStep = ({ setSession, onNext, headingRef }: StepProps) => {
               onPress={changeLanguage}
               justifyContent="center"
               alignItems="center">
-              <Text size="sm" fontWeight="600" color="$accent">
+              <Text size="sm" fontWeight="600" color="$accentText">
                 {`${language}${LINK_SEPARATOR}${change}`}
               </Text>
             </Pressable>
