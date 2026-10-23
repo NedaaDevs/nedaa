@@ -3,8 +3,9 @@ import { Platform, StyleSheet, type View as NativeView } from "react-native";
 import { BlurView } from "expo-blur";
 import { getTokenValue, View } from "tamagui";
 
+import { HighlightEdge, type RadiusName, useElevationShadow } from "@/components/ui/material/edge";
 import { chooseMaterialSurface, MATERIAL_SURFACE } from "@/components/ui/material/surface";
-import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
+import { useThemeColor } from "@/components/ui/theme-color";
 import { BLUR_INTENSITY, BLUR_REDUCTION, type BlurLevel } from "@/constants/Blur";
 import { ELEVATION, ELEVATION_LEVEL, type ElevationLevel } from "@/constants/Elevation";
 import { PlatformType } from "@/enums/app";
@@ -22,8 +23,6 @@ const MATERIAL_SPEC = {
   [MATERIAL.FLOAT]: { color: "$surfaceFloat", blur: "FLOAT" },
   [MATERIAL.SHEET_HEADER]: { color: "$surfaceFloat", blur: "SHEET" },
 } as const satisfies Record<MaterialName, { color: string; blur: BlurLevel }>;
-
-type RadiusName = "chip" | "control" | "card" | "sheet" | "hero" | "pill";
 
 const OPAQUE_ALPHA = "FF";
 
@@ -50,8 +49,6 @@ export const Material = ({
 }: MaterialProps) => {
   const spec = MATERIAL_SPEC[material];
   const tint = useThemeColor(spec.color);
-  const highlight = useThemeColor("$highlight");
-  const isDark = useIsDarkTheme();
   const reduceTransparency = useReduceTransparency();
   const surface = chooseMaterialSurface({
     platform: Platform.OS === PlatformType.ANDROID ? PlatformType.ANDROID : PlatformType.IOS,
@@ -60,8 +57,7 @@ export const Material = ({
     hasBlurTarget: blurTarget != null,
   });
   const radiusValue = getTokenValue(`$${radius}`, "radius");
-  const lift = ELEVATION[elevation];
-  const shadow = lift.boxShadow[isDark ? "dark" : "light"];
+  const shadow = useElevationShadow(elevation);
 
   return (
     <View
@@ -69,7 +65,7 @@ export const Material = ({
       borderRadius={radius === "pill" ? "$pill" : `$${radius}`}
       style={[
         { backgroundColor: surface === MATERIAL_SURFACE.BLUR ? tint : opaque(tint) },
-        { elevation: lift.elevation },
+        { elevation: ELEVATION[elevation].elevation },
         shadow == null ? undefined : { boxShadow: shadow },
         style,
       ]}>
@@ -82,16 +78,7 @@ export const Material = ({
           style={[StyleSheet.absoluteFill, { borderRadius: radiusValue }]}
         />
       )}
-      <View
-        testID={props.testID ? `${props.testID}-highlight` : undefined}
-        position="absolute"
-        top={0}
-        start={radiusValue}
-        end={radiusValue}
-        height={1}
-        pointerEvents="none"
-        style={{ backgroundColor: highlight }}
-      />
+      <HighlightEdge owner={props.testID} radius={radius} />
       {children}
     </View>
   );

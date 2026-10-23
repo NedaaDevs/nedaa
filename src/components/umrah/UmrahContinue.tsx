@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Meter } from "@/components/ui/meter";
-import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { useAppStore } from "@/stores/app";
@@ -32,16 +32,12 @@ export const UmrahContinue = () => {
   const next = t("tools.umrah.nextStep", { step: t(stepKey) });
 
   return (
-    <Pressable
+    <Card.Pressable
       onPress={() => router.push(BACK_DESTINATION.UMRAH.href)}
       accessibilityLabel={`${title}, ${done}, ${next}`}
       accessibilityHint={t("a11y.tools.continueHint")}
       padding="$3"
-      gap="$2"
-      borderWidth={1}
-      borderColor="$border"
-      borderRadius="$card"
-      backgroundColor="$surface2">
+      gap="$2">
       <HStack alignItems="center" justifyContent="space-between" gap="$2.5">
         <Text size="sm" bold color="$fg">
           {title}
@@ -54,6 +50,6 @@ export const UmrahContinue = () => {
       <Text size="xs" color="$muted">
         {next}
       </Text>
-    </Pressable>
+    </Card.Pressable>
   );
 };

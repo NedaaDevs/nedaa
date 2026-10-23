@@ -3,6 +3,7 @@ import { screen, userEvent } from "@testing-library/react-native";
 
 import { CALLOUT_PART, Callout } from "@/components/ui/callout";
 import { STATE_PANEL_ICON_ID, STATE_PANEL_ROOT_ID, StatePanel } from "@/components/ui/state-panel";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { STATE_PANEL_KIND, STATE_PANEL_VARIANT } from "@/constants/StatePanel";
 import { PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -57,16 +58,17 @@ describe("StatePanel", () => {
     ).toBeTruthy();
   });
 
-  // A card frames the state on a screen; the flat variant sits on a sheet's own surface.
+  // A card sets the state off by its fill; the flat variant sits on a sheet's own surface.
   it.each([
     [STATE_PANEL_VARIANT.CARD, true],
     [STATE_PANEL_VARIANT.FLAT, false],
-  ])("draws a %s variant with a frame: %s", async (variant, framed) => {
+  ])("draws a %s variant with a filled frame: %s", async (variant, framed) => {
     await renderWithTheme(<StatePanel variant={variant} title="Title" body="Body." />);
 
     const root = screen.getByTestId(STATE_PANEL_ROOT_ID);
-    if (framed) expect(root).toHaveStyle({ borderTopWidth: 1 });
-    else expect(root).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(root).not.toHaveStyle({ borderTopWidth: 1 });
+    if (framed) expect(root).toHaveStyle({ backgroundColor: NEDAA_LIGHT.surfaceGlass.hex });
+    else expect(root).not.toHaveStyle({ backgroundColor: NEDAA_LIGHT.surfaceGlass.hex });
   });
 
   describe("speaking its message", () => {

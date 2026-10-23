@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { PrayerGrid } from "@/components/today/PrayerGrid";
+import { Card } from "@/components/ui/card";
 import { TodayHeader } from "@/components/today/TodayHeader";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
@@ -22,17 +23,14 @@ export const TextSizePreview = ({ size }: { size: TextSizeValue }) => {
 
   return (
     <SkyOccluder>
-      <VStack
+      <Card
         testID={TEXT_SIZE_PREVIEW_PART.FRAME}
         accessible
         accessibilityLabel={t("a11y.textSize.preview")}
         pointerEvents="none"
         padding="$3"
         gap="$2"
-        borderWidth={1}
-        borderColor="$border"
-        borderRadius="$sheet"
-        backgroundColor="$surface2">
+        borderRadius="$sheet">
         <Text size="xs" bold color="$fg">
           {t("settings.textSize.preview")}
         </Text>
@@ -42,7 +40,7 @@ export const TextSizePreview = ({ size }: { size: TextSizeValue }) => {
             <PrayerGrid onSelect={IGNORE_PRESS} nextOnly />
           </TextScaleContext>
         </VStack>
-      </VStack>
+      </Card>
     </SkyOccluder>
   );
 };

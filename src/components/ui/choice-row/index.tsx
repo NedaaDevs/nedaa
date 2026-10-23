@@ -4,6 +4,7 @@ import { Check } from "lucide-react-native";
 import { FontLanguage } from "tamagui";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_STYLE, LIST_ROW_VARIANT } from "@/components/ui/list-row";
@@ -25,12 +26,13 @@ const CARD_FRAME = {
   ...LIST_ROW_STYLE[LIST_ROW_VARIANT.CARD].frame,
   minHeight: 84,
   paddingHorizontal: "$2.5",
+  // A clear edge at rest, so the chosen card's accent ring moves nothing.
+  borderWidth: 1,
+  borderColor: "transparent",
 } as const;
 /** A pressed card shrinks a touch and keeps its full colour. */
 const PRESSED = { opacity: 1, scale: 0.99 } as const;
 const PRESSED_STILL = { opacity: 1 } as const;
-/** A pressed grouped row takes the wash, as a switch row does. */
-const PRESSED_WASH = { opacity: 1, backgroundColor: "$pressed" } as const;
 const CHECK_SIZE = 22;
 const CHECK_EDGE = 1.5;
 const TICK_SIZE = 13;
@@ -98,9 +100,11 @@ export const ChoiceRow = ({
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const grouped = use(VariantContext) === LIST_ROW_VARIANT.GROUPED;
+  // A row in a group lies flat on it; a choice alone is a card of its own.
+  const Frame = grouped ? Pressable : Card.Pressable;
 
   return (
-    <Pressable
+    <Frame
       testID={testID}
       onPress={onPress}
       accessibilityRole="radio"
@@ -112,7 +116,7 @@ export const ChoiceRow = ({
       {...(grouped ? GROUPED_STYLE.frame : CARD_FRAME)}
       {...(selected && { backgroundColor: "$accentSoft" })}
       {...(selected && !grouped && { borderColor: "$accent" })}
-      pressStyle={grouped ? PRESSED_WASH : reduced ? PRESSED_STILL : PRESSED}>
+      pressStyle={grouped ? GROUPED_STYLE.press : reduced ? PRESSED_STILL : PRESSED}>
       {leading}
       <VStack flex={1}>
         <Text {...GROUPED_STYLE.title} color="$fg">
@@ -127,7 +131,7 @@ export const ChoiceRow = ({
         ) : null}
       </VStack>
       <ChoiceCheck selected={selected} />
-    </Pressable>
+    </Frame>
   );
 };
 
