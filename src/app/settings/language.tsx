@@ -3,10 +3,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { LanguageChoices } from "@/components/settings/LanguageChoices";
 import { LanguageHero } from "@/components/settings/LanguageHero";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
-import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SECTION_KIND } from "@/constants/Section";
 
@@ -38,7 +38,7 @@ const LanguageContent = () => {
         />
       </SkyOccluder>
 
-      <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+      <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
         <LanguageHero />
 
         <SkyOccluder>
@@ -46,7 +46,7 @@ const LanguageContent = () => {
             <LanguageChoices />
           </Section>
         </SkyOccluder>
-      </VStack>
+      </ScreenContent>
     </SkyScrollView>
   );
 };

@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppearanceChoices } from "@/components/settings/AppearanceChoices";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
@@ -44,7 +45,7 @@ const AppearanceContent = () => {
         />
       </SkyOccluder>
 
-      <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+      <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
         <SkyHero
           accessibilityLabel={t("a11y.join", {
             first: t("a11y.join", { first: kicker, second: title }),
@@ -68,7 +69,7 @@ const AppearanceContent = () => {
             </VStack>
           </Section>
         </SkyOccluder>
-      </VStack>
+      </ScreenContent>
     </SkyScrollView>
   );
 };

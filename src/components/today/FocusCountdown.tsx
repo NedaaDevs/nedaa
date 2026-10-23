@@ -58,7 +58,7 @@ export const FocusCountdown = ({ paused = false }: Props) => {
   // Name and figure share a baseline; short of room, the figure wraps under.
   return (
     <VStack>
-      <Text size="md" typography="helper" fontWeight="600" color="$accent">
+      <Text size="md" typography="helper" fontWeight="600" color="$accentText">
         {label}
       </Text>
       <HStack

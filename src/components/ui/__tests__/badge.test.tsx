@@ -47,7 +47,7 @@ describe("Badge", () => {
 
   it.each([
     ["muted", NEDAA_LIGHT.quietTint.hex, NEDAA_LIGHT.muted.hex],
-    ["info", NEDAA_LIGHT.accentTint.hex, NEDAA_LIGHT.accent.hex],
+    ["info", NEDAA_LIGHT.accentTint.hex, NEDAA_LIGHT.accentText.hex],
   ] as const)("tints the %s badge like the pill", async (action, fill, ink) => {
     await renderBadge({ action });
 
