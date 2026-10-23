@@ -1,6 +1,13 @@
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { TOAST_GAP } from "@/constants/Toast";
-import { SAFE_EDGE, isSkySegments, rootSafeAreaEdges, toastBottom } from "@/utils/safeArea";
+import { TAB_BAR_EDGE_GAP } from "@/constants/TabBar";
+import {
+  SAFE_EDGE,
+  isSkySegments,
+  rootSafeAreaEdges,
+  tabBarEdgeGap,
+  toastBottom,
+} from "@/utils/safeArea";
 
 /** A routed screen: no onboarding flow over it, no immersive reader. */
 const ROUTE = { onboarding: false, immersiveReader: false };
@@ -77,5 +84,24 @@ describe("toastBottom", () => {
     ],
   ])("clears %s", (_name, segments, tabBarHeight, clears) => {
     expect(toastBottom({ segments, tabBarHeight, insetBottom: INSET })).toBe(clears + TOAST_GAP);
+  });
+});
+
+describe("tabBarEdgeGap", () => {
+  const GAP = TAB_BAR_EDGE_GAP;
+
+  // The home indicator sits in the gap under the pill, where it takes no touch.
+  it.each([0, 20, 34])("holds the pill %s above an iPhone's edge", (insetBottom) => {
+    expect(tabBarEdgeGap({ android: false, insetBottom })).toBe(GAP);
+  });
+
+  // Android's bottom inset is a navigation bar that takes touches.
+  it.each([
+    [0, GAP],
+    [16, GAP],
+    [24, 24],
+    [48, 48],
+  ])("keeps the pill clear of an Android inset of %s", (insetBottom, gap) => {
+    expect(tabBarEdgeGap({ android: true, insetBottom })).toBe(gap);
   });
 });

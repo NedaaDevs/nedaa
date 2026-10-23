@@ -20,6 +20,7 @@ import { useAthkarStore } from "@/stores/athkar";
 
 // Hooks
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 
 // Constants
@@ -42,6 +43,7 @@ const MY_ATHKAR_SUPPORTED_LANGUAGES = ["ar", "en"];
 const AthkarTabs = () => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const tabBarInset = useTabBarInset();
 
   const { setCurrentType, validateDailyStreak } = useAthkarStore();
   const playerState = useAthkarStore((s) => s.playerState);
@@ -216,7 +218,9 @@ const AthkarTabs = () => {
       </Box>
 
       {/* Content Area */}
-      <ScrollView style={{ flex: 1, backgroundColor: "transparent" }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: "transparent" }}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}>
         <Box padding="$4">
           {activeTab === "my-athkar" ? (
             <MyAthkarList />
@@ -231,7 +235,7 @@ const AthkarTabs = () => {
           onPress={() => router.push("/athkar-focus")}
           size="lg"
           placement="bottom end"
-          bottom={16}
+          marginBottom={tabBarInset}
           accessibilityLabel={t("athkar.focus.title")}>
           <FabIcon as={Focus} />
         </Fab>

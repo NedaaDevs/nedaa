@@ -59,6 +59,7 @@ import {
 import { formatNumberToLocale } from "@/utils/number";
 import { useFontFamily } from "@/contexts/FontContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
 
 const log = AppLogger.create("compass");
 
@@ -88,6 +89,7 @@ const getSensorIssue = (
 
 const CompassScreen = () => {
   const { t } = useTranslation();
+  const tabBarInset = useTabBarInset();
   const dialFontFamily = useFontFamily("regular");
   const isFocused = useIsFocused();
   const { isActive: isAppActive } = useAppVisibility();
@@ -364,7 +366,7 @@ const CompassScreen = () => {
       <ScreenHeader title={t("compass.title")} back={{ to: BACK_DESTINATION.TOOLS }} />
 
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: tabBarInset }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
         <VStack
