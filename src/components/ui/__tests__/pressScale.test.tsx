@@ -1,8 +1,9 @@
 import { StyleSheet } from "react-native";
-import { act, fireEvent, screen } from "@testing-library/react-native";
+import { act, fireEvent, renderHook, screen } from "@testing-library/react-native";
 
 import { Card } from "@/components/ui/card";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 let mockReduced = false;
@@ -52,6 +53,14 @@ describe("press scale", () => {
     await act(() => fireEvent(screen.getByRole("button"), "responderGrant", { nativeEvent: {} }));
 
     expect(StyleSheet.flatten(screen.getByRole("button").props.style).transform).toBeUndefined();
+  });
+
+  // Down is a short timing under the finger; up is the snap spring.
+  it("goes down on the press timing and comes back on the snap spring", async () => {
+    const { result } = await renderHook(() => usePressScale());
+
+    expect(result.current.pressStyle).toMatchObject({ scale: 0.98, transition: "press" });
+    expect(result.current.transition).toBe("springSnap");
   });
 
   it("keeps the card's dim beside the scale", async () => {

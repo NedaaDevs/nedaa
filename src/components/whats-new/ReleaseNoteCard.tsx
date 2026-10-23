@@ -49,7 +49,7 @@ const ReleaseNoteAction = ({ entry, onNavigate, onSettled }: ActionProps) => {
         accessibilityLabel={t("a11y.opens", { name: title })}
         alignSelf="flex-start"
         justifyContent="center">
-        <Text size="sm" fontWeight="600" color="$accent">
+        <Text size="sm" fontWeight="600" color="$accentText">
           {t(action.ctaKey)}
         </Text>
       </Pressable>
@@ -64,8 +64,8 @@ const ReleaseNoteAction = ({ entry, onNavigate, onSettled }: ActionProps) => {
         minHeight="$target"
         accessible
         accessibilityLabel={t("whatsNew.enabled")}>
-        <Icon as={Check} size="sm" color="$accent" />
-        <Text size="sm" fontWeight="600" color="$accent">
+        <Icon as={Check} size="sm" color="$accentText" />
+        <Text size="sm" fontWeight="600" color="$accentText">
           {t("whatsNew.enabled")}
         </Text>
       </HStack>
