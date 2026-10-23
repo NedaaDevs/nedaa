@@ -28,14 +28,14 @@ const both = (...rows: Layer[]) => ({
 const E2_CONTACT: Layer = [2, 4, 0.08, 0.35];
 
 /**
- * Four levels of lift. `boxShadow` is for iOS and carries one string per theme;
- * `elevation` is the Android value. `null` draws nothing.
+ * Four levels of lift, one `boxShadow` string per theme; `null` draws nothing.
+ * Both platforms draw it: Android `elevation` shows through a see-through fill.
  */
 export const ELEVATION = {
-  e0: { boxShadow: { light: null, dark: null }, elevation: 0 },
-  e1: { boxShadow: both([1, 2, 0.06, 0.3], [6, 16, 0.06, 0.28]), elevation: 2 },
-  e2: { boxShadow: both(E2_CONTACT, [12, 32, 0.12, 0.45]), elevation: 8 },
-  e3: { boxShadow: both([-8, 24, 0.1, 0.35], [-24, 64, 0.18, 0.55]), elevation: 16 },
+  e0: { boxShadow: { light: null, dark: null } },
+  e1: { boxShadow: both([1, 2, 0.06, 0.3], [6, 16, 0.06, 0.28]) },
+  e2: { boxShadow: both(E2_CONTACT, [12, 32, 0.12, 0.45]) },
+  e3: { boxShadow: both([-8, 24, 0.1, 0.35], [-24, 64, 0.18, 0.55]) },
 } as const;
 
 export type ElevationLevel = keyof typeof ELEVATION;

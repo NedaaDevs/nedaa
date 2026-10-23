@@ -12,15 +12,6 @@ describe("elevation", () => {
     expect(Object.keys(ELEVATION)).toEqual(["e0", "e1", "e2", "e3"]);
   });
 
-  it.each([
-    ["e0", 0],
-    ["e1", 2],
-    ["e2", 8],
-    ["e3", 16],
-  ] as const)("%s sets Android elevation %i", (level, elevation) => {
-    expect(ELEVATION[level].elevation).toBe(elevation);
-  });
-
   // A part lifted inside a track takes only e2's tight layer.
   it.each(["light", "dark"] as const)("the contact shadow is e2's first layer (%s)", (theme) => {
     const [first, second] = String(ELEVATION.e2.boxShadow[theme]).split(", 0 ");

@@ -1,8 +1,10 @@
 import { Platform, StyleSheet } from "react-native";
 import { screen } from "@testing-library/react-native";
+import { getTokenValue, Theme } from "tamagui";
 
 import { Material } from "@/components/ui/material";
 import { BLUR_INTENSITY } from "@/constants/Blur";
+import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -82,6 +84,50 @@ describe("Material", () => {
     await renderWithTheme(<Material testID="material" material="float" />);
 
     expect(screen.queryByTestId("blur-view")).toBeNull();
+  });
+
+  // The float colour carries the tint; the thin material adds saturation.
+  it("tints the light theme's blur with the thin light material", async () => {
+    await renderWithTheme(<Material testID="material" material="float" />);
+
+    expect(screen.getByTestId("blur-view").props.tint).toBe("systemUltraThinMaterialLight");
+  });
+
+  it("tints the dark theme's blur with the thin dark material", async () => {
+    await renderWithTheme(
+      <Theme name="dark">
+        <Material testID="material" material="float" />
+      </Theme>
+    );
+
+    expect(screen.getByTestId("blur-view").props.tint).toBe("systemUltraThinMaterialDark");
+  });
+
+  // A sheet header is the top of a sheet: its lower edge meets the body square.
+  it("rounds a sheet header and its blur at the top corners only", async () => {
+    await renderWithTheme(<Material testID="material" material="sheetHeader" radius="sheet" />);
+    const sheet = getTokenValue("$sheet", "radius");
+    const blur = StyleSheet.flatten(screen.getByTestId("blur-view").props.style);
+
+    for (const style of [fill(), blur]) {
+      expect(style).toMatchObject({ borderTopStartRadius: sheet, borderTopEndRadius: sheet });
+      expect(style.borderBottomStartRadius ?? 0).toBe(0);
+      expect(style.borderBottomLeftRadius ?? 0).toBe(0);
+      expect(style.borderRadius ?? 0).toBe(0);
+    }
+  });
+
+  // Android elevation shows through a see-through fill, so it is never set.
+  it.each([
+    ["ios", "26.0"],
+    ["android", 34],
+    ["android", 30],
+  ] as const)("lifts with boxShadow alone on %s %s", async (os, version) => {
+    setPlatform(os, version);
+    await renderWithTheme(<Material testID="material" material="float" elevation="e2" />);
+
+    expect(fill().boxShadow).toBe(ELEVATION.e2.boxShadow.light);
+    expect(fill().elevation ?? 0).toBe(0);
   });
 
   it("draws the highlight edge", async () => {
