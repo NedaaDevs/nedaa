@@ -1,7 +1,15 @@
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { StyleSheet, View } from "react-native";
+import { withSpring } from "react-native-reanimated";
+import { getTokenValue } from "tamagui";
 
-import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import {
+  SEGMENTED_FORM,
+  SEGMENTED_PART,
+  SegmentedChoice,
+  type SegmentedForm,
+} from "@/components/ui/segmented-choice";
+import { SPRING } from "@/constants/Motion";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppDirection, AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -10,6 +18,16 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { LTR_ISOLATE } from "@/utils/digits";
+
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
+
+beforeEach(() => {
+  mockReduced = false;
+  jest.clearAllMocks();
+});
 
 const MINUTES = [5, 10, 15, 20, 30] as const;
 type Minutes = (typeof MINUTES)[number];
@@ -29,6 +47,7 @@ type Setup = {
   locale?: AppLocale;
   useWesternNumerals?: boolean;
   withSpoken?: boolean;
+  form?: SegmentedForm;
 };
 
 const renderChoice = ({
@@ -37,6 +56,7 @@ const renderChoice = ({
   locale = AppLocale.EN,
   useWesternNumerals = true,
   withSpoken = true,
+  form = SEGMENTED_FORM.COMPACT,
 }: Setup = {}) => {
   useAppStore.setState({ locale });
   usePreferencesStore.setState({ useWesternNumerals });
@@ -48,6 +68,7 @@ const renderChoice = ({
       accessibilityLabel={GROUP}
       label={String}
       spokenLabel={withSpoken ? spoken : undefined}
+      form={form}
     />,
     { isRTL: isRTLDirection(getDirection(locale)) }
   );
@@ -58,7 +79,7 @@ const group = () => screen.getByLabelText(GROUP);
 const choices = () => screen.getAllByRole("radio");
 const styleOf = (element: ReturnType<typeof group>) => StyleSheet.flatten(element.props.style);
 
-describe("SegmentedChoice", () => {
+describe("SegmentedChoice, compact", () => {
   it("names the group and every choice for a screen reader", async () => {
     await renderChoice();
 
@@ -123,6 +144,17 @@ describe("SegmentedChoice", () => {
     await renderChoice();
 
     expect(styleOf(group())).toMatchObject({ flexWrap: "wrap" });
+  });
+
+  // The compact pills are the one segmented form that keeps a drawn edge.
+  it("edges the chosen pill in the accent and the rest plainly", async () => {
+    await renderChoice({ value: 15 });
+
+    expect(choices().map((choice) => styleOf(choice).borderTopColor)).toEqual(
+      MINUTES.map((minutes) =>
+        minutes === 15 ? NEDAA_LIGHT.accentEdge.hex : NEDAA_LIGHT.border.hex
+      )
+    );
   });
 
   it("speaks the visible text when no spoken name is given", async () => {
@@ -223,6 +255,19 @@ const renderPlaces = () => {
   );
 };
 
+/** Lays the track out at a width, as the native layout pass would. */
+const layOut = (label: string, width: number) =>
+  act(() =>
+    fireEvent(screen.getByLabelText(label), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width, height: 52 } },
+    })
+  );
+
+const indicator = () =>
+  StyleSheet.flatten(
+    screen.getByTestId(SEGMENTED_PART.INDICATOR, { includeHiddenElements: true }).props.style
+  );
+
 describe("SegmentedChoice with icons", () => {
   it("draws each option's icon, hidden from the reader", async () => {
     await renderPlaces();
@@ -244,38 +289,176 @@ describe("SegmentedChoice with icons", () => {
     }
   });
 
-  // The chosen tile carries the strongest fill and edge in the row.
-  it("fills the chosen tile with the accent and edges the rest", async () => {
+  // The raised indicator carries the choice; the tiles draw no fill or edge.
+  it("raises the chosen tile on the indicator and leaves every tile bare", async () => {
     await renderPlaces();
+    await layOut("Start on", 304);
 
     expect(choices().map((choice) => styleOf(choice))).toEqual(
-      PLACES.map((place) =>
-        expect.objectContaining(
-          place === "home"
-            ? {
-                backgroundColor: NEDAA_LIGHT.accentSoft.hex,
-                borderTopColor: NEDAA_LIGHT.accentEdge.hex,
-              }
-            : {
-                backgroundColor: NEDAA_LIGHT.surface2Soft.hex,
-                borderTopColor: NEDAA_LIGHT.border.hex,
-              }
-        )
-      )
+      PLACES.map(() => expect.objectContaining({ backgroundColor: "transparent" }))
     );
+    for (const choice of choices()) {
+      expect(styleOf(choice).borderTopWidth ?? 0).toBe(0);
+    }
+    expect(indicator()).toMatchObject({ backgroundColor: NEDAA_LIGHT.raised.hex });
   });
 
-  it("rounds a tile as a control, not a pill", async () => {
+  it("rounds the track as a control and the indicator as a chip", async () => {
     await renderPlaces();
+    await layOut("Start on", 304);
 
-    for (const choice of choices()) {
-      expect(styleOf(choice).borderTopLeftRadius).toBe(12);
-    }
+    expect(styleOf(screen.getByLabelText("Start on")).borderTopLeftRadius).toBe(12);
+    expect(indicator().borderRadius).toBe(getTokenValue("$chip", "radius"));
   });
 
   it("gives every tile a role, a name and a 44pt target", async () => {
     await renderPlaces();
 
     expect(controlProblems()).toEqual([]);
+  });
+});
+
+const THEMES = ["light", "dark", "auto"] as const;
+type Theme = (typeof THEMES)[number];
+const THEMES_GROUP = "Appearance";
+const PAD = 4;
+
+const renderFramed = ({
+  value = "light",
+  isRTL = false,
+}: { value?: Theme | "none"; isRTL?: boolean } = {}) => {
+  useAppStore.setState({ locale: isRTL ? AppLocale.AR : AppLocale.EN });
+  return renderWithTheme(
+    <SegmentedChoice<Theme | "none">
+      options={THEMES}
+      value={value}
+      onChange={jest.fn()}
+      accessibilityLabel={THEMES_GROUP}
+      label={String}
+    />,
+    { isRTL }
+  );
+};
+
+/** 3 segments in a 304 track: (304 - 2 x 4 pad - 2 x 4 gap) / 3 = 96 each. */
+const SEGMENT = 96;
+const STEP = SEGMENT + PAD;
+const translateOf = () =>
+  (indicator().transform as { translateX: number }[] | undefined)?.[0]?.translateX;
+
+describe("SegmentedChoice, framed", () => {
+  it("is the default form: one sunken track, its options in equal parts", async () => {
+    await renderFramed();
+    const track = styleOf(screen.getByLabelText(THEMES_GROUP));
+
+    expect(track).toMatchObject({
+      flexWrap: "nowrap",
+      backgroundColor: NEDAA_LIGHT.quietTint.hex,
+      paddingTop: PAD,
+      gap: PAD,
+    });
+    expect(track.borderTopWidth ?? 0).toBe(0);
+    for (const choice of choices()) {
+      expect(styleOf(choice)).toMatchObject({ flexGrow: 1, flexBasis: 0 });
+    }
+  });
+
+  it("gives every segment a role, a name and a 44pt target", async () => {
+    await renderFramed();
+
+    expect(controlProblems()).toEqual([]);
+  });
+
+  it("sets the chosen label in the ink and the rest muted, at 14", async () => {
+    await renderFramed({ value: "dark" });
+
+    expect(screen.getByText("dark")).toHaveStyle({ color: NEDAA_LIGHT.fg.hex, fontSize: 14 });
+    expect(screen.getByText("light")).toHaveStyle({ color: NEDAA_LIGHT.muted.hex });
+  });
+
+  // Nothing is measured before layout, so no indicator can sit in the wrong place.
+  it("draws the indicator once the track is laid out, one segment wide", async () => {
+    await renderFramed();
+
+    expect(
+      screen.queryByTestId(SEGMENTED_PART.INDICATOR, { includeHiddenElements: true })
+    ).toBeNull();
+
+    await layOut(THEMES_GROUP, 304);
+
+    expect(indicator()).toMatchObject({ width: SEGMENT, top: PAD, bottom: PAD, start: PAD });
+  });
+
+  it.each([
+    ["light", 0],
+    ["dark", STEP],
+    ["auto", 2 * STEP],
+  ] as const)("places the indicator under %s, %s from the start", async (value, offset) => {
+    await renderFramed({ value });
+    await layOut(THEMES_GROUP, 304);
+
+    expect(translateOf()).toBe(offset);
+  });
+
+  // The indicator is placed from the start edge, so RTL runs the other way.
+  it.each([
+    ["light", 0],
+    ["dark", -STEP],
+    ["auto", -2 * STEP],
+  ] as const)("places the indicator under %s in RTL, %s across", async (value, offset) => {
+    await renderFramed({ value, isRTL: true });
+    await layOut(THEMES_GROUP, 304);
+
+    expect(indicator()).toMatchObject({ start: PAD });
+    expect(translateOf()).toBe(offset);
+  });
+
+  it("draws no indicator when no option is chosen", async () => {
+    await renderFramed({ value: "none" });
+    await layOut(THEMES_GROUP, 304);
+
+    expect(
+      screen.queryByTestId(SEGMENTED_PART.INDICATOR, { includeHiddenElements: true })
+    ).toBeNull();
+  });
+
+  // The first placement and a new width jump; only a new choice slides.
+  it("slides to a new choice on the snap spring", async () => {
+    const { rerender } = await renderFramed({ value: "light" });
+    await layOut(THEMES_GROUP, 304);
+
+    expect(withSpring).not.toHaveBeenCalled();
+
+    await rerender(
+      <SegmentedChoice<Theme>
+        options={THEMES}
+        value="auto"
+        onChange={jest.fn()}
+        accessibilityLabel={THEMES_GROUP}
+        label={String}
+      />
+    );
+
+    expect(withSpring).toHaveBeenCalledWith(2 * STEP, SPRING.SNAP);
+    expect(translateOf()).toBe(2 * STEP);
+  });
+
+  it("jumps to a new choice under reduced motion", async () => {
+    mockReduced = true;
+    const { rerender } = await renderFramed({ value: "light" });
+    await layOut(THEMES_GROUP, 304);
+
+    await rerender(
+      <SegmentedChoice<Theme>
+        options={THEMES}
+        value="dark"
+        onChange={jest.fn()}
+        accessibilityLabel={THEMES_GROUP}
+        label={String}
+      />
+    );
+
+    expect(withSpring).not.toHaveBeenCalled();
+    expect(translateOf()).toBe(STEP);
   });
 });

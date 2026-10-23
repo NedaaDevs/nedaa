@@ -9,6 +9,7 @@ import { Icon, type IconProps, type IconSize } from "@/components/ui/icon";
 import { IconTile, TILE_STROKE } from "@/components/ui/icon-tile";
 import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
 import { Pressable } from "@/components/ui/pressable";
+import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { Text, type TextProps } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
@@ -31,7 +32,7 @@ type VariantStyle = {
   >;
   /** The pressed look; unset keeps the pressable's own dim. */
   press?: Pick<HStackProps, "backgroundColor" | "opacity">;
-  /** Draws the resting lift and lit edge of a card. */
+  /** Draws the resting lift and lit edge of a card, which shrinks when pressed. */
   rests?: boolean;
   title: Pick<TextProps, "size" | "bold" | "fontWeight" | "typography">;
   status: Pick<TextProps, "size" | "fontWeight" | "typography">;
@@ -144,6 +145,7 @@ export const ListRow = ({
   const shadow = useElevationShadow(ELEVATION_LEVEL.E1);
   const lift = style.rests ? { boxShadow: shadow } : undefined;
   const edge = style.rests ? <HighlightEdge /> : null;
+  const scale = usePressScale();
   const leading =
     icon && tile ? (
       <IconTile icon={icon} />
@@ -186,6 +188,7 @@ export const ListRow = ({
       gap="$3"
       {...style.frame}
       {...(style.press && { pressStyle: style.press })}
+      {...(style.rests && scale)}
       style={lift}>
       {edge}
       {leading}

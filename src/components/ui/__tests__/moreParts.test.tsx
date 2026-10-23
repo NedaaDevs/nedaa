@@ -5,14 +5,15 @@ import { AlarmClock, Compass } from "lucide-react-native";
 import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { METER_PART, Meter } from "@/components/ui/meter";
-import { Section } from "@/components/ui/section";
+import { SECTION_LABEL_INK, SECTION_PART, Section } from "@/components/ui/section";
+import { Text as AppText } from "@/components/ui/text";
 import { Tile } from "@/components/ui/tile";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { SECTION_KIND } from "@/constants/Section";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
-import { fontSizeOf } from "@/test-helpers/text";
+import { fontSizeOf, styleOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 describe("Section", () => {
@@ -46,16 +47,41 @@ describe("Section", () => {
     expect(header).toHaveStyle({ color: NEDAA_LIGHT.fg.hex, fontSize: fontSizeOf("lg") });
   });
 
-  // A label also sits on the sky, where `muted` falls below 4.5:1.
-  it("labels a section in the sky's muted ink at the sm size", async () => {
+  // A label is ink set back to 78%, not a muted caption, at 15/600.
+  it("labels a section in the ink at 78%, at the label size and 600", async () => {
     await renderWithTheme(
-      <Section title="Alerts" kind={SECTION_KIND.LABEL}>
-        {null}
-      </Section>
+      <>
+        <Section title="Alerts" kind={SECTION_KIND.LABEL}>
+          {null}
+        </Section>
+        <AppText size="label" fontWeight="600">
+          reference
+        </AppText>
+      </>
     );
     const header = screen.getByRole("header", { name: "Alerts" });
 
-    expect(header).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex, fontSize: fontSizeOf("sm") });
+    expect(header).toHaveStyle({
+      color: NEDAA_LIGHT.fg.hex,
+      opacity: SECTION_LABEL_INK,
+      fontSize: fontSizeOf("label"),
+      fontFamily: styleOf(screen.getByText("reference")).fontFamily,
+    });
+  });
+
+  // The label sits 10 above its group and 4 in from the group's edge.
+  it("spaces a label 10 above its group, inset 4 at both ends", async () => {
+    await renderWithTheme(
+      <Section title="Alerts" kind={SECTION_KIND.LABEL}>
+        <Text>inside</Text>
+      </Section>
+    );
+
+    expect(styleOf(screen.getByTestId(SECTION_PART.HEAD))).toMatchObject({
+      paddingLeft: 4,
+      paddingRight: 4,
+    });
+    expect(styleOf(screen.getByTestId(SECTION_PART.FRAME))).toMatchObject({ gap: 10 });
   });
 });
 

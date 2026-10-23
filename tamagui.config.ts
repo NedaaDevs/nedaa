@@ -396,6 +396,9 @@ const lightTheme = {
   thumb: NEDAA_LIGHT.thumb.hex,
   pressed: NEDAA_LIGHT.pressed.hex,
   tile: NEDAA_LIGHT.tile.hex,
+  accentTint: NEDAA_LIGHT.accentTint.hex,
+  quietTint: NEDAA_LIGHT.quietTint.hex,
+  warnTint: NEDAA_LIGHT.warnTint.hex,
 };
 
 const darkTheme = {
@@ -486,6 +489,9 @@ const darkTheme = {
   thumb: NEDAA_DARK.thumb.hex,
   pressed: NEDAA_DARK.pressed.hex,
   tile: NEDAA_DARK.tile.hex,
+  accentTint: NEDAA_DARK.accentTint.hex,
+  quietTint: NEDAA_DARK.quietTint.hex,
+  warnTint: NEDAA_DARK.warnTint.hex,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
