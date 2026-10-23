@@ -29,12 +29,15 @@ type Props = {
   cy: number;
   phase: number;
   isRTL: boolean;
+  /** Draws the moon at this share of its sky size. */
+  scale?: number;
 };
 
 /** The moon: a pale halo, its faint body, a silver face with seas, a rim. */
-export const MoonGlyph = ({ cx: skyX, cy: skyY, phase, isRTL }: Props) => {
+export const MoonGlyph = ({ cx: skyX, cy: skyY, phase, isRTL, scale = 1 }: Props) => {
   const id = useId();
-  const { radius: r, face, seas, sea, seaOpacity, rim, earthshine, halo, tiltDegrees } = MOON_GLYPH;
+  const r = MOON_GLYPH.radius * scale;
+  const { face, seas, sea, seaOpacity, rim, earthshine, halo, tiltDegrees } = MOON_GLYPH;
   // Drawn about a fixed centre and moved by a transform: its SVG never changes
   // while it crosses the sky, which Android would redraw late or not at all.
   const box = 2 * r * halo.reach;
