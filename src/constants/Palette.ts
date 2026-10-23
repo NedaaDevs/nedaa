@@ -75,6 +75,8 @@ export const NEDAA_LIGHT = {
   accentRing: { oklch: "oklch(41.5% 0.09 232 / .35)", hex: "#00537259" },
   /** The accent for words: deep enough for 14pt text on every light sky. */
   accentText: { oklch: "oklch(31% 0.09 232)", hex: "#00354B" },
+  /** The bowl's rim behind its body: the sun's white. */
+  trail: { oklch: "oklch(100% 0 0 / .8)", hex: "#FFFFFFCC" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
@@ -116,6 +118,8 @@ export const NEDAA_DARK = {
   accentRing: { oklch: "oklch(80% 0.125 92 / .35)", hex: "#DBBB5659" },
   /** The accent for words; the gold already reads on the night sky. */
   accentText: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
+  /** The bowl's rim behind its body: the moon's halo. */
+  trail: { oklch: "oklch(92.5% 0.018 250 / .6)", hex: "#DEE7F299" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** Derived, so a token added to one palette must be added to the other. */
