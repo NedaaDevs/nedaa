@@ -13,9 +13,11 @@ export const FONT_SIZES: Record<string, { fontSize: number; lineHeight: number }
   $4: { fontSize: 16, lineHeight: 24 },
   $5: { fontSize: 18, lineHeight: 28 },
   $6: { fontSize: 20, lineHeight: 28 },
+  "$6.5": { fontSize: 22, lineHeight: 30 },
   $7: { fontSize: 24, lineHeight: 32 },
   "$7.5": { fontSize: 26, lineHeight: 34 },
   $8: { fontSize: 30, lineHeight: 36 },
+  "$8.5": { fontSize: 32, lineHeight: 40 },
   $9: { fontSize: 36, lineHeight: 40 },
   $10: { fontSize: 48, lineHeight: 48 },
   "$10.5": { fontSize: 40, lineHeight: 52 },
@@ -35,6 +37,8 @@ export const SIZE_MAP = {
   helper: "$2.75",
   label: "$3.75",
   heading: "$7.5",
+  headline: "$6.5",
+  figure: "$8.5",
   display: "$10.5",
 } as const satisfies Record<string, keyof typeof FONT_SIZES>;
 

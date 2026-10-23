@@ -1,16 +1,21 @@
-import { screen } from "@testing-library/react-native";
+import { processColor } from "react-native";
+import { act, fireEvent, screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
-import { TIMELINE_PART } from "@/components/ui/timeline";
 import { CelestialRhythm, RHYTHM_PART } from "@/components/today/CelestialRhythm";
+import { RHYTHM_ARC_PART, markTestId } from "@/components/today/RhythmArc";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import i18n from "@/localization/i18n";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import type { RhythmTimingId } from "@/utils/rhythm";
 import { controlProblems } from "@/test-helpers/controls";
 
 const LIGHT = config.themes.light;
+const hidden = { includeHiddenElements: true };
+/** A colour as react-native-svg hands it to the native view. */
+const paint = (hex: string) => ({ type: 0, payload: processColor(hex) });
 
 /** Wednesday 23 September 2026; the 25th is a Friday. */
 const day = (date: string): DayPrayerTimes => ({
@@ -28,15 +33,21 @@ const day = (date: string): DayPrayerTimes => ({
   } as DayPrayerTimes["otherTimings"],
 });
 
-const renderAt = (date: string, time: string, props = {}) => {
+const renderAt = async (date: string, time: string, props = {}) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
     todayTimings: day(date),
     tomorrowTimings: null,
   });
-  return renderWithTheme(<CelestialRhythm {...props} />);
+  await renderWithTheme(<CelestialRhythm {...props} />);
+  await act(() =>
+    fireEvent(screen.getByTestId(RHYTHM_ARC_PART.ROOT, hidden), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 340, height: 60 } },
+    })
+  );
 };
+const mark = (id: RhythmTimingId) => screen.getByTestId(markTestId(id), hidden);
 
 const summary = () => screen.getByTestId(RHYTHM_PART.ROOT).props.accessibilityLabel;
 const name = (key: string) => i18n.t(key);
@@ -78,53 +89,44 @@ describe("CelestialRhythm", () => {
     await renderAt("2026-09-25", "13:00");
 
     expect(summary()).toBe(i18n.t("a11y.rhythm.current", { prayer: name("prayerTimes.jumuah") }));
-    expect(
-      screen.getByText(name("prayerTimes.jumuah"), { includeHiddenElements: true })
-    ).toBeTruthy();
   });
 
-  it("labels every timing on the line", async () => {
+  // The cards carry the names; the arc marks each timing without them.
+  it("marks every timing on the arc, writing no names", async () => {
     await renderAt("2026-09-23", "16:00");
 
-    for (const key of [
-      "prayerTimes.fajr",
-      "otherTimings.sunrise",
-      "prayerTimes.dhuhr",
-      "prayerTimes.asr",
-      "prayerTimes.maghrib",
-      "prayerTimes.isha",
+    for (const id of [
+      PRAYER_ID.FAJR,
+      OTHER_TIMING.SUNRISE,
+      PRAYER_ID.DHUHR,
+      PRAYER_ID.ASR,
+      PRAYER_ID.MAGHRIB,
+      PRAYER_ID.ISHA,
     ]) {
-      expect(screen.getByText(name(key), { includeHiddenElements: true })).toBeTruthy();
+      expect(mark(id)).toBeTruthy();
     }
+    expect(screen.queryAllByText(/./, hidden)).toEqual([]);
   });
 
   // One gold for what is coming: the focus block and the cards mark it too.
-  it("draws the next prayer's label in the accent", async () => {
+  it("draws the next prayer's mark in the accent", async () => {
     await renderAt("2026-09-23", "16:00");
 
-    expect(
-      screen.getByText(name("prayerTimes.maghrib"), { includeHiddenElements: true })
-    ).toHaveStyle({ color: LIGHT.accent.val });
-    expect(
-      screen.getByText(name("prayerTimes.asr"), { includeHiddenElements: true })
-    ).not.toHaveStyle({ color: LIGHT.accent.val });
+    expect(mark(PRAYER_ID.MAGHRIB).props.fill).toEqual(paint(LIGHT.accent.val));
+    expect(mark(PRAYER_ID.ASR).props.fill).not.toEqual(paint(LIGHT.accent.val));
   });
 
-  it("lights the selected prayer's name", async () => {
+  it("lights the selected prayer's mark", async () => {
     await renderAt("2026-09-23", "10:00", { selected: PRAYER_ID.MAGHRIB });
 
-    expect(
-      screen.getByText(name("prayerTimes.maghrib"), { includeHiddenElements: true })
-    ).toHaveStyle({ color: LIGHT.accent.val });
+    expect(mark(PRAYER_ID.MAGHRIB).props.stroke).toEqual(paint(LIGHT.accent.val));
   });
 
-  // Nothing leads anywhere after Isha, so the line stays matte.
+  // Nothing leads anywhere after Isha, so the arc stays matte.
   it("fills nothing after Isha", async () => {
     await renderAt("2026-09-23", "22:00");
 
-    expect(screen.queryAllByTestId(TIMELINE_PART.FILL, { includeHiddenElements: true })).toEqual(
-      []
-    );
+    expect(screen.queryAllByTestId(RHYTHM_ARC_PART.DONE, hidden)).toEqual([]);
   });
 
   it("fades back while a state panel covers the day", async () => {
