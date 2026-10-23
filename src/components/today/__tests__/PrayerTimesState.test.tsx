@@ -3,7 +3,7 @@ import { screen, userEvent } from "@testing-library/react-native";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TIMELINE_PART } from "@/components/ui/timeline";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
-import { RHYTHM_ARC_HEIGHT } from "@/constants/Timeline";
+import { BOWL } from "@/constants/Timeline";
 import i18n from "@/localization/i18n";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -60,11 +60,11 @@ describe("PrayerTimesState", () => {
     expect(screen.getByLabelText(i18n.t("common.loading"))).toBeTruthy();
   });
 
-  // As tall as the arc it stands for, so Today keeps its height on load.
-  it("holds the arc's height while the times load", async () => {
+  // As tall as the bowl it stands for, so Today keeps its height on load.
+  it("holds the bowl's height while the times load", async () => {
     await renderState({ todayTimings: null, hasError: false, isLoading: true });
 
-    expect(screen.getByTestId(TIMELINE_PART.SKELETON)).toHaveStyle({ height: RHYTHM_ARC_HEIGHT });
+    expect(screen.getByTestId(TIMELINE_PART.SKELETON)).toHaveStyle({ height: BOWL.leastHeight });
   });
 
   // The load reads the location before it fetches; the wait shows the same.

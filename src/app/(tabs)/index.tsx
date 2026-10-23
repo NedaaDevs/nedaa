@@ -5,7 +5,6 @@ import { useIsFocused } from "expo-router";
 import { Box } from "@/components/ui/box";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
-import { VStack } from "@/components/ui/vstack";
 import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
 import { FocusCountdown } from "@/components/today/FocusCountdown";
@@ -19,6 +18,7 @@ import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 
 // Constants
+import { FOCUS_LAYOUT } from "@/constants/Countdown";
 import { TODAY_SCREEN_PART } from "@/constants/Today";
 
 // Hooks
@@ -38,7 +38,8 @@ export default function MainScreen() {
 
   return (
     <DaySimulator>
-      <SkyBackground paused={!focused}>
+      {/* The bowl draws Today's sun and moon; the sky keeps none of its own. */}
+      <SkyBackground paused={!focused} bodies={false}>
         {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
         <Box flex={1} paddingTop={insets.top}>
           <ActiveAlarmBanner />
@@ -48,23 +49,22 @@ export default function MainScreen() {
             {/* More air around the date and the prayer; the day below sits closer. */}
             <ScreenContent testID={TODAY_SCREEN_PART.CONTENT} paddingTop="$2" gap="$heroGap">
               <TodayHeader />
-              {/* The arc sits close under the countdown it belongs to. */}
-              <VStack testID={TODAY_SCREEN_PART.FOCUS} gap="$2.5">
-                <FocusCountdown paused={!focused} />
-                <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
-                  <SkyOccluder>
-                    <CelestialRhythm selected={detail.prayerId} />
-                  </SkyOccluder>
-                  <SkyOccluder>
-                    <LocationNotice />
-                  </SkyOccluder>
-                  <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
-                  <OtherTimes />
-                  <PrayerTimesState />
-                  {showOccasions ? <UpcomingOccasions /> : null}
-                  <DaySimulatorButton />
+              <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
+                {/* The countdown sits inside the bowl that draws the day. */}
+                <Box testID={TODAY_SCREEN_PART.FOCUS}>
+                  <CelestialRhythm selected={detail.prayerId}>
+                    <FocusCountdown paused={!focused} layout={FOCUS_LAYOUT.CENTRED} />
+                  </CelestialRhythm>
                 </Box>
-              </VStack>
+                <SkyOccluder>
+                  <LocationNotice />
+                </SkyOccluder>
+                <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
+                <OtherTimes />
+                <PrayerTimesState />
+                {showOccasions ? <UpcomingOccasions /> : null}
+                <DaySimulatorButton />
+              </Box>
             </ScreenContent>
           </SkyScrollView>
         </Box>

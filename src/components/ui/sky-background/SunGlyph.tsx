@@ -12,6 +12,8 @@ type Props = {
   height: number;
   /** Holds the rays still. */
   reduced: boolean;
+  /** Draws the sun at this share of its sky size. */
+  scale?: number;
 };
 
 const DEGREES = Math.PI / 180;
@@ -27,11 +29,13 @@ const rayPath = (reach: number, length: number, angle: number, halfAngle: number
 };
 
 /** The sun: slow faint rays behind a wide white bloom and a blown-out core. */
-export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
+export const SunGlyph = ({ cx, cy, width, height, reduced, scale = 1 }: Props) => {
   const id = useId();
-  const { colour, core, bloom, bloomStops, bloomStrength, rays, spinMs } = SUN_GLYPH;
+  const { colour, bloomStops, bloomStrength, rays, spinMs } = SUN_GLYPH;
+  const [core, bloom] = [SUN_GLYPH.core * scale, SUN_GLYPH.bloom * scale];
+  const lengths = rays.lengths.map((length) => length * scale);
   const white = colour.hex;
-  const reach = Math.max(...rays.lengths);
+  const reach = Math.max(...lengths);
   const [spin] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -49,7 +53,7 @@ export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
   }, [reduced, spin, spinMs]);
 
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
-  const step = 360 / rays.lengths.length;
+  const step = 360 / lengths.length;
 
   return (
     // The rays sit by a physical left, which RN swaps in RTL and the SVG does not.
@@ -77,7 +81,7 @@ export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
               <Stop offset={1} stopColor={white} stopOpacity={0} />
             </RadialGradient>
           </Defs>
-          {rays.lengths.map((length, i) => (
+          {lengths.map((length, i) => (
             <Path
               key={i}
               d={rayPath(reach, length, i * step + rays.offset, rays.halfAngle)}

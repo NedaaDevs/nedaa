@@ -1,24 +1,36 @@
-import { processColor } from "react-native";
+import { Text } from "react-native";
 import { act, fireEvent, screen } from "@testing-library/react-native";
 
-import config from "../../../../tamagui.config";
-import { CelestialRhythm, RHYTHM_PART } from "@/components/today/CelestialRhythm";
-import { RHYTHM_ARC_PART, markTestId } from "@/components/today/RhythmArc";
+import { BOWL_PART, bowlMarkTestId } from "@/components/today/Bowl";
+import { BOWL_FRAME_PART, CelestialRhythm, RHYTHM_PART } from "@/components/today/CelestialRhythm";
+import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { BOWL } from "@/constants/Timeline";
+import { AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
-import type { RhythmTimingId } from "@/utils/rhythm";
 import { controlProblems } from "@/test-helpers/controls";
 
-const LIGHT = config.themes.light;
+// hijri-native is a native module; the moon needs a Hijri day.
+jest.mock("@/utils/date", () => ({
+  ...jest.requireActual("@/utils/date"),
+  HijriNative: {
+    fromTimestamp: () => ({ year: 1448, month: 4, day: 12 }),
+    addDays: (date: { day: number }, days: number) => ({ ...date, day: date.day + days }),
+  },
+}));
+jest.mock("@/utils/measureInWindow", () => ({
+  measureInWindow: () => Promise.resolve({ x: 0, y: 0, width: 0, height: 0 }),
+}));
+
 const hidden = { includeHiddenElements: true };
-/** A colour as react-native-svg hands it to the native view. */
-const paint = (hex: string) => ({ type: 0, payload: processColor(hex) });
 
 /** Wednesday 23 September 2026; the 25th is a Friday. */
-const day = (date: string): DayPrayerTimes => ({
+const day = (date: string, next: string): DayPrayerTimes => ({
   date: Number(date.replaceAll("-", "")),
   timezone: "UTC",
   timings: {
@@ -30,113 +42,212 @@ const day = (date: string): DayPrayerTimes => ({
   },
   otherTimings: {
     [OTHER_TIMING.SUNRISE]: `${date}T05:50:00.000Z`,
+    [OTHER_TIMING.MIDNIGHT]: `${date}T23:57:00.000Z`,
+    [OTHER_TIMING.LAST_THIRD]: `${next}T01:55:00.000Z`,
   } as DayPrayerTimes["otherTimings"],
 });
 
-const renderAt = async (date: string, time: string, props = {}) => {
-  jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
+type Props = Parameters<typeof CelestialRhythm>[0];
+
+const renderAt = async (iso: string, props: Props = {}, isRTL = false) => {
+  jest.useFakeTimers({ now: new Date(iso) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
-    todayTimings: day(date),
-    tomorrowTimings: null,
+    todayTimings: day("2026-09-23", "2026-09-24"),
+    tomorrowTimings: day("2026-09-24", "2026-09-25"),
   });
-  await renderWithTheme(<CelestialRhythm {...props} />);
+  await renderWithTheme(
+    <SkyBackground bodies={false}>
+      <CelestialRhythm {...props} />
+    </SkyBackground>,
+    { isRTL }
+  );
   await act(() =>
-    fireEvent(screen.getByTestId(RHYTHM_ARC_PART.ROOT, hidden), "layout", {
-      nativeEvent: { layout: { x: 0, y: 0, width: 340, height: 60 } },
+    fireEvent(screen.getByTestId(BOWL_FRAME_PART.FRAME, hidden), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 320, height: BOWL.leastHeight } },
     })
   );
 };
-const mark = (id: RhythmTimingId) => screen.getByTestId(markTestId(id), hidden);
+const at = (time: string) => `2026-09-23T${time}:00.000Z`;
 
 const summary = () => screen.getByTestId(RHYTHM_PART.ROOT).props.accessibilityLabel;
 const name = (key: string) => i18n.t(key);
+const part = (id: string) => screen.queryAllByTestId(id, hidden);
 
 describe("CelestialRhythm", () => {
+  beforeEach(() => {
+    useAppStore.setState({ mode: AppMode.LIGHT, hijriDaysOffset: 0 });
+    usePreferencesStore.setState({ useWesternNumerals: true });
+  });
   afterEach(() => jest.useRealTimers());
 
   it("draws nothing until the day's times are known", async () => {
     usePrayerTimesStore.setState({ todayTimings: null });
-    await renderWithTheme(<CelestialRhythm />);
+    await renderWithTheme(
+      <SkyBackground>
+        <CelestialRhythm />
+      </SkyBackground>
+    );
 
     expect(screen.queryByTestId(RHYTHM_PART.ROOT)).toBeNull();
   });
 
   it.each([
-    ["during a prayer", "16:00", "a11y.rhythm.current", "prayerTimes.asr"],
-    ["after sunrise", "09:00", "a11y.rhythm.afterSunrise", "prayerTimes.dhuhr"],
-    ["before Fajr", "03:00", "a11y.rhythm.beforeFajr", "prayerTimes.fajr"],
-  ])("tells the screen reader where the day is %s", async (_when, time, key, prayer) => {
-    await renderAt("2026-09-23", time);
+    [
+      "during a prayer",
+      "16:00",
+      "a11y.rhythm.currentNext",
+      "prayerTimes.asr",
+      "prayerTimes.maghrib",
+    ],
+    ["after sunrise", "09:00", "a11y.rhythm.afterSunrise", "prayerTimes.dhuhr", undefined],
+    ["before Fajr", "03:00", "a11y.rhythm.beforeFajr", "prayerTimes.fajr", undefined],
+  ])("tells the screen reader where the day is %s", async (_when, time, key, prayer, next) => {
+    await renderAt(at(time));
 
-    expect(summary()).toBe(i18n.t(key, { prayer: name(prayer) }));
+    expect(summary()).toBe(
+      i18n.t(key, { prayer: name(prayer), ...(next ? { next: name(next) } : {}) })
+    );
+  });
+
+  // By night the summary is how much of the night has gone, Fajr ahead.
+  it("tells the screen reader how far the night has gone", async () => {
+    await renderAt("2026-09-24T00:00:00.000Z");
+    const night = (Date.parse("2026-09-24T04:30:00.000Z") - Date.parse(at("19:25"))) / 60_000;
+    const gone = Math.round(((24 * 60 - (19 * 60 + 25)) / night) * 100);
+
+    expect(summary()).toBe(
+      i18n.t("a11y.rhythm.night", { percent: String(gone), prayer: name("prayerTimes.fajr") })
+    );
+  });
+
+  it("is one element for the screen reader, a summary", async () => {
+    await renderAt(at("16:00"));
+    const root = screen.getByTestId(RHYTHM_PART.ROOT);
+
+    expect(root.props.accessible).toBe(true);
+    expect(root.props.accessibilityRole).toBe("summary");
   });
 
   // The store rolls days only on launch or foreground, never at midnight.
   it("follows the clock into the next stored day", async () => {
-    jest.useFakeTimers({ now: new Date("2026-09-24T13:00:00.000Z") });
-    usePrayerTimesStore.setState({
-      todayTimings: day("2026-09-23"),
-      tomorrowTimings: day("2026-09-24"),
-    });
-    await renderWithTheme(<CelestialRhythm />);
+    await renderAt("2026-09-24T13:00:00.000Z");
 
-    expect(summary()).toBe(i18n.t("a11y.rhythm.current", { prayer: name("prayerTimes.dhuhr") }));
+    expect(summary()).toBe(
+      i18n.t("a11y.rhythm.currentNext", {
+        prayer: name("prayerTimes.dhuhr"),
+        next: name("prayerTimes.asr"),
+      })
+    );
   });
 
   // The existing prayer list names Friday's Dhuhr as Jumuah; the rhythm agrees.
   it("names Dhuhr as Jumuah on a Friday", async () => {
-    await renderAt("2026-09-25", "13:00");
+    jest.useFakeTimers({ now: new Date("2026-09-25T13:00:00.000Z") });
+    usePrayerTimesStore.setState({
+      yesterdayTimings: null,
+      todayTimings: day("2026-09-25", "2026-09-26"),
+      tomorrowTimings: null,
+    });
+    await renderWithTheme(
+      <SkyBackground>
+        <CelestialRhythm />
+      </SkyBackground>
+    );
 
-    expect(summary()).toBe(i18n.t("a11y.rhythm.current", { prayer: name("prayerTimes.jumuah") }));
+    expect(summary()).toBe(
+      i18n.t("a11y.rhythm.currentNext", {
+        prayer: name("prayerTimes.jumuah"),
+        next: name("prayerTimes.asr"),
+      })
+    );
   });
 
-  // The cards carry the names; the arc marks each timing without them.
-  it("marks every timing on the arc, writing no names", async () => {
-    await renderAt("2026-09-23", "16:00");
+  it("names only the feet: Fajr at the start, Isha at the end", async () => {
+    await renderAt(at("16:00"));
 
-    for (const id of [
-      PRAYER_ID.FAJR,
-      OTHER_TIMING.SUNRISE,
-      PRAYER_ID.DHUHR,
-      PRAYER_ID.ASR,
-      PRAYER_ID.MAGHRIB,
-      PRAYER_ID.ISHA,
-    ]) {
-      expect(mark(id)).toBeTruthy();
-    }
-    expect(screen.queryAllByText(/./, hidden)).toEqual([]);
+    expect(screen.getByTestId(BOWL_PART.FOOT_START, hidden)).toHaveTextContent(
+      name("prayerTimes.fajr")
+    );
+    expect(screen.getByTestId(BOWL_PART.FOOT_END, hidden)).toHaveTextContent(
+      name("prayerTimes.isha")
+    );
   });
 
-  // One gold for what is coming: the focus block and the cards mark it too.
-  it("draws the next prayer's mark in the accent", async () => {
-    await renderAt("2026-09-23", "16:00");
+  it("ticks the day's timings by day and the night's by night", async () => {
+    await renderAt(at("16:00"));
+    expect(part(bowlMarkTestId(PRAYER_ID.ASR))).toHaveLength(1);
+    expect(part(bowlMarkTestId(OTHER_TIMING.MIDNIGHT))).toHaveLength(0);
 
-    expect(mark(PRAYER_ID.MAGHRIB).props.fill).toEqual(paint(LIGHT.accent.val));
-    expect(mark(PRAYER_ID.ASR).props.fill).not.toEqual(paint(LIGHT.accent.val));
+    await act(() => jest.advanceTimersByTime(6 * 60 * 60_000));
+    expect(part(bowlMarkTestId(PRAYER_ID.ASR))).toHaveLength(0);
+    expect(part(bowlMarkTestId(OTHER_TIMING.MIDNIGHT))).toHaveLength(1);
   });
 
-  it("lights the selected prayer's mark", async () => {
-    await renderAt("2026-09-23", "10:00", { selected: PRAYER_ID.MAGHRIB });
+  it("keeps the chosen prayer ringed on the arc", async () => {
+    await renderAt(at("10:00"), { selected: PRAYER_ID.MAGHRIB });
 
-    expect(mark(PRAYER_ID.MAGHRIB).props.stroke).toEqual(paint(LIGHT.accent.val));
+    expect(part(BOWL_PART.SELECTED)).toHaveLength(1);
   });
 
-  // Nothing leads anywhere after Isha, so the arc stays matte.
-  it("fills nothing after Isha", async () => {
-    await renderAt("2026-09-23", "22:00");
+  // One sun: the light sky's body rides the rim by day, the moon by night.
+  it.each([
+    ["16:00", SKY_PART.SUN],
+    ["22:00", SKY_PART.MOON],
+  ])("draws the body at %s on the rim", async (time, body) => {
+    await renderAt(at(time));
 
-    expect(screen.queryAllByTestId(RHYTHM_ARC_PART.DONE, hidden)).toEqual([]);
+    expect(part(body)).toHaveLength(1);
+  });
+
+  it("draws the moon on a dark sky by day", async () => {
+    useAppStore.setState({ mode: AppMode.DARK });
+    await renderAt(at("16:00"));
+
+    expect(part(SKY_PART.MOON)).toHaveLength(1);
+    expect(part(SKY_PART.SUN)).toHaveLength(0);
+  });
+
+  it("holds its least height and sets what it holds inside the bowl", async () => {
+    jest.useFakeTimers({ now: new Date(at("16:00")) });
+    usePrayerTimesStore.setState({ todayTimings: day("2026-09-23", "2026-09-24") });
+    await renderWithTheme(
+      <SkyBackground>
+        <CelestialRhythm>
+          <Text>inside</Text>
+        </CelestialRhythm>
+      </SkyBackground>
+    );
+
+    expect(screen.getByTestId(BOWL_FRAME_PART.FRAME)).toHaveStyle({ minHeight: BOWL.leastHeight });
+    expect(screen.getByTestId(BOWL_FRAME_PART.INSIDE)).toHaveStyle({
+      paddingTop: BOWL.insideTop,
+      alignItems: "center",
+    });
+    expect(screen.getByText("inside")).toBeTruthy();
+  });
+
+  // Large text makes the countdown taller; the bowl grows with it.
+  it("draws the bowl at the height it is laid out to", async () => {
+    await renderAt(at("16:00"));
+    await act(() =>
+      fireEvent(screen.getByTestId(BOWL_FRAME_PART.FRAME, hidden), "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 240 } },
+      })
+    );
+    const svg = screen.container.queryAll((node) => node.type === "RNSVGSvgView")[0];
+
+    expect(svg.props.bbHeight ?? svg.props.height).toBe(240);
   });
 
   it("fades back while a state panel covers the day", async () => {
-    await renderAt("2026-09-23", "16:00", { dimmed: true });
+    await renderAt(at("16:00"), { dimmed: true });
 
     expect(screen.getByTestId(RHYTHM_PART.ROOT)).toHaveStyle({ opacity: 0.35 });
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {
-    await renderAt("2026-09-23", "14:02");
+    await renderAt(at("14:02"));
 
     expect(controlProblems()).toEqual([]);
   });
