@@ -1,18 +1,26 @@
 import { BackHandler, Platform, StyleSheet, View } from "react-native";
-import { act, screen, within } from "@testing-library/react-native";
+import { act, fireEvent, screen, within } from "@testing-library/react-native";
 import { Easing, ReduceMotion, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTokenValue } from "tamagui";
 
-import { ACTIONSHEET_PART, Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
+import {
+  ACTIONSHEET_PART,
+  Actionsheet,
+  ActionsheetContent,
+  ActionsheetHero,
+} from "@/components/ui/actionsheet";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ELEVATION } from "@/constants/Elevation";
 import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { BOTTOM_SHEET_PART, dismissConfigs, modalProps } from "@/test-helpers/bottomSheetMock";
+import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 
 const BLUR_VIEW = "blur-view";
 jest.mock("expo-blur", () => {
@@ -62,11 +70,19 @@ beforeEach(() => {
   modalProps.mockClear();
   dismissConfigs.mockClear();
   jest.mocked(withTiming).mockClear();
+  clearHaptics();
 });
 
 afterEach(() => setPlatform(originalOS, originalVersion));
 
 describe("Actionsheet surface", () => {
+  it("sets the body in the screen gutter at its sides", async () => {
+    await renderWithTheme(<Sheet open />);
+    const gutter = getTokenValue("$screen", "space");
+
+    expect(styleOf(ACTIONSHEET_PART.BODY)).toMatchObject({ paddingHorizontal: gutter });
+  });
+
   it("lifts the sheet with the e3 shadow pair", async () => {
     await renderWithTheme(<Sheet open />);
 
@@ -201,9 +217,88 @@ describe("Actionsheet motion", () => {
     });
   });
 
+  // A snap point is a commit; arriving on open is not.
+  it("taps lightly when it reaches a snap point, not when it opens", async () => {
+    await renderWithTheme(<Sheet open />);
+
+    expect(firedHaptics()).toEqual([]);
+    await act(() => sheetProps()?.onChange?.(1));
+
+    expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.LIGHT]);
+  });
+
+  it("fades the scrim in on its own 220 timing", async () => {
+    await renderWithTheme(<Sheet open />);
+
+    expect(withTiming).toHaveBeenCalledWith(1, { duration: SHEET_MOTION.SCRIM_MS });
+    expect(SHEET_MOTION.SCRIM_MS).toBe(220);
+    expect(styleOf(ACTIONSHEET_PART.SCRIM).opacity).toBe(1);
+  });
+
+  // However it leaves, the scrim fades on its own timing.
+  it("fades the scrim out on its 220 timing once the sheet starts to leave", async () => {
+    await renderWithTheme(<Sheet open />);
+    jest.mocked(withTiming).mockClear();
+
+    await act(() => sheetProps()?.onAnimate?.(0, -1));
+
+    expect(withTiming).toHaveBeenCalledWith(0, { duration: SHEET_MOTION.SCRIM_MS });
+    expect(styleOf(ACTIONSHEET_PART.SCRIM).opacity).toBe(0);
+  });
+
+  it("leaves on the system sheet curve from a tap on the scrim", async () => {
+    await renderWithTheme(<Sheet open />);
+
+    await act(() => fireEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM)));
+
+    expect(dismissConfigs).toHaveBeenLastCalledWith({
+      duration: SHEET_MOTION.DISMISS_MS,
+      easing: Easing.bezier(...SHEET_CURVE),
+    });
+  });
+
+  it("fades the hero in over 120 as the sheet starts", async () => {
+    await renderWithTheme(
+      <Actionsheet isOpen>
+        <ActionsheetContent>
+          <ActionsheetHero>
+            <View />
+          </ActionsheetHero>
+        </ActionsheetContent>
+      </Actionsheet>
+    );
+
+    expect(withTiming).toHaveBeenCalledWith(1, { duration: SHEET_MOTION.HERO_FADE_MS });
+    expect(SHEET_MOTION.HERO_FADE_MS).toBe(120);
+    expect(styleOf(ACTIONSHEET_PART.HERO).opacity).toBe(1);
+  });
+
   describe("under Reduce Motion", () => {
     beforeEach(() => {
       mockReduced = true;
+    });
+
+    it("shows the hero at once", async () => {
+      await renderWithTheme(
+        <Actionsheet isOpen>
+          <ActionsheetContent>
+            <ActionsheetHero>
+              <View />
+            </ActionsheetHero>
+          </ActionsheetContent>
+        </Actionsheet>
+      );
+
+      expect(withTiming).not.toHaveBeenCalledWith(1, { duration: SHEET_MOTION.HERO_FADE_MS });
+      expect(styleOf(ACTIONSHEET_PART.HERO).opacity).toBe(1);
+    });
+
+    it("keeps the snap point's haptic", async () => {
+      await renderWithTheme(<Sheet open />);
+
+      await act(() => sheetProps()?.onChange?.(1));
+
+      expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.LIGHT]);
     });
 
     it("fades the sheet in where it stands", async () => {

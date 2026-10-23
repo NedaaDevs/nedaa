@@ -31,7 +31,7 @@ const ACTION_THEME_KEY: Record<BadgeAction, string> = {
   error: "error",
   warning: "warning",
   success: "success",
-  info: "accent",
+  info: "accentText",
   muted: "muted",
 };
 
@@ -100,7 +100,7 @@ const BadgeTextFrame = styled(TamaguiText, {
       error: { color: "$error" },
       warning: { color: "$warning" },
       success: { color: "$success" },
-      info: { color: "$accent" },
+      info: { color: "$accentText" },
       muted: { color: "$muted" },
     },
     // Sizes carry no styles: BadgeText computes the label's fontSize from the

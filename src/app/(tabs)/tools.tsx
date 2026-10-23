@@ -15,6 +15,7 @@ import {
 import { Divider } from "@/components/ui/divider";
 import { Grid } from "@/components/ui/grid";
 import { ListRow } from "@/components/ui/list-row";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
@@ -121,7 +122,7 @@ export default function ToolsScreen() {
         </SkyOccluder>
 
         <SkyOccluder>
-          <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$5" gap="$5">
+          <ScreenContent paddingTop="$2" paddingBottom="$5" gap="$section">
             <UmrahContinue />
 
             <Section title={t("tools.sections.utilities")}>
@@ -172,7 +173,7 @@ export default function ToolsScreen() {
                 onPress={() => open(BACK_DESTINATION.SETTINGS.href)}
               />
             </VStack>
-          </VStack>
+          </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
     </SkyBackground>

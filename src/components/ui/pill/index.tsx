@@ -17,7 +17,7 @@ export const PILL_PART = { DOT: "pill-dot" } as const;
 
 /** `lead` inks the label; a tint, never a line, carries the tone. */
 const TONE_STYLE = {
-  [PILL_TONE.ACCENT]: { fill: "$accentTint", ink: "$accent", lead: "$accent" },
+  [PILL_TONE.ACCENT]: { fill: "$accentTint", ink: "$accentText", lead: "$accentText" },
   [PILL_TONE.WARN]: { fill: "$warnTint", ink: "$fg", lead: "$fg" },
   [PILL_TONE.NEUTRAL]: { fill: "$quietTint", ink: "$fg", lead: "$mutedSky" },
 } as const satisfies Record<PillTone, { fill: string; ink: string; lead: string }>;
