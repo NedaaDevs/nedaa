@@ -5,7 +5,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, parse } from "node:path";
 import { useEffect } from "react";
 import { StyleSheet, Text, useColorScheme } from "react-native";
-import { router, Slot, usePathname } from "expo-router";
+import { router, Slot, usePathname, type Href } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
 
@@ -226,11 +226,11 @@ describe("tabs layout", () => {
     Object.assign({}, ...[screen.getByTestId(TAB_BAR_PART.FRAME).props.style].flat(Infinity));
 
   // The bar floats on every tab that shows it; content runs under it.
-  const FLOATING: [string, string][] = [
+  const FLOATING: [string, Href][] = [
     ["Today", BACK_DESTINATION.HOME.href],
     ["More", BACK_DESTINATION.TOOLS.href],
     ["Athkar", BACK_DESTINATION.ATHKAR.href],
-    ...Object.values(HiddenTab).map((name): [string, string] => [name, `/${name}`]),
+    ...Object.values(HiddenTab).map((name): [string, Href] => [name, `/${name}`]),
   ];
   it.each(FLOATING)("floats the bar over %s", async (_, href) => {
     await renderTabs();
