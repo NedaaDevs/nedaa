@@ -23,6 +23,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { expectOnRestingSurface } from "@/test-helpers/surface";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { prayerNameKey } from "@/utils/prayerName";
 import { fontSizeOf, styleOf } from "@/test-helpers/text";
@@ -127,6 +128,13 @@ describe("Text size", () => {
     );
     // A fact, not a link: nothing on the page but the back control is a button.
     expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("sets the preview and the Quran note on the shared card", async () => {
+    await renderTextSize();
+
+    expectOnRestingSurface(screen.getByTestId(TEXT_SIZE_PREVIEW_PART.FRAME));
+    expectOnRestingSurface(screen.getByText(t("settings.textSize.quranNote")));
   });
 
   it("draws the page sky once, with no sky in the preview", async () => {

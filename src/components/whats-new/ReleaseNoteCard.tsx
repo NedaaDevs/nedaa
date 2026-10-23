@@ -4,6 +4,7 @@ import { Check } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { NUMBER_BADGE_STYLE, NumberBadge } from "@/components/ui/number-badge";
@@ -111,15 +112,12 @@ export const ReleaseNoteCard = ({ entry, ordinal, onNavigate, onSettled }: Props
   const title = t(entry.titleKey);
   const body = t(entry.descriptionKey);
   return (
-    <HStack
+    <Card
       testID={`${RELEASE_NOTE_PART.CARD}-${entry.id}`}
+      flexDirection="row"
       alignItems="flex-start"
       gap="$2"
-      padding="$3"
-      borderWidth={1}
-      borderColor="$border"
-      borderRadius="$card"
-      backgroundColor="$surface2">
+      padding="$3">
       {/* The text's label reads the place; the badge only draws it. */}
       <Box accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <NumberBadge n={ordinal} size="md" badgeStyle={NUMBER_BADGE_STYLE.FILLED} />
@@ -142,6 +140,6 @@ export const ReleaseNoteCard = ({ entry, ordinal, onNavigate, onSettled }: Props
         </VStack>
         <ReleaseNoteAction entry={entry} onNavigate={onNavigate} onSettled={onSettled} />
       </VStack>
-    </HStack>
+    </Card>
   );
 };

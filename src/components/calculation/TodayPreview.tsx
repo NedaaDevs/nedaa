@@ -71,7 +71,12 @@ export const TodayPreview = ({ draft }: Props) => {
             </Text>
           ) : null}
         </HStack>
-        <HStack gap="$2" marginTop="$3" paddingTop="$2.5" borderTopWidth={1} borderColor="$border">
+        <HStack
+          gap="$2"
+          marginTop="$3"
+          paddingTop="$2.5"
+          borderTopWidth={1}
+          borderColor="$hairline">
           {prayers.map(({ prayer, name, shown }) => (
             <PrayerTimeCell
               key={prayer}

@@ -11,6 +11,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
+import { expectOnRestingSurface } from "@/test-helpers/surface";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
@@ -63,6 +64,13 @@ describe("UmrahContinue", () => {
     await renderCard();
 
     expect(screen.getByRole("button", { name: expectedLabel() })).toBeTruthy();
+  });
+
+  it("draws the journey on the shared card", async () => {
+    useUmrahGuideStore.getState().startUmrah();
+    await renderCard();
+
+    expectOnRestingSurface(screen.getByRole("button", { name: expectedLabel() }));
   });
 
   it("opens the guide where it was left", async () => {

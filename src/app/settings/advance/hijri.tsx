@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HijriDateHero } from "@/components/settings/HijriDateHero";
+import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Section } from "@/components/ui/section";
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -67,13 +68,7 @@ const HijriContent = () => {
 
         <Section title={t("settings.hijri.date.sections.adjustment")} kind={SECTION_KIND.LABEL}>
           <SkyOccluder>
-            <VStack
-              gap="$3"
-              padding="$4"
-              borderWidth={1}
-              borderColor="$border"
-              borderRadius="$card"
-              backgroundColor="$surface2">
+            <Card gap="$3" padding="$4">
               {/* The slider speaks its name and value; this row is for the eye. */}
               <HStack
                 {...HIDDEN_FROM_READER}
@@ -101,7 +96,7 @@ const HijriContent = () => {
                 startMark={end(SIGN.MINUS)}
                 endMark={end(SIGN.PLUS)}
               />
-            </VStack>
+            </Card>
           </SkyOccluder>
         </Section>
       </VStack>

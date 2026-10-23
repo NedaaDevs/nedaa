@@ -80,8 +80,6 @@ const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
           paddingTop="$1.5"
           paddingHorizontal="$2.5"
           paddingBottom={insets.bottom}
-          borderTopWidth={1}
-          borderColor="$border"
           backgroundColor="$bar">
           {tabs.map((tab) => {
             const route = state.routes.find((candidate) => candidate.name === tab.name);

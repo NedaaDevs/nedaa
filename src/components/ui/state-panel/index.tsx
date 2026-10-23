@@ -1,6 +1,7 @@
 import { CircleAlert, Clock, Hourglass, Info, type LucideIcon } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
+import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
@@ -52,10 +53,7 @@ const LOOK = {
     frame: {
       paddingVertical: "$5",
       paddingHorizontal: "$4",
-      borderWidth: 1,
-      borderColor: "$border",
       borderRadius: "$sheet",
-      backgroundColor: "$surface2",
     },
     icon: { size: "lg" },
     iconGap: undefined,
@@ -93,9 +91,11 @@ export const StatePanel = ({
   const { icon, color } = KIND_ICON[variant][kind];
   const look = LOOK[variant];
   useIosAnnouncement(message);
+  // A card on a screen draws the shared card; the flat one sits on its sheet.
+  const Frame = variant === STATE_PANEL_VARIANT.CARD ? Card : VStack;
 
   return (
-    <VStack testID={STATE_PANEL_ROOT_ID} alignItems="center" gap="$1.5" {...look.frame}>
+    <Frame testID={STATE_PANEL_ROOT_ID} alignItems="center" gap="$1.5" {...look.frame}>
       {/* One announced message; the action stays reachable beside it. */}
       <VStack
         alignItems="center"
@@ -130,6 +130,6 @@ export const StatePanel = ({
           </Text>
         </Pressable>
       )}
-    </VStack>
+    </Frame>
   );
 };

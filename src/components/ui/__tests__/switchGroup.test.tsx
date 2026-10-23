@@ -237,9 +237,9 @@ describe("SwitchGroup", () => {
     const grouped = screen.getByRole("switch", { name: LABEL });
     expect(styleOf(grouped.parent!).borderBottomWidth).toBeUndefined();
     expect(styleOf(grouped)).toMatchObject({
-      minHeight: 64,
-      paddingLeft: 12,
-      paddingRight: 12,
+      minHeight: 56,
+      paddingLeft: 14,
+      paddingRight: 14,
     });
     expect(controlProblems()).toEqual([]);
   });
