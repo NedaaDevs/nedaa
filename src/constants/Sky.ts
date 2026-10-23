@@ -118,6 +118,15 @@ export const SUN_GLYPH = {
   core: 30,
   /** Radius of the bloom that lightens the sky around the sun. */
   bloom: 170,
+  /** The bloom's falloff: offset along the radius, then opacity. */
+  bloomStops: [
+    [0, 0.95],
+    [0.12, 0.45],
+    [0.32, 0.12],
+    [1, 0],
+  ],
+  /** The bloom sits behind text, so it is drawn at this share of its stops. */
+  bloomStrength: 0.62,
   rays: {
     /** Each ray's length in turn, so they do not read as a regular star. */
     lengths: [135, 90, 115, 80, 105, 135, 90, 115, 80, 105],

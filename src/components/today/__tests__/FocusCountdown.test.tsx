@@ -1,9 +1,11 @@
 import { AppState, type AppStateStatus } from "react-native";
-import { act, screen, userEvent } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { withTiming } from "react-native-reanimated";
 
 import { FOCUS_COUNTDOWN_PART, FocusCountdown } from "@/components/today/FocusCountdown";
+import config from "../../../../tamagui.config";
 import { ROLE_RATIO } from "@/components/ui/text/sizing";
+import { A11Y_ACTION } from "@/constants/Accessibility";
 import { APP_STATE } from "@/constants/AppState";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { TextSize } from "@/enums/app";
@@ -76,6 +78,7 @@ describe("FocusCountdown", () => {
       expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({
         flexDirection: "row",
         flexWrap: "wrap",
+        alignItems: "baseline",
       });
       expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.NAME)).toHaveStyle({ flexShrink: 0 });
       expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.FIGURE)).toHaveStyle({ flexShrink: 0 });
@@ -95,6 +98,50 @@ describe("FocusCountdown", () => {
     const button = screen.getByRole("togglebutton", { name: name("prayerTimes.asr") });
     expect(button.props.accessibilityState).toMatchObject({ checked: false });
     expect(button.props.accessibilityHint).toBe(name("a11y.today.showElapsed"));
+  });
+
+  // The name alone is the toggle: no mark beside it, the flip one tap away.
+  it("draws the name alone on its toggle, with no swap mark", async () => {
+    await renderAt("2026-09-23", "14:02");
+    const button = screen.getByRole("togglebutton", { name: name("prayerTimes.asr") });
+
+    expect(button.children).toEqual([screen.getByText(name("prayerTimes.asr"))]);
+  });
+
+  it("flips the figure from the screen reader's activate action", async () => {
+    await renderAt("2026-09-23", "14:10");
+    const button = screen.getByRole("togglebutton", { name: name("prayerTimes.asr") });
+
+    expect(button.props.accessibilityActions).toEqual([{ name: A11Y_ACTION.ACTIVATE }]);
+    await act(() =>
+      fireEvent(button, "accessibilityAction", {
+        nativeEvent: { actionName: A11Y_ACTION.ACTIVATE },
+      })
+    );
+
+    expect(
+      screen.getAllByText(
+        i18n.t("today.focus.since", { prayer: name("prayerTimes.dhuhr") }),
+        hidden
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("togglebutton", { name: name("prayerTimes.asr") }).props.accessibilityState
+    ).toMatchObject({ checked: true });
+  });
+
+  // Level 1: the name and the figure at full ink; the label above in accent.
+  it("draws the name and the figure at full ink", async () => {
+    await renderAt("2026-09-23", "14:02");
+    const ink = config.themes.light.fg.val;
+
+    expect(screen.getByText(name("prayerTimes.asr"))).toHaveStyle({ color: ink });
+    for (const separator of screen.getAllByText(":", hidden)) {
+      expect(separator).toHaveStyle({ color: ink });
+    }
+    expect(screen.getByText(i18n.t("today.focus.next"))).toHaveStyle({
+      color: config.themes.light.accent.val,
+    });
   });
 
   it("counts down to it by default", async () => {
@@ -194,12 +241,12 @@ describe("FocusCountdown", () => {
     await renderAt("2026-09-23", "14:02");
     const named = screen.getByText(name("prayerTimes.asr"));
 
-    expect(named).toHaveStyle({ fontSize: fontSizeOf("5xl") });
+    expect(named).toHaveStyle({ fontSize: fontSizeOf("display") });
     expect(lineRatioOf(named)).toBeGreaterThanOrEqual(ROLE_RATIO.display);
   });
 
-  // Beside the countdown a long name has little room; it wraps, keeping its mark.
-  it("lets a long name wrap beside its mark, never truncating", async () => {
+  // Beside the countdown a long name has little room; it wraps.
+  it("lets a long name wrap, never truncating", async () => {
     await renderAt("2026-09-23", "14:02");
     const named = screen.getByText(name("prayerTimes.asr"));
 
@@ -211,13 +258,13 @@ describe("FocusCountdown", () => {
     await renderAt("2026-09-23", "14:02");
 
     for (const separator of screen.getAllByText(":", hidden)) {
-      expect(separator).toHaveStyle({ fontSize: fontSizeOf("4xl") });
+      expect(separator).toHaveStyle({ fontSize: fontSizeOf("figure") });
     }
     for (const label of screen.getAllByText(
       i18n.t("today.focus.until", { prayer: name("prayerTimes.asr") }),
       hidden
     )) {
-      expect(label).toHaveStyle({ fontSize: fontSizeOf("md") });
+      expect(label).toHaveStyle({ fontSize: fontSizeOf("helper") });
     }
     expect(screen.getByText(i18n.t("today.focus.next"))).toHaveStyle({
       fontSize: fontSizeOf("md"),

@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 
-import { PRAYER_ICONS } from "@/components/today/prayerIcons";
+import { RhythmArc } from "@/components/today/RhythmArc";
 import { Box } from "@/components/ui/box";
-import { Timeline } from "@/components/ui/timeline";
 import { TICK_STATE } from "@/constants/Timeline";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { useShownDay } from "@/hooks/useShownDay";
@@ -19,7 +18,7 @@ type Props = {
   dimmed?: boolean;
 };
 
-/** The prayer day as a line from Fajr to Isha, each timing where it falls. */
+/** The prayer day as an arc from Fajr to Isha, each timing where it falls. */
 export const CelestialRhythm = ({ selected, dimmed }: Props) => {
   const { t } = useTranslation();
   const { now, day: today, following } = useShownDay();
@@ -52,16 +51,7 @@ export const CelestialRhythm = ({ selected, dimmed }: Props) => {
       accessibilityRole="summary"
       accessibilityLabel={summary}
       opacity={dimmed ? 0.35 : 1}>
-      <Timeline
-        marks={marks.map((mark) => ({
-          ...mark,
-          icon: PRAYER_ICONS[mark.id],
-          label: nameOf(mark.id),
-        }))}
-        progress={progress}
-        accent={focus ?? undefined}
-        selected={selected}
-      />
+      <RhythmArc marks={marks} progress={progress} focus={focus ?? undefined} selected={selected} />
     </Box>
   );
 };

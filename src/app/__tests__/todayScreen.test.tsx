@@ -17,6 +17,8 @@ import { controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { HijriDate } from "@/utils/date";
+import { TODAY_SCREEN_PART } from "@/constants/Today";
+import config from "../../../tamagui.config";
 
 // Renders the whole Today screen under a router; a full parallel run passes 5 s.
 jest.setTimeout(20_000);
@@ -129,6 +131,31 @@ describe("Today", () => {
       screen.getByRole("header", { name: i18n.t("prayerTimes.maghrib"), hidden: true })
     ).toBeTruthy();
     expect(card.props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  // Sunrise shows once: the quiet sixth cell, not again under other times.
+  it("shows sunrise once, beside the prayers", async () => {
+    await renderToday();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    await user.press(screen.getByRole("button", { name: i18n.t("otherTimings.title") }));
+
+    expect(
+      screen.getAllByText(i18n.t("otherTimings.sunrise"), { includeHiddenElements: true })
+    ).toHaveLength(1);
+  });
+
+  // The air does the separating: a wide gutter, more room around what matters.
+  it("sets the gutter, the hero's air and the day's tighter rhythm", async () => {
+    await renderToday();
+    const space = config.tokens.space;
+
+    expect(screen.getByTestId(TODAY_SCREEN_PART.CONTENT)).toHaveStyle({
+      paddingLeft: space.screen.val,
+      paddingRight: space.screen.val,
+      gap: space.heroGap.val,
+    });
+    expect(screen.getByTestId(TODAY_SCREEN_PART.DAY)).toHaveStyle({ gap: space["3.5"].val });
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

@@ -7,13 +7,13 @@ import { inFocusWindow } from "@/utils/focusCount";
 
 export type PrayerCard = { id: PrayerId; time: string; state: PrayerCardState };
 
-/** The day's five cards: one wide, the other four in order, two by two. */
+/** The day's five cards in order, and the lead: just come in, else next. */
 export const prayerCards = (
   day: DayPrayerTimes,
   now: Date,
   /** The day after, whose Fajr is next once today's Isha is in. */
   following?: DayPrayerTimes | null
-): { wide: PrayerCard; rest: PrayerCard[] } => {
+): { lead: PrayerCard; cards: PrayerCard[] } => {
   const clock = now.getTime();
   const timeOf = (id: PrayerId) => parseISO(day.timings[id]).getTime();
   const passed = (id: PrayerId) => timeOf(id) <= clock;
@@ -21,31 +21,23 @@ export const prayerCards = (
   const latest = PRAYER_IDS.findLast(passed);
   // A prayer just come in keeps the lead for its window, as the current one.
   const current = latest && inFocusWindow(timeOf(latest), clock) ? latest : undefined;
+  // After Isha's window, tomorrow's Fajr leads, at tomorrow's time.
+  const tomorrowFajr = !current && !next && following;
 
   const cardOf = (id: PrayerId): PrayerCard => {
     if (id === current) return { id, time: day.timings[id], state: PRAYER_CARD_STATE.CURRENT };
     if (id === next && !current) {
       return { id, time: day.timings[id], state: PRAYER_CARD_STATE.NEXT };
     }
+    if (tomorrowFajr && id === PRAYER_ID.FAJR) {
+      return { id, time: following.timings[id], state: PRAYER_CARD_STATE.NEXT };
+    }
     const state = passed(id) ? PRAYER_CARD_STATE.PAST : PRAYER_CARD_STATE.FUTURE;
     return { id, time: day.timings[id], state };
   };
 
-  // After Isha's window, tomorrow's Fajr leads, at tomorrow's time.
-  if (!current && !next && following) {
-    return {
-      wide: {
-        id: PRAYER_ID.FAJR,
-        time: following.timings[PRAYER_ID.FAJR],
-        state: PRAYER_CARD_STATE.NEXT,
-      },
-      rest: PRAYER_IDS.filter((id) => id !== PRAYER_ID.FAJR).map(cardOf),
-    };
-  }
-  // With no tomorrow stored, nothing is next; Isha keeps the wide row.
-  const leading = current ?? next ?? PRAYER_ID.ISHA;
-  return {
-    wide: cardOf(leading),
-    rest: PRAYER_IDS.filter((id) => id !== leading).map(cardOf),
-  };
+  const cards = PRAYER_IDS.map(cardOf);
+  // With no tomorrow stored, nothing is next; Isha keeps the lead.
+  const leading = current ?? next ?? (tomorrowFajr ? PRAYER_ID.FAJR : PRAYER_ID.ISHA);
+  return { lead: cards[PRAYER_IDS.indexOf(leading)], cards };
 };

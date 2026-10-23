@@ -16,6 +16,9 @@ import { UpcomingOccasions } from "@/components/today/UpcomingOccasions";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 
+// Constants
+import { TODAY_SCREEN_PART } from "@/constants/Today";
+
 // Hooks
 import { usePrayerDetail } from "@/hooks/usePrayerDetail";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
@@ -40,20 +43,27 @@ export default function MainScreen() {
           <SkyScrollView
             contentContainerStyle={{ paddingBottom: tabBarInset }}
             showsVerticalScrollIndicator={false}>
-            <Box paddingHorizontal="$4" paddingTop="$2" gap="$3">
+            {/* More air around the date and the prayer; the day below sits closer. */}
+            <Box
+              testID={TODAY_SCREEN_PART.CONTENT}
+              paddingHorizontal="$screen"
+              paddingTop="$2"
+              gap="$heroGap">
               <TodayHeader />
               <FocusCountdown paused={!focused} />
-              <SkyOccluder>
-                <CelestialRhythm selected={detail.prayerId} />
-              </SkyOccluder>
-              <SkyOccluder>
-                <LocationNotice />
-              </SkyOccluder>
-              <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
-              <OtherTimes />
-              <PrayerTimesState />
-              {showOccasions ? <UpcomingOccasions /> : null}
-              <DaySimulatorButton />
+              <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
+                <SkyOccluder>
+                  <CelestialRhythm selected={detail.prayerId} />
+                </SkyOccluder>
+                <SkyOccluder>
+                  <LocationNotice />
+                </SkyOccluder>
+                <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
+                <OtherTimes />
+                <PrayerTimesState />
+                {showOccasions ? <UpcomingOccasions /> : null}
+                <DaySimulatorButton />
+              </Box>
             </Box>
           </SkyScrollView>
         </Box>
