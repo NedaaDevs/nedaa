@@ -148,7 +148,7 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<StepCityPicker\b/,
     home: "components/onboarding/flow/CityChoice.tsx",
   },
-  // PrayerGrid (cards) and PrayerDetailHero (one prayer) draw their own rows.
+  // PrayerGrid (cells) and PrayerDetailHero (one prayer) draw their own rows.
   {
     concept: "a prayer's name and time in a row of times",
     shows:
@@ -157,6 +157,14 @@ const ONE_RENDERER: readonly Rule[] = [
       /^(app|components)\/(?!today\/PrayerGrid\.tsx$|prayer-detail\/PrayerDetailHero\.tsx$).*\.tsx$/,
     drawsWith: /<PrayerTimeCell\b/,
     home: "components/today/PrayerTimeCell.tsx",
+  },
+  // The day's timings placed by rhythmLine are drawn on the one arc.
+  {
+    concept: "the day's rhythm",
+    shows: /\brhythmLine\(/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<RhythmArc\b/,
+    home: "components/today/RhythmArc.tsx",
   },
   // A screen reader says «م» as morning, so a spoken time names its period.
   {

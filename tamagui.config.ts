@@ -19,9 +19,11 @@ const latinFont = createFont({
     4: 16, // lg
     5: 18, // xl
     6: 20, // 2xl
+    6.5: 22, // headline
     7: 24, // 3xl
     7.5: 26,
     8: 30, // 4xl
+    8.5: 32, // figure
     9: 36, // 5xl
     10: 48,
     10.5: 40,
@@ -36,9 +38,11 @@ const latinFont = createFont({
     4: 24,
     5: 28,
     6: 28,
+    6.5: 30,
     7: 32,
     7.5: 34,
     8: 36,
+    8.5: 40,
     9: 40,
     10: 48,
     10.5: 52,
@@ -77,9 +81,11 @@ const arabicFont = createFont({
     4: 16,
     5: 18,
     6: 20,
+    6.5: 22,
     7: 24,
     7.5: 26,
     8: 30,
+    8.5: 32,
     9: 36,
     10: 48,
     10.5: 40,
@@ -94,9 +100,11 @@ const arabicFont = createFont({
     4: 24,
     5: 28,
     6: 28,
+    6.5: 30,
     7: 32,
     7.5: 34,
     8: 36,
+    8.5: 40,
     9: 40,
     10: 48,
     10.5: 52,
@@ -398,6 +406,8 @@ const lightTheme = {
   tile: NEDAA_LIGHT.tile.hex,
   accentTint: NEDAA_LIGHT.accentTint.hex,
   quietTint: NEDAA_LIGHT.quietTint.hex,
+  surfaceQuiet: NEDAA_LIGHT.surfaceQuiet.hex,
+  accentRing: NEDAA_LIGHT.accentRing.hex,
   warnTint: NEDAA_LIGHT.warnTint.hex,
 };
 
@@ -491,6 +501,8 @@ const darkTheme = {
   tile: NEDAA_DARK.tile.hex,
   accentTint: NEDAA_DARK.accentTint.hex,
   quietTint: NEDAA_DARK.quietTint.hex,
+  surfaceQuiet: NEDAA_DARK.surfaceQuiet.hex,
+  accentRing: NEDAA_DARK.accentRing.hex,
   warnTint: NEDAA_DARK.warnTint.hex,
 };
 
