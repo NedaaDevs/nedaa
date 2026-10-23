@@ -1,3 +1,7 @@
+import type { BlurTint } from "expo-blur";
+
+import { BRIGHTNESS, type Brightness } from "@/constants/Palette";
+
 /** Blur radius in points, by the surface that carries it. */
 export const BLUR = {
   /** A resting card or group. */
@@ -22,3 +26,12 @@ export const BLUR_INTENSITY = {
   FLOAT: 70,
   SHEET: 100,
 } as const satisfies Record<BlurLevel, number>;
+
+/**
+ * expo-blur `tint` per theme: the thinnest system material of that brightness,
+ * since the material's own colour already tints it.
+ */
+export const BLUR_TINT = {
+  [BRIGHTNESS.LIGHT]: "systemUltraThinMaterialLight",
+  [BRIGHTNESS.DARK]: "systemUltraThinMaterialDark",
+} as const satisfies Record<Brightness, BlurTint>;
