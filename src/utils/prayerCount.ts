@@ -18,8 +18,8 @@ export const prayerCount = (
   const shown = prayerDayAt(now, days);
   if (!shown) return null;
   const stored = storedDayList(days);
-  const { wide, rest } = prayerCards(shown, now, stored[stored.indexOf(shown) + 1]);
-  const card = [wide, ...rest].find((each) => each.id === id);
+  const { cards } = prayerCards(shown, now, stored[stored.indexOf(shown) + 1]);
+  const card = cards.find((each) => each.id === id);
   if (!card) return null;
   const cardTime = parseISO(card.time).getTime();
   const times = prayersIn(days).filter((prayer) => prayer.id === id);

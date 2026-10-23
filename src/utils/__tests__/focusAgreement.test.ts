@@ -43,16 +43,16 @@ const shownAt = (now: Date, days: StoredDays) => {
   return { shown, following: stored[stored.indexOf(shown) + 1] ?? null };
 };
 
-/** What each view puts first at `now`: countdown, wide card, timeline. */
+/** What each view puts first at `now`: countdown, lead card, timeline. */
 const leadsAt = (iso: string, days: StoredDays) => {
   const now = momentOf(iso);
   const { shown, following } = shownAt(now, days);
   const count = focusCount(now, days, OFF, false)!;
-  const { wide } = prayerCards(shown, now, following);
+  const { lead } = prayerCards(shown, now, following);
   const line = rhythmLine(shown, now, following);
   return {
     countdown: [count.named.id, count.current] as [PrayerId, boolean],
-    card: [wide.id, wide.state === PRAYER_CARD_STATE.CURRENT] as [PrayerId, boolean],
+    card: [lead.id, lead.state === PRAYER_CARD_STATE.CURRENT] as [PrayerId, boolean],
     timeline: line.focus,
   };
 };
@@ -88,9 +88,9 @@ describe("a prayer's own figure agrees with Today", () => {
   it.each(MOMENTS)("on the time each card shows in %s", (_name, isha, iso) => {
     const [now, days] = [momentOf(iso), daysWithIsha(isha)];
     const { shown, following } = shownAt(now, days);
-    const { wide, rest } = prayerCards(shown, now, following);
+    const { cards } = prayerCards(shown, now, following);
 
-    for (const card of [wide, ...rest]) {
+    for (const card of cards) {
       const own = prayerCount(card.id, now, days, OFF, false);
       expect(own?.named.time).toEqual(parseISO(card.time));
     }

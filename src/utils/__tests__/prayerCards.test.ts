@@ -20,31 +20,39 @@ const DAY: DayPrayerTimes = {
 const at = (time: string) => prayerCards(DAY, new Date(`2026-09-23T${time}:00.000Z`));
 const { PAST, CURRENT, NEXT, FUTURE } = PRAYER_CARD_STATE;
 const shape = (time: string) => {
-  const { wide, rest } = at(time);
-  return [[wide.id, wide.state], rest.map((card) => [card.id, card.state])];
+  const { lead, cards } = at(time);
+  return [[lead.id, lead.state], cards.map((card) => [card.id, card.state])];
 };
 
 describe("prayerCards", () => {
-  // The next prayer leads, full width; the rest keep the day's order two by two.
-  it("puts the next prayer first and the others after it in order", () => {
+  // Five equal cards in the day's order; the next prayer leads by its state.
+  it("keeps the day's order and names the next prayer as the lead", () => {
     expect(shape("14:02")).toEqual([
       [PRAYER_ID.ASR, NEXT],
       [
         [PRAYER_ID.FAJR, PAST],
         [PRAYER_ID.DHUHR, PAST],
+        [PRAYER_ID.ASR, NEXT],
         [PRAYER_ID.MAGHRIB, FUTURE],
         [PRAYER_ID.ISHA, FUTURE],
       ],
     ]);
   });
 
+  it("hands back the lead as one of the five cards", () => {
+    const { lead, cards } = at("14:02");
+
+    expect(cards).toContain(lead);
+  });
+
   // A prayer just come in keeps the lead, as the current one, for its window.
-  it("keeps a prayer just come in on top as the current one", () => {
+  it("keeps a prayer just come in as the lead, as the current one", () => {
     expect(shape("15:32")).toEqual([
       [PRAYER_ID.ASR, CURRENT],
       [
         [PRAYER_ID.FAJR, PAST],
         [PRAYER_ID.DHUHR, PAST],
+        [PRAYER_ID.ASR, CURRENT],
         [PRAYER_ID.MAGHRIB, FUTURE],
         [PRAYER_ID.ISHA, FUTURE],
       ],
@@ -66,14 +74,15 @@ describe("prayerCards", () => {
       date: 20260924,
       timings: { ...DAY.timings, [PRAYER_ID.FAJR]: "2026-09-24T04:31:00.000Z" },
     };
-    const { wide, rest } = prayerCards(DAY, new Date("2026-09-23T22:00:00.000Z"), tomorrow);
+    const { lead, cards } = prayerCards(DAY, new Date("2026-09-23T22:00:00.000Z"), tomorrow);
 
-    expect(wide).toEqual({
+    expect(lead).toEqual({
       id: PRAYER_ID.FAJR,
       time: tomorrow.timings[PRAYER_ID.FAJR],
       state: NEXT,
     });
-    expect(rest.map((card) => [card.id, card.state])).toEqual([
+    expect(cards.map((card) => [card.id, card.state])).toEqual([
+      [PRAYER_ID.FAJR, NEXT],
       [PRAYER_ID.DHUHR, PAST],
       [PRAYER_ID.ASR, PAST],
       [PRAYER_ID.MAGHRIB, PAST],
@@ -81,7 +90,7 @@ describe("prayerCards", () => {
     ]);
   });
 
-  // Without tomorrow's times nothing can be next; Isha keeps the wide row, quiet.
+  // Without tomorrow's times nothing can be next; Isha keeps the lead, quiet.
   it("leads with Isha, passed, when tomorrow is not stored", () => {
     expect(shape("22:00")).toEqual([
       [PRAYER_ID.ISHA, PAST],
@@ -90,11 +99,12 @@ describe("prayerCards", () => {
         [PRAYER_ID.DHUHR, PAST],
         [PRAYER_ID.ASR, PAST],
         [PRAYER_ID.MAGHRIB, PAST],
+        [PRAYER_ID.ISHA, PAST],
       ],
     ]);
   });
 
   it("carries each prayer's time", () => {
-    expect(at("14:02").wide.time).toBe(DAY.timings[PRAYER_ID.ASR]);
+    expect(at("14:02").lead.time).toBe(DAY.timings[PRAYER_ID.ASR]);
   });
 });

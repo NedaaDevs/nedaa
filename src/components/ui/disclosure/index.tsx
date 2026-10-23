@@ -16,6 +16,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Test ids for the parts that move. */
 export const DISCLOSURE_PART = {
+  ROOT: "disclosure",
   BODY: "disclosure-body",
   CONTENT: "disclosure-content",
   CHEVRON: "disclosure-chevron",
@@ -30,11 +31,13 @@ type Props = {
   title: string;
   /** Starts open, e.g. so a changed value inside is never hidden. */
   defaultOpen?: boolean;
+  /** A secondary door: a muted summary and no rule, the gap separating it. */
+  quiet?: boolean;
   children: ReactNode;
 };
 
 /** A summary row that opens a body below it, the body growing to its height. */
-export const Disclosure = ({ title, defaultOpen = false, children }: Props) => {
+export const Disclosure = ({ title, defaultOpen = false, quiet = false, children }: Props) => {
   const reduced = useReducedMotion();
   const [open, setOpen] = useState(defaultOpen);
   const [height, setHeight] = useState(0);
@@ -51,7 +54,10 @@ export const Disclosure = ({ title, defaultOpen = false, children }: Props) => {
   }));
 
   return (
-    <VStack borderBottomWidth={1} borderColor="$hairline">
+    <VStack
+      testID={DISCLOSURE_PART.ROOT}
+      borderBottomWidth={quiet ? undefined : 1}
+      borderColor={quiet ? undefined : "$hairline"}>
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityLabel={title}
@@ -60,11 +66,15 @@ export const Disclosure = ({ title, defaultOpen = false, children }: Props) => {
         alignItems="center"
         justifyContent="space-between"
         gap="$3">
-        <Text size="md" typography="helper" fontWeight="600" color="$fg">
+        <Text size="md" typography="helper" fontWeight="600" color={quiet ? "$mutedSky" : "$fg"}>
           {title}
         </Text>
         <Animated.View testID={DISCLOSURE_PART.CHEVRON} style={chevron}>
-          <Icon as={ChevronDown} size="lg" color="$muted" />
+          <Icon
+            as={ChevronDown}
+            size={quiet ? "sm" : "lg"}
+            color={quiet ? "$mutedSky" : "$muted"}
+          />
         </Animated.View>
       </Pressable>
       <Animated.View
