@@ -13,7 +13,6 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { isArabicScript } from "@/constants/Fonts";
 import type { AppLocale } from "@/enums/app";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Test ids for the row's parts. */
 export const CHOICE_ROW_PART = { CHECK: "choice-row-check", TICK: "choice-row-tick" } as const;
@@ -30,9 +29,8 @@ const CARD_FRAME = {
   borderWidth: 1,
   borderColor: "transparent",
 } as const;
-/** A pressed card shrinks a touch and keeps its full colour. */
-const PRESSED = { opacity: 1, scale: 0.99 } as const;
-const PRESSED_STILL = { opacity: 1 } as const;
+/** A pressed card keeps its full colour; `Card.Pressable` shrinks it. */
+const PRESSED = { opacity: 1 } as const;
 const CHECK_SIZE = 22;
 const CHECK_EDGE = 1.5;
 const TICK_SIZE = 13;
@@ -98,7 +96,6 @@ export const ChoiceRow = ({
   testID,
 }: Props) => {
   const { t } = useTranslation();
-  const reduced = useReducedMotion();
   const grouped = use(VariantContext) === LIST_ROW_VARIANT.GROUPED;
   // A row in a group lies flat on it; a choice alone is a card of its own.
   const Frame = grouped ? Pressable : Card.Pressable;
@@ -116,7 +113,7 @@ export const ChoiceRow = ({
       {...(grouped ? GROUPED_STYLE.frame : CARD_FRAME)}
       {...(selected && { backgroundColor: "$accentSoft" })}
       {...(selected && !grouped && { borderColor: "$accent" })}
-      pressStyle={grouped ? GROUPED_STYLE.press : reduced ? PRESSED_STILL : PRESSED}>
+      pressStyle={grouped ? GROUPED_STYLE.press : PRESSED}>
       {leading}
       <VStack flex={1}>
         <Text {...GROUPED_STYLE.title} color="$fg">

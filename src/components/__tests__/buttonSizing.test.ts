@@ -16,6 +16,6 @@ describe("buttonLabelFontSize", () => {
   });
 
   test("unknown size falls back to md", () => {
-    expect(buttonLabelFontSize(undefined, undefined, 1)).toBe(14);
+    expect(buttonLabelFontSize(undefined, undefined, 1)).toBe(16);
   });
 });

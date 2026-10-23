@@ -1,5 +1,10 @@
 import { BRIGHTNESS } from "@/constants/Palette";
-import { ELEVATION, ELEVATION_LEVEL, type ElevationLevel } from "@/constants/Elevation";
+import {
+  CONTACT_SHADOW,
+  ELEVATION,
+  ELEVATION_LEVEL,
+  type ElevationLevel,
+} from "@/constants/Elevation";
 
 describe("elevation", () => {
   it("names four levels, derived from the table", () => {
@@ -14,6 +19,14 @@ describe("elevation", () => {
     ["e3", 16],
   ] as const)("%s sets Android elevation %i", (level, elevation) => {
     expect(ELEVATION[level].elevation).toBe(elevation);
+  });
+
+  // A part lifted inside a track takes only e2's tight layer.
+  it.each(["light", "dark"] as const)("the contact shadow is e2's first layer (%s)", (theme) => {
+    const [first, second] = String(ELEVATION.e2.boxShadow[theme]).split(", 0 ");
+
+    expect(CONTACT_SHADOW[theme]).toBe(first);
+    expect(second).toBeDefined();
   });
 
   it("e0 draws no shadow in either theme", () => {

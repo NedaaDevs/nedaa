@@ -122,6 +122,21 @@ describe("premium surface tokens", () => {
   });
 });
 
+// A borderless pill and the segmented track are tints, not drawn lines.
+describe("tint tokens", () => {
+  it.each([
+    ["light", NEDAA_LIGHT, "#0053721F", "#081D3612", "#9F6B1E24"],
+    ["dark", NEDAA_DARK, "#DBBB561F", "#DCEAF212", "#D9AC5E24"],
+  ] as const)(
+    "%s tints the accent, the ink and the warn colour",
+    (_n, tokens, accent, quiet, warn) => {
+      expect(tokens.accentTint.hex).toBe(accent);
+      expect(tokens.quietTint.hex).toBe(quiet);
+      expect(tokens.warnTint.hex).toBe(warn);
+    }
+  );
+});
+
 describe("phase gradients", () => {
   const entries = Object.entries(PHASE_GRADIENTS).flatMap(([phase, byBrightness]) =>
     Object.entries(byBrightness)
