@@ -4,7 +4,7 @@ import { styled, View } from "tamagui";
 // height counts toward its parent's size.
 export const Divider = styled(View, {
   name: "Divider",
-  backgroundColor: "$border",
+  backgroundColor: "$hairline",
   flexShrink: 0,
 
   variants: {

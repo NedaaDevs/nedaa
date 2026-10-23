@@ -68,7 +68,7 @@ export const SoundPreview = ({
       gap="$inline"
       paddingHorizontal={showLabel ? "$3" : undefined}
       borderWidth={1}
-      borderColor="$border"
+      borderColor="$hairline"
       borderRadius="$control">
       <Icon as={isPlaying ? Square : Play} size="md" color="$muted" strokeWidth={HAIRLINE_STROKE} />
       {showLabel ? (
