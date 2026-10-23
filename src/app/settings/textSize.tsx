@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookOpen } from "lucide-react-native";
 
 import { TextSizePreview } from "@/components/settings/TextSizePreview";
-import { HStack } from "@/components/ui/hstack";
+import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
@@ -79,20 +79,12 @@ const TextSizeContent = () => {
 
         {/* The reader sizes its own text; this preset does not reach it. */}
         <SkyOccluder>
-          <HStack
-            accessible
-            alignItems="center"
-            gap="$3"
-            padding="$3"
-            borderWidth={1}
-            borderColor="$border"
-            borderRadius="$card"
-            backgroundColor="$surface2">
+          <Card accessible flexDirection="row" alignItems="center" gap="$3" padding="$3">
             <Icon as={BookOpen} size="md" color="$accent" />
             <Text flex={1} size="sm" fontWeight="600" typography="helper" color="$fg">
               {t("settings.textSize.quranNote")}
             </Text>
-          </HStack>
+          </Card>
         </SkyOccluder>
       </VStack>
     </SkyScrollView>

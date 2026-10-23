@@ -40,8 +40,6 @@ export const StickyActionBar = ({ state, label, busyStatus, onPress }: Props) =>
       paddingHorizontal="$group"
       paddingTop="$2.5"
       paddingBottom={insets.bottom + getTokenValue("$2.5", "space")}
-      borderTopWidth={1}
-      borderColor="$border"
       backgroundColor="$bar">
       {busy ? (
         <HStack

@@ -5,6 +5,7 @@ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
+import { ListGroup } from "@/components/ui/list-group";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -74,16 +75,14 @@ export const UpcomingOccasions = () => {
   if (occasions.length === 0) return null;
 
   return (
-    <VStack borderWidth={1} borderColor="$border" borderRadius="$card" backgroundColor="$surface2">
+    <ListGroup>
       <HStack
         alignItems="center"
         justifyContent="space-between"
         gap="$2"
         minHeight="$target"
         paddingStart="$3"
-        paddingEnd="$1"
-        borderBottomWidth={1}
-        borderColor="$border">
+        paddingEnd="$1">
         <Text
           accessibilityRole="header"
           size="md"
@@ -111,7 +110,7 @@ export const UpcomingOccasions = () => {
           </Box>
         </Pressable>
       </HStack>
-      {occasions.map((occasion, index) => {
+      {occasions.map((occasion) => {
         const name = t(occasion.i18nKey);
         const hijri = hijriLabel(occasion);
         // Neither part shrinks: when both cannot fit, the figure wraps under.
@@ -126,9 +125,7 @@ export const UpcomingOccasions = () => {
             columnGap="$2.5"
             rowGap="$1"
             paddingHorizontal="$3"
-            paddingVertical="$2"
-            borderTopWidth={index === 0 ? 0 : 1}
-            borderColor="$border">
+            paddingVertical="$2">
             <VStack testID={OCCASIONS_PART.NAME} flexGrow={1} flexShrink={0}>
               <Text size="lg" fontWeight="600" color="$fg">
                 {name}
@@ -141,6 +138,6 @@ export const UpcomingOccasions = () => {
           </Box>
         );
       })}
-    </VStack>
+    </ListGroup>
   );
 };

@@ -14,6 +14,7 @@ import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
+import { expectOnRestingSurface } from "@/test-helpers/surface";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { LTR_ISOLATE } from "@/utils/digits";
 import { HIJRI_OFFSETS, hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
@@ -102,6 +103,14 @@ describe("Hijri date screen", () => {
     await renderHijri();
 
     expect(heroOn(14)).toBeTruthy();
+  });
+
+  it("sets the adjustment on the shared card", async () => {
+    await renderHijri();
+
+    expectOnRestingSurface(
+      screen.getByText(t("settings.hijri.date.adjustmentHead"), { includeHiddenElements: true })
+    );
   });
 
   it("follows a drag in the hero and the value, and saves once on release", async () => {

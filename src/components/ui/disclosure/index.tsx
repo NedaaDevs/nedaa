@@ -51,7 +51,7 @@ export const Disclosure = ({ title, defaultOpen = false, children }: Props) => {
   }));
 
   return (
-    <VStack borderBottomWidth={1} borderColor="$border">
+    <VStack borderBottomWidth={1} borderColor="$hairline">
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityLabel={title}

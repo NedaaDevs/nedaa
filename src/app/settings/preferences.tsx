@@ -247,9 +247,6 @@ const PreferencesContent = () => {
                 gap="$2"
                 paddingVertical="$2.5"
                 paddingHorizontal="$3"
-                borderWidth={1}
-                borderStyle="dashed"
-                borderColor="$border"
                 borderRadius="$card">
                 <Icon as={Shield} size="sm" color="$accent" />
                 <Text size="sm" color="$mutedSky" flex={1}>

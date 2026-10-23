@@ -44,9 +44,7 @@ export const OtherTimes = () => {
         alignItems="center"
         justifyContent="space-between"
         gap="$1.5"
-        minHeight="$8"
-        borderTopWidth={1}
-        borderColor="$border">
+        minHeight="$8">
         <Text size="md" typography="helper" color="$mutedSky" flexShrink={1}>
           {label}
         </Text>

@@ -20,6 +20,7 @@ import {
   type AlarmPermissionId,
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { SOUND_ASSETS } from "@/constants/sounds";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import i18n from "@/localization/i18n";
@@ -526,7 +527,8 @@ describe("AlarmDisclosure", () => {
     await renderDisclosure(ALARM_TYPE.FAJR);
 
     const panel = screen.getByTestId(DETAIL_PANEL_ID);
-    expect(panel).toHaveStyle({ borderTopWidth: 1 });
+    expect(panel).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(panel).toHaveStyle({ backgroundColor: NEDAA_LIGHT.panel.hex });
     expect(within(panel).getAllByRole("radio").length).toBeGreaterThan(0);
     const link = within(panel).getByRole("button", {
       name: new RegExp(i18n.t("prayerDetail.alarm.more.title")),

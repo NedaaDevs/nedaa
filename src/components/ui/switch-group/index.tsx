@@ -89,7 +89,7 @@ export const SwitchGroup = ({
   const bodyStyle = useAnimatedStyle(() => ({ height: progress.get() * height }));
 
   return (
-    <VStack borderBottomWidth={nested || grouped ? undefined : 1} borderColor="$border">
+    <VStack borderBottomWidth={nested || grouped ? undefined : 1} borderColor="$hairline">
       <Pressable
         onPress={() => onValueChange(!value)}
         accessibilityRole="switch"

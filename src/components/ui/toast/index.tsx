@@ -107,8 +107,6 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
       paddingVertical="$2"
       paddingStart="$3"
       paddingEnd={action ? "$2" : "$3"}
-      borderWidth={1}
-      borderColor="$border"
       borderRadius="$card"
       backgroundColor="$raised"
       style={{ boxShadow: `0px 10px 28px ${shadow}` }}>

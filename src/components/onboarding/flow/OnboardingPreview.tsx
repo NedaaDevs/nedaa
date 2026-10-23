@@ -82,7 +82,7 @@ const PreviewChip = ({ id, name, time, index, next, muted }: ChipProps) => {
       paddingVertical="$1.5"
       borderRadius="$control"
       borderWidth={1}
-      borderColor={next ? "$accent" : "$border"}
+      borderColor={next ? "$accent" : "transparent"}
       backgroundColor={next ? "$accentSoft" : "$surface2"}>
       <PrayerTimeCell name={name} time={time} centered muted={muted} timeStyle={style} />
     </VStack>

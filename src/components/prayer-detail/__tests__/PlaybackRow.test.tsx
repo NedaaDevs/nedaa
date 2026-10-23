@@ -100,15 +100,13 @@ describe("PlaybackRow on Android", () => {
     expect(screen.queryByText(chip)).toBeNull();
   });
 
-  it("lays its row flat inside a bordered panel", async () => {
+  it("lays its row flat inside a panel set off by its fill", async () => {
     setPlayback(false, false);
     await renderRow();
 
     const panel = screen.getByTestId(DETAIL_PANEL_ID);
-    expect(panel).toHaveStyle({
-      borderTopWidth: 1,
-      backgroundColor: config.themes.light.panel.val,
-    });
+    expect(panel).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(panel).toHaveStyle({ backgroundColor: config.themes.light.panel.val });
     const row = within(panel).getByRole("button", { name: new RegExp(TITLE) });
     expect(row).not.toHaveStyle({ borderTopWidth: 1 });
   });
