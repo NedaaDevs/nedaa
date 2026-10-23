@@ -7,7 +7,7 @@ import { AlarmClock } from "lucide-react-native";
 
 import { DetailPanel } from "@/components/prayer-detail/DetailPanel";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
-import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import { SEGMENTED_FORM, SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SoundPicker } from "@/components/ui/sound-picker";
 import { SwitchGroup } from "@/components/ui/switch-group";
 import { Text } from "@/components/ui/text";
@@ -124,6 +124,7 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
               accessibilityLabel={t("prayerDetail.alarm.minutesBefore")}
               label={String}
               spokenLabel={(minutes) => t("common.minute", { count: minutes })}
+              form={SEGMENTED_FORM.COMPACT}
             />
           </VStack>
         ) : null}
