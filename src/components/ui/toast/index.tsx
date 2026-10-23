@@ -15,14 +15,15 @@ import { CircleAlert, CircleCheck, Info, LoaderCircle, TriangleAlert } from "luc
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Icon, type IconProps } from "@/components/ui/icon";
+import { Material, MATERIAL } from "@/components/ui/material";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
-import { useThemeColor } from "@/components/ui/theme-color";
+import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { TOAST_KIND, TOAST_MOTION, type ToastKind } from "@/constants/Toast";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { ToastAction } from "@/utils/toast";
 
-export const TOAST_PART = { ICON: "toast-icon" } as const;
+export const TOAST_PART = { FRAME: "toast", ICON: "toast-icon" } as const;
 
 /** The screen reader's own way to send a toast away. */
 export const TOAST_A11Y_ACTION = { DISMISS: "dismiss" } as const;
@@ -93,23 +94,24 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
   const { t } = useTranslation();
   const label = toastLabel(t, kind, message);
   const signal = SIGNAL[kind];
-  const shadow = useThemeColor("$shadow");
 
   const onAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
     if (nativeEvent.actionName === TOAST_A11Y_ACTION.DISMISS) onDismiss();
   };
 
   return (
-    <HStack
+    // No blur target, so Android draws the float colour opaque.
+    <Material
+      testID={TOAST_PART.FRAME}
+      material={MATERIAL.FLOAT}
+      elevation={ELEVATION_LEVEL.E2}
+      flexDirection="row"
       alignItems="center"
       gap="$2.5"
       minHeight="$14"
       paddingVertical="$2"
       paddingStart="$3"
-      paddingEnd={action ? "$2" : "$3"}
-      borderRadius="$card"
-      backgroundColor="$raised"
-      style={{ boxShadow: `0px 10px 28px ${shadow}` }}>
+      paddingEnd={action ? "$2" : "$3"}>
       <HStack
         flex={1}
         alignItems="center"
@@ -153,6 +155,6 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
           </Text>
         </Pressable>
       )}
-    </HStack>
+    </Material>
   );
 };
