@@ -1,8 +1,8 @@
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
-import { Actionsheet } from "@/components/ui/actionsheet";
+import { ACTIONSHEET_PART, Actionsheet, ActionsheetContent } from "@/components/ui/actionsheet";
 import { Switch } from "@/components/ui/switch";
 import { modalProps } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -26,13 +26,16 @@ describe("V3 colours in shared primitives", () => {
   it("draws a sheet on the raised surface with a handle in the ink's tint", async () => {
     await renderWithTheme(
       <Actionsheet isOpen onClose={jest.fn()}>
-        <Text>body</Text>
+        <ActionsheetContent>
+          <Text>body</Text>
+        </ActionsheetContent>
       </Actionsheet>
     );
     const props = modalProps.mock.lastCall?.[0];
+    const grabber = screen.getByTestId(ACTIONSHEET_PART.GRABBER, { includeHiddenElements: true });
 
     expect(props?.backgroundStyle?.backgroundColor).toBe(LIGHT.raised.val);
-    expect(props?.handleIndicatorStyle?.backgroundColor).toBe(LIGHT.handle.val);
+    expect(StyleSheet.flatten(grabber.props.style).backgroundColor).toBe(LIGHT.handle.val);
   });
 
   it("fills a switch with the accent while on", async () => {

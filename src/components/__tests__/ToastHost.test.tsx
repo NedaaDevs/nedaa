@@ -1,13 +1,14 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the host must bind to the mock below, not to its empty one.
 import { ToastHost, TOAST_HOST_PART } from "@/components/ToastHost";
-import { cancelAnimation, ReduceMotion, withTiming } from "react-native-reanimated";
+import { cancelAnimation, ReduceMotion, withSpring, withTiming } from "react-native-reanimated";
 import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { MessageToast } from "@/components/feedback/MessageToast";
 import { TOAST_DWELL_MS, TOAST_GAP, TOAST_KIND, TOAST_MOTION } from "@/constants/Toast";
+import { SPRING } from "@/constants/Motion";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useTabBarFrameStore } from "@/stores/tabBarFrame";
@@ -16,6 +17,9 @@ import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
 const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
 const label = (kind: string, message: string) => `${i18n.t(`a11y.toast.${kind}`)}: ${message}`;
@@ -35,6 +39,7 @@ const bottom = () =>
 describe("ToastHost", () => {
   beforeEach(async () => {
     jest.useFakeTimers();
+    mockReduced = false;
     await act(() => i18n.changeLanguage(AppLocale.EN));
     useToastStore.setState({ toast: null });
     useTabBarFrameStore.setState({ height: 0 });
@@ -147,6 +152,37 @@ describe("ToastHost", () => {
     expect(jest.mocked(withTiming).mock.calls[0][1]).toMatchObject({
       reduceMotion: ReduceMotion.Never,
     });
+  });
+
+  it("rises on the settle spring while it fades in", async () => {
+    await renderHost();
+    jest.mocked(withSpring).mockClear();
+    jest.mocked(withTiming).mockClear();
+    await act(() => MessageToast.showSuccess("Link copied"));
+
+    expect(withSpring).toHaveBeenCalledWith(0, {
+      ...SPRING.SETTLE,
+      reduceMotion: ReduceMotion.Never,
+    });
+    expect(withTiming).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ duration: TOAST_MOTION.enterMs })
+    );
+  });
+
+  it("only fades in under Reduce Motion", async () => {
+    mockReduced = true;
+    await renderHost();
+    jest.mocked(withSpring).mockClear();
+    jest.mocked(withTiming).mockClear();
+    await act(() => MessageToast.showSuccess("Link copied"));
+
+    expect(withSpring).not.toHaveBeenCalled();
+    expect(withTiming).toHaveBeenCalledTimes(1);
+    expect(withTiming).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ duration: TOAST_MOTION.reducedMs })
+    );
   });
 
   it("sits above the tab bar on a tab", async () => {

@@ -7,6 +7,8 @@ import { NEDAA_LIGHT } from "@/constants/Palette";
 import { styleOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
+const BUTTON_SIZES = ["xs", "sm", "md", "lg", "xl"] as const;
+
 const lightTheme = config.themes.light as Record<string, { val: string }>;
 
 const renderButton = (props: Parameters<typeof Button>[0] = {}) =>
@@ -69,6 +71,38 @@ describe("Button look", () => {
 
     expect(frame().minHeight).toBe(50);
     expect(label().fontSize).toBe(16);
+  });
+
+  // A larger size name never draws a smaller button.
+  it("stands each size taller than the last, its label never smaller", async () => {
+    await renderWithTheme(
+      <>
+        {BUTTON_SIZES.map((size) => (
+          <Button key={size} size={size} onPress={jest.fn()}>
+            <Button.Text>{size}</Button.Text>
+          </Button>
+        ))}
+      </>
+    );
+    const drawn = BUTTON_SIZES.map((size) => ({
+      height: styleOf(screen.getByRole("button", { name: size })).minHeight,
+      font: styleOf(screen.getByText(size)).fontSize,
+    }));
+
+    drawn.slice(1).forEach((step, i) => {
+      expect(step.height).toBeGreaterThan(drawn[i].height);
+      expect(step.font).toBeGreaterThanOrEqual(drawn[i].font);
+    });
+  });
+
+  // Sticky action bars and onboarding footers carry the large size.
+  it.each([
+    ["lg", "$14"],
+    ["xl", "$16"],
+  ] as const)("sets %s at the %s size step", async (size, step) => {
+    await renderButton({ size });
+
+    expect(frame().minHeight).toBe(getTokenValue(step, "size"));
   });
 
   it("sets the text button in the accent, 44 high, inset 8", async () => {

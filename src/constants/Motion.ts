@@ -22,6 +22,14 @@ export const SPRING = {
 /** iOS sheet curve, as cubic-bezier points: quick start, long settle. */
 export const SHEET_CURVE = [0.32, 0.72, 0, 1] as const;
 
+/** A bottom sheet's timings; it arrives on `SPRING.SETTLE`. */
+export const SHEET_MOTION = {
+  /** Leaving: a timing on `SHEET_CURVE`. */
+  DISMISS_MS: DURATION_MS.SETTLE,
+  /** Under Reduce Motion the sheet fades where it stands, both ways. */
+  REDUCED_FADE_MS: 200,
+} as const;
+
 /** CSS ease-in-out: slow at both ends, so no frame jumps. */
 export const EASE_IN_OUT_CURVE = [0.42, 0, 0.58, 1] as const;
 

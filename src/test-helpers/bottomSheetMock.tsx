@@ -58,15 +58,17 @@ type ModalProps = PropsWithChildren<
     onDismiss?: () => void;
     overrideReduceMotion?: string;
     topInset?: number;
-    animationConfigs?: { duration?: number; easing?: unknown };
+    animationConfigs?: { duration?: number; easing?: unknown; stiffness?: number };
     backgroundStyle?: ViewStyle;
     handleIndicatorStyle?: ViewStyle;
+    handleComponent?: ComponentType | null;
+    enableHandlePanningGesture?: boolean;
     backdropComponent?: ComponentType<BackdropProps>;
     containerComponent?: ComponentType<PropsWithChildren>;
   }
 >;
 
-type ModalMethods = { present: () => void; dismiss: () => void };
+type ModalMethods = { present: () => void; dismiss: (animationConfigs?: object) => void };
 
 /** Present inside a mounted sheet, as gorhom's internal context is. */
 const SheetContext = createContext<object | null>(null);
@@ -74,6 +76,9 @@ const IN_SHEET = {};
 
 /** Every render's props, newest last. */
 export const modalProps = jest.fn<void, [ModalProps]>();
+
+/** The animation each programmatic dismiss asked for, newest last. */
+export const dismissConfigs = jest.fn<void, [object | undefined]>();
 
 /** Each presented sheet's close action, top last, as gorhom queues them. */
 const presented: (() => void)[] = [];
@@ -92,7 +97,17 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
     latest.current.onDismiss?.();
   }, []);
 
-  useImperativeHandle(ref, () => ({ present: () => setMounted(true), dismiss: close }), [close]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      present: () => setMounted(true),
+      dismiss: (animationConfigs?: object) => {
+        dismissConfigs(animationConfigs);
+        close();
+      },
+    }),
+    [close]
+  );
 
   // Settles at the first detent once up, and queues while it is.
   useEffect(() => {
@@ -107,6 +122,7 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
   if (!mounted) return null;
   const Container = props.containerComponent ?? Fragment;
   const Backdrop = props.backdropComponent;
+  const Handle = props.handleComponent;
   return (
     <Container>
       {Backdrop ? <Backdrop /> : null}
@@ -123,6 +139,8 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
         )}>
         <SheetContext value={IN_SHEET}>{props.children}</SheetContext>
       </View>
+      {/* gorhom lays the handle out after the content, so it draws on top. */}
+      {Handle ? <Handle /> : null}
     </Container>
   );
 });
