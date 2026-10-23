@@ -39,7 +39,7 @@ export const PlaybackRow = () => {
       paddingVertical="$0.5"
       borderRadius="$pill"
       backgroundColor="$accentSoft">
-      <Text size="2xs" bold color="$accent">
+      <Text size="2xs" bold color="$accentText">
         {t("prayerDetail.playback.global")}
       </Text>
     </HStack>

@@ -79,7 +79,7 @@ describe("TabBarItem", () => {
   });
 
   it.each([
-    ["selected", true, LIGHT.accent.val],
+    ["selected", true, LIGHT.accentText.val],
     ["idle", false, LIGHT.muted.val],
   ])("draws a %s label in its colour", async (_state, selected, colour) => {
     await renderItem(selected);
@@ -189,8 +189,18 @@ describe("TabBar", () => {
       padding: PAD,
       borderRadius: getTokenValue("$pill", "radius"),
       backgroundColor: NEDAA_LIGHT.surfaceFloat.hex,
-      boxShadow: ELEVATION.e2.boxShadow.light,
     });
+    const shadow = String(styleOfId(TAB_BAR_ITEM_PART.TRACK).boxShadow);
+    expect(shadow.startsWith(ELEVATION.e2.boxShadow.light)).toBe(true);
+  });
+
+  // Over a bright sky the pill keeps a faint edge of its own.
+  it("rings its edge with a hairline inside", async () => {
+    await renderBar();
+
+    expect(styleOfId(TAB_BAR_ITEM_PART.TRACK).boxShadow).toBe(
+      `${ELEVATION.e2.boxShadow.light}, inset 0 0 0 0.5px ${NEDAA_LIGHT.hairline.hex}`
+    );
   });
 
   it("draws no rule along its top", async () => {

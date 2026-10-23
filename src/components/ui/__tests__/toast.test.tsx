@@ -4,6 +4,7 @@ import { fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { Toast, TOAST_A11Y_ACTION, TOAST_PART } from "@/components/ui/toast";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
+import { getTokenValue } from "tamagui";
 import { TOAST_KIND } from "@/constants/Toast";
 import i18n from "@/localization/i18n";
 import { controlProblems } from "@/test-helpers/controls";
@@ -97,6 +98,55 @@ describe("Toast", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
     expect(controlProblems()).toEqual([]);
   });
+
+  // The spec's glyph: a 34pt tile on chip corners, washed at .14 of its kind.
+  it("sets its glyph on a 34pt chip tile tinted at .14", async () => {
+    await renderWithTheme(
+      <Toast kind={TOAST_KIND.SUCCESS} message={MESSAGE} onDismiss={jest.fn()} />
+    );
+    const icon = screen.getByTestId(TOAST_PART.ICON, { includeHiddenElements: true });
+    const tint = screen.getByTestId(TOAST_PART.TINT, { includeHiddenElements: true });
+
+    expect(StyleSheet.flatten(icon.props.style)).toMatchObject({ width: 34, height: 34 });
+    const chip = getTokenValue("$chip", "radius");
+
+    expect(StyleSheet.flatten(tint.props.style)).toMatchObject({
+      borderTopLeftRadius: chip,
+      borderBottomRightRadius: chip,
+      opacity: 0.14,
+    });
+  });
+
+  it("sets the message at 14/600", async () => {
+    await renderWithTheme(
+      <Toast kind={TOAST_KIND.SUCCESS} message={MESSAGE} onDismiss={jest.fn()} />
+    );
+
+    expect(StyleSheet.flatten(screen.getByText(MESSAGE).props.style)).toMatchObject({
+      fontSize: 14,
+    });
+  });
+
+  it.each(Object.values(TOAST_KIND))(
+    "draws a %s toast's action as an accent text button at 14",
+    async (kind) => {
+      await renderWithTheme(
+        <Toast
+          kind={kind}
+          message={MESSAGE}
+          action={{ label: "Retry", onPress: jest.fn() }}
+          onDismiss={jest.fn()}
+        />
+      );
+      const button = screen.getByRole("button", { name: "Retry" });
+
+      expect(StyleSheet.flatten(button.props.style).backgroundColor).toBe("transparent");
+      expect(StyleSheet.flatten(screen.getByText("Retry").props.style)).toMatchObject({
+        fontSize: 14,
+        color: NEDAA_LIGHT.accentText.hex,
+      });
+    }
+  );
 
   it("lets a screen reader dismiss it", async () => {
     const onDismiss = jest.fn();

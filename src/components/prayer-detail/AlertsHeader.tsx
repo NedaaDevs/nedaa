@@ -26,7 +26,7 @@ export const AlertsHeader = ({ prayerId }: { prayerId: PrayerId }) => {
       <Text
         size="xs"
         bold
-        color="$accent"
+        color="$accentText"
         backgroundColor="$accentSoft"
         borderRadius="$pill"
         paddingHorizontal="$2"
@@ -43,7 +43,7 @@ export const AlertsHeader = ({ prayerId }: { prayerId: PrayerId }) => {
         justifyContent="center"
         paddingHorizontal="$2"
         borderRadius="$control">
-        <Text size="sm" color="$accent">
+        <Text size="sm" color="$accentText">
           {t("prayerDetail.alertsHeader.reset")}
         </Text>
       </Pressable>

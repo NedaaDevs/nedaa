@@ -6,11 +6,11 @@ import { HijriDateHero } from "@/components/settings/HijriDateHero";
 import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
 import { Section } from "@/components/ui/section";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { SteppedSlider } from "@/components/ui/stepped-slider";
 import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SECTION_KIND } from "@/constants/Section";
@@ -63,12 +63,12 @@ const HijriContent = () => {
         />
       </SkyOccluder>
 
-      <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+      <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
         <HijriDateHero offset={shown} />
 
         <Section title={t("settings.hijri.date.sections.adjustment")} kind={SECTION_KIND.LABEL}>
           <SkyOccluder>
-            <Card gap="$3" padding="$4">
+            <Card gap="$3">
               {/* The slider speaks its name and value; this row is for the eye. */}
               <HStack
                 {...HIDDEN_FROM_READER}
@@ -78,7 +78,7 @@ const HijriContent = () => {
                 <Text flex={1} size="md" bold color="$fg">
                   {t("settings.hijri.date.adjustmentHead")}
                 </Text>
-                <Text size="sm" bold color="$accent">
+                <Text size="sm" bold color="$accentText">
                   {label(shown)}
                 </Text>
               </HStack>
@@ -99,7 +99,7 @@ const HijriContent = () => {
             </Card>
           </SkyOccluder>
         </Section>
-      </VStack>
+      </ScreenContent>
     </SkyScrollView>
   );
 };

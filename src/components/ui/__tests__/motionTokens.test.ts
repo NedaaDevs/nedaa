@@ -14,8 +14,8 @@ const timing = (name: string) => {
   return match ? DURATION_MS[match[1] as keyof typeof DURATION_MS] : null;
 };
 
-/** The four steps a screen picks between. */
-const DURATIONS = { quick: 160, settle: 220, gentle: 280, sky: 720 } as const;
+/** The steps a screen picks between; `press` is a finger landing. */
+const DURATIONS = { press: 80, quick: 160, settle: 220, gentle: 280, sky: 720 } as const;
 
 /** The config's spring preset, read from source like the timings. */
 const spring = (name: string) => {

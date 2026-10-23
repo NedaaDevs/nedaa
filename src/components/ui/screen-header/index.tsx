@@ -1,5 +1,5 @@
 // Plugins
-import type { ComponentProps } from "react";
+import { use, type ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 
@@ -16,6 +16,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
+import { ScreenGutterContext } from "@/components/ui/screen-content";
 import { useBackDestination } from "@/components/ui/screen-header/useBackDestination";
 
 // Icons
@@ -67,6 +68,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const behind = useBackDestination();
+  const gutter = use(ScreenGutterContext);
   const plan = planBack(back, behind);
 
   // Back points to the start edge.
@@ -122,7 +124,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
   }
 
   return (
-    <VStack gap="$0.5" paddingHorizontal="$group" paddingTop="$1" paddingBottom="$3.5">
+    <VStack gap="$0.5" paddingHorizontal={gutter} paddingTop="$1" paddingBottom="$3.5">
       {(plan || action) && (
         <HStack alignItems="center">
           {plan && (
@@ -134,9 +136,9 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
               gap="$0.5"
               // The chevron's side bearing hangs outside the title's column.
               marginStart="$-1.5">
-              <Icon as={Chevron} size="lg" color="$accent" />
+              <Icon as={Chevron} size="lg" color="$accentText" />
               {destinationName && (
-                <Text size="label" fontWeight="600" color="$accent">
+                <Text size="label" fontWeight="600" color="$accentText">
                   {destinationName}
                 </Text>
               )}

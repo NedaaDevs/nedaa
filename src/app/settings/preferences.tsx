@@ -10,6 +10,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_STYLE, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
@@ -116,11 +117,11 @@ const PreferencesContent = () => {
         />
       </SkyOccluder>
 
-      <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+      <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
         <FocusCountdown />
 
         <SkyOccluder>
-          <VStack gap="$5">
+          <VStack gap="$section">
             <Section
               title={t("settings.preferences.sections.prayerTime")}
               kind={SECTION_KIND.LABEL}>
@@ -256,7 +257,7 @@ const PreferencesContent = () => {
             </Section>
           </VStack>
         </SkyOccluder>
-      </VStack>
+      </ScreenContent>
     </SkyScrollView>
   );
 };

@@ -21,8 +21,11 @@ import {
   BackHandler,
   FlatList,
   Platform,
+  Pressable as RNPressable,
   StyleSheet,
   View as RNView,
+  type StyleProp,
+  type ViewStyle,
   type FlatListProps,
   type HostInstance,
   type ViewInstance,
@@ -39,7 +42,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
-  BottomSheetBackdrop,
   useBottomSheetModal,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
@@ -51,8 +53,10 @@ import { Material, MATERIAL } from "@/components/ui/material";
 import { useElevationShadow } from "@/components/ui/material/edge";
 import { Pressable, type PressableProps } from "@/components/ui/pressable";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { PlatformType } from "@/enums/app";
 import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
+import { useHaptic } from "@/hooks/useHaptic";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { focusOn } from "@/utils/accessibilityFocus";
 
@@ -71,6 +75,15 @@ const LEAVE = { duration: SHEET_MOTION.DISMISS_MS, easing: Easing.bezier(...SHEE
 
 const REDUCED_FADE = { duration: SHEET_MOTION.REDUCED_FADE_MS };
 
+const SCRIM_FADE = { duration: SHEET_MOTION.SCRIM_MS };
+
+const HERO_FADE = { duration: SHEET_MOTION.HERO_FADE_MS };
+
+/** gorhom's index for a sheet that is closed or closing. */
+const CLOSED_INDEX = -1;
+
+const AnimatedPressable = Animated.createAnimatedComponent(RNPressable);
+
 /** Test ids for the parts a test reaches. */
 export const ACTIONSHEET_PART = {
   LAYER: "actionsheet-layer",
@@ -78,6 +91,8 @@ export const ACTIONSHEET_PART = {
   HEADER: "actionsheet-header",
   GRABBER: "actionsheet-grabber",
   BODY: "actionsheet-body",
+  SCRIM: "actionsheet-scrim",
+  HERO: "actionsheet-hero",
 } as const;
 
 /** Drawn in the top sheet's layer, where iOS lets a reader reach it. */
@@ -118,6 +133,28 @@ const SheetHeader = ({ blurTarget }: { blurTarget: BlurTarget }) => (
     />
   </Material>
 );
+
+type SheetScrimProps = {
+  shown: SharedValue<number>;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+};
+
+/** The dimmed screen behind a sheet; a tap on it closes the sheet. */
+const SheetScrim = ({ shown, onPress, style }: SheetScrimProps) => {
+  const { t } = useTranslation();
+  const scrim = useThemeColor("$scrim");
+  const faded = useAnimatedStyle(() => ({ opacity: shown.get() }));
+  return (
+    <AnimatedPressable
+      testID={ACTIONSHEET_PART.SCRIM}
+      style={[style, { backgroundColor: scrim }, faded]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t("common.close")}
+    />
+  );
+};
 
 type ModalLayerProps = PropsWithChildren<{ fade: SharedValue<number> }>;
 
@@ -170,17 +207,20 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   children,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
   const reduced = useReducedMotion();
+  const snapHaptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const shadow = useElevationShadow(ELEVATION_LEVEL.E3);
   // The whole layer's opacity; it moves only under Reduce Motion.
   const fade = useSharedValue(1);
+  const scrim = useSharedValue(0);
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<ViewInstance>(null);
   const blurTarget = useRef<ComponentRef<typeof RNView>>(null);
   const hasPresented = useRef(false);
   const leaving = useRef(false);
+  // Set once the sheet first settles; a later snap is the user's own move.
+  const settled = useRef(false);
   // Up from its first settle until gorhom reports it dismissed.
   const [shown, setShown] = useState(false);
   useCoverApp(shown);
@@ -211,6 +251,8 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     hasPresented.current = true;
     fade.set(reduced ? 0 : 1);
     if (reduced) fade.set(withTiming(1, REDUCED_FADE));
+    scrim.set(0);
+    scrim.set(withTiming(1, SCRIM_FADE));
     ref.current?.present();
   });
 
@@ -234,24 +276,41 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     if (hasPresented.current) return leave();
   }, [isOpen]);
 
-  const handleChange = useCallback((index: number) => {
-    if (index >= 0) setShown(true);
-  }, []);
+  const handleChange = useCallback(
+    (index: number) => {
+      if (index <= CLOSED_INDEX) return;
+      if (settled.current) void snapHaptic();
+      settled.current = true;
+      setShown(true);
+    },
+    [snapHaptic]
+  );
+
+  // Every way out starts here, so the scrim leaves on its own timing.
+  const handleAnimate = useCallback(
+    (_from: number, to: number) => {
+      if (to === CLOSED_INDEX) scrim.set(withTiming(0, SCRIM_FADE));
+    },
+    [scrim]
+  );
 
   const handleDismiss = useCallback(() => {
     hasPresented.current = false;
+    settled.current = false;
     setShown(false);
     onClose?.();
   }, [onClose]);
 
+  const dismissOnCurve = useCallback(() => ref.current?.dismiss(LEAVE), []);
+
   useEffect(() => {
     if (!isOpen) return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      ref.current?.dismiss(LEAVE);
+      dismissOnCurve();
       return true;
     });
     return () => sub.remove();
-  }, [isOpen]);
+  }, [isOpen, dismissOnCurve]);
 
   const renderHandle = useCallback(() => <SheetHeader blurTarget={blurTarget} />, []);
 
@@ -260,20 +319,12 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     [fade]
   );
 
+  // The scrim colour carries its own alpha; the fade runs it from 0 to 1.
   const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        // The scrim colour carries its own alpha.
-        opacity={1}
-        style={{ backgroundColor: theme.scrim.val }}
-        pressBehavior="close"
-        accessibilityLabel={t("common.close")}
-      />
+    ({ style }: BottomSheetBackdropProps) => (
+      <SheetScrim shown={scrim} onPress={dismissOnCurve} style={style} />
     ),
-    [t, theme.scrim.val]
+    [scrim, dismissOnCurve]
   );
 
   return (
@@ -285,6 +336,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       topInset={fitContent ? insets.top + getTokenValue(SHEET_TOP_GAP, "space") : undefined}
       enablePanDownToClose
       onChange={handleChange}
+      onAnimate={handleAnimate}
       onDismiss={handleDismiss}
       animationConfigs={SPRING.SETTLE}
       overrideReduceMotion={reduced ? ReduceMotion.Always : ReduceMotion.Never}
@@ -348,7 +400,7 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
           { paddingTop: headerHeight() },
           unpadded
             ? undefined
-            : { paddingHorizontal: getTokenValue("$group", "space"), paddingBottom },
+            : { paddingHorizontal: getTokenValue("$screen", "space"), paddingBottom },
         ]}>
         {children}
       </BlurTargetView>
@@ -356,6 +408,25 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
   );
 };
 ActionsheetContent.displayName = "ActionsheetContent";
+
+// --- ActionsheetHero ---
+
+/** A sheet's hero; it fades in as the sheet starts to rise. */
+const ActionsheetHero = ({ children }: PropsWithChildren) => {
+  const reduced = useReducedMotion();
+  const opacity = useSharedValue(reduced ? 1 : 0);
+
+  useEffect(() => {
+    if (!reduced) opacity.set(withTiming(1, HERO_FADE));
+  }, [reduced, opacity]);
+
+  const faded = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  return (
+    <Animated.View testID={ACTIONSHEET_PART.HERO} style={faded}>
+      {children}
+    </Animated.View>
+  );
+};
 
 // --- ActionsheetTitle ---
 
@@ -487,6 +558,7 @@ export {
   ActionsheetItemText,
   ActionsheetIcon,
   ActionsheetFlatList,
+  ActionsheetHero,
   ActionsheetScrollView,
   ActionsheetTitle,
 };

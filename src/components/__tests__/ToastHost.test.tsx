@@ -1,9 +1,11 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the host must bind to the mock below, not to its empty one.
-import { ToastHost, TOAST_HOST_PART } from "@/components/ToastHost";
+import { ToastHost, TOAST_HOST_PART, TOAST_HOST_GESTURE } from "@/components/ToastHost";
 import { cancelAnimation, ReduceMotion, withSpring, withTiming } from "react-native-reanimated";
 import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, userEvent } from "@testing-library/react-native";
+import { State } from "react-native-gesture-handler";
+import { fireGestureHandler, getByGestureTestId } from "react-native-gesture-handler/jest-utils";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { MessageToast } from "@/components/feedback/MessageToast";
@@ -15,8 +17,11 @@ import { useTabBarFrameStore } from "@/stores/tabBarFrame";
 import { useToastStore } from "@/stores/toast";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
@@ -183,6 +188,49 @@ describe("ToastHost", () => {
       1,
       expect.objectContaining({ duration: TOAST_MOTION.reducedMs })
     );
+  });
+
+  // A haptic marks an outcome; a plain statement or work under way stays quiet.
+  it.each([
+    [TOAST_KIND.SUCCESS, [HAPTIC_FEEDBACK.SUCCESS]],
+    [TOAST_KIND.WARNING, [HAPTIC_FEEDBACK.WARNING]],
+    [TOAST_KIND.ERROR, [HAPTIC_FEEDBACK.ERROR]],
+    [TOAST_KIND.INFO, []],
+    [TOAST_KIND.PROGRESS, []],
+  ] as const)("plays the %s toast's haptic: %j", async (kind, haptics) => {
+    await renderHost();
+    clearHaptics();
+    await act(() => useToastStore.getState().show({ kind, message: "Saved" }));
+
+    expect(firedHaptics()).toEqual(haptics);
+  });
+
+  it("keeps the haptic under Reduce Motion", async () => {
+    mockReduced = true;
+    await renderHost();
+    clearHaptics();
+    await act(() => MessageToast.showError("Couldn't save"));
+
+    expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.ERROR]);
+  });
+
+  it("snaps back on the snap spring after a short drag", async () => {
+    await renderHost();
+    await act(() => MessageToast.showSuccess("Link copied"));
+    jest.mocked(withSpring).mockClear();
+
+    await act(() =>
+      fireGestureHandler(getByGestureTestId(TOAST_HOST_GESTURE.SWIPE), [
+        { state: State.BEGAN, translationY: 0 },
+        { state: State.ACTIVE, translationY: 10 },
+        { state: State.END, translationY: 10 },
+      ])
+    );
+
+    expect(withSpring).toHaveBeenCalledWith(0, {
+      ...SPRING.SNAP,
+      reduceMotion: ReduceMotion.Never,
+    });
   });
 
   it("sits above the tab bar on a tab", async () => {

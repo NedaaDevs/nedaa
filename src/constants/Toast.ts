@@ -1,3 +1,5 @@
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+
 /** What a toast reports; each kind has its own icon, colour and dwell. */
 export const TOAST_KIND = {
   SUCCESS: "success",
@@ -19,6 +21,18 @@ export const TOAST_DWELL_MS = {
   [TOAST_KIND.WARNING]: 6000,
   [TOAST_KIND.ERROR]: 8000,
 } as const satisfies Record<ToastKind, number>;
+
+type ToastHaptic =
+  typeof HAPTIC_FEEDBACK.SUCCESS | typeof HAPTIC_FEEDBACK.WARNING | typeof HAPTIC_FEEDBACK.ERROR;
+
+/** An outcome arrives with its haptic; a statement or work under way, none. */
+export const TOAST_HAPTIC = {
+  [TOAST_KIND.SUCCESS]: HAPTIC_FEEDBACK.SUCCESS,
+  [TOAST_KIND.INFO]: null,
+  [TOAST_KIND.PROGRESS]: null,
+  [TOAST_KIND.WARNING]: HAPTIC_FEEDBACK.WARNING,
+  [TOAST_KIND.ERROR]: HAPTIC_FEEDBACK.ERROR,
+} as const satisfies Record<ToastKind, ToastHaptic | null>;
 
 export const TOAST_TIMING = {
   /** Extra time to reach a toast's action. */

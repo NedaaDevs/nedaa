@@ -73,6 +73,8 @@ export const NEDAA_LIGHT = {
   surfaceQuiet: { oklch: "oklch(97% 0.02 222 / .46)", hex: "#E7F9FF75" },
   /** The 1pt ring inside the next prayer's card. */
   accentRing: { oklch: "oklch(41.5% 0.09 232 / .35)", hex: "#00537259" },
+  /** The accent for words: deep enough for 14pt text on every light sky. */
+  accentText: { oklch: "oklch(31% 0.09 232)", hex: "#00354B" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
@@ -112,6 +114,8 @@ export const NEDAA_DARK = {
   warnTint: { oklch: "oklch(77% 0.11 80 / .14)", hex: "#D9AC5E24" },
   surfaceQuiet: { oklch: "oklch(23% 0.065 258 / .46)", hex: "#071C3B75" },
   accentRing: { oklch: "oklch(80% 0.125 92 / .35)", hex: "#DBBB5659" },
+  /** The accent for words; the gold already reads on the night sky. */
+  accentText: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** Derived, so a token added to one palette must be added to the other. */
@@ -125,12 +129,15 @@ type TintedPhase = typeof PHASE.DAWN | typeof PHASE.ASR | typeof PHASE.MAGHRIB;
 export const BRIGHTNESS = { LIGHT: "light", DARK: "dark" } as const;
 export type Brightness = (typeof BRIGHTNESS)[keyof typeof BRIGHTNESS];
 
+/** The light tinted skies' ground, which level-3 text is checked against. */
+const SKY_TINT_GROUND = { oklch: "oklch(95% 0.032 225 / .72)", hex: "#D9F4FFB8" } as const;
+
 type PhaseGradient = {
   angle: number;
-  /** Palette token the gradient starts from. */
-  from: ColorToken;
+  /** The colour the gradient starts from. */
+  from: PaletteEntry;
   /** The tint mixed into `base`; `to` is the result, re-derived by the test. */
-  base: ColorToken;
+  base: PaletteEntry;
   tint: string;
   percent: number;
   to: string;
@@ -141,27 +148,27 @@ export const PHASE_GRADIENTS: Record<TintedPhase, Record<Brightness, PhaseGradie
   [PHASE.ASR]: {
     light: {
       angle: 140,
-      from: "surface2",
-      base: "surface2",
+      from: SKY_TINT_GROUND,
+      base: SKY_TINT_GROUND,
       tint: "#EAD095",
       percent: 22,
-      to: "#C2F0EFAF",
+      to: "#C5F1F0C8",
     },
     dark: null,
   },
   [PHASE.MAGHRIB]: {
     light: {
       angle: 150,
-      from: "surface",
-      base: "surface",
+      from: NEDAA_LIGHT.surface,
+      base: NEDAA_LIGHT.surface,
       tint: "#BB7588",
       percent: 18,
       to: "#CEE3F6EB",
     },
     dark: {
       angle: 150,
-      from: "surface",
-      base: "surface",
+      from: NEDAA_DARK.surface,
+      base: NEDAA_DARK.surface,
       tint: "#BB7588",
       percent: 18,
       to: "#262A52",
@@ -170,8 +177,8 @@ export const PHASE_GRADIENTS: Record<TintedPhase, Record<Brightness, PhaseGradie
   [PHASE.DAWN]: {
     light: {
       angle: 160,
-      from: "surface2",
-      base: "surface",
+      from: SKY_TINT_GROUND,
+      base: NEDAA_LIGHT.surface,
       tint: "#BFAFCF",
       percent: 18,
       to: "#D9ECF8EB",

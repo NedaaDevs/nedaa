@@ -20,7 +20,7 @@ describe("Pill", () => {
       </Pill>
     );
 
-    expect(screen.getByText("2.10.8")).toHaveStyle({ color: NEDAA_LIGHT.accent.hex });
+    expect(screen.getByText("2.10.8")).toHaveStyle({ color: NEDAA_LIGHT.accentText.hex });
     expect(screen.getByTestId("pill")).toHaveStyle({ backgroundColor: NEDAA_LIGHT.accentTint.hex });
   });
 

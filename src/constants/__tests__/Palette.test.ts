@@ -144,10 +144,13 @@ describe("phase gradients", () => {
       .map(([brightness, gradient]) => [`${phase}/${brightness}`, brightness, gradient!] as const)
   );
 
-  it.each(entries)("%s mixes to its stated hex", (_name, brightness, gradient) => {
-    const palette = brightness === BRIGHTNESS.DARK ? NEDAA_DARK : NEDAA_LIGHT;
+  it.each(entries)("%s mixes to its stated hex", (_name, _brightness, gradient) => {
+    expect(mixOklch(gradient.base.hex, gradient.tint, gradient.percent)).toBe(gradient.to);
+  });
 
-    expect(mixOklch(palette[gradient.base].hex, gradient.tint, gradient.percent)).toBe(gradient.to);
+  it.each(entries)("%s starts from colours true to their oklch", (_name, _b, gradient) => {
+    expect(oklchToHex(gradient.from.oklch)).toBe(gradient.from.hex);
+    expect(oklchToHex(gradient.base.oklch)).toBe(gradient.base.hex);
   });
 
   it("declares both brightnesses for every phase", () => {

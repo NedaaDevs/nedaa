@@ -7,6 +7,7 @@ import type { StepProps } from "@/components/onboarding/flow/types";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { VStack } from "@/components/ui/vstack";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
@@ -35,7 +36,7 @@ export const CompleteStep = ({ onNext, headingRef, progress }: StepProps) => {
 
   return (
     <SkyScrollView contentContainerStyle={GROW} showsVerticalScrollIndicator={false}>
-      <VStack flex={1} paddingHorizontal="$4" paddingVertical="$6" gap="$6">
+      <ScreenContent flex={1} paddingVertical="$6" gap="$6">
         <VStack flex={1} alignItems="center" justifyContent="center" gap="$3">
           <SkyOccluder>
             <Box
@@ -75,7 +76,7 @@ export const CompleteStep = ({ onNext, headingRef, progress }: StepProps) => {
             <Button.Text>{open}</Button.Text>
           </Button>
         </SkyOccluder>
-      </VStack>
+      </ScreenContent>
     </SkyScrollView>
   );
 };

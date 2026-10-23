@@ -49,11 +49,11 @@ export const Callout = ({ body, action }: Props) => {
         flexDirection="row"
         alignItems="center"
         gap="$1">
-        <Text size="sm" fontWeight="600" color="$accent">
+        <Text size="sm" fontWeight="600" color="$accentText">
           {action.label}
         </Text>
         <Box testID={isRTL ? CALLOUT_PART.CHEVRON_LEFT : CALLOUT_PART.CHEVRON_RIGHT}>
-          <Icon as={isRTL ? ChevronLeft : ChevronRight} size="xs" color="$accent" />
+          <Icon as={isRTL ? ChevronLeft : ChevronRight} size="xs" color="$accentText" />
         </Box>
       </Pressable>
     </VStack>

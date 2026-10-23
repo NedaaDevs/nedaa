@@ -19,10 +19,10 @@ import { SETTINGS_ROWS } from "@/components/settings/settingsRows";
 import type { IconProps } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
-import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { SECTION_KIND } from "@/constants/Section";
@@ -91,7 +91,7 @@ export default function PrivacyScreen() {
         </SkyOccluder>
 
         <SkyOccluder>
-          <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+          <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$section">
             <Section title={t("settings.privacy.leaves.title")} kind={SECTION_KIND.LABEL}>
               <ListGroup>
                 <Point
@@ -175,7 +175,7 @@ export default function PrivacyScreen() {
                 />
               </ListGroup>
             </Section>
-          </VStack>
+          </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
     </SkyBackground>
