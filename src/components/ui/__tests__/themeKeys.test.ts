@@ -97,7 +97,7 @@ describe("theme keys", () => {
 });
 
 /** Touch targets, so a screen names the intent instead of repeating 44. */
-const TARGETS = { target: 44, targetTab: 50 } as const;
+const TARGETS = { target: 44, targetTab: 56 } as const;
 
 describe("touch target tokens", () => {
   it.each(Object.entries(TARGETS))("$%s is %ipx", (name, px) => {
