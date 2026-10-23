@@ -4,6 +4,7 @@ import { styled, YStack } from "tamagui";
 import type { GetProps, TamaguiElement } from "tamagui";
 
 import { HighlightEdge, radiusNameOf, useElevationShadow } from "@/components/ui/material/edge";
+import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
 
 const CardFrame = styled(YStack, {
@@ -122,13 +123,27 @@ const CardPressableFrame = styled(CardFrame, {
 /** Same reason as the `Pressable` primitive: the `disabled` variant only dims. */
 const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
   (
-    { onPress, onLongPress, disabled, accessibilityState, role, children, style, ...props },
+    {
+      onPress,
+      onLongPress,
+      disabled,
+      accessibilityState,
+      role,
+      children,
+      style,
+      pressStyle,
+      ...props
+    },
     ref
   ) => {
     const lift = useCardLift(props.variant);
+    const press = usePressScale();
     return (
       <CardPressableFrame
         ref={ref}
+        transition={press.transition}
+        animateOnly={press.animateOnly}
+        pressStyle={{ ...press.pressStyle, ...pressStyle }}
         // A button unless the caller names a role; `role` would override theirs.
         role={role ?? (props.accessibilityRole ? undefined : "button")}
         disabled={disabled}

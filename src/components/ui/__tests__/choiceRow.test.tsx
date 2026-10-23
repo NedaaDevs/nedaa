@@ -101,7 +101,7 @@ describe("ChoiceRow", () => {
 
   // A card under the finger shrinks a touch and keeps its full colour.
   it.each([
-    [false, [{ scale: 0.99 }]],
+    [false, [{ scale: 0.98 }]],
     [true, undefined],
   ] as const)("presses in (Reduce Motion: %s)", async (reduced, transform) => {
     mockReduced = reduced;

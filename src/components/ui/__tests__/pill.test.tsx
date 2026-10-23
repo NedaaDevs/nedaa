@@ -13,32 +13,62 @@ describe("Pill", () => {
     expect(screen.getByText("2.10.8")).toBeTruthy();
   });
 
-  it("inks the accent tone in the accent", async () => {
-    await renderWithTheme(<Pill tone={PILL_TONE.ACCENT}>2.10.8</Pill>);
+  it("inks the accent tone in the accent, on an accent tint", async () => {
+    await renderWithTheme(
+      <Pill tone={PILL_TONE.ACCENT} testID="pill">
+        2.10.8
+      </Pill>
+    );
 
     expect(screen.getByText("2.10.8")).toHaveStyle({ color: NEDAA_LIGHT.accent.hex });
+    expect(screen.getByTestId("pill")).toHaveStyle({ backgroundColor: NEDAA_LIGHT.accentTint.hex });
   });
 
-  // Warn ink on surface-2 falls below 4.5:1 in light, so the edge carries it.
-  it("edges the warn tone in the warn colour, with bold readable ink", async () => {
+  // A tint carries the pill; a drawn line would be a control's edge.
+  it.each(Object.values(PILL_TONE))("draws no border (%s)", async (tone) => {
+    await renderWithTheme(
+      <Pill tone={tone} testID="pill">
+        Asr
+      </Pill>
+    );
+
+    expect(styleOf(screen.getByTestId("pill")).borderTopWidth ?? 0).toBe(0);
+  });
+
+  it("stands at least 26 high, inset 10 at each side, its text at 12", async () => {
+    await renderWithTheme(
+      <Pill testID="pill" label="Next">
+        Asr
+      </Pill>
+    );
+
+    expect(screen.getByTestId("pill")).toHaveStyle({
+      minHeight: 26,
+      paddingLeft: 10,
+      paddingRight: 10,
+    });
+    expect(screen.getByText("Asr")).toHaveStyle({ fontSize: 12 });
+    expect(screen.getByText("Next")).toHaveStyle({ fontSize: 12 });
+  });
+
+  // Warn ink falls below 4.5:1 in light, so a warn tint carries the tone.
+  it("tints the warn tone in the warn colour, with readable ink at 600", async () => {
     await renderWithTheme(
       <>
         <Pill tone={PILL_TONE.WARN} testID="pill">
           Debug on
         </Pill>
-        <Text size="xs" bold>
-          bold
+        <Text size="sm" fontWeight="600">
+          semibold
         </Text>
       </>
     );
 
-    expect(screen.getByTestId("pill")).toHaveStyle({
-      borderTopColor: NEDAA_LIGHT.warn.hex,
-      backgroundColor: NEDAA_LIGHT.surface2.hex,
-    });
+    expect(screen.getByTestId("pill")).toHaveStyle({ backgroundColor: NEDAA_LIGHT.warnTint.hex });
     expect(screen.getByText("Debug on")).toHaveStyle({
       color: NEDAA_LIGHT.fg.hex,
-      fontFamily: styleOf(screen.getByText("bold")).fontFamily,
+      fontSize: 12,
+      fontFamily: styleOf(screen.getByText("semibold")).fontFamily,
     });
   });
 
@@ -69,15 +99,15 @@ describe("Pill", () => {
     }
   );
 
-  // Over the sky the chip keeps a quiet edge; the lead-in steps back in colour.
-  it("edges the neutral tone plainly, its name in the ink and its lead-in muted", async () => {
+  // Over the sky the chip is a quiet ink tint; the lead-in steps back in colour.
+  it("tints the neutral tone quietly, its name in the ink and its lead-in muted", async () => {
     await renderWithTheme(
       <Pill tone={PILL_TONE.NEUTRAL} label="Next" testID="pill">
         Asr
       </Pill>
     );
 
-    expect(screen.getByTestId("pill")).toHaveStyle({ borderTopColor: NEDAA_LIGHT.border.hex });
+    expect(screen.getByTestId("pill")).toHaveStyle({ backgroundColor: NEDAA_LIGHT.quietTint.hex });
     expect(screen.getByText("Asr")).toHaveStyle({ color: NEDAA_LIGHT.fg.hex });
     expect(screen.getByText("Next")).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex });
   });

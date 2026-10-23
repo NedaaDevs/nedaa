@@ -15,12 +15,15 @@ export type PillTone = (typeof PILL_TONE)[keyof typeof PILL_TONE];
 /** Test ids for the pill's parts. */
 export const PILL_PART = { DOT: "pill-dot" } as const;
 
-/** `lead` inks the label; `$mutedSky` is 7.7:1 on the chip over day sky. */
+/** `lead` inks the label; a tint, never a line, carries the tone. */
 const TONE_STYLE = {
-  [PILL_TONE.ACCENT]: { edge: "$accentEdge", ink: "$accent", lead: "$accent" },
-  [PILL_TONE.WARN]: { edge: "$warn", ink: "$fg", lead: "$fg" },
-  [PILL_TONE.NEUTRAL]: { edge: "$border", ink: "$fg", lead: "$mutedSky" },
-} as const satisfies Record<PillTone, { edge: string; ink: string; lead: string }>;
+  [PILL_TONE.ACCENT]: { fill: "$accentTint", ink: "$accent", lead: "$accent" },
+  [PILL_TONE.WARN]: { fill: "$warnTint", ink: "$fg", lead: "$fg" },
+  [PILL_TONE.NEUTRAL]: { fill: "$quietTint", ink: "$fg", lead: "$mutedSky" },
+} as const satisfies Record<PillTone, { fill: string; ink: string; lead: string }>;
+
+/** No size step is 26; the pill stands this high at least. */
+const PILL_MIN_HEIGHT = 26;
 
 type Props = {
   children: string;
@@ -43,7 +46,7 @@ export const Pill = ({
   alignSelf = "center",
   testID,
 }: Props) => {
-  const { edge, ink, lead } = TONE_STYLE[tone];
+  const { fill, ink, lead } = TONE_STYLE[tone];
 
   return (
     <HStack
@@ -51,12 +54,11 @@ export const Pill = ({
       alignSelf={alignSelf}
       alignItems="center"
       gap="$1.5"
-      paddingHorizontal="$2"
-      paddingVertical="$1"
-      borderWidth={1}
-      borderColor={edge}
+      minHeight={PILL_MIN_HEIGHT}
+      paddingHorizontal="$2.5"
+      paddingVertical="$0.5"
       borderRadius="$pill"
-      backgroundColor="$surface2">
+      backgroundColor={fill}>
       {dot ? (
         <Box
           testID={PILL_PART.DOT}
@@ -69,11 +71,11 @@ export const Pill = ({
         />
       ) : null}
       {label ? (
-        <Text size="xs" fontWeight="500" color={lead}>
+        <Text size="sm" fontWeight="500" color={lead}>
           {label}
         </Text>
       ) : null}
-      <Text size="xs" bold color={ink}>
+      <Text size="sm" fontWeight="600" color={ink}>
         {children}
       </Text>
     </HStack>

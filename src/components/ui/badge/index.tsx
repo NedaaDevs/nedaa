@@ -31,18 +31,19 @@ const ACTION_THEME_KEY: Record<BadgeAction, string> = {
   error: "error",
   warning: "warning",
   success: "success",
-  info: "info",
-  muted: "typography",
+  info: "accent",
+  muted: "muted",
 };
 
 // --- BadgeFrame ---
-// borderColor is set per action but only visible when variant=outline adds borderWidth.
+// A borderless tint pill; `outline` keeps its name and draws the same.
 
 const BadgeFrame = styled(XStack, {
   name: "Badge",
   context: BadgeContext,
   alignItems: "center",
-  borderRadius: "$chip",
+  borderRadius: "$pill",
+  borderWidth: 0,
 
   variants: {
     action: {
@@ -59,22 +60,22 @@ const BadgeFrame = styled(XStack, {
         borderColor: "$borderSuccess",
       },
       info: {
-        backgroundColor: "$backgroundInfo",
+        backgroundColor: "$accentTint",
         borderColor: "$borderInfo",
       },
       muted: {
-        backgroundColor: "$backgroundMuted",
+        backgroundColor: "$quietTint",
         borderColor: "$outline",
       },
     },
     variant: {
-      solid: { borderWidth: 0 },
-      outline: { borderWidth: 1 },
+      solid: {},
+      outline: {},
     },
     size: {
-      sm: { paddingHorizontal: "$tight", paddingVertical: "$0.5" },
-      md: { paddingHorizontal: "$inline", paddingVertical: "$tight" },
-      lg: { paddingHorizontal: "$stack", paddingVertical: "$tight" },
+      sm: { paddingHorizontal: "$1.5", paddingVertical: "$0.5" },
+      md: { paddingHorizontal: "$2.5", paddingVertical: "$0.5" },
+      lg: { paddingHorizontal: "$3", paddingVertical: "$1" },
     },
   } as const,
 
@@ -91,8 +92,7 @@ const BadgeTextFrame = styled(TamaguiText, {
   name: "BadgeText",
   context: BadgeContext,
   fontFamily: "$body",
-  fontWeight: "400",
-  textTransform: "uppercase",
+  fontWeight: "600",
   ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: "$tight" }),
 
   variants: {
@@ -100,8 +100,8 @@ const BadgeTextFrame = styled(TamaguiText, {
       error: { color: "$error" },
       warning: { color: "$warning" },
       success: { color: "$success" },
-      info: { color: "$info" },
-      muted: { color: "$typography" },
+      info: { color: "$accent" },
+      muted: { color: "$muted" },
     },
     // Sizes carry no styles: BadgeText computes the label's fontSize from the
     // size context so the app text-scale can multiply it.
@@ -114,7 +114,7 @@ const BadgeTextFrame = styled(TamaguiText, {
 });
 
 // Label font size per Badge size variant; the app text-scale multiplies it.
-const BADGE_FONT_SIZE: Record<string, number> = { sm: 10, md: 10, lg: 12 };
+const BADGE_FONT_SIZE: Record<string, number> = { sm: 12, md: 12, lg: 12 };
 
 type BadgeTextProps = GetProps<typeof BadgeTextFrame>;
 
@@ -123,7 +123,7 @@ const BadgeText = React.forwardRef<React.ComponentRef<typeof BadgeTextFrame>, Ba
     const ctx = BadgeContext.useStyledContext();
     const m = useTextScale();
     const base =
-      typeof fontSize === "number" ? fontSize : (BADGE_FONT_SIZE[ctx.size ?? "md"] ?? 10);
+      typeof fontSize === "number" ? fontSize : (BADGE_FONT_SIZE[ctx.size ?? "md"] ?? 12);
     return <BadgeTextFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
   }
 );

@@ -244,7 +244,7 @@ describe("AlarmDisclosure", () => {
     await renderDisclosure(ALARM_TYPE.FAJR);
 
     const pills = screen.getByLabelText(i18n.t("prayerDetail.alarm.minutesBefore"));
-    expect(pills).toBeTruthy();
+    expect(pills).toHaveStyle({ flexWrap: "wrap" });
     for (const step of ALARM_TIMING_CHOICES.fajr.minuteSteps.filter((m) => m > 0)) {
       expect(screen.getByRole("radio", { name: minutes(step) })).toBeTruthy();
     }
