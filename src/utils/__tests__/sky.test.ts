@@ -55,7 +55,7 @@ describe("skyScene", () => {
     const scene = skyScene(BRIGHTNESS.LIGHT, PHASE.ASR);
 
     expect(scene.base.angle).toBe(tint.angle);
-    expect(hexes(scene.base.stops)).toEqual([NEDAA_LIGHT[tint.from].hex, tint.to]);
+    expect(hexes(scene.base.stops)).toEqual([tint.from.hex, tint.to]);
     expect(scene.glow).toBeNull();
     expect(scene.sun).not.toBeNull();
     expect(scene.horizon).not.toBeNull();
@@ -78,7 +78,7 @@ describe("skyScene", () => {
     const tint = PHASE_GRADIENTS[PHASE.MAGHRIB].dark!;
 
     expect(hexes(skyScene(BRIGHTNESS.DARK, PHASE.MAGHRIB).base.stops)).toEqual([
-      NEDAA_DARK[tint.from].hex,
+      tint.from.hex,
       tint.to,
     ]);
   });

@@ -76,7 +76,7 @@ export const skyScene = (brightness: Brightness, phase: Phase | undefined): SkyS
       ? {
           angle: tint.angle,
           stops: [
-            { offset: 0, color: palette[tint.from].hex },
+            { offset: 0, color: tint.from.hex },
             { offset: 1, color: tint.to },
           ],
         }

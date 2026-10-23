@@ -4,7 +4,7 @@ import { parseISO } from "date-fns";
 import { ArrowDownUp } from "lucide-react-native";
 
 import { PRAYER_ICONS } from "@/components/today/prayerIcons";
-import { ActionsheetTitle } from "@/components/ui/actionsheet";
+import { ActionsheetHero, ActionsheetTitle } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { COUNT_DIRECTION, Countdown, Rolling } from "@/components/ui/countdown";
@@ -46,79 +46,81 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
   const until = count?.axis === COUNT_AXIS.UNTIL;
 
   return (
-    <VStack gap="$3" paddingTop="$2">
-      {/* The end stays clear for the sheet's close button. */}
-      <HStack alignItems="center" gap="$3" paddingEnd="$11">
-        <Box
-          width="$12"
-          height="$12"
-          alignItems="center"
-          justifyContent="center"
-          borderRadius="$pill"
-          borderWidth={1}
-          borderColor="$accentLine"
-          backgroundColor="$accentSoft">
-          {/* 22 sits between the ramp's 20 and 24. */}
-          <Icon as={PRAYER_ICONS[prayerId]} size={22} strokeWidth={1.65} color="$accent" />
-        </Box>
-        <VStack flexShrink={1}>
-          <ActionsheetTitle>
-            <Text size="3xl" bold typography="display" color="$fg">
-              {name}
-            </Text>
-          </ActionsheetTitle>
-          <Text
-            size="md"
-            numeric
-            color="$muted"
-            accessibilityLabel={spokenClockTime(
-              card.time,
-              day.timezone,
-              { locale, use24HourTime, western },
-              t
-            )}>
-            {digits(formatPrayerTime(card.time, day.timezone, { locale, use24HourTime }))}
-          </Text>
-        </VStack>
-      </HStack>
-      {count && (
-        <Pressable
-          accessibilityRole="togglebutton"
-          accessibilityLabel={t(until ? "a11y.today.untilSpoken" : "a11y.today.sinceSpoken", {
-            prayer: name,
-            duration: spokenDuration(count, t),
-          })}
-          accessibilityHint={t(until ? "a11y.today.showElapsed" : "a11y.today.showRemaining")}
-          accessibilityState={{ checked: !until }}
-          onPress={() => setFlipped((value) => !value)}
-          flexDirection="row"
-          alignItems="center"
-          gap="$3"
-          minHeight="$14"
-          paddingHorizontal="$3.5"
-          paddingVertical="$2.5"
-          borderRadius="$card"
-          backgroundColor="$surface2Soft">
-          <Countdown
-            value={digits(formatCount(count.seconds, count.precise, count.axis))}
-            reserve={digits(countReserve(count))}
-            counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
-            openKey={0}
-            switchKey={count.axis}
-            size="2xl"
-            bold
-            color="$fg"
-          />
-          <VStack flex={1}>
-            <Rolling
-              value={t(until ? "today.focus.until" : "today.focus.since", { prayer: name })}
-              size="sm"
+    <ActionsheetHero>
+      <VStack gap="$3" paddingTop="$2">
+        {/* The end stays clear for the sheet's close button. */}
+        <HStack alignItems="center" gap="$3" paddingEnd="$11">
+          <Box
+            width="$12"
+            height="$12"
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="$pill"
+            borderWidth={1}
+            borderColor="$accentLine"
+            backgroundColor="$accentSoft">
+            {/* 22 sits between the ramp's 20 and 24. */}
+            <Icon as={PRAYER_ICONS[prayerId]} size={22} strokeWidth={1.65} color="$accent" />
+          </Box>
+          <VStack flexShrink={1}>
+            <ActionsheetTitle>
+              <Text size="3xl" bold typography="display" color="$fg">
+                {name}
+              </Text>
+            </ActionsheetTitle>
+            <Text
+              size="md"
+              numeric
               color="$muted"
-            />
+              accessibilityLabel={spokenClockTime(
+                card.time,
+                day.timezone,
+                { locale, use24HourTime, western },
+                t
+              )}>
+              {digits(formatPrayerTime(card.time, day.timezone, { locale, use24HourTime }))}
+            </Text>
           </VStack>
-          <Icon as={ArrowDownUp} size="md" color="$muted" />
-        </Pressable>
-      )}
-    </VStack>
+        </HStack>
+        {count && (
+          <Pressable
+            accessibilityRole="togglebutton"
+            accessibilityLabel={t(until ? "a11y.today.untilSpoken" : "a11y.today.sinceSpoken", {
+              prayer: name,
+              duration: spokenDuration(count, t),
+            })}
+            accessibilityHint={t(until ? "a11y.today.showElapsed" : "a11y.today.showRemaining")}
+            accessibilityState={{ checked: !until }}
+            onPress={() => setFlipped((value) => !value)}
+            flexDirection="row"
+            alignItems="center"
+            gap="$3"
+            minHeight="$14"
+            paddingHorizontal="$3.5"
+            paddingVertical="$2.5"
+            borderRadius="$card"
+            backgroundColor="$surface2Soft">
+            <Countdown
+              value={digits(formatCount(count.seconds, count.precise, count.axis))}
+              reserve={digits(countReserve(count))}
+              counting={until ? COUNT_DIRECTION.DOWN : COUNT_DIRECTION.UP}
+              openKey={0}
+              switchKey={count.axis}
+              size="2xl"
+              bold
+              color="$fg"
+            />
+            <VStack flex={1}>
+              <Rolling
+                value={t(until ? "today.focus.until" : "today.focus.since", { prayer: name })}
+                size="sm"
+                color="$muted"
+              />
+            </VStack>
+            <Icon as={ArrowDownUp} size="md" color="$muted" />
+          </Pressable>
+        )}
+      </VStack>
+    </ActionsheetHero>
   );
 };

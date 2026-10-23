@@ -11,6 +11,7 @@ import { isTunedTiming, spokenTuning, summariseTuning } from "@/components/calcu
 import { useCalculationChoices } from "@/components/calculation/useCalculationChoices";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
@@ -102,7 +103,7 @@ const CalculationContent = () => {
           />
         </SkyOccluder>
 
-        <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$5">
+        <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
           <Text size="sm" color="$mutedSky">
             {city
               ? t("settings.calculation.intro", { city })
@@ -112,7 +113,7 @@ const CalculationContent = () => {
           <TodayPreview draft={draft} />
 
           <SkyOccluder>
-            <VStack gap="$5">
+            <VStack gap="$section">
               <Section title={t("settings.calculation.sections.method")} kind={SECTION_KIND.LABEL}>
                 <MethodCard
                   ref={openers[CALCULATION_PICKER.METHOD]}
@@ -152,7 +153,7 @@ const CalculationContent = () => {
               </Section>
             </VStack>
           </SkyOccluder>
-        </VStack>
+        </ScreenContent>
       </SkyScrollView>
 
       {/* Outside the scroll view, so it stays in reach at any scroll. */}

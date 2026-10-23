@@ -3,7 +3,9 @@ import { useIsFocused } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { VStack } from "@/components/ui/vstack";
 import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
 import { FocusCountdown } from "@/components/today/FocusCountdown";
@@ -44,27 +46,26 @@ export default function MainScreen() {
             contentContainerStyle={{ paddingBottom: tabBarInset }}
             showsVerticalScrollIndicator={false}>
             {/* More air around the date and the prayer; the day below sits closer. */}
-            <Box
-              testID={TODAY_SCREEN_PART.CONTENT}
-              paddingHorizontal="$screen"
-              paddingTop="$2"
-              gap="$heroGap">
+            <ScreenContent testID={TODAY_SCREEN_PART.CONTENT} paddingTop="$2" gap="$heroGap">
               <TodayHeader />
-              <FocusCountdown paused={!focused} />
-              <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
-                <SkyOccluder>
-                  <CelestialRhythm selected={detail.prayerId} />
-                </SkyOccluder>
-                <SkyOccluder>
-                  <LocationNotice />
-                </SkyOccluder>
-                <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
-                <OtherTimes />
-                <PrayerTimesState />
-                {showOccasions ? <UpcomingOccasions /> : null}
-                <DaySimulatorButton />
-              </Box>
-            </Box>
+              {/* The arc sits close under the countdown it belongs to. */}
+              <VStack testID={TODAY_SCREEN_PART.FOCUS} gap="$2.5">
+                <FocusCountdown paused={!focused} />
+                <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
+                  <SkyOccluder>
+                    <CelestialRhythm selected={detail.prayerId} />
+                  </SkyOccluder>
+                  <SkyOccluder>
+                    <LocationNotice />
+                  </SkyOccluder>
+                  <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
+                  <OtherTimes />
+                  <PrayerTimesState />
+                  {showOccasions ? <UpcomingOccasions /> : null}
+                  <DaySimulatorButton />
+                </Box>
+              </VStack>
+            </ScreenContent>
           </SkyScrollView>
         </Box>
         <PrayerDetailSheet

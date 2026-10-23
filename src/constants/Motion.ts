@@ -1,5 +1,7 @@
 /** Timing steps in ms, for Tamagui timing tokens and React Native `Animated`. */
 export const DURATION_MS = {
+  /** A finger landing on a row or card: the scale goes down this fast. */
+  PRESS: 80,
   QUICK: 160,
   SETTLE: 220,
   GENTLE: 280,
@@ -28,6 +30,10 @@ export const SHEET_MOTION = {
   DISMISS_MS: DURATION_MS.SETTLE,
   /** Under Reduce Motion the sheet fades where it stands, both ways. */
   REDUCED_FADE_MS: 200,
+  /** The scrim fades on its own timing, both ways, apart from the sheet. */
+  SCRIM_MS: DURATION_MS.SETTLE,
+  /** The hero's text fades in over this as the sheet starts to rise. */
+  HERO_FADE_MS: 120,
 } as const;
 
 /** CSS ease-in-out: slow at both ends, so no frame jumps. */

@@ -4,8 +4,8 @@ import { Icon, type IconProps } from "@/components/ui/icon";
 /** Test id for the tile's frame. */
 export const ICON_TILE_ID = "icon-tile";
 
-/** The tile's side, from the list row design; no size token is 34. */
-const TILE_SIZE = 34;
+/** A glyph tile's side, from the list row design; no size token is 34. */
+export const TILE_SIZE = 34;
 /** The glyph's stroke on the tile, and the chevron beside a tiled row. */
 export const TILE_STROKE = 1.75;
 

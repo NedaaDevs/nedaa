@@ -408,6 +408,7 @@ const lightTheme = {
   quietTint: NEDAA_LIGHT.quietTint.hex,
   surfaceQuiet: NEDAA_LIGHT.surfaceQuiet.hex,
   accentRing: NEDAA_LIGHT.accentRing.hex,
+  accentText: NEDAA_LIGHT.accentText.hex,
   warnTint: NEDAA_LIGHT.warnTint.hex,
 };
 
@@ -503,6 +504,7 @@ const darkTheme = {
   quietTint: NEDAA_DARK.quietTint.hex,
   surfaceQuiet: NEDAA_DARK.surfaceQuiet.hex,
   accentRing: NEDAA_DARK.accentRing.hex,
+  accentText: NEDAA_DARK.accentText.hex,
   warnTint: NEDAA_DARK.warnTint.hex,
 };
 
@@ -549,6 +551,7 @@ const animations = createAnimations({
   },
   // Durations only. The config is loaded in Node at build time, so it must not
   // import react-native; an easing curve has to come from the call site.
+  press: { type: "timing", duration: DURATION_MS.PRESS },
   quick: { type: "timing", duration: DURATION_MS.QUICK },
   settle: { type: "timing", duration: DURATION_MS.SETTLE },
   gentle: { type: "timing", duration: DURATION_MS.GENTLE },

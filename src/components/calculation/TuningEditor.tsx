@@ -135,7 +135,7 @@ export const TuningEditor = ({ settings, onChange, focus, focusRef }: Props) => 
               fontWeight="600"
               numeric
               numberOfLines={1}
-              color={moved ? "$accent" : "$fg"}>
+              color={moved ? "$accentText" : "$fg"}>
               {shown ? shown.shown : UNKNOWN_TIME}
             </Text>
           </Stepper>
