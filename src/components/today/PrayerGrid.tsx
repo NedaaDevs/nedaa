@@ -146,6 +146,7 @@ export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
     spokenClockTime(time, day.timezone, { locale, use24HourTime, western }, t);
   const sunrise = day.otherTimings[OTHER_TIMING.SUNRISE];
   const sunriseName = t("otherTimings.sunrise");
+  const sunrisePassed = parseISO(sunrise).getTime() <= now.getTime();
 
   return (
     <Grid columns={2} gap="$2.5">
@@ -186,7 +187,7 @@ export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
               numeric
               flexShrink={0}
               marginStart="auto"
-              color="$mutedSky">
+              color={sunrisePassed ? "$mutedSky" : "$fg"}>
               {shown(sunrise)}
             </Text>
           </HStack>
