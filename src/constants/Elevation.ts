@@ -49,3 +49,10 @@ export const ELEVATION_LEVEL = {
   E2: "e2",
   E3: "e3",
 } as const satisfies Record<string, ElevationLevel>;
+
+/** The accent glow under the next prayer's card: offset and blur, in points. */
+const ACCENT_GLOW = { offsetY: 10, blur: 24 } as const;
+
+/** A soft accent-coloured lift; the colour is the theme's `accentGlow`. */
+export const accentGlowShadow = (color: string): string =>
+  `0 ${ACCENT_GLOW.offsetY}px ${ACCENT_GLOW.blur}px ${color}`;

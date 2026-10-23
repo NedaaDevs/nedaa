@@ -211,7 +211,7 @@ describe("Text size", () => {
       pan().onChange({ x: AT[3], changeX: AT[3] - AT[0] });
     });
 
-    expect(previewDateSize()).toBe(fontSizeOf("4xl") * TEXT_SIZE_MULTIPLIERS[TextSize.MAX]);
+    expect(previewDateSize()).toBe(fontSizeOf("headline") * TEXT_SIZE_MULTIPLIERS[TextSize.MAX]);
     expect(titleSize()).toBe(before);
     expect(usePreferencesStore.getState().textSize).toBe(TextSize.DEFAULT);
   });
@@ -235,7 +235,7 @@ describe("Text size", () => {
     stop();
 
     expect(writes).toEqual([TextSize.XLARGE]);
-    expect(previewDateSize()).toBe(fontSizeOf("4xl") * TEXT_SIZE_MULTIPLIERS[TextSize.XLARGE]);
+    expect(previewDateSize()).toBe(fontSizeOf("headline") * TEXT_SIZE_MULTIPLIERS[TextSize.XLARGE]);
   });
 
   it("returns the preview to the stored size when a drag is cancelled", async () => {
@@ -247,7 +247,7 @@ describe("Text size", () => {
       pan().onEnd({ x: AT[3] }, false);
     });
 
-    expect(previewDateSize()).toBe(fontSizeOf("4xl"));
+    expect(previewDateSize()).toBe(fontSizeOf("headline"));
     expect(usePreferencesStore.getState().textSize).toBe(TextSize.DEFAULT);
   });
 
