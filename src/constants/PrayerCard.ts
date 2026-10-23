@@ -7,3 +7,6 @@ export const PRAYER_CARD_STATE = {
 } as const;
 
 export type PrayerCardState = (typeof PRAYER_CARD_STATE)[keyof typeof PRAYER_CARD_STATE];
+
+/** A Today prayer cell's least height; no size token sits at 60. */
+export const PRAYER_CELL_HEIGHT = 60;

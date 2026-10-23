@@ -118,7 +118,9 @@ describe("token line heights", () => {
 describe("premium type steps", () => {
   const STEPS = {
     "$10.5": { fontSize: 40, lineHeight: 52 },
+    "$8.5": { fontSize: 32, lineHeight: 40 },
     "$7.5": { fontSize: 26, lineHeight: 34 },
+    "$6.5": { fontSize: 22, lineHeight: 30 },
     "$3.75": { fontSize: 15, lineHeight: 21 },
     "$2.75": { fontSize: 13, lineHeight: 20 },
   } as const;
@@ -129,7 +131,9 @@ describe("premium type steps", () => {
 
   it.each([
     ["display", "$10.5"],
+    ["figure", "$8.5"],
     ["heading", "$7.5"],
+    ["headline", "$6.5"],
     ["label", "$3.75"],
     ["helper", "$2.75"],
   ] as const)("size %s maps to %s", (name, step) => {

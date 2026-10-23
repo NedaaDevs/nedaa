@@ -69,6 +69,10 @@ export const NEDAA_LIGHT = {
   quietTint: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
   /** A warn pill's fill. */
   warnTint: { oklch: "oklch(57% 0.11 72 / .14)", hex: "#9F6B1E24" },
+  /** A Today prayer card: the surface thinned below `surfaceGlass`. */
+  surfaceQuiet: { oklch: "oklch(97% 0.02 222 / .46)", hex: "#E7F9FF75" },
+  /** The 1pt ring inside the next prayer's card. */
+  accentRing: { oklch: "oklch(41.5% 0.09 232 / .35)", hex: "#00537259" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
@@ -106,6 +110,8 @@ export const NEDAA_DARK = {
   accentTint: { oklch: "oklch(80% 0.125 92 / .12)", hex: "#DBBB561F" },
   quietTint: { oklch: "oklch(93% 0.018 230 / .07)", hex: "#DCEAF212" },
   warnTint: { oklch: "oklch(77% 0.11 80 / .14)", hex: "#D9AC5E24" },
+  surfaceQuiet: { oklch: "oklch(23% 0.065 258 / .46)", hex: "#071C3B75" },
+  accentRing: { oklch: "oklch(80% 0.125 92 / .35)", hex: "#DBBB5659" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** Derived, so a token added to one palette must be added to the other. */

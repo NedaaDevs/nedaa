@@ -1,10 +1,14 @@
+import { StyleSheet } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
+import config from "../../../../tamagui.config";
 import { OtherTimes } from "@/components/today/OtherTimes";
+import { DISCLOSURE_PART } from "@/components/ui/disclosure";
 import {
   OTHER_TIME_LABEL_KEY,
   OTHER_TIMING,
   OTHER_TIMING_NAMES,
+  TODAY_OTHER_TIMES,
   PRAYER_ID,
 } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
@@ -54,13 +58,13 @@ describe("OtherTimes", () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it("opens to the six other times of the day, each with its time", async () => {
+  it("opens to the day's other times, each with its time", async () => {
     await renderWithTheme(<OtherTimes />);
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 
     await user.press(screen.getByRole("button", { name: i18n.t("otherTimings.title") }));
 
-    for (const name of OTHER_TIMING_NAMES) {
+    for (const name of TODAY_OTHER_TIMES) {
       const time = formatPrayerTime(OTHER[name], "UTC", {
         locale: AppLocale.EN,
         use24HourTime: false,
@@ -75,7 +79,7 @@ describe("OtherTimes", () => {
     expect(screen.getByText(i18n.t("otherTimings.title"))).toHaveStyle({
       fontSize: fontSizeOf("md"),
     });
-    for (const name of OTHER_TIMING_NAMES) {
+    for (const name of TODAY_OTHER_TIMES) {
       const time = formatPrayerTime(OTHER[name], "UTC", {
         locale: AppLocale.EN,
         use24HourTime: false,
@@ -111,12 +115,41 @@ describe("OtherTimes", () => {
   it("lets a long name wrap, never truncating", async () => {
     await renderWithTheme(<OtherTimes />);
 
-    for (const name of OTHER_TIMING_NAMES) {
+    for (const name of TODAY_OTHER_TIMES) {
       expect(
         screen.getByText(i18n.t(OTHER_TIME_LABEL_KEY[name]), { includeHiddenElements: true }).props
           .numberOfLines
       ).toBeUndefined();
     }
+  });
+
+  // Sunrise has its own quiet cell among the prayers, so the list omits it.
+  it("lists every other time but sunrise", async () => {
+    await renderWithTheme(<OtherTimes />);
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    await user.press(screen.getByRole("button", { name: i18n.t("otherTimings.title") }));
+
+    expect(TODAY_OTHER_TIMES).toEqual(
+      OTHER_TIMING_NAMES.filter((name) => name !== OTHER_TIMING.SUNRISE)
+    );
+    expect(
+      screen.queryByText(i18n.t(OTHER_TIME_LABEL_KEY[OTHER_TIMING.SUNRISE]), {
+        includeHiddenElements: true,
+      })
+    ).toBeNull();
+  });
+
+  // A secondary door at the quiet level: muted summary, no rule above or below.
+  it("sits quiet, with a muted summary and no rule", async () => {
+    await renderWithTheme(<OtherTimes />);
+
+    expect(screen.getByText(i18n.t("otherTimings.title"))).toHaveStyle({
+      color: config.themes.light.mutedSky.val,
+    });
+    const root = StyleSheet.flatten(screen.getByTestId(DISCLOSURE_PART.ROOT).props.style);
+    expect(root.borderBottomWidth).toBeUndefined();
+    expect(root.borderTopWidth).toBeUndefined();
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

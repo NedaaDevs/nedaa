@@ -124,7 +124,11 @@ describe("The user's place", () => {
         Boolean
       );
       expect(hero).toEqual(shown);
-      expect(textsIn(TODAY_HEADER_PART.PLACE)).toEqual(hero);
+      // Today joins the same two parts into its one quiet line.
+      const [city, country] = hero;
+      expect(textsIn(TODAY_HEADER_PART.PLACE)).toEqual([
+        country ? i18n.t("place.name", { city, country }) : city,
+      ]);
     }
   );
 });

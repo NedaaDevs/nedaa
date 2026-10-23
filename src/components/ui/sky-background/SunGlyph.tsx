@@ -29,7 +29,7 @@ const rayPath = (reach: number, length: number, angle: number, halfAngle: number
 /** The sun: slow faint rays behind a wide white bloom and a blown-out core. */
 export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
   const id = useId();
-  const { colour, core, bloom, rays, spinMs } = SUN_GLYPH;
+  const { colour, core, bloom, bloomStops, bloomStrength, rays, spinMs } = SUN_GLYPH;
   const white = colour.hex;
   const reach = Math.max(...rays.lengths);
   const [spin] = useState(() => new Animated.Value(0));
@@ -94,10 +94,14 @@ export const SunGlyph = ({ cx, cy, width, height, reduced }: Props) => {
             cx={cx}
             cy={cy}
             r={bloom}>
-            <Stop offset={0} stopColor={white} stopOpacity={0.95} />
-            <Stop offset={0.12} stopColor={white} stopOpacity={0.45} />
-            <Stop offset={0.32} stopColor={white} stopOpacity={0.12} />
-            <Stop offset={1} stopColor={white} stopOpacity={0} />
+            {bloomStops.map(([offset, opacity]) => (
+              <Stop
+                key={offset}
+                offset={offset}
+                stopColor={white}
+                stopOpacity={opacity * bloomStrength}
+              />
+            ))}
           </RadialGradient>
           <RadialGradient id={`${id}core`} gradientUnits="userSpaceOnUse" cx={cx} cy={cy} r={core}>
             <Stop offset={0} stopColor={white} />
