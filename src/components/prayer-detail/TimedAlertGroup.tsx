@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import { BellMinus, Users, type LucideIcon } from "lucide-react-native";
 
-import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import { SEGMENTED_FORM, SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SoundPicker } from "@/components/ui/sound-picker";
 import { SwitchGroup } from "@/components/ui/switch-group";
 import { Text } from "@/components/ui/text";
@@ -88,6 +88,7 @@ export const TimedAlertGroup = ({
           accessibilityLabel={t(copy.timing)}
           label={String}
           spokenLabel={(minutes) => t(copy.choice, { count: minutes })}
+          form={SEGMENTED_FORM.COMPACT}
         />
       </VStack>
       <SoundPicker
