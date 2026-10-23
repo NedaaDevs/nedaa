@@ -10,7 +10,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { APP_STATE } from "@/constants/AppState";
-import { COUNT_AXIS } from "@/constants/Countdown";
+import { COUNT_AXIS, FOCUS_LAYOUT, type FocusLayout } from "@/constants/Countdown";
 import { useFocusPrayer } from "@/hooks/useFocusPrayer";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -19,6 +19,7 @@ import { countReserve, formatCount } from "@/utils/focusCount";
 import { spokenDuration } from "@/utils/spokenDuration";
 
 export const FOCUS_COUNTDOWN_PART = {
+  ROOT: "focus-countdown",
   ROW: "focus-countdown-row",
   NAME: "focus-countdown-name",
   FIGURE: "focus-countdown-figure",
@@ -27,10 +28,12 @@ export const FOCUS_COUNTDOWN_PART = {
 type Props = {
   /** Holds the second clock while its screen is out of focus. */
   paused?: boolean;
+  /** A row beside the name by default; centred inside Today's bowl. */
+  layout?: FocusLayout;
 };
 
 /** The next prayer by name, and how long until it or since the last one. */
-export const FocusCountdown = ({ paused = false }: Props) => {
+export const FocusCountdown = ({ paused = false, layout = FOCUS_LAYOUT.ROW }: Props) => {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
   const focus = useFocusPrayer(flipped, paused);
@@ -54,25 +57,35 @@ export const FocusCountdown = ({ paused = false }: Props) => {
   const duration = spokenDuration(count, t);
 
   const flip = () => setFlipped((value) => !value);
+  const centred = layout === FOCUS_LAYOUT.CENTRED;
+  const align = centred ? "center" : "flex-start";
+  const textAlign = centred ? "center" : undefined;
 
-  // Name and figure share a baseline; short of room, the figure wraps under.
+  // In a row, name and figure share a baseline and the figure wraps under
+  // when short of room; centred, the four lines stack.
   return (
-    <VStack>
-      <Text size="md" typography="helper" fontWeight="600" color="$accentText">
+    <VStack testID={FOCUS_COUNTDOWN_PART.ROOT} alignItems={centred ? "center" : undefined}>
+      <Text
+        size="md"
+        typography="helper"
+        fontWeight="600"
+        color="$accentText"
+        textAlign={textAlign}>
         {label}
       </Text>
       <HStack
         testID={FOCUS_COUNTDOWN_PART.ROW}
-        flexWrap="wrap"
-        alignItems="baseline"
-        justifyContent="space-between"
+        flexDirection={centred ? "column" : "row"}
+        flexWrap={centred ? "nowrap" : "wrap"}
+        alignItems={centred ? "center" : "baseline"}
+        justifyContent={centred ? "flex-start" : "space-between"}
         columnGap="$4"
-        rowGap="$1">
+        rowGap={centred ? "$0" : "$1"}>
         <VStack
           testID={FOCUS_COUNTDOWN_PART.NAME}
-          flexGrow={1}
+          flexGrow={centred ? 0 : 1}
           flexShrink={0}
-          alignItems="flex-start">
+          alignItems={align}>
           <SkyOccluder>
             {/* The name is the toggle; the caption under the figure says which way. */}
             <Pressable
@@ -86,23 +99,30 @@ export const FocusCountdown = ({ paused = false }: Props) => {
               }}
               onPress={flip}
               justifyContent="center"
+              paddingStart={centred ? "$2.5" : 0}
               paddingEnd="$2.5"
               borderRadius="$control">
-              <Text size="display" bold typography="display" color="$fg" flexShrink={1}>
+              <Text
+                size="display"
+                bold
+                typography="display"
+                color="$fg"
+                flexShrink={1}
+                textAlign={textAlign}>
                 {name}
               </Text>
             </Pressable>
           </SkyOccluder>
         </VStack>
         <SkyOccluder testID={FOCUS_COUNTDOWN_PART.FIGURE} style={styles.whole}>
-          {/* The caption starts where the figure does, beside the name or under it. */}
+          {/* The caption lines up with the figure: its start edge, or centred. */}
           <VStack
             accessible
             accessibilityLabel={t(until ? "a11y.today.untilSpoken" : "a11y.today.sinceSpoken", {
               prayer: counted,
               duration,
             })}
-            alignItems="flex-start">
+            alignItems={align}>
             <Countdown
               value={digits(formatCount(count.seconds, count.precise, count.axis))}
               reserve={digits(countReserve(count))}
