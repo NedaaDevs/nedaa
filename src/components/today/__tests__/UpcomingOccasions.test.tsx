@@ -9,6 +9,7 @@ import {
   OCCASIONS_PART,
   UpcomingOccasions,
 } from "@/components/today/UpcomingOccasions";
+import { LIST_GROUP_PART } from "@/components/ui/list-group";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { IMPORTANT_DAYS, type ImportantDayDef } from "@/constants/ImportantDays";
 import { AppLocale, AppMode, TextSize } from "@/enums/app";
@@ -18,6 +19,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
+import { expectOnRestingSurface } from "@/test-helpers/surface";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { localizeDigits } from "@/utils/digits";
 import type { UpcomingImportantDay, upcomingImportantDays } from "@/utils/importantDays";
@@ -109,6 +111,15 @@ describe("UpcomingOccasions", () => {
     expect(within(first).getByText("42")).toBeTruthy();
     expect(within(first).getByText(i18n.t("importantDays.days", { count: 42 }))).toBeTruthy();
     expect(screen.getByLabelText(labelOf(SECOND, inDays(72)))).toBeTruthy();
+  });
+
+  it("sets its heading and rows in one list group", async () => {
+    await renderOccasions();
+
+    expectOnRestingSurface(screen.getByLabelText(labelOf(FIRST, inDays(42))));
+    expect(
+      screen.getAllByTestId(LIST_GROUP_PART.DIVIDER, { includeHiddenElements: true })
+    ).toHaveLength(2);
   });
 
   it("shows only the nearest two of several", async () => {

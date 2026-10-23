@@ -62,9 +62,7 @@ export const FocusCountdown = ({ paused = false }: Props) => {
       alignItems="flex-end"
       columnGap="$4"
       rowGap="$2"
-      paddingBottom="$2"
-      borderBottomWidth={1}
-      borderColor="$border">
+      paddingBottom="$2">
       <VStack
         testID={FOCUS_COUNTDOWN_PART.NAME}
         flexGrow={1}

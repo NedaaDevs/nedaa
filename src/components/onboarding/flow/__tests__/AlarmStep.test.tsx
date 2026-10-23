@@ -601,7 +601,7 @@ describe("the result card", () => {
     await returnFromSettings();
 
     expect(card().props.accessibilityLabel).toBe(join(allowed(1, 2), notOn(L)));
-    expect(card()).toHaveStyle({ borderTopColor: NEDAA_LIGHT.border.hex });
+    expect(card()).toHaveStyle({ borderTopColor: "transparent" });
     expect(card()).not.toHaveStyle({ backgroundColor: NEDAA_LIGHT.accentSoft.hex });
     // With no fill the line sits on the sky, where only mutedSky keeps 4.5:1.
     expect(screen.getByText(notOn(L))).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex });

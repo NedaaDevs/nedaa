@@ -67,7 +67,7 @@ const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardPro
       paddingVertical="$2"
       borderRadius="$card"
       borderWidth={selected ? 2 : 1}
-      borderColor={selected || next ? "$accent" : "$border"}
+      borderColor={selected || next ? "$accent" : "transparent"}
       backgroundColor={next ? "$accentSoft" : past ? "transparent" : "$surface2"}>
       <Box opacity={past ? 0.55 : 1}>
         <Icon as={PRAYER_ICONS[card.id]} size="lg" color={next ? "$accent" : "$muted"} />

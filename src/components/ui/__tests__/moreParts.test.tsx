@@ -7,6 +7,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { METER_PART, Meter } from "@/components/ui/meter";
 import { Section } from "@/components/ui/section";
 import { Tile } from "@/components/ui/tile";
+import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { SECTION_KIND } from "@/constants/Section";
 import { AppLocale } from "@/enums/app";
@@ -78,10 +79,15 @@ describe("ListRow", () => {
     expect(onPress).toHaveBeenCalled();
   });
 
-  it("stands alone as a bordered card by default", async () => {
+  it("stands alone as a resting card by default", async () => {
     await renderWithTheme(<ListRow icon={AlarmClock} title="A" status="B" onPress={jest.fn()} />);
 
-    expect(screen.getByRole("button", { name: "A, B" })).toHaveStyle({ borderTopWidth: 1 });
+    const row = screen.getByRole("button", { name: "A, B" });
+    expect(row).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(row).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.surfaceGlass.hex,
+      boxShadow: ELEVATION.e1.boxShadow.light,
+    });
   });
 
   // Inside a panel the panel draws the edge; a second border would nest cards.
@@ -153,7 +159,7 @@ describe("ListRow trailing chevron", () => {
 
 describe("ListRow grouped", () => {
   // Inside a list group the group draws the edge and the rules between rows.
-  it("lies flat, with the name at the md size", async () => {
+  it("lies flat, with the name at the lg size", async () => {
     await renderWithTheme(
       <ListRow variant={LIST_ROW_VARIANT.GROUPED} title="Privacy" status="B" onPress={jest.fn()} />
     );
@@ -161,8 +167,8 @@ describe("ListRow grouped", () => {
     const row = screen.getByRole("button", { name: "Privacy, B" });
     expect(row).not.toHaveStyle({ borderTopWidth: 1 });
     expect(row).toHaveStyle({ backgroundColor: "transparent" });
-    expect(screen.getByText("Privacy")).toHaveStyle({ fontSize: fontSizeOf("md") });
-    expect(screen.getByText("B")).toHaveStyle({ fontSize: fontSizeOf("sm") });
+    expect(screen.getByText("Privacy")).toHaveStyle({ fontSize: fontSizeOf("lg") });
+    expect(screen.getByText("B")).toHaveStyle({ fontSize: fontSizeOf("helper") });
   });
 });
 
@@ -194,8 +200,8 @@ describe("ListRow static", () => {
   it("keeps the grouped type sizes", async () => {
     await renderWithTheme(<ListRow variant={LIST_ROW_VARIANT.GROUPED} title="A" status={LONG} />);
 
-    expect(screen.getByText("A")).toHaveStyle({ fontSize: fontSizeOf("md") });
-    expect(screen.getByText(LONG)).toHaveStyle({ fontSize: fontSizeOf("sm") });
+    expect(screen.getByText("A")).toHaveStyle({ fontSize: fontSizeOf("lg") });
+    expect(screen.getByText(LONG)).toHaveStyle({ fontSize: fontSizeOf("helper") });
   });
 });
 

@@ -8,7 +8,7 @@ import { renderWithTheme } from "@/test-helpers/theme";
 const CARD = "onboarding-card";
 const LABEL = "the whole card";
 
-it("draws a bordered card on the second surface, padded by default", async () => {
+it("draws the shared glass card with no border, padded by default", async () => {
   await renderWithTheme(
     <OnboardingCard testID={CARD}>
       <Text>inside</Text>
@@ -16,10 +16,9 @@ it("draws a bordered card on the second surface, padded by default", async () =>
   );
 
   expect(screen.getByText("inside")).toBeTruthy();
+  expect(screen.getByTestId(CARD)).not.toHaveStyle({ borderTopWidth: 1 });
   expect(screen.getByTestId(CARD)).toHaveStyle({
-    backgroundColor: NEDAA_LIGHT.surface2.hex,
-    borderTopWidth: 1,
-    borderTopColor: NEDAA_LIGHT.border.hex,
+    backgroundColor: NEDAA_LIGHT.surfaceGlass.hex,
     borderTopLeftRadius: 16,
     paddingTop: 16,
   });
