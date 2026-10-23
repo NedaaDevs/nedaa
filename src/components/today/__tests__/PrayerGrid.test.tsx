@@ -281,6 +281,20 @@ describe("PrayerGrid", () => {
       expect(screen.getByText(time)).toHaveStyle({ color: LIGHT.mutedSky.val });
     });
 
+    // Quiet, not passed: before sunrise its time reads as still to come.
+    it("draws sunrise's time as still to come before sunrise", async () => {
+      await renderAt("2026-09-23", "03:00").rendered;
+      const time = formatPrayerTime(day("2026-09-23").otherTimings[OTHER_TIMING.SUNRISE], "UTC", {
+        locale: AppLocale.EN,
+        use24HourTime: false,
+      });
+
+      expect(screen.getByText(time)).toHaveStyle({ color: LIGHT.fg.val });
+      expect(screen.getByText(i18n.t("otherTimings.sunrise"))).toHaveStyle({
+        color: LIGHT.mutedSky.val,
+      });
+    });
+
     it("reads as one line, not a control", async () => {
       await renderAt("2026-09-23", "14:02").rendered;
       const spoken = spokenClockTime(
