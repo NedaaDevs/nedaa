@@ -163,6 +163,8 @@ describe.each(CASES)("$type group", ({ type, other, Group, title, summary, timin
     await renderWithTheme(<Group prayerId={PRAYER} />);
 
     expect(screen.getByLabelText(i18n.t(timing))).toHaveProp("accessibilityRole", "radiogroup");
+    // A long run of short options wraps as compact pills.
+    expect(screen.getByLabelText(i18n.t(timing))).toHaveStyle({ flexWrap: "wrap" });
     for (const minutes of NOTIFICATION_TIMING_CHOICES) {
       expect(pill(minutes).props.accessibilityState).toMatchObject({ selected: minutes === 20 });
     }

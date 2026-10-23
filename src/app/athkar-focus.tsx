@@ -781,7 +781,7 @@ const AthkarFocusScreen = () => {
           {!showInstructions && showTipIcon && (
             <Animated.View exiting={reduceMotion ? undefined : FadeOut}>
               <Button
-                size="md"
+                size="lg"
                 action="default"
                 variant="outline"
                 accessibilityLabel={t("athkar.focus.showInstructions")}
@@ -798,7 +798,7 @@ const AthkarFocusScreen = () => {
             </Animated.View>
           )}
           <Button
-            size="md"
+            size="lg"
             action="default"
             variant="outline"
             accessibilityLabel={t("common.close")}
