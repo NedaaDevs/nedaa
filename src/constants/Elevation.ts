@@ -25,6 +25,8 @@ const both = (...rows: Layer[]) => ({
   dark: layers("dark", ...rows),
 });
 
+const E2_CONTACT: Layer = [2, 4, 0.08, 0.35];
+
 /**
  * Four levels of lift. `boxShadow` is for iOS and carries one string per theme;
  * `elevation` is the Android value. `null` draws nothing.
@@ -32,11 +34,14 @@ const both = (...rows: Layer[]) => ({
 export const ELEVATION = {
   e0: { boxShadow: { light: null, dark: null }, elevation: 0 },
   e1: { boxShadow: both([1, 2, 0.06, 0.3], [6, 16, 0.06, 0.28]), elevation: 2 },
-  e2: { boxShadow: both([2, 4, 0.08, 0.35], [12, 32, 0.12, 0.45]), elevation: 8 },
+  e2: { boxShadow: both(E2_CONTACT, [12, 32, 0.12, 0.45]), elevation: 8 },
   e3: { boxShadow: both([-8, 24, 0.1, 0.35], [-24, 64, 0.18, 0.55]), elevation: 16 },
 } as const;
 
 export type ElevationLevel = keyof typeof ELEVATION;
+
+/** e2's tight layer alone, for a part lifted inside a track. */
+export const CONTACT_SHADOW = both(E2_CONTACT);
 
 export const ELEVATION_LEVEL = {
   E0: "e0",

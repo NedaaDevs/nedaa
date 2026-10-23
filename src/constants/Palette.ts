@@ -63,6 +63,12 @@ export const NEDAA_LIGHT = {
   pressed: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
   /** The tinted square behind a row's accent glyph. */
   tile: { oklch: "oklch(91% 0.042 223)", hex: "#C4E8F6" },
+  /** An accent pill's fill. */
+  accentTint: { oklch: "oklch(41.5% 0.09 232 / .12)", hex: "#0053721F" },
+  /** A quiet pill's fill and the segmented choice's sunken track. */
+  quietTint: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
+  /** A warn pill's fill. */
+  warnTint: { oklch: "oklch(57% 0.11 72 / .14)", hex: "#9F6B1E24" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
@@ -97,6 +103,9 @@ export const NEDAA_DARK = {
   thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
   pressed: { oklch: "oklch(93% 0.018 230 / .08)", hex: "#DCEAF214" },
   tile: { oklch: "oklch(33% 0.058 258)", hex: "#223653" },
+  accentTint: { oklch: "oklch(80% 0.125 92 / .12)", hex: "#DBBB561F" },
+  quietTint: { oklch: "oklch(93% 0.018 230 / .07)", hex: "#DCEAF212" },
+  warnTint: { oklch: "oklch(77% 0.11 80 / .14)", hex: "#D9AC5E24" },
 } as const satisfies Record<string, PaletteEntry>;
 
 /** Derived, so a token added to one palette must be added to the other. */
