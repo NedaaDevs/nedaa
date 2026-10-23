@@ -45,7 +45,12 @@ type MaterialProps = ComponentProps<typeof View> & {
   radius?: RadiusName;
   /** Android only: the view whose pixels the blur reads. */
   blurTarget?: RefObject<ComponentRef<typeof NativeView> | null>;
+  /** Draws a hairline just inside the edge, for a surface over a bright sky. */
+  ring?: boolean;
 };
+
+/** The hairline ring's width, under a point so it reads as an edge. */
+const RING_WIDTH = 0.5;
 
 /** A tinted, blurred surface with a lit top edge; opaque where blur is unavailable. */
 export const Material = ({
@@ -53,12 +58,14 @@ export const Material = ({
   elevation = ELEVATION_LEVEL.E1,
   radius = "card",
   blurTarget,
+  ring = false,
   children,
   style,
   ...props
 }: MaterialProps) => {
   const spec = MATERIAL_SPEC[material];
   const tint = useThemeColor(spec.color);
+  const hairline = useThemeColor("$hairline");
   const isDark = useIsDarkTheme();
   const reduceTransparency = useReduceTransparency();
   const surface = chooseMaterialSurface({
@@ -68,7 +75,9 @@ export const Material = ({
     hasBlurTarget: blurTarget != null,
   });
   const radii = cornerRadii(spec.corners, getTokenValue(`$${radius}`, "radius"));
-  const shadow = useElevationShadow(elevation);
+  const lift = useElevationShadow(elevation);
+  const inner = ring ? `inset 0 0 0 ${RING_WIDTH}px ${hairline}` : undefined;
+  const shadow = [lift, inner].filter(Boolean).join(", ") || undefined;
 
   return (
     <View

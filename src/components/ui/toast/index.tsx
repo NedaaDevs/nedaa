@@ -13,17 +13,19 @@ import Animated, {
 import { CircleAlert, CircleCheck, Info, LoaderCircle, TriangleAlert } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
+import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Icon, type IconProps } from "@/components/ui/icon";
+import { TILE_SIZE } from "@/components/ui/icon-tile";
 import { Material, MATERIAL } from "@/components/ui/material";
-import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
+import { FONT_SIZES, SIZE_MAP } from "@/components/ui/text/sizing";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { TOAST_KIND, TOAST_MOTION, type ToastKind } from "@/constants/Toast";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { ToastAction } from "@/utils/toast";
 
-export const TOAST_PART = { FRAME: "toast", ICON: "toast-icon" } as const;
+export const TOAST_PART = { FRAME: "toast", ICON: "toast-icon", TINT: "toast-tint" } as const;
 
 /** The screen reader's own way to send a toast away. */
 export const TOAST_A11Y_ACTION = { DISMISS: "dismiss" } as const;
@@ -44,11 +46,11 @@ const GLYPH = {
   [TOAST_KIND.ERROR]: CircleAlert,
 } as const satisfies Record<ToastKind, IconProps["as"]>;
 
-// The action's words need 4.5:1 on the raised surface; warn reaches only 4.2.
-const ACTION_INK = { ...SIGNAL, [TOAST_KIND.WARNING]: "$fg" } as const satisfies Record<
-  ToastKind,
-  string
->;
+/** The glyph tile's wash: its kind's colour at this strength. */
+const TILE_TINT = 0.14;
+
+/** The action reads at the message's size. */
+const ACTION_FONT_SIZE = FONT_SIZES[SIZE_MAP.md].fontSize;
 
 /** Spoken before the message: the kind the icon shows by sight. */
 const PREFIX_KEY = {
@@ -122,38 +124,31 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
         onAccessibilityAction={onAccessibilityAction}>
         <Box
           testID={TOAST_PART.ICON}
-          width="$9"
-          height="$9"
+          width={TILE_SIZE}
+          height={TILE_SIZE}
           alignItems="center"
           justifyContent="center"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants">
           <Box
+            testID={TOAST_PART.TINT}
             style={StyleSheet.absoluteFill}
-            borderRadius="$control"
+            borderRadius="$chip"
             backgroundColor={signal}
-            opacity={0.13}
+            opacity={TILE_TINT}
           />
           <Turning turning={kind === TOAST_KIND.PROGRESS}>
             <Icon as={GLYPH[kind]} size="lg" color={signal} strokeWidth={1.8} />
           </Turning>
         </Box>
-        <Text size="sm" typography="helper" fontWeight="600" color="$fg" flex={1}>
+        <Text size="md" typography="helper" fontWeight="600" color="$fg" flex={1}>
           {message}
         </Text>
       </HStack>
       {action && (
-        <Pressable
-          onPress={action.onPress}
-          accessibilityRole="button"
-          accessibilityLabel={action.label}
-          justifyContent="center"
-          paddingHorizontal="$2"
-          borderRadius="$control">
-          <Text size="sm" bold color={ACTION_INK[kind]}>
-            {action.label}
-          </Text>
-        </Pressable>
+        <Button variant="link" onPress={action.onPress} accessibilityLabel={action.label}>
+          <Button.Text fontSize={ACTION_FONT_SIZE}>{action.label}</Button.Text>
+        </Button>
       )}
     </Material>
   );

@@ -8,6 +8,7 @@ import { SupportActions } from "@/components/settings/SupportActions";
 import { SETTINGS_ROWS } from "@/components/settings/settingsRows";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
@@ -82,7 +83,7 @@ export default function SettingsScreen() {
         </SkyOccluder>
 
         <SkyOccluder>
-          <VStack paddingHorizontal="$4" paddingTop="$2" paddingBottom="$8" gap="$section">
+          <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$section">
             {SETTINGS_LAYOUT.map(({ id, labelKey, rows }) => {
               const shown = rows.filter((row) => !hidden[row]);
               if (!shown.length) return null;
@@ -102,7 +103,7 @@ export default function SettingsScreen() {
                 </Section>
               );
             })}
-          </VStack>
+          </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
     </SkyBackground>

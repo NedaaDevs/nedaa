@@ -140,7 +140,7 @@ describe("FocusCountdown", () => {
       expect(separator).toHaveStyle({ color: ink });
     }
     expect(screen.getByText(i18n.t("today.focus.next"))).toHaveStyle({
-      color: config.themes.light.accent.val,
+      color: config.themes.light.accentText.val,
     });
   });
 

@@ -55,6 +55,7 @@ type BackdropProps = NullableA11y & Pick<ViewProps, "style"> & { opacity?: numbe
 type ModalProps = PropsWithChildren<
   NullableA11y & {
     onChange?: (index: number) => void;
+    onAnimate?: (fromIndex: number, toIndex: number) => void;
     onDismiss?: () => void;
     overrideReduceMotion?: string;
     topInset?: number;

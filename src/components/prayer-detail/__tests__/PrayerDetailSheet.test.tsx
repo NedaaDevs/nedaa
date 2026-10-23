@@ -3,6 +3,7 @@ import { AccessibilityInfo, View, type ViewInstance } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
+import { ACTIONSHEET_PART } from "@/components/ui/actionsheet";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -142,7 +143,7 @@ describe("PrayerDetailSheet", () => {
     const onClose = jest.fn();
     await renderOn("2026-09-23", PRAYER_ID.ASR, onClose);
 
-    await act(() => fireEvent.press(screen.getByTestId(BOTTOM_SHEET_PART.BACKDROP)));
+    await act(() => fireEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM)));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -151,10 +152,10 @@ describe("PrayerDetailSheet", () => {
     const onClose = jest.fn();
     await renderOn("2026-09-23", PRAYER_ID.ASR, onClose);
 
-    // The backdrop is named Close too; this is the sheet's own button.
+    // The scrim is named Close too; this is the sheet's own button.
     const [button] = screen
       .getAllByRole("button", { name: i18n.t("common.close") })
-      .filter((each) => each.props.testID !== BOTTOM_SHEET_PART.BACKDROP);
+      .filter((each) => each.props.testID !== ACTIONSHEET_PART.SCRIM);
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     await user.press(button);
 
@@ -167,7 +168,7 @@ describe("PrayerDetailSheet", () => {
 
     const [button] = screen
       .getAllByRole("button", { name: i18n.t("common.close") })
-      .filter((each) => each.props.testID !== BOTTOM_SHEET_PART.BACKDROP);
+      .filter((each) => each.props.testID !== ACTIONSHEET_PART.SCRIM);
     expect(button).toHaveStyle({ position: "absolute", top: 0 });
   });
 

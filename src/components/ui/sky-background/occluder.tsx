@@ -9,6 +9,7 @@ import {
 } from "react";
 import { ScrollView, View, type ScrollViewProps, type ViewProps } from "react-native";
 
+import { SCREEN_GUTTER, ScreenGutterContext } from "@/components/ui/screen-content";
 import { measureInWindow } from "@/utils/measureInWindow";
 import type { WindowRect } from "@/utils/sky";
 
@@ -68,12 +69,15 @@ export const SkyScrollView = (props: ScrollViewProps) => {
     };
 
   return (
-    <ScrollView
-      {...props}
-      onScrollEndDrag={settled(props.onScrollEndDrag)}
-      onMomentumScrollEnd={settled(props.onMomentumScrollEnd)}
-      onLayout={settled(props.onLayout)}
-      onContentSizeChange={settled(props.onContentSizeChange)}
-    />
+    // A screen on the sky sets its header in the screen gutter.
+    <ScreenGutterContext value={SCREEN_GUTTER}>
+      <ScrollView
+        {...props}
+        onScrollEndDrag={settled(props.onScrollEndDrag)}
+        onMomentumScrollEnd={settled(props.onMomentumScrollEnd)}
+        onLayout={settled(props.onLayout)}
+        onContentSizeChange={settled(props.onContentSizeChange)}
+      />
+    </ScreenGutterContext>
   );
 };

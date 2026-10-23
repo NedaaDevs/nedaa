@@ -158,6 +158,15 @@ describe("Today", () => {
     expect(screen.getByTestId(TODAY_SCREEN_PART.DAY)).toHaveStyle({ gap: space["3.5"].val });
   });
 
+  // The arc reads as the countdown's own line, so it sits close under it.
+  it("sets the arc 10 under the countdown", async () => {
+    await renderToday();
+
+    expect(screen.getByTestId(TODAY_SCREEN_PART.FOCUS)).toHaveStyle({
+      gap: config.tokens.space["2.5"].val,
+    });
+  });
+
   it("gives every control a role, a name and a 44pt target", async () => {
     usePreferencesStore.setState({ showImportantDaysOnHome: true });
     await renderToday();
