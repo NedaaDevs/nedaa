@@ -17,6 +17,7 @@ import { NEDAA_LIGHT } from "@/constants/Palette";
 import { BOTTOM_SHEET_PART, dismissConfigs, modalProps } from "@/test-helpers/bottomSheetMock";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 import { renderWithTheme } from "@/test-helpers/theme";
+import i18n from "@/localization/i18n";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -249,7 +250,7 @@ describe("Actionsheet motion", () => {
   it("leaves on the system sheet curve from a tap on the scrim", async () => {
     await renderWithTheme(<Sheet open />);
 
-    await userEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM));
+    await userEvent.press(screen.getByRole("button", { name: i18n.t("a11y.dismiss") }));
 
     expect(dismissConfigs).toHaveBeenLastCalledWith({
       duration: SHEET_MOTION.DISMISS_MS,
