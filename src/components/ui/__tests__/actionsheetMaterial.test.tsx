@@ -1,5 +1,5 @@
 import { BackHandler, Platform, StyleSheet, View } from "react-native";
-import { act, fireEvent, screen, within } from "@testing-library/react-native";
+import { act, screen, userEvent, within } from "@testing-library/react-native";
 import { Easing, ReduceMotion, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTokenValue } from "tamagui";
@@ -249,7 +249,7 @@ describe("Actionsheet motion", () => {
   it("leaves on the system sheet curve from a tap on the scrim", async () => {
     await renderWithTheme(<Sheet open />);
 
-    await act(() => fireEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM)));
+    await userEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM));
 
     expect(dismissConfigs).toHaveBeenLastCalledWith({
       duration: SHEET_MOTION.DISMISS_MS,

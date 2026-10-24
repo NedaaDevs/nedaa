@@ -74,7 +74,7 @@ type InkKey = (typeof ACTION_INK)[ButtonAction] | "accentText" | "bg" | "fg" | "
 const inkKey = (action: ButtonAction, variant: ButtonVariant): InkKey => {
   if (variant === "solid") return action === "primary" ? "bg" : "typographyContrast";
   if (variant === "outline" && action === "primary") return "fg";
-  // A text button is words alone, so it takes the accent made for text.
+  // A text button's label, icon and spinner share the accent made for text.
   if (variant === "link" && action === "primary") return "accentText";
   return ACTION_INK[action];
 };
