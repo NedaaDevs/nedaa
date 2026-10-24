@@ -4,7 +4,9 @@ import { act, screen, userEvent, waitFor, within } from "@testing-library/react-
 import { AppearanceStep } from "@/components/onboarding/flow/steps/AppearanceStep";
 import { NumeralsStep } from "@/components/onboarding/flow/steps/NumeralsStep";
 import { TextSizeStep } from "@/components/onboarding/flow/steps/TextSizeStep";
-import { PrayerGrid } from "@/components/today/PrayerGrid";
+import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
+import { PRAYER_GRID_PART, PrayerGrid } from "@/components/today/PrayerGrid";
+import { TODAY_STYLE_PREVIEW_PART } from "@/components/today/TodayStylePreview";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
 import { APPEARANCE_ORDER } from "@/constants/Appearance";
@@ -13,6 +15,7 @@ import { PHASE } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { CLOCK_FORMAT } from "@/constants/Preferences";
 import { nearestTextSize } from "@/constants/TextSize";
+import { TODAY_STYLE } from "@/constants/Today";
 import { PhaseContext } from "@/contexts/PhaseContext";
 import { AppLocale, AppMode, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -23,6 +26,7 @@ import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import { lastPrimary, stepProps } from "@/test-helpers/onboardingStepProps";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { sampleDays } from "@/utils/sampleDays";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => false }));
@@ -158,12 +162,73 @@ describe("AppearanceStep", () => {
       second: t(`settings.themes.${mode}.description`),
     });
 
+  const styleNames = Object.values(TODAY_STYLE).map((style) =>
+    t(`settings.preferences.todayStyle.options.${style}`)
+  );
+  const hidden = { includeHiddenElements: true };
+  const SAMPLE_DAY = sampleDays(new Date()).today ?? null;
+
+  beforeEach(() => usePreferencesStore.setState({ todayStyle: TODAY_STYLE.BOWL }));
+
   it("offers the four modes in the Settings order and no colour family", async () => {
     await renderAppearance();
 
-    expect(screen.getAllByRole("radio").map((row) => row.props.accessibilityLabel)).toEqual(
-      APPEARANCE_ORDER.map(rowName)
+    expect(
+      screen
+        .getAllByRole("radio")
+        .map((row) => row.props.accessibilityLabel)
+        .filter((name) => !styleNames.includes(name))
+    ).toEqual(APPEARANCE_ORDER.map(rowName));
+  });
+
+  it("offers Today's two styles, the bowl chosen", async () => {
+    await renderAppearance();
+    const group = screen.getByLabelText(t("settings.preferences.todayStyle.title"));
+
+    expect(group.props.accessibilityRole).toBe("radiogroup");
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((r) => r.props.accessibilityLabel)
+    ).toEqual(styleNames);
+    expect(screen.getByRole("radio", { name: styleNames[0] })).toBeSelected();
+  });
+
+  // Before the user's times exist, the preview draws a sample day and says so.
+  it("previews the bowl on a sample day before any times are stored", async () => {
+    await renderAppearance();
+
+    expect(screen.getByTestId(BOWL_FRAME_PART.FRAME, hidden)).toBeTruthy();
+    expect(screen.getByTestId(TODAY_STYLE_PREVIEW_PART.SAMPLE_NOTE)).toHaveTextContent(
+      t("onboarding.appearance.sampleTimes")
     );
+    expect(screen.queryByTestId(TODAY_STYLE_PREVIEW_PART.ROOT)).toBeNull();
+  });
+
+  it("previews the simple style once chosen, its lit card carrying the bar", async () => {
+    await renderAppearance();
+
+    await userEvent.press(screen.getByRole("radio", { name: styleNames[1] }));
+
+    expect(usePreferencesStore.getState().todayStyle).toBe(TODAY_STYLE.SIMPLE);
+    expect(screen.queryByTestId(BOWL_FRAME_PART.FRAME, hidden)).toBeNull();
+    expect(screen.getAllByTestId(PRAYER_GRID_PART.BAR, hidden)).toHaveLength(1);
+  });
+
+  // Times for the default place are not the user's either.
+  it("keeps the sample over the default place's times", async () => {
+    usePrayerTimesStore.setState({ todayTimings: SAMPLE_DAY, usingDefaultLocation: true });
+    await renderAppearance();
+
+    expect(screen.getByTestId(TODAY_STYLE_PREVIEW_PART.SAMPLE_NOTE)).toBeTruthy();
+  });
+
+  it("previews the user's own times once stored, with no sample note", async () => {
+    usePrayerTimesStore.setState({ todayTimings: SAMPLE_DAY, usingDefaultLocation: false });
+    await renderAppearance();
+
+    expect(screen.queryByTestId(TODAY_STYLE_PREVIEW_PART.SAMPLE_NOTE)).toBeNull();
+    expect(screen.getByTestId(TODAY_STYLE_PREVIEW_PART.ROOT)).toBeTruthy();
   });
 
   it("applies a mode through the theme dissolve", async () => {

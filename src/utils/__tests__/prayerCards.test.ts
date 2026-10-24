@@ -107,4 +107,39 @@ describe("prayerCards", () => {
   it("carries each prayer's time", () => {
     expect(at("14:02").lead.time).toBe(DAY.timings[PRAYER_ID.ASR]);
   });
+
+  // The lit card's bar: how far the clock has come from the last prayer.
+  describe("progress", () => {
+    const TOMORROW: DayPrayerTimes = {
+      ...DAY,
+      date: 20260924,
+      timings: { ...DAY.timings, [PRAYER_ID.FAJR]: "2026-09-24T04:25:00.000Z" },
+    };
+
+    it.each([
+      // Dhuhr 12:00 to Asr 15:20 is 200 minutes.
+      ["13:40", 0.5],
+      ["14:30", 0.75],
+      // Asr to Maghrib is 165 minutes, just come in or not.
+      ["15:31", 11 / 165],
+      ["15:53", 0.2],
+    ])("measures the way from the last prayer to the next at %s", (time, share) => {
+      expect(at(time).progress).toBeCloseTo(share, 5);
+    });
+
+    // Isha 19:25 to tomorrow's Fajr 04:25 is nine hours.
+    it("runs from Isha to tomorrow's Fajr after Isha", () => {
+      const { progress } = prayerCards(DAY, new Date("2026-09-23T23:55:00.000Z"), TOMORROW);
+
+      expect(progress).toBeCloseTo(0.5, 5);
+    });
+
+    it("has none after Isha when tomorrow is not stored", () => {
+      expect(at("22:00").progress).toBeNull();
+    });
+
+    it("has none before the day's first prayer", () => {
+      expect(at("03:00").progress).toBeNull();
+    });
+  });
 });

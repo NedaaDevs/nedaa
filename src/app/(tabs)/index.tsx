@@ -5,21 +5,19 @@ import { useIsFocused } from "expo-router";
 import { Box } from "@/components/ui/box";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
-import { CelestialRhythm } from "@/components/today/CelestialRhythm";
 import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
-import { FocusCountdown } from "@/components/today/FocusCountdown";
 import { LocationNotice } from "@/components/today/LocationNotice";
 import { OtherTimes } from "@/components/today/OtherTimes";
 import { PrayerGrid } from "@/components/today/PrayerGrid";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TodayHeader } from "@/components/today/TodayHeader";
+import { TodayHero } from "@/components/today/TodayHero";
 import { UpcomingOccasions } from "@/components/today/UpcomingOccasions";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 
 // Constants
-import { FOCUS_LAYOUT } from "@/constants/Countdown";
-import { TODAY_SCREEN_PART } from "@/constants/Today";
+import { TODAY_SCREEN_PART, TODAY_STYLE } from "@/constants/Today";
 
 // Hooks
 import { usePrayerDetail } from "@/hooks/usePrayerDetail";
@@ -33,13 +31,15 @@ export default function MainScreen() {
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const showOccasions = usePreferencesStore((state) => state.showImportantDaysOnHome);
+  const todayStyle = usePreferencesStore((state) => state.todayStyle);
+  const bowl = todayStyle === TODAY_STYLE.BOWL;
   // A card opens its prayer's sheet; the card and its mark on the line stay lit.
   const detail = usePrayerDetail();
 
   return (
     <DaySimulator>
-      {/* The bowl draws Today's sun and moon; the sky keeps none of its own. */}
-      <SkyBackground paused={!focused} bodies={false}>
+      {/* With the bowl, the bowl draws the sun and moon and the sky draws none. */}
+      <SkyBackground paused={!focused} bodies={!bowl}>
         {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
         <Box flex={1} paddingTop={insets.top}>
           <ActiveAlarmBanner />
@@ -50,16 +50,14 @@ export default function MainScreen() {
             <ScreenContent testID={TODAY_SCREEN_PART.CONTENT} paddingTop="$2" gap="$heroGap">
               <TodayHeader />
               <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
-                {/* The countdown sits inside the bowl that draws the day. */}
+                {/* The countdown sits inside the bowl that draws the day, or alone. */}
                 <Box testID={TODAY_SCREEN_PART.FOCUS}>
-                  <CelestialRhythm selected={detail.prayerId}>
-                    <FocusCountdown paused={!focused} layout={FOCUS_LAYOUT.CENTRED} />
-                  </CelestialRhythm>
+                  <TodayHero todayStyle={todayStyle} selected={detail.prayerId} paused={!focused} />
                 </Box>
                 <SkyOccluder>
                   <LocationNotice />
                 </SkyOccluder>
-                <PrayerGrid selected={detail.prayerId} onSelect={detail.open} />
+                <PrayerGrid selected={detail.prayerId} onSelect={detail.open} progress={!bowl} />
                 <OtherTimes />
                 <PrayerTimesState />
                 {showOccasions ? <UpcomingOccasions /> : null}
