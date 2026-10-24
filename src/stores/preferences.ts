@@ -2,6 +2,7 @@ import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { getCalendars } from "expo-localization";
+import { TODAY_STYLE, type TodayStyle } from "@/constants/Today";
 import { OpeningTab, type OpeningTabValue, TextSize, type TextSizeValue } from "@/enums/app";
 
 // Seeds the initial 24-hour setting from the device clock; once the user
@@ -22,6 +23,8 @@ type PreferencesState = {
   openingTab: OpeningTabValue;
   // Today's focus figure counts to the second; off counts in minutes, calmer.
   showSeconds: boolean;
+  // Today draws the day as the bowl, or plainly with a bar on the lit card.
+  todayStyle: TodayStyle;
   hapticsEnabled: boolean;
   // Today lists the two nearest occasions below the prayer times.
   showImportantDaysOnHome: boolean;
@@ -40,6 +43,7 @@ type PreferencesState = {
   setWeekStartsOn: (value: number) => void;
   setOpeningTab: (value: OpeningTabValue) => void;
   setShowSeconds: (value: boolean) => void;
+  setTodayStyle: (value: TodayStyle) => void;
   setHapticsEnabled: (value: boolean) => void;
   setShowImportantDaysOnHome: (value: boolean) => void;
   setLargeControls: (value: boolean) => void;
@@ -56,6 +60,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       weekStartsOn: deviceWeekStartsOn(),
       openingTab: OpeningTab.HOME,
       showSeconds: true,
+      todayStyle: TODAY_STYLE.BOWL,
       hapticsEnabled: true,
       showImportantDaysOnHome: false,
       largeControls: false,
@@ -68,6 +73,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setWeekStartsOn: (value) => set({ weekStartsOn: value }),
       setOpeningTab: (value) => set({ openingTab: value }),
       setShowSeconds: (value) => set({ showSeconds: value }),
+      setTodayStyle: (value) => set({ todayStyle: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
       setLargeControls: (value) => set({ largeControls: value }),

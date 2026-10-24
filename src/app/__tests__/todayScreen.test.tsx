@@ -7,7 +7,8 @@ import { act, fireEvent, userEvent, within } from "@testing-library/react-native
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { BOWL_PART } from "@/components/today/Bowl";
-import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
+import { BOWL_FRAME_PART, RHYTHM_PART } from "@/components/today/CelestialRhythm";
+import { PRAYER_GRID_PART } from "@/components/today/PrayerGrid";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
@@ -22,7 +23,7 @@ import { controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { HijriDate } from "@/utils/date";
-import { TODAY_SCREEN_PART } from "@/constants/Today";
+import { TODAY_SCREEN_PART, TODAY_STYLE } from "@/constants/Today";
 import config from "../../../tamagui.config";
 
 // Renders the whole Today screen under a router; a full parallel run passes 5 s.
@@ -88,7 +89,10 @@ describe("Today", () => {
     jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
     await act(() => i18n.changeLanguage(AppLocale.EN));
     useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN, hijriDaysOffset: 0 });
-    usePreferencesStore.setState({ showImportantDaysOnHome: false });
+    usePreferencesStore.setState({
+      showImportantDaysOnHome: false,
+      todayStyle: TODAY_STYLE.BOWL,
+    });
     useLocationStore.setState({ localizedLocation: { city: "Makkah", country: "Saudi Arabia" } });
     usePrayerTimesStore.setState({
       yesterdayTimings: null,
@@ -205,14 +209,60 @@ describe("Today", () => {
 
   // Every other sky screen keeps the sky's own sun and moon.
   it("is the only screen that hides the sky's bodies", () => {
-    const hiding = skySources().filter((text) =>
-      /<SkyBackground\b[^>]*bodies=\{false\}/.test(text)
-    );
+    const hiding = /<SkyBackground\b[^>]*bodies=\{(?!true\})/;
+    const hiders = skySources().filter((text) => hiding.test(text));
 
-    expect(hiding).toHaveLength(1);
-    expect(readFileSync(join(SRC, "app/(tabs)/index.tsx"), "utf8")).toMatch(
-      /<SkyBackground\b[^>]*bodies=\{false\}/
-    );
+    expect(hiders).toHaveLength(1);
+    expect(readFileSync(join(SRC, "app/(tabs)/index.tsx"), "utf8")).toMatch(hiding);
+  });
+
+  it("draws no progress bar in the bowl style", async () => {
+    await renderToday();
+
+    expect(screen.queryAllByTestId(PRAYER_GRID_PART.BAR, hidden)).toHaveLength(0);
+  });
+
+  // The simple style: no bowl, the countdown in its row, a bar on the lit card.
+  describe("in the simple style", () => {
+    beforeEach(() => usePreferencesStore.setState({ todayStyle: TODAY_STYLE.SIMPLE }));
+
+    it("draws no bowl, the countdown first in the day in its row", async () => {
+      await renderToday();
+      const day = screen.getByTestId(TODAY_SCREEN_PART.DAY);
+      const focus = screen.getByTestId(TODAY_SCREEN_PART.FOCUS);
+
+      expect(screen.queryByTestId(RHYTHM_PART.ROOT, hidden)).toBeNull();
+      expect(screen.queryByTestId(BOWL_FRAME_PART.FRAME, hidden)).toBeNull();
+      expect(day.children[0]).toBe(focus);
+      expect(within(focus).getByText(i18n.t("today.focus.next"))).toBeTruthy();
+      expect(within(focus).getByTestId(FOCUS_COUNTDOWN_PART.ROOT)).not.toHaveStyle({
+        alignItems: "center",
+      });
+    });
+
+    it("keeps the sky's own sun", async () => {
+      await renderToday();
+
+      expect(screen.getAllByTestId(SKY_PART.BODIES, hidden)).not.toHaveLength(0);
+      expect(screen.getAllByTestId(SKY_PART.SUN, hidden)).toHaveLength(1);
+    });
+
+    // 14:02 is between Dhuhr (12:00) and Asr (15:20): Asr's card is lit.
+    it("draws one bar, in the lit card", async () => {
+      await renderToday();
+      const asr = screen.getByRole("button", {
+        name: new RegExp(`^${i18n.t("prayerTimes.asr")},`),
+      });
+
+      expect(screen.getAllByTestId(PRAYER_GRID_PART.BAR, hidden)).toHaveLength(1);
+      expect(within(asr).getByTestId(PRAYER_GRID_PART.BAR, hidden)).toBeTruthy();
+    });
+
+    it("gives every control a role, a name and a 44pt target", async () => {
+      await renderToday();
+
+      expect(controlProblems()).toEqual([]);
+    });
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {
