@@ -7,13 +7,20 @@ import { inFocusWindow } from "@/utils/focusCount";
 
 export type PrayerCard = { id: PrayerId; time: string; state: PrayerCardState };
 
+export type PrayerCards = {
+  lead: PrayerCard;
+  cards: PrayerCard[];
+  /** The share of the way from the last prayer to the next; null without both. */
+  progress: number | null;
+};
+
 /** The day's five cards in order, and the lead: just come in, else next. */
 export const prayerCards = (
   day: DayPrayerTimes,
   now: Date,
   /** The day after, whose Fajr is next once today's Isha is in. */
   following?: DayPrayerTimes | null
-): { lead: PrayerCard; cards: PrayerCard[] } => {
+): PrayerCards => {
   const clock = now.getTime();
   const timeOf = (id: PrayerId) => parseISO(day.timings[id]).getTime();
   const passed = (id: PrayerId) => timeOf(id) <= clock;
@@ -39,5 +46,15 @@ export const prayerCards = (
   const cards = PRAYER_IDS.map(cardOf);
   // With no tomorrow stored, nothing is next; Isha keeps the lead.
   const leading = current ?? next ?? (tomorrowFajr ? PRAYER_ID.FAJR : PRAYER_ID.ISHA);
-  return { lead: cards[PRAYER_IDS.indexOf(leading)], cards };
+
+  const nextTime = next
+    ? timeOf(next)
+    : following
+      ? parseISO(following.timings[PRAYER_ID.FAJR]).getTime()
+      : undefined;
+  const progress =
+    latest && nextTime !== undefined
+      ? (clock - timeOf(latest)) / (nextTime - timeOf(latest))
+      : null;
+  return { lead: cards[PRAYER_IDS.indexOf(leading)], cards, progress };
 };
