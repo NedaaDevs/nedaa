@@ -21,8 +21,8 @@ const AA = 4.5;
 
 const PALETTE = { [BRIGHTNESS.LIGHT]: NEDAA_LIGHT, [BRIGHTNESS.DARK]: NEDAA_DARK } as const;
 
-/** The four phases the design checks, in both themes. */
-const PHASES = [PHASE.DAWN, PHASE.DAY, PHASE.MAGHRIB, PHASE.NIGHT] as const;
+/** The five phases the design checks, in both themes. */
+const PHASES = [PHASE.DAWN, PHASE.DAY, PHASE.ASR, PHASE.MAGHRIB, PHASE.NIGHT] as const;
 const CASES = Object.values(BRIGHTNESS).flatMap((brightness) =>
   PHASES.map((phase) => [`${brightness} ${phase}`, brightness, phase] as const)
 );

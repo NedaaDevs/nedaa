@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, StyleSheet } from "react-native";
 import { useSegments } from "expo-router";
@@ -70,6 +70,9 @@ export const ToastHost = () => {
     if (haptic) void feedback[haptic]();
   });
 
+  // The last toast felt and spoken.
+  const arrived = useRef<ShownToast["id"] | null>(null);
+
   // The toast on screen; it outlives the store's while it plays its exit.
   const [shown, setShown] = useState<ShownToast | null>(toast);
   if (toast && toast.id !== shown?.id) setShown(toast);
@@ -82,11 +85,15 @@ export const ToastHost = () => {
     offset.set(reduced ? 0 : TOAST_MOTION.rise);
     opacity.set(withTiming(1, easeOut(reduced ? TOAST_MOTION.reducedMs : TOAST_MOTION.enterMs)));
     if (!reduced) offset.set(withSpring(0, SETTLE));
-    arriveHaptic(toast.kind);
-    AccessibilityInfo.announceForAccessibilityWithOptions(
-      toastLabel(t, toast.kind, toast.message),
-      announcementFor(toast.kind)
-    );
+    // A setting change reruns this; the haptic and the announcement stay once.
+    if (arrived.current !== toast.id) {
+      arrived.current = toast.id;
+      arriveHaptic(toast.kind);
+      AccessibilityInfo.announceForAccessibilityWithOptions(
+        toastLabel(t, toast.kind, toast.message),
+        announcementFor(toast.kind)
+      );
+    }
     const timer = setTimeout(() => hide(toast.id), toastDwellMs(toast, screenReader));
     return () => clearTimeout(timer);
   }, [toast, reduced, screenReader, hide, t, opacity, offset]);

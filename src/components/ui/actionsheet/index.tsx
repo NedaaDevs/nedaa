@@ -151,7 +151,7 @@ const SheetScrim = ({ shown, onPress, style }: SheetScrimProps) => {
       style={[style, { backgroundColor: scrim }, faded]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={t("common.close")}
+      accessibilityLabel={t("a11y.dismiss")}
     />
   );
 };

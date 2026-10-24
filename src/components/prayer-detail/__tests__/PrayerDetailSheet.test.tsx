@@ -1,9 +1,8 @@
 import { Component, createRef } from "react";
 import { AccessibilityInfo, View, type ViewInstance } from "react-native";
-import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
-import { ACTIONSHEET_PART } from "@/components/ui/actionsheet";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -143,7 +142,8 @@ describe("PrayerDetailSheet", () => {
     const onClose = jest.fn();
     await renderOn("2026-09-23", PRAYER_ID.ASR, onClose);
 
-    await act(() => fireEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM)));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.press(screen.getByRole("button", { name: i18n.t("a11y.dismiss") }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -152,10 +152,7 @@ describe("PrayerDetailSheet", () => {
     const onClose = jest.fn();
     await renderOn("2026-09-23", PRAYER_ID.ASR, onClose);
 
-    // The scrim is named Close too; this is the sheet's own button.
-    const [button] = screen
-      .getAllByRole("button", { name: i18n.t("common.close") })
-      .filter((each) => each.props.testID !== ACTIONSHEET_PART.SCRIM);
+    const button = screen.getByRole("button", { name: i18n.t("common.close") });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     await user.press(button);
 
@@ -166,9 +163,7 @@ describe("PrayerDetailSheet", () => {
   it("floats its close button at the top end, out of the flow", async () => {
     await renderOn("2026-09-23", PRAYER_ID.ASR);
 
-    const [button] = screen
-      .getAllByRole("button", { name: i18n.t("common.close") })
-      .filter((each) => each.props.testID !== ACTIONSHEET_PART.SCRIM);
+    const button = screen.getByRole("button", { name: i18n.t("common.close") });
     expect(button).toHaveStyle({ position: "absolute", top: 0 });
   });
 
