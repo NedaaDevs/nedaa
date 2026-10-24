@@ -140,6 +140,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<AppearanceChoices\b/,
     home: "components/settings/AppearanceChoices.tsx",
   },
+  // Preferences and the Appearance step offer the same Today style choice.
+  {
+    concept: "the Today style choice",
+    shows: /todayStyle\.options\b|<TodayStyleChoices\b/,
+    within: /\.tsx$/,
+    drawsWith: /<TodayStyleChoices\b/,
+    home: "components/settings/TodayStyleChoices.tsx",
+  },
   // The location step, the prime and the fetch all open the same city picker.
   {
     concept: "the in-step city picker",
