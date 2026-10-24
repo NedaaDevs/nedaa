@@ -214,6 +214,19 @@ describe("ToastHost", () => {
     expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.ERROR]);
   });
 
+  // Reduce Motion turning on mid-toast replays its motion, never its arrival.
+  it("plays the haptic and the announcement once per toast", async () => {
+    await renderHost();
+    clearHaptics();
+    await act(() => MessageToast.showError("Couldn't save"));
+
+    mockReduced = true;
+    await act(() => useTabBarFrameStore.setState({ height: 80 }));
+
+    expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.ERROR]);
+    expect(announce).toHaveBeenCalledTimes(1);
+  });
+
   it("snaps back on the snap spring after a short drag", async () => {
     await renderHost();
     await act(() => MessageToast.showSuccess("Link copied"));
