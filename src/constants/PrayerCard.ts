@@ -10,3 +10,9 @@ export type PrayerCardState = (typeof PRAYER_CARD_STATE)[keyof typeof PRAYER_CAR
 
 /** A Today prayer cell's least height; no size token sits at 60. */
 export const PRAYER_CELL_HEIGHT = 60;
+
+/** The lit card's progress bar height; no size token sits at 3. */
+export const PRAYER_BAR_HEIGHT = 3;
+
+/** The bar's distance above the card's lower edge; no space token sits at 3. */
+export const PRAYER_BAR_INSET = 3;

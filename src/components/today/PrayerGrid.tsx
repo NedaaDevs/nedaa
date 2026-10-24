@@ -7,7 +7,7 @@ import { PRAYER_ICONS } from "@/components/today/prayerIcons";
 import { Box } from "@/components/ui/box";
 import { Grid } from "@/components/ui/grid";
 import { HStack } from "@/components/ui/hstack";
-import { Icon } from "@/components/ui/icon";
+import { Icon, type IconProps } from "@/components/ui/icon";
 import { HighlightEdge } from "@/components/ui/material/edge";
 import { Pressable } from "@/components/ui/pressable";
 import { usePressScale } from "@/components/ui/pressable/pressScale";
@@ -15,7 +15,12 @@ import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
 import { VStack } from "@/components/ui/vstack";
 import { accentGlowShadow } from "@/constants/Elevation";
-import { PRAYER_CARD_STATE, PRAYER_CELL_HEIGHT } from "@/constants/PrayerCard";
+import {
+  PRAYER_BAR_HEIGHT,
+  PRAYER_BAR_INSET,
+  PRAYER_CARD_STATE,
+  PRAYER_CELL_HEIGHT,
+} from "@/constants/PrayerCard";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { useShownDay } from "@/hooks/useShownDay";
 import { useAppStore } from "@/stores/app";
@@ -29,7 +34,10 @@ import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 export const PRAYER_GRID_PART = {
   SUNRISE: "prayer-grid-sunrise",
+  SUNRISE_ICON: "prayer-grid-sunrise-icon",
   RING: "prayer-grid-ring",
+  BAR: "prayer-grid-bar",
+  BAR_FILL: "prayer-grid-bar-fill",
 } as const;
 
 type CardProps = {
@@ -38,11 +46,76 @@ type CardProps = {
   time: string;
   spoken: string;
   selected: boolean;
+  /** The share of the way to the next prayer, drawn as a bar when lit. */
+  progress: number | null;
   onPress: (opener: ViewInstance | null) => void;
 };
 
+/** A thin bar along the card's lower edge, filling from the last prayer. */
+const ProgressBar = ({ share }: { share: number }) => (
+  <Box
+    testID={PRAYER_GRID_PART.BAR}
+    accessibilityElementsHidden
+    importantForAccessibility="no-hide-descendants"
+    position="absolute"
+    start="$3.5"
+    end="$3.5"
+    bottom={PRAYER_BAR_INSET}
+    height={PRAYER_BAR_HEIGHT}
+    borderRadius="$pill"
+    overflow="hidden"
+    backgroundColor="$track">
+    <Box
+      testID={PRAYER_GRID_PART.BAR_FILL}
+      height="100%"
+      width={`${share * 100}%`}
+      borderRadius="$pill"
+      backgroundColor="$accent"
+    />
+  </Box>
+);
+
+/** The frame every cell shares: a card's room, surface edge and shape. */
+const CARD_FRAME = {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: "$2.5",
+  minHeight: PRAYER_CELL_HEIGHT,
+  paddingHorizontal: "$3.5",
+  paddingVertical: "$2",
+  borderRadius: "$card",
+} as const;
+
+type FaceProps = {
+  icon: IconProps["as"];
+  name: string;
+  time: string;
+  lit: boolean;
+  past: boolean;
+  iconTestID?: string;
+};
+
+/** A card's inside: the edge, its icon, and its name stacked over its time. */
+const CardFace = ({ icon, name, time, lit, past, iconTestID }: FaceProps) => (
+  <>
+    <HighlightEdge radius="card" />
+    <Box testID={iconTestID} opacity={past ? 0.6 : 1}>
+      <Icon as={icon} size="md" color={lit ? "$accent" : "$muted"} />
+    </Box>
+    {/* Stacked, so a half-width cell fits any name beside its time. */}
+    <VStack flex={1}>
+      <Text size="md" fontWeight="600" color={past ? "$mutedSky" : "$fg"}>
+        {name}
+      </Text>
+      <Text size="label" fontWeight="600" numeric color={past ? "$mutedSky" : "$fg"}>
+        {time}
+      </Text>
+    </VStack>
+  </>
+);
+
 /** One prayer, name over time: quiet, or tinted, ringed and lit when next. */
-const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardProps) => {
+const PrayerCardView = ({ card, name, time, spoken, selected, progress, onPress }: CardProps) => {
   const { t } = useTranslation();
   // Held from mount: a ref handed over later is never attached.
   const self = useRef<ViewInstance>(null);
@@ -74,16 +147,10 @@ const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardPro
       transition={press.transition}
       animateOnly={press.animateOnly}
       pressStyle={press.pressStyle}
-      flexDirection="row"
-      alignItems="center"
-      gap="$2.5"
-      minHeight={PRAYER_CELL_HEIGHT}
-      paddingHorizontal="$3.5"
-      paddingVertical="$2"
-      borderRadius="$card"
+      {...CARD_FRAME}
       backgroundColor={next ? "$accentSoft" : "$surfaceQuiet"}
       style={next ? { boxShadow: glow } : undefined}>
-      <HighlightEdge radius="card" />
+      <CardFace icon={PRAYER_ICONS[card.id]} name={name} time={time} lit={next} past={past} />
       {/* Drawn over the card, so a ring moves nothing; the chosen ring wins. */}
       {selected || next ? (
         <Box
@@ -99,18 +166,7 @@ const PrayerCardView = ({ card, name, time, spoken, selected, onPress }: CardPro
           borderColor={selected ? "$accent" : "$accentRing"}
         />
       ) : null}
-      <Box opacity={past ? 0.6 : 1}>
-        <Icon as={PRAYER_ICONS[card.id]} size="md" color={next ? "$accent" : "$muted"} />
-      </Box>
-      {/* Stacked, so a half-width cell fits any name beside its time. */}
-      <VStack flex={1}>
-        <Text size="md" fontWeight="600" color={past ? "$mutedSky" : "$fg"}>
-          {name}
-        </Text>
-        <Text size="label" fontWeight="600" numeric color={past ? "$mutedSky" : "$fg"}>
-          {time}
-        </Text>
-      </VStack>
+      {next && progress !== null ? <ProgressBar share={progress} /> : null}
     </Pressable>
   );
 };
@@ -122,10 +178,12 @@ type Props = {
   onSelect: (id: PrayerId, opener: ViewInstance | null) => void;
   /** Only the leading prayer's card, across the row, as a short preview. */
   nextOnly?: boolean;
+  /** A bar in the lit card, filling from the last prayer to the next. */
+  progress?: boolean;
 };
 
-/** The day's five prayers in equal cells, and sunrise quiet in the sixth. */
-export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
+/** The day's five prayers in equal cells, and sunrise in the sixth. */
+export const PrayerGrid = ({ selected, onSelect, nextOnly = false, progress = false }: Props) => {
   const { t } = useTranslation();
   const { now, day, following } = useShownDay();
   const locale = useAppStore((state) => state.locale);
@@ -134,7 +192,7 @@ export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
 
   if (!day) return null;
 
-  const { lead, cards } = prayerCards(day, now, following);
+  const { lead, cards, progress: share } = prayerCards(day, now, following);
   const friday = isFridayInTimeZone(parseISO(day.timings[PRAYER_ID.DHUHR]), day.timezone);
   const shown = (time: string) =>
     localizeDigits(
@@ -158,12 +216,14 @@ export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
             time={shown(card.time)}
             spoken={spoken(card.time)}
             selected={card.id === selected}
+            progress={progress ? share : null}
             onPress={(opener) => onSelect(card.id, opener)}
           />
         </Grid.Item>
       ))}
       {nextOnly ? null : (
         <Grid.Item key={OTHER_TIMING.SUNRISE}>
+          {/* A card like the prayers', never lit and never a control. */}
           <HStack
             testID={PRAYER_GRID_PART.SUNRISE}
             accessible
@@ -171,25 +231,16 @@ export const PrayerGrid = ({ selected, onSelect, nextOnly = false }: Props) => {
               prayer: sunriseName,
               time: spoken(sunrise),
             })}
-            alignItems="center"
-            gap="$1.5"
-            minHeight={PRAYER_CELL_HEIGHT}
-            paddingHorizontal="$2.5">
-            <Box opacity={0.8}>
-              <Icon as={PRAYER_ICONS[OTHER_TIMING.SUNRISE]} size="sm" color="$mutedSky" />
-            </Box>
-            <Text size="helper" fontWeight="500" flexShrink={1} color="$mutedSky">
-              {sunriseName}
-            </Text>
-            <Text
-              size="md"
-              fontWeight="500"
-              numeric
-              flexShrink={0}
-              marginStart="auto"
-              color={sunrisePassed ? "$mutedSky" : "$fg"}>
-              {shown(sunrise)}
-            </Text>
+            {...CARD_FRAME}
+            backgroundColor="$surfaceQuiet">
+            <CardFace
+              icon={PRAYER_ICONS[OTHER_TIMING.SUNRISE]}
+              name={sunriseName}
+              time={shown(sunrise)}
+              lit={false}
+              past={sunrisePassed}
+              iconTestID={PRAYER_GRID_PART.SUNRISE_ICON}
+            />
           </HStack>
         </Grid.Item>
       )}

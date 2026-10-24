@@ -1,8 +1,8 @@
 import type { PrayerId } from "@/constants/Prayer";
 import { useBoundaryClock } from "@/hooks/useBoundaryClock";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
+import { useStoredDays } from "@/hooks/useStoredDays";
 import { useClockOverride } from "@/hooks/useTodayClock";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { focusCount, type CountSettings, type FocusCount } from "@/utils/focusCount";
 import type { StoredDays } from "@/utils/phase";
@@ -15,14 +15,11 @@ type Counter = (now: Date, days: StoredDays, settings: CountSettings) => FocusCo
 
 /** A figure on Today's clock, ticking each second while it shows seconds. */
 const useFigure = (count: Counter, paused: boolean): FocusCount | null => {
-  const yesterday = usePrayerTimesStore((state) => state.yesterdayTimings);
-  const today = usePrayerTimesStore((state) => state.todayTimings);
-  const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
+  const days = useStoredDays();
   const seconds = usePreferencesStore((state) => state.showSeconds);
   const settings: CountSettings = {
     seconds,
   };
-  const days = { yesterday, today, tomorrow };
 
   const override = useClockOverride();
   const minute = useMinuteClock();

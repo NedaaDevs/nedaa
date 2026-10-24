@@ -3,13 +3,17 @@
 import PreferencesScreen from "@/app/settings/preferences";
 import { Text } from "react-native";
 import { usePathname } from "expo-router";
-import { act, userEvent } from "@testing-library/react-native";
+import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
+import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
+import { PRAYER_GRID_PART } from "@/components/today/PrayerGrid";
+import { TODAY_STYLE_PREVIEW_PART } from "@/components/today/TodayStylePreview";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { TODAY_STYLE } from "@/constants/Today";
 import { TAB_ITEMS } from "@/constants/TabBar";
 import { AppLocale, OpeningTab, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -101,6 +105,7 @@ describe("Preferences", () => {
       showImportantDaysOnHome: false,
       shareUsageStats: true,
       textSize: TextSize.LARGE,
+      todayStyle: TODAY_STYLE.BOWL,
     });
     usePrayerTimesStore.setState({
       yesterdayTimings: null,
@@ -196,6 +201,48 @@ describe("Preferences", () => {
     await press(radio("settings.preferences.clock.spoken.12h"));
 
     expect(usePreferencesStore.getState().use24HourTime).toBe(false);
+  });
+
+  // Two styles for Today, the bowl first and chosen by default.
+  it("offers Today's two styles as one choice, the bowl chosen", async () => {
+    await renderPreferences();
+    const group = screen.getByLabelText(t("settings.preferences.todayStyle.title"));
+    const options = within(group).getAllByRole("radio");
+
+    expect(group.props.accessibilityRole).toBe("radiogroup");
+    expect(options.map((option) => option.props.accessibilityLabel)).toEqual([
+      t("settings.preferences.todayStyle.options.bowl"),
+      t("settings.preferences.todayStyle.options.simple"),
+    ]);
+    expect(radio("settings.preferences.todayStyle.options.bowl")).toBeSelected();
+    expect(radio("settings.preferences.todayStyle.options.simple")).not.toBeSelected();
+  });
+
+  it("sets Today's style from its choice", async () => {
+    await renderPreferences();
+
+    await press(radio("settings.preferences.todayStyle.options.simple"));
+
+    expect(usePreferencesStore.getState().todayStyle).toBe(TODAY_STYLE.SIMPLE);
+    expect(radio("settings.preferences.todayStyle.options.simple")).toBeSelected();
+  });
+
+  // The head of the screen previews the chosen style with the user's own times.
+  it("previews the chosen style at the top, and follows the choice", async () => {
+    await renderPreferences();
+    const preview = screen.getByTestId(TODAY_STYLE_PREVIEW_PART.ROOT);
+
+    expect(within(preview).getByTestId(BOWL_FRAME_PART.FRAME)).toBeTruthy();
+    expect(within(preview).queryAllByTestId(PRAYER_GRID_PART.BAR, hidden)).toHaveLength(0);
+
+    await press(radio("settings.preferences.todayStyle.options.simple"));
+
+    expect(within(preview).queryByTestId(BOWL_FRAME_PART.FRAME, hidden)).toBeNull();
+    expect(within(preview).getByTestId(FOCUS_COUNTDOWN_PART.ROOT)).not.toHaveStyle({
+      alignItems: "center",
+    });
+    expect(within(preview).getAllByTestId(PRAYER_GRID_PART.BAR, hidden)).toHaveLength(1);
+    expect(screen.queryByTestId(TODAY_STYLE_PREVIEW_PART.SAMPLE_NOTE)).toBeNull();
   });
 
   it("offers the numerals choice only where Arabic numerals exist", async () => {
