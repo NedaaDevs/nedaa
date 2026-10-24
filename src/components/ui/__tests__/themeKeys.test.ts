@@ -22,11 +22,14 @@ const tokenBlock = (name: string): string => {
 const blockKeys = (name: string): string[] =>
   [...tokenBlock(name).matchAll(/^\s{4}"?([a-zA-Z0-9.]+)"?:/gm)].map((m) => m[1]);
 
-const themeKeys = (name: string): string[] => {
+const themeBlock = (name: string): string => {
   const block = source().match(new RegExp(`\\nconst ${name} = \\{([\\s\\S]*?)\\n\\};`));
   if (!block) throw new Error(`${name} not found`);
-  return [...block[1].matchAll(/^\s{2}([a-zA-Z0-9]+):/gm)].map((m) => m[1]);
+  return block[1];
 };
+
+const themeKeys = (name: string): string[] =>
+  [...themeBlock(name).matchAll(/^\s{2}([a-zA-Z0-9]+):/gm)].map((m) => m[1]);
 
 const THEMES = ["lightTheme", "darkTheme"];
 
@@ -73,17 +76,14 @@ describe("theme keys", () => {
     const keys = new Set(themeKeys(theme));
     const missing = COLOR_TOKENS.filter((token) => !keys.has(token));
     const palette = PALETTE_BY_THEME[theme as keyof typeof PALETTE_BY_THEME];
+    const own = palette === NEDAA_LIGHT ? "NEDAA_LIGHT" : "NEDAA_DARK";
     const wired = [
-      ...source().matchAll(
-        new RegExp(
-          `^\\s{2}(\\w+): ${palette === NEDAA_LIGHT ? "NEDAA_LIGHT" : "NEDAA_DARK"}\\.(\\w+)\\.hex,`,
-          "gm"
-        )
-      ),
+      ...themeBlock(theme).matchAll(/^\s{2}(\w+): (NEDAA_LIGHT|NEDAA_DARK)\.(\w+)\.hex,/gm),
     ];
 
     expect(missing).toEqual([]);
-    expect(wired.filter((m) => m[1] !== m[2])).toEqual([]);
+    expect(wired.length).toBeGreaterThan(30);
+    expect(wired.filter(([, key, from, token]) => from !== own || key !== token)).toEqual([]);
   });
 
   // `size` and `space` resolve by the same lookup, so a theme key named for one
