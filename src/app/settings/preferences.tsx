@@ -14,6 +14,7 @@ import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import { TodayStyleChoices } from "@/components/settings/TodayStyleChoices";
 import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { SwitchGroup } from "@/components/ui/switch-group";
 import { Text } from "@/components/ui/text";
@@ -21,7 +22,6 @@ import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
 import { SECTION_KIND } from "@/constants/Section";
-import { TODAY_STYLE } from "@/constants/Today";
 import { tabItem } from "@/constants/TabBar";
 import { OpeningTab } from "@/enums/app";
 import { useBarTabs } from "@/hooks/useBarTabs";
@@ -32,7 +32,6 @@ import { usePreferencesStore } from "@/stores/preferences";
 
 const CLOCK_FORMATS = Object.values(CLOCK_FORMAT);
 const NUMERAL_STYLES = Object.values(NUMERAL_STYLE);
-const TODAY_STYLES = Object.values(TODAY_STYLE);
 const GROUPED = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 
 type ChoiceSettingProps = { title: string; summary: string; children: ReactNode };
@@ -72,8 +71,6 @@ const PreferencesContent = () => {
     useShallow((state) => ({
       showSeconds: state.showSeconds,
       setShowSeconds: state.setShowSeconds,
-      todayStyle: state.todayStyle,
-      setTodayStyle: state.setTodayStyle,
       use24HourTime: state.use24HourTime,
       setUse24HourTime: state.setUse24HourTime,
       useWesternNumerals: state.useWesternNumerals,
@@ -145,13 +142,7 @@ const PreferencesContent = () => {
                 <ChoiceSetting
                   title={t("settings.preferences.todayStyle.title")}
                   summary={t("settings.preferences.todayStyle.description")}>
-                  <SegmentedChoice
-                    options={TODAY_STYLES}
-                    value={preferences.todayStyle}
-                    onChange={preferences.setTodayStyle}
-                    accessibilityLabel={t("settings.preferences.todayStyle.title")}
-                    label={(style) => t(`settings.preferences.todayStyle.options.${style}`)}
-                  />
+                  <TodayStyleChoices />
                 </ChoiceSetting>
                 <ChoiceSetting
                   title={t("settings.preferences.clock.title")}
