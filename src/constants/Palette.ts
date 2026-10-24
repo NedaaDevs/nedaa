@@ -114,7 +114,7 @@ export const NEDAA_DARK = {
   accentTint: { oklch: "oklch(80% 0.125 92 / .12)", hex: "#DBBB561F" },
   quietTint: { oklch: "oklch(93% 0.018 230 / .07)", hex: "#DCEAF212" },
   warnTint: { oklch: "oklch(77% 0.11 80 / .14)", hex: "#D9AC5E24" },
-  surfaceQuiet: { oklch: "oklch(23% 0.065 258 / .46)", hex: "#071C3B75" },
+  surfaceQuiet: { oklch: "oklch(100% 0 0 / .06)", hex: "#FFFFFF0F" },
   accentRing: { oklch: "oklch(80% 0.125 92 / .35)", hex: "#DBBB5659" },
   /** The accent for words; the gold already reads on the night sky. */
   accentText: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
