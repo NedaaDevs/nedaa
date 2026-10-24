@@ -6,7 +6,7 @@ import { primeAccessibilityFlag, useAccessibilityFlag } from "@/hooks/useAccessi
 
 const read = () => AccessibilityInfo.isReduceTransparencyEnabled();
 
-// Known before the first screen mounts, so no first frame blurs by mistake.
+// Read at import, so the setting is usually known before the first screen.
 if (Platform.OS === PlatformType.IOS) {
   primeAccessibilityFlag(read, A11Y_FLAG_EVENT.REDUCE_TRANSPARENCY);
 }
