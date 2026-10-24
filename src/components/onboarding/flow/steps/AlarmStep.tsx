@@ -181,7 +181,7 @@ const ResultCard = ({ items, on, line, label, cardRef }: ResultProps) => {
       borderRadius="$card"
       borderWidth={1}
       borderColor={on ? "$accent" : "transparent"}
-      backgroundColor={on ? "$accentSoft" : undefined}>
+      backgroundColor={on ? "$accentSoft" : "$surface2"}>
       {items.length > 0 ? (
         <Text size="lg" bold color="$fg">
           {t("onboarding.alarm.count", count)}

@@ -603,7 +603,8 @@ describe("the result card", () => {
     expect(card().props.accessibilityLabel).toBe(join(allowed(1, 2), notOn(L)));
     expect(card()).toHaveStyle({ borderTopColor: "transparent" });
     expect(card()).not.toHaveStyle({ backgroundColor: NEDAA_LIGHT.accentSoft.hex });
-    // With no fill the line sits on the sky, where only mutedSky keeps 4.5:1.
+    // The quiet fill keeps the result framed once its accent ring is gone.
+    expect(card()).toHaveStyle({ backgroundColor: NEDAA_LIGHT.surface2.hex });
     expect(screen.getByText(notOn(L))).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex });
     expect(segments(ONBOARDING_PART.ALARM_BAR_ON)).toBe(1);
     expect(segments(ONBOARDING_PART.ALARM_BAR_OFF)).toBe(1);

@@ -75,7 +75,7 @@ export const Material = ({
           blurReductionFactor={BLUR_REDUCTION}
           blurMethod="dimezisBlurViewSdk31Plus"
           blurTarget={blurTarget}
-          style={[StyleSheet.absoluteFill, { borderRadius: radiusValue }]}
+          style={[StyleSheet.absoluteFill, { borderRadius: radiusValue, overflow: "hidden" }]}
         />
       )}
       <HighlightEdge owner={props.testID} radius={radius} />

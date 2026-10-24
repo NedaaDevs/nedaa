@@ -41,6 +41,15 @@ describe("Material", () => {
     expect(screen.getByTestId("blur-view").props.intensity).toBe(BLUR_INTENSITY.FLOAT);
   });
 
+  // BlurView ignores borderRadius unless it clips, so its corners would show.
+  it("clips the blur to its rounded corners", async () => {
+    await renderWithTheme(<Material testID="material" material="float" />);
+
+    expect(StyleSheet.flatten(screen.getByTestId("blur-view").props.style)).toMatchObject({
+      overflow: "hidden",
+    });
+  });
+
   it("blurs a sheet header at the sheet intensity", async () => {
     await renderWithTheme(<Material testID="material" material="sheetHeader" />);
 
