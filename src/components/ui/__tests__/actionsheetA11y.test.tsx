@@ -137,7 +137,7 @@ describe("Actionsheet accessibility", () => {
     await renderWithTheme(<Screen open />);
 
     const backdrop = screen.getByTestId(ACTIONSHEET_PART.SCRIM);
-    expect(backdrop.props.accessibilityLabel).toBe(i18n.t("common.close"));
+    expect(backdrop.props.accessibilityLabel).toBe(i18n.t("a11y.dismiss"));
   });
 
   it("tints the scrim navy, at the strength its colour carries", async () => {
