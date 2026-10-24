@@ -70,7 +70,7 @@ export const ToastHost = () => {
     if (haptic) void feedback[haptic]();
   });
 
-  // The last toast felt and spoken.
+  // The last toast whose arrival was handled.
   const arrived = useRef<ShownToast["id"] | null>(null);
 
   // The toast on screen; it outlives the store's while it plays its exit.
