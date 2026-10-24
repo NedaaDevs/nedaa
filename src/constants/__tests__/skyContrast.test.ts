@@ -20,6 +20,9 @@ const contrast = (a: string, b: string) => {
 /** WCAG AA for text below 18pt: every level-3 line is 13–14pt. */
 const AA = 4.5;
 
+/** The least luminance step that keeps a card off its sky's own colour. */
+const CARD_APART = 1.05;
+
 const PALETTE = { [BRIGHTNESS.LIGHT]: NEDAA_LIGHT, [BRIGHTNESS.DARK]: NEDAA_DARK } as const;
 
 /** The five phases the design checks, in both themes. */
@@ -70,6 +73,15 @@ describe.each(CASES)("%s sky", (_name, brightness, phase) => {
 
     expect(worst(palette.fg.hex, card)).toBeGreaterThanOrEqual(AA);
     expect(worst(palette.mutedSky.hex, card)).toBeGreaterThanOrEqual(AA);
+  });
+
+  // A card in the sky's own colour vanishes; its edge reads as a stray line.
+  it("sets the quiet card apart from the sky", () => {
+    const card = cardOver(palette.surfaceQuiet.hex, sky);
+
+    sky.forEach((ground, i) => {
+      expect(contrast(card[i], ground)).toBeGreaterThanOrEqual(CARD_APART);
+    });
   });
 
   // The next-prayer label, back links, text buttons and tinted pills.
