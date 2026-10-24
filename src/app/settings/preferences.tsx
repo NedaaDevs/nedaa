@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Shield } from "lucide-react-native";
 import { useShallow } from "zustand/react/shallow";
 
-import { FocusCountdown } from "@/components/today/FocusCountdown";
+import { TodayStylePreview } from "@/components/today/TodayStylePreview";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
@@ -21,6 +21,7 @@ import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
 import { SECTION_KIND } from "@/constants/Section";
+import { TODAY_STYLE } from "@/constants/Today";
 import { tabItem } from "@/constants/TabBar";
 import { OpeningTab } from "@/enums/app";
 import { useBarTabs } from "@/hooks/useBarTabs";
@@ -31,6 +32,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 
 const CLOCK_FORMATS = Object.values(CLOCK_FORMAT);
 const NUMERAL_STYLES = Object.values(NUMERAL_STYLE);
+const TODAY_STYLES = Object.values(TODAY_STYLE);
 const GROUPED = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 
 type ChoiceSettingProps = { title: string; summary: string; children: ReactNode };
@@ -58,7 +60,7 @@ const PreferencesScreen = () => (
 
 export default PreferencesScreen;
 
-/** The screen over its sky, headed by the countdown its seconds switch sets. */
+/** The screen over its sky, headed by Today in the style chosen below. */
 const PreferencesContent = () => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -70,6 +72,8 @@ const PreferencesContent = () => {
     useShallow((state) => ({
       showSeconds: state.showSeconds,
       setShowSeconds: state.setShowSeconds,
+      todayStyle: state.todayStyle,
+      setTodayStyle: state.setTodayStyle,
       use24HourTime: state.use24HourTime,
       setUse24HourTime: state.setUse24HourTime,
       useWesternNumerals: state.useWesternNumerals,
@@ -118,7 +122,7 @@ const PreferencesContent = () => {
       </SkyOccluder>
 
       <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
-        <FocusCountdown />
+        <TodayStylePreview />
 
         <SkyOccluder>
           <VStack gap="$section">
@@ -138,6 +142,17 @@ const PreferencesContent = () => {
 
             <Section title={t("settings.preferences.sections.display")} kind={SECTION_KIND.LABEL}>
               <ListGroup>
+                <ChoiceSetting
+                  title={t("settings.preferences.todayStyle.title")}
+                  summary={t("settings.preferences.todayStyle.description")}>
+                  <SegmentedChoice
+                    options={TODAY_STYLES}
+                    value={preferences.todayStyle}
+                    onChange={preferences.setTodayStyle}
+                    accessibilityLabel={t("settings.preferences.todayStyle.title")}
+                    label={(style) => t(`settings.preferences.todayStyle.options.${style}`)}
+                  />
+                </ChoiceSetting>
                 <ChoiceSetting
                   title={t("settings.preferences.clock.title")}
                   summary={t("settings.preferences.clock.description")}>
