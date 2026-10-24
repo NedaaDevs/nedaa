@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { Background } from "@/components/ui/background";
 import SoundPicker from "@/components/alarm/SoundPicker";
 
@@ -35,9 +36,13 @@ import {
 
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
 import { shareAlarmReport, copyAlarmReport } from "@/utils/alarmReport";
+import { PRAYER_ID } from "@/constants/Prayer";
+import { ALARM_DEBUG_TEST_SECONDS, alarmDebugScheduleId } from "@/constants/E2E";
 
 const AlarmDebugScreen = () => {
-  const [isModuleAvailable, setIsModuleAvailable] = useState<boolean | null>(null);
+  // Whether the native module is linked cannot change while the process runs, so it
+  // is read once at mount instead of being refreshed with the rest of the status.
+  const [isModuleAvailable] = useState(() => ExpoAlarm.isNativeModuleAvailable());
   const [isAlarmKitAvailable, setIsAlarmKitAvailable] = useState<boolean | null>(null);
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [bgRefreshStatus, setBgRefreshStatus] = useState<string | null>(null);
@@ -56,8 +61,12 @@ const AlarmDebugScreen = () => {
   const [hasAutoStart, setHasAutoStart] = useState<boolean | null>(null);
   const [deviceManufacturer, setDeviceManufacturer] = useState<string>("");
 
-  const [testChallengeType, setTestChallengeType] = useState<ChallengeType>("tap");
-  const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>("easy");
+  const [testChallengeType, setTestChallengeType] = useState<ChallengeType>(
+    ExpoAlarm.CHALLENGE_TYPE.TAP
+  );
+  const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>(
+    ExpoAlarm.CHALLENGE_DIFFICULTY.EASY
+  );
   const [testChallengeCount, setTestChallengeCount] = useState<number>(1);
   const [testVibrationEnabled, setTestVibrationEnabled] = useState<boolean>(true);
   const [testVibrationPattern, setTestVibrationPattern] = useState<VibrationPattern>("default");
@@ -120,10 +129,7 @@ const AlarmDebugScreen = () => {
   };
 
   const checkStatus = async () => {
-    const moduleAvailable = ExpoAlarm.isNativeModuleAvailable();
-    setIsModuleAvailable(moduleAvailable);
-
-    if (moduleAvailable) {
+    if (ExpoAlarm.isNativeModuleAvailable()) {
       const alarmKitAvailable = await ExpoAlarm.isAlarmKitAvailable();
       setIsAlarmKitAvailable(alarmKitAvailable);
 
@@ -153,7 +159,9 @@ const AlarmDebugScreen = () => {
   };
 
   useEffect(() => {
-    checkStatus();
+    void (async () => {
+      await checkStatus();
+    })();
   }, []);
 
   const handleRequestAuth = async () => {
@@ -167,7 +175,7 @@ const AlarmDebugScreen = () => {
   };
 
   const applyTestSettings = () => {
-    updateSettings("fajr", {
+    updateSettings(PRAYER_ID.FAJR, {
       sound: testSound,
       challenge: {
         type: testChallengeType,
@@ -186,7 +194,7 @@ const AlarmDebugScreen = () => {
     });
 
     // Sync to native so the alarm service uses these values
-    ExpoAlarm.setAlarmSettings("fajr", {
+    ExpoAlarm.setAlarmSettings(ScheduledAlarmType.FAJR, {
       sound: testSound,
       volume: testVolume,
       challengeType: testChallengeType,
@@ -280,9 +288,9 @@ const AlarmDebugScreen = () => {
 
   const scheduleNextFajr = async () => {
     try {
-      const alarmId = await schedulePrayerAlarm("fajr", "fajr");
+      const alarmId = await schedulePrayerAlarm(PRAYER_ID.FAJR, ScheduledAlarmType.FAJR);
       if (alarmId) {
-        const nextFajr = getNextPrayerDate("fajr");
+        const nextFajr = getNextPrayerDate(PRAYER_ID.FAJR);
         setLastResult(`Scheduled Fajr: ${nextFajr?.toISOString()}`);
         await checkStatus();
       } else {
@@ -300,7 +308,7 @@ const AlarmDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="Alarm Debug" href="/settings" backOnClick />
+      <ScreenHeader title="Alarm Debug" back={{ fallback: BACK_DESTINATION.SETTINGS }} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -632,9 +640,10 @@ const AlarmDebugScreen = () => {
               </Text>
 
               <HStack gap="$2" flexWrap="wrap">
-                {[10, 30, 60, 180].map((seconds) => (
+                {ALARM_DEBUG_TEST_SECONDS.map((seconds) => (
                   <Button
                     key={seconds}
+                    testID={alarmDebugScheduleId(seconds)}
                     size="sm"
                     variant="outline"
                     onPress={() => scheduleTestAlarm(seconds)}>
@@ -706,7 +715,7 @@ const AlarmDebugScreen = () => {
                     </Button>
                   </HStack>
                 </VStack>
-                <StreakShareButton variant="fajr" count={fajrStreak} />
+                <StreakShareButton variant={PRAYER_ID.FAJR} count={fajrStreak} />
               </HStack>
 
               <HStack justifyContent="space-between" alignItems="center">
@@ -729,7 +738,7 @@ const AlarmDebugScreen = () => {
               </Button>
               {todayTimings && (
                 <Text size="sm" color="$typographySecondary">
-                  Next Fajr: {getNextPrayerDate("fajr")?.toLocaleString() ?? "N/A"}
+                  Next Fajr: {getNextPrayerDate(PRAYER_ID.FAJR)?.toLocaleString() ?? "N/A"}
                 </Text>
               )}
             </VStack>

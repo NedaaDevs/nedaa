@@ -19,7 +19,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { useQadaStore } from "@/stores/qada";
 import { AppLogger } from "@/utils/appLogger";
 import { dateToInt } from "@/utils/date";
-import { refreshAllWidgets } from "../../modules/expo-widgets/src";
+import { refreshAllWidgets } from "expo-widgets";
 
 import type { WidgetSnapshotInputs } from "@/services/widgetSnapshotFile";
 

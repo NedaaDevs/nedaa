@@ -1,25 +1,6 @@
-import { useEffect, useState } from "react";
+import { useBoundaryClock } from "@/hooks/useBoundaryClock";
 
-/**
- * Current device time, re-rendering once per minute on the minute boundary.
- * Feed it to anything whose output depends on the clock rather than on state.
- */
-export const useMinuteClock = (): Date => {
-  const [now, setNow] = useState(() => new Date());
+const MINUTE_MS = 60_000;
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    const msToNextMinute = 60_000 - (Date.now() % 60_000);
-    const timeout = setTimeout(() => {
-      setNow(new Date());
-      interval = setInterval(() => setNow(new Date()), 60_000);
-    }, msToNextMinute);
-
-    return () => {
-      clearTimeout(timeout);
-      if (interval) clearInterval(interval);
-    };
-  }, []);
-
-  return now;
-};
+/** The device time on each minute boundary. */
+export const useMinuteClock = (): Date => useBoundaryClock(MINUTE_MS);

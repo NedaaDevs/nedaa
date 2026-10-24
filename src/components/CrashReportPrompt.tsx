@@ -5,10 +5,10 @@ import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
-  BottomSheetTextInput,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { useTheme } from "tamagui";
+import { SheetInput } from "@/components/ui/sheet-input";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { WifiOff } from "lucide-react-native";
 
@@ -144,24 +144,18 @@ const CrashReportPrompt = () => {
               {t("crashPrompt.body")}
             </Text>
 
-            <BottomSheetTextInput
+            <SheetInput
+              variant="boxed"
               value={note}
               onChangeText={setNote}
               editable={!submitting}
               placeholder={t("crashPrompt.notePlaceholder")}
-              placeholderTextColor={theme.typographySecondary?.val}
               multiline
               accessibilityLabel={t("crashPrompt.notePlaceholder")}
               style={{
-                color: theme.typography?.val,
                 backgroundColor: theme.backgroundMuted?.val ?? theme.background?.val,
-                borderColor: theme.borderColor?.val,
-                borderWidth: 1,
-                borderRadius: 12,
-                padding: 12,
                 minHeight: 72,
                 fontSize: 15,
-                textAlignVertical: "top",
               }}
             />
 

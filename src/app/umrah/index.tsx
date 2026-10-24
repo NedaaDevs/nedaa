@@ -13,7 +13,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import JourneyTimeline from "@/components/umrah/JourneyTimeline";
 
 import {
@@ -29,6 +29,7 @@ import PrepareCard from "@/components/umrah/PrepareCard";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { UMRAH_STAGES } from "@/constants/UmrahGuide";
 import { getMinistryLink } from "@/constants/UmrahChecklist";
 
@@ -44,7 +45,7 @@ const formatDuration = (minutes: number, t: (key: string) => string): string => 
 export default function UmrahOverviewScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const insets = useSafeAreaInsets();
   const { activeProgress, history, startUmrah, resetProgress, seedScreenshotProgress } =
     useUmrahGuideStore();
@@ -92,7 +93,7 @@ export default function UmrahOverviewScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.title" backOnClick />
+      <ScreenHeader variant="bar" title={t("umrah.title")} back />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: activeProgress ? 80 : 100 }}>
         <VStack paddingHorizontal="$4" paddingTop="$4" gap="$2">

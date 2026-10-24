@@ -13,7 +13,7 @@ import { Icon } from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
 import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import AddCustomSoundModal from "@/components/AddCustomSoundModal";
 
 // Icons
@@ -32,6 +32,7 @@ import {
   formatFileSize,
   calculateTotalStorage,
   getCustomSoundUsages,
+  describeCustomSoundUsages,
   replaceCustomSoundInSettings,
   getAlarmUsagesForUri,
   releaseCustomSoundFromAlarms,
@@ -40,9 +41,11 @@ import {
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Constants
+import { CUSTOM_SOUND_MAX_MB } from "@/constants/CustomSound";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
@@ -50,9 +53,9 @@ import type { AddCustomSoundResult, CustomSound } from "@/types/customSound";
 
 export default function CustomSoundsScreen() {
   const { t } = useTranslation();
-  const hapticMedium = useHaptic("medium");
-  const hapticSuccess = useHaptic("success");
-  const hapticLight = useHaptic("light");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   const { customSounds, isInitialized, initialize, addCustomSound, deleteCustomSound } =
@@ -72,7 +75,7 @@ export default function CustomSoundsScreen() {
   if (Platform.OS !== PlatformType.ANDROID) {
     return (
       <Background>
-        <TopBar title={t("notification.customSound.title")} backOnClick />
+        <ScreenHeader title={t("notification.customSound.title")} back />
         <Box flex={1} justifyContent="center" alignItems="center" padding="$6">
           <VStack gap="$3" alignItems="center" maxWidth={400}>
             <Box
@@ -208,22 +211,12 @@ export default function CustomSoundsScreen() {
     const isInUse = usedSounds.has(id) || alarmUsages.length > 0;
 
     if (isInUse && usages.length + alarmUsages.length > 0) {
-      // Format usages
-      const usageLabels = [
-        ...usages.map((usage) =>
-          usage.prayerId
-            ? t(`notification.customSound.usage.${usage.type}`, { prayer: usage.prayerId })
-            : t(`notification.customSound.usage.default.${usage.type}`)
-        ),
-        ...alarmUsages.map((alarmType) => t(`alarm.types.${alarmType}`)),
-      ];
-
       // Show alert with auto-replacement option
       await confirmThen(
         t("notification.customSound.deleteInUseTitle"),
         t("notification.customSound.deleteInUseMessage", {
           name: sound.name,
-          usages: usageLabels.join(", "),
+          usages: describeCustomSoundUsages(usages, alarmUsages, t),
           replacement: t("notification.sound.beep"),
         }),
         t("notification.customSound.replaceAndDelete"),
@@ -261,7 +254,7 @@ export default function CustomSoundsScreen() {
 
   return (
     <Background>
-      <TopBar title={t("notification.customSound.title")} backOnClick />
+      <ScreenHeader title={t("notification.customSound.title")} back />
 
       <ScrollView style={{ flex: 1 }}>
         <VStack gap="$4" padding="$4">
@@ -279,7 +272,7 @@ export default function CustomSoundsScreen() {
               </Box>
               <VStack gap="$2" flex={1}>
                 <Text size="sm" color="$typography">
-                  {t("notification.customSound.info")}
+                  {t("notification.customSound.info", { maxMb: CUSTOM_SOUND_MAX_MB })}
                 </Text>
                 <HStack gap="$2" marginTop="$2" flexWrap="wrap">
                   <Badge
@@ -301,7 +294,7 @@ export default function CustomSoundsScreen() {
                     paddingHorizontal="$3"
                     paddingVertical="$1">
                     <Badge.Text size="sm" color="$primary" fontWeight="500">
-                      {customSounds.length} {t("notification.customSound.sounds")}
+                      {t("notification.customSound.sounds", { count: customSounds.length })}
                     </Badge.Text>
                   </Badge>
                 </HStack>

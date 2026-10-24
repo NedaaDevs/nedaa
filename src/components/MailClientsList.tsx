@@ -6,6 +6,7 @@ import { getEmailClients, openComposer } from "react-native-email-link";
 import * as Application from "expo-application";
 import * as Device from "expo-device";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -32,43 +33,43 @@ type Props = {
 
 const MailClientsList = ({ onClose }: Props) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const [mailClients, setMailClients] = useState<MailClient[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchMailClients = async () => {
+      try {
+        setLoading(true);
+        const clients = await getEmailClients();
+
+        const formattedClients = clients.map((client) => {
+          let icon = "mail";
+          const id = client.id.toLowerCase();
+
+          if (id.includes("gmail")) icon = "gmail";
+          else if (id.includes("outlook")) icon = "outlook";
+          else if (id.includes("yahoo")) icon = "yahoo";
+
+          return {
+            ...client,
+            icon,
+          };
+        });
+
+        setMailClients(formattedClients);
+      } catch (error) {
+        console.error("Error fetching mail clients:", error);
+        Alert.alert(t("email.clients.error.loadFailed"));
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMailClients();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchMailClients = async () => {
-    try {
-      setLoading(true);
-      const clients = await getEmailClients();
-
-      const formattedClients = clients.map((client) => {
-        let icon = "mail";
-        const id = client.id.toLowerCase();
-
-        if (id.includes("gmail")) icon = "gmail";
-        else if (id.includes("outlook")) icon = "outlook";
-        else if (id.includes("yahoo")) icon = "yahoo";
-
-        return {
-          ...client,
-          icon,
-        };
-      });
-
-      setMailClients(formattedClients);
-    } catch (error) {
-      console.error("Error fetching mail clients:", error);
-      Alert.alert(t("email.clients.error.loadFailed"));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMailClientSelect = async (client: MailClient) => {
     hapticSelection();

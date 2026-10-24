@@ -9,6 +9,7 @@ import {
   type LocationDetails,
   type ManualLocation,
 } from "@/types/location";
+import { PLACE_UNKNOWN } from "@/constants/Location";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
@@ -29,6 +30,7 @@ import {
   LOCATION_REQUEST_TIMEOUT_EXTENDED,
   LocationPermissionError,
 } from "@/utils/location";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("location");
 
@@ -88,38 +90,40 @@ export const useLocationStore = create<LocationStore>()(
         autoUpdateLocation: true,
         showCityChangeModal: false,
         pendingCityChange: null,
-        locationMode: LocationMode.DEVICE,
+        // A screenshot build starts on its seeded city; restore below keeps it there.
+        locationMode: IS_SCREENSHOT_MODE ? LocationMode.MANUAL : LocationMode.DEVICE,
         manualLocation: null,
         manualLocationChosenAt: null,
         // Initialize location when permission is granted
         initializeLocation: async () => {
-          const previousState = get();
-          const previousLastKnownCoords = previousState.lastKnownCoords;
-          const previousVerifiedLocation = previousLastKnownCoords
-            ? {
-                locationDetails: previousState.locationDetails,
-                localizedLocation: previousState.localizedLocation,
-                lastKnownCoords: previousLastKnownCoords,
-              }
-            : null;
+          // A city chosen during the fix is the user's; the fix leaves it.
+          const stillAutomatic = () => {
+            if (get().locationMode === LocationMode.DEVICE) return true;
+            log.i("Init", "a city was chosen during the fix; the device place is not applied");
+            return false;
+          };
           set({ isGettingLocation: true });
           try {
             // Get initial location with timeout protection
             const location = await getLocationWithTimeout();
             log.i("Init", "initial location retrieved");
+            if (!stillAutomatic()) return;
 
-            // Keep an accurate fix even when address services are unavailable.
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                coords: location.coords,
-                error: null,
-                isLoading: false,
-              },
-              // A coordinate becomes prayer-ready only after its timezone is resolved.
-              lastKnownCoords: null,
-              isLocationPermissionGranted: true,
-            }));
+            // A saved place stands until the fix's timezone resolves; with none, the
+            // fix is kept even when address services are unavailable.
+            set((state) =>
+              state.lastKnownCoords
+                ? { isLocationPermissionGranted: true }
+                : {
+                    locationDetails: {
+                      ...state.locationDetails,
+                      coords: location.coords,
+                      error: null,
+                      isLoading: false,
+                    },
+                    isLocationPermissionGranted: true,
+                  }
+            );
 
             const [geocodedAddress] = await Location.reverseGeocodeAsync({
               latitude: location.coords.latitude,
@@ -141,28 +145,25 @@ export const useLocationStore = create<LocationStore>()(
                 return null;
               });
 
+            if (!stillAutomatic()) return;
             const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
-            if (!timezone) {
-              if (previousVerifiedLocation) {
-                set(previousVerifiedLocation);
-              }
-              throw new Error(i18n.t("location.update.error"));
-            }
+            if (!timezone) throw new Error(i18n.t("location.update.error"));
 
             set({
               locationDetails: {
                 coords: location.coords,
                 address: {
-                  country: geocodedAddress?.country ?? localizedGeocode?.countryName ?? "N/A",
-                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? "N/A",
+                  country:
+                    geocodedAddress?.country ?? localizedGeocode?.countryName ?? PLACE_UNKNOWN,
+                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? PLACE_UNKNOWN,
                 },
                 timezone,
                 error: null,
                 isLoading: false,
               },
               localizedLocation: {
-                country: localizedGeocode?.countryName || geocodedAddress?.country || "N/A",
-                city: localizedGeocode?.city || geocodedAddress?.city || "N/A",
+                country: localizedGeocode?.countryName || geocodedAddress?.country || PLACE_UNKNOWN,
+                city: localizedGeocode?.city || geocodedAddress?.city || PLACE_UNKNOWN,
               },
               lastKnownCoords: {
                 latitude: location.coords.latitude,
@@ -173,14 +174,19 @@ export const useLocationStore = create<LocationStore>()(
           } catch (error) {
             const cause =
               error instanceof Error ? error : new Error("Failed to initialize location");
-            log.e("Init", "initialize location failed", cause);
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                error: stripLocationDiagnostics(cause.message),
-                isLoading: false,
-              },
-            }));
+            // A chosen city abandons the fix: an info log, no device error.
+            if (get().locationMode !== LocationMode.DEVICE) {
+              log.i("Init", `abandoned fix failed: ${cause.message}`);
+            } else {
+              log.e("Init", "initialize location failed", cause);
+              set((state) => ({
+                locationDetails: {
+                  ...state.locationDetails,
+                  error: stripLocationDiagnostics(cause.message),
+                  isLoading: false,
+                },
+              }));
+            }
             throw cause;
           } finally {
             set({ isGettingLocation: false });
@@ -266,7 +272,7 @@ export const useLocationStore = create<LocationStore>()(
               });
 
               const currentCity = get().locationDetails.address?.city;
-              const newCity = geocodedAddress.city ?? "N/A";
+              const newCity = geocodedAddress.city ?? PLACE_UNKNOWN;
 
               if (currentCity !== newCity) {
                 log.i("CityChange", `city changed: ${currentCity} -> ${newCity}`);
@@ -291,16 +297,20 @@ export const useLocationStore = create<LocationStore>()(
         //  get localizedLocation (For display only)
         updateAddressTranslation: async () => {
           const location = get().locationDetails;
+          const asked = appStore.getState().locale;
 
           const geocodeAdd = await get()
             .reverseGeocode({
               lat: location.coords.latitude,
               lng: location.coords.longitude,
-              locale: appStore.getState().locale,
+              locale: asked,
             })
             .catch((e) => {
               log.w("Geocode", `address translation failed: ${(e as Error)?.message ?? e}`);
             });
+
+          // A later language switch owns the name; this answer is for the old one.
+          if (appStore.getState().locale !== asked) return false;
 
           if (geocodeAdd) {
             // Update localizedLocation with localized strings
@@ -457,6 +467,12 @@ export const useLocationStore = create<LocationStore>()(
           locationMode: state.locationMode,
           manualLocation: state.manualLocation,
           manualLocationChosenAt: state.manualLocationChosenAt,
+        }),
+        // A saved DEVICE mode would read the device position in a screenshot build.
+        merge: (persisted, current) => ({
+          ...current,
+          ...(typeof persisted === "object" && persisted !== null ? persisted : {}),
+          ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
         }),
       }
     ),

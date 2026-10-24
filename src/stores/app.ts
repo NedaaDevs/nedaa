@@ -1,4 +1,3 @@
-import { Appearance } from "react-native";
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 
@@ -12,6 +11,7 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 
 // Constants
 import { RTL_LOCALES } from "@/constants/Locales";
+import { isOnboardingStepId } from "@/constants/Onboarding";
 import { ALL_WHATS_NEW_IDS } from "@/constants/WhatsNew";
 
 // Types
@@ -51,12 +51,11 @@ export const useAppStore = create<AppState>()(
       persist(
         (set) => ({
           isFirstRun: true,
+          onboardingStep: null,
           hasHydrated: false,
           locale: initialLanguage,
-          mode: Appearance.getColorScheme() as AppMode,
+          mode: AppMode.SYSTEM,
           direction: initialDirection,
-          loadingMessage: "",
-          showLoadingOverlay: false,
           hijriDaysOffset: 0,
           dismissedFeatureCards: [],
 
@@ -66,11 +65,17 @@ export const useAppStore = create<AppState>()(
             // install never starts with an announcement backlog.
             set((state) => ({
               isFirstRun,
+              onboardingStep: isFirstRun ? state.onboardingStep : null,
               dismissedFeatureCards: isFirstRun
                 ? state.dismissedFeatureCards
                 : [...new Set([...state.dismissedFeatureCards, ...ALL_WHATS_NEW_IDS])],
             }));
           },
+
+          setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
+
+          // One write, so no state holds a first run with a stale saved step.
+          restartOnboarding: () => set({ isFirstRun: true, onboardingStep: null }),
 
           setLocale: (locale: AppLocale) => {
             i18n.changeLanguage(locale);
@@ -80,13 +85,6 @@ export const useAppStore = create<AppState>()(
 
           setMode: (mode: AppMode) => {
             set({ mode });
-          },
-
-          setLoadingState: (loading: boolean, message?: string) => {
-            set({
-              showLoadingOverlay: loading,
-              loadingMessage: message || "",
-            });
           },
 
           setHijirOffset: (daysOffset) => {
@@ -105,19 +103,21 @@ export const useAppStore = create<AppState>()(
           storage: createJSONStorage(() => Storage),
           partialize: (state) => ({
             isFirstRun: state.isFirstRun,
+            onboardingStep: state.onboardingStep,
             locale: state.locale,
             mode: state.mode,
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
             hijriDaysOffset: state.hijriDaysOffset,
-            // Exclude loading state from persistence
           }),
           merge: (persisted, current) => {
             const saved = (persisted ?? {}) as Partial<AppState>;
-            return {
-              ...current,
-              ...saved,
-            };
+            // A missing saved step keeps the current one; an unknown one is dropped.
+            const onboardingStep =
+              saved.onboardingStep === undefined || isOnboardingStepId(saved.onboardingStep)
+                ? (saved.onboardingStep ?? current.onboardingStep)
+                : null;
+            return { ...current, ...saved, onboardingStep };
           },
           onRehydrateStorage: () => (state, error) => {
             if (error) {

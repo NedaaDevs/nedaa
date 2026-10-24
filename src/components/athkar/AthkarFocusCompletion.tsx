@@ -54,7 +54,7 @@ export const AthkarFocusCompletion = ({
         {/* Header */}
         <Box position="absolute" top={48} end={16} zIndex={10}>
           <Button
-            size="md"
+            size="sm"
             action="default"
             variant="outline"
             onPress={handleFinish}

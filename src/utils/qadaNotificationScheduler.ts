@@ -19,6 +19,69 @@ import type { NotificationSettings } from "@/types/notification";
 // Enums
 import { PlatformType } from "@/enums/app";
 
+// Constants
+import { QADA_CHANNEL_PREFIX } from "@/constants/Notification";
+
+const QADA_CHANNEL_NAME = "Qada Reminders";
+const QADA_DEFAULT_CHANNEL_ID = `${QADA_CHANNEL_PREFIX}_default`;
+
+// Each sound and vibration gets its own id, so only the one in use is kept.
+const deleteOtherQadaChannels = async (keepId: string): Promise<void> => {
+  try {
+    const existing = await Notifications.getNotificationChannelsAsync();
+    for (const { id } of existing) {
+      if (id !== keepId && id.startsWith(`${QADA_CHANNEL_PREFIX}_`)) {
+        await Notifications.deleteNotificationChannelAsync(id);
+      }
+    }
+  } catch (error) {
+    console.error("[Qada Notification] Failed to delete old channels:", error);
+  }
+};
+
+const createDefaultSoundChannel = async (vibrationEnabled: boolean): Promise<string> => {
+  await Notifications.setNotificationChannelAsync(QADA_DEFAULT_CHANNEL_ID, {
+    name: QADA_CHANNEL_NAME,
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: "default",
+    vibrationPattern: vibrationEnabled ? [0, 500, 200, 500] : undefined,
+    enableVibrate: vibrationEnabled,
+  });
+  return QADA_DEFAULT_CHANNEL_ID;
+};
+
+const createQadaChannel = async (
+  soundKey: string,
+  customSounds: CustomSound[],
+  vibrationEnabled: boolean
+): Promise<string> => {
+  if (soundKey === "default") {
+    return createDefaultSoundChannel(vibrationEnabled);
+  }
+
+  const channelId = `${QADA_CHANNEL_PREFIX}_${soundKey}_${vibrationEnabled ? "vib" : "silent"}`;
+
+  try {
+    // Handles both custom and bundled sounds.
+    await createChannelWithCustomSound(
+      channelId,
+      QADA_CHANNEL_NAME,
+      soundKey,
+      customSounds,
+      Notifications.AndroidImportance.HIGH,
+      vibrationEnabled
+    );
+
+    console.log(
+      `[Qada Notification] Created channel: ${channelId} with sound: ${soundKey}, vibration: ${vibrationEnabled}`
+    );
+    return channelId;
+  } catch (error) {
+    console.error(`[Qada Notification] Failed to create channel ${channelId}:`, error);
+    return createDefaultSoundChannel(vibrationEnabled);
+  }
+};
+
 /**
  * Calculate next Ramadan date using Hijri calendar with timezone awareness
  */
@@ -63,12 +126,12 @@ export const buildNotificationContent = (
     // Use generic app name for privacy
     if (type === "ramadan") {
       return {
-        title: t("common.nedaa"),
+        title: t("brand.name"),
         body: t("notification.qada.bodyPrivacyRamadan"),
       };
     }
     return {
-      title: t("common.nedaa"),
+      title: t("brand.name"),
       body: t("notification.qada.bodyPrivacy"),
     };
   }
@@ -76,10 +139,10 @@ export const buildNotificationContent = (
   if (type === "ramadan" && daysUntilRamadan) {
     return {
       title: t("notification.qada.titleRamadan"),
-      body: t("notification.qada.bodyRamadan", {
-        days: daysUntilRamadan,
-        count: remainingCount,
-      }),
+      body: `${t("notification.qada.ramadanIn", { count: daysUntilRamadan })} ${t(
+        "notification.qada.fastsOwed",
+        { count: remainingCount }
+      )}`,
     };
   }
 
@@ -90,50 +153,18 @@ export const buildNotificationContent = (
 };
 
 /**
- * Setup Android notification channel for qada using centralized custom sound manager
+ * Sets up the Android qada channel for a sound and deletes the ones it replaces.
  */
 export const setupQadaNotificationChannel = async (
   soundKey: string,
   customSounds: CustomSound[],
   vibrationEnabled: boolean
-): Promise<string> => {
-  const channelId = `qada_reminder_${soundKey}_${vibrationEnabled ? "vib" : "silent"}`;
+): Promise<string | undefined> => {
+  if (Platform.OS !== PlatformType.ANDROID) return undefined;
 
-  if (Platform.OS !== PlatformType.ANDROID) {
-    return channelId;
-  }
-
-  try {
-    // Use the centralized createChannelWithCustomSound function
-    // This handles both custom and bundled sounds automatically
-    await createChannelWithCustomSound(
-      channelId,
-      "Qada Reminders",
-      soundKey,
-      customSounds,
-      Notifications.AndroidImportance.HIGH,
-      vibrationEnabled
-    );
-
-    console.log(
-      `[Qada Notification] Created channel: ${channelId} with sound: ${soundKey}, vibration: ${vibrationEnabled}`
-    );
-    return channelId;
-  } catch (error) {
-    console.error(`[Qada Notification] Failed to create channel ${channelId}:`, error);
-
-    // Fallback to system default channel
-    const fallbackChannelId = "qada_reminder_default";
-    await Notifications.setNotificationChannelAsync(fallbackChannelId, {
-      name: "Qada Reminders",
-      importance: Notifications.AndroidImportance.HIGH,
-      sound: "default",
-      vibrationPattern: vibrationEnabled ? [0, 500, 200, 500] : undefined,
-      enableVibrate: vibrationEnabled,
-    });
-
-    return fallbackChannelId;
-  }
+  const channelId = await createQadaChannel(soundKey, customSounds, vibrationEnabled);
+  await deleteOtherQadaChannels(channelId);
+  return channelId;
 };
 
 /**
@@ -275,30 +306,12 @@ export const scheduleQadaNotifications = async (
       return;
     }
 
-    // Handle "default" sound - don't pass to channel creation
-    let soundKey = qadaSoundSettings.sound;
-    let channelId: string;
-
-    if (soundKey === "default") {
-      // For default system sound, use a simple channel without custom sound
-      channelId = "qada_reminder_default";
-      if (Platform.OS === PlatformType.ANDROID) {
-        await Notifications.setNotificationChannelAsync(channelId, {
-          name: "Qada Reminders",
-          importance: Notifications.AndroidImportance.HIGH,
-          sound: "default",
-          vibrationPattern: qadaSoundSettings.vibration ? [0, 500, 200, 500] : undefined,
-          enableVibrate: qadaSoundSettings.vibration,
-        });
-      }
-    } else {
-      // For custom/bundled sounds, use the channel setup function
-      channelId = await setupQadaNotificationChannel(
-        soundKey,
-        customSounds,
-        qadaSoundSettings.vibration
-      );
-    }
+    const soundKey = qadaSoundSettings.sound;
+    const channelId = await setupQadaNotificationChannel(
+      soundKey,
+      customSounds,
+      qadaSoundSettings.vibration
+    );
 
     // Build notification content
     const content = buildNotificationContent(

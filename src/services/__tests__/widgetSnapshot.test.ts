@@ -12,7 +12,7 @@ jest.mock("@/services/widgetSnapshotFile", () => ({
 }));
 
 const mockRefreshAllWidgets = jest.fn<Promise<void>, []>(async () => {});
-jest.mock("../../../modules/expo-widgets/src", () => ({
+jest.mock("expo-widgets", () => ({
   refreshAllWidgets: () => mockRefreshAllWidgets(),
 }));
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { getCalendars } from "expo-localization";
+import { TODAY_STYLE, type TodayStyle } from "@/constants/Today";
 import { OpeningTab, type OpeningTabValue, TextSize, type TextSizeValue } from "@/enums/app";
 
 // Seeds the initial 24-hour setting from the device clock; once the user
@@ -20,12 +21,12 @@ type PreferencesState = {
   weekStartsOn: number;
   // Tab the app lands on at launch.
   openingTab: OpeningTabValue;
-  countdownEnabled: boolean;
-  countdownMinutes: number;
-  iqamaCountUpEnabled: boolean;
-  iqamaCountUpMinutes: number;
+  // Today's focus figure counts to the second; off counts in minutes, calmer.
+  showSeconds: boolean;
+  // Today draws the day as the bowl, or plainly with a bar on the lit card.
+  todayStyle: TodayStyle;
   hapticsEnabled: boolean;
-  // Home shows the Important Days pager card. The Tools screen is always available.
+  // Today lists the two nearest occasions below the prayer times.
   showImportantDaysOnHome: boolean;
   // Accessibility: render bigger buttons/text where controls support it (default off).
   largeControls: boolean;
@@ -41,10 +42,8 @@ type PreferencesState = {
   setUse24HourTime: (value: boolean) => void;
   setWeekStartsOn: (value: number) => void;
   setOpeningTab: (value: OpeningTabValue) => void;
-  setCountdownEnabled: (value: boolean) => void;
-  setCountdownMinutes: (value: number) => void;
-  setIqamaCountUpEnabled: (value: boolean) => void;
-  setIqamaCountUpMinutes: (value: number) => void;
+  setShowSeconds: (value: boolean) => void;
+  setTodayStyle: (value: TodayStyle) => void;
   setHapticsEnabled: (value: boolean) => void;
   setShowImportantDaysOnHome: (value: boolean) => void;
   setLargeControls: (value: boolean) => void;
@@ -60,10 +59,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       use24HourTime: deviceUses24HourClock(),
       weekStartsOn: deviceWeekStartsOn(),
       openingTab: OpeningTab.HOME,
-      countdownEnabled: false,
-      countdownMinutes: 60,
-      iqamaCountUpEnabled: false,
-      iqamaCountUpMinutes: 30,
+      showSeconds: true,
+      todayStyle: TODAY_STYLE.BOWL,
       hapticsEnabled: true,
       showImportantDaysOnHome: false,
       largeControls: false,
@@ -75,10 +72,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       setUse24HourTime: (value) => set({ use24HourTime: value }),
       setWeekStartsOn: (value) => set({ weekStartsOn: value }),
       setOpeningTab: (value) => set({ openingTab: value }),
-      setCountdownEnabled: (value) => set({ countdownEnabled: value }),
-      setCountdownMinutes: (value) => set({ countdownMinutes: value }),
-      setIqamaCountUpEnabled: (value) => set({ iqamaCountUpEnabled: value }),
-      setIqamaCountUpMinutes: (value) => set({ iqamaCountUpMinutes: value }),
+      setShowSeconds: (value) => set({ showSeconds: value }),
+      setTodayStyle: (value) => set({ todayStyle: value }),
       setHapticsEnabled: (value) => set({ hapticsEnabled: value }),
       setShowImportantDaysOnHome: (value) => set({ showImportantDaysOnHome: value }),
       setLargeControls: (value) => set({ largeControls: value }),

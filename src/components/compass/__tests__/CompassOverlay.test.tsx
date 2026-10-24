@@ -1,5 +1,5 @@
 import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { render, screen } from "@testing-library/react-native";
 
 import { CompassOverlay } from "@/components/compass/CompassOverlay";
 
@@ -21,29 +21,19 @@ jest.mock("@/components/ui/vstack", () => {
   return { VStack: View };
 });
 
-const renderOverlay = (variant: "holdFlat" | "calibrate") => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<CompassOverlay variant={variant} reduceMotion />);
-  });
-  return tree;
-};
-
-const hasText = (tree: renderer.ReactTestRenderer, text: string) =>
-  tree.root.findAll((node) => node.props.children === text).length > 0;
+const renderOverlay = (variant: "holdFlat" | "calibrate") =>
+  render(<CompassOverlay variant={variant} reduceMotion />);
 
 describe("CompassOverlay", () => {
-  it("shows the hold-flat hint", () => {
-    const tree = renderOverlay("holdFlat");
-    expect(hasText(tree, "compass.holdFlat")).toBe(true);
-    expect(hasText(tree, "compass.calibrationNote")).toBe(false);
-    act(() => tree.unmount());
+  it("shows the hold-flat hint", async () => {
+    await renderOverlay("holdFlat");
+    expect(screen.getByText("compass.holdFlat")).toBeOnTheScreen();
+    expect(screen.queryByText("compass.calibrationNote")).not.toBeOnTheScreen();
   });
 
-  it("shows the calibrate title and figure-8 instruction", () => {
-    const tree = renderOverlay("calibrate");
-    expect(hasText(tree, "compass.issue.sensor_uncalibrated.title")).toBe(true);
-    expect(hasText(tree, "compass.calibrationNote")).toBe(true);
-    act(() => tree.unmount());
+  it("shows the calibrate title and figure-8 instruction", async () => {
+    await renderOverlay("calibrate");
+    expect(screen.getByText("compass.issue.sensor_uncalibrated.title")).toBeOnTheScreen();
+    expect(screen.getByText("compass.calibrationNote")).toBeOnTheScreen();
   });
 });

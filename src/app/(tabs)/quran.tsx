@@ -25,7 +25,12 @@ import { QuranContentDB } from "@/services/quran-content-db";
 import { localizedSurahName } from "@/utils/surahName";
 import { useRTL } from "@/contexts/RTLContext";
 import { useResolvedQuranTheme, usePrefersDarkReader } from "@/hooks/useResolvedQuranTheme";
-import { QURAN_THEME_COLORS, isColoredVersion, isDarkPaper } from "@/constants/Quran";
+import {
+  QURAN_LIBRARY_TAB,
+  QURAN_THEME_COLORS,
+  isColoredVersion,
+  isDarkPaper,
+} from "@/constants/Quran";
 import { MushafVersion, DownloadStatus, ReaderViewMode } from "@/enums/quran";
 import { PlatformType } from "@/enums/app";
 import { QuranDownload } from "@/services/quran-download";
@@ -435,15 +440,16 @@ const QuranScreen = () => {
             </YStack>
           )}
 
-          {/* Reading-size rocker: down the side, clear of the centred controls.
-              Rides the chrome, and shows itself once on entry so it's findable. */}
+          {/* Reading-size rocker: down the end side, clear of the centred
+              controls. Rides the chrome, and shows itself once on entry so
+              it's findable. */}
           {readerMode === ReaderViewMode.TEXT &&
             !actionAyah &&
             infoSurah == null &&
             !guideSheet && (
               <YStack
                 position="absolute"
-                right={12}
+                end={12}
                 bottom={insets.bottom + 148}
                 zIndex={12}
                 pointerEvents="box-none">
@@ -556,7 +562,7 @@ const QuranScreen = () => {
                   <Pressable
                     onPress={() => {
                       setShowOverlay(false);
-                      libraryRef.current?.open("bookmarks");
+                      libraryRef.current?.open(QURAN_LIBRARY_TAB.BOOKMARKS);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={t("quran.library.bookmarks")}
@@ -644,7 +650,7 @@ const QuranScreen = () => {
                   <Pressable
                     onPress={() => {
                       setShowOverlay(false);
-                      libraryRef.current?.open("index");
+                      libraryRef.current?.open(QURAN_LIBRARY_TAB.INDEX);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={t("quran.library.title")}

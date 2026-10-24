@@ -17,13 +17,14 @@ import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 const ContactUs = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const hapticMedium = useHaptic("medium");
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
 
   const [mailModalVisible, setMailModalVisible] = useState(false);
 

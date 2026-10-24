@@ -1,11 +1,14 @@
+import { useTranslation } from "react-i18next";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import AthkarTabs from "@/components/athkar/AthkarTabs";
 
 const Athkar = () => {
+  const { t } = useTranslation();
+
   return (
     <Background>
-      <TopBar title="athkar.title" />
+      <ScreenHeader title={t("athkar.title")} />
       <AthkarTabs />
     </Background>
   );

@@ -7,7 +7,9 @@ import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { DEBUG_SCREEN } from "@/constants/DebugScreens";
 import { Background } from "@/components/ui/background";
 
 import * as BackgroundTask from "expo-background-task";
@@ -110,8 +112,9 @@ const BackgroundDebugScreen = () => {
   }, []);
 
   useEffect(() => {
-    checkStatus();
-    loadLogs();
+    void (async () => {
+      await Promise.all([checkStatus(), loadLogs()]);
+    })();
   }, [checkStatus, loadLogs]);
 
   const handleToggleRegistration = async () => {
@@ -160,7 +163,10 @@ const BackgroundDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="Background Debug" href="/settings" backOnClick />
+      <ScreenHeader
+        title={DEBUG_SCREEN.BACKGROUND.label}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

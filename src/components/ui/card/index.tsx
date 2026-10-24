@@ -1,34 +1,32 @@
 import { forwardRef } from "react";
 import { withStaticProperties } from "@tamagui/helpers";
 import { styled, YStack } from "tamagui";
-import type { GetProps } from "tamagui";
+import type { GetProps, TamaguiElement } from "tamagui";
+
+import { HighlightEdge, radiusNameOf, useElevationShadow } from "@/components/ui/material/edge";
+import { usePressScale } from "@/components/ui/pressable/pressScale";
+import { ELEVATION_LEVEL } from "@/constants/Elevation";
 
 const CardFrame = styled(YStack, {
   name: "Card",
-  backgroundColor: "$backgroundSecondary",
-  borderRadius: "$6",
-  padding: "$4",
+  backgroundColor: "$surfaceGlass",
+  borderRadius: "$card",
+  padding: "$cardPad",
 
   variants: {
-    // Radius climbs with padding so a card reads at the same "softness" at any
-    // size. md is the default and matches the grouped list radius.
+    // Size changes the inset, not the shape: a card is a card at any size. The
+    // small one reads as a chip, which is its own intent.
     size: {
-      sm: { padding: "$3", borderRadius: "$4" },
-      md: { padding: "$4", borderRadius: "$6" },
-      lg: { padding: "$6", borderRadius: "$7" },
+      sm: { padding: "$stack", borderRadius: "$chip" },
+      md: { padding: "$cardPad", borderRadius: "$card" },
+      // 24 has no named step; the vocabulary stops at section (20).
+      lg: { padding: "$6", borderRadius: "$card" },
     },
     variant: {
-      // Flat surface. The default: surfaces separate from the page by radius and
-      // a background step rather than by shadow.
+      // The resting surface: a glass tone, the e1 lift and a lit top edge.
       plain: {},
-      elevated: {
-        backgroundColor: "$backgroundSecondary",
-        shadowColor: "$shadowColor",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-      },
+      // Every resting card carries the e1 lift, so this rests like `plain`.
+      elevated: {},
       outline: {
         backgroundColor: "transparent",
         borderWidth: 1,
@@ -45,7 +43,7 @@ const CardFrame = styled(YStack, {
       // own padding, clipped so the first and last row inherit the corners.
       grouped: {
         padding: 0,
-        borderRadius: "$6",
+        borderRadius: "$card",
         overflow: "hidden",
       },
     },
@@ -57,13 +55,58 @@ const CardFrame = styled(YStack, {
   },
 });
 
+type CardVariant = NonNullable<GetProps<typeof CardFrame>["variant"]>;
+type CardSize = GetProps<typeof CardFrame>["size"];
+
+/** Transparent cards draw no surface, so they take no lift and no lit edge. */
+const RESTS: Record<CardVariant, boolean> = {
+  plain: true,
+  elevated: true,
+  outline: false,
+  ghost: false,
+  filled: true,
+  grouped: true,
+};
+
+/** The e1 shadow a resting card draws; undefined for a transparent one. */
+const useCardLift = (variant: CardVariant | undefined): string | undefined => {
+  const shadow = useElevationShadow(ELEVATION_LEVEL.E1);
+  return RESTS[variant ?? "plain"] ? shadow : undefined;
+};
+
+type CardEdgeProps = { owner?: string; size: CardSize; borderRadius?: unknown };
+
+/** Clears the caller's radius where it names one; else the size's own. */
+const CardEdge = ({ owner, size, borderRadius }: CardEdgeProps) => (
+  <HighlightEdge
+    owner={owner}
+    radius={radiusNameOf(borderRadius) ?? (size === "sm" ? "chip" : "card")}
+  />
+);
+
+const RestingCard = forwardRef<TamaguiElement, GetProps<typeof CardFrame>>(
+  ({ children, style, ...props }, ref) => {
+    const lift = useCardLift(props.variant);
+    return (
+      <CardFrame ref={ref} {...props} style={lift ? [{ boxShadow: lift }, style] : style}>
+        {lift ? (
+          <CardEdge owner={props.testID} size={props.size} borderRadius={props.borderRadius} />
+        ) : null}
+        {children}
+      </CardFrame>
+    );
+  }
+);
+RestingCard.displayName = "Card";
+
 // Tappable card. Mirrors the `Pressable` primitive's touch behaviour so a
 // hand-rolled `<Pressable>` surface swaps over without changing feel.
 const CardPressableFrame = styled(CardFrame, {
   name: "CardPressable",
-  role: "button",
-  minHeight: 44,
-  minWidth: 44,
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
+  minHeight: "$target",
+  minWidth: "$target",
   pressStyle: {
     opacity: 0.7,
   },
@@ -79,16 +122,43 @@ const CardPressableFrame = styled(CardFrame, {
 
 /** Same reason as the `Pressable` primitive: the `disabled` variant only dims. */
 const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
-  ({ onPress, onLongPress, disabled, accessibilityState, ...props }, ref) => (
-    <CardPressableFrame
-      ref={ref}
-      disabled={disabled}
-      onPress={disabled ? undefined : onPress}
-      onLongPress={disabled ? undefined : onLongPress}
-      accessibilityState={{ disabled: Boolean(disabled), ...accessibilityState }}
-      {...props}
-    />
-  )
+  (
+    {
+      onPress,
+      onLongPress,
+      disabled,
+      accessibilityState,
+      role,
+      children,
+      style,
+      pressStyle,
+      ...props
+    },
+    ref
+  ) => {
+    const lift = useCardLift(props.variant);
+    const press = usePressScale();
+    return (
+      <CardPressableFrame
+        ref={ref}
+        transition={press.transition}
+        animateOnly={press.animateOnly}
+        pressStyle={{ ...press.pressStyle, ...pressStyle }}
+        // A button unless the caller names a role; `role` would override theirs.
+        role={role ?? (props.accessibilityRole ? undefined : "button")}
+        disabled={disabled}
+        onPress={disabled ? undefined : onPress}
+        onLongPress={disabled ? undefined : onLongPress}
+        accessibilityState={{ disabled: Boolean(disabled), ...accessibilityState }}
+        {...props}
+        style={lift ? [{ boxShadow: lift }, style] : style}>
+        {lift ? (
+          <CardEdge owner={props.testID} size={props.size} borderRadius={props.borderRadius} />
+        ) : null}
+        {children}
+      </CardPressableFrame>
+    );
+  }
 );
 CardPressable.displayName = "CardPressable";
 
@@ -97,10 +167,10 @@ CardPressable.displayName = "CardPressable";
 const CardDivider = styled(YStack, {
   name: "CardDivider",
   height: 1,
-  backgroundColor: "$outline",
+  backgroundColor: "$hairline",
 });
 
-export const Card = withStaticProperties(CardFrame, {
+export const Card = withStaticProperties(RestingCard, {
   Pressable: CardPressable,
   Divider: CardDivider,
 });

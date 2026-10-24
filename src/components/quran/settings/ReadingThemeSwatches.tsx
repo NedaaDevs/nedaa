@@ -1,10 +1,9 @@
-import { useColorScheme } from "react-native";
 import { XStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 
 import { QuranTheme, QuranThemeType } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
-import { useAppStore } from "@/stores/app";
+import { useAppIsDark } from "@/hooks/useAppIsDark";
 import ThemePreviewCard from "@/components/quran/settings/ThemePreviewCard";
 
 // Explicit reader papers (override). Nedaa is handled separately as the
@@ -22,9 +21,7 @@ const ReadingThemeSwatches = () => {
   const setQuranTheme = useQuranStore((s) => s.setQuranTheme);
   const setQuranThemeAuto = useQuranStore((s) => s.setQuranThemeAuto);
 
-  const mode = useAppStore((s) => s.mode);
-  const systemScheme = useColorScheme();
-  const appIsDark = mode === "system" ? systemScheme === "dark" : mode === "dark";
+  const appIsDark = useAppIsDark();
   const nedaaPreview = appIsDark ? QuranTheme.NEDAA_DARK : QuranTheme.NEDAA_LIGHT;
 
   return (

@@ -7,12 +7,18 @@ import {
   getEffectiveConfig,
   type NotificationSettings,
   NotificationType,
+  type PrayerNotificationType,
 } from "@/types/notification";
 import { PrayerName } from "@/types/prayerTimes";
 import type { CustomSound } from "@/types/customSound";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  PRAYER_NOTIFICATION_TYPES,
+} from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Utils
@@ -87,17 +93,11 @@ const CHANNEL_VERSION = 3;
 type ChannelSettings = { sound: string; vibration: boolean };
 
 /** The notification types whose channels this module creates and deletes. */
-const MANAGED_TYPES = [
-  NOTIFICATION_TYPE.PRAYER,
-  NOTIFICATION_TYPE.IQAMA,
-  NOTIFICATION_TYPE.PRE_ATHAN,
-  NOTIFICATION_TYPE.ATHKAR,
-] as const;
-const MANAGED_IDS = ["reminder", "quran_reminder"] as const;
+const MANAGED_TYPES = [...PRAYER_NOTIFICATION_TYPES, NOTIFICATION_TYPE.ATHKAR];
+const MANAGED_IDS: readonly string[] = Object.values(NOTIFICATION_CHANNEL_ID);
 
 const isManagedChannel = (id: string) =>
-  MANAGED_TYPES.some((type) => id.startsWith(`${type}_`)) ||
-  MANAGED_IDS.some((managed) => id === managed);
+  MANAGED_TYPES.some((type) => id.startsWith(`${type}_`)) || MANAGED_IDS.includes(id);
 
 /**
  * One channel per prayer, type, sound, playback mode and vibration. Android restores
@@ -116,23 +116,23 @@ const generateChannelId = (
   return `${type}_${prayer}_${sanitizedSoundKey}_v${CHANNEL_VERSION}_${modeSuffix}_${vibrationSuffix}`;
 };
 
-/**
- * Get the display name for a channel
- */
+// Splits a current-version generateChannelId id into type, prayer and sound.
+const PRAYER_CHANNEL_ID = new RegExp(`^([^_]+)_([^_]+)_(.+)_v${CHANNEL_VERSION}_[a-z]+_[a-z]+$`);
+
+const CHANNEL_TYPE_NAME: Record<PrayerNotificationType, string> = {
+  [NOTIFICATION_TYPE.PRAYER]: "Prayer",
+  [NOTIFICATION_TYPE.IQAMA]: "Iqama",
+  [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
+};
+
+/** Get the display name for a channel */
 const getChannelDisplayName = (
   prayer: PrayerName,
-  type: NotificationType,
+  type: PrayerNotificationType,
   soundKey: string
 ): string => {
   const prayerName = prayer.charAt(0).toUpperCase() + prayer.slice(1);
-  const typeName = {
-    [NOTIFICATION_TYPE.PRAYER]: "Prayer",
-    [NOTIFICATION_TYPE.IQAMA]: "Iqama",
-    [NOTIFICATION_TYPE.PRE_ATHAN]: "Pre-Athan",
-    [NOTIFICATION_TYPE.ATHKAR]: "Athkar",
-    [NOTIFICATION_TYPE.QADA]: "Qada",
-    [NOTIFICATION_TYPE.OTHER_TIMING]: "Other Timing",
-  }[type];
+  const typeName = CHANNEL_TYPE_NAME[type];
 
   return `${prayerName} ${typeName} (${soundKey})`;
 };
@@ -179,7 +179,13 @@ export const createNotificationChannels = async (
   // All user preferences live in the app store, so nothing is lost.
   await deleteAllManagedChannels();
 
-  const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+  const prayers: PrayerName[] = [
+    PRAYER_ID.FAJR,
+    PRAYER_ID.DHUHR,
+    PRAYER_ID.ASR,
+    PRAYER_ID.MAGHRIB,
+    PRAYER_ID.ISHA,
+  ];
   const channels: ChannelConfig[] = [];
 
   // Create channels for each prayer and notification type combination
@@ -271,7 +277,7 @@ export const createNotificationChannels = async (
 
   // Create reminder channel
   channels.push({
-    id: "reminder",
+    id: NOTIFICATION_CHANNEL_ID.REMINDER,
     name: "Prayer Reminders",
     sound: null,
     importance: Notifications.AndroidImportance.HIGH,
@@ -283,7 +289,7 @@ export const createNotificationChannels = async (
   if (athkarSettings) {
     if (athkarSettings.morningNotification.enabled) {
       channels.push({
-        id: "athkar_morning",
+        id: NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING,
         name: "Morning Athkar",
         sound: null,
         importance: Notifications.AndroidImportance.HIGH,
@@ -294,7 +300,7 @@ export const createNotificationChannels = async (
 
     if (athkarSettings.eveningNotification.enabled) {
       channels.push({
-        id: "athkar_evening",
+        id: NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING,
         name: "Evening Athkar",
         sound: null,
         importance: Notifications.AndroidImportance.HIGH,
@@ -306,7 +312,7 @@ export const createNotificationChannels = async (
 
   if (quranReminderEnabled) {
     channels.push({
-      id: "quran_reminder",
+      id: NOTIFICATION_CHANNEL_ID.QURAN_REMINDER,
       name: "Quran Reminders",
       sound: null,
       importance: Notifications.AndroidImportance.HIGH,
@@ -391,7 +397,13 @@ export const shouldUpdateChannels = async (
 
   try {
     const existingChannels = await Notifications.getNotificationChannelsAsync();
-    const prayers: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    const prayers: PrayerName[] = [
+      PRAYER_ID.FAJR,
+      PRAYER_ID.DHUHR,
+      PRAYER_ID.ASR,
+      PRAYER_ID.MAGHRIB,
+      PRAYER_ID.ISHA,
+    ];
     const requiredChannels = new Set<string>();
 
     // Build set of required channel IDs
@@ -483,16 +495,20 @@ export const shouldUpdateChannels = async (
     // Check Athkar channels if settings provided
     if (athkarSettings) {
       if (athkarSettings.morningNotification.enabled) {
-        requiredChannels.add("athkar_morning");
-        const existingChannel = existingChannels.find((ch) => ch.id === "athkar_morning");
+        requiredChannels.add(NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING);
+        const existingChannel = existingChannels.find(
+          (ch) => ch.id === NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING
+        );
         if (!existingChannel || existingChannel.sound !== "default") {
           return true;
         }
       }
 
       if (athkarSettings.eveningNotification.enabled) {
-        requiredChannels.add("athkar_evening");
-        const existingChannel = existingChannels.find((ch) => ch.id === "athkar_evening");
+        requiredChannels.add(NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING);
+        const existingChannel = existingChannels.find(
+          (ch) => ch.id === NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING
+        );
         if (!existingChannel || existingChannel.sound !== "default") {
           return true;
         }
@@ -500,7 +516,7 @@ export const shouldUpdateChannels = async (
     }
 
     // Reminder channel is always required
-    requiredChannels.add("reminder");
+    requiredChannels.add(NOTIFICATION_CHANNEL_ID.REMINDER);
 
     // Check if there are old channels that need cleanup
     const managedChannels = existingChannels.filter((ch) => isManagedChannel(ch.id));
@@ -529,16 +545,11 @@ export const getActiveChannelMappings = async (): Promise<ChannelMapping[]> => {
     const mappings: ChannelMapping[] = [];
 
     for (const channel of channels) {
-      // Parse our managed channels
-      const match = channel.id.match(/^(prayer|iqama|preathan)_([^_]+)_(.+)$/);
-      if (match) {
-        const [, type, prayer, soundKey] = match;
-        mappings.push({
-          channelId: channel.id,
-          prayerName: prayer as PrayerName,
-          notificationType: type as NotificationType,
-          soundKey: soundKey.replace(/_/g, " "), // Convert back from sanitized form
-        });
+      const [, typePart, prayerPart, soundKey] = channel.id.match(PRAYER_CHANNEL_ID) ?? [];
+      const notificationType = PRAYER_NOTIFICATION_TYPES.find((type) => type === typePart);
+      const prayerName = PRAYER_IDS.find((prayer) => prayer === prayerPart);
+      if (notificationType && prayerName && soundKey) {
+        mappings.push({ channelId: channel.id, prayerName, notificationType, soundKey });
       }
     }
 

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master, v3]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up dependencies
+        uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
+
+      - name: Lint
+        run: bun run lint -- --max-warnings 0
+
+      - name: Check formatting
+        run: bun run format:check
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up dependencies
+        uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
+
+      # The screenshot tool is its own package with its own lockfile.
+      - name: Install screenshot tool dependencies
+        run: bun install --frozen-lockfile --cwd scripts/screenshots
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      # Jest ignores scripts/; these tests run under bun:test.
+      - name: Test build scripts
+        run: bun test scripts
+
+  test:
+    name: Test (shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up dependencies
+        uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
+
+      - name: Run Jest
+        env:
+          CI: "true"
+          SHARD: ${{ matrix.shard }}
+        run: bunx jest --shard="$SHARD/3" --ci --forceExit --watchAll=false --watchman=false

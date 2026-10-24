@@ -1,3 +1,4 @@
+import { PRAYER_ID } from "@/constants/Prayer";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 
 jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
@@ -14,11 +15,11 @@ const day = (date: number, hours: Record<string, string>) => ({
   date,
   timezone: "UTC",
   timings: {
-    fajr: `2026-07-${date}T05:00:00Z`,
-    dhuhr: `2026-07-${date}T12:00:00Z`,
-    asr: `2026-07-${date}T15:00:00Z`,
-    maghrib: `2026-07-${date}T19:00:00Z`,
-    isha: `2026-07-${date}T21:00:00Z`,
+    [PRAYER_ID.FAJR]: `2026-07-${date}T05:00:00Z`,
+    [PRAYER_ID.DHUHR]: `2026-07-${date}T12:00:00Z`,
+    [PRAYER_ID.ASR]: `2026-07-${date}T15:00:00Z`,
+    [PRAYER_ID.MAGHRIB]: `2026-07-${date}T19:00:00Z`,
+    [PRAYER_ID.ISHA]: `2026-07-${date}T21:00:00Z`,
     ...hours,
   },
   otherTimings: {
@@ -41,7 +42,7 @@ describe("prayer getters honour an injected clock", () => {
   test("getNextPrayer reports the prayer after the given moment", () => {
     const morning = new Date("2026-07-29T13:00:00Z");
 
-    expect(usePrayerTimesStore.getState().getNextPrayer(morning)?.name).toBe("asr");
+    expect(usePrayerTimesStore.getState().getNextPrayer(morning)?.name).toBe(PRAYER_ID.ASR);
   });
 
   test("getNextPrayer rolls over as the moment advances past a prayer", () => {
@@ -50,14 +51,14 @@ describe("prayer getters honour an injected clock", () => {
 
     const { getNextPrayer } = usePrayerTimesStore.getState();
 
-    expect(getNextPrayer(beforeAsr)?.name).toBe("asr");
-    expect(getNextPrayer(afterAsr)?.name).toBe("maghrib");
+    expect(getNextPrayer(beforeAsr)?.name).toBe(PRAYER_ID.ASR);
+    expect(getNextPrayer(afterAsr)?.name).toBe(PRAYER_ID.MAGHRIB);
   });
 
   test("getPreviousPrayer reports the prayer before the given moment", () => {
     const afterAsr = new Date("2026-07-29T15:30:00Z");
 
-    expect(usePrayerTimesStore.getState().getPreviousPrayer(afterAsr)?.name).toBe("asr");
+    expect(usePrayerTimesStore.getState().getPreviousPrayer(afterAsr)?.name).toBe(PRAYER_ID.ASR);
   });
 
   test("getNextOtherTiming honours the given moment", () => {
