@@ -5,7 +5,7 @@ import config from "../../../../tamagui.config";
 import { PRAYER_GRID_PART, PrayerGrid } from "@/components/today/PrayerGrid";
 import { GRID_PART } from "@/components/ui/grid";
 import { ELEVATION } from "@/constants/Elevation";
-import { PRAYER_CELL_HEIGHT } from "@/constants/PrayerCard";
+import { PRAYER_BAR_INSET, PRAYER_CELL_HEIGHT } from "@/constants/PrayerCard";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -43,13 +43,14 @@ const day = (date: string): DayPrayerTimes => ({
 const renderAt = (
   date: string,
   time: string,
-  props: { selected?: PrayerId; nextOnly?: boolean } = {}
+  props: { selected?: PrayerId; nextOnly?: boolean; progress?: boolean } = {},
+  tomorrow: string | null = null
 ) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
     todayTimings: day(date),
-    tomorrowTimings: null,
+    tomorrowTimings: tomorrow ? day(tomorrow) : null,
   });
   const onSelect = jest.fn();
   return { onSelect, rendered: renderWithTheme(<PrayerGrid onSelect={onSelect} {...props} />) };
@@ -268,7 +269,8 @@ describe("PrayerGrid", () => {
   describe("the sunrise cell", () => {
     const sunrise = () => screen.getByTestId(PRAYER_GRID_PART.SUNRISE);
 
-    it("shows sunrise and its time at the quiet level", async () => {
+    // After sunrise it takes a passed card's look: quiet surface, muted words.
+    it("shows sunrise and its time as a passed card once it has risen", async () => {
       await renderAt("2026-09-23", "14:02").rendered;
       const time = formatPrayerTime(day("2026-09-23").otherTimings[OTHER_TIMING.SUNRISE], "UTC", {
         locale: AppLocale.EN,
@@ -279,10 +281,41 @@ describe("PrayerGrid", () => {
         color: LIGHT.mutedSky.val,
       });
       expect(screen.getByText(time)).toHaveStyle({ color: LIGHT.mutedSky.val });
+      expect(within(sunrise()).getByTestId(PRAYER_GRID_PART.SUNRISE_ICON)).toHaveStyle({
+        opacity: 0.6,
+      });
+      expect(styleOf(sunrise())).toMatchObject({
+        backgroundColor: LIGHT.surfaceQuiet.val,
+        minHeight: PRAYER_CELL_HEIGHT,
+      });
     });
 
-    // Quiet, not passed: before sunrise its time reads as still to come.
-    it("draws sunrise's time as still to come before sunrise", async () => {
+    // The same card as a prayer's: its edge, its name stacked over its time.
+    it("draws sunrise as a card like the prayers', name over time", async () => {
+      await renderAt("2026-09-23", "14:02").rendered;
+      const named = within(sunrise()).getByText(i18n.t("otherTimings.sunrise"));
+      const time = within(sunrise()).getByText(
+        formatPrayerTime(day("2026-09-23").otherTimings[OTHER_TIMING.SUNRISE], "UTC", {
+          locale: AppLocale.EN,
+          use24HourTime: false,
+        })
+      );
+      const fajr = screen.getByRole("button", { name: label("2026-09-23", PRAYER_ID.FAJR) });
+
+      expect(time.parent).toBe(named.parent);
+      expect(named).toHaveStyle({ fontSize: fontSizeOf("md") });
+      expect(time).toHaveStyle({ fontSize: fontSizeOf("label") });
+      expect(within(sunrise()).getAllByTestId(/highlight/, hidden).length).toBeGreaterThan(0);
+      const card = styleOf(fajr);
+      expect(styleOf(sunrise())).toMatchObject({
+        paddingTop: card.paddingTop,
+        paddingLeft: card.paddingLeft,
+        borderTopLeftRadius: card.borderTopLeftRadius,
+      });
+    });
+
+    // Before sunrise the cell reads as still to come, never as passed.
+    it("draws sunrise as still to come before sunrise", async () => {
       await renderAt("2026-09-23", "03:00").rendered;
       const time = formatPrayerTime(day("2026-09-23").otherTimings[OTHER_TIMING.SUNRISE], "UTC", {
         locale: AppLocale.EN,
@@ -291,8 +324,12 @@ describe("PrayerGrid", () => {
 
       expect(screen.getByText(time)).toHaveStyle({ color: LIGHT.fg.val });
       expect(screen.getByText(i18n.t("otherTimings.sunrise"))).toHaveStyle({
-        color: LIGHT.mutedSky.val,
+        color: LIGHT.fg.val,
       });
+      expect(within(sunrise()).getByTestId(PRAYER_GRID_PART.SUNRISE_ICON)).toHaveStyle({
+        opacity: 1,
+      });
+      expect(styleOf(sunrise()).backgroundColor).toBe(LIGHT.surfaceQuiet.val);
     });
 
     it("reads as one line, not a control", async () => {
@@ -309,8 +346,21 @@ describe("PrayerGrid", () => {
         i18n.t("a11y.today.prayerCard", { prayer: i18n.t("otherTimings.sunrise"), time: spoken })
       );
       expect(sunrise().props.onResponderRelease).toBeUndefined();
-      expect(styleOf(sunrise()).backgroundColor).toBeUndefined();
+      expect(sunrise().props.accessibilityRole).toBeUndefined();
+      expect(sunrise().props.accessibilityHint).toBeUndefined();
+      // A card's surface, yet never lit: no tint, glow or ring.
+      expect(styleOf(sunrise()).backgroundColor).toBe(LIGHT.surfaceQuiet.val);
+      expect(styleOf(sunrise()).boxShadow).toBeUndefined();
+      expect(within(sunrise()).queryByTestId(PRAYER_GRID_PART.RING, hidden)).toBeNull();
       expect(cards()).toHaveLength(5);
+    });
+
+    // Just before sunrise the bar belongs to Dhuhr's card, never to sunrise.
+    it("never carries the bar", async () => {
+      await renderAt("2026-09-23", "05:40", { progress: true }).rendered;
+
+      expect(within(sunrise()).queryByTestId(PRAYER_GRID_PART.BAR, hidden)).toBeNull();
+      expect(screen.getAllByTestId(PRAYER_GRID_PART.BAR, hidden)).toHaveLength(1);
     });
 
     it("sits last, after Isha", async () => {
@@ -352,5 +402,82 @@ describe("PrayerGrid", () => {
     await renderAt("2026-09-23", "14:02").rendered;
 
     expect(controlProblems()).toEqual([]);
+  });
+
+  // Today's simple style: a thin bar in the lit card, from the last prayer.
+  describe("the progress bar", () => {
+    const bars = () => screen.queryAllByTestId(PRAYER_GRID_PART.BAR, hidden);
+    const fill = () => screen.getByTestId(PRAYER_GRID_PART.BAR_FILL, hidden);
+    const litCard = (date: string, id: PrayerId) =>
+      screen.getByRole("button", { name: label(date, id, true) });
+
+    // Dhuhr 12:00 to Asr 15:20: 13:40 is half the way.
+    it("fills the lit card's bar by the way from the last prayer", async () => {
+      await renderAt("2026-09-23", "13:40", { progress: true }).rendered;
+
+      expect(bars()).toHaveLength(1);
+      expect(
+        within(litCard("2026-09-23", PRAYER_ID.ASR)).getByTestId(PRAYER_GRID_PART.BAR, hidden)
+      ).toBeTruthy();
+      expect(fill()).toHaveStyle({ width: "50%" });
+    });
+
+    // Asr just came in at 15:20; Maghrib at 18:05 is 165 minutes on.
+    it("runs on from a prayer just come in, in its card", async () => {
+      await renderAt("2026-09-23", "15:53", { progress: true }).rendered;
+
+      expect(bars()).toHaveLength(1);
+      expect(fill()).toHaveStyle({ width: "20%" });
+    });
+
+    // Isha 19:25 to tomorrow's Fajr 04:30 is 545 minutes; 21:14 is a fifth.
+    it("runs from Isha to tomorrow's Fajr once Isha is in", async () => {
+      await renderAt("2026-09-23", "21:14", { progress: true }, "2026-09-24").rendered;
+
+      expect(
+        within(litCard("2026-09-24", PRAYER_ID.FAJR)).getByTestId(PRAYER_GRID_PART.BAR, hidden)
+      ).toBeTruthy();
+      expect(fill()).toHaveStyle({ width: "20%" });
+    });
+
+    it("draws no bar after Isha with no tomorrow stored", async () => {
+      await renderAt("2026-09-23", "22:00", { progress: true }).rendered;
+
+      expect(bars()).toHaveLength(0);
+    });
+
+    it("draws no bar unless asked", async () => {
+      await renderAt("2026-09-23", "13:40").rendered;
+
+      expect(bars()).toHaveLength(0);
+    });
+
+    // The bar is decoration: the card's own label already names the prayer.
+    it("hides the bar from a screen reader, the card's label unchanged", async () => {
+      await renderAt("2026-09-23", "13:40", { progress: true }).rendered;
+      const bar = bars()[0];
+
+      expect(bar.props.accessibilityElementsHidden).toBe(true);
+      expect(bar.props.importantForAccessibility).toBe("no-hide-descendants");
+      expect(screen.queryAllByRole("progressbar")).toHaveLength(0);
+      expect(litCard("2026-09-23", PRAYER_ID.ASR)).toBeTruthy();
+    });
+
+    it("draws the track in a faint ink and the fill in the accent", async () => {
+      await renderAt("2026-09-23", "13:40", { progress: true }).rendered;
+
+      expect(styleOf(bars()[0])).toMatchObject({ backgroundColor: LIGHT.track.val });
+      expect(styleOf(fill())).toMatchObject({ backgroundColor: LIGHT.accent.val });
+    });
+
+    // Laid over the card's lower edge, so the lit card matches its row.
+    it("takes no room in the card", async () => {
+      await renderAt("2026-09-23", "13:40", { progress: true }).rendered;
+
+      expect(styleOf(bars()[0])).toMatchObject({
+        position: "absolute",
+        bottom: PRAYER_BAR_INSET,
+      });
+    });
   });
 });

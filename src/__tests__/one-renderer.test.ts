@@ -166,6 +166,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<Bowl\b/,
     home: "components/today/Bowl.tsx",
   },
+  // Today and the style previews draw Today's head, bowl or row, alike.
+  {
+    concept: "Today's head in its style",
+    shows: /\bTODAY_STYLE\.(BOWL|SIMPLE)\b|<CelestialRhythm\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<TodayHero\b/,
+    home: "components/today/TodayHero.tsx",
+  },
   // The sky and Today's bowl draw the one sun, each at its own scale.
   {
     concept: "the sun",

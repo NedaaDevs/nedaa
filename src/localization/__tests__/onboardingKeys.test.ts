@@ -18,6 +18,7 @@ import { CALCULATION_PICKER, CALCULATION_TITLE_KEY } from "@/constants/Calculati
 import { PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
 import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
+import { TODAY_STYLE } from "@/constants/Today";
 import { AppLocale, TextSize } from "@/enums/app";
 import ar from "@/localization/locales/ar.json";
 import en from "@/localization/locales/en.json";
@@ -109,6 +110,10 @@ const TEMPLATED: Record<string, readonly string[]> = {
   "settings.languages.*.nativeTitle": fill("settings.languages.*.nativeTitle", ALL_LOCALES),
   "settings.themes.*.title": fill("settings.themes.*.title", APPEARANCE_ORDER),
   "settings.themes.*.description": fill("settings.themes.*.description", APPEARANCE_ORDER),
+  "settings.preferences.todayStyle.options.*": fill(
+    "settings.preferences.todayStyle.options.*",
+    Object.values(TODAY_STYLE)
+  ),
   "settings.preferences.numerals.options.*": fill(
     "settings.preferences.numerals.options.*",
     Object.values(NUMERAL_STYLE)
