@@ -3,7 +3,7 @@ import { Linking } from "react-native";
 import type { ParseKeys } from "i18next";
 import { LocateFixed, MapPin, RefreshCw, Search } from "lucide-react-native";
 
-import LocationUpdateProgress from "@/components/LocationUpdateProgress";
+import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { Button } from "@/components/ui/button";
 import { CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { ListGroup } from "@/components/ui/list-group";
@@ -17,8 +17,8 @@ import { SECTION_KIND } from "@/constants/Section";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
-import type { UpdateState } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
+import type { UpdateRun } from "@/stores/locationUpdate";
 import { AppLogger } from "@/utils/appLogger";
 
 const log = AppLogger.create("location");
@@ -111,7 +111,8 @@ const ChooseCityRow = ({ onPress }: { onPress: () => void }) => {
 type DeviceProps = {
   onChooseCity: () => void;
   onRefresh: () => void;
-  updateState: UpdateState;
+  /** The last update, drawn when a later step stopped it. */
+  run: UpdateRun | null;
   /** A read or update runs; the place cannot change under it. */
   busy: boolean;
   onRetry: () => void;
@@ -126,7 +127,7 @@ type DeviceProps = {
 export const DeviceBody = ({
   onChooseCity,
   onRefresh,
-  updateState,
+  run,
   busy,
   onRetry,
   lastFound,
@@ -159,7 +160,7 @@ export const DeviceBody = ({
           onPress={onRefresh}
         />
       </ListGroup>
-      <LocationUpdateProgress state={updateState} onRetry={onRetry} />
+      <LocationUpdateProgress run={run} onRetry={onRetry} />
     </>
   );
 };
@@ -167,7 +168,8 @@ export const DeviceBody = ({
 type ManualProps = {
   onChooseDevice: () => void;
   onChooseCity: () => void;
-  updateState: UpdateState;
+  /** The last update, drawn when a later step stopped it. */
+  run: UpdateRun | null;
   /** A read or update runs; the place cannot change under it. */
   busy: boolean;
   onRetry: () => void;
@@ -178,7 +180,7 @@ type ManualProps = {
 export const ManualBody = ({
   onChooseDevice,
   onChooseCity,
-  updateState,
+  run,
   busy,
   onRetry,
   refused,
@@ -214,7 +216,7 @@ export const ManualBody = ({
           onPress={onChooseCity}
         />
       </ListGroup>
-      <LocationUpdateProgress state={updateState} onRetry={onRetry} />
+      <LocationUpdateProgress run={run} onRetry={onRetry} />
     </>
   );
 };

@@ -231,6 +231,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<PlaceHero\b/,
     home: "components/ui/place-hero/index.tsx",
   },
+  // Location, the city-change sheet and the pickers show one update's steps.
+  {
+    concept: "the steps of a location update",
+    shows: /\blocation\.update\.(step|steps|failed)\.|\buseLocationUpdate\(\)/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<LocationUpdateProgress\b/,
+    home: "components/LocationUpdateProgress.tsx",
+  },
   // A file that calls playSource or names previewSource draws SoundPreview.
   {
     concept: "a sound's play and stop control",

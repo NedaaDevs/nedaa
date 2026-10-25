@@ -3,6 +3,7 @@ import { TOAST_GAP } from "@/constants/Toast";
 import { TAB_BAR_EDGE_GAP } from "@/constants/TabBar";
 import {
   SAFE_EDGE,
+  isQuranSegments,
   isSkySegments,
   rootSafeAreaEdges,
   tabBarEdgeGap,
@@ -103,5 +104,18 @@ describe("tabBarEdgeGap", () => {
     [48, 48],
   ])("keeps the pill clear of an Android inset of %s", (insetBottom, gap) => {
     expect(tabBarEdgeGap({ android: true, insetBottom })).toBe(gap);
+  });
+});
+
+describe("isQuranSegments", () => {
+  const segmentsOf = ({ route }: { route: string }) => route.split("/");
+
+  it.each([
+    ["the Quran tab", segmentsOf(BACK_DESTINATION.QURAN), true],
+    ["a screen under the Quran tab", [...segmentsOf(BACK_DESTINATION.QURAN), "reader"], true],
+    ["another tab", segmentsOf(BACK_DESTINATION.TOOLS), false],
+    ["Listen, outside the tabs", segmentsOf(BACK_DESTINATION.QURAN_LISTEN), false],
+  ])("reads %s: %s", (_name, segments, quran) => {
+    expect(isQuranSegments(segments)).toBe(quran);
   });
 });
