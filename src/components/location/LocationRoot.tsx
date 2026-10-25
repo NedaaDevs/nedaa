@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import type { ParseKeys } from "i18next";
 
 import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
+import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import {
   AutoUpdateSection,
   DeniedBody,
@@ -22,6 +23,7 @@ import {
   FIX_SOURCE,
   LOCATION_PICKER,
   LOCATION_ROOT_STATE,
+  UPDATE_START,
   UPDATE_STEP,
   type CityPickerView,
   type FixAgeUnit,
@@ -37,6 +39,7 @@ import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { usePlace } from "@/hooks/usePlace";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
 import { useLocationStore } from "@/stores/location";
+import { isRunning } from "@/stores/locationUpdate";
 import { fixAgeOf } from "@/utils/fixAge";
 
 type Hero = { tone: PlaceHeroTone; kicker: ParseKeys; note: ParseKeys };
@@ -77,16 +80,25 @@ type HeroFacts = {
   chosenCity: boolean;
   /** No city chosen and no verified place: the times are Makkah's. */
   noPlace: boolean;
-  /** This screen's run read the place, then failed at the times. */
+  /** The last run read the place, then failed at the times. */
   placeChanged: boolean;
+  /** A run reads the device; the place it moves to is not known yet. */
+  finding: boolean;
 };
 
 /** The hero says only what holds: whose place, or that none is found. */
 const heroFor = (
   state: LocationRootState,
-  { chosenCity, noPlace, placeChanged }: HeroFacts
+  { chosenCity, noPlace, placeChanged, finding }: HeroFacts
 ): Hero => {
   switch (state) {
+    // The title is the run's target once its first step has set the place.
+    case LOCATION_ROOT_STATE.UPDATING:
+      if (finding && noPlace) return { ...ASK_HERO, note: "location.hero.findingNote" };
+      return {
+        ...(chosenCity ? CITY_HERO : DEVICE_HERO),
+        note: finding ? "location.hero.findingNote" : "location.hero.updatingNote",
+      };
     case LOCATION_ROOT_STATE.CHECKING:
     case LOCATION_ROOT_STATE.DEVICE:
       return noPlace ? ASK_HERO : DEVICE_HERO;
@@ -134,11 +146,21 @@ export const LocationRoot = () => {
   // A read started anywhere, such as at launch, holds the controls too.
   const reading = useLocationStore((state) => state.isGettingLocation);
   const { permission, ask } = useLocationPermission();
-  const { updateState, executeUpdate, switchToDevice, retry, dismissFailure } = useLocationUpdate();
+  const {
+    run: liveRun,
+    executeUpdate,
+    switchToDevice,
+    retry,
+    dismissFailure,
+  } = useLocationUpdate();
+  const focused = useIsFocused();
+  // Behind a pushed screen this one stays mounted; the front one draws the run.
+  const run = focused ? liveRun : null;
   // The system said no when the device was picked over a chosen city.
   const [refused, setRefused] = useState(false);
-  const updating = updateState.isUpdating || reading;
-  const failedStep: UpdateStep | null = updateState.error?.step ?? null;
+  const running = isRunning(run);
+  const updating = running || reading;
+  const failedStep: UpdateStep | null = run?.failed ? run.step : null;
 
   const state = locationRootState({
     chosenCity,
@@ -146,12 +168,17 @@ export const LocationRoot = () => {
     failedStep,
     storedFailure,
     updating,
+    running,
   });
   // Only the location step fails before the place is written.
   const placeChanged = failedStep !== null && failedStep !== UPDATE_STEP.LOCATION;
   const noPlace = !chosenCity && !verified;
-  const hero = heroFor(state, { chosenCity, noPlace, placeChanged });
-  const title = !noPlace && place.name ? place.name : t("onboarding.location.question");
+  const finding =
+    running && run?.step === UPDATE_STEP.LOCATION && run.start.kind !== UPDATE_START.CITY;
+  const hero = heroFor(state, { chosenCity, noPlace, placeChanged, finding });
+  // A run names its target once the read is done; else only a verified place.
+  const named = !noPlace || (state === LOCATION_ROOT_STATE.UPDATING && !finding);
+  const title = named && place.name ? place.name : t("onboarding.location.question");
   const failure = placeChanged ? null : storedFailure;
   const age = fixedAt === null ? null : fixAgeOf(fixedAt, now.getTime());
 
@@ -188,7 +215,7 @@ export const LocationRoot = () => {
           <DeviceBody
             onChooseCity={chooseCity}
             onRefresh={refresh}
-            updateState={updateState}
+            run={run}
             busy={updating}
             onRetry={retry}
             lastFound={age ? t(LAST_FOUND[age.unit], { count: age.count }) : undefined}
@@ -201,7 +228,7 @@ export const LocationRoot = () => {
           <ManualBody
             onChooseDevice={() => void chooseDevice()}
             onChooseCity={chooseCity}
-            updateState={updateState}
+            run={run}
             busy={updating}
             onRetry={retry}
             refused={refused && !permission?.granted}
@@ -213,6 +240,8 @@ export const LocationRoot = () => {
         );
       case LOCATION_ROOT_STATE.DENIED:
         return <DeniedBody onChooseCity={chooseCity} verified={verified} />;
+      case LOCATION_ROOT_STATE.UPDATING:
+        return <LocationUpdateProgress run={run} onRetry={() => void retry()} />;
       case LOCATION_ROOT_STATE.FAILURE:
         return (
           <>

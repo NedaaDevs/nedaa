@@ -15,7 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Pressable } from "@/components/ui/pressable";
 import CityResultRow from "@/components/location/CityResultRow";
 import CitiesPackRow from "@/components/location/CitiesPackRow";
-import LocationUpdateProgress from "@/components/LocationUpdateProgress";
+import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 
 // Hooks
 import { useCitySearch } from "@/hooks/useCitySearch";
@@ -23,6 +23,7 @@ import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 
 // Stores
 import { useCitiesPackStore } from "@/stores/citiesPack";
+import { isRunning } from "@/stores/locationUpdate";
 
 // Constants
 import { CITIES_SEED_CITY_COUNT } from "@/constants/Cities";
@@ -57,7 +58,7 @@ type CityPickerProps = {
 const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
   const { t } = useTranslation();
   const { query, setQuery, results, isSearching, offersFullPack } = useCitySearch();
-  const { updateState, applyManualLocation, retry } = useLocationUpdate();
+  const { run, applyManualLocation, retry } = useLocationUpdate();
   const refreshInstalled = useCitiesPackStore((state) => state.refreshInstalled);
 
   useEffect(() => {
@@ -69,6 +70,10 @@ const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
     Keyboard.dismiss();
     const applied = await applyManualLocation(toManualLocation(city));
     if (applied) onDone();
+  };
+  // A retry that lands is a pick that landed.
+  const retryPick = async () => {
+    if (await retry()) onDone();
   };
 
   const hasQuery = query.trim().length > 0;
@@ -105,7 +110,7 @@ const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
         </Box>
       )}
 
-      <LocationUpdateProgress state={updateState} onRetry={retry} />
+      <LocationUpdateProgress run={run} onRetry={() => void retryPick()} />
 
       <FlatList
         data={results}
@@ -113,7 +118,7 @@ const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         renderItem={({ item }) => (
-          <CityResultRow city={item} onSelect={handleSelect} disabled={updateState.isUpdating} />
+          <CityResultRow city={item} onSelect={handleSelect} disabled={isRunning(run)} />
         )}
         ListHeaderComponent={
           offersFullPack && results.length === 0 ? (

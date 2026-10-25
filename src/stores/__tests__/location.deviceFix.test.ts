@@ -1,6 +1,7 @@
 import { reverseGeocodeAsync } from "@/adapters/location";
-import { FIX_SOURCE, LOCATION_FAILURE } from "@/constants/Location";
+import { FIX_SOURCE, LOCATION_FAILURE, PLACE_UNKNOWN } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
+import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
 import { LocationFixError, getLocationWithTimeout, readLocation } from "@/utils/location";
@@ -85,8 +86,10 @@ describe("device fix in the location store", () => {
       lastKnownCoords: { latitude: RIYADH.coords.latitude, longitude: RIYADH.coords.longitude },
       showCityChangeModal: false,
       pendingCityChange: null,
+      cityOffered: null,
       reverseGeocode,
     });
+    useAppStore.setState({ isFirstRun: false });
   });
 
   it("stores the failure kind of a failed first fix", async () => {
@@ -153,6 +156,141 @@ describe("device fix in the location store", () => {
     expect(useLocationStore.getState().pendingCityChange).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  // A move drops the old translated name; the new one's lands later.
+  it("names a new city at once, before its translation lands", async () => {
+    useLocationStore.setState({
+      localizedLocation: { city: "الرياض", country: "السعودية" },
+      reverseGeocode: () => new Promise(() => {}),
+    });
+    mockReadLocation.mockResolvedValue({ location: JEDDAH, source: FIX_SOURCE.FRESH });
+    mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+
+    await useLocationStore.getState().updateCurrentLocation();
+
+    expect(useLocationStore.getState().localizedLocation).toEqual({
+      city: "Jeddah",
+      country: "Saudi Arabia",
+    });
+  });
+
+  it("keeps the translated name of a refresh in the same city", async () => {
+    const localized = { city: "الرياض", country: "السعودية" };
+    useLocationStore.setState({
+      localizedLocation: localized,
+      reverseGeocode: () => new Promise(() => {}),
+    });
+    mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
+    mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Riyadh")]);
+
+    await useLocationStore.getState().updateCurrentLocation();
+
+    expect(useLocationStore.getState().localizedLocation).toEqual(localized);
+  });
+
+  it("takes a zone as the place's own", async () => {
+    await useLocationStore.getState().setTimezone("Asia/Dubai");
+
+    expect(useLocationStore.getState().locationDetails.timezone).toBe("Asia/Dubai");
+  });
+
+  describe("the city-change offer", () => {
+    /** The device now reads Jeddah, named by the device geocoder. */
+    const inJeddah = () => {
+      mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+    };
+
+    it("offers the new city against the saved one", async () => {
+      inJeddah();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      const state = useLocationStore.getState();
+      expect(state.pendingCityChange).toEqual({ currentCity: "Riyadh", newCity: "Jeddah" });
+      expect(state.showCityChangeModal).toBe(true);
+    });
+
+    it("logs through the app logger, not the console", async () => {
+      const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+      inJeddah();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(consoleLog).not.toHaveBeenCalled();
+      consoleLog.mockRestore();
+    });
+
+    it("offers nothing while onboarding runs", async () => {
+      useAppStore.setState({ isFirstRun: true });
+      inJeddah();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    });
+
+    it.each([
+      ["no saved address", null],
+      ["an unnamed saved city", { country: "Saudi Arabia", city: PLACE_UNKNOWN }],
+    ])("offers nothing against %s", async (_case, address) => {
+      useLocationStore.setState((state) => ({
+        locationDetails: { ...state.locationDetails, address },
+      }));
+      inJeddah();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    });
+
+    it("offers nothing for a new place the geocoder cannot name", async () => {
+      mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress(PLACE_UNKNOWN)]);
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    });
+
+    // Saved coordinates that moved during the read are not the ones compared.
+    it("offers nothing when the saved place moved during the check", async () => {
+      mockGetLocationWithTimeout.mockImplementation(async () => {
+        useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+        useLocationStore.setState({ locationMode: LocationMode.DEVICE });
+        return JEDDAH;
+      });
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    });
+
+    it("keeps the offer drawn while the sheet closes", async () => {
+      inJeddah();
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      useLocationStore.getState().closeCityChange();
+
+      const state = useLocationStore.getState();
+      expect(state.showCityChangeModal).toBe(false);
+      expect(state.pendingCityChange).toEqual({ currentCity: "Riyadh", newCity: "Jeddah" });
+    });
+
+    it("offers a closed city no more this session, and offers another", async () => {
+      inJeddah();
+      await useLocationStore.getState().checkAndPromptCityChange();
+      useLocationStore.getState().clearCityChange();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+      expect(useLocationStore.getState().pendingCityChange).toBeNull();
+
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Taif")]);
+      await useLocationStore.getState().checkAndPromptCityChange();
+      expect(useLocationStore.getState().pendingCityChange?.newCity).toBe("Taif");
+    });
   });
 
   it("records when the first fix was observed", async () => {
