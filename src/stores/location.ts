@@ -9,7 +9,12 @@ import {
   type LocationDetails,
   type ManualLocation,
 } from "@/types/location";
-import { LOCATION_FAILURE, PLACE_UNKNOWN, type LocationFailure } from "@/constants/Location";
+import {
+  LOCATION_FAILURE,
+  PLACE_UNKNOWN,
+  knownPlaceName,
+  type LocationFailure,
+} from "@/constants/Location";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
@@ -32,6 +37,7 @@ import {
   locationFailureOf,
   readLocation,
 } from "@/utils/location";
+import { errorText } from "@/utils/errorText";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("location");
@@ -68,6 +74,9 @@ const choiceMoved = (now: PlaceChoice, before: PlaceChoice): boolean =>
   now.manualLocation !== before.manualLocation ||
   now.manualLocationChosenAt !== before.manualLocationChosenAt;
 
+/** The saved city and the one the device is in now, both device-named. */
+type CityChangeOffer = { currentCity: string; newCity: string };
+
 // City-change checks compare names from this one geocoder, so every stored
 // device address comes from it.
 const deviceAddressAt = async ({
@@ -89,24 +98,22 @@ export type LocationStore = {
     country: string;
     city: string;
   };
-  timezone: string;
   isLocationPermissionGranted: boolean;
   isGettingLocation: boolean;
   lastKnownCoords: {
     latitude: number;
     longitude: number;
   } | null;
-  cityChangeDetected: boolean;
   autoUpdateLocation: boolean;
   locationMode: LocationModeValue;
   manualLocation: ManualLocation | null;
   /** When the city was chosen; the observation time of the stand-in Qibla fix. */
   manualLocationChosenAt: number | null;
+  /** The city-change sheet is up; its offer stays until it has closed. */
   showCityChangeModal: boolean;
-  pendingCityChange: {
-    currentCity: string;
-    newCity: string;
-  } | null;
+  pendingCityChange: CityChangeOffer | null;
+  /** The last new city offered this session; it is not offered again. */
+  cityOffered: string | null;
   initializeLocation: () => Promise<void>;
   setAutoUpdateLocation: (value: boolean) => void;
   updateCurrentLocation: () => Promise<void>;
@@ -114,9 +121,15 @@ export type LocationStore = {
   adoptDeviceLocation: () => Promise<void>;
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
   updateAddressTranslation: () => Promise<boolean>;
+  /** The place's zone, as the times fetched for it state. */
   setTimezone: (tz: string) => Promise<void>;
   checkAndPromptCityChange: () => Promise<void>;
-  dismissCityChangeModal: () => void;
+  /** Puts the city-change sheet up with this offer. */
+  offerCityChange: (offer: CityChangeOffer) => void;
+  /** Takes the sheet down; its offer stays drawn while it leaves. */
+  closeCityChange: () => void;
+  /** Drops the offer once the sheet is gone; its city is not offered again. */
+  clearCityChange: () => void;
   setManualLocation: (location: ManualLocation) => void;
   clearManualLocation: () => void;
 };
@@ -127,14 +140,13 @@ export const useLocationStore = create<LocationStore>()(
       (set, get) => ({
         locationDetails: initialLocationDetails,
         localizedLocation: { country: "", city: "" },
-        timezone: "Asia/Riyadh",
         isLocationPermissionGranted: false,
         isGettingLocation: false,
         lastKnownCoords: null,
-        cityChangeDetected: false,
         autoUpdateLocation: true,
         showCityChangeModal: false,
         pendingCityChange: null,
+        cityOffered: null,
         // A screenshot build starts on its seeded city; restore below keeps it there.
         locationMode: IS_SCREENSHOT_MODE ? LocationMode.MANUAL : LocationMode.DEVICE,
         manualLocation: null,
@@ -253,14 +265,15 @@ export const useLocationStore = create<LocationStore>()(
             }
 
             // An unnamed fix clears the address; an old city name would hide a move.
+            const address = geocodedAddress && {
+              country: geocodedAddress.country ?? PLACE_UNKNOWN,
+              city: geocodedAddress.city ?? PLACE_UNKNOWN,
+            };
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
                 coords: location.coords,
-                address: geocodedAddress && {
-                  country: geocodedAddress.country ?? PLACE_UNKNOWN,
-                  city: geocodedAddress.city ?? PLACE_UNKNOWN,
-                },
+                address,
                 error: null,
                 fixSource: source,
                 fixedAt: location.timestamp,
@@ -269,6 +282,15 @@ export const useLocationStore = create<LocationStore>()(
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
               },
+              // A new city's own name shows until its translation lands.
+              ...(address?.city === state.locationDetails.address?.city
+                ? {}
+                : {
+                    localizedLocation: {
+                      city: address?.city ?? "",
+                      country: address?.country ?? "",
+                    },
+                  }),
             }));
 
             // Update the localized address in the background
@@ -316,9 +338,7 @@ export const useLocationStore = create<LocationStore>()(
         },
 
         setTimezone: async (tz) => {
-          set({
-            timezone: tz,
-          });
+          set((state) => ({ locationDetails: { ...state.locationDetails, timezone: tz } }));
         },
 
         setAutoUpdateLocation: (value: boolean) => {
@@ -381,75 +401,66 @@ export const useLocationStore = create<LocationStore>()(
         },
 
         checkAndPromptCityChange: async () => {
-          const state = get();
-          const lastCoords = state.lastKnownCoords;
-
-          if (!lastCoords || state.showCityChangeModal) {
-            return;
-          }
+          const before = get();
+          const savedCoords = before.lastKnownCoords;
+          if (!savedCoords || before.showCityChangeModal) return;
 
           // A city the user chose is never second-guessed against the device position;
           // the prompt belongs to the mode that is actually tracking the device.
-          if (state.locationMode === LocationMode.MANUAL) {
+          if (before.locationMode === LocationMode.MANUAL) return;
+
+          // The offer names the saved city; without a name there is no offer.
+          const currentCity = knownPlaceName(before.locationDetails.address?.city);
+          if (!currentCity) {
+            log.i("CityChange", "the saved city has no name; no offer");
             return;
           }
 
           try {
-            const currentLocation = await getLocationWithTimeout();
-
-            // Calculate distance
+            const fix = await getLocationWithTimeout();
             const distance = calculateDistance(
-              lastCoords.latitude,
-              lastCoords.longitude,
-              currentLocation.coords.latitude,
-              currentLocation.coords.longitude
+              savedCoords.latitude,
+              savedCoords.longitude,
+              fix.coords.latitude,
+              fix.coords.longitude
             );
+            log.d("CityChange", `${distance.toFixed(2)} km from the saved place`);
+            if (distance <= CITY_CHANGE_THRESHOLD) return;
 
-            console.log(`[Location] Distance from last location: ${distance.toFixed(2)}km`);
-
-            if (distance > CITY_CHANGE_THRESHOLD) {
-              // Get city names for comparison and display
-              // With no name for the new place there is nothing to offer.
-              const newGeocodedAddress = await deviceAddressAt(currentLocation.coords);
-              if (!newGeocodedAddress) {
-                log.i("CityChange", "new place has no device address; no prompt");
-                return;
-              }
-
-              const currentCity = get().locationDetails.address?.city || "Unknown";
-              const newCity = newGeocodedAddress.city ?? "Unknown";
-
-              if (currentCity !== newCity) {
-                console.log(`[Location] City changed from ${currentCity} to ${newCity}`);
-
-                // Set pending change and show modal
-                set({
-                  pendingCityChange: {
-                    currentCity,
-                    newCity,
-                  },
-                  showCityChangeModal: true,
-                  cityChangeDetected: true,
-                });
-              } else {
-                console.log(`[Location] Distance threshold exceeded but same city: ${currentCity}`);
-              }
-            } else {
-              console.log(`[Location] City change check completed - no significant change`);
+            const newCity = knownPlaceName((await deviceAddressAt(fix.coords))?.city);
+            const state = get();
+            // Only against the place still saved, and never over onboarding.
+            if (state.lastKnownCoords !== savedCoords || appStore.getState().isFirstRun) {
+              log.i("CityChange", "the saved place or the flow changed during the check");
+              return;
             }
+            if (!newCity || newCity === currentCity || newCity === state.cityOffered) {
+              log.i("CityChange", "no new named city to offer");
+              return;
+            }
+            log.i("CityChange", `offering ${newCity} over ${currentCity}`);
+            get().offerCityChange({ currentCity, newCity });
           } catch (error) {
             // Runs on every launch, so a declined permission is an expected quiet skip.
             if (error instanceof LocationPermissionError) return;
-            console.error("[Location] Failed to check city change:", error);
+            log.w("CityChange", `city change check failed: ${errorText(error)}`);
           }
         },
 
-        dismissCityChangeModal: () => {
-          set({
+        offerCityChange: (offer) => {
+          set({ pendingCityChange: offer, showCityChangeModal: true });
+        },
+
+        closeCityChange: () => {
+          set({ showCityChangeModal: false });
+        },
+
+        clearCityChange: () => {
+          set((state) => ({
             showCityChangeModal: false,
             pendingCityChange: null,
-            cityChangeDetected: false,
-          });
+            cityOffered: state.pendingCityChange?.newCity ?? state.cityOffered,
+          }));
         },
 
         // lastKnownCoords is what marks a position prayer-ready; without it the prayer

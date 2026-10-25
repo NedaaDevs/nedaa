@@ -15,7 +15,7 @@ import { StepBody } from "@/components/onboarding/flow/StepBody";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { useBusyRequest } from "@/components/onboarding/flow/useBusyRequest";
-import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
+import { useViewFocus } from "@/hooks/useViewFocus";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";

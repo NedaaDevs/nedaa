@@ -6,6 +6,7 @@ import {
   LocationFailureOffer,
 } from "@/components/location/LocationFailureOffer";
 import { E2E_ID } from "@/constants/E2E";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import {
   ANDROID_LOCATION_SETTINGS,
   LOCATION_FAILURE,
@@ -27,13 +28,13 @@ const PLATFORM = Platform.OS;
 
 type Handlers = { onRetry: jest.Mock; onChooseCity: jest.Mock; onEnterCoordinates: jest.Mock };
 
-const renderOffer = async (failure: LocationFailure | null) => {
+const renderOffer = async (failure: LocationFailure | null, { inSheet = false } = {}) => {
   const handlers: Handlers = {
     onRetry: jest.fn(),
     onChooseCity: jest.fn(),
     onEnterCoordinates: jest.fn(),
   };
-  await renderWithTheme(<LocationFailureOffer failure={failure} {...handlers} />);
+  await renderWithTheme(<LocationFailureOffer failure={failure} inSheet={inSheet} {...handlers} />);
   return handlers;
 };
 
@@ -135,6 +136,24 @@ describe("LocationFailureOffer", () => {
     const retry = within(card).getByRole("button", { name: t("common.retry") });
     expect(styleOf(retry).backgroundColor).toBe(NEDAA_LIGHT.accent.hex);
     expect(styleOf(retry).alignSelf).not.toBe("center");
+  });
+
+  // Weight 700 is for display and title text; a card's name tops out at 600.
+  it("names the failure in the semibold face", async () => {
+    await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+    expect(screen.getByText(t("location.failure.notFound.title"))).toHaveStyle({
+      fontFamily: DEFAULT_FACES.semibold,
+    });
+  });
+
+  // A sheet stacks two tones and never lays glass on glass.
+  it("lies flat on the panel tone inside a sheet", async () => {
+    await renderOffer(LOCATION_FAILURE.TIMEOUT, { inSheet: true });
+
+    expect(screen.getByTestId(LOCATION_FAILURE_PART.CARD)).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.panel.hex,
+    });
   });
 
   it("offers the manual ways under their own label", async () => {

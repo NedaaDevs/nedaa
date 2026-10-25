@@ -13,12 +13,19 @@ type Facts = {
   chosenCity: boolean;
   /** Null until the first check answers. */
   permission: LocationPermission | null;
-  /** The step this screen's own last run failed at; null when none failed. */
+  /** The step the last update run failed at; null when none failed. */
   failedStep: UpdateStep | null;
   /** Why the last device read failed, kept until one succeeds. */
   storedFailure: LocationFailure | null;
+  /** A device read or an update runs. */
   updating: boolean;
+  /** An update run is in flight. */
+  running: boolean;
 };
+
+/** A run stopped before its place had times: the failure card's case. */
+export const failedAtPlaceOrTimes = (step: UpdateStep | null): boolean =>
+  step === UPDATE_STEP.LOCATION || step === UPDATE_STEP.PRAYER_TIMES;
 
 /** Which state the Location screen draws from what it knows now. */
 export const locationRootState = ({
@@ -27,13 +34,12 @@ export const locationRootState = ({
   failedStep,
   storedFailure,
   updating,
+  running,
 }: Facts): LocationRootState => {
-  // Notifications and alarms fail after the place and its times are in.
-  const placeOrTimesFailed =
-    failedStep === UPDATE_STEP.LOCATION || failedStep === UPDATE_STEP.PRAYER_TIMES;
+  if (running) return LOCATION_ROOT_STATE.UPDATING;
   // Access lost since then: a retry could only fail again.
   const accessGone = permission !== null && !permission.granted;
-  if (placeOrTimesFailed && !accessGone) return LOCATION_ROOT_STATE.FAILURE;
+  if (failedAtPlaceOrTimes(failedStep) && !accessGone) return LOCATION_ROOT_STATE.FAILURE;
   if (chosenCity) return LOCATION_ROOT_STATE.MANUAL;
   if (!permission) return LOCATION_ROOT_STATE.CHECKING;
   if (!permission.granted) {

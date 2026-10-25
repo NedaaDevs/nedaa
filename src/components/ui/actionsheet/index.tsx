@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  createRef,
   use,
   useCallback,
   useEffect,
@@ -100,6 +101,11 @@ const ActionsheetOverlay = createContext<ReactNode>(null);
 
 /** Where ActionsheetTitle registers its view for the sheet to focus. */
 const TitleContext = createContext<RefObject<ViewInstance | null> | null>(null);
+
+const NO_TITLE = createRef<ViewInstance>();
+
+/** The sheet's title, for content that sends reader focus back to it. */
+const useActionsheetTitle = (): RefObject<ViewInstance | null> => use(TitleContext) ?? NO_TITLE;
 
 type BlurTarget = RefObject<ComponentRef<typeof RNView> | null>;
 
@@ -561,6 +567,7 @@ export {
   ActionsheetHero,
   ActionsheetScrollView,
   ActionsheetTitle,
+  useActionsheetTitle,
 };
 export type {
   ActionsheetProps,

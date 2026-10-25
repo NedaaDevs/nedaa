@@ -6,7 +6,7 @@ import CoordinateEntry from "@/components/location/CoordinateEntry";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { useStepBack } from "@/components/onboarding/flow/useStepBack";
-import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
+import { useViewFocus } from "@/hooks/useViewFocus";
 import { Button } from "@/components/ui/button";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyScrollView } from "@/components/ui/sky-background";

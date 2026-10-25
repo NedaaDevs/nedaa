@@ -1,6 +1,10 @@
 /** What the location store writes for a city or country it could not name. */
 export const PLACE_UNKNOWN = "N/A";
 
+/** A city or country name, unless it is missing or the unnamed mark. */
+export const knownPlaceName = (name: string | null | undefined): string | undefined =>
+  name && name !== PLACE_UNKNOWN ? name : undefined;
+
 /** Whose place the stored prayer times are for, from both persisted stores. */
 export const TIMES_PLACE = {
   /** A store has not loaded from disk, so its fact is not known. */
@@ -39,15 +43,32 @@ export const FIX_AGE_UNIT = {
 } as const;
 export type FixAgeUnit = (typeof FIX_AGE_UNIT)[keyof typeof FIX_AGE_UNIT];
 
-/** A location update's steps in order, and DONE once every one has run. */
+/** A location update's steps, in the order they run. */
 export const UPDATE_STEP = {
   LOCATION: "location",
   PRAYER_TIMES: "prayerTimes",
   NOTIFICATIONS: "notifications",
   ALARMS: "alarms",
-  DONE: "done",
 } as const;
 export type UpdateStep = (typeof UPDATE_STEP)[keyof typeof UPDATE_STEP];
+
+/** Where a location update takes its place from. */
+export const UPDATE_START = {
+  /** A fresh device read, in device mode. */
+  DEVICE: "device",
+  /** A device read that replaces a chosen city once it lands. */
+  ADOPT_DEVICE: "adoptDevice",
+  /** A city the user chose. */
+  CITY: "city",
+} as const;
+
+/** The rows an update's progress shows; the later two steps share the last. */
+export const PROGRESS_ROW = {
+  PLACE: "place",
+  TIMES: "times",
+  ALERTS: "alerts",
+} as const;
+export type ProgressRow = (typeof PROGRESS_ROW)[keyof typeof PROGRESS_ROW];
 
 /** The Android settings page that turns location services on. */
 export const ANDROID_LOCATION_SETTINGS = "android.settings.LOCATION_SOURCE_SETTINGS";
@@ -55,6 +76,17 @@ export const ANDROID_LOCATION_SETTINGS = "android.settings.LOCATION_SOURCE_SETTI
 /** What a city picker shows: the city list, or coordinate entry. */
 export const CITY_PICKER_VIEW = { LIST: "list", COORDINATES: "coordinates" } as const;
 export type CityPickerView = (typeof CITY_PICKER_VIEW)[keyof typeof CITY_PICKER_VIEW];
+
+/** What the city-change sheet shows under the two cities. */
+export const CITY_CHANGE_VIEW = {
+  /** Update, or keep the saved city. */
+  OFFER: "offer",
+  /** The sheet's update, step by step. */
+  RUNNING: "running",
+  /** Where that update stopped. */
+  STOPPED: "stopped",
+} as const;
+export type CityChangeView = (typeof CITY_CHANGE_VIEW)[keyof typeof CITY_CHANGE_VIEW];
 
 /** The city picker's route, and the search param naming its first view. */
 export const LOCATION_PICKER = { href: "/settings/location-picker", viewParam: "view" } as const;
@@ -70,5 +102,7 @@ export const LOCATION_ROOT_STATE = {
   /** Access refused; only Settings can give it. */
   DENIED: "denied",
   FAILURE: "failure",
+  /** An update runs; the screen shows its steps. */
+  UPDATING: "updating",
 } as const;
 export type LocationRootState = (typeof LOCATION_ROOT_STATE)[keyof typeof LOCATION_ROOT_STATE];

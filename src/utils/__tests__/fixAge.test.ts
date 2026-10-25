@@ -19,14 +19,4 @@ describe("fixAgeOf", () => {
   ])("names %s in whole units, rounded down", (_name, fixedAt, age) => {
     expect(fixAgeOf(fixedAt, NOW)).toEqual(age);
   });
-
-  // The compass names a saved fix's age by the same rule.
-  it.each([
-    ["just now", NOW, { unit: FIX_AGE_UNIT.NOW, count: 0 }],
-    ["one minute", NOW - MINUTE, { unit: FIX_AGE_UNIT.MINUTES, count: 1 }],
-    ["one hour", NOW - HOUR, { unit: FIX_AGE_UNIT.HOURS, count: 1 }],
-    ["twenty-four hours", NOW - DAY, { unit: FIX_AGE_UNIT.DAYS, count: 1 }],
-  ])("ages a compass fix saved %s", (_label, fixedAt, age) => {
-    expect(fixAgeOf(fixedAt, NOW)).toEqual(age);
-  });
 });

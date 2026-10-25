@@ -88,7 +88,7 @@ jest.mock("@/hooks/useCitySearch", () => ({
 }));
 jest.mock("@/hooks/useLocationUpdate", () => ({
   useLocationUpdate: () => ({
-    updateState: { isUpdating: false, currentStep: null, error: null },
+    run: null,
     applyManualLocation: () => new Promise<boolean>(() => {}),
     retry: () => {},
   }),

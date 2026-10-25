@@ -6,7 +6,7 @@ import { StepBody } from "@/components/onboarding/flow/StepBody";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { useStepPrimary } from "@/components/onboarding/flow/useStepPrimary";
-import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
+import { useViewFocus } from "@/hooks/useViewFocus";
 import { ChoiceGroup, ChoiceRow } from "@/components/ui/choice-row";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import {
