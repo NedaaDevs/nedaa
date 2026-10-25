@@ -22,6 +22,10 @@ const mockGetByRange = jest.fn();
 const mockBgLog = jest.fn();
 const mockWaitForHydration = jest.fn();
 const mockSyncWidgetSnapshot = jest.fn(async () => {});
+const mockMarkTimes = jest.fn();
+/** Where the stored days were fetched; the place is always at MOCK_PLACE. */
+let mockTimesCoords: { latitude: number; longitude: number } | null = null;
+const MOCK_PLACE = { latitude: 24.7136, longitude: 46.6753 };
 
 let mockNow = new Date("2026-08-15T08:00:00Z");
 
@@ -56,6 +60,8 @@ jest.mock("@/stores/prayerTimes", () => ({
     getState: () => ({
       getAndStorePrayerTimes: mockGetAndStore,
       refreshTimingsFromDb: mockRefreshTimings,
+      markTimesFor: mockMarkTimes,
+      timesCoords: mockTimesCoords,
     }),
     persist: hydratedPersist,
   },
@@ -63,7 +69,7 @@ jest.mock("@/stores/prayerTimes", () => ({
 jest.mock("@/stores/location", () => ({
   __esModule: true,
   default: {
-    getState: () => ({ locationDetails: { timezone: "Asia/Riyadh" } }),
+    getState: () => ({ locationDetails: { timezone: "Asia/Riyadh", coords: MOCK_PLACE } }),
     persist: hydratedPersist,
   },
 }));
@@ -119,6 +125,7 @@ describe("executeBackgroundRefresh", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockNow = new Date("2026-08-15T08:00:00Z");
+    mockTimesCoords = MOCK_PLACE;
     // Every gated store is hydrated unless a test says otherwise.
     mockWaitForHydration.mockImplementation(async () => {});
     mockAwaitPendingReapply.mockResolvedValue(false);
@@ -214,6 +221,28 @@ describe("executeBackgroundRefresh", () => {
     // First call: whole current year (no args). Second call: next year.
     expect(mockGetAndStore).toHaveBeenNthCalledWith(1);
     expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
+  });
+
+  // A failed update leaves the new place over the old place's days.
+  it("fetches when the stored days were fetched for other coordinates", async () => {
+    mockTimesCoords = { latitude: 21.4858, longitude: 39.1925 };
+    mockGetAndStore.mockResolvedValue(true);
+
+    await executeBackgroundRefresh();
+
+    expect(mockGetAndStore).toHaveBeenCalled();
+    expect(mockMarkTimes).toHaveBeenCalledWith(MOCK_PLACE);
+  });
+
+  it("marks the days only once next year's fetch has landed too", async () => {
+    mockNow = new Date("2026-12-30T08:00:00Z");
+    mockTimesCoords = { latitude: 21.4858, longitude: 39.1925 };
+    mockGetAndStore.mockImplementation(async (year?: number) => year === undefined);
+
+    await executeBackgroundRefresh();
+
+    expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
+    expect(mockMarkTimes).not.toHaveBeenCalled();
   });
 
   it("does not fetch the next year outside December", async () => {
