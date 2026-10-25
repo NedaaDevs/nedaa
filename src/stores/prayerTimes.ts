@@ -156,7 +156,8 @@ const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<Refetch> => 
   if (month === 1) {
     // Last year's days older than the kept ones are cleaned up, so none stay.
     const needed = getYear(subDays(now, KEPT_PAST_DAYS)) < year;
-    const stored = (await get().getAndStorePrayerTimes(year - 1)) || !needed;
+    if (!needed) return { stands: true, complete: true };
+    const stored = await get().getAndStorePrayerTimes(year - 1);
     return { stands: stored, complete: stored };
   }
   if (month === 12) {
