@@ -71,7 +71,7 @@ beforeEach(async () => {
     todayTimings: RIYADH_DAY,
     hasError: false,
     isLoading: false,
-    loadPrayerTimes: jest.fn(() => Promise.resolve()),
+    loadPrayerTimes: jest.fn(() => Promise.resolve(true)),
   });
   useNotificationStore.setState({
     scheduleAllNotifications: jest.fn(async (): Promise<SchedulingResult> => ({
@@ -181,7 +181,7 @@ it("drafts the Asr school from its own row, with one selection tick", async () =
 });
 
 it("holds back and skip while the apply runs", async () => {
-  const load = later();
+  const load = later<boolean>();
   usePrayerTimesStore.setState({ loadPrayerTimes: jest.fn(() => load.promise) });
   const props = stepProps();
   await renderWithTheme(<CalculationStep {...props} />);
@@ -191,7 +191,7 @@ it("holds back and skip while the apply runs", async () => {
   await waitFor(() => expect(props.setBusy).toHaveBeenLastCalledWith(true));
   expect(props.onNext).not.toHaveBeenCalled();
 
-  await act(async () => load.release());
+  await act(async () => load.release(true));
   await waitFor(() => expect(props.onNext).toHaveBeenCalledTimes(1));
   expect(props.setBusy).toHaveBeenLastCalledWith(false);
 });
@@ -216,7 +216,7 @@ it("drafts the midnight mode from its own row", async () => {
 });
 
 it("disables the method card and the rows while the apply runs", async () => {
-  const load = later();
+  const load = later<boolean>();
   usePrayerTimesStore.setState({ loadPrayerTimes: jest.fn(() => load.promise) });
   const props = stepProps();
   await renderWithTheme(<CalculationStep {...props} />);
@@ -232,7 +232,7 @@ it("disables the method card and the rows while the apply runs", async () => {
   await waitFor(() => expect(props.setBusy).toHaveBeenLastCalledWith(true));
   for (const choice of choices) expect(choice).toBeDisabled();
 
-  await act(async () => load.release());
+  await act(async () => load.release(true));
   await waitFor(() => expect(props.onNext).toHaveBeenCalledTimes(1));
 });
 
@@ -250,7 +250,7 @@ it("drops an unapplied draft when the step leaves", async () => {
 });
 
 it("keeps the draft for a running apply when the step leaves", async () => {
-  const load = later();
+  const load = later<boolean>();
   usePrayerTimesStore.setState({ loadPrayerTimes: jest.fn(() => load.promise) });
   const props = stepProps();
   const { unmount } = await renderWithTheme(<CalculationStep {...props} />);
@@ -261,7 +261,7 @@ it("keeps the draft for a running apply when the step leaves", async () => {
   await act(async () => unmount());
   expect(useProviderSettingsStore.getState().isModified).toBe(true);
 
-  await act(async () => load.release());
+  await act(async () => load.release(true));
   await waitFor(() => expect(useProviderSettingsStore.getState().applying).toBe(false));
   expect(useProviderSettingsStore.getState().getCurrentSettings()?.method).toBe(MWL.id);
   expect(useProviderSettingsStore.getState().isModified).toBe(false);

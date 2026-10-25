@@ -25,7 +25,7 @@ const DAY: DayPrayerTimes = {
   } as DayPrayerTimes["otherTimings"],
 };
 
-const loadPrayerTimes = jest.fn(() => Promise.resolve());
+const loadPrayerTimes = jest.fn(() => Promise.resolve(true));
 const clearError = jest.fn();
 
 const renderState = (state: {

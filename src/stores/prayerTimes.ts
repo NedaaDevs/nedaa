@@ -59,7 +59,7 @@ export type PrayerTimesStore = {
   didGetCurrentLocation: boolean;
   /** The times on screen were computed from the default coordinates, not the user's. */
   usingDefaultLocation: boolean;
-  /** Where the stored days were fetched; null until a full refetch marks it. */
+  /** Where the stored days were fetched; null until they are first marked. */
   timesCoords: Coords | null;
   isLoading: boolean;
   /** True while either load verb runs. */
@@ -76,11 +76,12 @@ export type PrayerTimesStore = {
   getPrayerTimes: (yearOverride?: number, month?: number) => Promise<PrayerTimesResponse>;
   getProviders: () => Promise<Provider[]>;
   getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<boolean>;
-  /** Marks where the stored days were fetched, once all their years landed. */
+  /** Marks where the stored days were fetched. */
   markTimesFor: (coords: Coords) => void;
-  loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<void>;
+  /** Resolves false while a year the load fetched is still owed. */
+  loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<boolean>;
   /** Loads for the place the location store holds; takes no device fix. */
-  loadPrayerTimesAtCurrentPlace: (forceGetAndStore?: boolean) => Promise<void>;
+  loadPrayerTimesAtCurrentPlace: (forceGetAndStore?: boolean) => Promise<boolean>;
   /** Re-reads the two-week window from the database and resets the projections. */
   refreshTimingsFromDb: () => Promise<DayPrayerTimes[]>;
   // `now` is a parameter so callers that re-render on a clock tick recompute; without
@@ -173,7 +174,7 @@ const loadTimes = async (
   get: GetTimes,
   forceGetAndStore: boolean,
   takeFix: () => Promise<void>
-): Promise<void> => {
+): Promise<boolean> => {
   try {
     // Clear any previous errors
     set({ hasError: false, errorMessage: "" });
@@ -199,18 +200,23 @@ const loadTimes = async (
     });
 
     await get().refreshTimingsFromDb();
-    const { yesterdayTimings, todayTimings, tomorrowTimings } = get();
+    const { yesterdayTimings, todayTimings, tomorrowTimings, twoWeeksTimings } = get();
     const missing = [
       !yesterdayTimings && "yesterday",
       !todayTimings && "today",
       !tomorrowTimings && "tomorrow",
     ].filter(Boolean);
-    // Days fetched for other coordinates are another place's, so they count
-    // as missing; a newly verified place stays best effort.
-    const placeMoved =
-      verified && !placeNewlyVerified && timesMoved(get().timesCoords, locationDetails.coords);
+    const placeSettled = verified && !placeNewlyVerified;
+    // Days stored before any mark are taken as the settled place's own.
+    if (placeSettled && get().timesCoords === null && (yesterdayTimings || twoWeeksTimings)) {
+      get().markTimesFor(locationDetails.coords);
+    }
+    // Days fetched for another place count as missing; a newly verified
+    // place stays best effort.
+    const placeMoved = placeSettled && timesMoved(get().timesCoords, locationDetails.coords);
     const required = forceGetAndStore || missing.length > 0 || placeMoved;
 
+    let landed = true;
     if (required || placeNewlyVerified) {
       const reason = forceGetAndStore
         ? "forced"
@@ -233,6 +239,7 @@ const loadTimes = async (
       const refetch = (await get().getAndStorePrayerTimes(undefined, firstMonth))
         ? await storeAdjacentYear(get, now)
         : NOT_STORED;
+      landed = refetch.complete;
 
       if (refetch.stands) {
         await get().refreshTimingsFromDb();
@@ -249,6 +256,7 @@ const loadTimes = async (
     }
 
     await get().cleanupOldData();
+    return landed;
   } catch (error: any) {
     log.e("Load", "loadPrayerTimes failed", error instanceof Error ? error : undefined);
     set({

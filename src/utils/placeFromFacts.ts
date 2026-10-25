@@ -15,6 +15,11 @@ export type Coords = { latitude: number; longitude: number };
 export const sameCoords = (a: Coords, b: Coords): boolean =>
   a.latitude === b.latitude && a.longitude === b.longitude;
 
-/** The stored days were fetched for other coordinates than the place's. */
+/** Drift still counted as the same place; 0.01° of longitude is 2.4 s. */
+const TIMES_DRIFT_DEGREES = 0.01;
+
+/** The stored days were fetched for another place than `place`. */
 export const timesMoved = (timesCoords: Coords | null, place: Coords): boolean =>
-  timesCoords !== null && !sameCoords(timesCoords, place);
+  timesCoords !== null &&
+  (Math.abs(timesCoords.latitude - place.latitude) > TIMES_DRIFT_DEGREES ||
+    Math.abs(timesCoords.longitude - place.longitude) > TIMES_DRIFT_DEGREES);

@@ -40,8 +40,9 @@ export const useApplyCalculation = () => {
   // The error toast's retry calls this too; the store's lock covers both.
   const apply = async () => {
     try {
-      const ran = await runApply((onStep) =>
-        applyProviderSettings(
+      let applied = false;
+      const ran = await runApply(async (onStep) => {
+        applied = await applyProviderSettings(
           {
             saveSettings,
             loadPrayerTimes,
@@ -51,19 +52,26 @@ export const useApplyCalculation = () => {
             markSettingsApplied,
           },
           onStep
-        )
-      );
-      if (ran) hapticSuccess();
-    } catch (error) {
-      MessageToast.showError(t("providers.saveFailed"), {
-        action: { label: t("common.retry"), onPress: apply },
+        );
       });
-      log.e(
-        "Settings",
-        "applying provider settings failed",
-        error instanceof Error ? error : undefined
-      );
+      if (!ran) return;
+      // A year still owed leaves the edit pending, so it reads as unsaved.
+      if (applied) hapticSuccess();
+      else reportFailure(new Error("a year of prayer times is still owed"));
+    } catch (error) {
+      reportFailure(error);
     }
+  };
+
+  const reportFailure = (error: unknown) => {
+    MessageToast.showError(t("providers.saveFailed"), {
+      action: { label: t("common.retry"), onPress: apply },
+    });
+    log.e(
+      "Settings",
+      "applying provider settings failed",
+      error instanceof Error ? error : undefined
+    );
   };
 
   const state: StickyActionState = busy

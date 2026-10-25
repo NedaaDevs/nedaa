@@ -196,6 +196,29 @@ describe("a refetch at a year boundary", () => {
     expect(oldPlaceDates()).toEqual([]);
   });
 
+  it.each([
+    ["early December", new Date(2026, 11, 5, 12)],
+    ["the 18th of December", new Date(2026, 11, 18, 12)],
+  ])("on %s, resolves false while next year's days are owed", async (_name, today) => {
+    mockNow = today;
+    storeOldPlace(today);
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) as never });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)).resolves.toBe(
+      false
+    );
+  });
+
+  it("resolves true once every year it fetched landed", async () => {
+    mockNow = new Date(2026, 11, 5, 12);
+    storeOldPlace(mockNow);
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)).resolves.toBe(
+      true
+    );
+  });
+
   // A newly verified place is best effort; the flag waits for a full refetch.
   it("keeps the default-place flag when a needed adjacent year fails", async () => {
     mockNow = new Date(2027, 0, 1, 12);
@@ -215,6 +238,7 @@ describe("a refetch at a year boundary", () => {
 // days; a kill or a failed fetch in between leaves the old place's days.
 describe("a load after the place moved", () => {
   const OLD_COORDS = { latitude: 51.5072, longitude: -0.1276 };
+  const JEDDAH_COORDS = { latitude: 21.4858, longitude: 39.1925 };
   const today = new Date(2026, 8, 15, 12);
 
   beforeEach(() => {
@@ -277,7 +301,7 @@ describe("a load after the place moved", () => {
   it("marks the days with the coordinates they were fetched for", async () => {
     const api = jest.fn(async (yearOverride?: number, month?: number) => {
       // The place moves while the fetch is out.
-      placeAt({ latitude: 21.4858, longitude: 39.1925 }, OLD_ZONE);
+      placeAt(JEDDAH_COORDS, OLD_ZONE);
       return serveNewPlace(yearOverride, month);
     });
     usePrayerTimesStore.setState({ getPrayerTimes: api as never });
@@ -317,14 +341,73 @@ describe("a load after the place moved", () => {
     expect(oldPlaceDates()).toEqual([]);
   });
 
-  // An install from before the mark has none; its days stand as they are.
-  it("keeps the stored days when nothing marks where they were fetched", async () => {
-    const api = jest.fn(serveNewPlace);
-    usePrayerTimesStore.setState({ timesCoords: null, getPrayerTimes: api as never });
+  // A fix at the same place drifts a few metres; that is not a move.
+  it("keeps the stored days through a fix's drift", async () => {
+    const api = jest.fn(async () => {
+      throw new Error("offline");
+    });
+    usePrayerTimesStore.setState({ timesCoords: RIYADH_COORDS, getPrayerTimes: api });
+    placeAt(
+      { latitude: RIYADH_COORDS.latitude + 0.0004, longitude: RIYADH_COORDS.longitude - 0.0003 },
+      OLD_ZONE
+    );
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      true
+    );
+
+    expect(api).not.toHaveBeenCalled();
+  });
+
+  // An install from before the mark has none; its days are the saved place's.
+  it("keeps unmarked stored days, marking them with the saved place", async () => {
+    const api = jest.fn(async () => {
+      throw new Error("offline");
+    });
+    usePrayerTimesStore.setState({ timesCoords: null, getPrayerTimes: api });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
     expect(api).not.toHaveBeenCalled();
+    expect(daysRead()).not.toContain(null);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
+  });
+
+  it("refetches unmarked days on the load after a move whose fetch failed", async () => {
+    usePrayerTimesStore.setState({
+      timesCoords: null,
+      getPrayerTimes: jest.fn(async () => {
+        throw new Error("offline");
+      }),
+    });
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+    placeAt(JEDDAH_COORDS);
+    await expect(
+      usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
+    ).rejects.toThrow();
+    const api = jest.fn(serveNewPlace);
+    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+
+    expect(api).toHaveBeenCalled();
+    expect(oldPlaceDates()).toEqual([]);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(JEDDAH_COORDS);
+  });
+
+  // Those days are the default place's, not the newly verified one's.
+  it("leaves unmarked days unmarked while the place is newly verified", async () => {
+    usePrayerTimesStore.setState({
+      timesCoords: null,
+      usingDefaultLocation: true,
+      getPrayerTimes: jest.fn(async () => {
+        throw new Error("offline");
+      }),
+    });
+
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+
+    expect(usePrayerTimesStore.getState().timesCoords).toBeNull();
   });
 
   it("keeps a newly verified place's refetch best effort", async () => {
@@ -335,8 +418,8 @@ describe("a load after the place moved", () => {
       }),
     });
 
-    await expect(
-      usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()
-    ).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
   });
 });
