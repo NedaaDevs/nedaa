@@ -30,6 +30,7 @@ import { useCompass } from "@/hooks/useCompass";
 import { useCompassLocation } from "@/hooks/useCompassLocation";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useLocationStore } from "@/stores/location";
@@ -43,7 +44,6 @@ import {
   manualLocationToFix,
   canProvideAlignmentFeedback,
   getCalibrationOverlayVisible,
-  getCompassLocationAge,
   getCompassSensorReliability,
   getDetentIndex,
   getHeadingReliabilityIssue,
@@ -56,6 +56,7 @@ import {
   type QiblaHapticStep,
   type QiblaProximityState,
 } from "@/utils/compass";
+import { fixAgeOf } from "@/utils/fixAge";
 import { formatNumberToLocale } from "@/utils/number";
 import { useFontFamily } from "@/contexts/FontContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -93,6 +94,7 @@ const CompassScreen = () => {
   const dialFontFamily = useFontFamily("regular");
   const isFocused = useIsFocused();
   const { isActive: isAppActive } = useAppVisibility();
+  const now = useMinuteClock();
   const qiblaSeed = useScreenshotSeed("qibla");
   const isScreenshotMode = qiblaSeed !== null;
   const location = useCompassLocation({
@@ -346,14 +348,14 @@ const CompassScreen = () => {
       : `${formatNumberToLocale(`${Math.round(qiblaDirection) % 360}`)}° ${getTranslatedCompassDirection(qiblaDirection, t)}`;
   const savedAge =
     effectiveFix && locationSource === CompassLocationSource.SAVED
-      ? getCompassLocationAge(effectiveFix.timestamp)
+      ? fixAgeOf(effectiveFix.timestamp, now.getTime())
       : null;
   const locationText = effectiveFix
     ? [
         t("compass.locationAccuracyMeters", {
           meters: formatNumberToLocale(`${Math.round(effectiveFix.accuracyMeters)}`),
         }),
-        savedAge ? t(`compass.locationSavedAge.${savedAge.unit}`, { count: savedAge.value }) : null,
+        savedAge ? t(`compass.locationSavedAge.${savedAge.unit}`, { count: savedAge.count }) : null,
       ]
         .filter(Boolean)
         .join(" · ")

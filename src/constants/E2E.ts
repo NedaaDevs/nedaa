@@ -6,7 +6,7 @@ export const E2E_ID = {
   ALARM_ENABLE_SWITCH: "alarm-enable-switch",
   /** The alarm city page's button to the location settings. */
   ALARM_CHOOSE_CITY: "alarm-choose-city",
-  /** Settings › Location's way to the city picker. */
+  /** The city picker's way in on Settings › Location and the fetch error. */
   LOCATION_CHOOSE_CITY: "location-choose-city",
   CITY_SEARCH_INPUT: "city-search-input",
   /** Every row of the city results; a flow taps the first. */

@@ -5,6 +5,7 @@
  */
 
 import { PHASE } from "@/constants/Phase";
+import { PLACE_HERO_TONE, type PlaceHeroTone } from "@/constants/PlaceHero";
 
 export type PaletteEntry = { readonly oklch: string; readonly hex: string };
 
@@ -188,5 +189,81 @@ export const PHASE_GRADIENTS: Record<TintedPhase, Record<Brightness, PhaseGradie
       to: "#D9ECF8EB",
     },
     dark: null,
+  },
+};
+
+/** One gradient stop: a colour and where it sits along the line, in percent. */
+type HeroStop = { color: PaletteEntry; at: number };
+
+/** A place hero's paint: its gradient, and the skyline drawn at its foot. */
+type HeroPaint = { angle: number; stops: readonly HeroStop[]; skyline: PaletteEntry };
+
+const HERO_ANGLE = 150;
+
+/** The dark skyline is one shade for every tone. */
+const DARK_SKYLINE = { oklch: "oklch(9% 0.035 257 / .55)", hex: "#00020B8C" } as const;
+const LIGHT_SKYLINE = { oklch: "oklch(33% 0.08 209 / .25)", hex: "#003D4540" } as const;
+
+/** The device's and no place's tints are cool; a chosen city's is warm. */
+export const PLACE_HERO_PAINT: Record<PlaceHeroTone, Record<Brightness, HeroPaint>> = {
+  [PLACE_HERO_TONE.DEVICE]: {
+    light: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(91% 0.072 205)", hex: "#A8F0F8" }, at: 0 },
+        { color: { oklch: "oklch(80% 0.09 210)", hex: "#72CEDE" }, at: 60 },
+        { color: { oklch: "oklch(74% 0.085 214)", hex: "#66B9CC" }, at: 100 },
+      ],
+      skyline: LIGHT_SKYLINE,
+    },
+    dark: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(30% 0.09 238)", hex: "#00324B" }, at: 0 },
+        { color: { oklch: "oklch(24% 0.09 250)", hex: "#00203E" }, at: 60 },
+        { color: { oklch: "oklch(20% 0.065 257)", hex: "#021533" }, at: 100 },
+      ],
+      skyline: DARK_SKYLINE,
+    },
+  },
+  [PLACE_HERO_TONE.CITY]: {
+    light: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(90% 0.07 77)", hex: "#F9D9AA" }, at: 0 },
+        { color: { oklch: "oklch(83% 0.085 50)", hex: "#F5B896" }, at: 53 },
+        { color: { oklch: "oklch(72% 0.09 30)", hex: "#D78F83" }, at: 100 },
+      ],
+      skyline: { oklch: "oklch(42% 0.09 35 / .32)", hex: "#76392A52" },
+    },
+    dark: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(34% 0.075 50)", hex: "#562B0F" }, at: 0 },
+        { color: { oklch: "oklch(28% 0.078 36)", hex: "#48170A" }, at: 53 },
+        { color: { oklch: "oklch(21% 0.055 28)", hex: "#2D0C09" }, at: 100 },
+      ],
+      skyline: DARK_SKYLINE,
+    },
+  },
+  [PLACE_HERO_TONE.NONE]: {
+    light: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(90% 0.052 242)", hex: "#C1E3FE" }, at: 0 },
+        { color: { oklch: "oklch(83% 0.065 235)", hex: "#9FCFEC" }, at: 54 },
+        { color: { oklch: "oklch(73% 0.078 230)", hex: "#72B1D0" }, at: 100 },
+      ],
+      skyline: LIGHT_SKYLINE,
+    },
+    dark: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(30% 0.065 246)", hex: "#0C304C" }, at: 0 },
+        { color: { oklch: "oklch(25% 0.065 250)", hex: "#03233F" }, at: 54 },
+        { color: { oklch: "oklch(20% 0.045 257)", hex: "#08162A" }, at: 100 },
+      ],
+      skyline: DARK_SKYLINE,
+    },
   },
 };

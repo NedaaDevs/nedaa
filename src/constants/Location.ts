@@ -29,3 +29,46 @@ export const FIX_SOURCE = {
   LAST_KNOWN: "lastKnown",
 } as const;
 export type FixSource = (typeof FIX_SOURCE)[keyof typeof FIX_SOURCE];
+
+/** The unit a device fix's age is named in. */
+export const FIX_AGE_UNIT = {
+  NOW: "now",
+  MINUTES: "minutes",
+  HOURS: "hours",
+  DAYS: "days",
+} as const;
+export type FixAgeUnit = (typeof FIX_AGE_UNIT)[keyof typeof FIX_AGE_UNIT];
+
+/** A location update's steps in order, and DONE once every one has run. */
+export const UPDATE_STEP = {
+  LOCATION: "location",
+  PRAYER_TIMES: "prayerTimes",
+  NOTIFICATIONS: "notifications",
+  ALARMS: "alarms",
+  DONE: "done",
+} as const;
+export type UpdateStep = (typeof UPDATE_STEP)[keyof typeof UPDATE_STEP];
+
+/** The Android settings page that turns location services on. */
+export const ANDROID_LOCATION_SETTINGS = "android.settings.LOCATION_SOURCE_SETTINGS";
+
+/** What a city picker shows: the city list, or coordinate entry. */
+export const CITY_PICKER_VIEW = { LIST: "list", COORDINATES: "coordinates" } as const;
+export type CityPickerView = (typeof CITY_PICKER_VIEW)[keyof typeof CITY_PICKER_VIEW];
+
+/** The city picker's route, and the search param naming its first view. */
+export const LOCATION_PICKER = { href: "/settings/location-picker", viewParam: "view" } as const;
+
+/** What the Location screen shows below its hero. */
+export const LOCATION_ROOT_STATE = {
+  /** The first permission check has not answered. */
+  CHECKING: "checking",
+  DEVICE: "device",
+  MANUAL: "manual",
+  /** No access yet, and the system can still ask. */
+  PERMISSION: "permission",
+  /** Access refused; only Settings can give it. */
+  DENIED: "denied",
+  FAILURE: "failure",
+} as const;
+export type LocationRootState = (typeof LOCATION_ROOT_STATE)[keyof typeof LOCATION_ROOT_STATE];

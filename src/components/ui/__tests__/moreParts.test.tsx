@@ -128,6 +128,25 @@ describe("ListRow", () => {
   });
 });
 
+// A live value stays on one line; a row's explanation is read in full.
+describe("ListRow status lines", () => {
+  const NOTE = "We ask for location access if you haven't given it.";
+
+  it("keeps a live status to one line", async () => {
+    await renderWithTheme(<ListRow title="Refresh" status="12 minutes ago" onPress={jest.fn()} />);
+
+    expect(screen.getByText("12 minutes ago").props.numberOfLines).toBe(1);
+  });
+
+  it("wraps a status that explains the row", async () => {
+    await renderWithTheme(
+      <ListRow title="Automatic location" status={NOTE} wrapStatus onPress={jest.fn()} />
+    );
+
+    expect(screen.getByText(NOTE).props.numberOfLines).toBeUndefined();
+  });
+});
+
 describe("ListRow icon", () => {
   // Settings rows mark their icon with a tinted tile; More keeps it bare.
   it("sets the icon on the tinted tile when asked", async () => {
@@ -195,6 +214,17 @@ describe("ListRow grouped", () => {
     expect(row).toHaveStyle({ backgroundColor: "transparent" });
     expect(screen.getByText("Privacy")).toHaveStyle({ fontSize: fontSizeOf("lg") });
     expect(screen.getByText("B")).toHaveStyle({ fontSize: fontSizeOf("helper") });
+  });
+});
+
+describe("ListRow test id", () => {
+  it("carries the test id its host names on the row a flow presses", async () => {
+    const onPress = jest.fn();
+    await renderWithTheme(<ListRow title="A" testID="row-a" onPress={onPress} />);
+
+    await userEvent.press(screen.getByTestId("row-a"));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
 

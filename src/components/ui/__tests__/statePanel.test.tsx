@@ -1,9 +1,11 @@
 import { AccessibilityInfo, Platform } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 
-import { CALLOUT_PART, Callout } from "@/components/ui/callout";
+import { CALLOUT_PART, CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { STATE_PANEL_ICON_ID, STATE_PANEL_ROOT_ID, StatePanel } from "@/components/ui/state-panel";
-import { NEDAA_LIGHT } from "@/constants/Palette";
+import { Theme } from "tamagui";
+
+import { NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
 import { STATE_PANEL_KIND, STATE_PANEL_VARIANT } from "@/constants/StatePanel";
 import { PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -136,6 +138,46 @@ describe("Callout", () => {
           includeHiddenElements: true,
         })
       ).toBeTruthy();
+    }
+  );
+});
+
+describe("Callout tones", () => {
+  it("states a fact with no action, offering nothing to press", async () => {
+    await renderWithTheme(<Callout body="Showing Makkah's times." />);
+
+    expect(screen.getByLabelText("Showing Makkah's times.")).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("warns by default: the warn edge and the warning sign", async () => {
+    await renderWithTheme(<Callout body="Showing Makkah's times." />);
+
+    expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+      borderTopWidth: 1,
+      borderTopColor: NEDAA_LIGHT.warn.hex,
+    });
+    expect(
+      screen.getByTestId(CALLOUT_PART.ICON_WARN, { includeHiddenElements: true })
+    ).toBeTruthy();
+  });
+
+  // A tint, never a line, carries a calm tone: light blue, or navy in dark.
+  it.each([
+    ["light", NEDAA_LIGHT, false],
+    ["dark", NEDAA_DARK, true],
+  ] as const)(
+    "informs on the tile tint in %s, with no edge and the info sign in the ink",
+    async (_theme, palette, dark) => {
+      const callout = <Callout tone={CALLOUT_TONE.INFO} body="Found from a recent reading." />;
+      await renderWithTheme(dark ? <Theme name="dark">{callout}</Theme> : callout);
+
+      const frame = screen.getByTestId(CALLOUT_PART.FRAME);
+      expect(frame).toHaveStyle({ backgroundColor: palette.tile.hex });
+      expect(frame).not.toHaveStyle({ borderTopWidth: 1 });
+      const sign = screen.getByTestId(CALLOUT_PART.ICON_INFO, { includeHiddenElements: true });
+      const [glyph] = sign.queryAll((node) => node.type === "RNSVGSvgView");
+      expect(glyph).toHaveProp("stroke", palette.fg.hex);
     }
   );
 });

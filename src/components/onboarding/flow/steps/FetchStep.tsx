@@ -1,8 +1,8 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
 import { ChooseCityButton, StepCityPicker } from "@/components/onboarding/flow/CityChoice";
-import { OnboardingCard } from "@/components/onboarding/flow/OnboardingCard";
 import { OnboardingPreview } from "@/components/onboarding/flow/OnboardingPreview";
 import { StepBody } from "@/components/onboarding/flow/StepBody";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
@@ -10,7 +10,7 @@ import type { StepProps } from "@/components/onboarding/flow/types";
 import { useStepPrimary } from "@/components/onboarding/flow/useStepPrimary";
 import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
 import { SkyOccluder } from "@/components/ui/sky-background";
-import { Text } from "@/components/ui/text";
+import { CITY_PICKER_VIEW, type CityPickerView } from "@/constants/Location";
 import {
   FETCH_ATTEMPT_TIMEOUT_MS,
   FETCH_PHASE,
@@ -93,6 +93,11 @@ export const FetchStep = ({
   const [phase, setPhase] = useState<FetchPhase>(FETCH_PHASE.LOADING);
   // The view the picker opened over, which its back returns to.
   const [pickedFrom, setPickedFrom] = useState<FetchPhase>(FETCH_PHASE.LOADING);
+  const [pickerView, setPickerView] = useState<CityPickerView>(CITY_PICKER_VIEW.LIST);
+  // A failed device read names its kind; a chosen city's failure is the times'.
+  const failure = useLocationStore((state) =>
+    state.locationMode === LocationMode.DEVICE ? state.locationDetails.error : null
+  );
   // Right from the first frame; each try then moves it as it goes.
   const [stage, setStage] = useState<FetchStage>(() =>
     firstStage(useLocationStore.getState().locationMode)
@@ -121,11 +126,13 @@ export const FetchStep = ({
     });
   };
 
-  const chooseCity = () => {
+  const openPicker = (view: CityPickerView) => {
     generation.current += 1;
     setPickedFrom(phase);
+    setPickerView(view);
     setPhase(FETCH_PHASE.PICKER);
   };
+  const chooseCity = () => openPicker(CITY_PICKER_VIEW.LIST);
 
   const begin = useEffectEvent(() => {
     if (started.current) return;
@@ -156,14 +163,10 @@ export const FetchStep = ({
     else retry();
   };
 
-  useStepPrimary(
-    setPrimary,
-    phase === FETCH_PHASE.ERROR ? { label: t("common.retry"), onPress: retry } : null
-  );
-
-  // Only the error shows the frame's primary, for Retry; set before paint.
+  // The step draws its own actions, Retry among them; set before paint.
+  useStepPrimary(setPrimary, null);
   useLayoutEffect(() => {
-    setPrimaryHidden(phase !== FETCH_PHASE.ERROR);
+    setPrimaryHidden(true);
   });
 
   if (phase === FETCH_PHASE.PICKER) {
@@ -178,6 +181,7 @@ export const FetchStep = ({
           moveOn();
         }}
         onClose={closePicker}
+        initialView={pickerView}
       />
     );
   }
@@ -188,17 +192,17 @@ export const FetchStep = ({
         <StepHeading
           headingRef={headingRef}
           progress={progress}
-          title={t("today.failed.title")}
-          body={t("onboarding.fetch.errorBody")}
+          title={t("onboarding.fetch.errorTitle")}
+          body={t("onboarding.fetch.errorCard")}
         />
         <SkyOccluder>
-          <OnboardingCard>
-            <Text size="sm" color="$fg">
-              {t("onboarding.fetch.errorCard")}
-            </Text>
-          </OnboardingCard>
+          <LocationFailureOffer
+            failure={failure}
+            onRetry={retry}
+            onChooseCity={chooseCity}
+            onEnterCoordinates={() => openPicker(CITY_PICKER_VIEW.COORDINATES)}
+          />
         </SkyOccluder>
-        <ChooseCityButton onPress={chooseCity} />
       </StepBody>
     );
   }

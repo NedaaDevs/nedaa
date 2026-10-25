@@ -25,6 +25,8 @@ import {
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
 import { later, never } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { E2E_ID } from "@/constants/E2E";
+import { LOCATION_FAILURE } from "@/constants/Location";
 import { AppLogger } from "@/utils/appLogger";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -65,6 +67,17 @@ const fetchLands = () =>
 const settle = () => act(() => jest.advanceTimersByTimeAsync(0));
 const silencedWarn = () =>
   jest.spyOn(AppLogger.create("prayertimes"), "w").mockImplementation(() => {});
+/** The offer's Retry, drawn in place of the frame's primary. */
+const pressRetry = () =>
+  act(async () => {
+    await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
+  });
+/** The error offer's city row, read with its note. */
+const OFFER_CITY_NAME = () =>
+  t("a11y.join", {
+    first: t("onboarding.location.chooseCity"),
+    second: t("location.failure.chooseCityNote"),
+  });
 
 beforeEach(async () => {
   jest.useFakeTimers();
@@ -102,11 +115,11 @@ it("takes the fix first: a failed fix never fetches, retries once after the dela
 
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS - 1));
   expect(mockFix).toHaveBeenCalledTimes(1);
-  expect(screen.queryByText(t("today.failed.title"))).toBeNull();
+  expect(screen.queryByText(t("onboarding.fetch.errorTitle"))).toBeNull();
 
   await act(() => jest.advanceTimersByTimeAsync(1));
   expect(mockFix).toHaveBeenCalledTimes(2);
-  expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+  expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
   expect(props.setBusy).not.toHaveBeenCalledWith(true);
   expect(props.onNext).not.toHaveBeenCalled();
 
@@ -122,7 +135,7 @@ it("logs a failed attempt instead of showing it", async () => {
 
   expect(warn).toHaveBeenCalledTimes(1);
   expect(warn).toHaveBeenCalledWith("Onboarding", expect.stringContaining("timeout"));
-  expect(screen.queryByText(t("today.failed.title"))).toBeNull();
+  expect(screen.queryByText(t("onboarding.fetch.errorTitle"))).toBeNull();
 });
 
 it("ends in the error state, not a spinner, when the databases cannot open", async () => {
@@ -136,7 +149,7 @@ it("ends in the error state, not a spinner, when the databases cannot open", asy
   expect(mockOpen).toHaveBeenCalledTimes(2);
   expect(mockFix).not.toHaveBeenCalled();
   expect(mockLoad).not.toHaveBeenCalled();
-  expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+  expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
   expect(props.onNext).not.toHaveBeenCalled();
 });
 
@@ -153,7 +166,7 @@ it("treats times for the default place as a failure", async () => {
 
   expect(mockFix).not.toHaveBeenCalled();
   expect(mockLoad).toHaveBeenCalledTimes(2);
-  expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+  expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
   expect(props.onNext).not.toHaveBeenCalled();
 });
 
@@ -368,10 +381,10 @@ it("gives up on an attempt with no answer within the deadline, then shows the er
 
   await act(() => jest.advanceTimersByTimeAsync(worstCase - 1));
   expect(mockLoad).toHaveBeenCalledTimes(2);
-  expect(screen.queryByText(t("today.failed.title"))).toBeNull();
+  expect(screen.queryByText(t("onboarding.fetch.errorTitle"))).toBeNull();
 
   await act(() => jest.advanceTimersByTimeAsync(1));
-  expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+  expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
   expect(warn).toHaveBeenCalledTimes(2);
   expect(props.setBusy).not.toHaveBeenCalledWith(true);
   expect(props.onNext).not.toHaveBeenCalled();
@@ -475,15 +488,13 @@ it("names the city button for a screen reader while loading", async () => {
   );
 });
 
-it("names the city button for a screen reader in the error state", async () => {
+it("names the city row for a screen reader in the error state", async () => {
   mockFix.mockRejectedValue(new Error("timeout"));
   silencedWarn();
   await renderWithTheme(<FetchStep {...stepProps()} />);
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
-  expect(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY)).toHaveAccessibleName(
-    t("a11y.onboarding.chooseCityManually")
-  );
+  expect(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toHaveAccessibleName(OFFER_CITY_NAME());
 });
 
 // A chosen city shares no location, so the button says only what it shows.
@@ -500,16 +511,15 @@ describe("the city button for a city chosen by hand", () => {
     );
   });
 
-  it("is named by its words in the error state", async () => {
+  // The error's offer is the Location screen's: its row names what it shows.
+  it("is the offer's city row, named by its words, in the error state", async () => {
     mockLoad.mockRejectedValue(new Error("offline"));
     silencedWarn();
     await renderWithTheme(<FetchStep {...stepProps()} />);
     await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
-    expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
-    expect(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY)).toHaveAccessibleName(
-      t("onboarding.location.chooseCity")
-    );
+    expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
+    expect(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toHaveAccessibleName(OFFER_CITY_NAME());
   });
 });
 
@@ -540,7 +550,7 @@ it("keeps the picker when a fetch fails after it opened, and does not retry", as
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
   expect(screen.getByText(t("location.picker.title"))).toBeTruthy();
-  expect(screen.queryByText(t("today.failed.title"))).toBeNull();
+  expect(screen.queryByText(t("onboarding.fetch.errorTitle"))).toBeNull();
   expect(mockFix).toHaveBeenCalledTimes(1);
   expect(props.onNext).not.toHaveBeenCalled();
 });
@@ -551,11 +561,13 @@ it("retries from the error state", async () => {
   const props = stepProps();
   await renderWithTheme(<FetchStep {...props} />);
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
-  expect(lastPrimary(props.setPrimary)?.label).toBe(t("common.retry"));
+  // The offer draws Retry; the frame's primary stays out of the way.
+  expect(lastPrimary(props.setPrimary)).toBeNull();
+  expect(primaryHidden(props.setPrimaryHidden)).toBe(true);
 
   mockFix.mockReset().mockResolvedValue(undefined);
   fetchLands();
-  await act(async () => lastPrimary(props.setPrimary)?.onPress());
+  await pressRetry();
   await settle();
 
   expect(props.onNext).toHaveBeenCalledTimes(1);
@@ -568,12 +580,12 @@ it("returns to the error state when a retry fails again", async () => {
   await renderWithTheme(<FetchStep {...props} />);
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
-  await act(async () => lastPrimary(props.setPrimary)?.onPress());
-  expect(screen.queryByText(t("today.failed.title"))).toBeNull();
+  await pressRetry();
+  expect(screen.queryByText(t("onboarding.fetch.errorTitle"))).toBeNull();
 
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
   expect(mockFix).toHaveBeenCalledTimes(4);
-  expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+  expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
   expect(props.setBusy).not.toHaveBeenCalledWith(true);
   expect(props.onNext).not.toHaveBeenCalled();
 });
@@ -586,7 +598,7 @@ it("moves on with a city picked from the error state", async () => {
   await renderWithTheme(<FetchStep {...props} />);
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
-  await user.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
+  await user.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
   expect(screen.getByText(t("location.picker.title"))).toBeTruthy();
   await act(async () => mockPicker.onDone?.());
 
@@ -611,7 +623,7 @@ it("moves reader focus to the heading when the error and then the picker show", 
   expect(focus).toHaveBeenCalledTimes(1);
   expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
 
-  await user.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
+  await user.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
   expect(focus).toHaveBeenCalledTimes(2);
 });
 
@@ -652,14 +664,14 @@ describe("the city picker", () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     await renderWithTheme(<FetchStep {...props} />);
     await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
-    await user.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
+    await user.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
 
     await act(async () => lastBack(props.setBack)?.());
 
-    expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+    expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
     expect(mockFix).toHaveBeenCalledTimes(2);
-    expect(primaryHidden(props.setPrimaryHidden)).toBe(false);
-    expect(lastPrimary(props.setPrimary)?.label).toBe(t("common.retry"));
+    expect(primaryHidden(props.setPrimaryHidden)).toBe(true);
+    expect(screen.getByRole("button", { name: t("common.retry") })).toBeTruthy();
   });
 
   it("offers coordinates, as the location step does", async () => {
@@ -710,5 +722,72 @@ describe("the city picker", () => {
 
       expect(props.dropTriedCity).not.toHaveBeenCalled();
     });
+  });
+});
+
+// The error draws the Location screen's offer: reason, Retry, manual ways.
+describe("the error's offer", () => {
+  const COORDINATES_NAME = () =>
+    t("a11y.join", {
+      first: t("location.picker.enterCoordinates"),
+      second: t("location.failure.coordinatesNote"),
+    });
+
+  it("says the city was not found when the device read timed out", async () => {
+    silencedWarn();
+    mockFix.mockImplementation(async () => {
+      useLocationStore.setState((state) => ({
+        locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.TIMEOUT },
+      }));
+      throw new Error("timeout");
+    });
+    await renderWithTheme(<FetchStep {...stepProps()} />);
+    await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
+
+    expect(screen.getByText(t("location.failure.notFound.title"))).toBeTruthy();
+  });
+
+  it("says the times failed when a chosen city's load did", async () => {
+    silencedWarn();
+    useLocationStore.setState((state) => ({
+      locationMode: LocationMode.MANUAL,
+      locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.TIMEOUT },
+    }));
+    mockLoad.mockRejectedValue(new Error("offline"));
+    await renderWithTheme(<FetchStep {...stepProps()} />);
+    await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
+
+    expect(screen.getByText(t("today.failed.title"))).toBeTruthy();
+    expect(screen.queryByText(t("location.failure.notFound.title"))).toBeNull();
+  });
+
+  it("opens the coordinates straight from the error, and back returns to it", async () => {
+    silencedWarn();
+    mockFix.mockRejectedValue(new Error("timeout"));
+    const props = stepProps();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderWithTheme(<FetchStep {...props} />);
+    await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
+
+    await user.press(screen.getByRole("button", { name: COORDINATES_NAME() }));
+    expect(screen.getByText(t("location.coordinates.title"))).toBeTruthy();
+
+    await act(async () => lastBack(props.setBack)?.());
+    expect(screen.getByText(t("onboarding.fetch.errorTitle"))).toBeTruthy();
+  });
+
+  it("moves on with coordinates entered from the error", async () => {
+    silencedWarn();
+    mockFix.mockRejectedValue(new Error("timeout"));
+    const props = stepProps();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderWithTheme(<FetchStep {...props} />);
+    await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
+
+    await user.press(screen.getByRole("button", { name: COORDINATES_NAME() }));
+    await act(async () => mockCoordinates.onDone?.());
+
+    expect(props.setSession).toHaveBeenCalledWith(CITY);
+    expect(props.onNext).toHaveBeenCalledTimes(1);
   });
 });
