@@ -177,11 +177,11 @@ describe("a refetch at a year boundary", () => {
   });
 
   it.each([
-    ["the 3rd of January", new Date(2027, 0, 3, 12), 2026],
-    ["mid-January", new Date(2027, 0, 15, 12), 2026],
-    ["early December", new Date(2026, 11, 5, 12), 2027],
-    ["the 18th of December", new Date(2026, 11, 18, 12), 2027],
-  ])("on %s, succeeds without the adjacent year", async (_name, today, failingYear) => {
+    ["the 3rd of January", new Date(2027, 0, 3, 12), 2026, false],
+    ["mid-January", new Date(2027, 0, 15, 12), 2026, false],
+    ["early December", new Date(2026, 11, 5, 12), 2027, true],
+    ["the 18th of December", new Date(2026, 11, 18, 12), 2027, true],
+  ])("on %s, succeeds without the adjacent year", async (_name, today, failingYear, asked) => {
     mockNow = today;
     storeOldPlace(today);
     const api = serveNewPlaceExcept(failingYear);
@@ -189,7 +189,8 @@ describe("a refetch at a year boundary", () => {
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
 
-    expect(api.mock.calls.map(([year]) => year)).toContain(failingYear);
+    // Last year holds no kept day from the 3rd, so it is not even asked for.
+    expect(api.mock.calls.map(([year]) => year).includes(failingYear)).toBe(asked);
     const read = daysRead();
     expect(read).not.toContain(null);
     expect(read.map((day) => day?.timezone)).toEqual(read.map(() => NEW_ZONE));
