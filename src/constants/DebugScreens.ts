@@ -40,4 +40,8 @@ export const DEBUG_COPY = {
   ON: "Debug on",
   RESTART_ONBOARDING: "Restart onboarding",
   RESTART_ONBOARDING_HINT: "Shows the first-run screens again; your settings stay",
+  SHOW_CITY_CHANGE: "Show city change",
+  /** The sheet's sample cities: the one it offers, and a stand-in saved one. */
+  SAMPLE_NEW_CITY: "Jeddah",
+  SAMPLE_SAVED_CITY: "Riyadh",
 } as const;

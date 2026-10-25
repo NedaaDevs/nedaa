@@ -33,6 +33,26 @@ describe("on iOS", () => {
     expect(announce().mock.calls).toEqual([[FIRST], [SECOND]]);
   });
 
+  // Two surfaces can draw one value, such as a run's step; it is said once.
+  it("says a message another mounted caller holds only once", async () => {
+    const first = await announcing(FIRST);
+    const second = await announcing(FIRST);
+    expect(announce().mock.calls).toEqual([[FIRST]]);
+
+    await first.rerender({ message: SECOND });
+    await second.rerender({ message: SECOND });
+    expect(announce().mock.calls).toEqual([[FIRST], [SECOND]]);
+  });
+
+  it("says a message again once no caller holds it", async () => {
+    const hook = await announcing(FIRST);
+    await hook.unmount();
+
+    await announcing(FIRST);
+
+    expect(announce().mock.calls).toEqual([[FIRST], [FIRST]]);
+  });
+
   it("says nothing for no message", async () => {
     const hook = await announcing(null);
     await hook.rerender({ message: null });

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { PLACE_UNKNOWN } from "@/constants/Location";
+import { knownPlaceName } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 import type { ManualLocation } from "@/types/location";
@@ -15,10 +15,8 @@ export type Place = {
 
 type Parts = { city?: string | null; country?: string | null };
 
-const known = (part: string | null | undefined) =>
-  part && part !== PLACE_UNKNOWN ? part : undefined;
-
-const hasPart = ({ city, country }: Parts) => Boolean(known(city) || known(country));
+const hasPart = ({ city, country }: Parts) =>
+  Boolean(knownPlaceName(city) || knownPlaceName(country));
 
 /** A chosen city's own names in the app's language. */
 const chosenCityParts = (city: ManualLocation, language: string): Parts => ({
@@ -39,8 +37,8 @@ export const usePlace = (): Place => {
     : hasPart(localized)
       ? localized
       : (address ?? {});
-  const city = known(parts.city);
-  const country = known(parts.country);
+  const city = knownPlaceName(parts.city);
+  const country = knownPlaceName(parts.country);
   const name = city && country ? t("place.name", { city, country }) : city || country;
   return { city, country, name };
 };

@@ -1,7 +1,9 @@
 import { act, renderHook } from "@testing-library/react-native";
 
+import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
+import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { initialLocationDetails } from "@/types/location";
 
 const mockReadLocation = jest.fn();
@@ -40,11 +42,13 @@ jest.mock("@/api/geocodeApi", () => ({
 }));
 
 jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: () => ({ loadPrayerTimes: mockLoadPrayerTimes }),
+  usePrayerTimesStore: { getState: () => ({ loadPrayerTimes: mockLoadPrayerTimes }) },
 }));
 
 jest.mock("@/stores/notification", () => ({
-  useNotificationStore: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
+  useNotificationStore: {
+    getState: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
+  },
 }));
 
 jest.mock("@/utils/alarmScheduler", () => ({
@@ -69,6 +73,7 @@ describe("useLocationUpdate location fail-safe", () => {
     mockLoadPrayerTimes.mockResolvedValue(undefined);
     mockScheduleNotifications.mockResolvedValue(undefined);
     mockRescheduleAlarms.mockResolvedValue(undefined);
+    useLocationUpdateStore.setState({ run: null });
     useLocationStore.setState({
       locationDetails: initialLocationDetails,
       localizedLocation: { country: "", city: "" },
@@ -90,9 +95,10 @@ describe("useLocationUpdate location fail-safe", () => {
       await result.current.executeUpdate();
     });
 
-    expect(result.current.updateState.error).toEqual({
-      step: "location",
-      message: "HMS location unavailable",
+    expect(result.current.run).toEqual({
+      start: { kind: UPDATE_START.DEVICE },
+      step: UPDATE_STEP.LOCATION,
+      failed: true,
     });
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
     expect(mockScheduleNotifications).not.toHaveBeenCalled();

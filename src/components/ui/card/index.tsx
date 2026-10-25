@@ -39,6 +39,10 @@ const CardFrame = styled(YStack, {
       filled: {
         backgroundColor: "$backgroundMuted",
       },
+      // Nested in a sheet: the thinned panel tone; glass never lies on glass.
+      panel: {
+        backgroundColor: "$panel",
+      },
       // Inset-grouped list container: one surface holding rows that supply their
       // own padding, clipped so the first and last row inherit the corners.
       grouped: {
@@ -58,13 +62,14 @@ const CardFrame = styled(YStack, {
 type CardVariant = NonNullable<GetProps<typeof CardFrame>["variant"]>;
 type CardSize = GetProps<typeof CardFrame>["size"];
 
-/** Transparent cards draw no surface, so they take no lift and no lit edge. */
+/** Transparent and nested cards draw no lift and no lit edge. */
 const RESTS: Record<CardVariant, boolean> = {
   plain: true,
   elevated: true,
   outline: false,
   ghost: false,
   filled: true,
+  panel: false,
   grouped: true,
 };
 

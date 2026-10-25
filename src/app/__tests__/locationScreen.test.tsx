@@ -6,6 +6,7 @@ import { useLocalSearchParams, usePathname } from "expo-router";
 import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
+import { CityChangeSheet } from "@/components/location/CityChangeSheet";
 import { PLACE_HERO_PART } from "@/components/ui/place-hero";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -15,11 +16,15 @@ import {
   FIX_SOURCE,
   LOCATION_FAILURE,
   LOCATION_PICKER,
+  UPDATE_START,
+  UPDATE_STEP,
 } from "@/constants/Location";
 import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
+import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
+import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
@@ -35,6 +40,13 @@ import {
 } from "@/utils/location";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
+// The test router unmounts a screen once another is pushed; a device keeps it.
+let mockFocused = true;
+jest.mock("expo-router", () => ({
+  ...jest.requireActual("expo-router"),
+  useIsFocused: () => mockFocused,
+}));
 jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
 jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 // Reached through the notification store; its database never opens here.
@@ -53,6 +65,7 @@ const PLATFORM = Platform.OS;
 const MD_BUTTON_HEIGHT = 50;
 
 const RIYADH = { city: "Riyadh", country: "Saudi Arabia" };
+const JEDDAH = { city: "Jeddah", country: "Saudi Arabia" };
 const RIYADH_COORDS = { latitude: 24.7136, longitude: 46.6753 };
 const MAKKAH: ManualLocation = {
   cityId: 104515,
@@ -80,10 +93,16 @@ const Picker = () => {
   );
 };
 
-const renderScreen = ({ isRTL = false } = {}) =>
+const renderScreen = ({ isRTL = false, withSheet = false } = {}) =>
   renderRouter(
     {
-      [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => <LocationScreen />,
+      [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => (
+        <>
+          <LocationScreen />
+          {/* The root layout draws the city-change sheet over every screen. */}
+          {withSheet ? <CityChangeSheet /> : null}
+        </>
+      ),
       [LOCATION_PICKER.href.slice(1)]: () => <Picker />,
     },
     {
@@ -149,6 +168,7 @@ beforeEach(async () => {
     isGettingLocation: false,
   });
   usePrayerTimesStore.setState({ loadPrayerTimes: mockLoad });
+  useLocationUpdateStore.setState({ run: null });
   useNotificationStore.setState({
     scheduleAllNotifications: jest.fn(async () => ({ success: true, scheduledCount: 0 })),
   });
@@ -157,6 +177,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   Platform.OS = PLATFORM;
+  mockFocused = true;
   jest.restoreAllMocks();
 });
 
@@ -239,7 +260,7 @@ describe("Settings › Location", () => {
     });
 
     // A read runs for seconds; the place cannot change under it.
-    it("holds the city choice and the refresh while a read runs", async () => {
+    it("shows the update's steps while it reads, with no way to change the place", async () => {
       mockUpdate.mockReturnValue(new Promise(() => {}));
       await renderScreen();
       const refresh = await screen.findByRole("button", {
@@ -247,11 +268,110 @@ describe("Settings › Location", () => {
       });
 
       await userEvent.press(refresh);
-      await userEvent.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
 
-      expect(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeDisabled();
-      expect(refresh).toBeDisabled();
+      expect(await screen.findByLabelText(t("location.update.step.location"))).toBeTruthy();
+      expect(screen.queryByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: new RegExp(`^${t("location.device.refresh")}`) })
+      ).toBeNull();
+      expect(screen.queryByLabelText(t("a11y.location.mode"))).toBeNull();
       expect(screen.queryByTestId("pathname")).toBeNull();
+      expect(hero()).toHaveAccessibleName(
+        heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.findingNote"))
+      );
+    });
+
+    it("returns to the device's place, the new one, once the update lands", async () => {
+      mockUpdate.mockImplementation(async () => {
+        useLocationStore.setState((state) => ({
+          localizedLocation: JEDDAH,
+          locationDetails: { ...state.locationDetails, address: JEDDAH },
+        }));
+      });
+      await renderScreen();
+
+      await userEvent.press(
+        await screen.findByRole("button", {
+          name: new RegExp(`^${t("location.device.refresh")}`),
+        })
+      );
+
+      expect(await screen.findByLabelText(t("a11y.location.mode"))).toBeTruthy();
+      expect(hero()).toHaveAccessibleName(
+        heroName(
+          t("location.hero.deviceKicker"),
+          t("place.name", JEDDAH),
+          t("location.hero.deviceNote")
+        )
+      );
+      expect(screen.queryByLabelText(t("location.update.step.prayerTimes"))).toBeNull();
+    });
+
+    // With no verified place, the hero asks until the read names the target.
+    it("names the place a read found while its times load, from no place", async () => {
+      placeFacts(true, null);
+      let read: () => void = () => {};
+      mockUpdate.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            read = () => {
+              useLocationStore.setState((state) => ({
+                lastKnownCoords: RIYADH_COORDS,
+                localizedLocation: JEDDAH,
+                locationDetails: { ...state.locationDetails, address: JEDDAH },
+              }));
+              resolve();
+            };
+          })
+      );
+      mockLoad.mockReturnValue(new Promise(() => {}));
+      await renderScreen();
+
+      await userEvent.press(
+        await screen.findByRole("button", {
+          name: new RegExp(`^${t("location.device.refresh")}`),
+        })
+      );
+      expect(hero()).toHaveAccessibleName(
+        heroName(
+          t("settings.location.title"),
+          t("onboarding.location.question"),
+          t("location.hero.findingNote")
+        )
+      );
+
+      await act(async () => read());
+
+      expect(await screen.findByLabelText(t("location.update.step.prayerTimes"))).toBeTruthy();
+      expect(hero()).toHaveAccessibleName(
+        heroName(
+          t("location.hero.deviceKicker"),
+          t("place.name", JEDDAH),
+          t("location.hero.updatingNote")
+        )
+      );
+    });
+
+    // The run lives in a store: a screen opened mid-run shows where it goes.
+    it("names a city's run on the hero when opened while its times load", async () => {
+      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationUpdateStore.setState({
+        run: {
+          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          step: UPDATE_STEP.PRAYER_TIMES,
+          failed: false,
+        },
+      });
+      await renderScreen();
+
+      expect(await screen.findByLabelText(t("location.update.step.prayerTimes"))).toBeTruthy();
+      expect(hero()).toHaveAccessibleName(
+        heroName(
+          t("location.hero.cityKicker"),
+          t("place.name", { city: MAKKAH.name, country: MAKKAH.country.name }),
+          t("location.hero.updatingNote")
+        )
+      );
     });
 
     it("holds its controls while a read started elsewhere runs", async () => {
@@ -379,17 +499,17 @@ describe("Settings › Location", () => {
       expect(announce).toHaveBeenCalledWith(t("location.manual.deviceRefused"));
     });
 
-    it("holds the mode and the city row while the switch to the device reads", async () => {
+    it("takes the mode and the city row away while the switch to the device reads", async () => {
       mockAdopt.mockReturnValue(new Promise(() => {}));
       await renderScreen();
       const device = await screen.findByRole("radio", { name: t("onboarding.location.automatic") });
 
       await userEvent.press(device);
-      await userEvent.press(device);
 
       expect(mockAdopt).toHaveBeenCalledTimes(1);
-      expect(device).toBeDisabled();
-      expect(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeDisabled();
+      expect(await screen.findByLabelText(t("location.update.step.location"))).toBeTruthy();
+      expect(screen.queryByRole("radio", { name: t("onboarding.location.automatic") })).toBeNull();
+      expect(screen.queryByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeNull();
     });
   });
 
@@ -659,11 +779,48 @@ describe("Settings › Location", () => {
         })
       );
 
-      expect(await screen.findByLabelText(t("location.update.error"))).toBeTruthy();
+      expect(await screen.findByLabelText(t(`location.update.failed.${_step}`))).toBeTruthy();
       expect(screen.queryByText(t("today.failed.title"))).toBeNull();
       expect(hero()).toHaveAccessibleName(
         heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.deviceNote"))
       );
+    });
+
+    // A failed run stays in its store: retry repeats its city, not the device.
+    it("shows a failed city run on opening, and retries that city", async () => {
+      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationUpdateStore.setState({
+        run: {
+          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          step: UPDATE_STEP.PRAYER_TIMES,
+          failed: true,
+        },
+      });
+      await renderScreen();
+
+      await userEvent.press(await screen.findByRole("button", { name: t("common.retry") }));
+
+      expect(mockLoad).toHaveBeenCalledWith(true);
+      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(mockAdopt).not.toHaveBeenCalled();
+      expect(await screen.findByLabelText(t("location.manual.notice"))).toBeTruthy();
+    });
+
+    // Its retry would bring back a city the user has since left.
+    it("shows no failed city run once that city was dropped", async () => {
+      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationUpdateStore.setState({
+        run: {
+          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          step: UPDATE_STEP.PRAYER_TIMES,
+          failed: true,
+        },
+      });
+      useLocationStore.getState().clearManualLocation();
+      await renderScreen();
+
+      expect(await screen.findByLabelText(t("a11y.location.mode"))).toBeTruthy();
+      expect(screen.queryByText(t("today.failed.title"))).toBeNull();
     });
 
     it("points to Settings when access is gone after a failed read", async () => {
@@ -696,5 +853,62 @@ describe("Settings › Location", () => {
 
     const group = await screen.findByLabelText(t("a11y.location.mode"));
     expect(StyleSheet.flatten(group.props.style).direction).toBe("rtl");
+  });
+
+  // One run, drawn by every surface that is up; VoiceOver hears it once.
+  describe("under another surface drawing the same run", () => {
+    beforeEach(() => {
+      Platform.OS = PlatformType.IOS;
+    });
+
+    const announced = (message: string) =>
+      jest
+        .mocked(AccessibilityInfo.announceForAccessibility)
+        .mock.calls.filter(([said]) => said === message).length;
+
+    it("says each step once under the city-change sheet", async () => {
+      jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+      let read: () => void = () => {};
+      mockUpdate.mockReturnValue(new Promise<void>((resolve) => (read = resolve)));
+      mockLoad.mockReturnValue(new Promise(() => {}));
+      useAppStore.setState({ isFirstRun: false });
+      useLocationStore.getState().offerCityChange({ currentCity: "Riyadh", newCity: "Jeddah" });
+      await renderScreen({ withSheet: true });
+
+      await userEvent.press(
+        await screen.findByRole("button", { name: t("location.cityChange.update") })
+      );
+      await act(async () => read());
+
+      // The sheet's view hides the screen's from the reader, not from render.
+      expect(
+        screen.getAllByLabelText(t("location.update.step.prayerTimes"), {
+          includeHiddenElements: true,
+        })
+      ).toHaveLength(2);
+      expect(announced(t("location.update.step.location"))).toBe(1);
+      expect(announced(t("location.update.step.prayerTimes"))).toBe(1);
+    });
+
+    // A pushed screen leaves this one mounted behind it, off screen; a card it
+    // would show there is not said.
+    it("says nothing of its own failure card while another screen is in front", async () => {
+      jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+      mockFocused = false;
+      await renderScreen();
+      await screen.findByLabelText(t("a11y.location.mode"));
+
+      await act(() =>
+        useLocationUpdateStore
+          .getState()
+          .withRun({ kind: UPDATE_START.CITY, city: MAKKAH }, async (enter) => {
+            enter(UPDATE_STEP.PRAYER_TIMES);
+            throw new Error("offline");
+          })
+      );
+
+      expect(screen.queryByText(t("today.failed.title"))).toBeNull();
+      expect(announced(`${t("today.failed.title")}. ${t("today.failed.body")}`)).toBe(0);
+    });
   });
 });

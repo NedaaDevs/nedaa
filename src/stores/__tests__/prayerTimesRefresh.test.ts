@@ -25,7 +25,7 @@ jest.mock("@/stores/location", () => ({
   __esModule: true,
   default: {
     getState: () => ({
-      locationDetails: { timezone: "Asia/Riyadh" },
+      locationDetails: { timezone: "Asia/Riyadh", coords: { latitude: 24.7, longitude: 46.7 } },
       lastKnownCoords: null,
       setTimezone: mockSetTimezone,
     }),

@@ -8,6 +8,11 @@ export const SAFE_EDGE = { TOP: "top", RIGHT: "right", LEFT: "left" } as const;
 export type SafeEdge = (typeof SAFE_EDGE)[keyof typeof SAFE_EDGE];
 
 const [TAB_GROUP] = BACK_DESTINATION.HOME.route.split("/");
+const [, QURAN_TAB] = BACK_DESTINATION.QURAN.route.split("/");
+
+/** The Quran tab or a screen under it. */
+export const isQuranSegments = (segments: readonly string[]) =>
+  segments[0] === TAB_GROUP && segments[1] === QURAN_TAB;
 
 /** Stack screens drawn on the sky, by navigator route name. */
 const SKY_STACK_ROUTES: readonly string[] = [

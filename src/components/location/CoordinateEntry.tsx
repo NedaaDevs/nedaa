@@ -10,13 +10,14 @@ import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import LocationUpdateProgress from "@/components/LocationUpdateProgress";
+import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 
 // Services
 import { CitiesDB } from "@/services/cities-db";
 
 // Hooks
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
+import { isRunning } from "@/stores/locationUpdate";
 
 // Utils
 import { parseCoordinate, formatCityLabel, CoordinateAxis } from "@/utils/cities";
@@ -101,7 +102,7 @@ const CoordinateField = ({
  */
 const CoordinateEntry = ({ onDone }: CoordinateEntryProps) => {
   const { t, i18n } = useTranslation();
-  const { updateState, applyManualLocation, retry } = useLocationUpdate();
+  const { run, applyManualLocation, retry } = useLocationUpdate();
 
   const [latitudeText, setLatitudeText] = useState("");
   const [longitudeText, setLongitudeText] = useState("");
@@ -134,7 +135,7 @@ const CoordinateEntry = ({ onDone }: CoordinateEntryProps) => {
   const nearest = isCurrent ? resolved.nearest : null;
   const isResolving = isValid && !isCurrent;
 
-  const canSave = isValid && nearest !== null && !updateState.isUpdating;
+  const canSave = isValid && nearest !== null && !isRunning(run);
 
   const handleSave = async () => {
     if (latitude === null || longitude === null || !nearest) return;
@@ -154,6 +155,10 @@ const CoordinateEntry = ({ onDone }: CoordinateEntryProps) => {
 
     const applied = await applyManualLocation(manual);
     if (applied) onDone();
+  };
+  // A retry that lands is a save that landed.
+  const retrySave = async () => {
+    if (await retry()) onDone();
   };
 
   return (
@@ -209,7 +214,7 @@ const CoordinateEntry = ({ onDone }: CoordinateEntryProps) => {
         </Card>
       )}
 
-      <LocationUpdateProgress state={updateState} onRetry={retry} />
+      <LocationUpdateProgress run={run} onRetry={() => void retrySave()} />
 
       <Button
         onPress={handleSave}

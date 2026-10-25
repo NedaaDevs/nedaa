@@ -33,14 +33,12 @@ export function seedScreenshotState(locale: "en" | "ar" = "en") {
       country: place.country,
       city: place.city,
     },
-    timezone: "Asia/Riyadh",
     isLocationPermissionGranted: true,
     isGettingLocation: false,
     lastKnownCoords: {
       latitude: 21.4225,
       longitude: 39.8262,
     },
-    cityChangeDetected: false,
     // A manual city never reads the device position, which would open a system dialog.
     locationMode: LocationMode.MANUAL,
   });
