@@ -16,17 +16,26 @@ const mockWaitForAlarmStores = jest.fn();
 const mockLogError = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
 const mockCheckPermission = jest.fn();
+type MockCoords = { latitude: number; longitude: number };
 const mockLocationState: {
   locationMode: LocationModeValue;
-  lastKnownCoords: { latitude: number; longitude: number } | null;
+  lastKnownCoords: MockCoords | null;
+  locationDetails: { coords: MockCoords };
 } = {
   locationMode: LocationMode.DEVICE,
   lastKnownCoords: null,
+  locationDetails: { coords: { latitude: 24.7136, longitude: 46.6753 } },
 };
-const mockPrayerTimesState = {
+const mockPrayerTimesState: {
+  didGetCurrentLocation: boolean;
+  usingDefaultLocation: boolean;
+  loadingTimes: boolean;
+  timesCoords: MockCoords | null;
+} = {
   didGetCurrentLocation: true,
   usingDefaultLocation: false,
   loadingTimes: false,
+  timesCoords: null,
 };
 /** Both stores' disk read: whether it has landed, and who waits for it. */
 const mockHydration = { landed: true, listeners: [] as (() => void)[] };
@@ -52,6 +61,7 @@ jest.mock("@/stores/prayerTimes", () => ({
       didGetCurrentLocation: mockPrayerTimesState.didGetCurrentLocation,
       usingDefaultLocation: mockPrayerTimesState.usingDefaultLocation,
       loadingTimes: mockPrayerTimesState.loadingTimes,
+      timesCoords: mockPrayerTimesState.timesCoords,
     }),
     persist: mockPersist,
   },
@@ -100,8 +110,10 @@ beforeEach(() => {
   mockPrayerTimesState.didGetCurrentLocation = true;
   mockPrayerTimesState.usingDefaultLocation = false;
   mockPrayerTimesState.loadingTimes = false;
+  mockPrayerTimesState.timesCoords = { latitude: 24.7136, longitude: 46.6753 };
   mockLocationState.locationMode = LocationMode.DEVICE;
   mockLocationState.lastKnownCoords = { latitude: 24.7136, longitude: 46.6753 };
+  mockLocationState.locationDetails = { coords: { latitude: 24.7136, longitude: 46.6753 } };
   mockSyncWidgetSnapshot.mockClear().mockResolvedValue(undefined);
   mockHydration.landed = true;
   mockHydration.listeners = [];
@@ -239,6 +251,18 @@ describe("registerForegroundReschedule", () => {
 
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
     expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
+  });
+
+  // A run that failed at the times leaves the new place over the old days.
+  it("refetches for a verified place whose days were fetched elsewhere", async () => {
+    mockLocationState.locationDetails = { coords: { latitude: 21.4858, longitude: 39.1925 } };
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+
+    expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
+    expect(mockRefreshTimings).not.toHaveBeenCalled();
   });
 
   it("leaves a manually picked location alone", async () => {

@@ -48,6 +48,18 @@ describe("Card", () => {
     expectResting();
   });
 
+  // A sheet stacks two tones and never lays glass on glass.
+  it("lies flat on the panel tone when nested in a sheet", async () => {
+    await renderWithTheme(<Card testID={SURFACE} variant="panel" />);
+
+    const surface = screen.getByTestId(SURFACE);
+    expect(surface).toHaveStyle({ backgroundColor: NEDAA_LIGHT.panel.hex });
+    expect(surface).not.toHaveStyle({ boxShadow: ELEVATION.e1.boxShadow.light });
+    expect(
+      screen.queryByTestId(`${SURFACE}-highlight`, { includeHiddenElements: true })
+    ).toBeNull();
+  });
+
   it("rules a grouped card's rows with the hairline", async () => {
     await renderWithTheme(<Card.Divider testID="divider" />);
 

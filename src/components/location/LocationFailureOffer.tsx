@@ -78,6 +78,8 @@ type Props = {
   onRetry: () => void;
   onChooseCity: () => void;
   onEnterCoordinates: () => void;
+  /** Drawn inside a sheet: on its panel tone, not a lifted card. */
+  inSheet?: boolean;
 };
 
 /** What went wrong, retry first, then the ways to set a place by hand. */
@@ -86,6 +88,7 @@ export const LocationFailureOffer = ({
   onRetry,
   onChooseCity,
   onEnterCoordinates,
+  inSheet = false,
 }: Props) => {
   const { t } = useTranslation();
   const android = Platform.OS === PlatformType.ANDROID;
@@ -99,7 +102,7 @@ export const LocationFailureOffer = ({
 
   return (
     <VStack gap="$section">
-      <Card testID={LOCATION_FAILURE_PART.CARD} gap="$3">
+      <Card testID={LOCATION_FAILURE_PART.CARD} variant={inSheet ? "panel" : "plain"} gap="$3">
         {/* One announced message; the actions stay reachable beside it. */}
         <HStack
           alignItems="flex-start"
@@ -109,7 +112,7 @@ export const LocationFailureOffer = ({
           accessibilityLiveRegion="polite">
           <Icon as={CircleAlert} size="md" color="$danger" />
           <VStack flex={1} gap="$0.5">
-            <Text size="md" bold color="$fg">
+            <Text size="md" fontWeight="600" color="$fg">
               {title}
             </Text>
             <Text size="sm" color="$muted">

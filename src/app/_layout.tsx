@@ -5,7 +5,7 @@ import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { isSkySegments, rootSafeAreaEdges } from "@/utils/safeArea";
+import { isQuranSegments, isSkySegments, rootSafeAreaEdges } from "@/utils/safeArea";
 import * as SplashScreen from "expo-splash-screen";
 
 import { TamaguiProvider, FontLanguage, useThemeName } from "tamagui";
@@ -32,7 +32,7 @@ import { ThemeTransitionProvider } from "@/components/ui/theme-transition";
 import { ToastHost } from "@/components/ToastHost";
 import { ActionsheetOverlay } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
-import CityChangeModal from "@/components/CityChangeModal";
+import { CityChangeSheet } from "@/components/location/CityChangeSheet";
 import { OnboardingGate } from "@/components/onboarding/flow/OnboardingGate";
 import PlayerBottomSheet from "@/components/athkar/PlayerBottomSheet";
 import CrashReportPrompt from "@/components/CrashReportPrompt";
@@ -42,7 +42,6 @@ import { useInitialSetup } from "@/hooks/useInitialSetup";
 import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useNotificationResponses } from "@/hooks/useNotificationResponses";
-import { useCityChangeHandler } from "@/hooks/useCityChangeHandler";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
 import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
 import { installScreenshotRouter } from "@/screenshot-mode/router";
@@ -71,17 +70,9 @@ function AppShell() {
   const theme = useTheme();
   const themeName = useThemeName();
   const isFirstRun = useAppStore((state) => state.isFirstRun);
-  const {
-    showCityChangeModal,
-    pendingCityChange,
-    updateState,
-    handleCityChangeUpdate,
-    dismissCityChangeModal,
-    retryUpdate,
-  } = useCityChangeHandler();
 
   const segments = useSegments();
-  const isQuranScreen = segments.at(0) === "(tabs)" && segments.at(1) === "quran";
+  const isQuranScreen = isQuranSegments(segments);
   const quranTheme = useResolvedQuranTheme();
   const readerActive = useQuranStore((s) => s.readerActive);
   // The immersive reader is the visible Quran surface (vs. the version/download
@@ -116,17 +107,7 @@ function AppShell() {
             importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
             <StatusBar animated style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
 
-            {pendingCityChange && (
-              <CityChangeModal
-                isOpen={showCityChangeModal}
-                onClose={dismissCityChangeModal}
-                onUpdate={handleCityChangeUpdate}
-                onRetry={retryUpdate}
-                currentCity={pendingCityChange.currentCity}
-                newCity={pendingCityChange.newCity}
-                updateState={updateState}
-              />
-            )}
+            <CityChangeSheet />
 
             <OnboardingGate showOnboarding={showOnboarding}>
               <Stack
