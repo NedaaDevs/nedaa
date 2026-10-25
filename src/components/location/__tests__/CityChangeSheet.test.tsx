@@ -45,7 +45,7 @@ const OFFER = { currentCity: "Riyadh", newCity: "Jeddah" };
 
 const { closeCityChange } = useLocationStore.getState();
 const mockUpdate = jest.fn(async () => {});
-const mockLoad = jest.fn(async () => {});
+const mockLoad = jest.fn(async () => true);
 
 /** The picker route, printing what it was opened on. */
 const Picker = () => {
@@ -109,7 +109,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
   await act(() => i18n.changeLanguage(AppLocale.EN));
   mockUpdate.mockResolvedValue(undefined);
-  mockLoad.mockResolvedValue(undefined);
+  mockLoad.mockResolvedValue(true);
   useAppStore.setState({ isFirstRun: false });
   useLocationUpdateStore.setState({ run: null });
   useLocationStore.setState({

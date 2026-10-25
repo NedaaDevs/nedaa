@@ -1,6 +1,9 @@
+import { renderHook } from "@testing-library/react-native";
+
 import { reverseGeocodeAsync } from "@/adapters/location";
-import { FIX_SOURCE, LOCATION_FAILURE, PLACE_UNKNOWN } from "@/constants/Location";
+import { FIX_SOURCE, LOCATION_FAILURE, PLACE_UNKNOWN, knownPlaceName } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
+import { usePlace } from "@/hooks/usePlace";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
@@ -187,6 +190,104 @@ describe("device fix in the location store", () => {
     await useLocationStore.getState().updateCurrentLocation();
 
     expect(useLocationStore.getState().localizedLocation).toEqual(localized);
+  });
+
+  // Naming the place needs the network; an offline refresh is not a move.
+  describe("a refresh whose device geocoder fails", () => {
+    const localized = { city: "الرياض", country: "السعودية" };
+
+    beforeEach(() => {
+      useLocationStore.setState({
+        localizedLocation: localized,
+        reverseGeocode: jest.fn(async () => {
+          throw new Error("offline");
+        }),
+      });
+      mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
+      mockReverseGeocodeAsync.mockRejectedValue(new Error("offline"));
+    });
+
+    it("keeps the saved name, and the place still shows it", async () => {
+      await useLocationStore.getState().updateCurrentLocation();
+
+      const state = useLocationStore.getState();
+      expect(state.locationDetails.address).toEqual({ country: "Saudi Arabia", city: "Riyadh" });
+      expect(state.localizedLocation).toEqual(localized);
+      const { result } = await renderHook(() => usePlace());
+      expect(result.current.city).toBe(localized.city);
+    });
+
+    it("clears the saved name when the fix is in another city", async () => {
+      mockReadLocation.mockResolvedValue({ location: JEDDAH, source: FIX_SOURCE.FRESH });
+
+      await useLocationStore.getState().updateCurrentLocation();
+
+      expect(
+        knownPlaceName(useLocationStore.getState().locationDetails.address?.city)
+      ).toBeUndefined();
+      const { result } = await renderHook(() => usePlace());
+      expect(result.current.city).toBeUndefined();
+    });
+
+    it("still offers a city change once the device moves", async () => {
+      await useLocationStore.getState().updateCurrentLocation();
+      mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).toEqual({
+        currentCity: "Riyadh",
+        newCity: "Jeddah",
+      });
+    });
+
+    // A chosen city's name was never the device geocoder's.
+    it("leaves the device's place unnamed when it replaces a chosen city", async () => {
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+      mockReadLocation.mockResolvedValue({ location: JEDDAH, source: FIX_SOURCE.FRESH });
+
+      await useLocationStore.getState().adoptDeviceLocation();
+
+      const state = useLocationStore.getState();
+      expect(state.locationMode).toBe(LocationMode.DEVICE);
+      expect(knownPlaceName(state.locationDetails.address?.city)).toBeUndefined();
+      expect(state.localizedLocation.city).toBe("");
+    });
+
+    it("leaves the place unnamed after a chosen city is cleared", async () => {
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+      useLocationStore.getState().clearManualLocation();
+      const atMakkah = fixAt(MAKKAH_CITY.latitude, MAKKAH_CITY.longitude);
+      mockReadLocation.mockResolvedValue({ location: atMakkah, source: FIX_SOURCE.FRESH });
+
+      await useLocationStore.getState().updateCurrentLocation();
+
+      expect(
+        knownPlaceName(useLocationStore.getState().locationDetails.address?.city)
+      ).toBeUndefined();
+    });
+  });
+
+  // An old name would hide a move the geocoder could not name.
+  it.each([
+    ["no address", []],
+    ["an address without a city", [{ city: null, country: "Saudi Arabia", timezone: null }]],
+  ])("clears the saved name when the geocoder answers with %s", async (_case, answer) => {
+    useLocationStore.setState({
+      localizedLocation: { city: "الرياض", country: "السعودية" },
+      reverseGeocode: () => new Promise(() => {}),
+    });
+    mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
+    mockReverseGeocodeAsync.mockResolvedValue(answer);
+
+    await useLocationStore.getState().updateCurrentLocation();
+
+    expect(
+      knownPlaceName(useLocationStore.getState().locationDetails.address?.city)
+    ).toBeUndefined();
+    const { result } = await renderHook(() => usePlace());
+    expect(result.current.city).toBeUndefined();
   });
 
   it("takes a zone as the place's own", async () => {
