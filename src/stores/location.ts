@@ -77,19 +77,25 @@ const choiceMoved = (now: PlaceChoice, before: PlaceChoice): boolean =>
 /** The saved city and the one the device is in now, both device-named. */
 type CityChangeOffer = { currentCity: string; newCity: string };
 
+/** Whether two points lie within the city-change distance of each other. */
+const withinCityChange = (a: Coords, b: Coords): boolean =>
+  calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude) <= CITY_CHANGE_THRESHOLD;
+
+/** The device geocoder's answer; a failed one names no place. */
+type DeviceGeocode =
+  | { failed: true; address: null }
+  | { failed: false; address: Location.LocationGeocodedAddress | null };
+
 // City-change checks compare names from this one geocoder, so every stored
 // device address comes from it.
-const deviceAddressAt = async ({
-  latitude,
-  longitude,
-}: Coords): Promise<Location.LocationGeocodedAddress | null> => {
-  const addresses = await Location.reverseGeocodeAsync({ latitude, longitude }).catch(
-    (error: unknown) => {
-      log.w("Geocode", `device address failed: ${(error as Error)?.message ?? error}`);
-      return [];
-    }
-  );
-  return addresses[0] ?? null;
+const deviceAddressAt = async ({ latitude, longitude }: Coords): Promise<DeviceGeocode> => {
+  try {
+    const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
+    return { failed: false, address: addresses[0] ?? null };
+  } catch (error) {
+    log.w("Geocode", `device address failed: ${errorText(error)}`);
+    return { failed: true, address: null };
+  }
 };
 
 export type LocationStore = {
@@ -187,7 +193,7 @@ export const useLocationStore = create<LocationStore>()(
                   }
             );
 
-            const geocodedAddress = await deviceAddressAt(location.coords);
+            const geocodedAddress = (await deviceAddressAt(location.coords)).address;
 
             // Get localized version
             const localizedGeocode = await get()
@@ -258,17 +264,25 @@ export const useLocationStore = create<LocationStore>()(
           try {
             const { location, source } = await readLocation(LOCATION_REQUEST_TIMEOUT_EXTENDED);
             log.i("Update", `location updated (${source})`);
-            const geocodedAddress = await deviceAddressAt(location.coords);
+            const geocoded = await deviceAddressAt(location.coords);
             if (choiceMoved(get(), choice)) {
               log.i("Update", "a city was chosen during the read; the fix is not applied");
               return;
             }
 
-            // An unnamed fix clears the address; an old city name would hide a move.
-            const address = geocodedAddress && {
-              country: geocodedAddress.country ?? PLACE_UNKNOWN,
-              city: geocodedAddress.city ?? PLACE_UNKNOWN,
-            };
+            // A failed geocode keeps the device's name within its saved city.
+            const saved = get().lastKnownCoords;
+            const keepsName =
+              geocoded.failed &&
+              choice.locationMode === LocationMode.DEVICE &&
+              saved !== null &&
+              withinCityChange(saved, location.coords);
+            const address = keepsName
+              ? get().locationDetails.address
+              : geocoded.address && {
+                  country: geocoded.address.country ?? PLACE_UNKNOWN,
+                  city: geocoded.address.city ?? PLACE_UNKNOWN,
+                };
             set((state) => ({
               locationDetails: {
                 ...state.locationDetails,
@@ -427,7 +441,7 @@ export const useLocationStore = create<LocationStore>()(
             log.d("CityChange", `${distance.toFixed(2)} km from the saved place`);
             if (distance <= CITY_CHANGE_THRESHOLD) return;
 
-            const newCity = knownPlaceName((await deviceAddressAt(fix.coords))?.city);
+            const newCity = knownPlaceName((await deviceAddressAt(fix.coords)).address?.city);
             const state = get();
             // Only against the place still saved, and never over onboarding.
             if (state.lastKnownCoords !== savedCoords || appStore.getState().isFirstRun) {

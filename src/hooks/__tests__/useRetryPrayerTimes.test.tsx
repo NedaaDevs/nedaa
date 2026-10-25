@@ -9,7 +9,7 @@ describe("useRetryPrayerTimes", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("clears the error, then reloads the times from the source", async () => {
-    const loadPrayerTimes = jest.fn(() => Promise.resolve());
+    const loadPrayerTimes = jest.fn(() => Promise.resolve(true));
     usePrayerTimesStore.setState({ clearError, loadPrayerTimes });
     const { result } = await renderHook(() => useRetryPrayerTimes());
 

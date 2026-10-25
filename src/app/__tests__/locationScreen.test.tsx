@@ -81,7 +81,7 @@ const MAKKAH: ManualLocation = {
 
 const mockUpdate = jest.fn(async () => {});
 const mockAdopt = jest.fn(async () => {});
-const mockLoad = jest.fn(async () => {});
+const mockLoad = jest.fn(async () => true);
 
 /** The picker route, printing what it was opened on. */
 const Picker = () => {
@@ -160,7 +160,7 @@ beforeEach(async () => {
   jest.mocked(requestLocationPermission).mockResolvedValue({ granted: true });
   mockUpdate.mockResolvedValue(undefined);
   mockAdopt.mockResolvedValue(undefined);
-  mockLoad.mockResolvedValue(undefined);
+  mockLoad.mockResolvedValue(true);
   useLocationStore.setState({
     updateCurrentLocation: mockUpdate,
     adoptDeviceLocation: mockAdopt,

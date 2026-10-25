@@ -40,10 +40,10 @@ export const appSetup = async (
     const { loadPrayerTimes } = prayerStore;
 
     // A pending reapply forces the refetch, since cached times satisfy a normal load.
-    // The flag clears only once the fetch lands, so an interrupted launch retries.
+    // The flag clears once every fetched year lands; a later load retries.
     const pendingReapply = await awaitPendingReapply();
-    await loadPrayerTimes(pendingReapply);
-    if (pendingReapply) {
+    const landed = await loadPrayerTimes(pendingReapply);
+    if (pendingReapply && landed) {
       useProviderSettingsStore.getState().clearPendingReapply();
     }
     // Gate scheduling on alarm-store rehydration; reading defaults here silently
