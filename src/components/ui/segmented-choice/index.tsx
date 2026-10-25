@@ -45,6 +45,12 @@ export type SegmentedChoiceProps<V extends string | number> = {
   /** An icon over each option's text. */
   icon?: (option: V) => IconProps["as"];
   form?: SegmentedForm;
+  /** An option's test id, where a flow taps it. */
+  optionTestID?: (option: V) => string | undefined;
+  /** What choosing an option does, where it does more than select it. */
+  optionHint?: (option: V) => string | undefined;
+  /** Holds every option still, such as while the choice is being applied. */
+  disabled?: boolean;
 };
 
 type IndicatorProps = { index: number; count: number; trackWidth: number };
@@ -83,6 +89,9 @@ export const SegmentedChoice = <V extends string | number>({
   literalDigits = false,
   icon,
   form = SEGMENTED_FORM.FRAMED,
+  optionTestID,
+  optionHint,
+  disabled = false,
 }: SegmentedChoiceProps<V>) => {
   const { isRTL, direction } = useRTL();
   const locale = useAppStore((state) => state.locale);
@@ -120,9 +129,12 @@ export const SegmentedChoice = <V extends string | number>({
         return (
           <Pressable
             key={option}
+            testID={optionTestID?.(option)}
             accessibilityRole="radio"
             accessibilityLabel={digits(spokenLabel(option))}
+            accessibilityHint={optionHint?.(option)}
             accessibilityState={{ selected }}
+            disabled={disabled}
             onPress={() => {
               if (!selected) onChange(option);
             }}

@@ -61,6 +61,18 @@ describe("location adapter", () => {
     });
   });
 
+  it.each([true, false])("says whether Huawei Location Kit reads the position (%s)", (hms) => {
+    jest.doMock("expo-hms-location", () => ({ ExpoHmsLocationModule: { isAvailable: hms } }));
+
+    let isolatedLocation: typeof import("@/adapters/location") | undefined;
+    jest.isolateModules(() => {
+      isolatedLocation =
+        jest.requireActual<typeof import("@/adapters/location")>("@/adapters/location");
+    });
+
+    expect(isolatedLocation!.usesHmsLocation()).toBe(hms);
+  });
+
   it("uses Expo Location when the HMS native module is absent", async () => {
     const expoGetForegroundPermissionsAsync = jest.fn().mockResolvedValue(mockPermission);
 

@@ -32,6 +32,10 @@ import type { AlarmType } from "@/types/alarm";
 import { prayerNameKey } from "@/utils/prayerName";
 
 const FLOW_DIR = join(__dirname, "..", "..", "components", "onboarding", "flow");
+// Parts outside the flow that draw its copy, such as the fetch error's offer.
+const SHARED_PARTS = [
+  join(__dirname, "..", "..", "components", "location", "LocationFailureOffer.tsx"),
+];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -52,7 +56,9 @@ const sources = (dir: string): string[] =>
     return /\.tsx?$/.test(entry.name) ? [path] : [];
   });
 
-const SOURCE_TEXT = sources(FLOW_DIR).map((path) => readFileSync(path, "utf8"));
+const SOURCE_TEXT = [...sources(FLOW_DIR), ...SHARED_PARTS].map((path) =>
+  readFileSync(path, "utf8")
+);
 
 // A key starts with a namespace the bundle has; this keeps import paths out.
 const NAMESPACES = new Set(Object.keys(en).map((key) => key.split(".")[0]));
@@ -181,7 +187,14 @@ const placeholders = (text: string) =>
 describe("the keys found in the flow", () => {
   it("include keys outside onboarding", () => {
     expect(LITERAL_KEYS).toEqual(
-      expect.arrayContaining(["common.retry", "today.failed.title", "a11y.join"])
+      expect.arrayContaining([
+        "common.retry",
+        "today.failed.title",
+        "location.failure.notFound.title",
+        "location.picker.title",
+        "location.coordinates.title",
+        "a11y.join",
+      ])
     );
     expect(LITERAL_KEYS.filter((key) => key.startsWith("onboarding.")).length).toBeGreaterThan(40);
   });

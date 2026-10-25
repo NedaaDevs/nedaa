@@ -51,6 +51,9 @@ const getLocationProvider = (): LocationProvider =>
     ? (ExpoHmsLocationModule as unknown as LocationProvider)
     : getExpoLocation();
 
+/** Whether Huawei Location Kit reads the position. */
+export const usesHmsLocation = (): boolean => ExpoHmsLocationModule.isAvailable;
+
 export const getForegroundPermissionsAsync = (): Promise<LocationPermissionResponse> =>
   getLocationProvider().getForegroundPermissionsAsync();
 
