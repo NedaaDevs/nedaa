@@ -21,6 +21,7 @@ import { useQuranRemindersStore } from "@/stores/quranReminders";
 // Utils
 import { timeZonedNow, dateToInt, getTimezoneMonth, getTimezoneYear } from "@/utils/date";
 import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
+import { timesMoved } from "@/utils/placeFromFacts";
 import { AppLogger } from "@/utils/appLogger";
 import { waitForHydration } from "@/utils/storeHydration";
 import { addDays } from "date-fns";
@@ -90,7 +91,7 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
       return BackgroundTask.BackgroundTaskResult.Failed;
     }
 
-    const timezone = locationStore.getState().locationDetails.timezone;
+    const { timezone, coords } = locationStore.getState().locationDetails;
     if (!timezone) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
@@ -110,7 +111,9 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     const pendingReapply = await awaitPendingReapply();
 
     const futureData = await PrayerTimesDB.getPrayerTimesByDateRange(todayInt, futureDate);
-    const hasSufficientData = futureData.length >= MIN_FUTURE_DAYS;
+    // Days fetched for other coordinates are another place's, however many.
+    const placeMoved = timesMoved(usePrayerTimesStore.getState().timesCoords, coords);
+    const hasSufficientData = futureData.length >= MIN_FUTURE_DAYS && !placeMoved;
 
     let fetchedNewData = false;
     if (!hasSufficientData || pendingReapply) {
@@ -120,19 +123,25 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
         "success",
         pendingReapply
           ? "Provider reapply pending, refetching"
-          : `Only ${futureData.length} days of data, fetching more`
+          : placeMoved
+            ? "Place moved, refetching"
+            : `Only ${futureData.length} days of data, fetching more`
       );
 
       try {
         const prayerTimesStore = usePrayerTimesStore.getState();
+        // The fetch reads the place from the store as it starts.
+        const fetchedFor = locationStore.getState().locationDetails.coords;
         const success = await prayerTimesStore.getAndStorePrayerTimes();
 
         if (success) {
           // A late-December window crosses into January and the current-year
           // fetch cannot cover it; best-effort, the next run retries.
-          if (getTimezoneMonth(timezone) === 12) {
-            await prayerTimesStore.getAndStorePrayerTimes(getTimezoneYear(timezone) + 1);
-          }
+          const allLanded =
+            getTimezoneMonth(timezone) !== 12 ||
+            (await prayerTimesStore.getAndStorePrayerTimes(getTimezoneYear(timezone) + 1));
+          // Next year's days are read later, so they must be this place's too.
+          if (allLanded) prayerTimesStore.markTimesFor(fetchedFor);
           if (pendingReapply) {
             useProviderSettingsStore.getState().clearPendingReapply();
           }

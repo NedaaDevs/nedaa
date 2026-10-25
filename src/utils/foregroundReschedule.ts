@@ -9,6 +9,7 @@ import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { AppLogger } from "@/utils/appLogger";
 import { checkLocationPermission } from "@/utils/location";
+import { timesMoved } from "@/utils/placeFromFacts";
 import { readTimesPlace } from "@/utils/timesPlace";
 
 const log = AppLogger.create("alarm");
@@ -47,19 +48,24 @@ const runForegroundWork = async (): Promise<void> => {
 // otherwise refetch the year on every foreground.
 let locationRepairAttempted = false;
 
-/** Default-place times that a verified place or a device fix can replace. */
+/** Times that are not the saved place's, which a refetch can replace. */
 const canRepairLocation = async (): Promise<boolean> => {
   if (locationRepairAttempted) return false;
   const place = await readTimesPlace();
   // Unloaded stores hold defaults, not the place; the retry stays for later.
   if (place === TIMES_PLACE.UNKNOWN) return false;
-  const { didGetCurrentLocation, loadingTimes } = usePrayerTimesStore.getState();
+  const { didGetCurrentLocation, loadingTimes, timesCoords } = usePrayerTimesStore.getState();
   // The running load owns the outcome; the retry stays for a later foreground.
   if (loadingTimes) return false;
   // A verified place whose own rows a failed fetch never stored.
   if (place === TIMES_PLACE.AWAITING_TIMES) return true;
+  const location = useLocationStore.getState();
+  // A verified place whose days were fetched for other coordinates.
+  if (place === TIMES_PLACE.VERIFIED && timesMoved(timesCoords, location.locationDetails.coords)) {
+    return true;
+  }
   if (didGetCurrentLocation) return false;
-  if (useLocationStore.getState().locationMode !== LocationMode.DEVICE) return false;
+  if (location.locationMode !== LocationMode.DEVICE) return false;
   return (await checkLocationPermission()).granted;
 };
 

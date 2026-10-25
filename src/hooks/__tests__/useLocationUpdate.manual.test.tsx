@@ -1,3 +1,4 @@
+import { AccessibilityInfo, Platform } from "react-native";
 import { act, renderHook } from "@testing-library/react-native";
 import { reverseGeocodeAsync } from "expo-location";
 
@@ -7,8 +8,11 @@ import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
-import { FIX_SOURCE, LOCATION_FAILURE, UPDATE_STEP } from "@/constants/Location";
+import { FIX_SOURCE, LOCATION_FAILURE, UPDATE_START, UPDATE_STEP } from "@/constants/Location";
+import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { LocationFixError } from "@/utils/location";
+import { PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
 
 const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
@@ -46,11 +50,13 @@ jest.mock("@/api/geocodeApi", () => ({
 }));
 
 jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: () => ({ loadPrayerTimes: mockLoadPrayerTimes }),
+  usePrayerTimesStore: { getState: () => ({ loadPrayerTimes: mockLoadPrayerTimes }) },
 }));
 
 jest.mock("@/stores/notification", () => ({
-  useNotificationStore: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
+  useNotificationStore: {
+    getState: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
+  },
 }));
 
 jest.mock("@/utils/alarmScheduler", () => ({
@@ -80,6 +86,8 @@ const RIYADH: ManualLocation = {
 };
 
 const mountHook = () => renderHook(() => useLocationUpdate());
+
+beforeEach(() => useLocationUpdateStore.setState({ run: null }));
 
 describe("applyManualLocation", () => {
   beforeEach(() => {
@@ -134,9 +142,27 @@ describe("applyManualLocation", () => {
     });
 
     expect(applied).toBe(true);
-    expect(result.current.updateState.error).toBeNull();
-    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.DONE);
+    expect(result.current.run).toBeNull();
   });
+
+  // The status line leaves with the run, so the end is said on both platforms.
+  it.each([PlatformType.IOS, PlatformType.ANDROID])(
+    "says on %s that the update landed",
+    async (os) => {
+      const platform = Platform.OS;
+      Platform.OS = os;
+      const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+
+      const { result } = await mountHook();
+      await act(async () => {
+        await result.current.applyManualLocation(RIYADH);
+      });
+
+      expect(announce).toHaveBeenCalledWith(i18n.t("location.update.step.done"));
+      Platform.OS = platform;
+      announce.mockRestore();
+    }
+  );
 
   it("reports failure so the caller keeps the picker open", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
@@ -158,9 +184,10 @@ describe("applyManualLocation", () => {
       await result.current.applyManualLocation(RIYADH);
     });
 
-    expect(result.current.updateState.error).toEqual({
-      step: "prayerTimes",
-      message: "network down",
+    expect(result.current.run).toEqual({
+      start: { kind: UPDATE_START.CITY, city: RIYADH },
+      step: UPDATE_STEP.PRAYER_TIMES,
+      failed: true,
     });
   });
 
@@ -202,7 +229,7 @@ describe("applyManualLocation", () => {
     expect(mockReadLocation).not.toHaveBeenCalled();
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(2);
-    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.DONE);
+    expect(result.current.run).toBeNull();
   });
 });
 
@@ -272,14 +299,14 @@ describe("switchToDevice", () => {
       await result.current.switchToDevice();
     });
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
-    expect(result.current.updateState.error?.step).toBe("location");
+    expect(result.current.run?.step).toBe(UPDATE_STEP.LOCATION);
 
     await act(async () => {
       await result.current.retry();
     });
 
     expect(useLocationStore.getState().locationMode).toBe(LocationMode.DEVICE);
-    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.DONE);
+    expect(result.current.run).toBeNull();
   });
 });
 
@@ -305,8 +332,7 @@ describe("dismissFailure", () => {
 
     await act(async () => result.current.dismissFailure());
 
-    expect(result.current.updateState.error).toBeNull();
-    expect(result.current.updateState.isUpdating).toBe(false);
+    expect(result.current.run).toBeNull();
   });
 
   // The run goes on either way; hiding it would leave its result unexplained.
@@ -319,7 +345,69 @@ describe("dismissFailure", () => {
 
     await act(async () => result.current.dismissFailure());
 
-    expect(result.current.updateState.isUpdating).toBe(true);
-    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.PRAYER_TIMES);
+    expect(result.current.run).toEqual({
+      start: { kind: UPDATE_START.CITY, city: RIYADH },
+      step: UPDATE_STEP.PRAYER_TIMES,
+      failed: false,
+    });
+  });
+});
+
+// The run lives in a store, so every screen reads the one in flight.
+describe("one run at a time", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockScheduleNotifications.mockResolvedValue(undefined);
+    mockRescheduleAlarms.mockResolvedValue(undefined);
+  });
+
+  // A fresh mount has no state of its own, so what it shows is the store's.
+  it("shows a screen opened mid-run the run in flight", async () => {
+    mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
+    const first = await mountHook();
+    await act(async () => {
+      void first.result.current.applyManualLocation(RIYADH);
+    });
+
+    const reopened = await mountHook();
+
+    expect(reopened.result.current.run?.step).toBe(UPDATE_STEP.PRAYER_TIMES);
+    expect(reopened.result.current.run?.failed).toBe(false);
+  });
+
+  it("starts no second run while one is in flight", async () => {
+    mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
+    const { result } = await mountHook();
+    await act(async () => {
+      void result.current.applyManualLocation(RIYADH);
+    });
+
+    let started: boolean | undefined;
+    await act(async () => {
+      started = await result.current.executeUpdate();
+    });
+
+    expect(started).toBe(false);
+    expect(mockReadLocation).not.toHaveBeenCalled();
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
+  });
+
+  // A screen opened after the failure retries the same city, not the device.
+  it("retries the failed run's own start from a screen opened after it", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
+    const first = await mountHook();
+    await act(async () => {
+      await first.result.current.applyManualLocation(RIYADH);
+    });
+    mockLoadPrayerTimes.mockResolvedValue(undefined);
+
+    const reopened = await mountHook();
+    await act(async () => {
+      await reopened.result.current.retry();
+    });
+
+    expect(mockReadLocation).not.toHaveBeenCalled();
+    expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(2);
+    expect(reopened.result.current.run).toBeNull();
   });
 });

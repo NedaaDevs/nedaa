@@ -8,9 +8,22 @@ const BASE = {
   failedStep: null,
   storedFailure: null,
   updating: false,
+  running: false,
 } as const;
 
 describe("locationRootState", () => {
+  // The run decides the place; nothing else on the screen may change it.
+  it.each([
+    ["the device", BASE],
+    ["a chosen city", { ...BASE, chosenCity: true }],
+    ["no access", { ...BASE, permission: { granted: false, canAskAgain: false } }],
+    ["a stored failure", { ...BASE, storedFailure: LOCATION_FAILURE.TIMEOUT }],
+  ])("shows an update's steps while one runs, over %s", (_case, facts) => {
+    expect(locationRootState({ ...facts, running: true, updating: true })).toBe(
+      LOCATION_ROOT_STATE.UPDATING
+    );
+  });
+
   it("shows the device's place with access and no failure", () => {
     expect(locationRootState(BASE)).toBe(LOCATION_ROOT_STATE.DEVICE);
   });

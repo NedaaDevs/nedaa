@@ -2,6 +2,8 @@ import { render, screen, userEvent } from "@testing-library/react-native";
 
 import CityPicker from "@/components/location/CityPicker";
 import { E2E_ID } from "@/constants/E2E";
+import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
+import i18n from "@/localization/i18n";
 import { useCitySearch, type CitySearchState } from "@/hooks/useCitySearch";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { ThemeProvider } from "@/test-helpers/theme";
@@ -48,7 +50,7 @@ beforeEach(() => {
   jest.mocked(useCitySearch).mockReturnValue(search([FIRST, SECOND]));
   applyManualLocation.mockReset().mockResolvedValue(true);
   jest.mocked(useLocationUpdate).mockReturnValue({
-    updateState: { isUpdating: false, currentStep: null, error: null },
+    run: null,
     applyManualLocation,
     executeUpdate: jest.fn(),
     switchToDevice: jest.fn(),
@@ -85,5 +87,26 @@ describe("CityPicker, as the CI flows reach it", () => {
       expect.objectContaining({ cityId: FIRST.gid, name: FIRST.name })
     );
     expect(onDone).toHaveBeenCalled();
+  });
+
+  // A pick whose times failed is retried in place; landing closes the list.
+  it("closes once a retried pick lands", async () => {
+    const retry = jest.fn(async () => true);
+    jest.mocked(useLocationUpdate).mockReturnValue({
+      ...jest.mocked(useLocationUpdate)(),
+      run: {
+        start: { kind: UPDATE_START.CITY, city: { ...FIRST, cityId: FIRST.gid } },
+        step: UPDATE_STEP.PRAYER_TIMES,
+        failed: true,
+      },
+      retry,
+    });
+    const onDone = jest.fn();
+    await renderPicker(onDone);
+
+    await userEvent.press(screen.getByRole("button", { name: i18n.t("common.retry") }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 });

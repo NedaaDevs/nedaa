@@ -8,7 +8,7 @@ import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { useBusyRequest } from "@/components/onboarding/flow/useBusyRequest";
 import { useStepPrimary } from "@/components/onboarding/flow/useStepPrimary";
-import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
+import { useViewFocus } from "@/hooks/useViewFocus";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { LOCATION_CHOICE } from "@/constants/Onboarding";
