@@ -212,7 +212,7 @@ describe("Calculation screen", () => {
 
   it("holds every choice still while the changes apply", async () => {
     // The fetch never settles, so the apply stays running.
-    usePrayerTimesStore.setState({ loadPrayerTimes: () => new Promise<void>(() => {}) });
+    usePrayerTimesStore.setState({ loadPrayerTimes: () => new Promise<boolean>(() => {}) });
     await renderCalculation();
     await userEvent.press(button(new RegExp(t("settings.calculation.asr.title"))));
     await userEvent.press(radio(new RegExp(t("settings.calculation.asr.options.hanafi.name"))));

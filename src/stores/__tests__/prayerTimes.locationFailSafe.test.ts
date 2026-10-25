@@ -141,7 +141,7 @@ describe("prayer-time location fail-safe", () => {
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     // Still false, so a real fix is attempted again on the next load.
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
@@ -158,7 +158,7 @@ describe("prayer-time location fail-safe", () => {
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(usePrayerTimesStore.getState().hasError).toBe(false);
     expect(refreshPrayerTimes).toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe("prayer-time location fail-safe", () => {
     mockReverseGeocodeApi.mockRejectedValue(new Error("API geocoder unavailable"));
     jest.spyOn(console, "error").mockImplementation();
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(useLocationStore.getState().locationDetails.coords).toEqual(acquiredLocation.coords);
     expect(useLocationStore.getState().lastKnownCoords).toBeNull();
@@ -331,7 +331,7 @@ describe("prayer-time location fail-safe", () => {
     mockReverseGeocodeApi.mockRejectedValue(new Error("API geocoder unavailable"));
     jest.spyOn(console, "error").mockImplementation();
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(useLocationStore.getState().locationDetails).toMatchObject({
       coords: savedLocationDetails.coords,
@@ -363,7 +363,7 @@ describe("prayer-time location fail-safe", () => {
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
     expect(useLocationStore.getState().locationDetails.coords).toEqual(persistedCoords);
@@ -387,7 +387,7 @@ describe("prayer-time location fail-safe", () => {
     });
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
     expect(refreshPrayerTimes).toHaveBeenCalledTimes(1);
@@ -605,7 +605,7 @@ describe("a place verified after the default place's days were stored", () => {
     const { fetch, getAndStorePrayerTimes } = pendingFetch();
     fetch.release(false);
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes()).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes()).resolves.toBe(false);
 
     expect(getAndStorePrayerTimes).toHaveBeenCalled();
     expect(usingDefault()).toBe(true);

@@ -211,6 +211,25 @@ describe("executeBackgroundRefresh", () => {
     expect(mockClearPendingReapply).not.toHaveBeenCalled();
   });
 
+  // Next year's rows hold the old settings until their own fetch lands.
+  it("keeps the reapply flag in December until next year's fetch lands", async () => {
+    mockNow = new Date("2026-12-30T08:00:00Z");
+    // The flag stays pending until the task clears it.
+    mockAwaitPendingReapply.mockImplementation(
+      async () => mockClearPendingReapply.mock.calls.length === 0
+    );
+    mockGetAndStore.mockImplementation(async (year?: number) => year === undefined);
+    await executeBackgroundRefresh();
+    expect(mockClearPendingReapply).not.toHaveBeenCalled();
+    mockGetAndStore.mockReset().mockResolvedValue(true);
+
+    await executeBackgroundRefresh();
+
+    expect(mockGetAndStore).toHaveBeenNthCalledWith(1);
+    expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
+    expect(mockClearPendingReapply).toHaveBeenCalledTimes(1);
+  });
+
   it("also fetches the next year in December", async () => {
     mockNow = new Date("2026-12-30T08:00:00Z");
     mockGetByRange.mockResolvedValue([{ date: 1 }]);

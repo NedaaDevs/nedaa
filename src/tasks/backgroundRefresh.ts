@@ -111,7 +111,7 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     const pendingReapply = await awaitPendingReapply();
 
     const futureData = await PrayerTimesDB.getPrayerTimesByDateRange(todayInt, futureDate);
-    // Days fetched for other coordinates are another place's, however many.
+    // Days fetched for another place are not this one's, however many.
     const placeMoved = timesMoved(usePrayerTimesStore.getState().timesCoords, coords);
     const hasSufficientData = futureData.length >= MIN_FUTURE_DAYS && !placeMoved;
 
@@ -140,10 +140,11 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
           const allLanded =
             getTimezoneMonth(timezone) !== 12 ||
             (await prayerTimesStore.getAndStorePrayerTimes(getTimezoneYear(timezone) + 1));
-          // Next year's days are read later, so they must be this place's too.
-          if (allLanded) prayerTimesStore.markTimesFor(fetchedFor);
-          if (pendingReapply) {
-            useProviderSettingsStore.getState().clearPendingReapply();
+          // Next year's days are read later, so the place mark and the
+          // reapply's clear wait for them too.
+          if (allLanded) {
+            prayerTimesStore.markTimesFor(fetchedFor);
+            if (pendingReapply) useProviderSettingsStore.getState().clearPendingReapply();
           }
           fetchedNewData = true;
           await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "prayer_times_fetched", "success");

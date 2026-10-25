@@ -6,7 +6,7 @@ const SAVED = { method: 4 };
 
 const makeDeps = () => ({
   saveSettings: jest.fn(() => Promise.resolve(SAVED)),
-  loadPrayerTimes: jest.fn(() => Promise.resolve()),
+  loadPrayerTimes: jest.fn(() => Promise.resolve(true)),
   scheduleAllNotifications: jest.fn(() => Promise.resolve()),
   rescheduleAllAlarms: jest.fn(() => Promise.resolve()),
   reloadPrayerWidgets: jest.fn(),
@@ -48,6 +48,17 @@ describe("applyProviderSettings", () => {
     await applyProviderSettings(deps, () => {});
 
     expect(order).toEqual(["widgets", "applied"]);
+  });
+
+  // Next year's rows hold the old settings until their own fetch lands.
+  test("leaves the settings unapplied while the load owes a year", async () => {
+    const deps = makeDeps();
+    deps.loadPrayerTimes.mockResolvedValueOnce(false);
+
+    await applyProviderSettings(deps, () => {});
+
+    expect(deps.rescheduleAllAlarms).toHaveBeenCalled();
+    expect(deps.markSettingsApplied).not.toHaveBeenCalled();
   });
 
   test("leaves the settings unapplied when a step fails", async () => {

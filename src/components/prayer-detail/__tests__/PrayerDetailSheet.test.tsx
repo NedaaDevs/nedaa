@@ -186,7 +186,7 @@ describe("PrayerDetailSheet", () => {
 
   it("clears the error and reloads the times on a retry", async () => {
     const clearError = jest.fn();
-    const loadPrayerTimes = jest.fn(() => Promise.resolve());
+    const loadPrayerTimes = jest.fn(() => Promise.resolve(true));
     await renderOn("2026-09-23", PRAYER_ID.ASR);
     await act(() =>
       usePrayerTimesStore.setState({

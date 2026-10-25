@@ -60,7 +60,7 @@ const canRepairLocation = async (): Promise<boolean> => {
   // A verified place whose own rows a failed fetch never stored.
   if (place === TIMES_PLACE.AWAITING_TIMES) return true;
   const location = useLocationStore.getState();
-  // A verified place whose days were fetched for other coordinates.
+  // A verified place whose days were fetched for another place.
   if (place === TIMES_PLACE.VERIFIED && timesMoved(timesCoords, location.locationDetails.coords)) {
     return true;
   }
