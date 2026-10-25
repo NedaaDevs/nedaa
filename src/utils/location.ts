@@ -16,6 +16,7 @@ import {
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/location";
+import type { LocationPermission } from "@/types/location";
 
 import { AppLogger } from "@/utils/appLogger";
 import { withDeadline, withTimeout } from "@/utils/withTimeout";
@@ -34,16 +35,16 @@ export const LAST_KNOWN_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 // The cached-fix read is local; one that stalls counts as no cached fix.
 const LAST_KNOWN_REQUEST_TIMEOUT = 3000;
 
-export const checkLocationPermission = async () => {
+export const checkLocationPermission = async (): Promise<LocationPermission> => {
   try {
     const { status, canAskAgain } = await getForegroundPermissionsAsync();
 
-    return { granted: status === LocalPermissionStatus.GRANTED, canRequestAgain: canAskAgain };
+    return { granted: status === LocalPermissionStatus.GRANTED, canAskAgain };
   } catch (error) {
     log.w("Permission", `check failed: ${(error as Error)?.message ?? error}`);
     return {
       granted: false,
-      canRequestAgain: true,
+      canAskAgain: true,
     };
   }
 };
