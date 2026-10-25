@@ -462,3 +462,57 @@ describe("SegmentedChoice, framed", () => {
     expect(translateOf()).toBe(STEP);
   });
 });
+
+describe("SegmentedChoice, per-option test ids and hints", () => {
+  const CHOICES = ["device", "city"] as const;
+  const HINT = "Opens a searchable list of cities";
+
+  const renderWithExtras = () =>
+    renderWithTheme(
+      <SegmentedChoice
+        options={CHOICES}
+        value="device"
+        onChange={jest.fn()}
+        accessibilityLabel={GROUP}
+        label={String}
+        optionTestID={(option) => (option === "city" ? "pick-city" : undefined)}
+        optionHint={(option) => (option === "city" ? HINT : undefined)}
+      />
+    );
+
+  it("gives an option the test id its host names", async () => {
+    await renderWithExtras();
+
+    expect(screen.getByTestId("pick-city")).toHaveAccessibleName("city");
+  });
+
+  // An option that opens a screen says so; a plain choice needs no hint.
+  it("hints only the options whose host describes what they do", async () => {
+    await renderWithExtras();
+
+    expect(screen.getByRole("radio", { name: "city" })).toHaveProp("accessibilityHint", HINT);
+    expect(screen.getByRole("radio", { name: "device" }).props.accessibilityHint).toBeUndefined();
+  });
+});
+
+describe("SegmentedChoice, held still", () => {
+  it("says every option is disabled and ignores a press", async () => {
+    const onChange = jest.fn();
+    await renderWithTheme(
+      <SegmentedChoice
+        options={["device", "city"] as const}
+        value="device"
+        onChange={onChange}
+        accessibilityLabel={GROUP}
+        label={String}
+        disabled
+      />
+    );
+
+    const city = screen.getByRole("radio", { name: "city" });
+    expect(city).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "device", selected: true })).toBeDisabled();
+    await userEvent.press(city);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

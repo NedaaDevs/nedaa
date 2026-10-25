@@ -138,7 +138,7 @@ describe("prayer-time location fail-safe", () => {
   it("does not mark location acquired when acquisition fails", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
@@ -156,7 +156,7 @@ describe("prayer-time location fail-safe", () => {
   it("falls back to the default location when the permission is declined", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
-    mockCheckLocationPermission.mockResolvedValue({ granted: false, canRequestAgain: false });
+    mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
 
@@ -281,7 +281,7 @@ describe("prayer-time location fail-safe", () => {
       timestamp: 1_750_000_000_000,
     };
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockResolvedValue(acquiredLocation);
     mockReverseGeocodeAsync.mockRejectedValue(new Error("Android geocoder unavailable"));
     mockReverseGeocodeApi.mockRejectedValue(new Error("API geocoder unavailable"));
@@ -325,7 +325,7 @@ describe("prayer-time location fail-safe", () => {
       localizedLocation: savedLocalizedLocation,
       lastKnownCoords: { latitude: savedCoords.latitude, longitude: savedCoords.longitude },
     });
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockResolvedValue(acquiredLocation);
     mockReverseGeocodeAsync.mockRejectedValue(new Error("Android geocoder unavailable"));
     mockReverseGeocodeApi.mockRejectedValue(new Error("API geocoder unavailable"));
@@ -360,7 +360,7 @@ describe("prayer-time location fail-safe", () => {
       locationDetails: { ...initialLocationDetails, coords: persistedCoords },
       lastKnownCoords: { latitude: persistedCoords.latitude, longitude: persistedCoords.longitude },
     });
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
@@ -385,7 +385,7 @@ describe("prayer-time location fail-safe", () => {
       },
       lastKnownCoords: { latitude: 24.7136, longitude: 46.6753 },
     });
-    mockCheckLocationPermission.mockResolvedValue({ granted: false, canRequestAgain: false });
+    mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
 
@@ -524,7 +524,7 @@ describe("one position read per fetch attempt", () => {
     resetStores();
     mockGetPrayerTimesByDateRange.mockResolvedValue([]);
     mockGetPrayerTimesByDate.mockResolvedValue(null);
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
     mockReverseGeocodeAsync.mockResolvedValue([]);
     mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
@@ -580,7 +580,7 @@ describe("a place verified after the default place's days were stored", () => {
     resetStores();
     mockGetPrayerTimesByDateRange.mockResolvedValue([storedDay(TODAY), storedDay(TOMORROW)]);
     mockGetPrayerTimesByDate.mockResolvedValue(storedDay(YESTERDAY));
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
     mockReverseGeocodeAsync.mockResolvedValue([]);
     mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
@@ -659,7 +659,7 @@ describe("a place verified after the default place's days were stored", () => {
   });
 
   it("does not refetch the default place's stored days while no fix lands", async () => {
-    mockCheckLocationPermission.mockResolvedValue({ granted: false, canRequestAgain: false });
+    mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
     const { getAndStorePrayerTimes } = pendingFetch();
 
     await usePrayerTimesStore.getState().loadPrayerTimes();

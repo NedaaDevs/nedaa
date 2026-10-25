@@ -118,8 +118,20 @@ type Props = BaseProps &
         ref?: Ref<ViewInstance>;
         /** Names a page outside the app; the row reads as a link and points outward. */
         linkLabel?: string;
+        /** The row's test id, where a flow presses it. */
+        testID?: string;
+        /** The status explains the row, not a live value, so it wraps. */
+        wrapStatus?: boolean;
       }
-    | { onPress?: never; hint?: never; linkLabel?: never; disabled?: never; ref?: never }
+    | {
+        onPress?: never;
+        hint?: never;
+        linkLabel?: never;
+        disabled?: never;
+        ref?: never;
+        testID?: never;
+        wrapStatus?: never;
+      }
   );
 
 /**
@@ -138,6 +150,8 @@ export const ListRow = ({
   onPress,
   disabled,
   ref,
+  testID,
+  wrapStatus = false,
 }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
@@ -175,6 +189,7 @@ export const ListRow = ({
   return (
     <Pressable
       ref={ref}
+      testID={testID}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole={linkLabel ? "link" : undefined}
@@ -197,7 +212,7 @@ export const ListRow = ({
           {title}
         </Text>
         {status ? (
-          <Text {...style.status} color="$muted" numberOfLines={1}>
+          <Text {...style.status} color="$muted" numberOfLines={wrapStatus ? undefined : 1}>
             {status}
           </Text>
         ) : null}
