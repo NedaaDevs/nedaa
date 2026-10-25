@@ -147,7 +147,7 @@ struct SmallQadaView: View {
 
             Spacer()
 
-            // Today's progress + interactive button
+            // Today's progress and the record prompt
             if #available(iOS 17.0, *) {
                 HStack(spacing: 6) {
                     if entry.todayCompleted > 0 {
@@ -161,12 +161,7 @@ struct SmallQadaView: View {
                         }
                     }
 
-                    Button(intent: IncrementQadaIntent()) {
-                        Label("+1", systemImage: "plus.circle.fill")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                    }
-                    .tint(NedaaColors.primary(for: colorScheme))
+                    QadaRecordMark(font: .caption2)
                 }
             } else if entry.todayCompleted > 0 {
                 HStack(spacing: 4) {
@@ -246,14 +241,7 @@ struct MediumQadaView: View {
                         }
                     }
 
-                    if #available(iOS 17.0, *) {
-                        Button(intent: IncrementQadaIntent()) {
-                            Label("+1", systemImage: "plus.circle.fill")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                        }
-                        .tint(NedaaColors.primary(for: colorScheme))
-                    }
+                    QadaRecordMark(font: .caption)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -343,14 +331,7 @@ struct LargeQadaView: View {
                         .clipShape(Capsule())
                     }
 
-                    if #available(iOS 17.0, *) {
-                        Button(intent: IncrementQadaIntent()) {
-                            Label("+1", systemImage: "plus.circle.fill")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                        }
-                        .tint(NedaaColors.primary(for: colorScheme))
-                    }
+                    QadaRecordMark(font: .caption)
                 }
             }
 
@@ -499,3 +480,16 @@ struct LargeQadaView: View {
     QadaHomeScreenEntry.preview
 }
 #endif
+
+/// The "+1" prompt; a tap on the widget opens Qada, where the app records it.
+private struct QadaRecordMark: View {
+    let font: Font
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Label("+1", systemImage: "plus.circle.fill")
+            .font(font.weight(.bold))
+            .foregroundStyle(NedaaColors.primary(for: colorScheme))
+            .accessibilityHidden(true)
+    }
+}
