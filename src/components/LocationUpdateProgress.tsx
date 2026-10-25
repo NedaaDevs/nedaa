@@ -7,7 +7,8 @@ import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Check, CircleAlert } from "lucide-react-native";
 
-import type { UpdateState, UpdateStep } from "@/hooks/useLocationUpdate";
+import { UPDATE_STEP, type UpdateStep } from "@/constants/Location";
+import type { UpdateState } from "@/hooks/useLocationUpdate";
 
 type Props = {
   state: UpdateState;
@@ -15,11 +16,11 @@ type Props = {
 };
 
 const STEP_KEYS: Record<UpdateStep, string> = {
-  location: "location.update.step.location",
-  prayerTimes: "location.update.step.prayerTimes",
-  notifications: "location.update.step.notifications",
-  alarms: "location.update.step.alarms",
-  done: "location.update.step.done",
+  [UPDATE_STEP.LOCATION]: "location.update.step.location",
+  [UPDATE_STEP.PRAYER_TIMES]: "location.update.step.prayerTimes",
+  [UPDATE_STEP.NOTIFICATIONS]: "location.update.step.notifications",
+  [UPDATE_STEP.ALARMS]: "location.update.step.alarms",
+  [UPDATE_STEP.DONE]: "location.update.step.done",
 };
 
 const LocationUpdateProgress = ({ state, onRetry }: Props) => {
@@ -49,7 +50,7 @@ const LocationUpdateProgress = ({ state, onRetry }: Props) => {
   if (!state.currentStep) return null;
 
   const stepText = t(STEP_KEYS[state.currentStep]);
-  const isDone = state.currentStep === "done";
+  const isDone = state.currentStep === UPDATE_STEP.DONE;
 
   return (
     <HStack

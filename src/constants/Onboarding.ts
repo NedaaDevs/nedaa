@@ -107,10 +107,6 @@ export type LocationChoice = (typeof LOCATION_CHOICE)[keyof typeof LOCATION_CHOI
 export const LOCATION_STEP_VIEW = { CHOICE: "choice", PICKER: "picker" } as const;
 export type LocationStepView = (typeof LOCATION_STEP_VIEW)[keyof typeof LOCATION_STEP_VIEW];
 
-/** What a step's city picker shows: the city list, or coordinate entry. */
-export const CITY_PICKER_VIEW = { LIST: "list", COORDINATES: "coordinates" } as const;
-export type CityPickerView = (typeof CITY_PICKER_VIEW)[keyof typeof CITY_PICKER_VIEW];
-
 /** The fetch step waits this long before its one silent retry. */
 export const FETCH_RETRY_MS = 1500;
 

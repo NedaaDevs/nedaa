@@ -108,20 +108,6 @@ export const MAX_SAVED_LOCATION_AGE_MS = 24 * 60 * 60 * 1_000;
  */
 export const DECLINATION_DRIFT_DEGREES = 0.1;
 
-export type CompassLocationAge = {
-  unit: "now" | "minutes" | "hours";
-  value: number;
-};
-
-export const getCompassLocationAge = (timestamp: number, now = Date.now()): CompassLocationAge => {
-  const ageMs = Math.max(0, now - timestamp);
-  if (ageMs < 60_000) return { unit: "now", value: 0 };
-  if (ageMs < 60 * 60_000) {
-    return { unit: "minutes", value: Math.floor(ageMs / 60_000) };
-  }
-  return { unit: "hours", value: Math.floor(ageMs / (60 * 60_000)) };
-};
-
 export const getCompassSensorReliability = (
   accuracyDegrees: number | null
 ): CompassSensorReliabilityValue => {

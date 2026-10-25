@@ -5,6 +5,8 @@ import { PLACE_UNKNOWN } from "@/constants/Location";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
+import { LocationMode } from "@/enums/location";
+import type { ManualLocation } from "@/types/location";
 
 const LOCALIZED = { city: "الرياض", country: "السعودية" };
 const ADDRESS = { city: "Riyadh", country: "Saudi Arabia" };
@@ -19,9 +21,36 @@ const setPlace = (
     locationDetails: { ...useLocationStore.getState().locationDetails, address },
   });
 
+const RIYADH_CITY: ManualLocation = {
+  cityId: 108410,
+  name: "Riyadh",
+  names: { ar: "الرياض", ur: null, ms: null },
+  region: null,
+  countryCode: "SA",
+  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
+  latitude: 24.68773,
+  longitude: 46.72185,
+  timezone: "Asia/Riyadh",
+};
+
 describe("usePlace", () => {
   beforeEach(async () => {
     await act(() => i18n.changeLanguage(AppLocale.EN));
+    useLocationStore.setState({ locationMode: LocationMode.DEVICE, manualLocation: null });
+  });
+
+  // A chosen city holds each language's name; the store keeps the base one.
+  it("names a chosen city in the app's language", async () => {
+    useLocationStore.getState().setManualLocation(RIYADH_CITY);
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+
+    const { result } = await renderHook(() => usePlace());
+
+    expect(result.current).toEqual({
+      city: "الرياض",
+      country: "السعودية",
+      name: i18n.t("place.name", { city: "الرياض", country: "السعودية" }),
+    });
   });
 
   it("names the place in the app's language", async () => {

@@ -2,7 +2,7 @@ import { reverseGeocodeAsync } from "@/adapters/location";
 import { FIX_SOURCE, LOCATION_FAILURE } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
-import { initialLocationDetails, type LocationObject } from "@/types/location";
+import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
 import { LocationFixError, getLocationWithTimeout, readLocation } from "@/utils/location";
 
 jest.mock("expo-sqlite/kv-store", () => ({
@@ -52,6 +52,18 @@ const JEDDAH = fixAt(21.4858, 39.1925);
 const JEDDAH_NORTH = fixAt(21.76, 39.15);
 
 const deviceAddress = (city: string) => ({ city, country: "Saudi Arabia", timezone: null });
+
+const MAKKAH_CITY: ManualLocation = {
+  cityId: 104515,
+  name: "Makkah",
+  names: { ar: "مكة المكرمة", ur: null, ms: null },
+  region: null,
+  countryCode: "SA",
+  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
+  latitude: 21.4225,
+  longitude: 39.8262,
+  timezone: "Asia/Riyadh",
+};
 
 const reverseGeocode: LocationStore["reverseGeocode"] = jest.fn(async () => ({
   city: "Riyadh",
@@ -141,6 +153,149 @@ describe("device fix in the location store", () => {
     expect(useLocationStore.getState().pendingCityChange).toBeNull();
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it("records when the first fix was observed", async () => {
+    mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
+    mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Riyadh")]);
+
+    await useLocationStore.getState().initializeLocation();
+
+    expect(useLocationStore.getState().locationDetails.fixedAt).toBe(RIYADH.timestamp);
+  });
+
+  it("records when an updated fix was observed, which a cached fix dates earlier", async () => {
+    const cached = { ...JEDDAH, timestamp: JEDDAH.timestamp - 60_000 };
+    mockReadLocation.mockResolvedValue({ location: cached, source: FIX_SOURCE.LAST_KNOWN });
+    mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+
+    await useLocationStore.getState().updateCurrentLocation();
+
+    expect(useLocationStore.getState().locationDetails.fixedAt).toBe(cached.timestamp);
+  });
+
+  it("keeps no fix time for a chosen city", () => {
+    useLocationStore.setState({
+      locationDetails: { ...initialLocationDetails, fixedAt: RIYADH.timestamp },
+    });
+
+    useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+
+    expect(useLocationStore.getState().locationDetails.fixedAt).toBeNull();
+  });
+
+  // A read stalls for seconds; a city chosen meanwhile is the user's.
+  describe("a city chosen while a device read runs", () => {
+    /** A read that resolves only once `finish` is called. */
+    const heldRead = () => {
+      let finish: (fix: LocationObject) => void = () => {};
+      mockReadLocation.mockReturnValue(
+        new Promise((resolve) => {
+          finish = (location) => resolve({ location, source: FIX_SOURCE.FRESH });
+        })
+      );
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+      return (location: LocationObject) => finish(location);
+    };
+    const MAKKAH_COORDS = { latitude: MAKKAH_CITY.latitude, longitude: MAKKAH_CITY.longitude };
+
+    it("keeps the city over a refresh that lands after it", async () => {
+      const finish = heldRead();
+      const update = useLocationStore.getState().updateCurrentLocation();
+
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+      finish(JEDDAH);
+      await update;
+
+      const state = useLocationStore.getState();
+      expect(state.locationMode).toBe(LocationMode.MANUAL);
+      expect(state.locationDetails.coords.latitude).toBe(MAKKAH_CITY.latitude);
+      expect(state.lastKnownCoords).toEqual(MAKKAH_COORDS);
+    });
+
+    it("stores no failure for a read that fails after the city was chosen", async () => {
+      let fail: (error: Error) => void = () => {};
+      mockReadLocation.mockReturnValue(new Promise((_resolve, reject) => (fail = reject)));
+      const update = useLocationStore.getState().updateCurrentLocation();
+
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+      fail(new LocationFixError(LOCATION_FAILURE.TIMEOUT));
+
+      await expect(update).resolves.toBeUndefined();
+      expect(useLocationStore.getState().locationDetails.error).toBeNull();
+    });
+
+    it("keeps a city chosen while the switch to the device reads", async () => {
+      const OTHER = { ...MAKKAH_CITY, cityId: 1, name: "Taif", latitude: 21.27, longitude: 40.41 };
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+      const finish = heldRead();
+      const adopt = useLocationStore.getState().adoptDeviceLocation();
+
+      useLocationStore.getState().setManualLocation(OTHER);
+      finish(JEDDAH);
+      await adopt;
+
+      const state = useLocationStore.getState();
+      expect(state.locationMode).toBe(LocationMode.MANUAL);
+      expect(state.manualLocation).toEqual(OTHER);
+      expect(state.lastKnownCoords).toEqual({
+        latitude: OTHER.latitude,
+        longitude: OTHER.longitude,
+      });
+    });
+  });
+
+  // Naming the place needs the network; the device itself found it.
+  it("stores no failure kind when the read worked and the timezone did not", async () => {
+    useLocationStore.setState((state) => ({
+      locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.TIMEOUT },
+      reverseGeocode: jest.fn(async () => {
+        throw new Error("offline");
+      }),
+    }));
+    mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
+    mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Riyadh")]);
+
+    await expect(useLocationStore.getState().initializeLocation()).rejects.toThrow();
+
+    expect(useLocationStore.getState().locationDetails.error).toBeNull();
+  });
+
+  describe("adopting the device location over a chosen city", () => {
+    beforeEach(() => useLocationStore.getState().setManualLocation(MAKKAH_CITY));
+
+    it("switches to the device with its fix, its city named before the translation lands", async () => {
+      mockReadLocation.mockResolvedValue({ location: JEDDAH, source: FIX_SOURCE.FRESH });
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
+      useLocationStore.setState({ reverseGeocode: () => new Promise(() => {}) });
+
+      await useLocationStore.getState().adoptDeviceLocation();
+
+      const state = useLocationStore.getState();
+      expect(state.locationMode).toBe(LocationMode.DEVICE);
+      expect(state.manualLocation).toBeNull();
+      expect(state.manualLocationChosenAt).toBeNull();
+      expect(state.lastKnownCoords).toEqual({
+        latitude: JEDDAH.coords.latitude,
+        longitude: JEDDAH.coords.longitude,
+      });
+      expect(state.localizedLocation).toEqual({ city: "Jeddah", country: "Saudi Arabia" });
+    });
+
+    it("keeps the chosen city when the device read fails", async () => {
+      mockReadLocation.mockRejectedValue(new LocationFixError(LOCATION_FAILURE.TIMEOUT));
+
+      await expect(useLocationStore.getState().adoptDeviceLocation()).rejects.toThrow();
+
+      const state = useLocationStore.getState();
+      expect(state.locationMode).toBe(LocationMode.MANUAL);
+      expect(state.manualLocation).toEqual(MAKKAH_CITY);
+      expect(state.lastKnownCoords).toEqual({
+        latitude: MAKKAH_CITY.latitude,
+        longitude: MAKKAH_CITY.longitude,
+      });
+      expect(state.localizedLocation.city).toBe(MAKKAH_CITY.name);
+    });
   });
 
   it("drops a saved error that is not a failure kind", () => {

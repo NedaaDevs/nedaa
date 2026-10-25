@@ -207,3 +207,72 @@ describe("retired keys", () => {
     expect(Object.keys(locale).filter((key) => RETIRED.test(key))).toEqual([]);
   });
 });
+
+// The Location screen's refresh row: how long ago the device found the place.
+describe("the last time the device found the place", () => {
+  it.each([
+    [
+      "location.device.lastFound.minutes",
+      [
+        "آخر تحديد للموقع قبل أقل من دقيقة",
+        "آخر تحديد للموقع قبل دقيقة",
+        "آخر تحديد للموقع قبل دقيقتين",
+        "آخر تحديد للموقع قبل 3 دقائق",
+        "آخر تحديد للموقع قبل 11 دقيقة",
+        "آخر تحديد للموقع قبل 100 دقيقة",
+      ],
+    ],
+    [
+      "location.device.lastFound.hours",
+      [
+        "آخر تحديد للموقع قبل أقل من ساعة",
+        "آخر تحديد للموقع قبل ساعة",
+        "آخر تحديد للموقع قبل ساعتين",
+        "آخر تحديد للموقع قبل 3 ساعات",
+        "آخر تحديد للموقع قبل 11 ساعة",
+        "آخر تحديد للموقع قبل 100 ساعة",
+      ],
+    ],
+    [
+      "location.device.lastFound.days",
+      [
+        "آخر تحديد للموقع قبل أقل من يوم",
+        "آخر تحديد للموقع قبل يوم",
+        "آخر تحديد للموقع قبل يومين",
+        "آخر تحديد للموقع قبل 3 أيام",
+        "آخر تحديد للموقع قبل 11 يومًا",
+        "آخر تحديد للموقع قبل 100 يوم",
+      ],
+    ],
+  ])("says %s in Arabic with all six forms", (key, sentences) => {
+    expect(ARABIC_COUNTS.map((count) => sayAr(key, count))).toEqual(sentences);
+  });
+
+  it.each([
+    ["location.device.lastFound.minutes", "Last found 1 minute ago", "Last found 5 minutes ago"],
+    ["location.device.lastFound.hours", "Last found 1 hour ago", "Last found 5 hours ago"],
+    ["location.device.lastFound.days", "Last found 1 day ago", "Last found 5 days ago"],
+  ])("says %s in English", (key, one, five) => {
+    expect(sayEn(key, 1)).toBe(one);
+    expect(sayEn(key, 5)).toBe(five);
+  });
+});
+
+// The compass's saved fix can be a chosen city's, days old.
+describe("the age of the compass's saved fix in days", () => {
+  it("says it in Arabic with all six forms", () => {
+    expect(ARABIC_COUNTS.map((count) => sayAr("compass.locationSavedAge.days", count))).toEqual([
+      "محفوظ منذ أقل من يوم",
+      "محفوظ منذ يوم",
+      "محفوظ منذ يومين",
+      "محفوظ منذ 3 أيام",
+      "محفوظ منذ 11 يومًا",
+      "محفوظ منذ 100 يوم",
+    ]);
+  });
+
+  it("says it in English", () => {
+    expect(sayEn("compass.locationSavedAge.days", 1)).toBe("Saved 1 day ago");
+    expect(sayEn("compass.locationSavedAge.days", 5)).toBe("Saved 5 days ago");
+  });
+});

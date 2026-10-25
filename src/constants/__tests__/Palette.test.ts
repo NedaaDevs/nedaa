@@ -4,7 +4,9 @@ import {
   NEDAA_DARK,
   NEDAA_LIGHT,
   PHASE_GRADIENTS,
+  PLACE_HERO_PAINT,
 } from "@/constants/Palette";
+import { PLACE_HERO_TONE } from "@/constants/PlaceHero";
 import { mixOklch, oklchToHex } from "@/test-helpers/oklch";
 
 /** Each palette carries the least forgiving surface its tokens sit on. */
@@ -155,6 +157,33 @@ describe("phase gradients", () => {
 
   it("declares both brightnesses for every phase", () => {
     for (const byBrightness of Object.values(PHASE_GRADIENTS)) {
+      expect(Object.keys(byBrightness).sort()).toEqual(Object.values(BRIGHTNESS).sort());
+    }
+  });
+});
+
+describe("place hero paints", () => {
+  const paints = Object.entries(PLACE_HERO_PAINT).flatMap(([tone, byBrightness]) =>
+    Object.entries(byBrightness).map(
+      ([brightness, paint]) => [`${tone}/${brightness}`, paint] as const
+    )
+  );
+
+  it.each(paints)("%s draws colours true to their oklch", (_name, paint) => {
+    for (const { color } of paint.stops) expect(oklchToHex(color.oklch)).toBe(color.hex);
+    expect(oklchToHex(paint.skyline.oklch)).toBe(paint.skyline.hex);
+  });
+
+  it.each(paints)("%s runs its stops from 0 to 100 in order", (_name, paint) => {
+    const at = paint.stops.map((stop) => stop.at);
+    expect(at[0]).toBe(0);
+    expect(at[at.length - 1]).toBe(100);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+  });
+
+  it("paints every tone in both brightnesses", () => {
+    expect(Object.keys(PLACE_HERO_PAINT).sort()).toEqual(Object.values(PLACE_HERO_TONE).sort());
+    for (const byBrightness of Object.values(PLACE_HERO_PAINT)) {
       expect(Object.keys(byBrightness).sort()).toEqual(Object.values(BRIGHTNESS).sort());
     }
   });

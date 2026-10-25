@@ -207,6 +207,30 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\bspokenClockTime\(/,
     home: "utils/spokenClockTime.ts",
   },
+  // A screen reading why the device read failed offers the one way out.
+  {
+    concept: "the way out of a failed place or times fetch",
+    shows: /\blocationDetails\.error\b|\bLOCATION_FAILURE\b|\blocation\.failure\./,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<LocationFailureOffer\b/,
+    home: "components/location/LocationFailureOffer.tsx",
+  },
+  // A screen naming how old a location fix is computes it by the one rule.
+  {
+    concept: "the age of a location fix",
+    shows: /\bfixAgeOf\(|\bcompass\.locationSavedAge\b|\blocation\.device\.lastFound\b/,
+    within: /^(app|components)\//,
+    drawsWith: /\bfixAgeOf\(/,
+    home: "utils/fixAge.ts",
+  },
+  // A screen naming whose place the times are for paints it on the one hero.
+  {
+    concept: "the place hero",
+    shows: /\bPLACE_HERO_(TONE|PAINT)\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<PlaceHero\b/,
+    home: "components/ui/place-hero/index.tsx",
+  },
   // A file that calls playSource or names previewSource draws SoundPreview.
   {
     concept: "a sound's play and stop control",
