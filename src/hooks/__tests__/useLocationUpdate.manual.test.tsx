@@ -1,9 +1,14 @@
 import { act, renderHook } from "@testing-library/react-native";
+import { reverseGeocodeAsync } from "expo-location";
+
+import { geocodeApi } from "@/api/geocodeApi";
 
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
+import { FIX_SOURCE, LOCATION_FAILURE, UPDATE_STEP } from "@/constants/Location";
+import { LocationFixError } from "@/utils/location";
 
 const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
@@ -130,7 +135,7 @@ describe("applyManualLocation", () => {
 
     expect(applied).toBe(true);
     expect(result.current.updateState.error).toBeNull();
-    expect(result.current.updateState.currentStep).toBe("done");
+    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.DONE);
   });
 
   it("reports failure so the caller keeps the picker open", async () => {
@@ -197,6 +202,124 @@ describe("applyManualLocation", () => {
     expect(mockReadLocation).not.toHaveBeenCalled();
     expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(2);
-    expect(result.current.updateState.currentStep).toBe("done");
+    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.DONE);
+  });
+});
+
+const DEVICE_FIX = {
+  location: {
+    coords: {
+      latitude: 21.4858,
+      longitude: 39.1925,
+      altitude: null,
+      accuracy: 100,
+      altitudeAccuracy: null,
+      heading: null,
+      speed: null,
+    },
+    timestamp: 1_750_000_000_000,
+  },
+  source: FIX_SOURCE.FRESH,
+};
+
+describe("switchToDevice", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    jest.mocked(reverseGeocodeAsync).mockResolvedValue([]);
+    // The translated name is fetched in the background; it never lands here.
+    jest.mocked(geocodeApi.reverseGeocode).mockReturnValue(new Promise(() => {}));
+    mockLoadPrayerTimes.mockResolvedValue(undefined);
+    mockScheduleNotifications.mockResolvedValue(undefined);
+    mockRescheduleAlarms.mockResolvedValue(undefined);
+    useLocationStore.setState({
+      locationDetails: initialLocationDetails,
+      localizedLocation: { country: "", city: "" },
+      lastKnownCoords: null,
+      locationMode: LocationMode.DEVICE,
+      manualLocation: null,
+    });
+    useLocationStore.getState().setManualLocation(RIYADH);
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it("replaces the chosen city with the device's fix and refreshes everything after it", async () => {
+    mockReadLocation.mockResolvedValue(DEVICE_FIX);
+    const { result } = await mountHook();
+
+    let switched: boolean | undefined;
+    await act(async () => {
+      switched = await result.current.switchToDevice();
+    });
+
+    expect(switched).toBe(true);
+    expect(useLocationStore.getState().locationMode).toBe(LocationMode.DEVICE);
+    expect(useLocationStore.getState().manualLocation).toBeNull();
+    expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
+    expect(mockRescheduleAlarms).toHaveBeenCalled();
+  });
+
+  it("keeps the chosen city when the read fails, and retries the switch itself", async () => {
+    mockReadLocation
+      .mockRejectedValueOnce(new LocationFixError(LOCATION_FAILURE.TIMEOUT))
+      .mockResolvedValue(DEVICE_FIX);
+    const { result } = await mountHook();
+    await act(async () => {
+      await result.current.switchToDevice();
+    });
+    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+    expect(result.current.updateState.error?.step).toBe("location");
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(useLocationStore.getState().locationMode).toBe(LocationMode.DEVICE);
+    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.DONE);
+  });
+});
+
+describe("dismissFailure", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    mockScheduleNotifications.mockResolvedValue(undefined);
+    mockRescheduleAlarms.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it("clears a failed run, so a reader who took another way sees no failure", async () => {
+    mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
+    const { result } = await mountHook();
+    await act(async () => {
+      await result.current.applyManualLocation(RIYADH);
+    });
+
+    await act(async () => result.current.dismissFailure());
+
+    expect(result.current.updateState.error).toBeNull();
+    expect(result.current.updateState.isUpdating).toBe(false);
+  });
+
+  // The run goes on either way; hiding it would leave its result unexplained.
+  it("leaves a running update on screen", async () => {
+    mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
+    const { result } = await mountHook();
+    await act(async () => {
+      void result.current.applyManualLocation(RIYADH);
+    });
+
+    await act(async () => result.current.dismissFailure());
+
+    expect(result.current.updateState.isUpdating).toBe(true);
+    expect(result.current.updateState.currentStep).toBe(UPDATE_STEP.PRAYER_TIMES);
   });
 });

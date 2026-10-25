@@ -58,7 +58,7 @@ const mockRefresh = jest.fn(async (): Promise<DayPrayerTimes[]> => []);
 const after = <T,>(ms: number, value: T) =>
   new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
 
-const LOCATION_GRANTED = { granted: true, canRequestAgain: true };
+const LOCATION_GRANTED = { granted: true, canAskAgain: true };
 const NOTIFICATIONS_GRANTED = { status: PermissionStatus.GRANTED };
 const NOTIFICATIONS_UNDETERMINED = { status: PermissionStatus.UNDETERMINED };
 

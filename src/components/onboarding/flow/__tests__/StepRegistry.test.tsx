@@ -237,7 +237,7 @@ const VIEWS: [string, OnboardingStepId, (props: StepProps) => Promise<void>, str
     async () => {
       await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
     },
-    "today.failed.title",
+    "onboarding.fetch.errorTitle",
   ],
   [
     "the fetch's picker",

@@ -59,10 +59,8 @@ export type LocationGeocodedAddress = {
   formattedAddress: string | null;
 };
 
-export type LocationPermissionsState = {
-  status: LocalPermissionStatus;
-  canRequestAgain: boolean;
-};
+/** Whether the app may read location, and if the system can still ask. */
+export type LocationPermission = { granted: boolean; canAskAgain: boolean };
 
 export type Address = {
   country: string;
@@ -77,6 +75,8 @@ export type LocationDetails = {
   error: LocationFailure | null;
   /** Where the stored device position came from; null for a chosen city. */
   fixSource: FixSource | null;
+  /** When the device observed the stored position; null for a chosen city. */
+  fixedAt: number | null;
   isLoading: boolean;
 };
 
@@ -96,6 +96,7 @@ export const initialLocationDetails: LocationDetails = {
   timezone: "Asia/Riyadh",
   error: null,
   fixSource: null,
+  fixedAt: null,
   isLoading: false,
 };
 

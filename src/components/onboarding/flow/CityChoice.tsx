@@ -10,7 +10,8 @@ import { useViewFocus } from "@/components/onboarding/flow/useViewFocus";
 import { Button } from "@/components/ui/button";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyScrollView } from "@/components/ui/sky-background";
-import { CITY_PICKER_VIEW, ONBOARDING_PART, type CityPickerView } from "@/constants/Onboarding";
+import { CITY_PICKER_VIEW, type CityPickerView } from "@/constants/Location";
+import { ONBOARDING_PART } from "@/constants/Onboarding";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 
@@ -49,6 +50,8 @@ type PickerProps = Pick<StepProps, "headingRef" | "progress" | "setBack" | "setP
   onDone: () => void;
   /** Leaves the list for the host's view before it. */
   onClose: () => void;
+  /** The view it opens on; coordinates opened first go back to the host. */
+  initialView?: CityPickerView;
 };
 
 /** A step's city list or coordinate entry, drawn in place of its body. */
@@ -59,10 +62,12 @@ export const StepCityPicker = ({
   setPrimaryHidden,
   onDone,
   onClose,
+  initialView = CITY_PICKER_VIEW.LIST,
 }: PickerProps) => {
   const { t } = useTranslation();
-  const [view, setView] = useState<CityPickerView>(CITY_PICKER_VIEW.LIST);
+  const [view, setView] = useState<CityPickerView>(initialView);
   const coordinates = view === CITY_PICKER_VIEW.COORDINATES;
+  const listBehind = coordinates && initialView === CITY_PICKER_VIEW.LIST;
 
   // Shown until it unmounts or its back leaves for the host's view.
   const open = useRef(true);
@@ -78,7 +83,7 @@ export const StepCityPicker = ({
   };
 
   // Back walks out one view at a time: coordinates, the list, then the host.
-  useStepBack(setBack, coordinates ? () => setView(CITY_PICKER_VIEW.LIST) : close);
+  useStepBack(setBack, listBehind ? () => setView(CITY_PICKER_VIEW.LIST) : close);
   useViewFocus(view, headingRef);
 
   // A pick is the way on and Skip the way out: the frame's primary steps aside.

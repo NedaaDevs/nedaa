@@ -1,4 +1,11 @@
-import { BRIGHTNESS, NEDAA_DARK, NEDAA_LIGHT, type Brightness } from "@/constants/Palette";
+import {
+  BRIGHTNESS,
+  NEDAA_DARK,
+  NEDAA_LIGHT,
+  PLACE_HERO_PAINT,
+  type Brightness,
+} from "@/constants/Palette";
+import { HERO_NOTE_INK } from "@/components/ui/place-hero";
 import { PHASE, type Phase } from "@/constants/Phase";
 import { BODY_BEHIND_TEXT, MOON_GLYPH, SUN_GLYPH } from "@/constants/Sky";
 import { flattenOver, skyScene } from "@/utils/sky";
@@ -138,5 +145,21 @@ describe.each(CASES)("%s sky under the bowl's body", (_name, brightness, phase) 
     for (const ink of inks) {
       expect(worst(ink, [...grounds])).toBeGreaterThanOrEqual(AA);
     }
+  });
+});
+
+// The copy may sit on any part of the gradient, bare or under the skyline.
+describe.each(Object.entries(PLACE_HERO_PAINT))("the %s place hero", (_tone, byBrightness) => {
+  it.each(Object.values(BRIGHTNESS))("keeps its title and note readable in %s", (brightness) => {
+    const ink = PALETTE[brightness].fg.hex;
+    const { stops, skyline } = byBrightness[brightness];
+    const bare = stops.map(({ color }) => color.hex);
+    const grounds = [...bare, ...flattenOverAll(skyline.hex, bare)];
+    const note = withAlpha(ink, HERO_NOTE_INK[brightness]);
+
+    expect(worst(ink, grounds)).toBeGreaterThanOrEqual(AA);
+    grounds.forEach((ground) =>
+      expect(contrast(flattenOver(note, ground), ground)).toBeGreaterThanOrEqual(AA)
+    );
   });
 });
