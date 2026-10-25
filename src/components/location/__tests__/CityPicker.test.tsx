@@ -51,7 +51,9 @@ beforeEach(() => {
     updateState: { isUpdating: false, currentStep: null, error: null },
     applyManualLocation,
     executeUpdate: jest.fn(),
+    switchToDevice: jest.fn(),
     retry: jest.fn(),
+    dismissFailure: jest.fn(),
   });
 });
 

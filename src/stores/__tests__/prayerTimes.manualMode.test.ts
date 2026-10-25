@@ -140,7 +140,7 @@ describe("prayer times with a manual location", () => {
   });
 
   it("still acquires the device position in device mode", async () => {
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("no fix"));
 
     await usePrayerTimesStore.getState().loadPrayerTimes(true);
@@ -152,7 +152,7 @@ describe("prayer times with a manual location", () => {
     useLocationStore.getState().setManualLocation(LAHORE);
     useLocationStore.getState().clearManualLocation();
     usePrayerTimesStore.setState({ didGetCurrentLocation: false });
-    mockCheckLocationPermission.mockResolvedValue({ granted: false, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: true });
 
     await usePrayerTimesStore.getState().loadPrayerTimes(true);
 

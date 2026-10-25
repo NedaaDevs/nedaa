@@ -5,9 +5,8 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useNotificationStore } from "@/stores/notification";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import type { ManualLocation } from "@/types/location";
+import { UPDATE_STEP, type UpdateStep } from "@/constants/Location";
 import { reloadPrayerWidgets } from "expo-widget";
-
-export type UpdateStep = "location" | "prayerTimes" | "notifications" | "alarms" | "done";
 
 export type UpdateState = {
   isUpdating: boolean;
@@ -56,14 +55,16 @@ export const useLocationUpdate = () => {
       setUpdateState({ isUpdating: true, currentStep: null, error: null });
 
       try {
-        await runStep("location", setCoordinates);
-        await runStep("prayerTimes", () => prayerTimesStore.loadPrayerTimes(true));
-        await runStep("notifications", () => notificationStore.scheduleAllNotifications());
-        await runStep("alarms", () => rescheduleAllAlarms());
+        await runStep(UPDATE_STEP.LOCATION, setCoordinates);
+        await runStep(UPDATE_STEP.PRAYER_TIMES, () => prayerTimesStore.loadPrayerTimes(true));
+        await runStep(UPDATE_STEP.NOTIFICATIONS, () =>
+          notificationStore.scheduleAllNotifications()
+        );
+        await runStep(UPDATE_STEP.ALARMS, () => rescheduleAllAlarms());
 
         reloadPrayerWidgets();
 
-        setUpdateState({ isUpdating: false, currentStep: "done", error: null });
+        setUpdateState({ isUpdating: false, currentStep: UPDATE_STEP.DONE, error: null });
 
         setTimeout(() => {
           setUpdateState(initialState);
@@ -89,10 +90,22 @@ export const useLocationUpdate = () => {
     [runPipeline, locationStore]
   );
 
+  // The device read comes first; a failed read leaves the chosen city.
+  const switchToDevice = useCallback(
+    () => runPipeline(() => locationStore.adoptDeviceLocation()),
+    [runPipeline, locationStore]
+  );
+
   const retry = useCallback(
     () => (lastSetCoordinates.current ? runPipeline(lastSetCoordinates.current) : executeUpdate()),
     [runPipeline, executeUpdate]
   );
 
-  return { updateState, executeUpdate, applyManualLocation, retry };
+  // A running update stays on screen; only a finished one is closed.
+  const dismissFailure = useCallback(
+    () => setUpdateState((prev) => (prev.isUpdating ? prev : initialState)),
+    []
+  );
+
+  return { updateState, executeUpdate, applyManualLocation, switchToDevice, retry, dismissFailure };
 };

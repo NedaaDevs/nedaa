@@ -88,7 +88,7 @@ describe("OnboardingFlow with the real column", () => {
     captureAppState();
     jest
       .mocked(checkLocationPermission)
-      .mockImplementation(async () => ({ granted: mockGrants.location, canRequestAgain: true }));
+      .mockImplementation(async () => ({ granted: mockGrants.location, canAskAgain: true }));
     jest.mocked(checkPermissions).mockImplementation(async () => ({
       status: mockGrants.notifications ? PermissionStatus.GRANTED : PermissionStatus.UNDETERMINED,
     }));
