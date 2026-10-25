@@ -116,7 +116,7 @@ describe("prayer times with a manual location", () => {
   it("never touches the location permission or the device position in manual mode", async () => {
     useLocationStore.getState().setManualLocation(LAHORE);
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(mockCheckLocationPermission).not.toHaveBeenCalled();
     expect(mockGetLocationWithTimeout).not.toHaveBeenCalled();

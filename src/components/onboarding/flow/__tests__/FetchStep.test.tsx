@@ -57,11 +57,12 @@ const t = i18n.t.bind(i18n);
 const CITY = { locationChoice: LOCATION_CHOICE.CITY };
 
 const mockFix = jest.fn(async () => {});
-const mockLoad = jest.fn(async (_force?: boolean) => {});
+const mockLoad = jest.fn(async (_force?: boolean) => true);
 /** A fetch that lands: the store gets the day for a verified place. */
 const fetchLands = () =>
   mockLoad.mockImplementation(async () => {
     usePrayerTimesStore.setState({ todayTimings: RIYADH_DAY, usingDefaultLocation: false });
+    return true;
   });
 /** Runs the pending promise chain without moving the clock. */
 const settle = () => act(() => jest.advanceTimersByTimeAsync(0));
@@ -84,7 +85,7 @@ beforeEach(async () => {
   await act(() => i18n.changeLanguage(AppLocale.EN));
   mockOpen.mockReset().mockResolvedValue(undefined);
   mockFix.mockReset().mockResolvedValue(undefined);
-  mockLoad.mockReset().mockResolvedValue(undefined);
+  mockLoad.mockReset().mockResolvedValue(true);
   delete mockPicker.onDone;
   delete mockPicker.onEnterCoordinates;
   delete mockCoordinates.onDone;
@@ -158,6 +159,7 @@ it("treats times for the default place as a failure", async () => {
   useLocationStore.setState({ locationMode: LocationMode.MANUAL });
   mockLoad.mockImplementation(async () => {
     usePrayerTimesStore.setState({ todayTimings: RIYADH_DAY, usingDefaultLocation: true });
+    return false;
   });
   const props = stepProps();
   await renderWithTheme(<FetchStep {...props} />);
