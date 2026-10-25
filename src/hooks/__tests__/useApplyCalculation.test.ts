@@ -5,15 +5,16 @@ import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { useApplyCalculation } from "@/hooks/useApplyCalculation";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
-const mockLoadPrayerTimes = jest.fn<Promise<void>, [boolean?]>(() => Promise.resolve());
+const mockLoadPrayerTimes = jest.fn<Promise<boolean>, [boolean?]>(() => Promise.resolve(true));
 const mockScheduleNotifications = jest.fn(() => Promise.resolve());
 const mockRescheduleAlarms = jest.fn(() => Promise.resolve());
 const mockShowError = jest.fn();
+const mockHapticSuccess = jest.fn();
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
+jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => mockHapticSuccess }));
 jest.mock("@/components/feedback", () => ({
   MessageToast: { showError: (...args: unknown[]) => mockShowError(...args) },
 }));
@@ -97,6 +98,22 @@ describe("useApplyCalculation", () => {
     await act(() => result.current.apply());
 
     expect(applied()).toBe(true);
+    expect(mockHapticSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  // A year the load still owes leaves the edit pending, so it is not a success.
+  it("reports a load that still owes a year and stays ready to retry", async () => {
+    mockLoadPrayerTimes.mockResolvedValueOnce(false);
+    const { result } = await mount();
+
+    await act(() => result.current.apply());
+
+    expect(mockHapticSuccess).not.toHaveBeenCalled();
+    expect(mockShowError).toHaveBeenCalledWith("providers.saveFailed", {
+      action: { label: "common.retry", onPress: expect.any(Function) },
+    });
+    expect(applied()).toBe(false);
+    expect(result.current.state).toBe(STICKY_ACTION_STATE.READY);
   });
 
   // A screen reopened mid-apply mounts a fresh hook; the lock must reach it.
