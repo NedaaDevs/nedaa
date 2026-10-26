@@ -36,6 +36,19 @@ describe("Card", () => {
     expectResting();
   });
 
+  // The lit edge follows whatever corner the card is given, named or not.
+  it.each([
+    [24, 24],
+    ["$10", 999],
+  ] as const)("lights the curve of a %s corner", async (borderRadius, corner) => {
+    await renderWithTheme(<Card testID={SURFACE} borderRadius={borderRadius} />);
+
+    expect(highlight()).toHaveStyle({
+      borderTopLeftRadius: corner,
+      borderTopRightRadius: corner,
+    });
+  });
+
   it("pads its content by the card inset", async () => {
     await renderWithTheme(<Card testID={SURFACE} />);
 

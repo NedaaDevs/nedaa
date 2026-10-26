@@ -102,7 +102,7 @@ export const PlaceHero = ({ tone, kicker, title, subtitle }: Props) => {
           </View>
         </View>
       ) : null}
-      <HighlightEdge owner={PLACE_HERO_PART.FRAME} radius="hero" />
+      <HighlightEdge owner={PLACE_HERO_PART.FRAME} radius="$hero" />
       <Pill dot tone={PILL_TONE.NEUTRAL} alignSelf="flex-start">
         {kicker}
       </Pill>
