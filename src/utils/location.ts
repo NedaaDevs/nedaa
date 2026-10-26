@@ -42,7 +42,7 @@ export const checkLocationPermission = async (): Promise<LocationPermission> => 
 
     return { granted: status === LocalPermissionStatus.GRANTED, canAskAgain };
   } catch (error) {
-    log.w("Permission", `check failed: ${(error as Error)?.message ?? error}`);
+    log.w("Permission", `check failed: ${errorText(error)}`);
     return {
       granted: false,
       canAskAgain: true,
@@ -55,7 +55,7 @@ export const requestLocationPermission = async () => {
     const { status } = await requestForegroundPermissionsAsync();
     return { granted: status === LocalPermissionStatus.GRANTED };
   } catch (error) {
-    log.w("Permission", `request failed: ${(error as Error)?.message ?? error}`);
+    log.w("Permission", `request failed: ${errorText(error)}`);
     return { granted: false, error };
   }
 };
