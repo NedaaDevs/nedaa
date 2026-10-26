@@ -149,12 +149,12 @@ describe("the scheduler and the channels it creates", () => {
     const result = await runScheduler({ fullAthanPlayback: false, fullIqamaPlayback: false });
     expect(result.success).toBe(true);
 
-    const reminders = scheduled.mock.calls.filter(
-      ([, input]) => input.data.categoryId === OPEN_APP_REMINDER_ID
+    const onReminderChannel = scheduled.mock.calls.filter(
+      ([, , options]) => options?.channelId === NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER
     );
-    expect(reminders).toHaveLength(1);
-    const [[, , options]] = reminders;
-    expect(options.channelId).toBe(NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER);
+    expect(onReminderChannel).toHaveLength(1);
+    const [[, input]] = onReminderChannel;
+    expect(input.data.categoryId).toBe(OPEN_APP_REMINDER_ID);
     expect(created).toHaveBeenCalledWith(
       NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER,
       expect.objectContaining({ sound: SYSTEM_SOUND })
