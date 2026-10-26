@@ -6,7 +6,7 @@ import { AppDirection } from "@/enums/app";
 import { QuranTheme } from "@/enums/quran";
 import i18n from "@/localization/i18n";
 import { usePreferencesStore } from "@/stores/preferences";
-import { onPhone } from "@/test-helpers/nativeSurface";
+import { drawnSides, onPhone } from "@/test-helpers/nativeSurface";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("moti", () => {
@@ -29,7 +29,7 @@ describe("AutoScrollControl pill", () => {
 
       for (const part of [play, pill]) {
         const style = StyleSheet.flatten(part?.props.style);
-        expect(onPhone(style, AppDirection.RTL)).toEqual(style);
+        expect(drawnSides(onPhone(style, AppDirection.RTL), app)).toEqual(drawnSides(style, app));
       }
     }
   );
