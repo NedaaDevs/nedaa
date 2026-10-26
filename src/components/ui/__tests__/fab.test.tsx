@@ -95,9 +95,9 @@ describe("Fab surface", () => {
 
 describe("Fab placement", () => {
   it.each(PHONE_APP_PAIRS)(
-    "puts a bottom end Fab at the reading end on a $phone phone in a $app app",
+    "sits at the reading end on a $phone phone in a $app app",
     async ({ phone, app }) => {
-      await renderWithTheme(<Fab testID={FAB_ID} placement="bottom end" />, {
+      await renderWithTheme(<Fab testID={FAB_ID} />, {
         isRTL: app === AppDirection.RTL,
       });
 
