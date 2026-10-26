@@ -50,7 +50,7 @@ const cornerRadii = (corners: Corners, radius: number) =>
     ? { borderTopStartRadius: radius, borderTopEndRadius: radius }
     : { borderRadius: radius };
 
-/** A radius token or points; the blur under the tint takes it in points. */
+/** A radius token or points; the native blur view takes it in points. */
 type MaterialRadius = Extract<RadiusTokens, `$${string}`> | number;
 
 const OPAQUE_ALPHA = "FF";
