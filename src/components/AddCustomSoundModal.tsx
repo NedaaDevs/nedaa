@@ -88,67 +88,39 @@ export default function AddCustomSoundModal({
       : code;
 
   const choose = (file: DocumentPicker.DocumentPickerAsset | null) => {
+    if (!file) return;
+
     // Refused at pick time, so a name is never typed for a file that cannot
     // be added.
-    if (file && validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
+    if (validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
       setSelectedFile(null);
       setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
       return;
     }
 
-    if (file) {
-      // Check for duplicates
-      const duplicate = findDuplicateSound(file, customSounds);
+    // An empty name takes the file's name without its extension.
+    const select = () => {
+      setSelectedFile(file);
+      if (!soundName) setSoundName(file.name.replace(/\.[^/.]+$/, ""));
+    };
 
-      if (duplicate) {
-        // Show duplicate warning
-        Alert.alert(
-          t("notification.customSound.duplicateTitle"),
-          t("notification.customSound.duplicateMessage", {
-            existingName: duplicate.name,
-          }),
-          [
-            {
-              text: t("common.cancel"),
-              style: "cancel",
-              onPress: () => {
-                // Don't select the file
-                setSelectedFile(null);
-              },
-            },
-            {
-              text: t("notification.customSound.addAnyway"),
-              onPress: () => {
-                // Proceed with the file
-                setSelectedFile(file);
-                setForceAdd(true);
-                setDuplicateWarning(
-                  t("notification.customSound.duplicateMessage", {
-                    existingName: duplicate.name,
-                  })
-                );
+    const duplicate = findDuplicateSound(file, customSounds);
+    if (!duplicate) return select();
 
-                // Auto-fill name from filename if empty
-                if (!soundName) {
-                  // Remove extension
-                  const name = file.name.replace(/\.[^/.]+$/, "");
-                  setSoundName(name);
-                }
-              },
-            },
-          ]
-        );
-      } else {
-        // No duplicate
-        setSelectedFile(file);
-
-        // Auto-fill name from filename if empty
-        if (!soundName) {
-          const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-          setSoundName(name);
-        }
-      }
-    }
+    const duplicateMessage = t("notification.customSound.duplicateMessage", {
+      existingName: duplicate.name,
+    });
+    Alert.alert(t("notification.customSound.duplicateTitle"), duplicateMessage, [
+      { text: t("common.cancel"), style: "cancel", onPress: () => setSelectedFile(null) },
+      {
+        text: t("notification.customSound.addAnyway"),
+        onPress: () => {
+          select();
+          setForceAdd(true);
+          setDuplicateWarning(duplicateMessage);
+        },
+      },
+    ]);
   };
 
   // Chains, not tries: the React Compiler cannot lower a try that holds a
