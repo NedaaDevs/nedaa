@@ -2101,6 +2101,7 @@
   "streakShare.shareAction": "شارك سلسلتك",
   "streakShare.tagline": "من تطبيق $t(brand.name)",
   "today.defaultLocation.action": "تحديد الموقع",
+  "today.defaultLocation.awaitingTimes": "لم تُحمَّل مواقيت مدينتك بعد، لذلك نعرض مواقيت مكة المكرمة.",
   "today.defaultLocation.body": "لم نتمكن من تحديد موقعك، لذلك نعرض مواقيت مكة المكرمة.",
   "today.failed.body": "تأكد من اتصالك بالإنترنت، ثم أعد المحاولة.",
   "today.failed.title": "تعذّر تحميل المواقيت",
