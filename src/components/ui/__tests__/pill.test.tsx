@@ -99,15 +99,17 @@ describe("Pill", () => {
     }
   );
 
-  // Over the sky the chip is a quiet ink tint; the lead-in steps back in colour.
-  it("tints the neutral tone quietly, its name in the ink and its lead-in muted", async () => {
+  // On the sky the chip takes the quiet card fill, where its lead-in reads.
+  it("fills the neutral tone like a quiet card, its lead-in muted", async () => {
     await renderWithTheme(
       <Pill tone={PILL_TONE.NEUTRAL} label="Next" testID="pill">
         Asr
       </Pill>
     );
 
-    expect(screen.getByTestId("pill")).toHaveStyle({ backgroundColor: NEDAA_LIGHT.quietTint.hex });
+    expect(screen.getByTestId("pill")).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.surfaceQuiet.hex,
+    });
     expect(screen.getByText("Asr")).toHaveStyle({ color: NEDAA_LIGHT.fg.hex });
     expect(screen.getByText("Next")).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex });
   });

@@ -5,6 +5,7 @@ import {
   PLACE_HERO_PAINT,
   type Brightness,
 } from "@/constants/Palette";
+import { PILL_PAINT, PILL_TONE } from "@/components/ui/pill";
 import { HERO_NOTE_INK } from "@/components/ui/place-hero";
 import { SEGMENTED_PAINT } from "@/components/ui/segmented-choice/paint";
 import { PHASE, type Phase } from "@/constants/Phase";
@@ -99,6 +100,17 @@ describe.each(CASES)("%s sky", (_name, brightness, phase) => {
     expect(worst(palette[SEGMENTED_PAINT.LABEL].hex, track)).toBeGreaterThanOrEqual(AA);
   });
 
+  // A pill's text and its lighter label, both on the pill's own fill.
+  it.each(Object.entries(PILL_PAINT))(
+    "keeps the %s pill's text readable",
+    (_tone, { fill, ink, lead }) => {
+      const pill = cardOver(palette[fill].hex, sky);
+
+      expect(worst(palette[ink].hex, pill)).toBeGreaterThanOrEqual(AA);
+      expect(worst(palette[lead].hex, pill)).toBeGreaterThanOrEqual(AA);
+    }
+  );
+
   // The next-prayer label, back links, text buttons and tinted pills.
   it("keeps accent text readable on the sky", () => {
     expect(worst(palette.accentText.hex, sky)).toBeGreaterThanOrEqual(AA);
@@ -169,5 +181,16 @@ describe.each(Object.entries(PLACE_HERO_PAINT))("the %s place hero", (_tone, byB
     grounds.forEach((ground) =>
       expect(contrast(flattenOver(note, ground), ground)).toBeGreaterThanOrEqual(AA)
     );
+  });
+
+  // The hero's next-prayer pill, which carries no lead-in.
+  it.each(Object.values(BRIGHTNESS))("keeps its neutral pill readable in %s", (brightness) => {
+    const palette = PALETTE[brightness];
+    const { fill, ink } = PILL_PAINT[PILL_TONE.NEUTRAL];
+    const { stops, skyline } = byBrightness[brightness];
+    const bare = stops.map(({ color }) => color.hex);
+    const pill = cardOver(palette[fill].hex, [...bare, ...flattenOverAll(skyline.hex, bare)]);
+
+    expect(worst(palette[ink].hex, pill)).toBeGreaterThanOrEqual(AA);
   });
 });
