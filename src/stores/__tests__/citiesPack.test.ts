@@ -187,4 +187,21 @@ describe("cities pack store", () => {
     useCitiesPackStore.getState().cancel();
     await second;
   });
+
+  // A cancel can land after the install; the newer download keeps the flag.
+  it("a cancelled download that installed leaves a newer download running", async () => {
+    const finishFirst: { resolve?: () => void } = {};
+    mockDownload
+      .mockImplementationOnce(() => new Promise<void>((resolve) => (finishFirst.resolve = resolve)))
+      .mockImplementationOnce(() => new Promise(() => {}));
+
+    const first = useCitiesPackStore.getState().download();
+    useCitiesPackStore.getState().cancel();
+    void useCitiesPackStore.getState().download();
+    mockIsInstalled.mockReturnValue(true);
+    finishFirst.resolve?.();
+    await first;
+
+    expect(useCitiesPackStore.getState()).toMatchObject({ isDownloading: true, isInstalled: true });
+  });
 });

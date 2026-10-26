@@ -55,7 +55,9 @@ export const useCitiesPackStore = create<CitiesPackStore>()(
           // download already released it before installing; this covers the case where
           // it was reopened while the download ran.
           await invalidateCitiesDb();
-          set({ isInstalled: isFullPackInstalled(), isDownloading: false });
+          const isInstalled = isFullPackInstalled();
+          // A cancel after the install leaves a newer download's flag.
+          set(own.signal.aborted ? { isInstalled } : { isInstalled, isDownloading: false });
         } catch (error) {
           // A cancel rejects the task; it returns to the offer, not a failure.
           if (own.signal.aborted) return;
