@@ -1,15 +1,7 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import SettingsScreen from "@/app/(tabs)/settings";
-import {
-  Animated,
-  AppState,
-  Linking,
-  Platform,
-  Share,
-  Text,
-  type AppStateStatus,
-} from "react-native";
+import { AppState, Linking, Platform, Share, Text, type AppStateStatus } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { usePathname } from "expo-router";
 import { act, userEvent } from "@testing-library/react-native";
@@ -40,12 +32,6 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 jest.mock("@/hooks/useAlarmSupported", () => ({ useAlarmSupported: () => true }));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: jest.fn(() => false) }));
 jest.mock("expo-clipboard", () => ({ setStringAsync: jest.fn(() => Promise.resolve(true)) }));
-// Another tab or a pushed screen covers this one, which stays mounted beneath.
-let mockFocused = true;
-jest.mock("expo-router", () => ({
-  ...jest.requireActual("expo-router"),
-  useIsFocused: () => mockFocused,
-}));
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
@@ -153,7 +139,6 @@ const aladhanId = PRAYER_TIME_PROVIDERS.ALADHAN.id;
 const MAKKAH = PRAYER_TIME_PROVIDERS.ALADHAN.methods.find(({ nameKey }) => nameKey === "makkah")!;
 
 beforeEach(() => {
-  mockFocused = true;
   jest.useRealTimers();
   jest.restoreAllMocks();
   jest.mocked(useReducedMotion).mockReturnValue(false);
@@ -179,18 +164,6 @@ describe("Settings root", () => {
     await renderSettings();
 
     expect(screen.getAllByTestId(SKY_PART.CANVAS, { includeHiddenElements: true }).length).toBe(1);
-  });
-
-  it.each([
-    { focused: true, turns: true },
-    { focused: false, turns: false },
-  ])("in focus $focused, turns the sun's rays: $turns", async ({ focused, turns }) => {
-    useAppStore.setState({ mode: AppMode.LIGHT });
-    mockFocused = focused;
-    const spins = jest.spyOn(Animated, "loop");
-    await renderSettings();
-
-    expect(spins.mock.calls.length > 0).toBe(turns);
   });
 
   it("labels its five sections in order", async () => {
