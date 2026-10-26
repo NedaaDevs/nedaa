@@ -3,6 +3,7 @@ import { useWindowDimensions, type LayoutChangeEvent, type ViewInstance } from "
 import { useIsFocused } from "expo-router";
 
 import { Background } from "@/components/ui/background";
+import { SkyBodiesContext, useSkyBodyClaims } from "@/components/ui/sky-background/bodies";
 import {
   SkyOccluder,
   SkyOccluderContext,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/sky-background/occluder";
 import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SkyPaint } from "@/components/ui/sky-background/SkyPaint";
-import { useBodyBehindText } from "@/components/ui/sky-background/useBodyBehindText";
+import { useBodyOpacity } from "@/components/ui/sky-background/useBodyOpacity";
 import { LiveSkyContext, useLiveSky } from "@/components/ui/sky-background/useLiveSky";
 import { measureInWindow } from "@/utils/measureInWindow";
 import type { WindowRect } from "@/utils/sky";
@@ -21,12 +22,10 @@ type Props = {
   children?: ReactNode;
   /** Holds the sky still while its screen is out of focus. */
   paused?: boolean;
-  /** Draws the sun and moon; without them the glow rests in its corner. */
-  bodies?: boolean;
 };
 
 /** The screen surface: the sky for the current brightness, phase and hour. */
-export const SkyBackground = ({ children, paused = false, bodies = true }: Props) => {
+export const SkyBackground = ({ children, paused = false }: Props) => {
   const window = useWindowDimensions();
   const [size, setSize] = useState({ width: window.width, height: window.height });
   const sky = useLiveSky();
@@ -37,7 +36,7 @@ export const SkyBackground = ({ children, paused = false, bodies = true }: Props
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [epoch, setEpoch] = useState(0);
   const canvas = useRef<ViewInstance>(null);
-  // Stable, and a no-op for an unchanged box, so measuring never loops a render.
+  // Stable, and a no-op for an unchanged box: measuring never loops a render.
   const [report] = useState(
     () => (id: string, box: WindowRect | null) =>
       setBoxes((current) => {
@@ -60,7 +59,15 @@ export const SkyBackground = ({ children, paused = false, bodies = true }: Props
     width,
     height,
   }));
-  const bodyOpacity = useBodyBehindText({ ...sky, ...size, boxes: onSky });
+  // A view that draws the sun and moon itself claims them from the sky.
+  const { claim, claimed, claimedAtOnce } = useSkyBodyClaims();
+  const { bodyOpacity, drawn } = useBodyOpacity({
+    ...sky,
+    ...size,
+    boxes: onSky,
+    claimed,
+    claimedAtOnce,
+  });
 
   const onLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
@@ -72,16 +79,19 @@ export const SkyBackground = ({ children, paused = false, bodies = true }: Props
       <SkyPaint
         ref={canvas}
         scene={scene}
-        celestial={bodies ? celestial : undefined}
+        // Without the bodies, the glow rests in its corner.
+        celestial={drawn ? celestial : undefined}
         hijriDay={hijriDay}
         isRTL={isRTL}
         reduced={reduced || paused}
         {...size}
-        bodies={bodies}
+        bodies={drawn}
         bodyOpacity={bodyOpacity}
       />
       <LiveSkyContext value={sky}>
-        <SkyOccluderContext value={registry}>{children}</SkyOccluderContext>
+        <SkyBodiesContext value={claim}>
+          <SkyOccluderContext value={registry}>{children}</SkyOccluderContext>
+        </SkyBodiesContext>
       </LiveSkyContext>
     </Background>
   );
