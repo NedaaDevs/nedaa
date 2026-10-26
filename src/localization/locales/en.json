@@ -19,6 +19,7 @@
   "a11y.alarm.previewAlarm": "Preview alarm, rings in {{seconds}} seconds",
   "a11y.alarm.ringingAnnouncement": "{{prayer}} alarm. Time to wake up for prayer.",
   "a11y.alarm.snoozeButton": "Snooze alarm, {{count}} snoozes remaining",
+  "a11y.alarm.streak": "{{count}}-day streak",
   "a11y.alarm.tapsRemaining": "{{count}} taps remaining to dismiss",
   "a11y.athkar.audioPause": "Pause audio",
   "a11y.athkar.audioPlay": "Play audio for this thikr",
