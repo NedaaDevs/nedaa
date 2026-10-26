@@ -200,11 +200,11 @@ const ONE_RENDERER: readonly Rule[] = [
   },
   // A screen reader says «م» as morning, so a spoken time names its period.
   {
-    concept: "a prayer time a screen reader speaks",
+    concept: "a clock time a screen reader speaks",
     shows:
-      /\bformatPrayerTime\([\s\S]*\baccessibilityLabel\b|\baccessibilityLabel\b[\s\S]*\bformatPrayerTime\(/,
+      /\b(formatPrayerTime|toLocaleTimeString)\([\s\S]*\baccessibilityLabel\b|\baccessibilityLabel\b[\s\S]*\b(formatPrayerTime|toLocaleTimeString)\(/,
     within: /\.tsx$/,
-    drawsWith: /\bspokenClockTime\(/,
+    drawsWith: /\bspokenClockTime\(|\buseClockTime\(/,
     home: "utils/spokenClockTime.ts",
   },
   // A screen reading why the device read failed offers the one way out.
