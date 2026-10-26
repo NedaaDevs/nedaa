@@ -1,5 +1,6 @@
 import { addDays, format, subDays } from "date-fns";
 
+import { TIMES_FETCH } from "@/constants/PrayerTimes";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 
@@ -137,7 +138,9 @@ describe("prayer widget recovery", () => {
       .spyOn(usePrayerTimesStore.getState(), "getPrayerTimes")
       .mockResolvedValue(data as never);
     mockInsertPrayerTimes.mockResolvedValue({ success: true });
-    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes()).resolves.toBe(true);
+    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes()).resolves.toBe(
+      TIMES_FETCH.STORED
+    );
     expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
     expect(mockInsertPrayerTimes.mock.invocationCallOrder[0]).toBeLessThan(
       (syncWidgetSnapshot as jest.Mock).mock.invocationCallOrder[0]
@@ -150,7 +153,7 @@ describe("prayer widget recovery", () => {
     mockGetByDate.mockResolvedValue(null);
     const fetch = jest
       .spyOn(usePrayerTimesStore.getState(), "getAndStorePrayerTimes")
-      .mockResolvedValue(false);
+      .mockResolvedValue(TIMES_FETCH.FAILED);
     await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
     expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
     fetch.mockRestore();

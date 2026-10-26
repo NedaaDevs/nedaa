@@ -23,6 +23,7 @@ import { SECTION_KIND } from "@/constants/Section";
 import { PlatformType } from "@/enums/app";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 
 const log = AppLogger.create("location");
 
@@ -66,10 +67,7 @@ const copyFor = (failure: LocationFailure | null, android: boolean): Copy => {
 
 const openLocationSettings = () =>
   Linking.sendIntent(ANDROID_LOCATION_SETTINGS).catch((error: unknown) =>
-    log.w(
-      "Failure",
-      `location settings failed to open: ${error instanceof Error ? error.message : String(error)}`
-    )
+    log.w("Failure", `location settings failed to open: ${errorText(error)}`)
   );
 
 type Props = {
@@ -95,7 +93,7 @@ export const LocationFailureOffer = ({
   const copy = copyFor(failure, android);
   const title = t(copy.title);
   const hint = t(copy.hint);
-  const message = `${title}. ${hint}`;
+  const message = t("a11y.sentences", { first: title, second: hint });
   const retry = t("common.retry");
   const openSettings = t("location.failure.servicesOff.open");
   useIosAnnouncement(message);

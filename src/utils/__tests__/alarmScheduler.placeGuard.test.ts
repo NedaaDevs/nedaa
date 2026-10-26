@@ -3,6 +3,7 @@ import { addDays } from "date-fns";
 import { ALARM_DEFAULTS, ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
 import { TIMES_PLACE } from "@/constants/Location";
 import { PRAYER_ID } from "@/constants/Prayer";
+import { TIMES_FETCH, type TimesFetch } from "@/constants/PrayerTimes";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore, type ScheduledAlarm } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
@@ -409,7 +410,7 @@ describe("a place verified while the default place's days are stored", () => {
   );
 
   /** Default rows for every day, a verified place, and `fetching` to fetch. */
-  const verifyWhileDefaultStored = (fetching: () => Promise<boolean>) => {
+  const verifyWhileDefaultStored = (fetching: () => Promise<TimesFetch>) => {
     storeTimes(true);
     usePrayerTimesStore.setState({
       yesterdayTimings: day(-1),
@@ -423,7 +424,7 @@ describe("a place verified while the default place's days are stored", () => {
     (usePrayerTimesStore.getState().getAndStorePrayerTimes as jest.Mock).mock.calls.length;
 
   it("arms nothing while its refetch runs, and arms once the days land", async () => {
-    const fetch = later<boolean>();
+    const fetch = later<TimesFetch>();
     verifyWhileDefaultStored(() => fetch.promise);
 
     const load = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
@@ -432,7 +433,7 @@ describe("a place verified while the default place's days are stored", () => {
     await ensureAlarmsScheduled();
     expect(mockSchedule).not.toHaveBeenCalled();
 
-    fetch.release(true);
+    fetch.release(TIMES_FETCH.STORED);
     await load;
     await ensureAlarmsScheduled();
 
@@ -443,7 +444,7 @@ describe("a place verified while the default place's days are stored", () => {
   });
 
   it("arms nothing after its refetch fails", async () => {
-    verifyWhileDefaultStored(async () => false);
+    verifyWhileDefaultStored(async () => TIMES_FETCH.FAILED);
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
     await ensureAlarmsScheduled();

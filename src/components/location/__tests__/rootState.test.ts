@@ -7,7 +7,7 @@ const BASE = {
   permission: GRANTED,
   failedStep: null,
   storedFailure: null,
-  updating: false,
+  reading: false,
   running: false,
 } as const;
 
@@ -19,7 +19,7 @@ describe("locationRootState", () => {
     ["no access", { ...BASE, permission: { granted: false, canAskAgain: false } }],
     ["a stored failure", { ...BASE, storedFailure: LOCATION_FAILURE.TIMEOUT }],
   ])("shows an update's steps while one runs, over %s", (_case, facts) => {
-    expect(locationRootState({ ...facts, running: true, updating: true })).toBe(
+    expect(locationRootState({ ...facts, running: true, reading: true })).toBe(
       LOCATION_ROOT_STATE.UPDATING
     );
   });
@@ -100,9 +100,9 @@ describe("locationRootState", () => {
     );
   });
 
-  it("shows the read in progress, not the old failure, while a retry runs", () => {
+  it("shows the device state, not the old failure, while a device read started elsewhere runs", () => {
     expect(
-      locationRootState({ ...BASE, storedFailure: LOCATION_FAILURE.TIMEOUT, updating: true })
+      locationRootState({ ...BASE, storedFailure: LOCATION_FAILURE.TIMEOUT, reading: true })
     ).toBe(LOCATION_ROOT_STATE.DEVICE);
   });
 

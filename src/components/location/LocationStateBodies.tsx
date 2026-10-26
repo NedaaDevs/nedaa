@@ -20,6 +20,7 @@ import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useLocationStore } from "@/stores/location";
 import type { UpdateRun } from "@/stores/locationUpdate";
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 
 const log = AppLogger.create("location");
 
@@ -64,10 +65,7 @@ const LocationModeChoice = ({ mode, onChooseDevice, onChooseCity, busy }: ModePr
 
 const openAppSettings = () =>
   Linking.openSettings().catch((error: unknown) =>
-    log.w(
-      "Root",
-      `app settings failed to open: ${error instanceof Error ? error.message : String(error)}`
-    )
+    log.w("Root", `app settings failed to open: ${errorText(error)}`)
   );
 
 /** The way to the app's page in Settings, where location access is given. */
