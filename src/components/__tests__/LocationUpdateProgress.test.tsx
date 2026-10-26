@@ -176,7 +176,7 @@ describe("LocationUpdateProgress", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  // A step naming "your location" reads as tracking the person, not the city.
+  // The place step names the city the update sets, not the device position.
   describe.each(HAND_WRITTEN_LOCALES)("at the place step in %s", (locale) => {
     const words = PLACE_WORDS[locale];
 
