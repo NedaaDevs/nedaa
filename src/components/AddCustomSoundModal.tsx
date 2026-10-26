@@ -100,7 +100,7 @@ export default function AddCustomSoundModal({
       // Check for duplicates
       const duplicate = findDuplicateSound(file, customSounds);
 
-      if (duplicate && !forceAdd) {
+      if (duplicate) {
         // Show duplicate warning
         Alert.alert(
           t("notification.customSound.duplicateTitle"),
@@ -139,7 +139,7 @@ export default function AddCustomSoundModal({
           ]
         );
       } else {
-        // No duplicate or user has chosen to proceed
+        // No duplicate
         setSelectedFile(file);
 
         // Auto-fill name from filename if empty
