@@ -100,6 +100,13 @@ describe.each(CASES)("%s sky", (_name, brightness, phase) => {
     expect(worst(palette[SEGMENTED_PAINT.LABEL].hex, track)).toBeGreaterThanOrEqual(AA);
   });
 
+  // The compact form's chosen pill inks its label on the accent's soft fill.
+  it("keeps a compact choice's chosen label readable on its pill", () => {
+    expect(
+      contrast(palette[SEGMENTED_PAINT.LABEL].hex, palette.accentSoft.hex)
+    ).toBeGreaterThanOrEqual(AA);
+  });
+
   // A pill's text and its lighter label, both on the pill's own fill.
   it.each(Object.entries(PILL_PAINT))(
     "keeps the %s pill's text readable",
