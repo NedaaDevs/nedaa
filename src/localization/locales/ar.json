@@ -954,7 +954,7 @@
   "location.picker.seedCoverage_many": "يقتصر البحث حاليًا على {{amount}} مدينة رئيسية.",
   "location.picker.seedCoverage_other": "يقتصر البحث حاليًا على {{amount}} مدينة رئيسية.",
   "location.picker.title": "اختر مدينتك",
-  "location.settings.keepLocationUpdated.summary": "يتحقق $t(brand.name) من مدينتك في كل مرة يُفتح فيها",
+  "location.settings.keepLocationUpdated.summary": "يتحقق $t(brand.name) من مدينتك عند كل تشغيل",
   "location.settings.keepLocationUpdated.title": "اقتراح التحديث عند تغيّر المدينة",
   "location.settings.travelSection": "عند السفر",
   "location.update.error": "تعذّر تحديث الموقع. اضغط لإعادة المحاولة.",
