@@ -10,7 +10,6 @@ import { Pressable } from "@/components/ui/pressable";
 import { SlidingIndicator } from "@/components/ui/sliding-indicator";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/components/ui/theme-color";
-import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { SPRING } from "@/constants/Motion";
 import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -76,7 +75,6 @@ export const TabBar = ({
     <Material
       testID={TAB_BAR_ITEM_PART.TRACK}
       material={MATERIAL.FLOAT}
-      elevation={ELEVATION_LEVEL.E2}
       radius="pill"
       ring
       accessibilityRole="tablist"
