@@ -117,7 +117,7 @@ describe("device fix in the location store", () => {
 
     await useLocationStore.getState().initializeLocation();
 
-    expect(useLocationStore.getState().locationDetails.fixSource).toBe(FIX_SOURCE.LAST_KNOWN);
+    expect(useLocationStore.getState().locationDetails.fix?.source).toBe(FIX_SOURCE.LAST_KNOWN);
   });
 
   it("records the source of an updated fix", async () => {
@@ -126,7 +126,7 @@ describe("device fix in the location store", () => {
 
     await useLocationStore.getState().updateCurrentLocation();
 
-    expect(useLocationStore.getState().locationDetails.fixSource).toBe(FIX_SOURCE.FRESH);
+    expect(useLocationStore.getState().locationDetails.fix?.source).toBe(FIX_SOURCE.FRESH);
   });
 
   it("names the updated fix's city in the stored address", async () => {
@@ -290,8 +290,8 @@ describe("device fix in the location store", () => {
     expect(result.current.city).toBeUndefined();
   });
 
-  it("takes a zone as the place's own", async () => {
-    await useLocationStore.getState().setTimezone("Asia/Dubai");
+  it("takes a zone as the place's own", () => {
+    useLocationStore.getState().setTimezone("Asia/Dubai");
 
     expect(useLocationStore.getState().locationDetails.timezone).toBe("Asia/Dubai");
   });
@@ -400,7 +400,7 @@ describe("device fix in the location store", () => {
 
     await useLocationStore.getState().initializeLocation();
 
-    expect(useLocationStore.getState().locationDetails.fixedAt).toBe(RIYADH.timestamp);
+    expect(useLocationStore.getState().locationDetails.fix?.at).toBe(RIYADH.timestamp);
   });
 
   it("records when an updated fix was observed, which a cached fix dates earlier", async () => {
@@ -410,17 +410,20 @@ describe("device fix in the location store", () => {
 
     await useLocationStore.getState().updateCurrentLocation();
 
-    expect(useLocationStore.getState().locationDetails.fixedAt).toBe(cached.timestamp);
+    expect(useLocationStore.getState().locationDetails.fix?.at).toBe(cached.timestamp);
   });
 
-  it("keeps no fix time for a chosen city", () => {
+  it("keeps no fix for a chosen city", () => {
     useLocationStore.setState({
-      locationDetails: { ...initialLocationDetails, fixedAt: RIYADH.timestamp },
+      locationDetails: {
+        ...initialLocationDetails,
+        fix: { source: FIX_SOURCE.FRESH, at: RIYADH.timestamp },
+      },
     });
 
     useLocationStore.getState().setManualLocation(MAKKAH_CITY);
 
-    expect(useLocationStore.getState().locationDetails.fixedAt).toBeNull();
+    expect(useLocationStore.getState().locationDetails.fix).toBeNull();
   });
 
   // A read stalls for seconds; a city chosen meanwhile is the user's.
@@ -546,6 +549,16 @@ describe("device fix in the location store", () => {
     const merged = merge(saved, useLocationStore.getState()) as LocationStore;
 
     expect(merged.locationDetails.error).toBeNull();
+  });
+
+  it("gives a saved record with no fix field no fix", () => {
+    const merge = useLocationStore.persist.getOptions().merge!;
+    const { fix: _fix, ...withoutFix } = initialLocationDetails;
+    const saved = { locationDetails: withoutFix };
+
+    const merged = merge(saved, useLocationStore.getState()) as LocationStore;
+
+    expect(merged.locationDetails.fix).toBeNull();
   });
 
   it("keeps a saved failure kind", () => {

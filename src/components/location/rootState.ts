@@ -17,8 +17,8 @@ type Facts = {
   failedStep: UpdateStep | null;
   /** Why the last device read failed, kept until one succeeds. */
   storedFailure: LocationFailure | null;
-  /** A device read or an update runs. */
-  updating: boolean;
+  /** A device read runs; `running` covers a run's own read. */
+  reading: boolean;
   /** An update run is in flight. */
   running: boolean;
 };
@@ -33,7 +33,7 @@ export const locationRootState = ({
   permission,
   failedStep,
   storedFailure,
-  updating,
+  reading,
   running,
 }: Facts): LocationRootState => {
   if (running) return LOCATION_ROOT_STATE.UPDATING;
@@ -47,5 +47,5 @@ export const locationRootState = ({
   }
   // A refusal stored before access was given is not a read that failed.
   const readFailed = storedFailure !== null && storedFailure !== LOCATION_FAILURE.DENIED;
-  return readFailed && !updating ? LOCATION_ROOT_STATE.FAILURE : LOCATION_ROOT_STATE.DEVICE;
+  return readFailed && !reading ? LOCATION_ROOT_STATE.FAILURE : LOCATION_ROOT_STATE.DEVICE;
 };

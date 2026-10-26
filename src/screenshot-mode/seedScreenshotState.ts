@@ -25,8 +25,7 @@ export function seedScreenshotState(locale: "en" | "ar" = "en") {
       },
       timezone: "Asia/Riyadh",
       error: null,
-      fixSource: null,
-      fixedAt: null,
+      fix: null,
       isLoading: false,
     },
     localizedLocation: {

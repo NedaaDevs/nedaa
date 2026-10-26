@@ -1,5 +1,6 @@
 import Storage from "expo-sqlite/kv-store";
 
+import { TIMES_FETCH, type TimesFetch } from "@/constants/PrayerTimes";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -136,7 +137,7 @@ describe("prayer-time location fail-safe", () => {
   });
 
   it("does not mark location acquired when acquisition fails", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
+    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
@@ -154,7 +155,7 @@ describe("prayer-time location fail-safe", () => {
    * default coordinates (Makkah) stand in until the user sets a location.
    */
   it("falls back to the default location when the permission is declined", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
+    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
@@ -270,7 +271,7 @@ describe("prayer-time location fail-safe", () => {
    * later load retries geocoding.
    */
   it("persists a fresh fix and still loads when its timezone is unresolved", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
+    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
     const acquiredLocation = {
       coords: {
         ...initialLocationDetails.coords,
@@ -296,7 +297,7 @@ describe("prayer-time location fail-safe", () => {
   });
 
   it("restores a verified saved location when a new fix has no resolved timezone", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
+    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
     const savedCoords = {
       ...initialLocationDetails.coords,
       latitude: 51.5072,
@@ -348,7 +349,7 @@ describe("prayer-time location fail-safe", () => {
   });
 
   it("uses verified persisted coordinates when an allowed current refresh fails", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
+    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
     const persistedCoords = {
       ...initialLocationDetails.coords,
       latitude: 24.7136,
@@ -371,7 +372,7 @@ describe("prayer-time location fail-safe", () => {
   });
 
   it("uses a persisted verified location when current permission is unavailable", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(true));
+    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
     usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
     useLocationStore.setState({
       locationDetails: {
@@ -518,6 +519,78 @@ describe("a device fix that lands after a city was chosen", () => {
   });
 });
 
+// A try that lost to its deadline leaves its fix running; the place belongs
+// to whatever the caller does next, and no load follows the late fix.
+describe("a device fix its caller gave up on", () => {
+  const SAVED = { latitude: 21.4858, longitude: 39.1925 };
+  let wanted = true;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetStores();
+    wanted = true;
+    mockReverseGeocodeAsync.mockResolvedValue([]);
+    mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
+  });
+
+  const expectPlaceKept = (before: LocationStore) => {
+    const after = useLocationStore.getState();
+    expect(after.locationDetails).toEqual(before.locationDetails);
+    expect(after.lastKnownCoords).toEqual(before.lastKnownCoords);
+  };
+
+  it("writes no coordinates when it gives up while the fix is pending", async () => {
+    const fix = later<typeof DEVICE_FIX>();
+    mockGetLocationWithTimeout.mockReturnValue(fix.promise);
+    const before = useLocationStore.getState();
+    const reading = useLocationStore.getState().initializeLocation(() => wanted);
+
+    wanted = false;
+    fix.release(DEVICE_FIX);
+
+    await expect(reading).resolves.toBeUndefined();
+    expectPlaceKept(before);
+  });
+
+  it("keeps the saved place when it gives up while the place is looked up", async () => {
+    useLocationStore.setState((state) => ({
+      lastKnownCoords: SAVED,
+      locationDetails: {
+        ...state.locationDetails,
+        coords: { ...state.locationDetails.coords, ...SAVED },
+      },
+    }));
+    const geocode = later<typeof RIYADH_GEOCODE>();
+    mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
+    mockReverseGeocodeApi.mockReturnValue(geocode.promise);
+    const before = useLocationStore.getState();
+    const reading = useLocationStore.getState().initializeLocation(() => wanted);
+    await until(() => mockReverseGeocodeApi.mock.calls.length > 0);
+    expect(mockReverseGeocodeApi).toHaveBeenCalled();
+
+    wanted = false;
+    geocode.release(RIYADH_GEOCODE);
+
+    await expect(reading).resolves.toBeUndefined();
+    expectPlaceKept(before);
+  });
+
+  it("writes no device error when the fix then fails", async () => {
+    const fix = later<typeof DEVICE_FIX>();
+    mockGetLocationWithTimeout.mockReturnValue(
+      fix.promise.then(() => Promise.reject(new Error("Location request timed out")))
+    );
+    const reading = useLocationStore.getState().initializeLocation(() => wanted);
+
+    wanted = false;
+    fix.release(DEVICE_FIX);
+
+    await expect(reading).rejects.toThrow("Location request timed out");
+    expect(useLocationStore.getState().locationDetails.error).toBeNull();
+    expect(locationLog.e).not.toHaveBeenCalled();
+  });
+});
+
 describe("one position read per fetch attempt", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -528,7 +601,9 @@ describe("one position read per fetch attempt", () => {
     mockGetLocationWithTimeout.mockResolvedValue(DEVICE_FIX);
     mockReverseGeocodeAsync.mockResolvedValue([]);
     mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: jest.fn(() => Promise.resolve(true)) });
+    usePrayerTimesStore.setState({
+      getAndStorePrayerTimes: jest.fn(() => Promise.resolve(TIMES_FETCH.STORED)),
+    });
   });
 
   it("reads the position once when the caller has just applied a fix", async () => {
@@ -557,7 +632,7 @@ const storedDay = (date: number) => ({ ...RIYADH_DAY, date });
 describe("a place verified after the default place's days were stored", () => {
   /** A fetch the test settles; records the flag held when it starts. */
   const pendingFetch = () => {
-    const fetch = later<boolean>();
+    const fetch = later<TimesFetch>();
     const flagAtFetch: boolean[] = [];
     const getAndStorePrayerTimes = jest.fn(() => {
       flagAtFetch.push(usePrayerTimesStore.getState().usingDefaultLocation);
@@ -595,7 +670,7 @@ describe("a place verified after the default place's days were stored", () => {
 
     expect(flagAtFetch).toEqual([true]);
     expect(usingDefault()).toBe(true);
-    fetch.release(true);
+    fetch.release(TIMES_FETCH.STORED);
     await load;
     expect(usingDefault()).toBe(false);
   });
@@ -603,7 +678,7 @@ describe("a place verified after the default place's days were stored", () => {
   // Best effort, so a launch with no network still runs the rest of its setup.
   it("keeps the default flag and rows, and resolves, when that refetch fails", async () => {
     const { fetch, getAndStorePrayerTimes } = pendingFetch();
-    fetch.release(false);
+    fetch.release(TIMES_FETCH.FAILED);
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes()).resolves.toBe(false);
 
@@ -617,7 +692,7 @@ describe("a place verified after the default place's days were stored", () => {
   it("still throws when that refetch fails with a day missing", async () => {
     mockGetPrayerTimesByDate.mockResolvedValue(null);
     const { fetch } = pendingFetch();
-    fetch.release(false);
+    fetch.release(TIMES_FETCH.FAILED);
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
 
@@ -627,7 +702,7 @@ describe("a place verified after the default place's days were stored", () => {
 
   it("still throws when a forced refetch fails", async () => {
     const { fetch } = pendingFetch();
-    fetch.release(false);
+    fetch.release(TIMES_FETCH.FAILED);
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).rejects.toThrow();
 
@@ -642,7 +717,7 @@ describe("a place verified after the default place's days were stored", () => {
     await until(() => flagAtFetch.length > 0);
 
     expect(flagAtFetch).toEqual([true]);
-    fetch.release(true);
+    fetch.release(TIMES_FETCH.STORED);
     await load;
     expect(usingDefault()).toBe(false);
   });
