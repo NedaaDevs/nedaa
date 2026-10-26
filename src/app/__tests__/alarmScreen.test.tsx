@@ -3,6 +3,7 @@ import { AccessibilityInfo } from "react-native";
 import * as ExpoAlarm from "expo-alarm";
 
 import AlarmTriggeredScreen from "@/app/alarm";
+import { ALARM_TYPE_META } from "@/constants/Alarm";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { AppLocale } from "@/enums/app";
@@ -14,6 +15,9 @@ import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 
 const mockAlarmId = "alarm-1";
+/** A type no alarm is scheduled with, as a stale or hand-made link carries. */
+const UNKNOWN_ALARM_TYPE = "unknown";
+let mockAlarmType: string = ScheduledAlarmType.JUMMAH;
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("expo-alarm", () => ({ ...jest.requireActual("expo-alarm") }));
@@ -22,10 +26,7 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => ({
-    alarmType: jest.requireActual("@/enums/alarm").ScheduledAlarmType.JUMMAH,
-    alarmId: mockAlarmId,
-  }),
+  useLocalSearchParams: () => ({ alarmType: mockAlarmType, alarmId: mockAlarmId }),
   Stack: { Screen: () => null },
 }));
 // 18:10 on the device clock, whatever zone the device is in.
@@ -70,6 +71,7 @@ describe("AlarmTriggeredScreen", () => {
   beforeAll(() => act(() => i18n.changeLanguage(AppLocale.AR)));
   afterAll(() => act(() => i18n.changeLanguage(AppLocale.EN)));
   beforeEach(() => {
+    mockAlarmType = ScheduledAlarmType.JUMMAH;
     useAppStore.setState({ locale: AppLocale.AR });
     usePreferencesStore.setState({ use24HourTime: false, useWesternNumerals: false });
     usePrayerTimesStore.setState({ todayTimings: DAY, tomorrowTimings: null });
@@ -99,6 +101,14 @@ describe("AlarmTriggeredScreen", () => {
       i18n.t("a11y.alarm.prayerAt", { prayer, time: "الثانية عشرة و١٠ دقائق ظهرًا" })
     );
   });
+  it("names an alarm of an unknown type as a custom alarm", async () => {
+    mockAlarmType = UNKNOWN_ALARM_TYPE;
+    await renderWithTheme(<AlarmTriggeredScreen />);
+
+    const title = ALARM_TYPE_META[ScheduledAlarmType.CUSTOM].title;
+    expect(screen.getByRole("header", { name: title })).toHaveTextContent(title);
+  });
+
   // The ringing alarm is announced once per screen, not on every re-render.
   it("announces the alarm once while it stays on screen", async () => {
     // React Native's test setup already mocks it, so earlier tests' calls count.
