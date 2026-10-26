@@ -2,7 +2,7 @@ import * as SQLite from "expo-sqlite";
 import { getDirectory } from "@/services/db";
 import { createSerializedDatabase } from "@/utils/serializedDatabase";
 import { AppLogger } from "@/utils/appLogger";
-import { TASK_RESULT, type TaskResult } from "@/constants/BackgroundTask";
+import { TASK_RESULT, type BackgroundEvent, type TaskResult } from "@/constants/BackgroundTask";
 import { ExpoDiagnosticsModule } from "../../modules/expo-diagnostics/src";
 
 const BG_LOG_DB_NAME = "background_task_logs.db";
@@ -48,7 +48,7 @@ export const BackgroundTaskLog = {
 
   log: (
     taskName: string,
-    action: string,
+    action: BackgroundEvent,
     result: TaskResult,
     details?: string,
     durationMs?: number
