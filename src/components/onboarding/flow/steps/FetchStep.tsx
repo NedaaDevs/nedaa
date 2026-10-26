@@ -85,6 +85,7 @@ export const FetchStep = ({
   setPrimary,
   setPrimaryHidden,
   setBack,
+  setBusy,
   dropTriedCity,
   headingRef,
   progress,
@@ -175,6 +176,7 @@ export const FetchStep = ({
         headingRef={headingRef}
         progress={progress}
         setBack={setBack}
+        setBusy={setBusy}
         setPrimaryHidden={setPrimaryHidden}
         onDone={() => {
           setSession({ locationChoice: LOCATION_CHOICE.CITY });

@@ -57,6 +57,7 @@ export const LocationPermissionStep = ({
         headingRef={headingRef}
         progress={progress}
         setBack={setBack}
+        setBusy={setBusy}
         setPrimaryHidden={setPrimaryHidden}
         onDone={() => {
           // Withdrawing the automatic choice drops the prime from the column.
