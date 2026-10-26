@@ -217,6 +217,42 @@ describe("LocationStep", () => {
     expect(props.onNext).toHaveBeenCalledTimes(1);
   });
 
+  // Back and Skip wait for the update, as they do for every other request.
+  it("holds the frame busy until the pick's update settles", async () => {
+    const update = later<boolean>();
+    updateStub.applyManualLocation.mockReturnValue(update.promise);
+    const props = stepProps();
+    await renderWithTheme(<LocationStep {...props} />);
+    await openLocationPicker(props);
+
+    await act(async () => pickerStub.pick?.());
+    expect(jest.mocked(props.setBusy).mock.calls).toEqual([[true]]);
+
+    await act(async () => update.release(false));
+    expect(jest.mocked(props.setBusy).mock.calls).toEqual([[true], [false]]);
+    expect(props.onNext).not.toHaveBeenCalled();
+  });
+
+  it("holds the frame busy until a retried pick settles", async () => {
+    updateStub.run = {
+      start: { kind: UPDATE_START.CITY, city: PLACE },
+      step: UPDATE_STEP.PRAYER_TIMES,
+      failed: true,
+    };
+    const update = later<boolean>();
+    updateStub.retry.mockReturnValue(update.promise);
+    const props = stepProps();
+    await renderWithTheme(<LocationStep {...props} />);
+    await openLocationPicker(props);
+
+    await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
+    expect(jest.mocked(props.setBusy).mock.calls).toEqual([[true]]);
+
+    await act(async () => update.release(true));
+    expect(jest.mocked(props.setBusy).mock.calls).toEqual([[true], [false]]);
+    expect(props.onNext).toHaveBeenCalledTimes(1);
+  });
+
   // As the language list does, every press on a row ticks, the chosen one too.
   it("ticks once for each press on a location row", async () => {
     await renderWithTheme(<LocationStep {...stepProps()} />);
