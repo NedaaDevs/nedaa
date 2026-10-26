@@ -18,6 +18,9 @@ type DateRange = {
 /** The device time, or the pinned moment in a screenshot build. */
 const currentTime = (): Date => screenshotNow() ?? new Date();
 
+/** The device's own IANA zone, the one its wall clock shows. */
+export const deviceTimeZone = (): string => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 /**
  * Converts a Unix timestamp (in seconds) to YYYYMMDD format
  * @param {number} timestamp
