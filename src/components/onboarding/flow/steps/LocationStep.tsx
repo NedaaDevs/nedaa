@@ -26,6 +26,7 @@ export const LocationStep = ({
   setPrimary,
   setPrimaryHidden,
   setBack,
+  setBusy,
   dropTriedCity,
   headingRef,
   progress,
@@ -68,6 +69,7 @@ export const LocationStep = ({
         headingRef={headingRef}
         progress={progress}
         setBack={setBack}
+        setBusy={setBusy}
         setPrimaryHidden={setPrimaryHidden}
         onDone={cityDone}
         onClose={() => setView(LOCATION_STEP_VIEW.CHOICE)}
