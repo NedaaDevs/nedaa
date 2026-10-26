@@ -231,7 +231,7 @@ describe("SkyBackground", () => {
     let spins: jest.SpyInstance;
     afterEach(() => {
       jest.useRealTimers();
-      spins.mockRestore();
+      jest.restoreAllMocks();
     });
     beforeEach(() => {
       spins = jest.spyOn(Animated, "loop");
@@ -270,15 +270,20 @@ describe("SkyBackground", () => {
       expect(raysTurn()).toBe(true);
     });
 
-    // Focus drops as a push starts, while the sky still shows beneath it.
+    // Focus drops as a push starts, while the sky still shows beneath it. Jest
+    // reads no native angle, so the pause must set no value back either.
     it("keeps its rays at their angle when it pauses", async () => {
       const { rerender } = await renderWithTheme(<Sky phase={PHASE.DAY} />);
       await act(() => jest.advanceTimersByTime(SUN_GLYPH.spinMs / 4));
       const turned = raysAngle();
+      const set = jest.spyOn(Animated.Value.prototype, "setValue");
+      const reset = jest.spyOn(Animated.Value.prototype, "resetAnimation");
 
       await rerender(<Sky phase={PHASE.DAY} paused />);
 
       expect(raysAngle()).toBe(turned);
+      expect(set).not.toHaveBeenCalled();
+      expect(reset).not.toHaveBeenCalled();
     });
 
     // RN swaps a physical left in RTL but not SVG x; one space keeps them aligned.
