@@ -36,7 +36,10 @@ import { PRAYER_ID } from "@/constants/Prayer";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
 // Friday Dhuhr occurrence; custom alarms have no associated prayer.
-const PRAYER_BY_ALARM: Partial<Record<string, { nameKey: string; timing: PrayerName }>> = {
+const PRAYER_BY_ALARM: Record<
+  ScheduledAlarmType.FAJR | ScheduledAlarmType.JUMMAH,
+  { nameKey: string; timing: PrayerName }
+> = {
   [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: PRAYER_ID.FAJR },
   [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: PRAYER_ID.DHUHR },
 };
@@ -232,8 +235,8 @@ function ActiveAlarmView({
   const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
 
-  const prayer = PRAYER_BY_ALARM[alarmType];
-  const prayerName = prayer ? t(prayer.nameKey) : t(`alarm.types.${alarmType}`);
+  const prayer = alarmType === ScheduledAlarmType.CUSTOM ? null : PRAYER_BY_ALARM[alarmType];
+  const prayerName = prayer ? t(prayer.nameKey) : t("alarm.types.custom");
 
   // Prayer time nearest the alarm's trigger — picks the today/tomorrow
   // occurrence closest to when the alarm fired; null when data is unavailable
