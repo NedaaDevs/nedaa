@@ -13,8 +13,6 @@ import { CLOCK_SAMPLE } from "@/constants/Onboarding";
 import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
 import { AppLocale } from "@/enums/app";
 import { useClockTime } from "@/hooks/useClockTime";
-import { useHaptic } from "@/hooks/useHaptic";
-import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 
@@ -24,7 +22,6 @@ const NUMERAL_STYLES = Object.values(NUMERAL_STYLE);
 /** The digits and the clock, the Settings controls, with a sample time. */
 export const NumeralsStep = ({ headingRef, progress }: StepProps) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const locale = useAppStore((state) => state.locale);
   const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
   const setUse24HourTime = usePreferencesStore((state) => state.setUse24HourTime);
@@ -48,10 +45,7 @@ export const NumeralsStep = ({ headingRef, progress }: StepProps) => {
             <SegmentedChoice
               options={NUMERAL_STYLES}
               value={western ? NUMERAL_STYLE.WESTERN : NUMERAL_STYLE.ARABIC}
-              onChange={(style) => {
-                hapticSelection();
-                setUseWesternNumerals(style === NUMERAL_STYLE.WESTERN);
-              }}
+              onChange={(style) => setUseWesternNumerals(style === NUMERAL_STYLE.WESTERN)}
               accessibilityLabel={t("settings.preferences.numerals.title")}
               label={(style) => t(`settings.preferences.numerals.options.${style}`)}
               spokenLabel={(style) => t(`settings.preferences.numerals.spoken.${style}`)}
@@ -61,10 +55,7 @@ export const NumeralsStep = ({ headingRef, progress }: StepProps) => {
           <SegmentedChoice
             options={CLOCK_FORMATS}
             value={use24HourTime ? CLOCK_FORMAT.TWENTY_FOUR_HOUR : CLOCK_FORMAT.TWELVE_HOUR}
-            onChange={(format) => {
-              hapticSelection();
-              setUse24HourTime(format === CLOCK_FORMAT.TWENTY_FOUR_HOUR);
-            }}
+            onChange={(format) => setUse24HourTime(format === CLOCK_FORMAT.TWENTY_FOUR_HOUR)}
             accessibilityLabel={t("settings.preferences.clock.title")}
             label={(format) => t(`settings.preferences.clock.options.${format}`)}
             spokenLabel={(format) => t(`settings.preferences.clock.spoken.${format}`)}

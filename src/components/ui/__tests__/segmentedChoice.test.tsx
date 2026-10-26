@@ -9,6 +9,7 @@ import {
   SegmentedChoice,
   type SegmentedForm,
 } from "@/components/ui/segmented-choice";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { SPRING } from "@/constants/Motion";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppDirection, AppLocale } from "@/enums/app";
@@ -16,6 +17,7 @@ import i18n from "@/localization/i18n";
 import { getDirection, isRTL as isRTLDirection, useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import { HAPTIC } from "@/test-helpers/hapticMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { LTR_ISOLATE } from "@/utils/digits";
 
@@ -23,6 +25,7 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 
 beforeEach(() => {
   mockReduced = false;
@@ -48,6 +51,7 @@ type Setup = {
   useWesternNumerals?: boolean;
   withSpoken?: boolean;
   form?: SegmentedForm;
+  disabled?: boolean;
 };
 
 const renderChoice = ({
@@ -57,6 +61,7 @@ const renderChoice = ({
   useWesternNumerals = true,
   withSpoken = true,
   form = SEGMENTED_FORM.COMPACT,
+  disabled,
 }: Setup = {}) => {
   useAppStore.setState({ locale });
   usePreferencesStore.setState({ useWesternNumerals });
@@ -69,6 +74,7 @@ const renderChoice = ({
       label={String}
       spokenLabel={withSpoken ? spoken : undefined}
       form={form}
+      disabled={disabled}
     />,
     { isRTL: isRTLDirection(getDirection(locale)) }
   );
@@ -126,6 +132,30 @@ describe("SegmentedChoice, compact", () => {
     await renderChoice();
 
     expect(controlProblems()).toEqual([]);
+  });
+
+  it("ticks once when a new option is chosen", async () => {
+    await renderChoice({ value: 15 });
+
+    await userEvent.setup().press(screen.getByRole("radio", { name: spoken(30) }));
+
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not tick for the option already chosen", async () => {
+    await renderChoice({ value: 15 });
+
+    await userEvent.setup().press(screen.getByRole("radio", { name: spoken(15) }));
+
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
+  });
+
+  it("does not tick while held still", async () => {
+    await renderChoice({ value: 15, disabled: true });
+
+    await userEvent.setup().press(screen.getByRole("radio", { name: spoken(30) }));
+
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 
   // Round at any height: the corner reaches half the pill however tall it grows.
