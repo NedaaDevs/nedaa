@@ -137,9 +137,19 @@ describe("Material", () => {
     expect(fill().boxShadow).toBeUndefined();
   });
 
-  it("draws the highlight edge", async () => {
-    await renderWithTheme(<Material testID="material" material="float" />);
+  // A 999 corner is wider than the bar, so the lit line follows the curve.
+  it("lights a pill's top edge along its curve", async () => {
+    await renderWithTheme(<Material testID="material" material="float" radius="pill" />);
+    const edge = StyleSheet.flatten(screen.getByTestId("material-highlight").props.style);
 
-    expect(screen.getByTestId("material-highlight")).toBeTruthy();
+    expect(edge).toMatchObject({
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      borderRadius: getTokenValue("$pill", "radius"),
+      boxShadow: `inset 0 1px 0 ${NEDAA_LIGHT.highlight.hex}`,
+    });
   });
 });

@@ -22,7 +22,7 @@ const expectResting = () => {
     backgroundColor: NEDAA_LIGHT.surfaceGlass.hex,
     boxShadow: ELEVATION.e1.boxShadow.light,
   });
-  expect(highlight()).toHaveStyle({ height: 1, backgroundColor: NEDAA_LIGHT.highlight.hex });
+  expect(highlight()).toHaveStyle({ boxShadow: `inset 0 1px 0 ${NEDAA_LIGHT.highlight.hex}` });
 };
 
 describe("Card", () => {
