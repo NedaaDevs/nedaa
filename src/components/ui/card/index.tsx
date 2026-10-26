@@ -18,7 +18,7 @@ const CardFrame = styled(YStack, {
     size: {
       sm: { padding: "$stack", borderRadius: "$chip" },
       md: { padding: "$cardPad", borderRadius: "$card" },
-      // 24 has no named step; the vocabulary stops at section (20).
+      // 24 is $section, a gap name; a card's inset stays on the numeric step.
       lg: { padding: "$6", borderRadius: "$card" },
     },
     variant: {
