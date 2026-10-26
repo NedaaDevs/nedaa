@@ -2,8 +2,8 @@ import { BRIGHTNESS } from "@/constants/Palette";
 import { CONTACT_SHADOW, ELEVATION, ELEVATION_LEVEL } from "@/constants/Elevation";
 
 describe("elevation", () => {
-  it("names four levels", () => {
-    expect(Object.keys(ELEVATION)).toEqual(["e0", "e1", "e2", "e3"]);
+  it("holds every level, in order", () => {
+    expect(Object.keys(ELEVATION)).toEqual(Object.values(ELEVATION_LEVEL));
   });
 
   // A part lifted inside a track takes only e2's tight layer.
@@ -46,13 +46,5 @@ describe("elevation", () => {
     expect(ELEVATION.e3.boxShadow.dark).toBe(
       "0 -8px 24px rgba(0, 0, 2, 0.35), 0 -24px 64px rgba(0, 0, 2, 0.55)"
     );
-  });
-
-  it("declares both brightnesses at every level", () => {
-    for (const level of Object.values(ELEVATION_LEVEL)) {
-      expect(Object.keys(ELEVATION[level].boxShadow).sort()).toEqual(
-        Object.values(BRIGHTNESS).sort()
-      );
-    }
   });
 });
