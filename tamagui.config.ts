@@ -557,8 +557,7 @@ const animations = createAnimations({
   quick: { type: "timing", duration: DURATION_MS.QUICK },
   settle: { type: "timing", duration: DURATION_MS.SETTLE },
   gentle: { type: "timing", duration: DURATION_MS.GENTLE },
-  // The shared springs; Reanimated reads the same numbers from `SPRING`.
-  springSettle: { type: "spring", ...SPRING.SETTLE },
+  // The press spring, from the same `SPRING` numbers Reanimated reads.
   springSnap: { type: "spring", ...SPRING.SNAP },
   // The sky crossfades across a prayer phase change.
   sky: { type: "timing", duration: DURATION_MS.SKY },
