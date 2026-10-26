@@ -1,5 +1,5 @@
-import { Platform } from "react-native";
-import { screen, userEvent } from "@testing-library/react-native";
+import { Alert, Platform } from "react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 import type { DocumentPickerAsset } from "expo-document-picker";
 
 import AddCustomSoundModal from "@/components/AddCustomSoundModal";
@@ -67,6 +67,7 @@ describe("AddCustomSoundModal", () => {
     jest.mocked(findDuplicateSound).mockReturnValue(null);
     jest.mocked(validateAudioFile).mockReturnValue({ valid: true });
     jest.mocked(pickAudioFile).mockResolvedValue(FILE);
+    jest.spyOn(Alert, "alert").mockImplementation(() => {});
   });
   afterEach(() => {
     Platform.OS = PLATFORM;
@@ -97,6 +98,23 @@ describe("AddCustomSoundModal", () => {
     expect(screen.getByText(FAILURE)).toBeTruthy();
     expect(props.onClose).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: t("common.add") })).toBeEnabled();
+  });
+
+  it("warns about a duplicate pick after an earlier Add anyway", async () => {
+    jest.mocked(findDuplicateSound).mockReturnValue(SOUND);
+    await renderModal();
+    const user = userEvent.setup();
+
+    await pick(user);
+    const buttons = jest.mocked(Alert.alert).mock.calls[0]?.[2] ?? [];
+    const addAnyway = buttons.find(
+      (button) => button.text === t("notification.customSound.addAnyway")
+    );
+    expect(addAnyway).toBeDefined();
+    await act(async () => addAnyway?.onPress?.());
+    await pick(user);
+
+    expect(Alert.alert).toHaveBeenCalledTimes(2);
   });
 
   it("says why a pick failed", async () => {
