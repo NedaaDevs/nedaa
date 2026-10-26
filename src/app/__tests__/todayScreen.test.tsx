@@ -8,15 +8,14 @@ import { BOWL_FRAME_PART, RHYTHM_PART } from "@/components/today/CelestialRhythm
 import { PRAYER_GRID_PART } from "@/components/today/PrayerGrid";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
 import { SKY_PART } from "@/components/ui/sky-background";
-import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
+import { UTC_DAY } from "@/test-helpers/prayerDay";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import type { HijriDate } from "@/utils/date";
@@ -41,26 +40,6 @@ jest.mock("@/utils/date", () => {
   };
 });
 
-const DAY: DayPrayerTimes = {
-  date: 20260923,
-  timezone: "UTC",
-  timings: {
-    [PRAYER_ID.FAJR]: "2026-09-23T04:30:00.000Z",
-    [PRAYER_ID.DHUHR]: "2026-09-23T12:00:00.000Z",
-    [PRAYER_ID.ASR]: "2026-09-23T15:20:00.000Z",
-    [PRAYER_ID.MAGHRIB]: "2026-09-23T18:05:00.000Z",
-    [PRAYER_ID.ISHA]: "2026-09-23T19:25:00.000Z",
-  },
-  otherTimings: {
-    [OTHER_TIMING.SUNRISE]: "2026-09-23T05:50:00.000Z",
-    [OTHER_TIMING.SUNSET]: "2026-09-23T18:05:00.000Z",
-    [OTHER_TIMING.IMSAK]: "2026-09-23T04:20:00.000Z",
-    [OTHER_TIMING.MIDNIGHT]: "2026-09-23T23:57:00.000Z",
-    [OTHER_TIMING.FIRST_THIRD]: "2026-09-23T22:00:00.000Z",
-    [OTHER_TIMING.LAST_THIRD]: "2026-09-24T01:55:00.000Z",
-  },
-};
-
 const hidden = { includeHiddenElements: true };
 const renderToday = () =>
   renderRouter(
@@ -83,7 +62,7 @@ describe("Today", () => {
     useLocationStore.setState({ localizedLocation: { city: "Makkah", country: "Saudi Arabia" } });
     usePrayerTimesStore.setState({
       yesterdayTimings: null,
-      todayTimings: DAY,
+      todayTimings: UTC_DAY,
       tomorrowTimings: null,
       hasError: false,
       isLoading: false,
