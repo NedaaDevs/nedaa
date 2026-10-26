@@ -34,7 +34,7 @@ export const LOCATION_REQUEST_TIMEOUT_EXTENDED = 35000; // 35 seconds
 // Prayer times need only the city, which a fix this old still names.
 export const LAST_KNOWN_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 // The cached-fix read is local; one that stalls counts as no cached fix.
-const LAST_KNOWN_REQUEST_TIMEOUT = 3000;
+export const LAST_KNOWN_REQUEST_TIMEOUT = 3000;
 
 export const checkLocationPermission = async (): Promise<LocationPermission> => {
   try {
