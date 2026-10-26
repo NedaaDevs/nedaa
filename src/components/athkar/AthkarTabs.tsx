@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useEffectEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
@@ -45,7 +45,8 @@ const AthkarTabs = () => {
   const router = useRouter();
   const tabBarInset = useTabBarInset();
 
-  const { setCurrentType, validateDailyStreak } = useAthkarStore();
+  const setCurrentType = useAthkarStore((s) => s.setCurrentType);
+  const validateDailyStreak = useAthkarStore((s) => s.validateDailyStreak);
   const playerState = useAthkarStore((s) => s.playerState);
 
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -65,23 +66,25 @@ const AthkarTabs = () => {
   const screenshotPeriod = useAthkarLandingScreenshotSeed();
 
   // Check for daily reset and validate streak on mount
-  useEffect(() => {
+  const openTab = useEffectEvent(() => {
     if (activeTab !== "my-athkar") {
       setCurrentType(activeTab);
     }
     validateDailyStreak();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    openTab();
   }, []);
 
-  // Force the seeded period (e.g. Morning) for the screenshot capture.
+  // Force the seeded period (e.g. Morning) for the screenshot capture. Only a
+  // screenshot-capture build seeds one; elsewhere it stays null.
+  const [seeded, setSeeded] = useState<typeof screenshotPeriod>(null);
+  if (screenshotPeriod !== seeded) {
+    setSeeded(screenshotPeriod);
+    if (screenshotPeriod) setActiveTab(screenshotPeriod);
+  }
   useEffect(() => {
-    if (!screenshotPeriod) return;
-    const period = screenshotPeriod === "evening" ? ATHKAR_TYPE.EVENING : ATHKAR_TYPE.MORNING;
-    // Reachable only in screenshot-capture builds: useAthkarLandingScreenshotSeed
-    // returns null otherwise, so the seeded period is applied once and never again.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveTab(period);
-    setCurrentType(period);
+    if (screenshotPeriod) setCurrentType(screenshotPeriod);
   }, [screenshotPeriod, setCurrentType]);
 
   const handleRequestOnboarding = useCallback(() => {
