@@ -1,9 +1,10 @@
+import { StyleSheet } from "react-native";
 import { getTokenValue, View } from "tamagui";
 
 import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
 import { ELEVATION, type ElevationLevel } from "@/constants/Elevation";
 
-/** The radius scale's names, which a lit edge clears at either end. */
+/** The radius scale's names, whose curve a lit edge follows. */
 export const RADIUS_NAMES = ["chip", "control", "card", "sheet", "hero", "pill"] as const;
 export type RadiusName = (typeof RADIUS_NAMES)[number];
 
@@ -26,21 +27,21 @@ type HighlightEdgeProps = {
   radius?: RadiusName;
 };
 
-/** The 1pt lit top edge of a surface, held clear of its rounded corners. */
+/** The 1pt lit top edge of a surface, inset along its rounded corners. */
 export const HighlightEdge = ({ owner, radius = "card" }: HighlightEdgeProps) => {
   const highlight = useThemeColor("$highlight");
-  const corner = getTokenValue(`$${radius}`, "radius");
 
   return (
     <View
       testID={owner ? `${owner}-highlight` : HIGHLIGHT_EDGE_ID}
-      position="absolute"
-      top={0}
-      start={corner}
-      end={corner}
-      height={1}
       pointerEvents="none"
-      style={{ backgroundColor: highlight }}
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          borderRadius: getTokenValue(`$${radius}`, "radius"),
+          boxShadow: `inset 0 1px 0 ${highlight}`,
+        },
+      ]}
     />
   );
 };
