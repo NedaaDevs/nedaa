@@ -1,8 +1,9 @@
+import type { ReactElement } from "react";
 import { StyleSheet } from "react-native";
 import { View, type RadiusTokens } from "tamagui";
 
 import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
-import { ELEVATION, type ElevationLevel } from "@/constants/Elevation";
+import { ELEVATION, ELEVATION_LEVEL, type ElevationLevel } from "@/constants/Elevation";
 
 /** Test id of an edge whose surface has none of its own. */
 export const HIGHLIGHT_EDGE_ID = "highlight-edge";
@@ -33,3 +34,16 @@ export const HighlightEdge = ({ owner, radius = "$card" }: HighlightEdgeProps) =
     />
   );
 };
+
+type RestingSurface = {
+  /** The e1 lift, for the surface's own style. */
+  lift: { boxShadow?: string };
+  /** The lit top edge, drawn as the surface's first child. */
+  edge: ReactElement;
+};
+
+/** The one resting look: the e1 lift and a lit top edge along the corners. */
+export const useRestingSurface = (edge: HighlightEdgeProps = {}): RestingSurface => ({
+  lift: { boxShadow: useElevationShadow(ELEVATION_LEVEL.E1) },
+  edge: <HighlightEdge {...edge} />,
+});

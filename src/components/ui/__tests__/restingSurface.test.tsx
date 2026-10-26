@@ -1,4 +1,4 @@
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import { AlarmClock } from "lucide-react-native";
 import { act, fireEvent, screen } from "@testing-library/react-native";
 
@@ -7,8 +7,10 @@ import { Card } from "@/components/ui/card";
 import { LIST_GROUP_PART, ListGroup } from "@/components/ui/list-group";
 import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { LIST_ROW_PART, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { PLACE_HERO_PART, PlaceHero } from "@/components/ui/place-hero";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
+import { PLACE_HERO_TONE } from "@/constants/PlaceHero";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const SURFACE = "surface";
@@ -93,6 +95,21 @@ describe("ListGroup surface", () => {
     expectResting();
   });
 
+  it("draws the grouped card's surface", async () => {
+    const GROUP = "group";
+    await renderWithTheme(
+      <>
+        <Card testID={SURFACE} variant="grouped" />
+        <ListGroup testID={GROUP}>
+          <Text>one</Text>
+        </ListGroup>
+      </>
+    );
+    const look = (id: string) => StyleSheet.flatten(screen.getByTestId(id).props.style);
+
+    expect(look(GROUP)).toEqual(look(SURFACE));
+  });
+
   it("rules between its rows with the hairline", async () => {
     await renderWithTheme(
       <ListGroup>
@@ -104,6 +121,24 @@ describe("ListGroup surface", () => {
     expect(
       screen.getByTestId(LIST_GROUP_PART.DIVIDER, { includeHiddenElements: true })
     ).toHaveStyle({ backgroundColor: NEDAA_LIGHT.hairline.hex });
+  });
+});
+
+describe("PlaceHero surface", () => {
+  it("rests with the card's lift and a lit edge along its hero corners", async () => {
+    await renderWithTheme(
+      <PlaceHero tone={PLACE_HERO_TONE.DEVICE} kicker="A" title="B" subtitle="C" />
+    );
+
+    expect(screen.getByTestId(PLACE_HERO_PART.FRAME)).toHaveStyle({
+      boxShadow: ELEVATION.e1.boxShadow.light,
+    });
+    expect(
+      screen.getByTestId(`${PLACE_HERO_PART.FRAME}-highlight`, { includeHiddenElements: true })
+    ).toHaveStyle({
+      borderTopLeftRadius: 24,
+      boxShadow: `inset 0 1px 0 ${NEDAA_LIGHT.highlight.hex}`,
+    });
   });
 });
 
