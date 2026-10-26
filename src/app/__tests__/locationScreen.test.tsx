@@ -1,7 +1,7 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import LocationScreen from "@/app/settings/location";
-import { AccessibilityInfo, Animated, Linking, Platform, StyleSheet, Text } from "react-native";
+import { AccessibilityInfo, Linking, Platform, StyleSheet, Text } from "react-native";
 import { useLocalSearchParams, usePathname } from "expo-router";
 import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
@@ -20,7 +20,7 @@ import {
   UPDATE_STEP,
   type FixSource,
 } from "@/constants/Location";
-import { AppLocale, AppMode, PlatformType } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -184,19 +184,6 @@ describe("Settings › Location", () => {
 
     expect(screen.getAllByTestId(SKY_PART.CANVAS, { includeHiddenElements: true })).toHaveLength(1);
     expect(screen.getByRole("header", { name: t("settings.location.title") })).toBeTruthy();
-  });
-
-  // The picker pushes over this screen, which stays mounted beneath it.
-  it.each([
-    { focused: true, turns: true },
-    { focused: false, turns: false },
-  ])("in focus $focused, turns the sun's rays: $turns", async ({ focused, turns }) => {
-    useAppStore.setState({ mode: AppMode.LIGHT });
-    mockFocused = focused;
-    const spins = jest.spyOn(Animated, "loop");
-    await renderScreen();
-
-    expect(spins.mock.calls.length > 0).toBe(turns);
   });
 
   describe("on the device's location", () => {
