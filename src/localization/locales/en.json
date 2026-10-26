@@ -1865,6 +1865,7 @@
   "streakShare.shareAction": "Share your streak",
   "streakShare.tagline": "Shared with Nedaa",
   "today.defaultLocation.action": "Set location",
+  "today.defaultLocation.awaitingTimes": "Showing Makkah's times: your city's times haven't loaded yet.",
   "today.defaultLocation.body": "Showing Makkah's times: we couldn't find your location.",
   "today.failed.body": "Check your internet connection, then try again.",
   "today.failed.title": "Couldn't load the times",
