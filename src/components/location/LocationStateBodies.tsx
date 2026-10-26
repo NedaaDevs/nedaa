@@ -4,6 +4,7 @@ import type { ParseKeys } from "i18next";
 import { LocateFixed, MapPin, RefreshCw, Search } from "lucide-react-native";
 
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
+import { StandInNotice } from "@/components/location/StandInNotice";
 import { Button } from "@/components/ui/button";
 import { CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { ListGroup } from "@/components/ui/list-group";
@@ -80,12 +81,6 @@ const OpenSettingsButton = () => {
       <Button.Text>{label}</Button.Text>
     </Button>
   );
-};
-
-/** Until a place is found, the times are Makkah's. */
-export const StandInNotice = () => {
-  const { t } = useTranslation();
-  return <Callout body={t("today.defaultLocation.body")} />;
 };
 
 /** A city by hand, which needs no location access. */

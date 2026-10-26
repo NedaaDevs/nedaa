@@ -11,8 +11,8 @@ import {
   DeviceBody,
   ManualBody,
   PermissionBody,
-  StandInNotice,
 } from "@/components/location/LocationStateBodies";
+import { StandInNotice } from "@/components/location/StandInNotice";
 import { locationRootState } from "@/components/location/rootState";
 import { PlaceHero } from "@/components/ui/place-hero";
 import { VStack } from "@/components/ui/vstack";
