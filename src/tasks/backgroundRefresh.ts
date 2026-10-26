@@ -27,6 +27,7 @@ import { timeZonedNow, dateToInt } from "@/utils/date";
 import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
 import { timesMoved } from "@/utils/placeFromFacts";
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 import { waitForHydration } from "@/utils/storeHydration";
 import { addDays } from "date-fns";
 
@@ -165,12 +166,11 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
           }
         }
       } catch (fetchError) {
-        const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
         await BackgroundTaskLog.log(
           BACKGROUND_REFRESH_TASK,
           BACKGROUND_EVENT.PRAYER_TIMES_FETCH_ERROR,
           TASK_RESULT.FAILED,
-          msg
+          errorText(fetchError)
         );
       }
     } else {
@@ -211,25 +211,23 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
         return BackgroundTask.BackgroundTaskResult.Failed;
       }
     } catch (scheduleError) {
-      const msg = scheduleError instanceof Error ? scheduleError.message : String(scheduleError);
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
         BACKGROUND_EVENT.SCHEDULE_FAILED,
         TASK_RESULT.FAILED,
-        msg
+        errorText(scheduleError)
       );
       return BackgroundTask.BackgroundTaskResult.Failed;
     }
 
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
     const durationMs = Date.now() - startTime;
     await BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
       BACKGROUND_EVENT.TASK_ERROR,
       TASK_RESULT.FAILED,
-      msg,
+      errorText(error),
       durationMs
     );
     return BackgroundTask.BackgroundTaskResult.Failed;
@@ -321,12 +319,11 @@ export async function registerBackgroundRefresh(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("[BackgroundRefresh] Registration failed:", error);
-    const msg = error instanceof Error ? error.message : String(error);
     await BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
       BACKGROUND_EVENT.REGISTRATION_ERROR,
       TASK_RESULT.FAILED,
-      msg
+      errorText(error)
     );
     return false;
   }
@@ -340,12 +337,11 @@ export async function unregisterBackgroundRefresh(): Promise<void> {
       console.log("[BackgroundRefresh] Task unregistered");
     }
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
     await BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
       BACKGROUND_EVENT.UNREGISTRATION_ERROR,
       TASK_RESULT.FAILED,
-      msg
+      errorText(error)
     );
   }
 }
