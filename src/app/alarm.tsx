@@ -31,6 +31,7 @@ import { clockFormat, deviceTimeZone, formatPrayerTime, getDateLocale } from "@/
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 import { isAlarmDue } from "@/utils/alarmDue";
+import { isScheduledAlarmType } from "@/utils/alarmTypes";
 import { spokenClockTime } from "@/utils/spokenClockTime";
 import { PRAYER_ID } from "@/constants/Prayer";
 
@@ -100,9 +101,9 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
     handleGraceExpire,
   } = useAlarmScreen(alarmId, alarmType);
 
+  // A link can carry a type no alarm has; it rings as a custom alarm.
   const meta =
-    ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? ScheduledAlarmType.CUSTOM] ??
-    ALARM_TYPE_META[ScheduledAlarmType.CUSTOM];
+    ALARM_TYPE_META[isScheduledAlarmType(alarmType) ? alarmType : ScheduledAlarmType.CUSTOM];
 
   return (
     <>
