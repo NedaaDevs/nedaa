@@ -4,8 +4,6 @@ import { BRIGHTNESS, type Brightness } from "@/constants/Palette";
 
 /** Blur radius in points, by the surface that carries it. */
 export const BLUR = {
-  /** A resting card or group. */
-  REST: 24,
   /** Tab bar, toast, floating control. */
   FLOAT: 28,
   /** The header of a sheet; its body stays opaque. */
@@ -22,9 +20,8 @@ export const BLUR_REDUCTION = 2.5;
  * draws the radius itself and iOS draws that fraction of its system blur.
  */
 export const BLUR_INTENSITY = {
-  REST: 60,
-  FLOAT: 70,
-  SHEET: 100,
+  FLOAT: BLUR.FLOAT * BLUR_REDUCTION,
+  SHEET: BLUR.SHEET * BLUR_REDUCTION,
 } as const satisfies Record<BlurLevel, number>;
 
 /**
