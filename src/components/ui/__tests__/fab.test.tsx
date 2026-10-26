@@ -1,5 +1,5 @@
 import { Platform, StyleSheet, View } from "react-native";
-import { act, fireEvent, screen } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { getTokenValue } from "tamagui";
 
 import { Fab, FAB_PART } from "@/components/ui/fab";
@@ -11,6 +11,8 @@ import { renderWithTheme } from "@/test-helpers/theme";
 import { layOutSpans } from "@/test-helpers/yogaPlacement";
 
 const FAB_ID = "fab";
+const BUTTON = "button";
+const FAB_LABEL = "Open focus";
 const SCREEN_WIDTH = 390;
 
 const BLUR_VIEW = "blur-view";
@@ -90,6 +92,17 @@ describe("Fab surface", () => {
     await press();
 
     expect(transformOf()).toBeUndefined();
+  });
+});
+
+describe("Fab accessibility", () => {
+  it("is one named button a screen reader can press", async () => {
+    const onPress = jest.fn();
+    await renderWithTheme(<Fab onPress={onPress} accessibilityLabel={FAB_LABEL} />);
+
+    await userEvent.press(screen.getByRole(BUTTON, { name: FAB_LABEL }));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
 
