@@ -245,7 +245,7 @@ const NotificationSettings = () => {
                   {t("notification.enableAll")}
                 </Text>
                 {totalOverrideCount > 0 && (
-                  <Badge size="sm" variant="outline" marginTop="$1" alignSelf="flex-start">
+                  <Badge size="sm" marginTop="$1" alignSelf="flex-start">
                     <Badge.Text>
                       {t("notification.customSettings", { count: totalOverrideCount })}
                     </Badge.Text>

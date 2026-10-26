@@ -24,8 +24,6 @@ const CardFrame = styled(YStack, {
     variant: {
       // The resting surface: a glass tone, the e1 lift and a lit top edge.
       plain: {},
-      // Every resting card carries the e1 lift, so this rests like `plain`.
-      elevated: {},
       outline: {
         backgroundColor: "transparent",
         borderWidth: 1,
@@ -67,7 +65,6 @@ type CardRestProps = Pick<
 /** Transparent and nested cards draw no lift and no lit edge. */
 const RESTS: Record<CardVariant, boolean> = {
   plain: true,
-  elevated: true,
   outline: false,
   ghost: false,
   filled: true,
