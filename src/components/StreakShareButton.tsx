@@ -1,5 +1,5 @@
-import { useRef, useState, type ComponentRef } from "react";
-import { View } from "react-native";
+import { useRef, useState } from "react";
+import { View, type ViewInstance } from "react-native";
 import { XStack, YStack } from "tamagui";
 import { useTranslation } from "react-i18next";
 import { Share2, X } from "lucide-react-native";
@@ -23,7 +23,7 @@ const StreakShareButton = ({ variant, count }: StreakShareButtonProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const cardRef = useRef<ComponentRef<typeof View>>(null);
+  const cardRef = useRef<ViewInstance>(null);
 
   const onShare = async () => {
     if (busy) return;
