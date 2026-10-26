@@ -64,20 +64,27 @@ const toManualLocation = (city: CitySearchResult): ManualLocation => ({
 type NoteProps = { testID: string; title: string; body: string; children?: ReactNode };
 
 /** What stands in place of the rows: the state, and any way on. */
-const SearchNote = ({ testID, title, body, children }: NoteProps) => (
-  <Card testID={testID} alignItems="center" gap="$2" paddingVertical="$5">
-    <IconTile icon={Search} />
-    <VStack alignItems="center" gap="$1" accessible accessibilityLabel={`${title}. ${body}`}>
-      <Text size="md" fontWeight="600" color="$fg" textAlign="center">
-        {title}
-      </Text>
-      <Text size="sm" color="$muted" textAlign="center">
-        {body}
-      </Text>
-    </VStack>
-    {children}
-  </Card>
-);
+const SearchNote = ({ testID, title, body, children }: NoteProps) => {
+  const { t } = useTranslation();
+  return (
+    <Card testID={testID} alignItems="center" gap="$2" paddingVertical="$5">
+      <IconTile icon={Search} />
+      <VStack
+        alignItems="center"
+        gap="$1"
+        accessible
+        accessibilityLabel={t("a11y.sentences", { first: title, second: body })}>
+        <Text size="md" fontWeight="600" color="$fg" textAlign="center">
+          {title}
+        </Text>
+        <Text size="sm" color="$muted" textAlign="center">
+          {body}
+        </Text>
+      </VStack>
+      {children}
+    </Card>
+  );
+};
 
 /** Two rows' worth of placeholder, drawn and never read. */
 const SkeletonRows = () => {

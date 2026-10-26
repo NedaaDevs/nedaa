@@ -4,6 +4,9 @@ import { KAABA_COORDINATES } from "@/utils/compass";
 import type { CityCountry, CityRegion, LocalizedNames } from "@/types/cities";
 import type { FixSource, LocationFailure } from "@/constants/Location";
 
+/** A point on the map, without a fix's other readings. */
+export type Coords = { latitude: number; longitude: number };
+
 export type LocationObjectCoords = {
   latitude: number;
   longitude: number;
@@ -73,10 +76,8 @@ export type LocationDetails = {
   timezone: string;
   /** Why the last device read failed; null after a success. */
   error: LocationFailure | null;
-  /** Where the stored device position came from; null for a chosen city. */
-  fixSource: FixSource | null;
-  /** When the device observed the stored position; null for a chosen city. */
-  fixedAt: number | null;
+  /** How and when the device found its position; null for a chosen city. */
+  fix: { source: FixSource; at: number } | null;
   isLoading: boolean;
 };
 
@@ -95,8 +96,7 @@ export const initialLocationDetails: LocationDetails = {
   address: null,
   timezone: "Asia/Riyadh",
   error: null,
-  fixSource: null,
-  fixedAt: null,
+  fix: null,
   isLoading: false,
 };
 

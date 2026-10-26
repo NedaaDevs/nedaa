@@ -50,8 +50,9 @@ const attemptFetch = async (live: () => boolean, onStage: OnStage): Promise<bool
   enter(firstStage(mode));
   await initDatabases();
   if (!live()) return false;
-  // The fix throws when it fails; the fetch alone uses a default place.
-  if (device) await useLocationStore.getState().initializeLocation();
+  // The fix throws when it fails; the fetch alone uses a default place. A
+  // fix that outlives the try applies nothing, since no load follows it.
+  if (device) await useLocationStore.getState().initializeLocation(live);
   if (!live()) return false;
   enter(FETCH_STAGE.LOADING_TIMES);
   await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);

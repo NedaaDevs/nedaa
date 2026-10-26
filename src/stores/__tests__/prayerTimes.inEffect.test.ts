@@ -1,4 +1,9 @@
+import { reloadPrayerWidgets } from "expo-widget";
+
+import { TIMES_FETCH } from "@/constants/PrayerTimes";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
+import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
+import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
@@ -46,10 +51,16 @@ const response = (applied?: unknown) => ({
 });
 
 describe("the settings the stored times came from", () => {
+  const { locationDetails } = useLocationStore.getState();
+
   beforeEach(() => {
     jest.clearAllMocks();
     useProviderSettingsStore.setState({ inEffect: null });
     mockInsert.mockResolvedValue({ success: true });
+  });
+
+  afterEach(() => {
+    useLocationStore.setState({ locationDetails });
   });
 
   it("keeps what the provider reports once the times are stored", async () => {
@@ -77,6 +88,29 @@ describe("the settings the stored times came from", () => {
     await usePrayerTimesStore.getState().getAndStorePrayerTimes(2027);
 
     expect(useProviderSettingsStore.getState().inEffect).toEqual({ method: MAKKAH });
+  });
+
+  // The move's own load fetches the new place's times and their report.
+  it("writes nothing when the place moves while the fetch is out", async () => {
+    useProviderSettingsStore.setState({ inEffect: { method: MWL } });
+    mockGet.mockImplementation(async () => {
+      useLocationStore.setState({
+        locationDetails: {
+          ...locationDetails,
+          coords: { ...locationDetails.coords, latitude: locationDetails.coords.latitude + 1 },
+        },
+      });
+      return response({ method: MAKKAH });
+    });
+
+    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes()).resolves.toBe(
+      TIMES_FETCH.SUPERSEDED
+    );
+
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(useProviderSettingsStore.getState().inEffect).toEqual({ method: MWL });
+    expect(reloadPrayerWidgets).not.toHaveBeenCalled();
+    expect(syncWidgetSnapshot).not.toHaveBeenCalled();
   });
 
   it("keeps the last report when the times fail to store", async () => {

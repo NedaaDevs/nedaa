@@ -254,6 +254,21 @@ describe("CityPicker's full city list", () => {
   });
 });
 
+// Urdu ends a sentence with «۔», not a Latin full stop.
+describe("CityPicker in Urdu", () => {
+  it("joins a note's two sentences as the language does", async () => {
+    await act(() => i18n.changeLanguage(AppLocale.UR));
+    showing(search(CITY_SEARCH_STATUS.DONE, []));
+    await renderPicker({ isRTL: true });
+
+    const note = t("a11y.sentences", {
+      first: t("location.picker.noneTitle"),
+      second: t("location.picker.noneHint"),
+    });
+    expect(screen.getByLabelText(note)).toBeTruthy();
+  });
+});
+
 describe("CityPicker in Arabic", () => {
   it("names each city and says the count in Arabic", async () => {
     await act(() => i18n.changeLanguage(AppLocale.AR));
