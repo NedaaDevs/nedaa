@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Bowl, type BowlBody } from "@/components/today/Bowl";
 import { Box } from "@/components/ui/box";
+import { useClaimSkyBodies } from "@/components/ui/sky-background/bodies";
 import { usePageSky } from "@/components/ui/sky-background/useLiveSky";
 import { VStack } from "@/components/ui/vstack";
 import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
@@ -38,6 +39,8 @@ export const CelestialRhythm = ({ selected, dimmed, children }: Props) => {
   const locale = useAppStore((state) => state.locale);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  // The bowl carries the sky's sun or moon, so the page sky draws neither.
+  useClaimSkyBodies(today !== null);
 
   if (!today) return null;
 

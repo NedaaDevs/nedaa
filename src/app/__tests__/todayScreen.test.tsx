@@ -1,8 +1,6 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
-import { readdirSync, readFileSync } from "fs";
-import { join } from "path";
 import { act, fireEvent, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
@@ -65,16 +63,6 @@ const DAY: DayPrayerTimes = {
 };
 
 const hidden = { includeHiddenElements: true };
-const SRC = join(__dirname, "../..");
-
-/** Every .tsx under src/, tests excluded. */
-const skySources = (dir = SRC): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return entry.name === "__tests__" ? [] : skySources(path);
-    return entry.name.endsWith(".tsx") ? [readFileSync(path, "utf8")] : [];
-  });
-
 const renderToday = () =>
   renderRouter(
     { [BACK_DESTINATION.HOME.route]: () => <TodayScreen /> },
@@ -205,15 +193,6 @@ describe("Today", () => {
     expect(
       within(screen.getByTestId(BOWL_PART.ROOT, hidden)).getAllByTestId(SKY_PART.SUN, hidden)
     ).toHaveLength(1);
-  });
-
-  // Every other sky screen keeps the sky's own sun and moon.
-  it("is the only screen that hides the sky's bodies", () => {
-    const hiding = /<(SkyBackground|ScreenSky)\b[^>]*bodies=\{(?!true\})/;
-    const hiders = skySources().filter((text) => hiding.test(text));
-
-    expect(hiders).toHaveLength(1);
-    expect(readFileSync(join(SRC, "app/(tabs)/index.tsx"), "utf8")).toMatch(hiding);
   });
 
   it("draws no progress bar in the bowl style", async () => {
