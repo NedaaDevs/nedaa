@@ -2,6 +2,7 @@ import { addDays, format, startOfDay } from "date-fns";
 
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { deviceTimeZone } from "@/utils/date";
 import type { StoredDays } from "@/utils/phase";
 
 const HOUR = 60;
@@ -57,10 +58,7 @@ const sampleDay = (midnight: Date, timezone: string): DayPrayerTimes => {
 };
 
 /** Yesterday, today and tomorrow as sample days, on the device's clock. */
-export const sampleDays = (
-  now: Date,
-  timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-): StoredDays => {
+export const sampleDays = (now: Date, timezone = deviceTimeZone()): StoredDays => {
   const today = startOfDay(now);
   return {
     yesterday: sampleDay(addDays(today, -1), timezone),
