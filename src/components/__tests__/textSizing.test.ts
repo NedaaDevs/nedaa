@@ -115,7 +115,7 @@ describe("token line heights", () => {
   });
 });
 
-describe("premium type steps", () => {
+describe("type steps 13/15/22/26/32/40", () => {
   const STEPS = {
     "$10.5": { fontSize: 40, lineHeight: 52 },
     "$8.5": { fontSize: 32, lineHeight: 40 },
