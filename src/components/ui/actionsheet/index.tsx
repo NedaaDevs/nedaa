@@ -119,7 +119,6 @@ const SheetHeader = ({ blurTarget }: { blurTarget: BlurTarget }) => (
   <Material
     testID={ACTIONSHEET_PART.HEADER}
     material={MATERIAL.SHEET_HEADER}
-    elevation={ELEVATION_LEVEL.E0}
     radius="sheet"
     blurTarget={blurTarget}
     height={headerHeight()}

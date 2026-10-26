@@ -124,10 +124,17 @@ describe("Material", () => {
     ["android", 30],
   ] as const)("lifts with boxShadow alone on %s %s", async (os, version) => {
     setPlatform(os, version);
-    await renderWithTheme(<Material testID="material" material="float" elevation="e2" />);
+    await renderWithTheme(<Material testID="material" material="float" />);
 
     expect(fill().boxShadow).toBe(ELEVATION.e2.boxShadow.light);
     expect(fill().elevation ?? 0).toBe(0);
+  });
+
+  // The header lies flat on its own sheet.
+  it("lifts a sheet header not at all", async () => {
+    await renderWithTheme(<Material testID="material" material="sheetHeader" />);
+
+    expect(fill().boxShadow).toBeUndefined();
   });
 
   it("draws the highlight edge", async () => {
