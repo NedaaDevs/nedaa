@@ -138,10 +138,8 @@ export const LocationRoot = () => {
     (state) => state.locationMode === LocationMode.MANUAL && state.manualLocation !== null
   );
   const storedFailure = useLocationStore((state) => state.locationDetails.error);
-  const lastKnown = useLocationStore(
-    (state) => state.locationDetails.fix?.source === FIX_SOURCE.LAST_KNOWN
-  );
-  const fixedAt = useLocationStore((state) => state.locationDetails.fix?.at ?? null);
+  const fix = useLocationStore((state) => state.locationDetails.fix);
+  const lastKnown = fix?.source === FIX_SOURCE.LAST_KNOWN;
   // A read started anywhere, such as at launch, holds the controls too.
   const reading = useLocationStore((state) => state.isGettingLocation);
   const { permission, ask } = useLocationPermission();
@@ -178,7 +176,7 @@ export const LocationRoot = () => {
   const named = !noPlace || (state === LOCATION_ROOT_STATE.UPDATING && !finding);
   const title = named && place.name ? place.name : t("onboarding.location.question");
   const failure = placeChanged ? null : storedFailure;
-  const age = fixedAt === null ? null : fixAgeOf(fixedAt, now.getTime());
+  const age = fix && fixAgeOf(fix.at, now.getTime());
 
   // A failed run is closed once another way is taken.
   const openPicker = (view: CityPickerView) => {
