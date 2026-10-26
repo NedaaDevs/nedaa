@@ -137,7 +137,7 @@ describe("PlaceHero surface", () => {
     expect(
       screen.getByTestId(`${PLACE_HERO_PART.FRAME}-highlight`, { includeHiddenElements: true })
     ).toHaveStyle({
-      borderTopLeftRadius: 24,
+      borderTopLeftRadius: config.tokens.radius.hero.val,
       boxShadow: `inset 0 1px 0 ${NEDAA_LIGHT.highlight.hex}`,
     });
   });
