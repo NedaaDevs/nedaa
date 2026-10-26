@@ -50,8 +50,8 @@ const cornerRadii = (corners: Corners, radius: number) =>
     ? { borderTopStartRadius: radius, borderTopEndRadius: radius }
     : { borderRadius: radius };
 
-/** A radius token or points; the native blur view takes it in points. */
-type MaterialRadius = Extract<RadiusTokens, `$${string}`> | number;
+/** A radius token; the native blur view takes it in points. */
+type MaterialRadius = Extract<RadiusTokens, `$${string}`>;
 
 const OPAQUE_ALPHA = "FF";
 
@@ -91,7 +91,7 @@ export const Material = ({
     reduceTransparency,
     hasBlurTarget: blurTarget != null,
   });
-  const corner = typeof radius === "number" ? radius : getTokenValue(radius, "radius");
+  const corner = getTokenValue(radius, "radius");
   const radii = cornerRadii(spec.corners, corner);
   const lift = useElevationShadow(spec.elevation);
   const inner = ring ? `inset 0 0 0 ${RING_WIDTH}px ${hairline}` : undefined;
