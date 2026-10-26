@@ -2,6 +2,7 @@ import { AppState, AppStateStatus } from "react-native";
 
 import { ALARM_HYDRATION_TIMEOUT_MS } from "@/constants/Alarm";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
+import type { Coords } from "@/types/location";
 
 // The `mock` prefix satisfies the factory hoisting rule; the factories read these lazily.
 const mockRescheduleIfNeeded = jest.fn();
@@ -16,11 +17,10 @@ const mockWaitForAlarmStores = jest.fn();
 const mockLogError = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
 const mockCheckPermission = jest.fn();
-type MockCoords = { latitude: number; longitude: number };
 const mockLocationState: {
   locationMode: LocationModeValue;
-  lastKnownCoords: MockCoords | null;
-  locationDetails: { coords: MockCoords };
+  lastKnownCoords: Coords | null;
+  locationDetails: { coords: Coords };
 } = {
   locationMode: LocationMode.DEVICE,
   lastKnownCoords: null,
@@ -30,7 +30,7 @@ const mockPrayerTimesState: {
   didGetCurrentLocation: boolean;
   usingDefaultLocation: boolean;
   loadingTimes: boolean;
-  timesCoords: MockCoords | null;
+  timesCoords: Coords | null;
 } = {
   didGetCurrentLocation: true,
   usingDefaultLocation: false,

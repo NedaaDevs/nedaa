@@ -144,7 +144,7 @@ const storeOldPlace = (today: Date) => {
 };
 
 /** Where the location store says the place is, as the times store reads it. */
-const placeAt = (coords: { latitude: number; longitude: number }, timezone = NEW_ZONE) =>
+const placeAt = (coords: Coords, timezone = NEW_ZONE) =>
   Object.assign(locationStore.getState().locationDetails, { coords, timezone });
 
 afterEach(() => {
