@@ -12,10 +12,15 @@ type Args = Pick<SkyPaintProps, "scene" | "celestial" | "hijriDay" | "isRTL" | "
   height: number;
   /** Text over the sky, in the same points. */
   boxes: readonly WindowRect[];
+  /** Another view on the page draws the sun and moon. */
+  claimed: boolean;
+  /** The claim came as the sky mounted, so nothing is left to fade. */
+  claimedAtOnce: boolean;
 };
 
-/** The sun's or moon's opacity, lowered while text covers its disc. */
-export const useBodyBehindText = ({
+// Dims the sun or moon behind text, and fades it out while a view claims it.
+// `drawn` holds the body on screen until that fade ends.
+export const useBodyOpacity = ({
   scene,
   celestial,
   hijriDay,
@@ -24,6 +29,8 @@ export const useBodyBehindText = ({
   width,
   height,
   boxes,
+  claimed,
+  claimedAtOnce,
 }: Args) => {
   const body = scene.sun
     ? {
@@ -45,19 +52,26 @@ export const useBodyBehindText = ({
       : null;
   const hidden = body !== null && discOverlaps(body.centre.cx, body.centre.cy, body.radius, boxes);
   const [bodyOpacity] = useState(() => new Animated.Value(1));
+  const atOnce = reduced || claimedAtOnce;
+  const [drawn, setDrawn] = useState(!claimed);
+  // Drawn again before a fade in; a claim taken at once leaves none to fade.
+  if (!claimed && !drawn) setDrawn(true);
+  if (claimed && atOnce && drawn) setDrawn(false);
 
   useEffect(() => {
-    const target = hidden ? BODY_BEHIND_TEXT.opacity : 1;
-    if (reduced) return bodyOpacity.setValue(target);
+    const target = claimed ? 0 : hidden ? BODY_BEHIND_TEXT.opacity : 1;
+    if (atOnce) return bodyOpacity.setValue(target);
     const fade = Animated.timing(bodyOpacity, {
       toValue: target,
       duration: DURATION_MS.GENTLE,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     });
-    fade.start();
+    fade.start(({ finished }) => {
+      if (finished && claimed) setDrawn(false);
+    });
     return () => fade.stop();
-  }, [hidden, reduced, bodyOpacity]);
+  }, [claimed, hidden, atOnce, bodyOpacity]);
 
-  return bodyOpacity;
+  return { bodyOpacity, drawn };
 };
