@@ -37,6 +37,10 @@ export type CitiesDownloadOptions = {
   signal?: AbortSignal;
 };
 
+const throwIfCancelled = (signal?: AbortSignal) => {
+  if (signal?.aborted) throw new Error("Cities pack download cancelled");
+};
+
 /**
  * Downloads the full cities pack into the cache, then moves it into the database
  * directory only after a verified non-empty file exists. An interrupted download
@@ -68,6 +72,8 @@ export const downloadCitiesPack = async ({
 
   log.i("CitiesDB", `downloading full pack ${CITIES_PACK_VERSION}`);
   const downloaded = await new DownloadTask(url, staging, options).downloadAsync();
+  // Checked first: once cancelled, the staging file is a newer download's.
+  throwIfCancelled(signal);
 
   if (!downloaded || !staging.exists || staging.size === 0) {
     if (staging.exists) staging.delete();
@@ -81,6 +87,8 @@ export const downloadCitiesPack = async ({
   if (!(await invalidateCitiesDb())) {
     throw new Error("Cities pack install deferred: cities.db still open");
   }
+  // The close awaits, so a cancel can land during it.
+  throwIfCancelled(signal);
   // A stale database and its write-ahead sidecars would otherwise shadow the new file.
   if (target.exists) target.delete();
   for (const suffix of ["-wal", "-shm"]) {

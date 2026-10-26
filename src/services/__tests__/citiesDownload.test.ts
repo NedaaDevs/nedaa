@@ -1,5 +1,5 @@
 // In-memory expo-file-system: each file's size by its path.
-const mockFs = { files: new Map<string, number>() };
+const mockFs: { files: Map<string, number>; onDownloaded?: () => void } = { files: new Map() };
 
 jest.mock("expo-file-system", () => {
   class File {
@@ -28,6 +28,7 @@ jest.mock("expo-file-system", () => {
     }
     async downloadAsync() {
       mockFs.files.set(this.file.uri, 6_073_000);
+      mockFs.onDownloaded?.();
       return { uri: this.file.uri };
     }
   }
@@ -51,6 +52,7 @@ const download = () => downloadCitiesPack({ onProgress: jest.fn() });
 
 beforeEach(() => {
   mockFs.files.clear();
+  mockFs.onDownloaded = undefined;
   jest.mocked(invalidateCitiesDb).mockReset();
 });
 
@@ -68,6 +70,34 @@ describe("downloadCitiesPack", () => {
     jest.mocked(invalidateCitiesDb).mockResolvedValue(false);
 
     await expect(download()).rejects.toThrow();
+
+    expect(installed()).toBe(false);
+  });
+
+  // A newer download shares the staging file; a cancelled one installs nothing.
+  it("installs nothing when cancelled once the transfer is done", async () => {
+    jest.mocked(invalidateCitiesDb).mockResolvedValue(true);
+    const cancel = new AbortController();
+    mockFs.onDownloaded = () => cancel.abort();
+
+    await expect(
+      downloadCitiesPack({ onProgress: jest.fn(), signal: cancel.signal })
+    ).rejects.toThrow();
+
+    expect(installed()).toBe(false);
+    expect(invalidateCitiesDb).not.toHaveBeenCalled();
+  });
+
+  it("installs nothing when cancelled while the open connection closes", async () => {
+    const cancel = new AbortController();
+    jest.mocked(invalidateCitiesDb).mockImplementation(async () => {
+      cancel.abort();
+      return true;
+    });
+
+    await expect(
+      downloadCitiesPack({ onProgress: jest.fn(), signal: cancel.signal })
+    ).rejects.toThrow();
 
     expect(installed()).toBe(false);
   });
