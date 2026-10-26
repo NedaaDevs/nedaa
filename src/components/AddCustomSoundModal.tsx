@@ -87,75 +87,79 @@ export default function AddCustomSoundModal({
       ? t("notification.customSound.fileTooLarge", { maxMb: CUSTOM_SOUND_MAX_MB })
       : code;
 
-  const handlePickFile = async () => {
-    try {
-      setError(null);
-      setDuplicateWarning(null);
-      setForceAdd(false);
-      const file = await pickAudioFile();
+  const choose = (file: DocumentPicker.DocumentPickerAsset | null) => {
+    // Refused at pick time, so a name is never typed for a file that cannot
+    // be added.
+    if (file && validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
+      setSelectedFile(null);
+      setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
+      return;
+    }
 
-      // Refused at pick time so a name is never typed for a file that cannot be added.
-      if (file && validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
-        setSelectedFile(null);
-        setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
-        return;
-      }
+    if (file) {
+      // Check for duplicates
+      const duplicate = findDuplicateSound(file, customSounds);
 
-      if (file) {
-        // Check for duplicates
-        const duplicate = findDuplicateSound(file, customSounds);
-
-        if (duplicate && !forceAdd) {
-          // Show duplicate warning
-          Alert.alert(
-            t("notification.customSound.duplicateTitle"),
-            t("notification.customSound.duplicateMessage", {
-              existingName: duplicate.name,
-            }),
-            [
-              {
-                text: t("common.cancel"),
-                style: "cancel",
-                onPress: () => {
-                  // Don't select the file
-                  setSelectedFile(null);
-                },
+      if (duplicate && !forceAdd) {
+        // Show duplicate warning
+        Alert.alert(
+          t("notification.customSound.duplicateTitle"),
+          t("notification.customSound.duplicateMessage", {
+            existingName: duplicate.name,
+          }),
+          [
+            {
+              text: t("common.cancel"),
+              style: "cancel",
+              onPress: () => {
+                // Don't select the file
+                setSelectedFile(null);
               },
-              {
-                text: t("notification.customSound.addAnyway"),
-                onPress: () => {
-                  // Proceed with the file
-                  setSelectedFile(file);
-                  setForceAdd(true);
-                  setDuplicateWarning(
-                    t("notification.customSound.duplicateMessage", {
-                      existingName: duplicate.name,
-                    })
-                  );
+            },
+            {
+              text: t("notification.customSound.addAnyway"),
+              onPress: () => {
+                // Proceed with the file
+                setSelectedFile(file);
+                setForceAdd(true);
+                setDuplicateWarning(
+                  t("notification.customSound.duplicateMessage", {
+                    existingName: duplicate.name,
+                  })
+                );
 
-                  // Auto-fill name from filename if empty
-                  if (!soundName) {
-                    const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-                    setSoundName(name);
-                  }
-                },
+                // Auto-fill name from filename if empty
+                if (!soundName) {
+                  // Remove extension
+                  const name = file.name.replace(/\.[^/.]+$/, "");
+                  setSoundName(name);
+                }
               },
-            ]
-          );
-        } else {
-          // No duplicate or user has chosen to proceed
-          setSelectedFile(file);
+            },
+          ]
+        );
+      } else {
+        // No duplicate or user has chosen to proceed
+        setSelectedFile(file);
 
-          // Auto-fill name from filename if empty
-          if (!soundName) {
-            const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-            setSoundName(name);
-          }
+        // Auto-fill name from filename if empty
+        if (!soundName) {
+          const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+          setSoundName(name);
         }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to pick file");
     }
+  };
+
+  // Chains, not tries: the React Compiler cannot lower a try that holds a
+  // `finally`, a `&&` or a ternary, and skips the whole modal.
+  const handlePickFile = async () => {
+    setError(null);
+    setDuplicateWarning(null);
+    setForceAdd(false);
+    await pickAudioFile()
+      .then(choose)
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to pick file"));
   };
 
   const handleAdd = async () => {
@@ -167,27 +171,26 @@ export default function AddCustomSoundModal({
     setIsProcessing(true);
     setError(null);
 
-    try {
-      // Use the already stored file, passing existing sounds and force flag
-      const result = await addCustomSound(
-        selectedFile,
-        soundName.trim(),
-        CUSTOM_SOUND_NOTIFICATION_TYPES,
-        customSounds,
-        forceAdd
+    // Use the already stored file, passing existing sounds and force flag
+    await addCustomSound(
+      selectedFile,
+      soundName.trim(),
+      CUSTOM_SOUND_NOTIFICATION_TYPES,
+      customSounds,
+      forceAdd
+    )
+      .then((result) => {
+        if (result.success) {
+          onSuccess(result);
+          handleClose();
+        } else {
+          setError(describeError(result.error));
+        }
+      })
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : t("notification.customSound.addError"))
       );
-
-      if (result.success) {
-        onSuccess(result);
-        handleClose();
-      } else {
-        setError(describeError(result.error));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("notification.customSound.addError"));
-    } finally {
-      setIsProcessing(false);
-    }
+    setIsProcessing(false);
   };
 
   const handleClose = () => {
