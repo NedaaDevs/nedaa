@@ -1,5 +1,8 @@
 import { readdirSync, readFileSync } from "fs";
 import { join, relative } from "path";
+import { getTokenValue } from "tamagui";
+
+import config from "../../tamagui.config";
 
 const SRC = join(__dirname, "..");
 
@@ -23,9 +26,36 @@ const SKY_SCREENS = sources(SRC)
   .filter(([path, text]) => !path.startsWith(HOME) && /<SkyScrollView\b/.test(text))
   .filter(([path]) => !OWN_MEASURE.has(path));
 
-/** A gutter set by hand, in any of the spellings Tamagui reads as one prop. */
-const HAND_GUTTER =
-  /\b(paddingHorizontal|px|paddingStart|paddingEnd|ps|pe)=("\$(4|group|screen)"|\{(16|20)\})/;
+/** The props Tamagui reads as a horizontal inset, by long name or shorthand. */
+const INSET_PROPS = [
+  "paddingHorizontal",
+  "px",
+  "paddingStart",
+  "paddingEnd",
+  "paddingLeft",
+  "pl",
+  "paddingRight",
+  "pr",
+];
+
+/** The space tokens named for the screen's gutter and a group's inset. */
+const GUTTER_NAMES = ["screen", "group"] as const;
+
+/** Those gutters' widths, in points. */
+const GUTTERS = GUTTER_NAMES.map((name) => getTokenValue(`$${name}`, "space"));
+
+/** The named gutters and the numbered space steps of the same width. */
+const GUTTER_TOKENS = [
+  ...GUTTER_NAMES,
+  ...Object.entries(config.tokens.space)
+    .filter(([name, { val }]) => /^\d+$/.test(name) && GUTTERS.includes(val))
+    .map(([name]) => name),
+];
+
+/** A horizontal gutter set by hand, as a token or in points. */
+const HAND_GUTTER = new RegExp(
+  `\\b(${INSET_PROPS.join("|")})=("\\$(${GUTTER_TOKENS.join("|")})"|\\{(${GUTTERS.join("|")})\\})`
+);
 
 describe("hand gutter rule", () => {
   it.each([
@@ -33,8 +63,9 @@ describe("hand gutter rule", () => {
     'px="$group"',
     'paddingStart="$screen"',
     "paddingEnd={16}",
-    'ps="$4"',
-    "pe={20}",
+    'pl="$4"',
+    'pr="$5"',
+    "paddingRight={20}",
   ])("sees %s", (prop) => {
     expect(prop).toMatch(HAND_GUTTER);
   });
