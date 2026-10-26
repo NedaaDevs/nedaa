@@ -47,12 +47,22 @@ const FAILURE_KINDS: readonly unknown[] = Object.values(LOCATION_FAILURE);
 const isLocationFailure = (value: unknown): value is LocationFailure =>
   FAILURE_KINDS.includes(value);
 
-// An older saved record may hold free-text errors or lack newer fields.
-const withKnownError = (details: LocationDetails): LocationDetails => ({
-  ...initialLocationDetails,
-  ...details,
-  error: isLocationFailure(details.error) ? details.error : null,
-});
+// An older saved record may hold a free-text error, lack a newer field or
+// keep a dropped one; only the fields a record has now are restored.
+const restoredDetails = (saved: LocationDetails): LocationDetails => {
+  const { coords, address, timezone, error, fix, isLoading } = {
+    ...initialLocationDetails,
+    ...saved,
+  };
+  return {
+    coords,
+    address,
+    timezone,
+    error: isLocationFailure(error) ? error : null,
+    fix,
+    isLoading,
+  };
+};
 
 /** How the place is set: the mode, and the city chosen and when. */
 type PlaceChoice = {
@@ -550,7 +560,7 @@ export const useLocationStore = create<LocationStore>()(
           return {
             ...current,
             ...saved,
-            locationDetails: withKnownError(saved.locationDetails ?? current.locationDetails),
+            locationDetails: restoredDetails(saved.locationDetails ?? current.locationDetails),
             ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
           };
         },
