@@ -7,12 +7,11 @@ import { Box } from "@/components/ui/box";
 import { HStack, type HStackProps } from "@/components/ui/hstack";
 import { Icon, type IconProps, type IconSize } from "@/components/ui/icon";
 import { IconTile, TILE_STROKE } from "@/components/ui/icon-tile";
-import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
+import { useRestingSurface } from "@/components/ui/material/edge";
 import { Pressable } from "@/components/ui/pressable";
 import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { Text, type TextProps } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { useRTL } from "@/contexts/RTLContext";
 
 export const LIST_ROW_VARIANT = {
@@ -156,9 +155,9 @@ export const ListRow = ({
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const style = LIST_ROW_STYLE[variant];
-  const shadow = useElevationShadow(ELEVATION_LEVEL.E1);
-  const lift = style.rests ? { boxShadow: shadow } : undefined;
-  const edge = style.rests ? <HighlightEdge /> : null;
+  const resting = useRestingSurface();
+  const lift = style.rests ? resting.lift : undefined;
+  const edge = style.rests ? resting.edge : null;
   const scale = usePressScale();
   const leading =
     icon && tile ? (

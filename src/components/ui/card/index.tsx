@@ -1,11 +1,10 @@
 import { forwardRef } from "react";
 import { withStaticProperties } from "@tamagui/helpers";
 import { styled, YStack } from "tamagui";
-import type { GetProps, RadiusTokens, TamaguiElement } from "tamagui";
+import type { GetProps, TamaguiElement } from "tamagui";
 
-import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
+import { useRestingSurface } from "@/components/ui/material/edge";
 import { usePressScale } from "@/components/ui/pressable/pressScale";
-import { ELEVATION_LEVEL } from "@/constants/Elevation";
 
 const CardFrame = styled(YStack, {
   name: "Card",
@@ -60,7 +59,10 @@ const CardFrame = styled(YStack, {
 });
 
 type CardVariant = NonNullable<GetProps<typeof CardFrame>["variant"]>;
-type CardSize = GetProps<typeof CardFrame>["size"];
+type CardRestProps = Pick<
+  GetProps<typeof CardFrame>,
+  "testID" | "size" | "borderRadius" | "variant"
+>;
 
 /** Transparent and nested cards draw no lift and no lit edge. */
 const RESTS: Record<CardVariant, boolean> = {
@@ -73,27 +75,21 @@ const RESTS: Record<CardVariant, boolean> = {
   grouped: true,
 };
 
-/** The e1 shadow a resting card draws; undefined for a transparent one. */
-const useCardLift = (variant: CardVariant | undefined): string | undefined => {
-  const shadow = useElevationShadow(ELEVATION_LEVEL.E1);
-  return RESTS[variant ?? "plain"] ? shadow : undefined;
+/** The resting look on the card's own corner; null for a card that lies flat. */
+const useCardRest = ({ testID, size, borderRadius, variant }: CardRestProps) => {
+  const resting = useRestingSurface({
+    owner: testID,
+    radius: borderRadius ?? (size === "sm" ? "$chip" : "$card"),
+  });
+  return RESTS[variant ?? "plain"] ? resting : null;
 };
-
-type CardEdgeProps = { owner?: string; size: CardSize; borderRadius?: RadiusTokens | null };
-
-/** Follows the caller's radius where one is given; else the size's own. */
-const CardEdge = ({ owner, size, borderRadius }: CardEdgeProps) => (
-  <HighlightEdge owner={owner} radius={borderRadius ?? (size === "sm" ? "$chip" : "$card")} />
-);
 
 const RestingCard = forwardRef<TamaguiElement, GetProps<typeof CardFrame>>(
   ({ children, style, ...props }, ref) => {
-    const lift = useCardLift(props.variant);
+    const rest = useCardRest(props);
     return (
-      <CardFrame ref={ref} {...props} style={lift ? [{ boxShadow: lift }, style] : style}>
-        {lift ? (
-          <CardEdge owner={props.testID} size={props.size} borderRadius={props.borderRadius} />
-        ) : null}
+      <CardFrame ref={ref} {...props} style={rest ? [rest.lift, style] : style}>
+        {rest?.edge}
         {children}
       </CardFrame>
     );
@@ -138,7 +134,7 @@ const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
     },
     ref
   ) => {
-    const lift = useCardLift(props.variant);
+    const rest = useCardRest(props);
     const press = usePressScale();
     return (
       <CardPressableFrame
@@ -153,10 +149,8 @@ const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
         onLongPress={disabled ? undefined : onLongPress}
         accessibilityState={{ disabled: Boolean(disabled), ...accessibilityState }}
         {...props}
-        style={lift ? [{ boxShadow: lift }, style] : style}>
-        {lift ? (
-          <CardEdge owner={props.testID} size={props.size} borderRadius={props.borderRadius} />
-        ) : null}
+        style={rest ? [rest.lift, style] : style}>
+        {rest?.edge}
         {children}
       </CardPressableFrame>
     );
