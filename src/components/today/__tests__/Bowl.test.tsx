@@ -1,4 +1,4 @@
-import { processColor } from "react-native";
+import { Animated, processColor } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
@@ -65,6 +65,8 @@ const centreOf = (id: string) => {
 };
 
 describe("Bowl by day", () => {
+  afterEach(() => jest.restoreAllMocks());
+
   it("ticks sunrise, Dhuhr, Asr and Maghrib where their share falls on the rim", async () => {
     await renderBowl();
 
@@ -182,6 +184,7 @@ describe("Bowl by day", () => {
   });
 
   it("sets the sun on the rim at now, small, its rays still", async () => {
+    const turns = jest.spyOn(Animated, "loop");
     await renderBowl();
     const pad = SUN_GLYPH.bloom * (BOWL.body / SUN_GLYPH.core);
     const circles = screen.container.queryAll((node) => node.type === "RNSVGCircle");
@@ -189,9 +192,8 @@ describe("Bowl by day", () => {
 
     expect(core.props.cx).toBeCloseTo(at(DAY_LINE.now).x + pad);
     expect(core.props.cy).toBeCloseTo(at(DAY_LINE.now).y + pad);
-    expect(screen.getByTestId(SKY_PART.SUN_RAYS, hidden).props.style).not.toContainEqual(
-      expect.objectContaining({ transform: expect.anything() })
-    );
+    // Jest never steps a native-driver animation, so still rays start no turn.
+    expect(turns).not.toHaveBeenCalled();
   });
 
   it("stays out of the reader's way", async () => {
