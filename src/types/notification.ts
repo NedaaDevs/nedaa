@@ -1,6 +1,10 @@
 import type { OtherTimingId } from "@/constants/Prayer";
 // Constants
-import type { NOTIFICATION_TYPE, PRAYER_NOTIFICATION_TYPES } from "@/constants/Notification";
+import type {
+  NOTIFICATION_TYPE,
+  PRAYER_NOTIFICATION_TYPES,
+  SYSTEM_SOUND,
+} from "@/constants/Notification";
 import { IqamaSoundKey, PrayerSoundKey, PreAthanSoundKey, QadaSoundKey } from "@/constants/sounds";
 
 // Enums
@@ -25,7 +29,7 @@ export type PreAthanNotificationConfig = NotificationWithTiming & {
 
 export type QadaNotificationConfig = {
   enabled: boolean;
-  sound: QadaSoundKey | "default";
+  sound: QadaSoundKey | typeof SYSTEM_SOUND;
   vibration: boolean;
 };
 
