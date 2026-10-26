@@ -2,6 +2,7 @@ import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
 
 import { CalculationStep } from "@/components/onboarding/flow/steps/CalculationStep";
 import { CALCULATION_PICKER, CALCULATION_TITLE_KEY } from "@/constants/Calculation";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ASR_SCHOOL, MIDNIGHT_MODE, PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -162,7 +163,7 @@ it("introduces the choices without a city when none is known", async () => {
 });
 
 it("drafts the Asr school from its own row, with one selection tick", async () => {
-  HAPTIC.selection.mockClear();
+  HAPTIC[HAPTIC_FEEDBACK.SELECTION].mockClear();
   const props = stepProps();
   await renderWithTheme(<CalculationStep {...props} />);
 
@@ -177,7 +178,7 @@ it("drafts the Asr school from its own row, with one selection tick", async () =
 
   expect(useProviderSettingsStore.getState().getDraftSettings()?.madhab).toBe(ASR_SCHOOL.HANAFI);
   expect(lastPrimary(props.setPrimary)?.label).toBe(t("onboarding.calculation.apply"));
-  expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+  expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
 });
 
 it("holds back and skip while the apply runs", async () => {

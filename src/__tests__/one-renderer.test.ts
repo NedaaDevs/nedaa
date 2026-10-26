@@ -247,11 +247,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<LocationUpdateProgress\b/,
     home: "components/LocationUpdateProgress.tsx",
   },
-  // A file that calls playSource or names previewSource draws SoundPreview.
+  // A file that plays a sound sample draws SoundPreview. The five files
+  // `within` leaves out draw their own control through useSoundPreview.
   {
     concept: "a sound's play and stop control",
-    shows: /\bsoundPreviewManager\.playSource\(|\bpreviewSource\b/,
-    within: /^(app|components|hooks)\//,
+    shows:
+      /\bsoundPreviewManager\.playSource\(|\bpreviewSource\b|\buseSoundPreview\(|<SoundPreviewButton\b/,
+    within:
+      /^(?!app\/settings\/(customSounds|qada)\.tsx$|components\/(NotificationQuickSetup|PrayerCustomizationModal|alarm\/SoundPicker)\.tsx$)(app|components|hooks)\//,
     drawsWith: /<SoundPreview\b/,
     home: "components/ui/sound-preview/index.tsx",
   },
