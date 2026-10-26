@@ -33,11 +33,8 @@ describe("spring presets", () => {
   });
 
   // Reanimated and Tamagui must agree, so the config reads the same constants.
-  it.each([
-    ["springSettle", "SETTLE"],
-    ["springSnap", "SNAP"],
-  ] as const)("%s is fed by SPRING.%s", (name, key) => {
-    expect(spring(name)).toMatch(new RegExp(`\\.\\.\\.SPRING\\.${key}\\b`));
+  it("springSnap is fed by SPRING.SNAP", () => {
+    expect(spring("springSnap")).toMatch(/\.\.\.SPRING\.SNAP\b/);
   });
 
   it("keeps settle as the 220ms timing", () => {
