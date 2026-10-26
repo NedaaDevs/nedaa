@@ -17,7 +17,6 @@ import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Clock } from "lucide-react-native";
 
-import { ALARM_TYPE_META } from "@/constants/Alarm";
 import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { ChallengeWrapper } from "@/components/alarm/challenges";
@@ -102,8 +101,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
   } = useAlarmScreen(alarmId, alarmType);
 
   // A link can carry a type no alarm has; it rings as a custom alarm.
-  const meta =
-    ALARM_TYPE_META[isScheduledAlarmType(alarmType) ? alarmType : ScheduledAlarmType.CUSTOM];
+  const type = isScheduledAlarmType(alarmType) ? alarmType : ScheduledAlarmType.CUSTOM;
 
   return (
     <>
@@ -133,8 +131,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
             ) : (
               <ActiveAlarmView
                 alarmId={alarmId}
-                alarmType={alarmType}
-                metaTitle={meta.title}
+                alarmType={type}
                 challengeConfig={challengeConfig}
                 canSnooze={canSnooze}
                 remainingSnoozes={remainingSnoozes}
@@ -206,7 +203,6 @@ function SnoozedView({
 function ActiveAlarmView({
   alarmId,
   alarmType,
-  metaTitle,
   challengeConfig,
   canSnooze,
   remainingSnoozes,
@@ -216,8 +212,7 @@ function ActiveAlarmView({
   onGraceExpire,
 }: {
   alarmId: string;
-  alarmType: string;
-  metaTitle: string;
+  alarmType: ScheduledAlarmType;
   challengeConfig: ChallengeConfig;
   canSnooze: boolean;
   remainingSnoozes: number;
@@ -238,9 +233,7 @@ function ActiveAlarmView({
   const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
 
   const prayer = PRAYER_BY_ALARM[alarmType];
-  const prayerName = prayer
-    ? t(prayer.nameKey)
-    : t(`alarm.types.${alarmType}`, { defaultValue: metaTitle });
+  const prayerName = prayer ? t(prayer.nameKey) : t(`alarm.types.${alarmType}`);
 
   // Prayer time nearest the alarm's trigger — picks the today/tomorrow
   // occurrence closest to when the alarm fired; null when data is unavailable
