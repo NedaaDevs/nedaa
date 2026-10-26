@@ -354,7 +354,7 @@ describe("device fix in the location store", () => {
       expect(useLocationStore.getState().pendingCityChange).toBeNull();
     });
 
-    // The API names the city in the app's language, the device geocoder does not.
+    // The API names the city in the app's language; device geocoding does not.
     it("offers nothing inside a city the first fix named through the API alone", async () => {
       useLocationStore.setState({
         reverseGeocode: jest.fn(async () => ({
@@ -515,7 +515,7 @@ describe("device fix in the location store", () => {
     });
   });
 
-  // A try that lost to its deadline leaves its read running while the next runs.
+  // A try past its deadline leaves its read running while the next one runs.
   describe("the reading flag while device reads overlap", () => {
     const fresh = (location: LocationObject): LocationFix => ({
       location,

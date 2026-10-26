@@ -18,7 +18,7 @@ export const localizeDigits = (str: string, locale: string, useWesternNumerals: 
 // Each place followed by a whole number of three-digit groups.
 const THOUSANDS = /\B(?=(\d{3})+(?!\d))/g;
 
-/** A whole count, comma-grouped in Western digits; Arabic-Indic go ungrouped. */
+/** A whole count: comma-grouped Western digits, or ungrouped Arabic-Indic. */
 export const countText = (count: number, locale: string, useWesternNumerals: boolean) =>
   keepsArabicDigits(locale, useWesternNumerals)
     ? toArabicIndicDigits(String(count))
