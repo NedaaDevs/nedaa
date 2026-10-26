@@ -31,7 +31,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 
 // Utils
-import { groupCount } from "@/utils/digits";
+import { countText } from "@/utils/digits";
 
 /** Test ids for the parts a test reaches. */
 export const CITIES_PACK_PART = { OFFER: "cities-pack-offer" } as const;
@@ -43,16 +43,16 @@ const ROW = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 const megabytes = (bytes: number): string => (bytes / 1_000_000).toFixed(1);
 
 /** A count in the digits the reader keeps, grouped as those digits are. */
-const useGroupedCount = (count: number) => {
+const useCountText = (count: number) => {
   const { i18n } = useTranslation();
   const western = usePreferencesStore((state) => state.useWesternNumerals);
-  return groupCount(count, i18n.language, western);
+  return countText(count, i18n.language, western);
 };
 
 /** What search covers until the full list is installed. */
 const SeedNote = () => {
   const { t } = useTranslation();
-  const amount = useGroupedCount(CITIES_SEED_CITY_COUNT);
+  const amount = useCountText(CITIES_SEED_CITY_COUNT);
   return (
     // Drawn on the bare sky, where plain muted ink falls short of AA.
     <Text size="helper" color="$mutedSky" paddingHorizontal="$1">
@@ -64,7 +64,7 @@ const SeedNote = () => {
 /** The standing offer: what the full list holds and what it costs. */
 const Offer = ({ onDownload }: { onDownload: () => void }) => {
   const { t } = useTranslation();
-  const amount = useGroupedCount(CITIES_FULL_CITY_COUNT);
+  const amount = useCountText(CITIES_FULL_CITY_COUNT);
   const title = t("location.picker.packDownload");
   const detail = t("location.picker.packDetail", {
     count: CITIES_FULL_CITY_COUNT,
