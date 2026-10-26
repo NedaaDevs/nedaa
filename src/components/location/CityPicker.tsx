@@ -1,37 +1,53 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, Keyboard } from "react-native";
-import { Search } from "lucide-react-native";
+import { AccessibilityInfo, Keyboard } from "react-native";
+import { Globe, Search } from "lucide-react-native";
 
 // Components
-import { Text } from "@/components/ui/text";
-import { Icon } from "@/components/ui/icon";
-import { Input } from "@/components/ui/input";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
-import { Pressable } from "@/components/ui/pressable";
-import CityResultRow from "@/components/location/CityResultRow";
+import { HStack } from "@/components/ui/hstack";
+import { IconTile } from "@/components/ui/icon-tile";
+import { ListGroup } from "@/components/ui/list-group";
+import { LIST_ROW_STYLE, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { SearchField } from "@/components/ui/search-field";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatePanel } from "@/components/ui/state-panel";
+import { Text } from "@/components/ui/text";
+import { useThemeColor } from "@/components/ui/theme-color";
+import { VStack } from "@/components/ui/vstack";
 import CitiesPackRow from "@/components/location/CitiesPackRow";
-import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 
 // Hooks
 import { useCitySearch } from "@/hooks/useCitySearch";
-import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 
 // Stores
 import { useCitiesPackStore } from "@/stores/citiesPack";
-import { isRunning } from "@/stores/locationUpdate";
+import { isRunning, useLocationUpdateStore } from "@/stores/locationUpdate";
 
 // Constants
-import { CITIES_SEED_CITY_COUNT } from "@/constants/Cities";
+import { CITY_SEARCH_STATUS } from "@/constants/Cities";
 import { E2E_ID } from "@/constants/E2E";
+
+// Utils
+import { formatCityLabel } from "@/utils/cities";
 
 // Types
 import type { CitySearchResult } from "@/types/cities";
 import type { ManualLocation } from "@/types/location";
+
+/** Test ids for the parts a test reaches. */
+export const CITY_PICKER_PART = {
+  PROMPT: "city-picker-prompt",
+  NONE: "city-picker-none",
+  SKELETON: "city-picker-skeleton",
+} as const;
+
+/** Rows held in place while the first search of a word runs. */
+const SKELETON_ROWS = ["first", "second"] as const;
+
+const ROW = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 
 const toManualLocation = (city: CitySearchResult): ManualLocation => ({
   cityId: city.gid,
@@ -45,117 +61,193 @@ const toManualLocation = (city: CitySearchResult): ManualLocation => ({
   timezone: city.timezone,
 });
 
-type CityPickerProps = {
-  /** Called once the chosen city has been applied and downstream data refreshed. */
-  onDone: () => void;
-  onEnterCoordinates?: () => void;
+type NoteProps = { testID: string; title: string; body: string; children?: ReactNode };
+
+/** What stands in place of the rows: the state, and any way on. */
+const SearchNote = ({ testID, title, body, children }: NoteProps) => (
+  <Card testID={testID} alignItems="center" gap="$2" paddingVertical="$5">
+    <IconTile icon={Search} />
+    <VStack alignItems="center" gap="$1" accessible accessibilityLabel={`${title}. ${body}`}>
+      <Text size="md" fontWeight="600" color="$fg" textAlign="center">
+        {title}
+      </Text>
+      <Text size="sm" color="$muted" textAlign="center">
+        {body}
+      </Text>
+    </VStack>
+    {children}
+  </Card>
+);
+
+/** Two rows' worth of placeholder, drawn and never read. */
+const SkeletonRows = () => {
+  const bone = useThemeColor("$track");
+  return (
+    <Box accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <ListGroup>
+        {SKELETON_ROWS.map((row) => (
+          <HStack key={row} testID={CITY_PICKER_PART.SKELETON} alignItems="center" {...ROW.frame}>
+            <VStack flex={1} gap="$2">
+              <Box width="42%" height="$2">
+                <Skeleton variant="circular" startColor={bone} />
+              </Box>
+              <Box width="64%" height="$2">
+                <Skeleton variant="circular" startColor={bone} />
+              </Box>
+            </VStack>
+          </HStack>
+        ))}
+      </ListGroup>
+    </Box>
+  );
 };
 
-/**
- * Self-contained city selection. It owns no navigation, so any host — settings today,
- * onboarding later — can mount it and decide what "done" means.
- */
-const CityPicker = ({ onDone, onEnterCoordinates }: CityPickerProps) => {
+type RowsProps = {
+  results: CitySearchResult[];
+  onPick: (city: CitySearchResult) => void;
+  /** An update runs; a pick now would be dropped. */
+  busy: boolean;
+};
+
+const ResultRows = ({ results, onPick, busy }: RowsProps) => {
+  const { t, i18n } = useTranslation();
+  return (
+    <ListGroup>
+      {results.map((city) => {
+        const label = formatCityLabel(city, i18n.language);
+        return (
+          <ListRow
+            key={city.gid}
+            variant={LIST_ROW_VARIANT.GROUPED}
+            title={label.city}
+            status={label.secondary}
+            hint={t("a11y.location.picker.selectCityHint")}
+            testID={E2E_ID.CITY_RESULT}
+            disabled={busy}
+            onPress={() => onPick(city)}
+          />
+        );
+      })}
+    </ListGroup>
+  );
+};
+
+type Props = {
+  /** A city was chosen; the host applies it and says what happens next. */
+  onPick: (place: ManualLocation) => void;
+  onEnterCoordinates: () => void;
+};
+
+/** City search in Arabic or English; the host decides what a pick does. */
+const CityPicker = ({ onPick, onEnterCoordinates }: Props) => {
   const { t } = useTranslation();
-  const { query, setQuery, results, isSearching, offersFullPack } = useCitySearch();
-  const { run, applyManualLocation, retry } = useLocationUpdate();
+  const { query, setQuery, results, status, foundNothing, reachedLimit, retry, offersFullPack } =
+    useCitySearch();
+  const busy = useLocationUpdateStore((state) => isRunning(state.run));
   const refreshInstalled = useCitiesPackStore((state) => state.refreshInstalled);
 
   useEffect(() => {
     refreshInstalled();
   }, [refreshInstalled]);
 
-  // A failed refresh keeps the picker open with the error on screen so the user can retry.
-  const handleSelect = async (city: CitySearchResult) => {
+  const outcome =
+    status !== CITY_SEARCH_STATUS.DONE
+      ? null
+      : results.length === 0
+        ? t("location.picker.noneTitle")
+        : t(reachedLimit ? "location.picker.resultCountCapped" : "location.picker.resultCount", {
+            count: results.length,
+          });
+
+  // What a search found is said on both platforms once it lands.
+  useEffect(() => {
+    if (outcome) AccessibilityInfo.announceForAccessibility(outcome);
+  }, [outcome]);
+
+  const pick = (city: CitySearchResult) => {
     Keyboard.dismiss();
-    const applied = await applyManualLocation(toManualLocation(city));
-    if (applied) onDone();
-  };
-  // A retry that lands is a pick that landed.
-  const retryPick = async () => {
-    if (await retry()) onDone();
+    onPick(toManualLocation(city));
   };
 
-  const hasQuery = query.trim().length > 0;
+  const enterCoordinates = t("location.picker.enterCoordinates");
+  const coordinatesHint = t("a11y.location.picker.enterCoordinatesHint");
+
+  const noneNote = (
+    <SearchNote
+      testID={CITY_PICKER_PART.NONE}
+      title={t("location.picker.noneTitle")}
+      body={t("location.picker.noneHint")}>
+      <Button
+        action="secondary"
+        variant="outline"
+        marginTop="$2"
+        alignSelf="stretch"
+        onPress={onEnterCoordinates}
+        accessibilityLabel={enterCoordinates}
+        accessibilityHint={coordinatesHint}>
+        <Button.Icon as={Globe} />
+        <Button.Text>{enterCoordinates}</Button.Text>
+      </Button>
+    </SearchNote>
+  );
+
+  const body = () => {
+    switch (status) {
+      case CITY_SEARCH_STATUS.IDLE:
+        return (
+          <SearchNote
+            testID={CITY_PICKER_PART.PROMPT}
+            title={t("location.picker.promptTitle")}
+            body={t("location.picker.searchExample")}
+          />
+        );
+      case CITY_SEARCH_STATUS.SEARCHING:
+      case CITY_SEARCH_STATUS.DONE:
+        // The last answer holds while the next search runs.
+        if (results.length > 0) return <ResultRows results={results} onPick={pick} busy={busy} />;
+        if (foundNothing) return noneNote;
+        return <SkeletonRows />;
+      case CITY_SEARCH_STATUS.FAILED:
+        return (
+          <StatePanel
+            title={t("location.picker.searchFailed.title")}
+            body={t("location.picker.searchFailed.body")}
+            action={{ label: t("common.retry"), onPress: retry }}
+          />
+        );
+      default: {
+        const unhandled: never = status;
+        return unhandled;
+      }
+    }
+  };
 
   return (
-    <VStack flex={1} gap="$2">
-      <Box paddingHorizontal="$4" paddingTop="$3">
-        <Card variant="grouped">
-          <HStack alignItems="center" gap="$2" paddingHorizontal="$3" height={44}>
-            <Icon as={Search} size="sm" color="$typographySecondary" />
-            <Input
-              testID={E2E_ID.CITY_SEARCH_INPUT}
-              flex={1}
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t("location.picker.searchPlaceholder")}
-              borderWidth={0}
-              backgroundColor="transparent"
-              paddingHorizontal="$0"
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel={t("a11y.location.picker.searchField")}
-            />
-            {isSearching && <Spinner size="small" />}
-          </HStack>
-        </Card>
-      </Box>
-
-      {offersFullPack && (
-        <Box paddingHorizontal="$4">
-          <Text size="xs" color="$typographySecondary">
-            {t("location.picker.seedNotice", { count: CITIES_SEED_CITY_COUNT })}
-          </Text>
-        </Box>
+    <VStack gap="$section">
+      <VStack gap="$3">
+        <SearchField
+          testID={E2E_ID.CITY_SEARCH_INPUT}
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t("location.picker.searchPlaceholder")}
+          status={
+            status === CITY_SEARCH_STATUS.SEARCHING ? t("location.picker.searching") : undefined
+          }
+          autoFocus
+        />
+        {body()}
+      </VStack>
+      {offersFullPack ? <CitiesPackRow /> : null}
+      {/* With no city found, the way to coordinates is in the note itself. */}
+      {foundNothing ? null : (
+        <Button
+          variant="link"
+          onPress={onEnterCoordinates}
+          accessibilityLabel={enterCoordinates}
+          accessibilityHint={coordinatesHint}>
+          <Button.Text>{enterCoordinates}</Button.Text>
+        </Button>
       )}
-
-      <LocationUpdateProgress run={run} onRetry={() => void retryPick()} />
-
-      <FlatList
-        data={results}
-        keyExtractor={(item) => String(item.gid)}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        renderItem={({ item }) => (
-          <CityResultRow city={item} onSelect={handleSelect} disabled={isRunning(run)} />
-        )}
-        ListHeaderComponent={
-          offersFullPack && results.length === 0 ? (
-            <Box paddingTop="$2">
-              <CitiesPackRow />
-            </Box>
-          ) : undefined
-        }
-        ListEmptyComponent={
-          hasQuery && !isSearching ? (
-            <Box padding="$5">
-              <Text size="sm" color="$typographySecondary" textAlign="center">
-                {t("location.picker.noResults")}
-              </Text>
-            </Box>
-          ) : undefined
-        }
-        ListFooterComponent={
-          <VStack gap="$3" paddingVertical="$4">
-            {offersFullPack && results.length > 0 ? <CitiesPackRow /> : null}
-            {onEnterCoordinates && (
-              <Pressable
-                onPress={onEnterCoordinates}
-                minHeight={44}
-                paddingHorizontal="$5"
-                justifyContent="center"
-                accessibilityRole="button"
-                accessibilityLabel={t("location.picker.enterCoordinates")}
-                accessibilityHint={t("a11y.location.picker.enterCoordinatesHint")}>
-                <Text size="sm" color="$accentPrimary">
-                  {t("location.picker.enterCoordinates")}
-                </Text>
-              </Pressable>
-            )}
-          </VStack>
-        }
-      />
     </VStack>
   );
 };

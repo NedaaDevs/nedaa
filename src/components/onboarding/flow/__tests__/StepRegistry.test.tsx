@@ -79,10 +79,11 @@ const mockCity = {
 };
 jest.mock("@/hooks/useCitySearch", () => ({
   useCitySearch: () => ({
-    query: "",
+    query: "Riyadh",
     setQuery: () => {},
     results: [mockCity],
-    isSearching: false,
+    status: jest.requireActual("@/constants/Cities").CITY_SEARCH_STATUS.DONE,
+    retry: () => {},
     offersFullPack: false,
   }),
 }));

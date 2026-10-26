@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Info, TriangleAlert } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
+import { ChevronLeft, ChevronRight, Info, MapPin, TriangleAlert } from "lucide-react-native";
 
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -14,6 +15,8 @@ export const CALLOUT_TONE = {
   WARN: "warn",
   /** A calm fact about what is shown, such as where a place came from. */
   INFO: "info",
+  /** A place found for what was entered, such as the nearest city. */
+  PLACE: "place",
 } as const;
 export type CalloutTone = (typeof CALLOUT_TONE)[keyof typeof CALLOUT_TONE];
 
@@ -22,6 +25,7 @@ export const CALLOUT_PART = {
   FRAME: "callout-frame",
   ICON_WARN: "callout-icon-warn",
   ICON_INFO: "callout-icon-info",
+  ICON_PLACE: "callout-icon-place",
   CHEVRON_LEFT: "callout-chevron-left",
   CHEVRON_RIGHT: "callout-chevron-right",
 } as const;
@@ -36,12 +40,25 @@ const TONE_LOOK = {
     frame: { backgroundColor: "$tile" },
     icon: { as: Info, color: "$fg", testID: CALLOUT_PART.ICON_INFO },
   },
+  [CALLOUT_TONE.PLACE]: {
+    frame: { backgroundColor: "$tile" },
+    icon: { as: MapPin, color: "$fg", testID: CALLOUT_PART.ICON_PLACE },
+  },
 } as const;
 
-type Props = { body: string; tone?: CalloutTone; action?: StateAction };
+type Props = {
+  /** A lead line over the body, such as the place found. */
+  title?: string;
+  body: string;
+  tone?: CalloutTone;
+  action?: StateAction;
+  /** Off where the host says the note itself, once it has settled. */
+  live?: boolean;
+};
 
 /** A note beside working content: what to know, and any way to act on it. */
-export const Callout = ({ body, tone = CALLOUT_TONE.WARN, action }: Props) => {
+export const Callout = ({ title, body, tone = CALLOUT_TONE.WARN, action, live = true }: Props) => {
+  const { t } = useTranslation();
   const { isRTL } = useRTL();
   const look = TONE_LOOK[tone];
   return (
@@ -57,14 +74,21 @@ export const Callout = ({ body, tone = CALLOUT_TONE.WARN, action }: Props) => {
         alignItems="flex-start"
         gap="$2"
         accessible
-        accessibilityLabel={body}
-        accessibilityLiveRegion="polite">
+        accessibilityLabel={title ? t("a11y.join", { first: title, second: body }) : body}
+        accessibilityLiveRegion={live ? "polite" : "none"}>
         <Box testID={look.icon.testID}>
           <Icon as={look.icon.as} size="sm" color={look.icon.color} />
         </Box>
-        <Text size="sm" color="$fg" flex={1}>
-          {body}
-        </Text>
+        <VStack flex={1}>
+          {title ? (
+            <Text size="sm" bold color="$fg">
+              {title}
+            </Text>
+          ) : null}
+          <Text size="sm" color="$fg">
+            {body}
+          </Text>
+        </VStack>
       </HStack>
       {/* An underline crosses Arabic dots; a chevron marks the action instead. */}
       {action ? (

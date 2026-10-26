@@ -38,6 +38,7 @@ jest.mock("react-native-safe-area-context", () =>
   jest.requireActual("@/test-helpers/safeAreaMock")
 );
 let mockReduced = false;
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 jest.mock("@/utils/measureInWindow", () => ({ measureInWindow: () => Promise.resolve(null) }));
 jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));

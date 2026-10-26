@@ -7,6 +7,7 @@ import { isFullPackInstalled, invalidateCitiesDb } from "@/services/cities-db";
 
 // Utils
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 
 const log = AppLogger.create("location");
 
@@ -37,12 +38,13 @@ export const useCitiesPackStore = create<CitiesPackStore>()(
       download: async () => {
         if (get().isDownloading) return;
 
-        controller = new AbortController();
+        const own = new AbortController();
+        controller = own;
         set({ isDownloading: true, error: null, receivedBytes: 0, totalBytes: 0 });
 
         try {
           await downloadCitiesPack({
-            signal: controller.signal,
+            signal: own.signal,
             onProgress: ({ receivedBytes, totalBytes }) => set({ receivedBytes, totalBytes }),
           });
 
@@ -52,12 +54,15 @@ export const useCitiesPackStore = create<CitiesPackStore>()(
           await invalidateCitiesDb();
           set({ isInstalled: isFullPackInstalled(), isDownloading: false });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Cities pack download failed";
+          // A cancel rejects the task; it returns to the offer, not a failure.
+          if (own.signal.aborted) return;
+          const message = errorText(error);
           log.w("CitiesDB", `full pack download failed: ${message}`);
           // The bundled seed stays usable, so a failure never blocks picking a city.
           set({ isDownloading: false, error: message });
         } finally {
-          controller = null;
+          // A cancelled task settling late keeps a newer download's controller.
+          if (controller === own) controller = null;
         }
       },
 

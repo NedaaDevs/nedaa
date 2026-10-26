@@ -22,8 +22,8 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   CITY_CHANGE_VIEW,
   CITY_PICKER_VIEW,
-  LOCATION_PICKER,
   UPDATE_STEP,
+  locationPickerRoute,
   type CityChangeView,
   type CityPickerView,
 } from "@/constants/Location";
@@ -195,7 +195,7 @@ export const CityChangeSheet = () => {
   const openPicker = (view: CityPickerView) => {
     dismissFailure();
     closeCityChange();
-    router.push({ pathname: LOCATION_PICKER.href, params: { [LOCATION_PICKER.viewParam]: view } });
+    router.push(locationPickerRoute(view));
   };
   const onClose = () => {
     setStarted(false);

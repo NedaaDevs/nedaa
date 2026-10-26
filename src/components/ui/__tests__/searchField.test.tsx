@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { screen, userEvent } from "@testing-library/react-native";
 
+import config from "../../../../tamagui.config";
 import { SearchField } from "@/components/ui/search-field";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -36,5 +37,29 @@ describe("SearchField", () => {
     await renderWithTheme(<Harness initial="Umm" />);
 
     expect(screen.getByLabelText(PLACEHOLDER).props.value).toBe("Umm");
+  });
+
+  it("offers the keyboard's search key", async () => {
+    await renderWithTheme(<Harness />);
+
+    expect(screen.getByLabelText(PLACEHOLDER).props.returnKeyType).toBe("search");
+  });
+
+  it("carries a test id to its field", async () => {
+    await renderWithTheme(
+      <SearchField value="" onChangeText={() => {}} placeholder={PLACEHOLDER} testID="field" />
+    );
+
+    expect(screen.getByTestId("field")).toBe(screen.getByLabelText(PLACEHOLDER));
+  });
+
+  it("shows a status beside the text while one is given", async () => {
+    const { rerender } = await renderWithTheme(
+      <SearchField value="Ri" onChangeText={() => {}} placeholder={PLACEHOLDER} status="Busy" />
+    );
+    expect(screen.getByText("Busy")).toHaveStyle({ color: config.themes.light.muted.val });
+
+    await rerender(<SearchField value="Ri" onChangeText={() => {}} placeholder={PLACEHOLDER} />);
+    expect(screen.queryByText("Busy")).toBeNull();
   });
 });

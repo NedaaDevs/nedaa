@@ -7,9 +7,18 @@ import type { StepProps } from "@/components/onboarding/flow/types";
 import { LOCATION_CHOICE, ONBOARDING_PART } from "@/constants/Onboarding";
 import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
+import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
+import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { controlProblems } from "@/test-helpers/controls";
+import {
+  coordinatesStub,
+  PLACE,
+  pickerStub,
+  resetPickerStubs,
+  updateStub,
+} from "@/test-helpers/cityPickerStubs";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import {
   lastBack,
@@ -17,6 +26,7 @@ import {
   primaryHidden,
   stepProps,
 } from "@/test-helpers/onboardingStepProps";
+import { later } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { requestLocationPermission } from "@/utils/location";
 
@@ -29,23 +39,19 @@ jest.mock("@/utils/location", () => ({
 
 jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 
-const mockPicker: { onDone?: () => void; onEnterCoordinates?: () => void } = {};
-const mockCoordinates: { onDone?: () => void } = {};
-jest.mock("@/components/location/CityPicker", () => {
-  const CityPickerStub = (props: { onDone: () => void; onEnterCoordinates?: () => void }) => {
-    mockPicker.onDone = props.onDone;
-    mockPicker.onEnterCoordinates = props.onEnterCoordinates;
-    return null;
-  };
-  return { __esModule: true, default: CityPickerStub };
-});
-jest.mock("@/components/location/CoordinateEntry", () => {
-  const CoordinateEntryStub = (props: { onDone: () => void }) => {
-    mockCoordinates.onDone = props.onDone;
-    return null;
-  };
-  return { __esModule: true, default: CoordinateEntryStub };
-});
+// A pick hands its place to the step, which waits on the update stub.
+jest.mock(
+  "@/components/location/CityPicker",
+  () => jest.requireActual("@/test-helpers/cityPickerStubs").cityPickerModule
+);
+jest.mock(
+  "@/components/location/CoordinateEntry",
+  () => jest.requireActual("@/test-helpers/cityPickerStubs").coordinateEntryModule
+);
+jest.mock(
+  "@/hooks/useLocationUpdate",
+  () => jest.requireActual("@/test-helpers/cityPickerStubs").locationUpdateModule
+);
 
 const t = i18n.t.bind(i18n);
 const mockRequest = jest.mocked(requestLocationPermission);
@@ -72,9 +78,7 @@ beforeEach(async () => {
   await act(() => i18n.changeLanguage(AppLocale.EN));
   mockRequest.mockReset().mockResolvedValue({ granted: false });
   clearHaptics();
-  delete mockPicker.onDone;
-  delete mockPicker.onEnterCoordinates;
-  delete mockCoordinates.onDone;
+  resetPickerStubs();
   useLocationStore.setState({ locationMode: LocationMode.DEVICE, manualLocation: null });
 });
 
@@ -97,7 +101,7 @@ describe("LocationStep", () => {
     await userEvent.press(screen.getByTestId(ONBOARDING_PART.LOCATION_CITY));
     await act(async () => lastPrimary(props.setPrimary)?.onPress());
 
-    expect(mockPicker.onDone).toBeDefined();
+    expect(pickerStub.pick).toBeDefined();
     expect(props.onNext).not.toHaveBeenCalled();
   });
 
@@ -121,7 +125,7 @@ describe("LocationStep", () => {
     });
     await renderWithTheme(<LocationStep {...props} />);
     await openLocationPicker(props);
-    const landing = mockPicker.onDone;
+    const landing = pickerStub.pick;
     // The pick has stored its city and is still loading the times.
     useLocationStore.setState({ locationMode: LocationMode.MANUAL });
 
@@ -143,7 +147,7 @@ describe("LocationStep", () => {
     const props = stepProps();
     await renderWithTheme(<LocationStep {...props} />);
     await openLocationPicker(props);
-    const landing = mockPicker.onDone;
+    const landing = pickerStub.pick;
     useLocationStore.setState({ locationMode: LocationMode.MANUAL });
 
     await stepBack(props);
@@ -160,9 +164,57 @@ describe("LocationStep", () => {
     await openLocationPicker(props);
     expect(props.onNext).not.toHaveBeenCalled();
 
-    await act(async () => mockPicker.onDone?.());
+    await act(async () => pickerStub.pick?.());
     expect(props.setSession).toHaveBeenCalledWith(CITY);
     expect(called(props.setSession)).toBeLessThan(called(props.onNext));
+  });
+
+  // Onboarding has no Location screen behind it: a pick waits in the step.
+  it("waits in the step until the pick's update lands", async () => {
+    const update = later<boolean>();
+    updateStub.applyManualLocation.mockReturnValue(update.promise);
+    const props = stepProps();
+    await renderWithTheme(<LocationStep {...props} />);
+    await openLocationPicker(props);
+
+    await act(async () => pickerStub.pick?.());
+    expect(updateStub.applyManualLocation).toHaveBeenCalledWith(PLACE);
+    expect(props.onNext).not.toHaveBeenCalled();
+
+    await act(async () => update.release(true));
+    expect(props.setSession).toHaveBeenCalledWith(CITY);
+    expect(props.onNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the pick's update steps in the step while it runs", async () => {
+    updateStub.run = {
+      start: { kind: UPDATE_START.CITY, city: PLACE },
+      step: UPDATE_STEP.PRAYER_TIMES,
+      failed: false,
+    };
+    const props = stepProps();
+    await renderWithTheme(<LocationStep {...props} />);
+    await openLocationPicker(props);
+
+    expect(screen.getByTestId(LOCATION_UPDATE_PART.FRAME)).toBeTruthy();
+  });
+
+  // A pick whose times failed is retried in place; landing moves the step on.
+  it("moves on once a retried pick lands", async () => {
+    updateStub.run = {
+      start: { kind: UPDATE_START.CITY, city: PLACE },
+      step: UPDATE_STEP.PRAYER_TIMES,
+      failed: true,
+    };
+    const props = stepProps();
+    await renderWithTheme(<LocationStep {...props} />);
+    await openLocationPicker(props);
+
+    await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
+
+    expect(updateStub.retry).toHaveBeenCalledTimes(1);
+    expect(props.setSession).toHaveBeenCalledWith(CITY);
+    expect(props.onNext).toHaveBeenCalledTimes(1);
   });
 
   // As the language list does, every press on a row ticks, the chosen one too.
@@ -182,8 +234,8 @@ describe("LocationStep", () => {
     await renderWithTheme(<LocationStep {...props} />);
     await openLocationPicker(props);
 
-    await act(async () => mockPicker.onEnterCoordinates?.());
-    await act(async () => mockCoordinates.onDone?.());
+    await act(async () => pickerStub.onEnterCoordinates?.());
+    await act(async () => coordinatesStub.save?.());
 
     expect(props.setSession).toHaveBeenCalledWith(CITY);
     expect(props.onNext).toHaveBeenCalledTimes(1);
@@ -195,7 +247,7 @@ describe("LocationStep", () => {
     await renderWithTheme(<LocationStep {...props} />);
     expect(lastBack(props.setBack)).toBeNull();
     await openLocationPicker(props);
-    await act(async () => mockPicker.onEnterCoordinates?.());
+    await act(async () => pickerStub.onEnterCoordinates?.());
     expect(screen.getByText(t("location.coordinates.title"))).toBeTruthy();
     expect(screen.queryByRole("button", { name: t("onboarding.back") })).toBeNull();
 
@@ -215,7 +267,7 @@ describe("LocationStep", () => {
 
     await openLocationPicker(props);
     expect(primaryHidden(props.setPrimaryHidden)).toBe(true);
-    await act(async () => mockPicker.onEnterCoordinates?.());
+    await act(async () => pickerStub.onEnterCoordinates?.());
     expect(primaryHidden(props.setPrimaryHidden)).toBe(true);
 
     await stepBack(props);
@@ -233,7 +285,7 @@ describe("LocationStep", () => {
     expect(focus).toHaveBeenCalledTimes(1);
     expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
 
-    await act(async () => mockPicker.onEnterCoordinates?.());
+    await act(async () => pickerStub.onEnterCoordinates?.());
     expect(focus).toHaveBeenCalledTimes(2);
 
     await stepBack(props);
@@ -284,7 +336,7 @@ describe("LocationPermissionStep", () => {
     );
 
     await userEvent.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
-    await act(async () => mockPicker.onDone?.());
+    await act(async () => pickerStub.pick?.());
 
     expect(props.setSession).toHaveBeenCalledWith(CITY);
     expect(props.onNext).toHaveBeenCalledTimes(1);
@@ -301,9 +353,9 @@ describe("LocationPermissionStep", () => {
     await renderWithTheme(<LocationPermissionStep {...props} />);
     await openDeniedPicker(props);
 
-    await act(async () => mockPicker.onEnterCoordinates?.());
+    await act(async () => pickerStub.onEnterCoordinates?.());
     expect(screen.getByText(t("location.coordinates.title"))).toBeTruthy();
-    await act(async () => mockCoordinates.onDone?.());
+    await act(async () => coordinatesStub.save?.());
 
     expect(props.setSession).toHaveBeenCalledWith(CITY);
     expect(props.onNext).toHaveBeenCalledTimes(1);

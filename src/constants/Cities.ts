@@ -20,3 +20,29 @@ export const CITIES_FULL_CITY_COUNT = 69537;
  */
 export const NEAREST_CITY_INITIAL_DEGREES = 0.75;
 export const NEAREST_CITY_MAX_DEGREES = 6;
+
+/** What is wrong with a typed coordinate, said under its field. */
+export const COORDINATE_ERROR = {
+  NOT_A_NUMBER: "notANumber",
+  OUT_OF_RANGE: "outOfRange",
+} as const;
+export type CoordinateError = (typeof COORDINATE_ERROR)[keyof typeof COORDINATE_ERROR];
+
+/** Why a typed coordinate is not one yet. */
+export const COORDINATE_PROBLEM = {
+  /** Empty, or a number part-way typed: no error is shown. */
+  INCOMPLETE: "incomplete",
+  ...COORDINATE_ERROR,
+} as const;
+export type CoordinateProblem = (typeof COORDINATE_PROBLEM)[keyof typeof COORDINATE_PROBLEM];
+
+/** Where a city search stands for the text in the field. */
+export const CITY_SEARCH_STATUS = {
+  /** Nothing typed. */
+  IDLE: "idle",
+  SEARCHING: "searching",
+  DONE: "done",
+  /** The cities database threw. */
+  FAILED: "failed",
+} as const;
+export type CitySearchStatus = (typeof CITY_SEARCH_STATUS)[keyof typeof CITY_SEARCH_STATUS];
