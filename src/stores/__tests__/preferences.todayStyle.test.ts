@@ -12,7 +12,9 @@ jest.mock("expo-sqlite/kv-store", () => ({
   },
 }));
 
-const STORE_KEY = "display-storage";
+const STORE_KEY = usePreferencesStore.persist.getOptions().name;
+
+beforeEach(() => usePreferencesStore.setState(usePreferencesStore.getInitialState(), true));
 
 describe("preferences Today style", () => {
   it("draws the bowl by default", () => {
@@ -27,7 +29,6 @@ describe("preferences Today style", () => {
 
   // Preferences saved before the setting existed carry no style.
   it("reads the bowl from saved preferences that name no style", async () => {
-    usePreferencesStore.setState({ todayStyle: TODAY_STYLE.BOWL });
     jest
       .mocked(Storage.getItem)
       .mockImplementation((key) =>
