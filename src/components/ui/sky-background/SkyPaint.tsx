@@ -1,5 +1,5 @@
-import { useLayoutEffect, useState, type ComponentRef, type Ref } from "react";
-import { Animated, Easing, StyleSheet, View } from "react-native";
+import { useLayoutEffect, useState, type Ref } from "react";
+import { Animated, Easing, StyleSheet, View, type ViewInstance } from "react-native";
 
 import { MoonGlyph } from "@/components/ui/sky-background/MoonGlyph";
 import { SKY_PART } from "@/components/ui/sky-background/parts";
@@ -36,7 +36,7 @@ export type SkyPaintProps = {
   bodyOpacity?: Animated.Value;
   /** The canvas's test id. */
   testID?: string;
-  ref?: Ref<ComponentRef<typeof View>>;
+  ref?: Ref<ViewInstance>;
 };
 
 type LayersProps = Omit<SkyPaintProps, "testID" | "ref" | "bodyOpacity"> & {

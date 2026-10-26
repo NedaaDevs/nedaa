@@ -1,5 +1,5 @@
-import type { ComponentProps, ComponentRef, RefObject } from "react";
-import { Platform, StyleSheet, type View as NativeView } from "react-native";
+import type { ComponentProps, RefObject } from "react";
+import { Platform, StyleSheet, type ViewInstance } from "react-native";
 import { BlurView } from "expo-blur";
 import { getTokenValue, View } from "tamagui";
 
@@ -44,7 +44,7 @@ type MaterialProps = ComponentProps<typeof View> & {
   elevation?: ElevationLevel;
   radius?: RadiusName;
   /** Android only: the view whose pixels the blur reads. */
-  blurTarget?: RefObject<ComponentRef<typeof NativeView> | null>;
+  blurTarget?: RefObject<ViewInstance | null>;
   /** Draws a hairline just inside the edge, for a surface over a bright sky. */
   ring?: boolean;
 };

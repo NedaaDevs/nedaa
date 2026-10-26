@@ -8,7 +8,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  type ComponentRef,
   type PropsWithChildren,
   type ReactNode,
   type RefObject,
@@ -107,7 +106,7 @@ const NO_TITLE = createRef<ViewInstance>();
 /** The sheet's title, for content that sends reader focus back to it. */
 const useActionsheetTitle = (): RefObject<ViewInstance | null> => use(TitleContext) ?? NO_TITLE;
 
-type BlurTarget = RefObject<ComponentRef<typeof RNView> | null>;
+type BlurTarget = RefObject<ViewInstance | null>;
 
 /** The content view whose pixels the header blurs on Android. */
 const BlurTargetContext = createContext<BlurTarget | null>(null);
@@ -222,7 +221,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<ViewInstance>(null);
-  const blurTarget = useRef<ComponentRef<typeof RNView>>(null);
+  const blurTarget = useRef<ViewInstance>(null);
   const hasPresented = useRef(false);
   const leaving = useRef(false);
   // Set once the sheet first settles; a later snap is the user's own move.

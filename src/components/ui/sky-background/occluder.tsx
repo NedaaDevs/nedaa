@@ -1,13 +1,11 @@
+import { createContext, use, useEffect, useId, useRef, type ReactNode } from "react";
 import {
-  createContext,
-  use,
-  useEffect,
-  useId,
-  useRef,
-  type ComponentRef,
-  type ReactNode,
-} from "react";
-import { ScrollView, View, type ScrollViewProps, type ViewProps } from "react-native";
+  ScrollView,
+  View,
+  type ScrollViewProps,
+  type ViewInstance,
+  type ViewProps,
+} from "react-native";
 
 import { SCREEN_GUTTER, ScreenGutterContext } from "@/components/ui/screen-content";
 import { measureInWindow } from "@/utils/measureInWindow";
@@ -34,7 +32,7 @@ type OccluderProps = {
 export const SkyOccluder = ({ children, style, testID }: OccluderProps) => {
   const registry = use(SkyOccluderContext);
   const id = useId();
-  const view = useRef<ComponentRef<typeof View>>(null);
+  const view = useRef<ViewInstance>(null);
   const report = registry?.report;
   const epoch = registry?.epoch;
 
