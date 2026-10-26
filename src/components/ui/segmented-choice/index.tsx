@@ -8,7 +8,9 @@ import { Pressable } from "@/components/ui/pressable";
 import { SlidingIndicator } from "@/components/ui/sliding-indicator";
 import { Text } from "@/components/ui/text";
 import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
+import { SEGMENTED_PAINT } from "@/components/ui/segmented-choice/paint";
 import { CONTACT_SHADOW } from "@/constants/Elevation";
+import type { ColorToken } from "@/constants/Palette";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -112,7 +114,7 @@ export const SegmentedChoice = <V extends string | number>({
             gap: TRACK_INSET,
             padding: TRACK_INSET,
             borderRadius: "$control",
-            backgroundColor: "$quietTint",
+            backgroundColor: `$${SEGMENTED_PAINT.TRACK}`,
             onLayout: ({ nativeEvent }: LayoutChangeEvent) =>
               setTrackWidth(nativeEvent.layout.width),
           }
@@ -125,7 +127,9 @@ export const SegmentedChoice = <V extends string | number>({
         const digits = (text: string) =>
           literalDigits ? text : localizeDigits(text, locale, western);
         const text = digits(label(option));
-        const colour = selected ? "$fg" : "$muted";
+        // On the track the raised mark alone shows the choice, as on iOS.
+        const colour: `$${ColorToken}` =
+          framed || selected ? `$${SEGMENTED_PAINT.LABEL}` : "$muted";
         return (
           <Pressable
             key={option}
