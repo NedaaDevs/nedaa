@@ -116,4 +116,49 @@ describe("cities pack store", () => {
     expect(seenSignal?.aborted).toBe(true);
     expect(useCitiesPackStore.getState().isDownloading).toBe(false);
   });
+
+  // The aborted task rejects; a cancel is the user's choice, not a failure.
+  test("a cancelled download records no error", async () => {
+    mockDownload.mockImplementationOnce(
+      ({ signal }: { signal: AbortSignal }) =>
+        new Promise((_, reject) =>
+          signal.addEventListener("abort", () => reject(new Error("aborted")))
+        )
+    );
+
+    const pending = useCitiesPackStore.getState().download();
+    useCitiesPackStore.getState().cancel();
+    await pending;
+
+    expect(useCitiesPackStore.getState().error).toBeNull();
+    expect(useCitiesPackStore.getState().isDownloading).toBe(false);
+  });
+
+  test("a download begun after a cancel can still be cancelled", async () => {
+    const settleFirst: { reject?: (error: Error) => void } = {};
+    const signals: AbortSignal[] = [];
+    mockDownload
+      .mockImplementationOnce(({ signal }: { signal: AbortSignal }) => {
+        signals.push(signal);
+        return new Promise((_, reject) => {
+          settleFirst.reject = reject;
+        });
+      })
+      .mockImplementationOnce(({ signal }: { signal: AbortSignal }) => {
+        signals.push(signal);
+        return new Promise((_, reject) =>
+          signal.addEventListener("abort", () => reject(new Error("aborted")))
+        );
+      });
+
+    const first = useCitiesPackStore.getState().download();
+    useCitiesPackStore.getState().cancel();
+    const second = useCitiesPackStore.getState().download();
+    settleFirst.reject?.(new Error("aborted"));
+    await first;
+    useCitiesPackStore.getState().cancel();
+    await second;
+
+    expect(signals[1]?.aborted).toBe(true);
+  });
 });

@@ -77,6 +77,11 @@ export const BACK_DESTINATION = {
     href: "/settings/location",
     title: "settings.location.title",
   },
+  SETTINGS_LOCATION_PICKER: {
+    route: "settings/location-picker",
+    href: "/settings/location-picker",
+    title: "location.picker.title",
+  },
   SETTINGS_PREFERENCES: {
     route: "settings/preferences",
     href: "/settings/preferences",
