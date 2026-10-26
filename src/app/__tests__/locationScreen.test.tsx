@@ -281,7 +281,7 @@ describe("Settings › Location", () => {
 
       await userEvent.press(refresh);
 
-      expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
+      expect(await screen.findByLabelText(t("onboarding.fetch.locatingDevice"))).toBeTruthy();
       expect(screen.queryByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeNull();
       expect(
         screen.queryByRole("button", { name: new RegExp(`^${t("location.device.refresh")}`) })
@@ -519,7 +519,7 @@ describe("Settings › Location", () => {
       await userEvent.press(device);
 
       expect(mockAdopt).toHaveBeenCalledTimes(1);
-      expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
+      expect(await screen.findByLabelText(t("onboarding.fetch.locatingDevice"))).toBeTruthy();
       expect(screen.queryByRole("radio", { name: t("onboarding.location.automatic") })).toBeNull();
       expect(screen.queryByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeNull();
     });
@@ -919,7 +919,7 @@ describe("Settings › Location", () => {
           includeHiddenElements: true,
         })
       ).toHaveLength(2);
-      expect(announced(t("location.update.step.city"))).toBe(1);
+      expect(announced(t("onboarding.fetch.locatingDevice"))).toBe(1);
       expect(announced(t("location.update.step.prayerTimes"))).toBe(1);
     });
 
