@@ -23,7 +23,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { DEBUG_COPY, DEBUG_SCREEN, type DebugScreen } from "@/constants/DebugScreens";
 import { SECTION_KIND } from "@/constants/Section";
@@ -110,7 +110,7 @@ export default function AboutScreen() {
 
   return (
     // The sky runs under the status bar; the content pads itself clear of it.
-    <SkyBackground>
+    <ScreenSky>
       <SkyScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -168,6 +168,6 @@ export default function AboutScreen() {
           </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
-    </SkyBackground>
+    </ScreenSky>
   );
 }

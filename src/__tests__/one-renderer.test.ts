@@ -182,6 +182,13 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<TodayHero\b/,
     home: "components/today/TodayHero.tsx",
   },
+  // Every route's sky holds still while another screen covers it.
+  {
+    concept: "a route screen's sky",
+    shows: /<(SkyBackground|ScreenSky)\b/,
+    within: /^app\/.*\.tsx$/,
+    drawsWith: /<ScreenSky\b/,
+  },
   // The sky and Today's bowl draw the one sun, each at its own scale.
   {
     concept: "the sun",

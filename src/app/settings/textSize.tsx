@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { SteppedSlider } from "@/components/ui/stepped-slider";
 import { Text, type TextSize as TextSizeName } from "@/components/ui/text";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -19,9 +19,9 @@ const PRESETS = Object.values(TextSize);
 
 export default function TextSizeScreen() {
   return (
-    <SkyBackground>
+    <ScreenSky>
       <TextSizeContent />
-    </SkyBackground>
+    </ScreenSky>
   );
 }
 
