@@ -217,7 +217,7 @@ describe("LocationStep", () => {
     expect(props.onNext).toHaveBeenCalledTimes(1);
   });
 
-  // Back and Skip wait for the update, as they do for every other request.
+  // Back and Skip wait while a picked city's update runs.
   it("holds the frame busy until the pick's update settles", async () => {
     const update = later<boolean>();
     updateStub.applyManualLocation.mockReturnValue(update.promise);
