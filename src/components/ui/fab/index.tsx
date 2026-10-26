@@ -41,6 +41,9 @@ const ICON_SIZE: Record<FabSize, IconSize> = {
 const FabFrame = styled(View, {
   name: "Fab",
   context: FabContext,
+  role: "button",
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
   alignItems: "center",
   justifyContent: "center",
   flexDirection: "row",
