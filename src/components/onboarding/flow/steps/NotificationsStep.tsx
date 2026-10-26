@@ -81,7 +81,8 @@ export const NotificationsStep = ({
               {t("onboarding.notifications.card")}
             </Text>
           </HStack>
-          {/* Only iOS marks the athan time-sensitive, which a Focus lets through. */}
+          {/* Only iOS marks the athan time-sensitive, which asks to come
+              through a Focus. */}
           {Platform.OS === PlatformType.IOS ? (
             <Text size="sm" color="$mutedSky">
               {t("onboarding.notifications.focusNote")}

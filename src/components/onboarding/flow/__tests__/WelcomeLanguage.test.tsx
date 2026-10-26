@@ -5,6 +5,7 @@ import { WelcomeStep } from "@/components/onboarding/flow/steps/WelcomeStep";
 import { BRAND_ICON_FRAME } from "@/components/ui/brand-icon";
 import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
 import { E2E_ID } from "@/constants/E2E";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -134,7 +135,7 @@ describe("LanguageStep", () => {
 
     expect(mockTransition).toHaveBeenCalledTimes(1);
     expect(setLocaleAction).toHaveBeenCalledWith(AppLocale.EN);
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 
   it("marks the language in use", async () => {

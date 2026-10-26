@@ -4,9 +4,11 @@ import { PermissionStatus } from "expo-notifications";
 
 import { NotificationsStep } from "@/components/onboarding/flow/steps/NotificationsStep";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
+import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { lastPrimary, stepProps } from "@/test-helpers/onboardingStepProps";
@@ -14,7 +16,7 @@ import { RIYADH_DAY, riyadhAt } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { AppLogger } from "@/utils/appLogger";
 import { requestNotificationPermission } from "@/utils/notifications";
-import { soundPreviewManager } from "@/utils/sound";
+import { getPreviewSource, soundPreviewManager } from "@/utils/sound";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => false }));
@@ -219,10 +221,16 @@ describe("the athan sample", () => {
   });
 
   it("plays the athan a new install uses, and stops on a second press", async () => {
+    const newInstallAthan = getPreviewSource(
+      NOTIFICATION_TYPE.PRAYER,
+      useNotificationStore.getInitialState().settings.defaults.prayer.sound
+    );
     await renderWithTheme(<NotificationsStep {...stepProps()} />);
 
     await user.press(hear());
-    expect(mockPlay).toHaveBeenCalledWith(MAKKAH_ATHAN_SAMPLE);
+    expect(mockPlay).toHaveBeenCalledWith(newInstallAthan);
+    // Other audio files share the value 1; this pins the match to one file.
+    expect(newInstallAthan).toBe(MAKKAH_ATHAN_SAMPLE);
 
     await user.press(stop());
     expect(mockStop).toHaveBeenCalledTimes(1);

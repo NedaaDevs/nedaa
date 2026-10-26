@@ -84,7 +84,7 @@ it("plays the success haptic once on arrival", async () => {
   const view = await renderWithTheme(<CompleteStep {...stepProps()} />);
   await view.rerender(<CompleteStep {...stepProps()} />);
 
-  expect(HAPTIC.success).toHaveBeenCalledTimes(1);
+  expect(HAPTIC[HAPTIC_FEEDBACK.SUCCESS]).toHaveBeenCalledTimes(1);
   expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SUCCESS]);
 });
 

@@ -10,6 +10,7 @@ import { TODAY_STYLE_PREVIEW_PART } from "@/components/today/TodayStylePreview";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
 import { APPEARANCE_ORDER } from "@/constants/Appearance";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { CLOCK_SAMPLE } from "@/constants/Onboarding";
 import { PHASE } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
@@ -75,7 +76,7 @@ describe("NumeralsStep", () => {
     );
 
     expect(usePreferencesStore.getState().useWesternNumerals).toBe(true);
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 
   it("shows the numerals control in Arabic", async () => {
@@ -95,7 +96,7 @@ describe("NumeralsStep", () => {
 
     expect(usePreferencesStore.getState().use24HourTime).toBe(true);
     expect(screen.getByText(/16:35/)).toBeTruthy();
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 
   // Arabic writes «ص» after the digits; the whole time is not one LTR run.
@@ -141,7 +142,7 @@ describe("NumeralsStep", () => {
       })
     );
 
-    expect(HAPTIC.selection).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 });
 
@@ -238,7 +239,7 @@ describe("AppearanceStep", () => {
 
     await waitFor(() => expect(useAppStore.getState().mode).toBe(AppMode.DARK));
     expect(mockTransition).toHaveBeenCalledTimes(1);
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -258,7 +259,7 @@ describe("TextSizeStep", () => {
     );
 
     expect(usePreferencesStore.getState().textSize).toBe(TextSize.LARGE);
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 
   it("preselects the size nearest the phone's large text, with no tick", async () => {
@@ -266,7 +267,7 @@ describe("TextSizeStep", () => {
     await renderWithTheme(<TextSizeStep {...stepProps()} />);
 
     expect(usePreferencesStore.getState().textSize).toBe(nearestTextSize(1.3));
-    expect(HAPTIC.selection).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 
   it("leaves the size alone once the offer is handled", async () => {

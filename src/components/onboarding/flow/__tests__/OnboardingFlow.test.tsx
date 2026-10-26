@@ -428,12 +428,12 @@ describe("OnboardingFlow", () => {
 
     await press(ONBOARDING_PART.CONTINUE);
     expect(currentStep()).toBe(S.APPEARANCE);
-    expect(HAPTIC.light).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(1);
 
     clearHaptics();
     await press(ONBOARDING_PART.CONTINUE);
     expect(currentStep()).toBe(S.COMPLETE);
-    expect(HAPTIC.success).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SUCCESS]).toHaveBeenCalledTimes(1);
     expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SUCCESS]);
   });
 

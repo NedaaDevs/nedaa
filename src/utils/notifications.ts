@@ -15,6 +15,44 @@ import { PlatformType } from "@/enums/app";
 // Types
 import type { NotificationOptions } from "@/types/notification";
 
+// Both schedulers send the same content; only their triggers differ.
+const buildContent = (
+  notificationInput: NotificationContentInput,
+  options?: NotificationOptions
+): NotificationContentInput => {
+  const content: NotificationContentInput = {
+    ...notificationInput,
+    data: {
+      ...notificationInput.data,
+      categoryId: options?.categoryId,
+    },
+  };
+
+  if (Platform.OS === PlatformType.ANDROID) {
+    content.priority = AndroidNotificationPriority.HIGH;
+
+    // For Android < 8.0, sound must be in the content
+    if (notificationInput.sound && notificationInput.sound !== "default") {
+      content.sound = notificationInput.sound;
+    }
+
+    if (options?.vibrate !== undefined) {
+      content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
+    }
+  } else if (Platform.OS === PlatformType.IOS) {
+    if (options?.timeSensitive) {
+      content.interruptionLevel = "timeSensitive";
+    }
+
+    // iOS always needs sound in content
+    if (notificationInput.sound) {
+      content.sound = notificationInput.sound;
+    }
+  }
+
+  return content;
+};
+
 export const scheduleNotification = async (
   date: Date,
   notificationInput: NotificationContentInput,
@@ -27,39 +65,7 @@ export const scheduleNotification = async (
   }
 
   try {
-    // Prepare notification content
-    const content: NotificationContentInput = {
-      ...notificationInput,
-      data: {
-        ...notificationInput.data,
-        categoryId: options?.categoryId,
-      },
-    };
-
-    // Platform-specific settings
-    if (Platform.OS === PlatformType.ANDROID) {
-      content.priority = AndroidNotificationPriority.HIGH;
-
-      // For Android < 8.0, sound must be in the content
-      if (notificationInput.sound && notificationInput.sound !== "default") {
-        content.sound = notificationInput.sound;
-      }
-
-      // Android vibration
-      if (options?.vibrate !== undefined) {
-        content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
-      }
-    } else if (Platform.OS === PlatformType.IOS) {
-      // iOS specific settings
-      if (options?.timeSensitive) {
-        content.interruptionLevel = "timeSensitive";
-      }
-
-      // iOS always needs sound in content
-      if (notificationInput.sound) {
-        content.sound = notificationInput.sound;
-      }
-    }
+    const content = buildContent(notificationInput, options);
 
     // trigger type
     let trigger: Notifications.NotificationTriggerInput;
@@ -120,39 +126,7 @@ export const scheduleRecurringNotification = async (
   }
 
   try {
-    // Prepare notification content
-    const content: NotificationContentInput = {
-      ...notificationInput,
-      data: {
-        ...notificationInput.data,
-        categoryId: options?.categoryId,
-      },
-    };
-
-    // Platform-specific settings
-    if (Platform.OS === PlatformType.ANDROID) {
-      content.priority = AndroidNotificationPriority.HIGH;
-
-      // For Android < 8.0, sound must be in the content
-      if (notificationInput.sound && notificationInput.sound !== "default") {
-        content.sound = notificationInput.sound;
-      }
-
-      // Android vibration
-      if (options?.vibrate !== undefined) {
-        content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
-      }
-    } else if (Platform.OS === PlatformType.IOS) {
-      // iOS specific settings
-      if (options?.timeSensitive) {
-        content.interruptionLevel = "timeSensitive";
-      }
-
-      // iOS always needs sound in content
-      if (notificationInput.sound) {
-        content.sound = notificationInput.sound;
-      }
-    }
+    const content = buildContent(notificationInput, options);
 
     // A weekday yields a weekly repeat (e.g. Friday Al-Kahf); otherwise a daily
     // repeat in the device timezone. Both are native OS-repeating triggers.

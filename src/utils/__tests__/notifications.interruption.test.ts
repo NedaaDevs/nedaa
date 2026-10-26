@@ -1,3 +1,4 @@
+import { AndroidNotificationPriority, type NotificationContentInput } from "expo-notifications";
 import { Platform } from "react-native";
 
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
@@ -19,6 +20,9 @@ jest.mock("@/services/cleanup", () => ({ cleanupManager: { register: jest.fn() }
 
 const TIME_SENSITIVE = "timeSensitive";
 const CONTENT = { title: "title", body: "body" };
+const SYSTEM_SOUND = "default";
+const CUSTOM_SOUND = "athan.wav";
+const VIBRATION_PATTERN = [0, 500, 200, 500];
 const ONE_MINUTE_MS = 60_000;
 
 const scheduledContent = () =>
@@ -28,13 +32,13 @@ const scheduledContent = () =>
 const HELPERS = [
   {
     name: "scheduleNotification",
-    schedule: (options?: NotificationOptions) =>
-      scheduleNotification(new Date(Date.now() + ONE_MINUTE_MS), CONTENT, options),
+    schedule: (options?: NotificationOptions, content: NotificationContentInput = CONTENT) =>
+      scheduleNotification(new Date(Date.now() + ONE_MINUTE_MS), content, options),
   },
   {
     name: "scheduleRecurringNotification",
-    schedule: (options?: NotificationOptions) =>
-      scheduleRecurringNotification(6, 30, CONTENT, options),
+    schedule: (options?: NotificationOptions, content: NotificationContentInput = CONTENT) =>
+      scheduleRecurringNotification(6, 30, content, options),
   },
 ];
 
@@ -63,5 +67,55 @@ describe.each(HELPERS)("$name and the iOS interruption level", ({ schedule }) =>
     onPlatform(PlatformType.ANDROID);
     await schedule({ timeSensitive: true });
     expect(scheduledContent()).not.toHaveProperty("interruptionLevel");
+  });
+});
+
+describe.each(HELPERS)("$name and the platform content", ({ schedule }) => {
+  beforeEach(() => mockScheduleNotificationAsync.mockClear());
+
+  it("asks Android for high priority", async () => {
+    onPlatform(PlatformType.ANDROID);
+    await schedule();
+    expect(scheduledContent().priority).toBe(AndroidNotificationPriority.HIGH);
+  });
+
+  it.each([
+    { platform: PlatformType.ANDROID, sound: CUSTOM_SOUND },
+    { platform: PlatformType.ANDROID, sound: SYSTEM_SOUND },
+    { platform: PlatformType.IOS, sound: CUSTOM_SOUND },
+    { platform: PlatformType.IOS, sound: SYSTEM_SOUND },
+  ])("keeps the $sound sound on $platform", async ({ platform, sound }) => {
+    onPlatform(platform);
+    await schedule(undefined, { ...CONTENT, sound });
+    expect(scheduledContent().sound).toBe(sound);
+  });
+
+  it.each([
+    { vibrate: true, pattern: VIBRATION_PATTERN },
+    { vibrate: false, pattern: [] },
+  ])("vibrates Android with $pattern for vibrate $vibrate", async ({ vibrate, pattern }) => {
+    onPlatform(PlatformType.ANDROID);
+    await schedule({ vibrate });
+    expect(scheduledContent().vibrate).toEqual(pattern);
+  });
+
+  it("leaves the Android vibration to the channel without the option", async () => {
+    onPlatform(PlatformType.ANDROID);
+    await schedule();
+    expect(scheduledContent()).not.toHaveProperty("vibrate");
+  });
+
+  it("sets no priority or vibration on iOS", async () => {
+    onPlatform(PlatformType.IOS);
+    await schedule({ vibrate: true });
+    expect(scheduledContent()).not.toHaveProperty("priority");
+    expect(scheduledContent()).not.toHaveProperty("vibrate");
+  });
+
+  it("adds the category to the caller's data", async () => {
+    onPlatform(PlatformType.ANDROID);
+    const categoryId = "category";
+    await schedule({ categoryId }, { ...CONTENT, data: { kept: true } });
+    expect(scheduledContent().data).toEqual({ kept: true, categoryId });
   });
 });

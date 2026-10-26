@@ -9,6 +9,7 @@ import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
 import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { controlProblems } from "@/test-helpers/controls";
@@ -259,10 +260,10 @@ describe("LocationStep", () => {
     const row = (key: string) => screen.getByRole("radio", { name: new RegExp(t(key)) });
 
     await userEvent.press(row("onboarding.location.automatic"));
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
 
     await userEvent.press(row("onboarding.location.city"));
-    expect(HAPTIC.selection).toHaveBeenCalledTimes(2);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(2);
   });
 
   it("reaches coordinates from the picker, and takes the city they give", async () => {
