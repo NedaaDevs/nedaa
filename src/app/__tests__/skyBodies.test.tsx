@@ -100,6 +100,7 @@ const TIMES = [
 
 const CASES = HOSTS.flatMap((host) => TIMES.map((time) => ({ ...host, ...time })));
 
+/** The suns and moons drawn inside each view with `id`. */
 const bodiesIn = (id: string) =>
   screen
     .queryAllByTestId(id, hidden)
@@ -107,9 +108,6 @@ const bodiesIn = (id: string) =>
       ...within(root).queryAllByTestId(SKY_PART.SUN, hidden),
       ...within(root).queryAllByTestId(SKY_PART.MOON, hidden),
     ]);
-
-/** The page sky's sun or moon and the bowl's; a theme swatch draws its own. */
-const bodies = () => [...bodiesIn(SKY_PART.CANVAS), ...bodiesIn(BOWL_PART.ROOT)];
 
 describe("A screen with a bowl over its sky", () => {
   afterEach(() => jest.useRealTimers());
@@ -134,6 +132,8 @@ describe("A screen with a bowl over its sky", () => {
       })
     );
 
-    expect(bodies()).toHaveLength(1);
+    // The bowl carries the body; the page sky draws none behind it.
+    expect(bodiesIn(SKY_PART.CANVAS)).toHaveLength(0);
+    expect(bodiesIn(BOWL_PART.ROOT)).toHaveLength(1);
   });
 });
