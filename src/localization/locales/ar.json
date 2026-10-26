@@ -1224,7 +1224,7 @@
   "onboarding.notifications.allowNotifications": "السماح بالإشعارات",
   "onboarding.notifications.card": "يمكنك لاحقًا تخصيص التنبيه والصوت والتوقيت لكل صلاة.",
   "onboarding.notifications.deniedBody": "لم تُفعَّل الإشعارات. يمكنك تفعيلها لاحقًا من إعدادات الجهاز.",
-  "onboarding.notifications.focusNote": "يصلك الأذان حتى في أوضاع التركيز على جهازك، مثل النوم.",
+  "onboarding.notifications.focusNote": "يمكن أن يصلك الأذان حتى في أوضاع التركيز على جهازك، مثل «النوم».",
   "onboarding.notifications.hearAthan": "الاستماع إلى الأذان",
   "onboarding.notifications.question": "هل تريد تنبيهات الصلاة؟",
   "onboarding.notifications.stopAthan": "إيقاف الأذان",
