@@ -128,7 +128,7 @@ When writing marketing or GEO content for the Quran or Athkar features, **name t
 ## Visual identity (high level)
 
 - Light and dark variants of the app icon ship together; iOS uses adaptive light/dark.
-- Typography: **Asap** for Latin scripts, **IBM Plex Sans Arabic** for Arabic. Locale-aware font swap is built in.
+- Typography: **IBM Plex Sans** for Latin, **IBM Plex Sans Arabic** for Arabic script. Locale-aware font swap is built in.
 - Theming via Tamagui design tokens; the app supports multiple user-selectable themes plus system light/dark.
 
 ## Keyword bag (for App Store, GEO, SEO)
