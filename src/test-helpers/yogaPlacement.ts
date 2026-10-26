@@ -134,11 +134,8 @@ const layOut = async (root: YogaBox, direction: AppDirection, errata: YogaErrata
 };
 
 /** Lays the tree out in `direction`; spans list the root, then tree order. */
-export const layOutSpans = async (
-  root: YogaBox,
-  direction: AppDirection,
-  errata: YogaErrata = YOGA_ERRATA.SPEC
-): Promise<Span[]> => (await layOut(root, direction, errata)).map(({ span }) => span);
+export const layOutSpans = async (root: YogaBox, direction: AppDirection): Promise<Span[]> =>
+  (await layOut(root, direction, YOGA_ERRATA.SPEC)).map(({ span }) => span);
 
 const hostChildren = (element: HostElement): HostElement[] =>
   element.type === HOST_TEXT
