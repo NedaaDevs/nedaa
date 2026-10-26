@@ -27,7 +27,7 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAppStore } from "@/stores/app";
-import { clockFormat, formatPrayerTime, getDateLocale } from "@/utils/date";
+import { clockFormat, deviceTimeZone, formatPrayerTime, getDateLocale } from "@/utils/date";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 import { isAlarmDue } from "@/utils/alarmDue";
@@ -47,9 +47,6 @@ const localeTime = (
   use24HourTime: boolean
 ) =>
   formatNumberToLocale(format(date, clockFormat(use24HourTime), { locale: getDateLocale(locale) }));
-
-// The wall clock is drawn in the device's zone, so it is spoken in it too.
-const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const DUE_STATUS = { CHECKING: "checking", DUE: "due", NOT_DUE: "notDue" } as const;
 type DueStatus = (typeof DUE_STATUS)[keyof typeof DUE_STATUS];
@@ -269,6 +266,7 @@ function ActiveAlarmView({
   }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, locale, use24HourTime, western, t]);
 
   const clock = localeTime(now, locale, use24HourTime);
+  // The wall clock is drawn in the device's zone, so it is spoken in it too.
   const spokenClock = spokenClockTime(now, deviceTimeZone(), { locale, use24HourTime, western }, t);
 
   // Announced once per screen; a later re-render must not repeat it.
