@@ -18,6 +18,8 @@ import {
   NOTIFICATION_CHANNEL_ID,
   NOTIFICATION_TYPE,
   PRAYER_NOTIFICATION_TYPES,
+  RETIRED_CHANNEL_ID,
+  SYSTEM_SOUND,
 } from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
@@ -94,7 +96,10 @@ type ChannelSettings = { sound: string; vibration: boolean };
 
 /** The notification types whose channels this module creates and deletes. */
 const MANAGED_TYPES = [...PRAYER_NOTIFICATION_TYPES, NOTIFICATION_TYPE.ATHKAR];
-const MANAGED_IDS: readonly string[] = Object.values(NOTIFICATION_CHANNEL_ID);
+const MANAGED_IDS: readonly string[] = [
+  ...Object.values(NOTIFICATION_CHANNEL_ID),
+  ...Object.values(RETIRED_CHANNEL_ID),
+];
 
 const isManagedChannel = (id: string) =>
   MANAGED_TYPES.some((type) => id.startsWith(`${type}_`)) || MANAGED_IDS.includes(id);
@@ -275,11 +280,11 @@ export const createNotificationChannels = async (
     }
   }
 
-  // Create reminder channel
+  // The open-the-app reminder has its own channel, so a mute reaches only it.
   channels.push({
-    id: NOTIFICATION_CHANNEL_ID.REMINDER,
-    name: "Prayer Reminders",
-    sound: null,
+    id: NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER,
+    name: "Open App Reminder",
+    sound: SYSTEM_SOUND,
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     showBadge: true,
@@ -515,8 +520,7 @@ export const shouldUpdateChannels = async (
       }
     }
 
-    // Reminder channel is always required
-    requiredChannels.add(NOTIFICATION_CHANNEL_ID.REMINDER);
+    requiredChannels.add(NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER);
 
     // Check if there are old channels that need cleanup
     const managedChannels = existingChannels.filter((ch) => isManagedChannel(ch.id));

@@ -39,6 +39,7 @@ import {
   NOTIFICATION_CHANNEL_ID,
   NOTIFICATION_TYPE,
   OPEN_APP_REMINDER_ID,
+  SYSTEM_SOUND,
 } from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
@@ -521,8 +522,9 @@ export const scheduleAllNotifications = async (
         type: NOTIFICATION_TYPE.PRAYER,
         prayerId: PRAYER_ID.FAJR,
         categoryId: OPEN_APP_REMINDER_ID,
+        channelId: NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER,
         vibration: true,
-        sound: "default",
+        sound: SYSTEM_SOUND,
       });
     }
 
