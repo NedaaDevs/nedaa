@@ -67,15 +67,6 @@ module.exports = defineConfig([
     },
   },
   {
-    // Test suites still render through react-test-renderer, deprecated in React 19.
-    // Silence the deprecation for tests until they move to
-    // @testing-library/react-native; production code keeps the check.
-    files: ["src/**/__tests__/**/*.{ts,tsx}"],
-    rules: {
-      "@typescript-eslint/no-deprecated": "off",
-    },
-  },
-  {
     // Card owns the surface treatment (background, radius, elevation). Painting
     // $backgroundSecondary by hand is what drove the radius and padding drift
     // Card exists to fix. The ui/ primitives and the player/tab chrome that
