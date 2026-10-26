@@ -85,7 +85,7 @@ describe("notification channels", () => {
     expect(deleted).toHaveBeenCalledWith(id);
   });
 
-  // Nothing posts on a retired channel, so its entry leaves the device's settings.
+  // Nothing posts on a retired channel, so the device's settings drop it.
   it.each(Object.values(RETIRED_CHANNEL_ID))("deletes the retired channel %s", async (id) => {
     channels.mockResolvedValue([{ id }]);
 
