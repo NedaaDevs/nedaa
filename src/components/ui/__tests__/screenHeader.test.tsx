@@ -337,6 +337,16 @@ describe("ScreenHeader", () => {
       expect(lineRatioOf(title)).toBeCloseTo(ROLE_RATIO.title, 1);
     });
 
+    // The header sits on the sky; the sky's muted ink holds AA on every phase.
+    it("draws the subtitle in the sky's muted ink", async () => {
+      await renderApp(
+        <ScreenHeader title={TITLE} subtitle={SUBTITLE} />,
+        BACK_DESTINATION.SETTINGS_ALARM.href
+      );
+
+      expect(screen.getByText(SUBTITLE)).toHaveStyle({ color: NEDAA_LIGHT.mutedSky.hex });
+    });
+
     it("draws the back control in the accent, its name at 15", async () => {
       await renderApp(<ScreenHeader title={TITLE} back />);
       await go(BACK_DESTINATION.TOOLS.href);
