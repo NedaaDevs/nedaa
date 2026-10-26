@@ -329,12 +329,17 @@ describe("SkyBackground", () => {
     });
 
     describe("behind text", () => {
-      const TextOverSky = () => (
+      /** Text on the night sky; `covered` lets it dim a moon behind it. */
+      const TextOverSky = ({ covered = true }: { covered?: boolean }) => (
         <PhaseContext value={PHASE.NIGHT}>
           <SkyBackground>
-            <SkyOccluder>
+            {covered ? (
+              <SkyOccluder>
+                <Text>Isha</Text>
+              </SkyOccluder>
+            ) : (
               <Text>Isha</Text>
-            </SkyOccluder>
+            )}
           </SkyBackground>
         </PhaseContext>
       );
@@ -357,6 +362,18 @@ describe("SkyBackground", () => {
         await settle();
 
         expect(bodies()).toHaveStyle({ opacity: BODY_BEHIND_TEXT.opacity });
+      });
+
+      it("brightens the moon again once the text over it goes", async () => {
+        mockTextBox = { x: 0, y: 0, width: 10_000, height: 10_000 };
+        const { rerender } = await renderWithTheme(<TextOverSky />);
+        await settle();
+        expect(bodies()).toHaveStyle({ opacity: BODY_BEHIND_TEXT.opacity });
+
+        await rerender(<TextOverSky covered={false} />);
+        await settle();
+
+        expect(bodies()).toHaveStyle({ opacity: 1 });
       });
 
       it("keeps the moon bright clear of text", async () => {
