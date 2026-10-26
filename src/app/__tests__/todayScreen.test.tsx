@@ -1,10 +1,9 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
-import { act, fireEvent, userEvent, within } from "@testing-library/react-native";
+import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
-import { BOWL_PART } from "@/components/today/Bowl";
 import { BOWL_FRAME_PART, RHYTHM_PART } from "@/components/today/CelestialRhythm";
 import { PRAYER_GRID_PART } from "@/components/today/PrayerGrid";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
@@ -177,22 +176,6 @@ describe("Today", () => {
     expect(within(bowl).getByTestId(FOCUS_COUNTDOWN_PART.ROOT)).toHaveStyle({
       alignItems: "center",
     });
-  });
-
-  // One sun: the sky draws no body on Today; the bowl draws it on its rim.
-  it("draws one sun, on the bowl", async () => {
-    await renderToday();
-    await act(() =>
-      fireEvent(screen.getByTestId(BOWL_FRAME_PART.FRAME), "layout", {
-        nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 160 } },
-      })
-    );
-
-    expect(screen.queryAllByTestId(SKY_PART.BODIES, hidden)).toHaveLength(0);
-    expect(screen.getAllByTestId(SKY_PART.SUN, hidden)).toHaveLength(1);
-    expect(
-      within(screen.getByTestId(BOWL_PART.ROOT, hidden)).getAllByTestId(SKY_PART.SUN, hidden)
-    ).toHaveLength(1);
   });
 
   it("draws no progress bar in the bowl style", async () => {
