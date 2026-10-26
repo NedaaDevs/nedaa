@@ -47,8 +47,8 @@ const FAILURE_KINDS: readonly unknown[] = Object.values(LOCATION_FAILURE);
 const isLocationFailure = (value: unknown): value is LocationFailure =>
   FAILURE_KINDS.includes(value);
 
-// An older saved record may hold a free-text error, lack a newer field or
-// keep a dropped one; only the fields a record has now are restored.
+// A saved record may hold a free-text error, or miss or add fields; it
+// restores to the fields of LocationDetails, defaults filling the gaps.
 const restoredDetails = (saved: LocationDetails): LocationDetails => {
   const { coords, address, timezone, error, fix, isLoading } = {
     ...initialLocationDetails,
