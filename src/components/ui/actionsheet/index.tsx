@@ -119,7 +119,7 @@ const SheetHeader = ({ blurTarget }: { blurTarget: BlurTarget }) => (
   <Material
     testID={ACTIONSHEET_PART.HEADER}
     material={MATERIAL.SHEET_HEADER}
-    radius="sheet"
+    radius="$sheet"
     blurTarget={blurTarget}
     height={headerHeight()}
     marginBottom={-headerHeight()}

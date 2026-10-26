@@ -1,9 +1,9 @@
 import { forwardRef } from "react";
 import { withStaticProperties } from "@tamagui/helpers";
 import { styled, YStack } from "tamagui";
-import type { GetProps, TamaguiElement } from "tamagui";
+import type { GetProps, RadiusTokens, TamaguiElement } from "tamagui";
 
-import { HighlightEdge, radiusNameOf, useElevationShadow } from "@/components/ui/material/edge";
+import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
 import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
 
@@ -79,14 +79,11 @@ const useCardLift = (variant: CardVariant | undefined): string | undefined => {
   return RESTS[variant ?? "plain"] ? shadow : undefined;
 };
 
-type CardEdgeProps = { owner?: string; size: CardSize; borderRadius?: unknown };
+type CardEdgeProps = { owner?: string; size: CardSize; borderRadius?: RadiusTokens | null };
 
-/** Clears the caller's radius where it names one; else the size's own. */
+/** Follows the caller's radius where one is given; else the size's own. */
 const CardEdge = ({ owner, size, borderRadius }: CardEdgeProps) => (
-  <HighlightEdge
-    owner={owner}
-    radius={radiusNameOf(borderRadius) ?? (size === "sm" ? "chip" : "card")}
-  />
+  <HighlightEdge owner={owner} radius={borderRadius ?? (size === "sm" ? "$chip" : "$card")} />
 );
 
 const RestingCard = forwardRef<TamaguiElement, GetProps<typeof CardFrame>>(

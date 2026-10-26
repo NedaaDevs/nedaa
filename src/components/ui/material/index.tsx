@@ -1,9 +1,9 @@
 import type { ComponentProps, RefObject } from "react";
 import { Platform, StyleSheet, type ViewInstance } from "react-native";
 import { BlurView } from "expo-blur";
-import { getTokenValue, View } from "tamagui";
+import { getTokenValue, View, type RadiusTokens } from "tamagui";
 
-import { HighlightEdge, type RadiusName, useElevationShadow } from "@/components/ui/material/edge";
+import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
 import { chooseMaterialSurface, MATERIAL_SURFACE } from "@/components/ui/material/surface";
 import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
 import { BLUR_INTENSITY, BLUR_REDUCTION, BLUR_TINT, type BlurLevel } from "@/constants/Blur";
@@ -51,6 +51,9 @@ const cornerRadii = (corners: Corners, radius: number) =>
     ? { borderTopStartRadius: radius, borderTopEndRadius: radius }
     : { borderRadius: radius };
 
+/** A radius token or points; the blur under the tint takes it in points. */
+type MaterialRadius = Extract<RadiusTokens, `$${string}`> | number;
+
 const OPAQUE_ALPHA = "FF";
 
 /** The colour with its alpha channel set to full. */
@@ -58,7 +61,7 @@ const opaque = (hex: string): string => `${hex.slice(0, 7)}${OPAQUE_ALPHA}`;
 
 type MaterialProps = ComponentProps<typeof View> & {
   material: MaterialName;
-  radius?: RadiusName;
+  radius?: MaterialRadius;
   /** Android only: the view whose pixels the blur reads. */
   blurTarget?: RefObject<ViewInstance | null>;
   /** Draws a hairline just inside the edge, for a surface over a bright sky. */
@@ -71,7 +74,7 @@ const RING_WIDTH = 0.5;
 /** A tinted, blurred surface with a lit top edge; opaque where blur is unavailable. */
 export const Material = ({
   material,
-  radius = "card",
+  radius = "$card",
   blurTarget,
   ring = false,
   children,
@@ -89,7 +92,8 @@ export const Material = ({
     reduceTransparency,
     hasBlurTarget: blurTarget != null,
   });
-  const radii = cornerRadii(spec.corners, getTokenValue(`$${radius}`, "radius"));
+  const corner = typeof radius === "number" ? radius : getTokenValue(radius, "radius");
+  const radii = cornerRadii(spec.corners, corner);
   const lift = useElevationShadow(spec.elevation);
   const inner = ring ? `inset 0 0 0 ${RING_WIDTH}px ${hairline}` : undefined;
   const shadow = [lift, inner].filter(Boolean).join(", ") || undefined;

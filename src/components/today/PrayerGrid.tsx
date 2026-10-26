@@ -98,7 +98,7 @@ type FaceProps = {
 /** A card's inside: the edge, its icon, and its name stacked over its time. */
 const CardFace = ({ icon, name, time, lit, past, iconTestID }: FaceProps) => (
   <>
-    <HighlightEdge radius="card" />
+    <HighlightEdge radius={CARD_FRAME.borderRadius} />
     <Box testID={iconTestID} opacity={past ? 0.6 : 1}>
       <Icon as={icon} size="md" color={lit ? "$accent" : "$muted"} />
     </Box>
