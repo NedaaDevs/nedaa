@@ -136,6 +136,7 @@ beforeEach(() => {
   useAlarmStore.setState({ scheduledAlarms: {} });
   useAlarmSettingsStore.setState(useAlarmSettingsStore.getInitialState());
   useAlarmStreakStore.setState({ streak: 0 });
+  usePreferencesStore.setState(usePreferencesStore.getInitialState());
   // Every permission granted, so the screen draws its alarms.
   jest.mocked(readAlarmPermissions).mockReset().mockResolvedValue([]);
 });
