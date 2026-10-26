@@ -50,12 +50,12 @@ import { AlarmTypeSettings } from "@/types/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
-import { usePreferencesStore } from "@/stores/preferences";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useAlarmArmed } from "@/hooks/useAlarmArmed";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useClockTime, type ClockTime } from "@/hooks/useClockTime";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
 
@@ -76,6 +76,7 @@ import {
 } from "@/utils/alarmPermissions";
 
 import { PlatformType } from "@/enums/app";
+import { deviceTimeZone } from "@/utils/date";
 import {
   getAlarmDiagnosticReport,
   getAlarmSummary,
@@ -218,12 +219,13 @@ const GatePage = ({ icon, title, body, action, pass, steps }: GatePageProps) => 
   );
 };
 
+// The ring time as drawn and as spoken, both in the device's wall clock.
 const formatAlarmTime = (
   triggerTime: number,
   t: (key: string, options?: Record<string, string>) => string,
   locale: string,
-  use24HourTime: boolean
-): string | null => {
+  clock: ReturnType<typeof useClockTime>
+): ClockTime | null => {
   if (!triggerTime) return null;
   const triggerDate = new Date(triggerTime);
   if (triggerDate.getTime() <= Date.now()) return null;
@@ -246,13 +248,11 @@ const formatAlarmTime = (
     day = triggerDate.toLocaleDateString(locale, { weekday: "long" });
   }
 
-  const time = triggerDate.toLocaleTimeString(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !use24HourTime,
-  });
-
-  return t("alarm.settings.firesAt", { day, time });
+  const { shown, spoken } = clock(triggerDate, deviceTimeZone());
+  return {
+    shown: t("alarm.settings.firesAt", { day, time: shown }),
+    spoken: t("alarm.settings.firesAt", { day, time: spoken }),
+  };
 };
 
 // One-line config digest: challenge type (+count) · sound name.
@@ -277,7 +277,7 @@ const AlarmSettings = () => {
   const fajrStreak = useAlarmStreakStore((s) => s.streak);
   const { isRTL } = useRTL();
   const isDebugMode = useDebugModeStore((s) => s.isEnabled);
-  const use24HourTime = usePreferencesStore((s) => s.use24HourTime);
+  const clock = useClockTime();
   const { becameActiveAt } = useAppVisibility();
   const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const verifiedPlace = useVerifiedPlace();
@@ -359,10 +359,16 @@ const AlarmSettings = () => {
       enabled: fajrOn,
       firesAt:
         fajrOn && fajrArmed
-          ? formatAlarmTime(fajrArmed.triggerTime, t, i18n.language, use24HourTime)
+          ? formatAlarmTime(fajrArmed.triggerTime, t, i18n.language, clock)
           : null,
       configSummary: formatConfigSummary(fajr, t),
-      streakLabel: fajrStreak >= 2 ? t("alarm.settings.streakStat", { count: fajrStreak }) : null,
+      streak:
+        fajrStreak >= 2
+          ? {
+              shown: t("alarm.settings.streakStat", { count: fajrStreak }),
+              spoken: t("a11y.alarm.streak", { count: fajrStreak }),
+            }
+          : null,
     },
     {
       type: ALARM_TYPE.FRIDAY,
@@ -372,10 +378,10 @@ const AlarmSettings = () => {
       enabled: fridayOn,
       firesAt:
         fridayOn && fridayArmed
-          ? formatAlarmTime(fridayArmed.triggerTime, t, i18n.language, use24HourTime)
+          ? formatAlarmTime(fridayArmed.triggerTime, t, i18n.language, clock)
           : null,
       configSummary: formatConfigSummary(friday, t),
-      streakLabel: null,
+      streak: null,
     },
   ];
 
@@ -456,8 +462,8 @@ const AlarmSettings = () => {
                   accessibilityLabel={[
                     `${alarm.title}, ${onOff(alarm.enabled)}`,
                     alarm.configSummary,
-                    alarm.firesAt,
-                    alarm.streakLabel,
+                    alarm.firesAt?.spoken,
+                    alarm.streak?.spoken,
                   ]
                     .filter(Boolean)
                     .join(". ")}
@@ -500,12 +506,12 @@ const AlarmSettings = () => {
                         </Text>
                         {alarm.firesAt && (
                           <Text size="xs" color="$primary" marginTop="$1">
-                            {alarm.firesAt}
+                            {alarm.firesAt.shown}
                           </Text>
                         )}
-                        {alarm.streakLabel && (
+                        {alarm.streak && (
                           <Text size="xs" color="$warning" marginTop="$1">
-                            {alarm.streakLabel}
+                            {alarm.streak.shown}
                           </Text>
                         )}
                       </VStack>

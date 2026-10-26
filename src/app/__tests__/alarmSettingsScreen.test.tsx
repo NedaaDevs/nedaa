@@ -15,18 +15,22 @@ import {
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { E2E_ID } from "@/constants/E2E";
-import { PlatformType } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
+import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
+import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { armFajr, fajrRecord } from "@/test-helpers/armedAlarm";
 import { holdHydration } from "@/test-helpers/hydration";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
+import { deviceTimeZone } from "@/utils/date";
+import { spokenClockTime } from "@/utils/spokenClockTime";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -87,6 +91,44 @@ const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const alarmRow = (title: string) =>
   screen.findByRole("button", { name: new RegExp(`^${literal(title)}, `) });
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** Any emoji; a screen reader says each one by its long Unicode name. */
+const EMOJI = /\p{Extended_Pictographic}/u;
+/** Clock digits in either digit set, such as "1:05" or «١:٠٥». */
+const CLOCK_DIGITS = /[0-9٠-٩]+:[0-9٠-٩]+/;
+
+/** Two days out at 13:05 on the device's clock, an afternoon ring time. */
+const afternoonRing = () => {
+  const at = new Date(Date.now() + 2 * DAY_MS);
+  at.setHours(13, 5, 0, 0);
+  return at.getTime();
+};
+
+/** The ring time as the row should speak it, from the shared spoken clock. */
+const spokenRing = (rings: number) => {
+  const { use24HourTime, useWesternNumerals: western } = usePreferencesStore.getState();
+  const locale = useAppStore.getState().locale;
+  const day = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
+  const time = spokenClockTime(
+    new Date(rings),
+    deviceTimeZone(),
+    { locale, use24HourTime, western },
+    t
+  );
+  return t("alarm.settings.firesAt", { day, time });
+};
+
+/** Runs `body` with the app in Arabic, then puts English back. */
+const inArabic = async (western: boolean, body: () => Promise<void>) => {
+  useAppStore.setState({ locale: AppLocale.AR });
+  usePreferencesStore.setState({ use24HourTime: false, useWesternNumerals: western });
+  await act(() => i18n.changeLanguage(AppLocale.AR));
+  try {
+    await body();
+  } finally {
+    useAppStore.setState({ locale: AppLocale.EN });
+    await act(() => i18n.changeLanguage(AppLocale.EN));
+  }
+};
 
 beforeEach(() => {
   jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
@@ -243,16 +285,68 @@ describe("Alarm settings list", () => {
 
     const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
     const weekday = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
-    const streak = t("alarm.settings.streakStat", { count: 3 });
     expect(within(fajr).getByText(new RegExp(weekday))).toBeTruthy();
-    expect(within(fajr).getByText(streak)).toBeTruthy();
+    expect(within(fajr).getByText(t("alarm.settings.streakStat", { count: 3 }))).toBeTruthy();
     const description = t("alarm.settings.fajrDescription");
-    const [title, status, ...lines] = within(fajr)
+    const [title, status, summary, ...rest] = within(fajr)
       .getAllByText(/./)
       .map((node) => String(node.props.children))
       .filter((text) => text !== description);
-    expect(lines).toHaveLength(3);
-    expect(fajr).toHaveAccessibleName([`${title}, ${status}`, ...lines].join(". "));
+    expect(rest).toHaveLength(2);
+    expect(fajr).toHaveAccessibleName(
+      [
+        `${title}, ${status}`,
+        summary,
+        spokenRing(rings),
+        t("a11y.alarm.streak", { count: 3 }),
+      ].join(". ")
+    );
+  });
+
+  // A screen reader says 🌅 as "sunrise", which is also a prayer time here.
+  it("speaks the streak without its emoji", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    useAlarmStreakStore.setState({ streak: 3 });
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    expect(within(fajr).getByText(t("alarm.settings.streakStat", { count: 3 }))).toBeTruthy();
+    expect(fajr).toHaveAccessibleName(
+      new RegExp(`\\. ${literal(t("a11y.alarm.streak", { count: 3 }))}$`)
+    );
+    expect(fajr).not.toHaveAccessibleName(EMOJI);
+  });
+
+  // Arabic speech reads «م» as its own period word, so the time is in words.
+  it("speaks an afternoon ring time in words in Arabic", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    const rings = afternoonRing();
+    const real = fajrRecord("fajr-real", rings);
+    useAlarmStore.setState({ scheduledAlarms: { [real.alarmId]: real } });
+
+    await inArabic(false, async () => {
+      await renderScreen();
+
+      const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+      expect(within(fajr).getByText(/١:٠٥ م/)).toBeTruthy();
+      expect(fajr).toHaveAccessibleName(new RegExp(`${literal(spokenRing(rings))}$`));
+      expect(fajr).toHaveAccessibleName(/الواحدة و٥ دقائق ظهرًا$/);
+      expect(fajr).not.toHaveAccessibleName(CLOCK_DIGITS);
+    });
+  });
+
+  it("draws the ring time in the digits the reader chose", async () => {
+    useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
+    const real = fajrRecord("fajr-real", afternoonRing());
+    useAlarmStore.setState({ scheduledAlarms: { [real.alarmId]: real } });
+
+    await inArabic(true, async () => {
+      await renderScreen();
+
+      const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+      expect(within(fajr).getByText(/1:05 م/)).toBeTruthy();
+      expect(within(fajr).queryByText(/١:٠٥/)).toBeNull();
+    });
   });
 
   it("says that each row opens its alarm's page", async () => {
@@ -274,9 +368,7 @@ describe("Alarm settings list", () => {
     await renderScreen();
 
     const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
-    const weekday = new Date(rings).toLocaleDateString(i18n.language, { weekday: "long" });
-    const ringTime = String(within(fajr).getByText(new RegExp(weekday)).props.children);
-    expect(fajr).toHaveAccessibleName(new RegExp(`\\. ${literal(ringTime)}$`));
+    expect(fajr).toHaveAccessibleName(new RegExp(`\\. ${literal(spokenRing(rings))}$`));
   });
 
   it("gives no ring time when only a rehearsal is pending", async () => {
