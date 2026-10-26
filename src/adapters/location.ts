@@ -7,6 +7,7 @@ import type {
   LocationPermissionResponse,
   LocationSubscription,
 } from "@/types/location";
+import { withDeadline } from "@/utils/withTimeout";
 
 export { LocationAccuracy } from "@/enums/location";
 export type {
@@ -91,15 +92,9 @@ export const REVERSE_GEOCODE_TIMEOUT_MS = 10_000;
 // Android 13+ can drop a geocoder error, so an unanswered call times out.
 export const reverseGeocodeAsync = (
   location: ReverseGeocodeInput
-): Promise<LocationGeocodedAddress[]> => {
-  // Asked first, so a synchronous throw leaves no timer behind.
-  const answer = getLocationProvider().reverseGeocodeAsync(location);
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const limit = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(
-      () => reject(new Error("reverse geocode timed out")),
-      REVERSE_GEOCODE_TIMEOUT_MS
-    );
-  });
-  return Promise.race([answer, limit]).finally(() => clearTimeout(timer));
-};
+): Promise<LocationGeocodedAddress[]> =>
+  withDeadline(
+    () => getLocationProvider().reverseGeocodeAsync(location),
+    REVERSE_GEOCODE_TIMEOUT_MS,
+    "reverse geocode timed out"
+  );
