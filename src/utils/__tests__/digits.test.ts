@@ -22,13 +22,13 @@ describe("isolateLatinNumbers", () => {
 });
 
 describe("groupCount", () => {
-  // Arabic-Indic digits take the Arabic thousands separator, not a Latin comma.
+  // Arabic-Indic digits go ungrouped, as the Quran download sizes are written.
   it.each([
     [999, "en", false, "999"],
     [2500, "en", false, "2,500"],
     [1234567, "en", false, "1,234,567"],
     [69537, "ar", true, "69,537"],
-    [69537, "ar", false, "٦٩٬٥٣٧"],
+    [69537, "ar", false, "٦٩٥٣٧"],
   ])("writes %p in %s (Western numerals: %p) as %p", (count, locale, western, expected) => {
     expect(groupCount(count, locale, western)).toBe(expected);
   });
