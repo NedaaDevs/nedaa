@@ -78,8 +78,8 @@ describe("palette", () => {
   });
 });
 
-describe("premium surface tokens", () => {
-  const NEW_TOKENS = {
+describe("material and tint tokens", () => {
+  const SURFACE_TOKENS = {
     light: {
       hairline: "#081D3614",
       surfaceGlass: "#E7F9FFA8",
@@ -96,11 +96,11 @@ describe("premium surface tokens", () => {
     },
   } as const;
 
-  it.each(Object.entries(NEW_TOKENS.light))("light %s is %s", (token, hex) => {
+  it.each(Object.entries(SURFACE_TOKENS.light))("light %s is %s", (token, hex) => {
     expect(NEDAA_LIGHT[token as keyof typeof NEDAA_LIGHT].hex).toBe(hex);
   });
 
-  it.each(Object.entries(NEW_TOKENS.dark))("dark %s is %s", (token, hex) => {
+  it.each(Object.entries(SURFACE_TOKENS.dark))("dark %s is %s", (token, hex) => {
     expect(NEDAA_DARK[token as keyof typeof NEDAA_DARK].hex).toBe(hex);
   });
 

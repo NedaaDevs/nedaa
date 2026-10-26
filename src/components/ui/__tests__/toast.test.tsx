@@ -99,7 +99,7 @@ describe("Toast", () => {
     expect(controlProblems()).toEqual([]);
   });
 
-  // The spec's glyph: a 34pt tile on chip corners, washed at .14 of its kind.
+  // A 34pt tile on chip corners, washed at .14 of its kind.
   it("sets its glyph on a 34pt chip tile tinted at .14", async () => {
     await renderWithTheme(
       <Toast kind={TOAST_KIND.SUCCESS} message={MESSAGE} onDismiss={jest.fn()} />
