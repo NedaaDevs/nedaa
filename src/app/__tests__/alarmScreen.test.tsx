@@ -3,7 +3,6 @@ import { AccessibilityInfo } from "react-native";
 import * as ExpoAlarm from "expo-alarm";
 
 import AlarmTriggeredScreen from "@/app/alarm";
-import { ALARM_TYPE_META } from "@/constants/Alarm";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { AppLocale } from "@/enums/app";
@@ -105,7 +104,7 @@ describe("AlarmTriggeredScreen", () => {
     mockAlarmType = UNKNOWN_ALARM_TYPE;
     await renderWithTheme(<AlarmTriggeredScreen />);
 
-    const title = ALARM_TYPE_META[ScheduledAlarmType.CUSTOM].title;
+    const title = i18n.t("alarm.types.custom");
     expect(screen.getByRole("header", { name: title })).toHaveTextContent(title);
   });
 
