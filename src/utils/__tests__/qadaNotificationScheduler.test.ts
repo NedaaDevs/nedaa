@@ -1,9 +1,8 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { NOTIFICATION_CHANNEL_ID } from "@/constants/Notification";
+import { NOTIFICATION_CHANNEL_ID, SYSTEM_SOUND } from "@/constants/Notification";
 import type { QadaSoundKey } from "@/constants/sounds";
-import type { QadaNotificationConfig } from "@/types/notification";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -34,7 +33,6 @@ const channels = Notifications.getNotificationChannelsAsync as unknown as jest.M
 const deleted = Notifications.deleteNotificationChannelAsync as jest.Mock;
 
 const SOUND: QadaSoundKey = "tasbih";
-const SYSTEM_SOUND: QadaNotificationConfig["sound"] = "default";
 
 describe("qada notification channel", () => {
   beforeEach(() => {

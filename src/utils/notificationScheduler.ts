@@ -119,7 +119,7 @@ const scheduleAthkarNotifications = async (
         {
           title: t("notification.athkar.morning.title"),
           body: t("notification.athkar.morning.body"),
-          sound: "default",
+          sound: SYSTEM_SOUND,
           data: {
             type: "ATHKAR",
             athkarType: ATHKAR_TYPE.MORNING,
@@ -157,7 +157,7 @@ const scheduleAthkarNotifications = async (
         {
           title: t("notification.athkar.evening.title"),
           body: t("notification.athkar.evening.body"),
-          sound: "default",
+          sound: SYSTEM_SOUND,
           data: {
             type: "ATHKAR",
             athkarType: ATHKAR_TYPE.EVENING,
@@ -276,7 +276,7 @@ const scheduleQuranReminderNotifications = async (
         {
           title: t("notification.alKahf.title"),
           body: t("notification.alKahf.body"),
-          sound: "default",
+          sound: SYSTEM_SOUND,
           data: {
             type: NOTIFICATION_TYPE.QURAN_REMINDER,
             reminderId: reminder.id,
@@ -726,7 +726,7 @@ const generatePrayerNotifications = (
           channelId: preAthanChannelId,
           vibration: preAthanConfig.vibration,
           sound:
-            getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound) || "default",
+            getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound) || SYSTEM_SOUND,
         });
       }
     }
@@ -752,7 +752,7 @@ const generatePrayerNotifications = (
       const prayerSound =
         isAthanSound(prayerConfig.sound) && fullAthanEnabled
           ? false
-          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default";
+          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || SYSTEM_SOUND;
 
       notifications.push({
         id: `prayer_${prayerId}_${prayerTime.getTime()}`,
@@ -790,7 +790,7 @@ const generatePrayerNotifications = (
       const iqamaSound =
         isIqamaFullSound(iqamaConfig.sound) && fullIqamaEnabled
           ? false
-          : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default";
+          : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || SYSTEM_SOUND;
 
       notifications.push({
         id: `iqama_${prayerId}_${prayerTime.getTime()}`,
