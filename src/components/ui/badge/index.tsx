@@ -36,7 +36,7 @@ const ACTION_THEME_KEY: Record<BadgeAction, string> = {
 };
 
 // --- BadgeFrame ---
-// A borderless tint pill; `outline` keeps its name and draws the same.
+// A borderless tint pill.
 
 const BadgeFrame = styled(XStack, {
   name: "Badge",
@@ -47,30 +47,11 @@ const BadgeFrame = styled(XStack, {
 
   variants: {
     action: {
-      error: {
-        backgroundColor: "$backgroundError",
-        borderColor: "$borderError",
-      },
-      warning: {
-        backgroundColor: "$backgroundWarning",
-        borderColor: "$borderWarning",
-      },
-      success: {
-        backgroundColor: "$backgroundSuccess",
-        borderColor: "$borderSuccess",
-      },
-      info: {
-        backgroundColor: "$accentTint",
-        borderColor: "$borderInfo",
-      },
-      muted: {
-        backgroundColor: "$quietTint",
-        borderColor: "$outline",
-      },
-    },
-    variant: {
-      solid: {},
-      outline: {},
+      error: { backgroundColor: "$backgroundError" },
+      warning: { backgroundColor: "$backgroundWarning" },
+      success: { backgroundColor: "$backgroundSuccess" },
+      info: { backgroundColor: "$accentTint" },
+      muted: { backgroundColor: "$quietTint" },
     },
     size: {
       sm: { paddingHorizontal: "$1.5", paddingVertical: "$0.5" },
@@ -81,7 +62,6 @@ const BadgeFrame = styled(XStack, {
 
   defaultVariants: {
     action: "muted",
-    variant: "solid",
     size: "md",
   },
 });

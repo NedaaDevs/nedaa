@@ -8,7 +8,6 @@ import { styleOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const ACTIONS = ["error", "warning", "success", "info", "muted"] as const;
-const VARIANTS = ["solid", "outline"] as const;
 
 const renderBadge = (props: Parameters<typeof Badge>[0] = {}) =>
   renderWithTheme(
@@ -24,16 +23,14 @@ const renderBadge = (props: Parameters<typeof Badge>[0] = {}) =>
 
 describe("Badge", () => {
   // A badge is a pill: a tint carries it, never a drawn line.
-  it.each(ACTIONS.flatMap((action) => VARIANTS.map((variant) => [action, variant] as const)))(
-    "draws no border and rounds as a pill (%s, %s)",
-    async (action, variant) => {
-      await renderBadge({ action, variant });
-      const frame = styleOf(screen.getByTestId("badge"));
+  it.each(ACTIONS)("draws no border and rounds as a pill (%s)", async (action) => {
+    await renderBadge({ action });
+    const frame = styleOf(screen.getByTestId("badge"));
 
-      expect(frame.borderTopWidth ?? 0).toBe(0);
-      expect(frame.borderTopLeftRadius).toBe(getTokenValue("$pill", "radius"));
-    }
-  );
+    expect(frame.borderTopWidth ?? 0).toBe(0);
+    expect(frame.borderTopColor).toBeUndefined();
+    expect(frame.borderTopLeftRadius).toBe(getTokenValue("$pill", "radius"));
+  });
 
   it("sets its text at 12/600, as written", async () => {
     await renderBadge();
