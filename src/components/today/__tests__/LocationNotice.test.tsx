@@ -7,11 +7,10 @@ import { LocationNotice } from "@/components/today/LocationNotice";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import i18n from "@/localization/i18n";
 import { placeFacts } from "@/test-helpers/place";
+import { RIYADH_COORDS } from "@/test-helpers/prayerDay";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { controlProblems } from "@/test-helpers/controls";
-
-const COORDS = { latitude: 24.7136, longitude: 46.6753 };
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
@@ -43,7 +42,7 @@ describe("LocationNotice", () => {
 
   // A found place is no failure to find one; its times are what is missing.
   it("says Makkah's times stand in until a found place's times load", async () => {
-    placeFacts(true, COORDS);
+    placeFacts(true, RIYADH_COORDS);
     await renderNotice();
 
     expect(screen.getByLabelText(i18n.t("today.defaultLocation.awaitingTimes"))).toBeTruthy();
@@ -51,7 +50,7 @@ describe("LocationNotice", () => {
   });
 
   it("stays away once the times are for the user's own place", async () => {
-    placeFacts(false, COORDS);
+    placeFacts(false, RIYADH_COORDS);
     await renderNotice();
 
     expect(screen.queryByLabelText(i18n.t("today.defaultLocation.body"))).toBeNull();
