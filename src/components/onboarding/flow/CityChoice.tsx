@@ -6,6 +6,7 @@ import CoordinateEntry from "@/components/location/CoordinateEntry";
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
+import { useBusyRequest } from "@/components/onboarding/flow/useBusyRequest";
 import { useStepBack } from "@/components/onboarding/flow/useStepBack";
 import { useViewFocus } from "@/hooks/useViewFocus";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,10 @@ export const ChooseCityButton = ({ onPress }: { onPress: () => void }) => {
   );
 };
 
-type PickerProps = Pick<StepProps, "headingRef" | "progress" | "setBack" | "setPrimaryHidden"> & {
+type PickerProps = Pick<
+  StepProps,
+  "headingRef" | "progress" | "setBack" | "setBusy" | "setPrimaryHidden"
+> & {
   /** The host's own success: its session write, then on. */
   onDone: () => void;
   /** Leaves the list for the host's view before it. */
@@ -63,6 +67,7 @@ export const StepCityPicker = ({
   headingRef,
   progress,
   setBack,
+  setBusy,
   setPrimaryHidden,
   onDone,
   onClose,
@@ -86,15 +91,18 @@ export const StepCityPicker = ({
     }
   };
 
-  // With no Location screen behind it, a pick waits here for its update.
+  // With no Location screen behind it, a pick waits here, the frame busy.
   const { run, applyManualLocation, retry } = useLocationUpdate();
-  const pick = async (place: ManualLocation) => {
-    if (await applyManualLocation(place)) done();
-  };
+  const { request } = useBusyRequest(setBusy);
+  const pick = (place: ManualLocation) =>
+    request(async () => {
+      if (await applyManualLocation(place)) done();
+    });
   // A failed pick is retried in place; one that lands moves the step on.
-  const retryPick = async () => {
-    if (await retry()) done();
-  };
+  const retryPick = () =>
+    request(async () => {
+      if (await retry()) done();
+    });
 
   // Back walks out one view at a time: coordinates, the list, then the host.
   useStepBack(setBack, listBehind ? () => setView(CITY_PICKER_VIEW.LIST) : close);
@@ -118,7 +126,7 @@ export const StepCityPicker = ({
         progress={progress}
         title={t(coordinates ? "location.coordinates.title" : "location.picker.title")}
       />
-      <LocationUpdateProgress run={run} onRetry={() => void retryPick()} />
+      <LocationUpdateProgress run={run} onRetry={retryPick} />
       {/* Either view grows with the text size, so it scrolls. */}
       <SkyScrollView
         keyboardShouldPersistTaps="handled"
@@ -126,10 +134,10 @@ export const StepCityPicker = ({
         showsVerticalScrollIndicator={false}>
         <VStack paddingBottom="$4">
           {coordinates ? (
-            <CoordinateEntry onSave={(place) => void pick(place)} />
+            <CoordinateEntry onSave={pick} />
           ) : (
             <CityPicker
-              onPick={(place) => void pick(place)}
+              onPick={pick}
               onEnterCoordinates={() => setView(CITY_PICKER_VIEW.COORDINATES)}
             />
           )}
