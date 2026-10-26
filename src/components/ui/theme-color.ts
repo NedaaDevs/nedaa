@@ -1,5 +1,6 @@
 import { useTheme as useTamaguiTheme, useThemeName } from "tamagui";
 
+import { BRIGHTNESS, type Brightness } from "@/constants/Palette";
 import { AppMode } from "@/enums/app";
 
 /** A `$key` names a theme value; anything else is already a colour. */
@@ -23,3 +24,7 @@ export const useThemeColor = (color: string): string => {
 
 /** True while the resolved theme is dark, Adaptive's evening phases included. */
 export const useIsDarkTheme = (): boolean => useThemeName() === AppMode.DARK;
+
+/** The resolved theme's brightness, the key of every per-theme table. */
+export const useBrightness = (): Brightness =>
+  useIsDarkTheme() ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT;
