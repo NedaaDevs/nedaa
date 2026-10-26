@@ -163,9 +163,9 @@ describe("CitiesPackRow", () => {
 
   it.each([
     [true, "تضم 69,537 مدينة، وحجمها 6.1 ميغابايت", "يقتصر البحث حاليًا على 2,500 مدينة رئيسية."],
-    [false, "تضم ٦٩٬٥٣٧ مدينة، وحجمها ٦.١ ميغابايت", "يقتصر البحث حاليًا على ٢٬٥٠٠ مدينة رئيسية."],
+    [false, "تضم ٦٩٥٣٧ مدينة، وحجمها ٦.١ ميغابايت", "يقتصر البحث حاليًا على ٢٥٠٠ مدينة رئيسية."],
   ])(
-    "groups the counts and states the size in Arabic (Western numerals: %p)",
+    "writes the counts and the size in Arabic in the reader's digits (Western numerals: %p)",
     async (western, detail, coverage) => {
       usePreferencesStore.setState({ useWesternNumerals: western });
       await act(() => i18n.changeLanguage(AppLocale.AR));

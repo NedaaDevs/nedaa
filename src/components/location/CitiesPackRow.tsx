@@ -42,7 +42,7 @@ const ROW = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 /** Megabytes to one decimal place, the unit said by the copy around it. */
 const megabytes = (bytes: number): string => (bytes / 1_000_000).toFixed(1);
 
-/** A count in groups of three, in the digits the reader keeps. */
+/** A count in the digits the reader keeps, grouped as those digits are. */
 const useGroupedCount = (count: number) => {
   const { i18n } = useTranslation();
   const western = usePreferencesStore((state) => state.useWesternNumerals);
