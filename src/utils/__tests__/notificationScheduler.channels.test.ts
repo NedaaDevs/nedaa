@@ -3,7 +3,12 @@ import { Platform } from "react-native";
 import { addHours } from "date-fns";
 
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { NOTIFICATION_TYPE, OPEN_APP_REMINDER_ID } from "@/constants/Notification";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  OPEN_APP_REMINDER_ID,
+  SYSTEM_SOUND,
+} from "@/constants/Notification";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
 import { PlatformType } from "@/enums/app";
@@ -138,6 +143,23 @@ describe("the scheduler and the channels it creates", () => {
       }
     }
   );
+
+  // A muted reminder channel must silence the reminder, and only it.
+  it("posts the open-the-app reminder on its own channel, which has a sound", async () => {
+    const result = await runScheduler({ fullAthanPlayback: false, fullIqamaPlayback: false });
+    expect(result.success).toBe(true);
+
+    const reminders = scheduled.mock.calls.filter(
+      ([, input]) => input.data.categoryId === OPEN_APP_REMINDER_ID
+    );
+    expect(reminders).toHaveLength(1);
+    const [[, , options]] = reminders;
+    expect(options.channelId).toBe(NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER);
+    expect(created).toHaveBeenCalledWith(
+      NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER,
+      expect.objectContaining({ sound: SYSTEM_SOUND })
+    );
+  });
 });
 
 describe("the scheduler and the iOS Time Sensitive mark", () => {
