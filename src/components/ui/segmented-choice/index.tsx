@@ -7,7 +7,7 @@ import { Icon, type IconProps } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { SlidingIndicator } from "@/components/ui/sliding-indicator";
 import { Text } from "@/components/ui/text";
-import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
+import { useBrightness, useThemeColor } from "@/components/ui/theme-color";
 import { SEGMENTED_PAINT } from "@/components/ui/segmented-choice/paint";
 import { CONTACT_SHADOW } from "@/constants/Elevation";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
@@ -62,7 +62,7 @@ type IndicatorProps = { index: number; count: number; trackWidth: number };
 /** The raised mark under the chosen segment. */
 const Indicator = ({ index, count, trackWidth }: IndicatorProps) => {
   const raised = useThemeColor("$raised");
-  const shadow = CONTACT_SHADOW[useIsDarkTheme() ? "dark" : "light"];
+  const shadow = CONTACT_SHADOW[useBrightness()];
   const inset = getTokenValue(TRACK_INSET, "space");
 
   return (
