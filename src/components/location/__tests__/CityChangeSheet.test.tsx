@@ -175,7 +175,7 @@ describe("CityChangeSheet", () => {
 
     await userEvent.press(updateButton());
 
-    expect(await screen.findByLabelText(t("location.update.step.location"))).toBeTruthy();
+    expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
     expect(title()).toBeTruthy();
     expect(screen.queryByRole("button", { name: t("location.cityChange.update") })).toBeNull();
 

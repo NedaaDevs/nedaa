@@ -1,14 +1,15 @@
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { LOCATION_UPDATE_PART, LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { ICON_SIZES } from "@/components/ui/icon/sizing";
 import { DEFAULT_FACES } from "@/constants/Fonts";
 import { UPDATE_START, UPDATE_STEP, type UpdateStep } from "@/constants/Location";
 import { NEDAA_LIGHT } from "@/constants/Palette";
-import { PlatformType } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import type { UpdateRun } from "@/stores/locationUpdate";
+import { HAND_WRITTEN_LOCALES, type HandWrittenLocale } from "@/test-helpers/locales";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const t = i18n.t.bind(i18n);
@@ -30,6 +31,12 @@ const renderProgress = (run: UpdateRun | null, { isRTL = false, inSheet = false 
 /** A row read with its state: done, in progress, or next. */
 const row = (label: string, state: "stepDone" | "stepNow" | "stepNext") =>
   screen.getByLabelText(t(`a11y.location.update.${state}`, { step: t(label) }));
+
+/** Words naming the city, and words naming the person's own position. */
+const PLACE_WORDS: Record<HandWrittenLocale, { city: RegExp; position: RegExp }> = {
+  [AppLocale.EN]: { city: /\bcity\b/i, position: /\blocation\b/i },
+  [AppLocale.AR]: { city: /مدين/, position: /موقع/ },
+};
 
 afterEach(() => {
   Platform.OS = PLATFORM;
@@ -146,5 +153,27 @@ describe("LocationUpdateProgress", () => {
     expect(screen.queryByTestId(LOCATION_UPDATE_PART.STEPS)).toBeNull();
     await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  // A step naming "your location" reads as tracking the person, not the city.
+  describe.each(HAND_WRITTEN_LOCALES)("at the place step in %s", (locale) => {
+    const words = PLACE_WORDS[locale];
+
+    beforeEach(() => act(() => i18n.changeLanguage(locale)));
+    afterAll(() => i18n.changeLanguage(AppLocale.EN));
+
+    it("names the city in its status line and its row", async () => {
+      await renderProgress(runAt(UPDATE_STEP.LOCATION));
+
+      expect(screen.getAllByText(words.city)).toHaveLength(2);
+      expect(screen.queryAllByText(words.position)).toEqual([]);
+    });
+
+    it("names the city when it stops", async () => {
+      await renderProgress(runAt(UPDATE_STEP.LOCATION, true));
+
+      expect(screen.getByText(words.city)).toBeTruthy();
+      expect(screen.queryAllByText(words.position)).toEqual([]);
+    });
   });
 });
