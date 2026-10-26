@@ -14,6 +14,7 @@ import { never, outcomeOf } from "@/test-helpers/promises";
 import { AppLogger } from "@/utils/appLogger";
 import {
   LAST_KNOWN_MAX_AGE_MS,
+  LAST_KNOWN_REQUEST_TIMEOUT,
   LocationFixError,
   LocationPermissionError,
   getLocationWithTimeout,
@@ -266,9 +267,6 @@ describe("readLocation", () => {
     });
 
     describe("when the cached-fix read stalls", () => {
-      // Longer than any limit the cached-fix read may have.
-      const STALL_MS = 10_000;
-
       beforeEach(() => {
         jest.useFakeTimers();
         mockGetLastKnownPositionAsync.mockReturnValue(never());
@@ -280,7 +278,7 @@ describe("readLocation", () => {
       it("fails as unavailable, not held by the stalled read", async () => {
         const outcome = outcomeOf(readLocation(DEADLINE_MS));
 
-        await jest.advanceTimersByTimeAsync(STALL_MS);
+        await jest.advanceTimersByTimeAsync(LAST_KNOWN_REQUEST_TIMEOUT);
 
         expect(outcome).toHaveBeenCalledWith({
           error: expect.objectContaining({ kind: LOCATION_FAILURE.UNAVAILABLE }),
