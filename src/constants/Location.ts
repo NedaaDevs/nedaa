@@ -1,3 +1,5 @@
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+
 /** What the location store writes for a city or country it could not name. */
 export const PLACE_UNKNOWN = "N/A";
 
@@ -88,8 +90,14 @@ export const CITY_CHANGE_VIEW = {
 } as const;
 export type CityChangeView = (typeof CITY_CHANGE_VIEW)[keyof typeof CITY_CHANGE_VIEW];
 
-/** The city picker's route, and the search param naming its first view. */
-export const LOCATION_PICKER = { href: "/settings/location-picker", viewParam: "view" } as const;
+/** The search param naming the city picker's view. */
+export const LOCATION_PICKER = { viewParam: "view" } as const;
+
+/** The route that opens the city picker on one view. */
+export const locationPickerRoute = (view: CityPickerView) => ({
+  pathname: BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href,
+  params: { [LOCATION_PICKER.viewParam]: view },
+});
 
 /** What the Location screen shows below its hero. */
 export const LOCATION_ROOT_STATE = {

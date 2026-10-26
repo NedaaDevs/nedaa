@@ -21,10 +21,10 @@ import {
   CITY_PICKER_VIEW,
   FIX_AGE_UNIT,
   FIX_SOURCE,
-  LOCATION_PICKER,
   LOCATION_ROOT_STATE,
   UPDATE_START,
   UPDATE_STEP,
+  locationPickerRoute,
   type CityPickerView,
   type FixAgeUnit,
   type LocationRootState,
@@ -187,7 +187,7 @@ export const LocationRoot = () => {
     dismissFailure();
     setRefused(false);
     void selectionHaptic();
-    router.push({ pathname: LOCATION_PICKER.href, params: { [LOCATION_PICKER.viewParam]: view } });
+    router.push(locationPickerRoute(view));
   };
   const chooseCity = () => openPicker(CITY_PICKER_VIEW.LIST);
 

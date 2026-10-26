@@ -22,6 +22,7 @@ import {
   primaryHidden,
   stepProps,
 } from "@/test-helpers/onboardingStepProps";
+import { coordinatesStub, pickerStub, resetPickerStubs } from "@/test-helpers/cityPickerStubs";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
 import { later, never } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -35,23 +36,19 @@ jest.mock("@/utils/date", () => jest.requireActual("@/test-helpers/hijriDateMock
 const mockOpen = jest.fn(async () => {});
 jest.mock("@/services/databases", () => ({ initDatabases: () => mockOpen() }));
 
-const mockPicker: { onDone?: () => void; onEnterCoordinates?: () => void } = {};
-jest.mock("@/components/location/CityPicker", () => {
-  const CityPickerStub = (props: { onDone: () => void; onEnterCoordinates?: () => void }) => {
-    mockPicker.onDone = props.onDone;
-    mockPicker.onEnterCoordinates = props.onEnterCoordinates;
-    return null;
-  };
-  return { __esModule: true, default: CityPickerStub };
-});
-const mockCoordinates: { onDone?: () => void } = {};
-jest.mock("@/components/location/CoordinateEntry", () => {
-  const CoordinateEntryStub = (props: { onDone: () => void }) => {
-    mockCoordinates.onDone = props.onDone;
-    return null;
-  };
-  return { __esModule: true, default: CoordinateEntryStub };
-});
+// A pick hands its place to the step, which waits on the update stub.
+jest.mock(
+  "@/components/location/CityPicker",
+  () => jest.requireActual("@/test-helpers/cityPickerStubs").cityPickerModule
+);
+jest.mock(
+  "@/components/location/CoordinateEntry",
+  () => jest.requireActual("@/test-helpers/cityPickerStubs").coordinateEntryModule
+);
+jest.mock(
+  "@/hooks/useLocationUpdate",
+  () => jest.requireActual("@/test-helpers/cityPickerStubs").locationUpdateModule
+);
 
 const t = i18n.t.bind(i18n);
 const CITY = { locationChoice: LOCATION_CHOICE.CITY };
@@ -86,9 +83,7 @@ beforeEach(async () => {
   mockOpen.mockReset().mockResolvedValue(undefined);
   mockFix.mockReset().mockResolvedValue(undefined);
   mockLoad.mockReset().mockResolvedValue(true);
-  delete mockPicker.onDone;
-  delete mockPicker.onEnterCoordinates;
-  delete mockCoordinates.onDone;
+  resetPickerStubs();
   useLocationStore.setState({
     locationMode: LocationMode.DEVICE,
     localizedLocation: { country: "", city: "" },
@@ -418,7 +413,7 @@ it("loads nothing once a city is picked mid-fix, and the picked city stays", asy
 
   await user.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
   useLocationStore.setState({ locationMode: LocationMode.MANUAL, localizedLocation: picked });
-  await act(async () => mockPicker.onDone?.());
+  await act(async () => pickerStub.pick?.());
   fix.release();
   await act(() => jest.advanceTimersByTimeAsync(FETCH_ATTEMPT_TIMEOUT_MS));
 
@@ -475,7 +470,7 @@ it("offers a city during loading; a fetch that lands after the picker opened doe
   expect(props.onNext).not.toHaveBeenCalled();
   expect(screen.getByText(t("location.picker.title"))).toBeTruthy();
 
-  await act(async () => mockPicker.onDone?.());
+  await act(async () => pickerStub.pick?.());
   expect(props.setSession).toHaveBeenCalledWith(CITY);
   expect(props.onNext).toHaveBeenCalledTimes(1);
 });
@@ -534,7 +529,7 @@ it("moves on once when a city is picked after the fetch already landed", async (
   expect(props.onNext).toHaveBeenCalledTimes(1);
 
   await user.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
-  await act(async () => mockPicker.onDone?.());
+  await act(async () => pickerStub.pick?.());
 
   expect(props.onNext).toHaveBeenCalledTimes(1);
 });
@@ -602,7 +597,7 @@ it("moves on with a city picked from the error state", async () => {
 
   await user.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
   expect(screen.getByText(t("location.picker.title"))).toBeTruthy();
-  await act(async () => mockPicker.onDone?.());
+  await act(async () => pickerStub.pick?.());
 
   expect(props.setSession).toHaveBeenCalledWith(CITY);
   expect(props.onNext).toHaveBeenCalledTimes(1);
@@ -684,9 +679,9 @@ describe("the city picker", () => {
     await settle();
     await user.press(screen.getByTestId(ONBOARDING_PART.CHOOSE_CITY));
 
-    await act(async () => mockPicker.onEnterCoordinates?.());
+    await act(async () => pickerStub.onEnterCoordinates?.());
     expect(screen.getByText(t("location.coordinates.title"))).toBeTruthy();
-    await act(async () => mockCoordinates.onDone?.());
+    await act(async () => coordinatesStub.save?.());
 
     expect(props.setSession).toHaveBeenCalledWith(CITY);
     expect(props.onNext).toHaveBeenCalledTimes(1);
@@ -787,7 +782,7 @@ describe("the error's offer", () => {
     await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
     await user.press(screen.getByRole("button", { name: COORDINATES_NAME() }));
-    await act(async () => mockCoordinates.onDone?.());
+    await act(async () => coordinatesStub.save?.());
 
     expect(props.setSession).toHaveBeenCalledWith(CITY);
     expect(props.onNext).toHaveBeenCalledTimes(1);

@@ -7,6 +7,7 @@ import { localizeDigits } from "@/utils/digits";
 export const LITERAL_DIGIT_KEYS = [
   "settings.preferences.numerals.options.", // each option shows its own digit set
   "settings.acknowledgements.", // licence identifiers such as CC BY 4.0
+  "location.coordinates.", // matches the coordinate fields, which show Western digits
 ];
 
 const hasLiteralDigits = (key: string | string[]) =>
