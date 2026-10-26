@@ -2,6 +2,10 @@ import { dropCityTriedSince } from "@/components/onboarding/flow/CityChoice";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 
+// The module draws the city search; its field reads the sheet context.
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
+
 const RUN_START = 10_000;
 const clear = jest.fn();
 

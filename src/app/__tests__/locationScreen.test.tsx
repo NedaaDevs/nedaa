@@ -103,7 +103,7 @@ const renderScreen = ({ isRTL = false, withSheet = false } = {}) =>
           {withSheet ? <CityChangeSheet /> : null}
         </>
       ),
-      [LOCATION_PICKER.href.slice(1)]: () => <Picker />,
+      [BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route]: () => <Picker />,
     },
     {
       initialUrl: BACK_DESTINATION.SETTINGS_LOCATION.href as string,
@@ -406,7 +406,7 @@ describe("Settings › Location", () => {
       await userEvent.press(await screen.findByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
 
       expect(pathname()).toHaveTextContent(
-        `${normalizeRoutePath(LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.LIST}`
+        `${normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.LIST}`
       );
     });
   });
@@ -714,7 +714,7 @@ describe("Settings › Location", () => {
       );
 
       expect(pathname()).toHaveTextContent(
-        `${normalizeRoutePath(LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.COORDINATES}`
+        `${normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.COORDINATES}`
       );
     });
 

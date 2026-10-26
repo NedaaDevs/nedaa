@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import CityPicker from "@/components/location/CityPicker";
 import CoordinateEntry from "@/components/location/CoordinateEntry";
+import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { useStepBack } from "@/components/onboarding/flow/useStepBack";
@@ -10,10 +11,13 @@ import { useViewFocus } from "@/hooks/useViewFocus";
 import { Button } from "@/components/ui/button";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyScrollView } from "@/components/ui/sky-background";
+import { VStack } from "@/components/ui/vstack";
 import { CITY_PICKER_VIEW, type CityPickerView } from "@/constants/Location";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
 import { LocationMode } from "@/enums/location";
+import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
+import type { ManualLocation } from "@/types/location";
 
 /** Drops a manual city picked at or after `since`; one stored before stays. */
 export const dropCityTriedSince = (since: number) => {
@@ -82,6 +86,16 @@ export const StepCityPicker = ({
     }
   };
 
+  // With no Location screen behind it, a pick waits here for its update.
+  const { run, applyManualLocation, retry } = useLocationUpdate();
+  const pick = async (place: ManualLocation) => {
+    if (await applyManualLocation(place)) done();
+  };
+  // A failed pick is retried in place; one that lands moves the step on.
+  const retryPick = async () => {
+    if (await retry()) done();
+  };
+
   // Back walks out one view at a time: coordinates, the list, then the host.
   useStepBack(setBack, listBehind ? () => setView(CITY_PICKER_VIEW.LIST) : close);
   useViewFocus(view, headingRef);
@@ -104,18 +118,23 @@ export const StepCityPicker = ({
         progress={progress}
         title={t(coordinates ? "location.coordinates.title" : "location.picker.title")}
       />
-      {coordinates ? (
-        // The entry grows with the text size, so it scrolls under the heading.
-        <SkyScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <CoordinateEntry onDone={done} />
-        </SkyScrollView>
-      ) : (
-        // The city list scrolls itself.
-        <CityPicker
-          onDone={done}
-          onEnterCoordinates={() => setView(CITY_PICKER_VIEW.COORDINATES)}
-        />
-      )}
+      <LocationUpdateProgress run={run} onRetry={() => void retryPick()} />
+      {/* Either view grows with the text size, so it scrolls. */}
+      <SkyScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}>
+        <VStack paddingBottom="$4">
+          {coordinates ? (
+            <CoordinateEntry onSave={(place) => void pick(place)} />
+          ) : (
+            <CityPicker
+              onPick={(place) => void pick(place)}
+              onEnterCoordinates={() => setView(CITY_PICKER_VIEW.COORDINATES)}
+            />
+          )}
+        </VStack>
+      </SkyScrollView>
     </ScreenContent>
   );
 };

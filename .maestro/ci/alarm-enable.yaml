@@ -39,10 +39,14 @@ appId: dev.nedaa.android
       - tapOn:
           id: "city-result"
           index: 0
-      # The picker closes once the city's times, notifications and alarms are set.
+      # A pick closes the picker; Location shows the update until it lands.
       - extendedWaitUntil:
           notVisible:
             id: "city-search-input"
+          timeout: 15000
+      - extendedWaitUntil:
+          visible:
+            id: "location-choose-city"
           timeout: 60000
       - openLink: "myapp://settings/alarm/fajr"
       - extendedWaitUntil:

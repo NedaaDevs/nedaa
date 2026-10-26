@@ -276,3 +276,77 @@ describe("the age of the compass's saved fix in days", () => {
     expect(sayEn("compass.locationSavedAge.days", 5)).toBe("Saved 5 days ago");
   });
 });
+
+// The city picker's counts: its results, its reach and the full list's size.
+describe("the city picker's counts", () => {
+  // A list's size is said as a grouped `amount`; `count` picks the form.
+  const sayCities = (key: string, count: number, lng: AppLocale) =>
+    i18n.t(key, { count, amount: String(count), size: "6.1", lng });
+
+  it.each([
+    [
+      "location.picker.resultCount",
+      [
+        "لم يُعثر على أي مدينة",
+        "عُثر على مدينة واحدة",
+        "عُثر على مدينتين",
+        "عُثر على 3 مدن",
+        "عُثر على 11 مدينة",
+        "عُثر على 100 مدينة",
+      ],
+    ],
+    [
+      "location.picker.resultCountCapped",
+      [
+        "لم يُعثر على أي مدينة",
+        "تعرض القائمة أول مدينة مطابقة للبحث",
+        "تعرض القائمة أول مدينتين مطابقتين للبحث",
+        "تعرض القائمة أول 3 مدن مطابقة للبحث",
+        "تعرض القائمة أول 11 مدينة مطابقة للبحث",
+        "تعرض القائمة أول 100 مدينة مطابقة للبحث",
+      ],
+    ],
+    [
+      "location.picker.seedCoverage",
+      [
+        "لا يشمل البحث أي مدينة بعد.",
+        "يقتصر البحث حاليًا على مدينة رئيسية واحدة.",
+        "يقتصر البحث حاليًا على مدينتين رئيسيتين.",
+        "يقتصر البحث حاليًا على 3 مدن رئيسية.",
+        "يقتصر البحث حاليًا على 11 مدينة رئيسية.",
+        "يقتصر البحث حاليًا على 100 مدينة رئيسية.",
+      ],
+    ],
+    [
+      "location.picker.packDetail",
+      [
+        "لا تضم أي مدينة، وحجمها 6.1 ميغابايت",
+        "تضم مدينة واحدة، وحجمها 6.1 ميغابايت",
+        "تضم مدينتين، وحجمها 6.1 ميغابايت",
+        "تضم 3 مدن، وحجمها 6.1 ميغابايت",
+        "تضم 11 مدينة، وحجمها 6.1 ميغابايت",
+        "تضم 100 مدينة، وحجمها 6.1 ميغابايت",
+      ],
+    ],
+  ])("says %s in Arabic with all six forms", (key, sentences) => {
+    expect(ARABIC_COUNTS.map((count) => sayCities(key, count, AppLocale.AR))).toEqual(sentences);
+  });
+
+  it.each([
+    ["location.picker.resultCount", "1 city found", "5 cities found"],
+    [
+      "location.picker.resultCountCapped",
+      "Showing the first city that matches",
+      "Showing the first 5 cities that match",
+    ],
+    [
+      "location.picker.seedCoverage",
+      "Search covers 1 major city for now.",
+      "Search covers 5 major cities for now.",
+    ],
+    ["location.picker.packDetail", "1 city, 6.1 MB", "5 cities, 6.1 MB"],
+  ])("says %s in English", (key, one, five) => {
+    expect(sayCities(key, 1, AppLocale.EN)).toBe(one);
+    expect(sayCities(key, 5, AppLocale.EN)).toBe(five);
+  });
+});

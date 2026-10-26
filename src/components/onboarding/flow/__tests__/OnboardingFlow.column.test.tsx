@@ -37,6 +37,7 @@ import { checkLocationPermission } from "@/utils/location";
 import { checkPermissions } from "@/utils/notifications";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("react-native-safe-area-context", () =>
   jest.requireActual("@/test-helpers/safeAreaMock")
 );

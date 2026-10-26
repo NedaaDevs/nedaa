@@ -77,10 +77,9 @@ export const downloadCitiesPack = async ({
   const target = new File(getDbDirectory(), CITIES_DB_NAME);
   // The reader has to let go before the file is replaced. Deleting a database whose WAL
   // index is still mapped raises SIGBUS in the next reader of that mapping, so a close
-  // that fails abandons the install; the next attempt downloads the pack again.
+  // that fails abandons the install, as a failure; a retry downloads it again.
   if (!(await invalidateCitiesDb())) {
-    log.w("CitiesDB", "cities.db still open — install deferred");
-    return;
+    throw new Error("Cities pack install deferred: cities.db still open");
   }
   // A stale database and its write-ahead sidecars would otherwise shadow the new file.
   if (target.exists) target.delete();

@@ -1,4 +1,4 @@
-import { AccessibilityInfo, Platform } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { screen, userEvent } from "@testing-library/react-native";
 
 import { CALLOUT_PART, CALLOUT_TONE, Callout } from "@/components/ui/callout";
@@ -180,4 +180,39 @@ describe("Callout tones", () => {
       expect(glyph).toHaveProp("stroke", palette.fg.hex);
     }
   );
+});
+
+describe("Callout's place tone", () => {
+  const fontOf = (text: string) =>
+    String(StyleSheet.flatten(screen.getByText(text).props.style).fontFamily);
+
+  it("names a found place on its own strong line, over its detail, by a pin", async () => {
+    await renderWithTheme(
+      <Callout tone={CALLOUT_TONE.PLACE} title="Nearest city: Makkah" body="2 km away" />
+    );
+
+    expect(screen.getByLabelText("Nearest city: Makkah, 2 km away")).toBeTruthy();
+    expect(fontOf("Nearest city: Makkah")).not.toBe(fontOf("2 km away"));
+    expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.tile.hex,
+    });
+    expect(
+      screen.getByTestId(CALLOUT_PART.ICON_PLACE, { includeHiddenElements: true })
+    ).toBeTruthy();
+  });
+
+  // A note whose host says it at a settled moment is no live region.
+  it("is read aloud as it changes unless its host says it", async () => {
+    await renderWithTheme(
+      <>
+        <Callout body="Read as it changes." />
+        <Callout body="Said by its host." live={false} />
+      </>
+    );
+
+    expect(screen.getByLabelText("Read as it changes.").props.accessibilityLiveRegion).toBe(
+      "polite"
+    );
+    expect(screen.getByLabelText("Said by its host.").props.accessibilityLiveRegion).toBe("none");
+  });
 });
