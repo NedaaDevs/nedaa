@@ -70,8 +70,8 @@ const channelSoundMatches = (
   if (expectedSound === null) {
     return existingSound === null || existingSound === undefined;
   }
-  if (expectedSound === "default") {
-    return existingSound === "default";
+  if (expectedSound === SYSTEM_SOUND) {
+    return existingSound === SYSTEM_SOUND;
   }
   // Expected is a specific sound file (e.g. "makkah_athan1.ogg").
   // The serializer will have reported it as "custom".
@@ -504,7 +504,7 @@ export const shouldUpdateChannels = async (
         const existingChannel = existingChannels.find(
           (ch) => ch.id === NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING
         );
-        if (!existingChannel || existingChannel.sound !== "default") {
+        if (!existingChannel || existingChannel.sound !== SYSTEM_SOUND) {
           return true;
         }
       }
@@ -514,7 +514,7 @@ export const shouldUpdateChannels = async (
         const existingChannel = existingChannels.find(
           (ch) => ch.id === NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING
         );
-        if (!existingChannel || existingChannel.sound !== "default") {
+        if (!existingChannel || existingChannel.sound !== SYSTEM_SOUND) {
           return true;
         }
       }
