@@ -2,17 +2,15 @@ import type { ReactElement } from "react";
 import { StyleSheet } from "react-native";
 import { View, type RadiusTokens } from "tamagui";
 
-import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
+import { useBrightness, useThemeColor } from "@/components/ui/theme-color";
 import { ELEVATION, ELEVATION_LEVEL, type ElevationLevel } from "@/constants/Elevation";
 
 /** Test id of an edge whose surface has none of its own. */
 export const HIGHLIGHT_EDGE_ID = "highlight-edge";
 
 /** The level's shadow for the current theme; undefined where it draws none. */
-export const useElevationShadow = (level: ElevationLevel): string | undefined => {
-  const isDark = useIsDarkTheme();
-  return ELEVATION[level].boxShadow[isDark ? "dark" : "light"] ?? undefined;
-};
+export const useElevationShadow = (level: ElevationLevel): string | undefined =>
+  ELEVATION[level].boxShadow[useBrightness()] ?? undefined;
 
 type HighlightEdgeProps = {
   /** The surface's test id; the edge takes it with a `-highlight` suffix. */

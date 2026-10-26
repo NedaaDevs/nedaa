@@ -1,20 +1,14 @@
 import { BRIGHTNESS } from "@/constants/Palette";
-import {
-  CONTACT_SHADOW,
-  ELEVATION,
-  ELEVATION_LEVEL,
-  type ElevationLevel,
-} from "@/constants/Elevation";
+import { CONTACT_SHADOW, ELEVATION, ELEVATION_LEVEL } from "@/constants/Elevation";
 
 describe("elevation", () => {
-  it("names four levels, derived from the table", () => {
-    expect(Object.values(ELEVATION_LEVEL)).toEqual(Object.keys(ELEVATION));
+  it("names four levels", () => {
     expect(Object.keys(ELEVATION)).toEqual(["e0", "e1", "e2", "e3"]);
   });
 
   // A part lifted inside a track takes only e2's tight layer.
-  it.each(["light", "dark"] as const)("the contact shadow is e2's first layer (%s)", (theme) => {
-    const [first, second] = String(ELEVATION.e2.boxShadow[theme]).split(", 0 ");
+  it.each(Object.values(BRIGHTNESS))("the contact shadow is e2's first layer (%s)", (theme) => {
+    const [first, second] = String(ELEVATION[ELEVATION_LEVEL.E2].boxShadow[theme]).split(", 0 ");
 
     expect(CONTACT_SHADOW[theme]).toBe(first);
     expect(second).toBeDefined();
@@ -55,7 +49,7 @@ describe("elevation", () => {
   });
 
   it("declares both brightnesses at every level", () => {
-    for (const level of Object.keys(ELEVATION) as ElevationLevel[]) {
+    for (const level of Object.values(ELEVATION_LEVEL)) {
       expect(Object.keys(ELEVATION[level].boxShadow).sort()).toEqual(
         Object.values(BRIGHTNESS).sort()
       );

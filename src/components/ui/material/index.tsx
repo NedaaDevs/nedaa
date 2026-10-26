@@ -5,10 +5,9 @@ import { getTokenValue, View, type RadiusTokens } from "tamagui";
 
 import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
 import { chooseMaterialSurface, MATERIAL_SURFACE } from "@/components/ui/material/surface";
-import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
+import { useBrightness, useThemeColor } from "@/components/ui/theme-color";
 import { BLUR_INTENSITY, BLUR_REDUCTION, BLUR_TINT, type BlurLevel } from "@/constants/Blur";
 import { ELEVATION_LEVEL, type ElevationLevel } from "@/constants/Elevation";
-import { BRIGHTNESS } from "@/constants/Palette";
 import { PlatformType } from "@/enums/app";
 import { useReduceTransparency } from "@/hooks/useReduceTransparency";
 
@@ -84,7 +83,7 @@ export const Material = ({
   const spec = MATERIAL_SPEC[material];
   const tint = useThemeColor(spec.color);
   const hairline = useThemeColor("$hairline");
-  const isDark = useIsDarkTheme();
+  const brightness = useBrightness();
   const reduceTransparency = useReduceTransparency();
   const surface = chooseMaterialSurface({
     platform: Platform.OS === PlatformType.ANDROID ? PlatformType.ANDROID : PlatformType.IOS,
@@ -110,7 +109,7 @@ export const Material = ({
       {surface === MATERIAL_SURFACE.BLUR && (
         <BlurView
           intensity={BLUR_INTENSITY[spec.blur]}
-          tint={BLUR_TINT[isDark ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT]}
+          tint={BLUR_TINT[brightness]}
           blurReductionFactor={BLUR_REDUCTION}
           blurMethod="dimezisBlurViewSdk31Plus"
           blurTarget={blurTarget}
