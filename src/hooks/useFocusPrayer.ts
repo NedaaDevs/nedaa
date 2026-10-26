@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { useCountdownTimer, type CountdownOptions } from "@/hooks/useCountdownTimer";
 import type { FocusCount, FocusPrayer } from "@/utils/focusCount";
 import { prayerNameKey } from "@/utils/prayerName";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
@@ -16,9 +16,9 @@ export type FocusPrayerView = {
 };
 
 /** Today's focus prayer by name; null with no later prayer stored. */
-export const useFocusPrayer = (flipped = false, paused = false): FocusPrayerView | null => {
+export const useFocusPrayer = (options: CountdownOptions = {}): FocusPrayerView | null => {
   const { t } = useTranslation();
-  const count = useCountdownTimer(flipped, paused);
+  const count = useCountdownTimer(options);
   if (!count) return null;
 
   // Friday's Dhuhr is Jumuah, by the day in the prayer's own timezone.
