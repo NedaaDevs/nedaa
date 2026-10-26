@@ -36,7 +36,7 @@ export const HighlightEdge = ({ owner, radius = "$card" }: HighlightEdgeProps) =
 type RestingSurface = {
   /** The e1 lift, for the surface's own style. */
   lift: { boxShadow?: string };
-  /** The lit top edge, drawn as the surface's first child. */
+  /** The lit top edge, for the surface to draw over its own fill. */
   edge: ReactElement;
 };
 
