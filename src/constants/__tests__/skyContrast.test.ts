@@ -177,11 +177,16 @@ describe.each(CASES)("%s sky under the bowl's body", (_name, brightness, phase) 
 
 // The copy may sit on any part of the gradient, bare or under the skyline.
 describe.each(Object.entries(PLACE_HERO_PAINT))("the %s place hero", (_tone, byBrightness) => {
-  it.each(Object.values(BRIGHTNESS))("keeps its title and note readable in %s", (brightness) => {
-    const ink = PALETTE[brightness].fg.hex;
+  /** Each stop of the gradient, bare and under the skyline. */
+  const heroGrounds = (brightness: Brightness) => {
     const { stops, skyline } = byBrightness[brightness];
     const bare = stops.map(({ color }) => color.hex);
-    const grounds = [...bare, ...flattenOverAll(skyline.hex, bare)];
+    return [...bare, ...flattenOverAll(skyline.hex, bare)];
+  };
+
+  it.each(Object.values(BRIGHTNESS))("keeps its title and note readable in %s", (brightness) => {
+    const ink = PALETTE[brightness].fg.hex;
+    const grounds = heroGrounds(brightness);
     const note = withAlpha(ink, HERO_NOTE_INK[brightness]);
 
     expect(worst(ink, grounds)).toBeGreaterThanOrEqual(AA);
@@ -194,9 +199,7 @@ describe.each(Object.entries(PLACE_HERO_PAINT))("the %s place hero", (_tone, byB
   it.each(Object.values(BRIGHTNESS))("keeps its neutral pill readable in %s", (brightness) => {
     const palette = PALETTE[brightness];
     const { fill, ink } = PILL_PAINT[PILL_TONE.NEUTRAL];
-    const { stops, skyline } = byBrightness[brightness];
-    const bare = stops.map(({ color }) => color.hex);
-    const pill = cardOver(palette[fill].hex, [...bare, ...flattenOverAll(skyline.hex, bare)]);
+    const pill = cardOver(palette[fill].hex, heroGrounds(brightness));
 
     expect(worst(palette[ink].hex, pill)).toBeGreaterThanOrEqual(AA);
   });
