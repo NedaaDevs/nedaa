@@ -6,8 +6,8 @@ export const toWesternDigits = (str: string) =>
 export const toArabicIndicDigits = (str: string) =>
   str.replace(/[0-9]/g, (digit) => ARABIC_INDIC_DIGITS[Number(digit)]);
 
-// Western digits are the stored form everywhere, so Arabic is the only locale that
-// converts and only when the reader keeps Arabic numerals.
+// Western digits are the stored form everywhere, so Arabic is the only
+// locale that converts, and only when the reader keeps Arabic numerals.
 const keepsArabicDigits = (locale: string, useWesternNumerals: boolean) =>
   locale.startsWith("ar") && !useWesternNumerals;
 
