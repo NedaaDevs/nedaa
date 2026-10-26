@@ -6,7 +6,8 @@ import config from "../../../../tamagui.config";
 import { Card } from "@/components/ui/card";
 import { LIST_GROUP_PART, ListGroup } from "@/components/ui/list-group";
 import { ICON_TILE_ID } from "@/components/ui/icon-tile";
-import { LIST_ROW_PART, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { LIST_ROW_PART, LIST_ROW_STYLE, LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { HIGHLIGHT_EDGE_ID } from "@/components/ui/material/edge";
 import { PLACE_HERO_PART, PlaceHero } from "@/components/ui/place-hero";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
@@ -143,6 +144,8 @@ describe("PlaceHero surface", () => {
 });
 
 describe("ListRow frame", () => {
+  afterEach(() => jest.restoreAllMocks());
+
   it("sets a grouped row at 56 high with a 10 by 14 inset", async () => {
     await renderWithTheme(
       <ListRow variant={LIST_ROW_VARIANT.GROUPED} title="A" onPress={jest.fn()} />
@@ -166,6 +169,19 @@ describe("ListRow frame", () => {
     expect(screen.getByRole("button", { name: "A" })).toHaveStyle({
       opacity: 1,
       backgroundColor: NEDAA_LIGHT.pressed.hex,
+    });
+  });
+
+  // The lit edge follows the row's own corner, whatever its variant sets.
+  it("lights the curve of the corner its variant sets", async () => {
+    jest.replaceProperty(LIST_ROW_STYLE[LIST_ROW_VARIANT.CARD].frame, "borderRadius", "$hero");
+    await renderWithTheme(<ListRow title="A" onPress={jest.fn()} />);
+    const corner = StyleSheet.flatten(screen.getByRole("button", { name: "A" }).props.style);
+
+    expect(corner.borderTopLeftRadius).toBe(config.tokens.radius.hero.val);
+    expect(screen.getByTestId(HIGHLIGHT_EDGE_ID, { includeHiddenElements: true })).toHaveStyle({
+      borderTopLeftRadius: corner.borderTopLeftRadius,
+      borderTopRightRadius: corner.borderTopRightRadius,
     });
   });
 
