@@ -76,6 +76,9 @@ const SAVED_HERO: Hero = {
   note: "location.hero.savedNote",
 };
 
+/** A device read in progress, in the words onboarding's fetch uses. */
+const FINDING_NOTE: ParseKeys = "onboarding.fetch.locatingDevice";
+
 type HeroFacts = {
   chosenCity: boolean;
   /** No city chosen and no verified place: the times are Makkah's. */
@@ -94,10 +97,10 @@ const heroFor = (
   switch (state) {
     // The title is the run's target once its first step has set the place.
     case LOCATION_ROOT_STATE.UPDATING:
-      if (finding && noPlace) return { ...ASK_HERO, note: "location.hero.findingNote" };
+      if (finding && noPlace) return { ...ASK_HERO, note: FINDING_NOTE };
       return {
         ...(chosenCity ? CITY_HERO : DEVICE_HERO),
-        note: finding ? "location.hero.findingNote" : "location.hero.updatingNote",
+        note: finding ? FINDING_NOTE : "location.hero.updatingNote",
       };
     case LOCATION_ROOT_STATE.CHECKING:
     case LOCATION_ROOT_STATE.DEVICE:

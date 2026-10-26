@@ -22,7 +22,7 @@ export const LOCATION_UPDATE_PART = {
 
 /** The line naming what runs now, read aloud as it changes. */
 const STATUS: Record<UpdateStep, ParseKeys> = {
-  [UPDATE_STEP.LOCATION]: "location.update.step.location",
+  [UPDATE_STEP.LOCATION]: "location.update.step.city",
   [UPDATE_STEP.PRAYER_TIMES]: "location.update.step.prayerTimes",
   [UPDATE_STEP.NOTIFICATIONS]: "location.update.step.notifications",
   [UPDATE_STEP.ALARMS]: "location.update.step.alarms",

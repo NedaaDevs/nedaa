@@ -266,7 +266,7 @@ describe("Settings › Location", () => {
 
       await userEvent.press(refresh);
 
-      expect(await screen.findByLabelText(t("location.update.step.location"))).toBeTruthy();
+      expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
       expect(screen.queryByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeNull();
       expect(
         screen.queryByRole("button", { name: new RegExp(`^${t("location.device.refresh")}`) })
@@ -274,7 +274,7 @@ describe("Settings › Location", () => {
       expect(screen.queryByLabelText(t("a11y.location.mode"))).toBeNull();
       expect(screen.queryByTestId("pathname")).toBeNull();
       expect(hero()).toHaveAccessibleName(
-        heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.findingNote"))
+        heroName(t("location.hero.deviceKicker"), placeName, t("onboarding.fetch.locatingDevice"))
       );
     });
 
@@ -333,7 +333,7 @@ describe("Settings › Location", () => {
         heroName(
           t("settings.location.title"),
           t("onboarding.location.question"),
-          t("location.hero.findingNote")
+          t("onboarding.fetch.locatingDevice")
         )
       );
 
@@ -504,7 +504,7 @@ describe("Settings › Location", () => {
       await userEvent.press(device);
 
       expect(mockAdopt).toHaveBeenCalledTimes(1);
-      expect(await screen.findByLabelText(t("location.update.step.location"))).toBeTruthy();
+      expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
       expect(screen.queryByRole("radio", { name: t("onboarding.location.automatic") })).toBeNull();
       expect(screen.queryByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeNull();
     });
@@ -883,7 +883,7 @@ describe("Settings › Location", () => {
           includeHiddenElements: true,
         })
       ).toHaveLength(2);
-      expect(announced(t("location.update.step.location"))).toBe(1);
+      expect(announced(t("location.update.step.city"))).toBe(1);
       expect(announced(t("location.update.step.prayerTimes"))).toBe(1);
     });
 
