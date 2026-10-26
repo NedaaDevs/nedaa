@@ -35,14 +35,14 @@ const MODE_LABEL: Record<LocationModeValue, ParseKeys> = {
 
 type ModeProps = {
   mode: LocationModeValue;
-  onChooseDevice: () => void;
-  onChooseCity: () => void;
+  /** Takes the mode picked; the choice ticks for it. */
+  onSwitch: (mode: LocationModeValue) => void;
   /** A read or update runs; the place cannot change under it. */
   busy: boolean;
 };
 
 /** The device or a city, one radio group; choosing a city opens the list. */
-const LocationModeChoice = ({ mode, onChooseDevice, onChooseCity, busy }: ModeProps) => {
+const LocationModeChoice = ({ mode, onSwitch, busy }: ModeProps) => {
   const { t } = useTranslation();
   // Only an option that is not chosen leads anywhere.
   const opensList = (option: LocationModeValue) =>
@@ -52,7 +52,7 @@ const LocationModeChoice = ({ mode, onChooseDevice, onChooseCity, busy }: ModePr
     <SegmentedChoice
       options={MODES}
       value={mode}
-      onChange={(next) => (next === LocationMode.MANUAL ? onChooseCity() : onChooseDevice())}
+      onChange={onSwitch}
       accessibilityLabel={t("a11y.location.mode")}
       label={(option) => t(MODE_LABEL[option])}
       optionTestID={(option) => (opensList(option) ? E2E_ID.LOCATION_CHOOSE_CITY : undefined)}
@@ -102,7 +102,8 @@ const ChooseCityRow = ({ onPress }: { onPress: () => void }) => {
 };
 
 type DeviceProps = {
-  onChooseCity: () => void;
+  /** Takes the mode the choice picks; the choice ticks for it. */
+  onSwitchMode: (mode: LocationModeValue) => void;
   onRefresh: () => void;
   /** The last update, drawn when a later step stopped it. */
   run: UpdateRun | null;
@@ -118,7 +119,7 @@ type DeviceProps = {
 };
 
 export const DeviceBody = ({
-  onChooseCity,
+  onSwitchMode,
   onRefresh,
   run,
   busy,
@@ -130,12 +131,7 @@ export const DeviceBody = ({
   const { t } = useTranslation();
   return (
     <>
-      <LocationModeChoice
-        mode={LocationMode.DEVICE}
-        onChooseDevice={onRefresh}
-        onChooseCity={onChooseCity}
-        busy={busy}
-      />
+      <LocationModeChoice mode={LocationMode.DEVICE} onSwitch={onSwitchMode} busy={busy} />
       {!verified ? (
         <StandInNotice />
       ) : lastKnown ? (
@@ -159,7 +155,8 @@ export const DeviceBody = ({
 };
 
 type ManualProps = {
-  onChooseDevice: () => void;
+  /** Takes the mode the choice picks; the choice ticks for it. */
+  onSwitchMode: (mode: LocationModeValue) => void;
   onChooseCity: () => void;
   /** The last update, drawn when a later step stopped it. */
   run: UpdateRun | null;
@@ -171,7 +168,7 @@ type ManualProps = {
 };
 
 export const ManualBody = ({
-  onChooseDevice,
+  onSwitchMode,
   onChooseCity,
   run,
   busy,
@@ -184,12 +181,7 @@ export const ManualBody = ({
   useIosAnnouncement(refused ? refusedNotice : null);
   return (
     <>
-      <LocationModeChoice
-        mode={LocationMode.MANUAL}
-        onChooseDevice={onChooseDevice}
-        onChooseCity={onChooseCity}
-        busy={busy}
-      />
+      <LocationModeChoice mode={LocationMode.MANUAL} onSwitch={onSwitchMode} busy={busy} />
       {refused ? (
         <>
           <Callout tone={CALLOUT_TONE.INFO} body={refusedNotice} />

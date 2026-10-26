@@ -30,7 +30,7 @@ import {
   type UpdateStep,
 } from "@/constants/Location";
 import { PLACE_HERO_TONE, type PlaceHeroTone } from "@/constants/PlaceHero";
-import { LocationMode } from "@/enums/location";
+import { LocationMode, type LocationModeValue } from "@/enums/location";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationPermission } from "@/hooks/useLocationPermission";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
@@ -182,10 +182,14 @@ export const LocationRoot = () => {
   const openPicker = (view: CityPickerView) => {
     dismissFailure();
     setRefused(false);
-    void selectionHaptic();
     router.push(locationPickerRoute(view));
   };
-  const chooseCity = () => openPicker(CITY_PICKER_VIEW.LIST);
+  // A row ticks as it opens the picker.
+  const tapPicker = (view: CityPickerView) => {
+    void selectionHaptic();
+    openPicker(view);
+  };
+  const chooseCity = () => tapPicker(CITY_PICKER_VIEW.LIST);
 
   const refresh = () => {
     void mediumHaptic();
@@ -193,13 +197,25 @@ export const LocationRoot = () => {
   };
 
   // The system asks first; a city stays until the device's place replaces it.
-  const chooseDevice = async () => {
-    if (updating) return;
+  const deviceAllowed = async () => {
+    if (updating) return false;
     const access = permission?.granted ? permission : await ask();
     setRefused(chosenCity && !access.granted);
-    if (!access.granted) return;
+    return access.granted;
+  };
+  const readDevice = () => (chosenCity ? switchToDevice() : executeUpdate());
+
+  // A row ticks once access is given.
+  const chooseDevice = async () => {
+    if (!(await deviceAllowed())) return;
     void mediumHaptic();
-    await (chosenCity ? switchToDevice() : executeUpdate());
+    await readDevice();
+  };
+
+  // The mode choice ticks as it is tapped; the switch it starts adds none.
+  const switchMode = async (mode: LocationModeValue) => {
+    if (mode === LocationMode.MANUAL) openPicker(CITY_PICKER_VIEW.LIST);
+    else if (await deviceAllowed()) await readDevice();
   };
 
   const body = () => {
@@ -209,7 +225,7 @@ export const LocationRoot = () => {
       case LOCATION_ROOT_STATE.DEVICE:
         return (
           <DeviceBody
-            onChooseCity={chooseCity}
+            onSwitchMode={(mode) => void switchMode(mode)}
             onRefresh={refresh}
             run={run}
             busy={updating}
@@ -222,7 +238,7 @@ export const LocationRoot = () => {
       case LOCATION_ROOT_STATE.MANUAL:
         return (
           <ManualBody
-            onChooseDevice={() => void chooseDevice()}
+            onSwitchMode={(mode) => void switchMode(mode)}
             onChooseCity={chooseCity}
             run={run}
             busy={updating}
@@ -246,7 +262,7 @@ export const LocationRoot = () => {
               failure={failure}
               onRetry={() => void retry()}
               onChooseCity={chooseCity}
-              onEnterCoordinates={() => openPicker(CITY_PICKER_VIEW.COORDINATES)}
+              onEnterCoordinates={() => tapPicker(CITY_PICKER_VIEW.COORDINATES)}
             />
           </>
         );
