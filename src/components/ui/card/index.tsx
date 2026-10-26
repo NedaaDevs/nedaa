@@ -72,7 +72,7 @@ const RESTS: Record<CardVariant, boolean> = {
   grouped: true,
 };
 
-/** The resting look on the card's own corner; null for a card that lies flat. */
+/** The resting look on the card's corner; null for a card that lies flat. */
 const useCardRest = ({ testID, size, borderRadius, variant }: CardRestProps) => {
   const resting = useRestingSurface({
     owner: testID,
