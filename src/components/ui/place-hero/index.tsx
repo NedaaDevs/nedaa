@@ -3,12 +3,11 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
+import { useRestingSurface } from "@/components/ui/material/edge";
 import { Pill, PILL_TONE } from "@/components/ui/pill";
 import { Text } from "@/components/ui/text";
 import { useIsDarkTheme } from "@/components/ui/theme-color";
 import { VStack } from "@/components/ui/vstack";
-import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { BRIGHTNESS, PLACE_HERO_PAINT, type Brightness } from "@/constants/Palette";
 import type { PlaceHeroTone } from "@/constants/PlaceHero";
 
@@ -53,7 +52,7 @@ type Props = {
 export const PlaceHero = ({ tone, kicker, title, subtitle }: Props) => {
   const { t } = useTranslation();
   const dark = useIsDarkTheme();
-  const lift = useElevationShadow(ELEVATION_LEVEL.E1);
+  const resting = useRestingSurface({ owner: PLACE_HERO_PART.FRAME, radius: "$hero" });
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   const brightness = dark ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT;
@@ -75,7 +74,7 @@ export const PlaceHero = ({ tone, kicker, title, subtitle }: Props) => {
       padding="$cardPad"
       borderRadius="$hero"
       overflow="hidden"
-      style={{ boxShadow: lift }}>
+      style={resting.lift}>
       <View
         testID={PLACE_HERO_PART.PAINT}
         pointerEvents="none"
@@ -102,7 +101,7 @@ export const PlaceHero = ({ tone, kicker, title, subtitle }: Props) => {
           </View>
         </View>
       ) : null}
-      <HighlightEdge owner={PLACE_HERO_PART.FRAME} radius="$hero" />
+      {resting.edge}
       <Pill dot tone={PILL_TONE.NEUTRAL} alignSelf="flex-start">
         {kicker}
       </Pill>
