@@ -125,10 +125,7 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_morning",
-          channelId:
-            Platform.OS === PlatformType.ANDROID
-              ? NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING
-              : undefined,
+          channelId: NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING,
           timezone,
         }
       );
@@ -163,10 +160,7 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_evening",
-          channelId:
-            Platform.OS === PlatformType.ANDROID
-              ? NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING
-              : undefined,
+          channelId: NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING,
           timezone,
         }
       );
@@ -283,10 +277,7 @@ const scheduleQuranReminderNotifications = async (
         {
           vibrate: true,
           categoryId: "quran_reminder",
-          channelId:
-            Platform.OS === PlatformType.ANDROID
-              ? NOTIFICATION_CHANNEL_ID.QURAN_REMINDER
-              : undefined,
+          channelId: NOTIFICATION_CHANNEL_ID.QURAN_REMINDER,
           weekday,
         }
       );
@@ -508,7 +499,7 @@ export const scheduleAllNotifications = async (
       };
 
       const result = await scheduleNotification(notification.time, notificationInput, {
-        vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
+        vibrate: notification.vibration,
         categoryId: notification.categoryId,
         channelId: notification.channelId,
         timeSensitive: notification.timeSensitive,
