@@ -232,10 +232,7 @@ export const useLocationStore = create<LocationStore>()(
                   locale: appStore.getState().locale,
                 })
                 .catch((error) => {
-                  log.w(
-                    "Geocode",
-                    `localized address failed: ${(error as Error)?.message ?? error}`
-                  );
+                  log.w("Geocode", `localized address failed: ${errorText(error)}`);
                   return null;
                 });
 
@@ -339,10 +336,7 @@ export const useLocationStore = create<LocationStore>()(
               get()
                 .updateAddressTranslation()
                 .catch((error) => {
-                  log.w(
-                    "Geocode",
-                    `address translation failed: ${(error as Error)?.message ?? error}`
-                  );
+                  log.w("Geocode", `address translation failed: ${errorText(error)}`);
                 });
             } catch (error) {
               const cause = error instanceof Error ? error : new Error("Failed to update location");
@@ -397,7 +391,7 @@ export const useLocationStore = create<LocationStore>()(
               locale: asked,
             })
             .catch((e) => {
-              log.w("Geocode", `address translation failed: ${(e as Error)?.message ?? e}`);
+              log.w("Geocode", `address translation failed: ${errorText(e)}`);
             });
 
           // A later language switch owns the name; this answer is for the old one.
