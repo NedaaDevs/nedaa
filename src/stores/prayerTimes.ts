@@ -153,7 +153,7 @@ const takeDeviceFixOnce = async (get: GetTimes): Promise<void> => {
 /** Whether a refetch lets the load stand, and whether all its days are new. */
 type Landed = { stands: boolean; complete: boolean };
 /** A refetch's result, or that the place moved while it ran. */
-export type Refetch = Landed | typeof TIMES_FETCH.SUPERSEDED;
+type Refetch = Landed | typeof TIMES_FETCH.SUPERSEDED;
 /** A place refetch's result; `fetched` when this year's days landed. */
 export type PlaceRefetch = (Landed & { fetched: boolean }) | typeof TIMES_FETCH.SUPERSEDED;
 
