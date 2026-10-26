@@ -20,7 +20,7 @@ const buildContent = (
   notificationInput: NotificationContentInput,
   options?: NotificationOptions
 ): NotificationContentInput => {
-  // The caller's sound stays in the content: iOS and Android before 8.0 play it.
+  // The sound stays in the content: iOS and Android before 8.0 play it there.
   const content: NotificationContentInput = {
     ...notificationInput,
     data: {
