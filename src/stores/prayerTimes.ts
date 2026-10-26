@@ -169,7 +169,16 @@ const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<Refetch> => 
   return { stands: true, complete: true };
 };
 
-/** The body of both load verbs; `takeFix` runs before the place is read. */
+/** The read-ahead window ends in next year on a day not stored. */
+const nextYearUnstored = (now: Date, read: DayPrayerTimes[] | null): boolean => {
+  const last = addDays(now, READ_AHEAD_DAYS);
+  return getYear(last) > getYear(now) && !read?.some(({ date }) => date === dateToInt(last));
+};
+
+/** The best-effort next-year fetch; a load started during it waits for it. */
+let readAhead: Promise<boolean> = Promise.resolve(true);
+
+/** The body of both load verbs; the place to load is read after `takeFix`. */
 const loadTimes = async (
   set: SetTimes,
   get: GetTimes,
@@ -180,7 +189,10 @@ const loadTimes = async (
     // Clear any previous errors
     set({ hasError: false, errorMessage: "" });
     set({ loadingTimes: true });
+    await readAhead;
 
+    // Unmarked days belong to the place held before the fix.
+    const placeBeforeFix = locationStore.getState().locationDetails.coords;
     await takeFix();
 
     const { locationDetails, lastKnownCoords } = locationStore.getState();
@@ -208,15 +220,15 @@ const loadTimes = async (
       !tomorrowTimings && "tomorrow",
     ].filter(Boolean);
     const placeSettled = verified && !placeNewlyVerified;
-    // Days stored before any mark are taken as the settled place's own.
     if (placeSettled && get().timesCoords === null && (yesterdayTimings || twoWeeksTimings)) {
-      get().markTimesFor(locationDetails.coords);
+      get().markTimesFor(placeBeforeFix);
     }
     // Days fetched for another place count as missing; a newly verified
     // place stays best effort.
     const placeMoved = placeSettled && timesMoved(get().timesCoords, locationDetails.coords);
     const required = forceGetAndStore || missing.length > 0 || placeMoved;
 
+    const now = timeZonedNow(locationDetails.timezone);
     let landed = true;
     if (required || placeNewlyVerified) {
       const reason = forceGetAndStore
@@ -227,7 +239,6 @@ const loadTimes = async (
             ? "place moved"
             : "place verified";
       log.i("Load", `refetching: ${reason}`);
-      const now = timeZonedNow(locationDetails.timezone);
       const currentYear = getYear(now);
       const currentMonth = getMonth(now) + 1;
       // This year's fetch starts at the month of its oldest kept day.
@@ -254,6 +265,12 @@ const loadTimes = async (
         // The default place's rows and flag stand; the next load retries.
         log.w("Load", "place-verified refetch failed; the default place's times stay");
       }
+    } else if (nextYearUnstored(now, twoWeeksTimings)) {
+      // Best effort: the stored days stand, and the next load asks again.
+      log.i("Load", "refetching: next year's read-ahead days");
+      readAhead = get().getAndStorePrayerTimes(getYear(now) + 1);
+      landed = await readAhead;
+      if (landed) await get().refreshTimingsFromDb();
     }
 
     await get().cleanupOldData();
