@@ -216,9 +216,8 @@ export const useLocationStore = create<LocationStore>()(
               locationDetails: {
                 coords: location.coords,
                 address: {
-                  country:
-                    geocodedAddress?.country ?? localizedGeocode?.countryName ?? PLACE_UNKNOWN,
-                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? PLACE_UNKNOWN,
+                  country: geocodedAddress?.country ?? PLACE_UNKNOWN,
+                  city: geocodedAddress?.city ?? PLACE_UNKNOWN,
                 },
                 timezone,
                 error: null,
