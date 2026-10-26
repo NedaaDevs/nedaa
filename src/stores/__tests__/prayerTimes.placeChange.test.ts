@@ -1,10 +1,13 @@
 import { addDays, eachDayOfInterval, endOfMonth } from "date-fns";
 
+import { LocationMode } from "@/enums/location";
 import locationStore from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { RIYADH_COORDS, RIYADH_DAY, RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { dateToInt } from "@/utils/date";
+import { checkLocationPermission } from "@/utils/location";
+import type { Coords } from "@/utils/placeFromFacts";
 
 // A row's zone names the place it was fetched for.
 const OLD_ZONE = "Europe/London";
@@ -422,5 +425,168 @@ describe("a load after the place moved", () => {
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
       false
     );
+  });
+
+  // Unmarked days were fetched before this launch's fix took the place.
+  describe("when the launch fix lands on unmarked days", () => {
+    const place = locationStore.getState();
+    const fixLandsAt = (coords: Coords) => {
+      place.initializeLocation = async () => {
+        placeAt(coords);
+        place.lastKnownCoords = coords;
+      };
+    };
+    const offline = () =>
+      jest.fn(async () => {
+        throw new Error("offline");
+      });
+
+    beforeEach(() => {
+      place.locationMode = LocationMode.DEVICE;
+      jest.mocked(checkLocationPermission).mockResolvedValue({ granted: true, canAskAgain: true });
+      usePrayerTimesStore.setState({ timesCoords: null, didGetCurrentLocation: false });
+    });
+
+    afterEach(() => {
+      place.lastKnownCoords = RIYADH_COORDS;
+    });
+
+    it("marks them with the place held before the fix", async () => {
+      fixLandsAt(JEDDAH_COORDS);
+      usePrayerTimesStore.setState({ getPrayerTimes: offline() });
+
+      // The fix moved the place, so the old place's days must be refetched.
+      await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
+
+      expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
+    });
+
+    it("refetches them for the place the fix moved to", async () => {
+      fixLandsAt(JEDDAH_COORDS);
+      const api = jest.fn(serveNewPlace);
+      usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+
+      await usePrayerTimesStore.getState().loadPrayerTimes();
+
+      expect(api).toHaveBeenCalled();
+      expect(oldPlaceDates()).toEqual([]);
+      expect(usePrayerTimesStore.getState().timesCoords).toEqual(JEDDAH_COORDS);
+    });
+
+    it("keeps them through a fix that drifts at the same place", async () => {
+      fixLandsAt({
+        latitude: RIYADH_COORDS.latitude + 0.0004,
+        longitude: RIYADH_COORDS.longitude - 0.0003,
+      });
+      const api = offline();
+      usePrayerTimesStore.setState({ getPrayerTimes: api });
+
+      await expect(usePrayerTimesStore.getState().loadPrayerTimes()).resolves.toBe(true);
+
+      expect(api).not.toHaveBeenCalled();
+      expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
+    });
+
+    // A cleared city leaves no verified place, but the days are still its own.
+    it("refetches them on a later load when the place before was unverified", async () => {
+      place.lastKnownCoords = null;
+      fixLandsAt(JEDDAH_COORDS);
+      usePrayerTimesStore.setState({ getPrayerTimes: offline() });
+      await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
+      const api = jest.fn(serveNewPlace);
+      usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+
+      await usePrayerTimesStore.getState().loadPrayerTimes();
+
+      expect(api).toHaveBeenCalled();
+      expect(oldPlaceDates()).toEqual([]);
+      expect(usePrayerTimesStore.getState().timesCoords).toEqual(JEDDAH_COORDS);
+    });
+  });
+});
+
+// The read-ahead window crosses into next year from 19 December.
+describe("an unforced load in December at the same place", () => {
+  /** This place's kept and read days around `today`, this year's only. */
+  const storeThisYear = (today: Date) => {
+    mockTable.clear();
+    for (let offset = -2; offset <= 13; offset += 1) {
+      const day = addDays(today, offset);
+      if (day.getFullYear() === today.getFullYear()) {
+        mockTable.set(dateToInt(day), row(day, NEW_ZONE));
+      }
+    }
+  };
+
+  beforeEach(() => {
+    usePrayerTimesStore.setState({ usingDefaultLocation: false, timesCoords: RIYADH_COORDS });
+  });
+
+  it("fetches next year's days the window reads, resolving true", async () => {
+    mockNow = new Date(2026, 11, 20, 12);
+    storeThisYear(mockNow);
+    const api = jest.fn(serveNewPlace);
+    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      true
+    );
+
+    expect(api.mock.calls.map(([year]) => year)).toEqual([2027]);
+    expect(usePrayerTimesStore.getState().twoWeeksTimings).toHaveLength(14);
+  });
+
+  it("keeps the stored days, resolving false, when that fetch fails", async () => {
+    mockNow = new Date(2026, 11, 20, 12);
+    storeThisYear(mockNow);
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) as never });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
+
+    expect(daysRead()).not.toContain(null);
+    expect(usePrayerTimesStore.getState().hasError).toBe(false);
+  });
+
+  // A settings apply during that fetch must not lose to its late write.
+  it("lets a load started during that fetch store next year's days last", async () => {
+    mockNow = new Date(2026, 11, 20, 12);
+    storeThisYear(mockNow);
+    let land = () => {};
+    const late = new Promise<void>((resolve) => {
+      land = resolve;
+    });
+    const stale = jest.fn(async (yearOverride?: number, month?: number) => {
+      await late;
+      const served = await serveNewPlace(yearOverride, month);
+      return { ...served, days: served.days.map((day) => ({ ...day, timezone: OLD_ZONE })) };
+    });
+    const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+    usePrayerTimesStore.setState({ getPrayerTimes: stale as never });
+    const launch = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+    await nextTask();
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    const forced = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
+    await nextTask();
+
+    land();
+    await Promise.all([launch, forced]);
+
+    expect(stale).toHaveBeenCalledTimes(1);
+    expect(oldPlaceDates()).toEqual([]);
+  });
+
+  it("asks for no year while the window stays in this year", async () => {
+    mockNow = new Date(2026, 11, 5, 12);
+    storeThisYear(mockNow);
+    const api = jest.fn(serveNewPlace);
+    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      true
+    );
+
+    expect(api).not.toHaveBeenCalled();
   });
 });
