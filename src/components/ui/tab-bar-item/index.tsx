@@ -76,7 +76,7 @@ export const TabBar = ({
     <Material
       testID={TAB_BAR_ITEM_PART.TRACK}
       material={MATERIAL.FLOAT}
-      radius="pill"
+      radius="$pill"
       ring
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}

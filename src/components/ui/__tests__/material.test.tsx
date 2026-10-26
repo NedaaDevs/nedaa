@@ -105,7 +105,7 @@ describe("Material", () => {
 
   // A sheet header is the top of a sheet: its lower edge meets the body square.
   it("rounds a sheet header and its blur at the top corners only", async () => {
-    await renderWithTheme(<Material testID="material" material="sheetHeader" radius="sheet" />);
+    await renderWithTheme(<Material testID="material" material="sheetHeader" radius="$sheet" />);
     const sheet = getTokenValue("$sheet", "radius");
     const blur = StyleSheet.flatten(screen.getByTestId("blur-view").props.style);
 
@@ -139,8 +139,9 @@ describe("Material", () => {
 
   // A 999 corner is wider than the bar, so the lit line follows the curve.
   it("lights a pill's top edge along its curve", async () => {
-    await renderWithTheme(<Material testID="material" material="float" radius="pill" />);
+    await renderWithTheme(<Material testID="material" material="float" radius="$pill" />);
     const edge = StyleSheet.flatten(screen.getByTestId("material-highlight").props.style);
+    const pill = getTokenValue("$pill", "radius");
 
     expect(edge).toMatchObject({
       position: "absolute",
@@ -148,7 +149,8 @@ describe("Material", () => {
       bottom: 0,
       left: 0,
       right: 0,
-      borderRadius: getTokenValue("$pill", "radius"),
+      borderTopLeftRadius: pill,
+      borderTopRightRadius: pill,
       boxShadow: `inset 0 1px 0 ${NEDAA_LIGHT.highlight.hex}`,
     });
   });

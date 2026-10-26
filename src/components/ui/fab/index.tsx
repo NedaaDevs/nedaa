@@ -132,7 +132,7 @@ const FabRoot = ({ children, ...props }: FabProps) => {
       <Material
         testID={FAB_PART.SURFACE}
         material={MATERIAL.FLOAT}
-        radius="pill"
+        radius="$pill"
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
