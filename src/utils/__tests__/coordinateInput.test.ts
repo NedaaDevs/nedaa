@@ -1,70 +1,101 @@
-import { parseCoordinate, CoordinateAxis } from "@/utils/cities";
+import { COORDINATE_PROBLEM } from "@/constants/Cities";
+import {
+  readCoordinate,
+  toAsciiNumerals,
+  CoordinateAxis,
+  type CoordinateAxisValue,
+} from "@/utils/cities";
 
 const { LATITUDE, LONGITUDE } = CoordinateAxis;
 
-describe("parseCoordinate", () => {
+const value = (text: string, axis: CoordinateAxisValue = LATITUDE) => {
+  const reading = readCoordinate(text, axis);
+  return "value" in reading ? reading.value : null;
+};
+const problem = (text: string, axis: CoordinateAxisValue = LATITUDE) => {
+  const reading = readCoordinate(text, axis);
+  return "problem" in reading ? reading.problem : null;
+};
+
+describe("readCoordinate", () => {
   test("accepts a decimal latitude in range", () => {
-    expect(parseCoordinate("24.68773", LATITUDE)).toBe(24.68773);
+    expect(value("24.68773")).toBe(24.68773);
   });
 
   test("accepts a negative longitude", () => {
-    expect(parseCoordinate("-1.89983", LONGITUDE)).toBe(-1.89983);
+    expect(value("-1.89983", LONGITUDE)).toBe(-1.89983);
   });
 
   test("accepts an explicit plus sign", () => {
-    expect(parseCoordinate("+24.5", LATITUDE)).toBe(24.5);
+    expect(value("+24.5")).toBe(24.5);
   });
 
   test("accepts a whole number", () => {
-    expect(parseCoordinate("24", LATITUDE)).toBe(24);
+    expect(value("24")).toBe(24);
   });
 
   test("ignores surrounding whitespace", () => {
-    expect(parseCoordinate("  24.5  ", LATITUDE)).toBe(24.5);
+    expect(value("  24.5  ")).toBe(24.5);
   });
 
   test("accepts the exact pole and antimeridian limits", () => {
-    expect(parseCoordinate("90", LATITUDE)).toBe(90);
-    expect(parseCoordinate("-90", LATITUDE)).toBe(-90);
-    expect(parseCoordinate("180", LONGITUDE)).toBe(180);
-    expect(parseCoordinate("-180", LONGITUDE)).toBe(-180);
+    expect(value("90")).toBe(90);
+    expect(value("-90")).toBe(-90);
+    expect(value("180", LONGITUDE)).toBe(180);
+    expect(value("-180", LONGITUDE)).toBe(-180);
   });
 
   test("accepts Arabic-Indic digits so an Arabic keyboard works", () => {
-    expect(parseCoordinate("٢٤.٥", LATITUDE)).toBe(24.5);
+    expect(value("٢٤.٥")).toBe(24.5);
   });
 
   test("accepts extended Arabic-Indic digits used by Urdu keyboards", () => {
-    expect(parseCoordinate("۲۴.۵", LATITUDE)).toBe(24.5);
+    expect(value("۲۴.۵")).toBe(24.5);
   });
 
   test("accepts the Arabic decimal separator", () => {
-    expect(parseCoordinate("٢٤٫٥", LATITUDE)).toBe(24.5);
+    expect(value("٢٤٫٥")).toBe(24.5);
   });
 
-  test("rejects a latitude beyond the poles", () => {
-    expect(parseCoordinate("91", LATITUDE)).toBeNull();
-    expect(parseCoordinate("-90.1", LATITUDE)).toBeNull();
+  test("names a latitude beyond the poles out of range", () => {
+    expect(problem("91")).toBe(COORDINATE_PROBLEM.OUT_OF_RANGE);
+    expect(problem("-90.1")).toBe(COORDINATE_PROBLEM.OUT_OF_RANGE);
   });
 
-  test("rejects a longitude beyond the antimeridian", () => {
-    expect(parseCoordinate("181", LONGITUDE)).toBeNull();
+  test("names a longitude beyond the antimeridian out of range", () => {
+    expect(problem("181", LONGITUDE)).toBe(COORDINATE_PROBLEM.OUT_OF_RANGE);
   });
 
-  test("treats 100 as valid longitude but invalid latitude", () => {
-    expect(parseCoordinate("100", LONGITUDE)).toBe(100);
-    expect(parseCoordinate("100", LATITUDE)).toBeNull();
+  test("treats 100 as valid longitude but out-of-range latitude", () => {
+    expect(value("100", LONGITUDE)).toBe(100);
+    expect(problem("100")).toBe(COORDINATE_PROBLEM.OUT_OF_RANGE);
   });
 
-  test("rejects text that is not a number", () => {
-    expect(parseCoordinate("north", LATITUDE)).toBeNull();
-    expect(parseCoordinate("", LATITUDE)).toBeNull();
-    expect(parseCoordinate("24.5.6", LATITUDE)).toBeNull();
-    expect(parseCoordinate("24,5", LATITUDE)).toBeNull();
+  test("names text that is not a number", () => {
+    expect(problem("north")).toBe(COORDINATE_PROBLEM.NOT_A_NUMBER);
+    expect(problem("24.5.6")).toBe(COORDINATE_PROBLEM.NOT_A_NUMBER);
+    expect(problem("24,5")).toBe(COORDINATE_PROBLEM.NOT_A_NUMBER);
+    expect(problem("٢٤٫٥٫٦")).toBe(COORDINATE_PROBLEM.NOT_A_NUMBER);
   });
 
-  test("rejects a partially typed value rather than guessing", () => {
-    expect(parseCoordinate("-", LATITUDE)).toBeNull();
-    expect(parseCoordinate("24.", LATITUDE)).toBeNull();
+  // A field part-way typed is not wrong yet, so it shows no error.
+  test("holds a partially typed or empty value as incomplete rather than guessing", () => {
+    expect(problem("")).toBe(COORDINATE_PROBLEM.INCOMPLETE);
+    expect(problem("-")).toBe(COORDINATE_PROBLEM.INCOMPLETE);
+    expect(problem("24.")).toBe(COORDINATE_PROBLEM.INCOMPLETE);
+    expect(problem("٢٤٫")).toBe(COORDINATE_PROBLEM.INCOMPLETE);
+    expect(value("-")).toBeNull();
+    expect(value("24.")).toBeNull();
+  });
+});
+
+describe("toAsciiNumerals", () => {
+  test("writes Arabic-Indic digits and the Arabic decimal mark as Western", () => {
+    expect(toAsciiNumerals("-٢١٫٤٢٢٥")).toBe("-21.4225");
+    expect(toAsciiNumerals("۳۹٫۸")).toBe("39.8");
+  });
+
+  test("leaves Western text as it is", () => {
+    expect(toAsciiNumerals("39.8262")).toBe("39.8262");
   });
 });

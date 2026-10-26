@@ -231,7 +231,7 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<PlaceHero\b/,
     home: "components/ui/place-hero/index.tsx",
   },
-  // Location, the city-change sheet and the pickers show one update's steps.
+  // Location, the city-change sheet and onboarding's picker show a run's steps.
   {
     concept: "the steps of a location update",
     shows: /\blocation\.update\.(step|steps|failed)\.|\buseLocationUpdate\(\)/,

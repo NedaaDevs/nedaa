@@ -15,6 +15,7 @@ import {
   UPDATE_START,
   UPDATE_STEP,
 } from "@/constants/Location";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppLocale } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
@@ -68,7 +69,7 @@ const renderSheet = ({ isRTL = false, dark = false } = {}) =>
         ) : (
           <CityChangeSheet />
         ),
-      [LOCATION_PICKER.href.slice(1)]: () => <Picker />,
+      [BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route]: () => <Picker />,
     },
     {
       initialUrl: "/",
@@ -291,7 +292,7 @@ describe("CityChangeSheet", () => {
     );
 
     expect(screen.getByTestId("pathname")).toHaveTextContent(
-      `${normalizeRoutePath(LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.LIST}`
+      `${normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.LIST}`
     );
     expect(title()).toBeNull();
     expect(useLocationUpdateStore.getState().run).toBeNull();
