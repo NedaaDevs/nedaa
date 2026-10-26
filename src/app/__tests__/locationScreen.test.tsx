@@ -427,8 +427,6 @@ describe("Settings › Location", () => {
 
   // The mode choice ticks as it is tapped; what it starts adds no second tick.
   describe("one haptic per tap", () => {
-    const ticks = () =>
-      Object.values(HAPTIC).reduce((sum, fire) => sum + fire.mock.calls.length, 0);
     const automaticRow = () =>
       screen.findByRole("button", {
         name: t("a11y.join", {
@@ -447,7 +445,7 @@ describe("Settings › Location", () => {
       );
 
       expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SELECTION]);
-      expect(ticks()).toBe(1);
+      expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
     });
 
     it("ticks once as the mode choice moves a chosen city to the device", async () => {
@@ -460,7 +458,7 @@ describe("Settings › Location", () => {
 
       expect(mockAdopt).toHaveBeenCalledTimes(1);
       expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SELECTION]);
-      expect(ticks()).toBe(1);
+      expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
     });
 
     it.each([
@@ -478,7 +476,7 @@ describe("Settings › Location", () => {
       await userEvent.press(await find());
 
       expect(firedHaptics()).toEqual([haptic]);
-      expect(ticks()).toBe(1);
+      expect(HAPTIC[haptic]).toHaveBeenCalledTimes(1);
     });
   });
 
