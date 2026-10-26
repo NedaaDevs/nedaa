@@ -45,7 +45,10 @@ export const useCitiesPackStore = create<CitiesPackStore>()(
         try {
           await downloadCitiesPack({
             signal: own.signal,
-            onProgress: ({ receivedBytes, totalBytes }) => set({ receivedBytes, totalBytes }),
+            // A cancelled task's late event leaves a newer download's meter.
+            onProgress: ({ receivedBytes, totalBytes }) => {
+              if (!own.signal.aborted) set({ receivedBytes, totalBytes });
+            },
           });
 
           // The open connection still points at the seed until it is dropped. The
