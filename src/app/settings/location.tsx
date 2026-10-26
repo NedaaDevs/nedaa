@@ -4,14 +4,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LocationRoot } from "@/components/location/LocationRoot";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 export default function LocationScreen() {
   return (
-    <SkyBackground>
+    <ScreenSky>
       <LocationContent />
-    </SkyBackground>
+    </ScreenSky>
   );
 }
 
