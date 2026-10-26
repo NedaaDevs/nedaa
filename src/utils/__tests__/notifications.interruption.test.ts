@@ -5,6 +5,7 @@ import {
 } from "expo-notifications";
 import { Platform } from "react-native";
 
+import { SYSTEM_SOUND } from "@/constants/Notification";
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
 import { scheduleNotification, scheduleRecurringNotification } from "@/utils/notifications";
 import type { NotificationOptions } from "@/types/notification";
@@ -24,7 +25,6 @@ jest.mock("@/services/cleanup", () => ({ cleanupManager: { register: jest.fn() }
 
 const TIME_SENSITIVE = "timeSensitive";
 const CONTENT = { title: "title", body: "body" };
-const SYSTEM_SOUND = "default";
 const CUSTOM_SOUND = "athan.wav";
 const VIBRATION_PATTERN = [0, 500, 200, 500];
 const ONE_MINUTE_MS = 60_000;
