@@ -1,8 +1,8 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-  // android.kotlinVersion in gradle.properties sets the Kotlin Gradle plugin; modules compile Compose
-  // against it, so the Compose compiler plugin below carries the same version.
+  // android.kotlinVersion in gradle.properties sets the Kotlin Gradle plugin
+  // and the Compose compiler plugin, so the two always match.
   ext.kotlinVersion = findProperty('android.kotlinVersion')
   repositories {
     google()
@@ -18,14 +18,11 @@ buildscript {
     classpath('com.facebook.react:react-native-gradle-plugin')
     def kotlinVersion = findProperty('android.kotlinVersion')
     classpath(kotlinVersion ? "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion" : 'org.jetbrains.kotlin:kotlin-gradle-plugin')
+    classpath(kotlinVersion ? "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion" : 'org.jetbrains.kotlin:compose-compiler-gradle-plugin')
     if (System.getenv("BUILD_VARIANT") == "hms") {
       classpath('com.huawei.agconnect:agcp:1.9.6.300')
     }
   }
-}
-
-plugins {
-  id 'org.jetbrains.kotlin.plugin.compose' version '2.2.10' apply false
 }
 
 allprojects {
