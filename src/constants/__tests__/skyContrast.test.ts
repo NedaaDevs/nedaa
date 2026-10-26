@@ -32,8 +32,8 @@ const CARD_APART = 1.05;
 
 const PALETTE = { [BRIGHTNESS.LIGHT]: NEDAA_LIGHT, [BRIGHTNESS.DARK]: NEDAA_DARK } as const;
 
-/** The five phases the design checks, in both themes. */
-const PHASES = [PHASE.DAWN, PHASE.DAY, PHASE.ASR, PHASE.MAGHRIB, PHASE.NIGHT] as const;
+/** Every phase, in both themes. */
+const PHASES = Object.values(PHASE);
 const CASES = Object.values(BRIGHTNESS).flatMap((brightness) =>
   PHASES.map((phase) => [`${brightness} ${phase}`, brightness, phase] as const)
 );
