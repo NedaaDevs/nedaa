@@ -163,7 +163,7 @@ export const SegmentedChoice = <V extends string | number>({
                   borderWidth: 1,
                   borderColor: selected ? "$accentEdge" : "$border",
                   borderRadius: "$pill",
-                  backgroundColor: selected ? "$accentSoft" : "transparent",
+                  backgroundColor: selected ? `$${SEGMENTED_PAINT.CHOSEN}` : "transparent",
                 })}>
             {icon ? <Icon as={icon(option)} size="md" color={colour} /> : null}
             <Text
