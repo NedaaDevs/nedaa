@@ -7,13 +7,15 @@ import { BRIGHTNESS } from "@/constants/Palette";
 import { AppMode } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
-const Reader = () => <Text testID="brightness">{useBrightness()}</Text>;
+const READER = "brightness";
+
+const Reader = () => <Text testID={READER}>{useBrightness()}</Text>;
 
 describe("useBrightness", () => {
   it("reads light under the light theme", async () => {
     await renderWithTheme(<Reader />);
 
-    expect(screen.getByTestId("brightness")).toHaveTextContent(BRIGHTNESS.LIGHT);
+    expect(screen.getByTestId(READER)).toHaveTextContent(BRIGHTNESS.LIGHT);
   });
 
   it("reads dark under the dark theme", async () => {
@@ -23,6 +25,6 @@ describe("useBrightness", () => {
       </Theme>
     );
 
-    expect(screen.getByTestId("brightness")).toHaveTextContent(BRIGHTNESS.DARK);
+    expect(screen.getByTestId(READER)).toHaveTextContent(BRIGHTNESS.DARK);
   });
 });
