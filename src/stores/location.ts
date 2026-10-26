@@ -154,12 +154,12 @@ type SetLocation = (partial: Partial<LocationStore>) => void;
 let readsStarted = 0;
 
 /** Runs a device read with `isGettingLocation` up until the newest settles. */
-const whileReading = async <T>(set: SetLocation, read: () => Promise<T>): Promise<T> => {
+const whileReading = async (set: SetLocation, read: () => Promise<void>): Promise<void> => {
   readsStarted += 1;
   const mine = readsStarted;
   set({ isGettingLocation: true });
   try {
-    return await read();
+    await read();
   } finally {
     if (mine === readsStarted) set({ isGettingLocation: false });
   }
