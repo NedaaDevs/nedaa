@@ -20,6 +20,7 @@ const buildContent = (
   notificationInput: NotificationContentInput,
   options?: NotificationOptions
 ): NotificationContentInput => {
+  // The caller's sound stays in the content: iOS and Android before 8.0 play it.
   const content: NotificationContentInput = {
     ...notificationInput,
     data: {
@@ -31,11 +32,6 @@ const buildContent = (
   if (Platform.OS === PlatformType.ANDROID) {
     content.priority = AndroidNotificationPriority.HIGH;
 
-    // For Android < 8.0, sound must be in the content
-    if (notificationInput.sound && notificationInput.sound !== "default") {
-      content.sound = notificationInput.sound;
-    }
-
     if (options?.vibrate !== undefined) {
       content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
     }
@@ -43,15 +39,14 @@ const buildContent = (
     if (options?.timeSensitive) {
       content.interruptionLevel = "timeSensitive";
     }
-
-    // iOS always needs sound in content
-    if (notificationInput.sound) {
-      content.sound = notificationInput.sound;
-    }
   }
 
   return content;
 };
+
+// Android 8.0+ posts on the caller's channel; iOS has no channels.
+const androidChannel = (options?: NotificationOptions): string | undefined =>
+  Platform.OS === PlatformType.ANDROID ? options?.channelId : undefined;
 
 export const scheduleNotification = async (
   date: Date,
@@ -82,12 +77,8 @@ export const scheduleNotification = async (
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: secondsFromNow,
           repeats: false,
+          channelId: androidChannel(options),
         };
-
-        // IMPORTANT: For Android 8.0+, use the channelId passed in options
-        if (Platform.OS === PlatformType.ANDROID && options?.channelId) {
-          trigger.channelId = options.channelId;
-        }
       } else {
         // If date is in the past, don't schedule
         console.warn(`Notification date is in the past: ${date}`);
@@ -130,23 +121,21 @@ export const scheduleRecurringNotification = async (
 
     // A weekday yields a weekly repeat (e.g. Friday Al-Kahf); otherwise a daily
     // repeat in the device timezone. Both are native OS-repeating triggers.
+    const channelId = androidChannel(options);
     const trigger: Notifications.NotificationTriggerInput = options?.weekday
       ? {
           type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
           weekday: options.weekday,
           hour,
           minute,
+          channelId,
         }
       : {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour,
           minute,
+          channelId,
         };
-
-    // IMPORTANT: For Android 8.0+, use the channelId passed in options
-    if (Platform.OS === PlatformType.ANDROID && options?.channelId) {
-      (trigger as any).channelId = options.channelId;
-    }
 
     const id = await Notifications.scheduleNotificationAsync({
       content,
