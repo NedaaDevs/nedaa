@@ -8,15 +8,18 @@ import { UPDATE_START, UPDATE_STEP, type UpdateStep } from "@/constants/Location
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
-import type { UpdateRun } from "@/stores/locationUpdate";
+import type { UpdateRun, UpdateStart } from "@/stores/locationUpdate";
+import { PLACE } from "@/test-helpers/cityPickerStubs";
 import { HAND_WRITTEN_LOCALES, type HandWrittenLocale } from "@/test-helpers/locales";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const t = i18n.t.bind(i18n);
 const PLATFORM = Platform.OS;
 
-const runAt = (step: UpdateStep, failed = false): UpdateRun => ({
-  start: { kind: UPDATE_START.DEVICE },
+const DEVICE_START: UpdateStart = { kind: UPDATE_START.DEVICE };
+
+const runAt = (step: UpdateStep, failed = false, start: UpdateStart = DEVICE_START): UpdateRun => ({
+  start,
   step,
   failed,
 });
@@ -73,6 +76,24 @@ describe("LocationUpdateProgress", () => {
 
     expect(row("location.update.steps.place", "stepNow")).toBeTruthy();
     expect(row("location.update.steps.times", "stepNext")).toBeTruthy();
+  });
+
+  // A device read is still finding the city, in the words the hero uses for it.
+  it.each([
+    [UPDATE_START.DEVICE, { kind: UPDATE_START.DEVICE }, "onboarding.fetch.locatingDevice"],
+    [
+      UPDATE_START.ADOPT_DEVICE,
+      { kind: UPDATE_START.ADOPT_DEVICE },
+      "onboarding.fetch.locatingDevice",
+    ],
+    [UPDATE_START.CITY, { kind: UPDATE_START.CITY, city: PLACE }, "location.update.step.city"],
+  ] as const)("says a %s run's place step in its own words", async (_kind, start, status) => {
+    Platform.OS = PlatformType.IOS;
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    await renderProgress(runAt(UPDATE_STEP.LOCATION, false, start));
+
+    expect(screen.getByLabelText(t(status))).toHaveProp("accessibilityLiveRegion", "polite");
+    expect(announce).toHaveBeenCalledWith(t(status));
   });
 
   // The page is not a live region: only the line naming the step is read.
