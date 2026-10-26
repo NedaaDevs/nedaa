@@ -1,4 +1,4 @@
-import { StyleSheet, Text } from "react-native";
+import { Animated, StyleSheet, Text } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import { SKY_PART } from "@/components/ui/sky-background";
@@ -32,12 +32,16 @@ describe("SkySwatch", () => {
     expect(widths[1] / widths[0]).toBeCloseTo(weights[1] / weights[0]);
   });
 
+  // Jest never steps a native-driver animation, so the spin is the loop the
+  // sun starts, not an angle read back.
   it("holds its suns still", async () => {
+    const spins = jest.spyOn(Animated, "loop");
     await renderSwatch(AppMode.LIGHT);
+    const started = spins.mock.calls.length;
+    spins.mockRestore();
 
     expect(part(SKY_PART.SUN)).toHaveLength(1);
-    const rays = [part(SKY_PART.SUN_RAYS)[0].props.style].flat(Infinity);
-    expect(rays.some((style) => style && "transform" in style)).toBe(false);
+    expect(started).toBe(0);
   });
 
   it("is hidden from the screen reader", async () => {

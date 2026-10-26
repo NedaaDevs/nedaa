@@ -1,8 +1,8 @@
-import { Text } from "react-native";
+import { Animated, Text } from "react-native";
 import { act, screen } from "@testing-library/react-native";
 
 import { SKY_PART, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
-import { BODY_BEHIND_TEXT } from "@/constants/Sky";
+import { BODY_BEHIND_TEXT, SUN_GLYPH } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
@@ -221,8 +221,13 @@ describe("SkyBackground", () => {
   });
 
   describe("sun", () => {
-    afterEach(() => jest.useRealTimers());
+    let spins: jest.SpyInstance;
+    afterEach(() => {
+      jest.useRealTimers();
+      spins.mockRestore();
+    });
     beforeEach(() => {
+      spins = jest.spyOn(Animated, "loop");
       clockAt("10:00");
       usePrayerTimesStore.setState({
         todayTimings: TODAY,
@@ -242,15 +247,31 @@ describe("SkyBackground", () => {
       expect(part(SKY_PART.SUN)).toHaveLength(0);
     });
 
-    const raysTurn = () =>
-      [part(SKY_PART.SUN_RAYS)[0].props.style]
-        .flat(Infinity)
-        .some((style) => style && "transform" in style);
+    /** The rays' turn, as the host draws it. */
+    const raysAngle = () =>
+      JSON.stringify(
+        Object.assign({}, ...[part(SKY_PART.SUN_RAYS)[0].props.style].flat(Infinity)).transform
+      );
+
+    // Jest never steps a native-driver animation, so the spin is the loop the
+    // sun starts, not an angle read back.
+    const raysTurn = () => spins.mock.calls.length > 0;
 
     it("turns its rays", async () => {
       await renderWithTheme(<Sky phase={PHASE.DAY} />);
 
       expect(raysTurn()).toBe(true);
+    });
+
+    // Focus drops as a push starts, while the sky still shows beneath it.
+    it("keeps its rays at their angle when it pauses", async () => {
+      const { rerender } = await renderWithTheme(<Sky phase={PHASE.DAY} />);
+      await act(() => jest.advanceTimersByTime(SUN_GLYPH.spinMs / 4));
+      const turned = raysAngle();
+
+      await rerender(<Sky phase={PHASE.DAY} paused />);
+
+      expect(raysAngle()).toBe(turned);
     });
 
     // RN swaps a physical left in RTL but not SVG x; one space keeps them aligned.
