@@ -52,8 +52,8 @@ export default function SettingsScreen() {
   };
 
   const rowOf = (id: SettingsRowId) => {
-    const { destination, icon, titleKey = destination.title } = SETTINGS_ROWS[id];
-    const title = t(titleKey);
+    const { destination, icon, titleKey } = SETTINGS_ROWS[id];
+    const title = t(titleKey ?? destination.title);
     return (
       <ListRow
         key={id}
