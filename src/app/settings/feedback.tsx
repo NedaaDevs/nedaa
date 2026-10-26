@@ -153,26 +153,29 @@ const FeedbackScreen = () => {
   const onSend = useCallback(async () => {
     if (!type) return;
     if (!clientKey.current) clientKey.current = generateClientKey();
+    const key = clientKey.current;
     submittingRef.current = true;
     setStatus("submitting");
     setProgress(0);
-    try {
-      const attachments: OutgoingAttachment[] = [];
-      if (logsAttached) {
-        attachments.push(logAttachment ?? (await buildLogAttachment({ category: type })));
-      }
-      if (image) attachments.push(image);
-      const receipt = await submitFeedback(
-        { type, message, contact, area, attachments, clientKey: clientKey.current },
+    const send = async () => {
+      const logs = logsAttached
+        ? [logAttachment ?? (await buildLogAttachment({ category: type }))]
+        : [];
+      const attachments = image ? [...logs, image] : logs;
+      return submitFeedback(
+        { type, message, contact, area, attachments, clientKey: key },
         setProgress
       );
-      setReceiptId(receipt.id);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    } finally {
-      submittingRef.current = false;
-    }
+    };
+    // A chain, not a try: the React Compiler cannot lower a try that holds a
+    // `finally` or a `??`, and skips the whole screen.
+    await send()
+      .then((receipt) => {
+        setReceiptId(receipt.id);
+        setStatus("success");
+      })
+      .catch(() => setStatus("error"));
+    submittingRef.current = false;
   }, [type, logsAttached, logAttachment, image, message, contact, area]);
 
   const enter = (i: number) => (reduceMotion ? undefined : FadeInDown.duration(320).delay(i * 55));
