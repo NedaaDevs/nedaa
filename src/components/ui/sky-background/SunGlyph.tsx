@@ -40,23 +40,40 @@ export const SunGlyph = ({ cx, cy, width, height, reduced, scale = 1 }: Props) =
 
   useEffect(() => {
     if (reduced) return;
-    const turning = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: spinMs,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-    turning.start();
-    return () => turning.stop();
+    let live = true;
+    let turning: Animated.CompositeAnimation | undefined;
+    const turnFor = (duration: number) =>
+      Animated.timing(spin, { toValue: 1, duration, easing: Easing.linear, useNativeDriver: true });
+    const wholeTurns = () => {
+      turning = Animated.loop(turnFor(spinMs));
+      turning.start();
+    };
+    // A native loop goes back to the angle it began at on every turn, so rays
+    // stopped mid-turn end that turn first, then loop from 0.
+    spin.stopAnimation((from) => {
+      if (!live) return;
+      if (from === 0) {
+        wholeTurns();
+        return;
+      }
+      turning = turnFor((1 - from) * spinMs);
+      turning.start(({ finished }) => {
+        if (!finished || !live) return;
+        spin.setValue(0);
+        wholeTurns();
+      });
+    });
+    return () => {
+      live = false;
+      turning?.stop();
+    };
   }, [reduced, spin, spinMs]);
 
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
   const step = 360 / lengths.length;
 
   return (
-    // The rays sit by a physical left, which RN swaps in RTL and the SVG does not.
+    // RN swaps the rays' physical left in RTL; the SVG inside does not.
     <View
       testID={SKY_PART.SUN}
       style={[StyleSheet.absoluteFill, styles.frame]}
