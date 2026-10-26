@@ -6,6 +6,7 @@ import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { AppLogger } from "@/utils/appLogger";
 
 const ALADHAN = PRAYER_TIME_PROVIDERS.ALADHAN;
 const MAKKAH = ALADHAN.methods.find((m) => m.nameKey === "makkah")!.id;
@@ -121,5 +122,24 @@ describe("the settings the stored times came from", () => {
     await usePrayerTimesStore.getState().getAndStorePrayerTimes();
 
     expect(useProviderSettingsStore.getState().inEffect).toEqual({ method: MWL });
+  });
+});
+
+describe("a failed fetch's log", () => {
+  // The API client resolves a failed request as a response, not an Error.
+  it("keeps the message of the response the API failed with", async () => {
+    const logError = jest.spyOn(AppLogger.create("prayertimes"), "e");
+    mockGet.mockResolvedValue({ success: false, message: "Network Error" });
+
+    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes(2027)).resolves.toBe(
+      TIMES_FETCH.FAILED
+    );
+
+    expect(logError).toHaveBeenCalledWith(
+      "Fetch",
+      "getAndStorePrayerTimes failed (2027/all)",
+      expect.objectContaining({ message: "Network Error" })
+    );
+    logError.mockRestore();
   });
 });
