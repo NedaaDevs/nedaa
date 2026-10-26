@@ -35,6 +35,7 @@ import { formatNumberToLocale, normalizeNumber } from "@/utils/number";
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { SYSTEM_SOUND } from "@/constants/Notification";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Icons
@@ -99,7 +100,7 @@ const QadaSettings = () => {
     () =>
       [
         {
-          value: "default",
+          value: SYSTEM_SOUND,
           label: "notification.sound.default",
           isPreviewable: false,
           isCustom: false,
@@ -470,7 +471,7 @@ const QadaSettings = () => {
                     isPlaying={isPlayingSound("qada", tempQadaSound)}
                     onPress={handleSoundPreview}
                     disabled={
-                      !tempQadaSound || tempQadaSound === "silent" || tempQadaSound === "default"
+                      !tempQadaSound || tempQadaSound === "silent" || tempQadaSound === SYSTEM_SOUND
                     }
                     size="md"
                     color="$primary"
