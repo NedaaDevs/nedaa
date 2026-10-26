@@ -1,5 +1,5 @@
 import { Linking, Platform, StyleSheet } from "react-native";
-import { screen, userEvent, within } from "@testing-library/react-native";
+import { act, screen, userEvent, within } from "@testing-library/react-native";
 
 import {
   LOCATION_FAILURE_PART,
@@ -13,7 +13,7 @@ import {
   type LocationFailure,
 } from "@/constants/Location";
 import { NEDAA_LIGHT } from "@/constants/Palette";
-import { PlatformType } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { usesHmsLocation } from "@/adapters/location";
@@ -39,13 +39,15 @@ const renderOffer = async (failure: LocationFailure | null, { inSheet = false } 
 };
 
 /** The panel's one announced message: what failed, then what to do. */
-const message = (title: string, hint: string) => screen.getByLabelText(`${t(title)}. ${t(hint)}`);
+const message = (title: string, hint: string) =>
+  screen.getByLabelText(t("a11y.sentences", { first: t(title), second: t(hint) }));
 const styleOf = (element: ReturnType<typeof screen.getByRole>) =>
   StyleSheet.flatten(element.props.style);
 
-afterEach(() => {
+afterEach(async () => {
   Platform.OS = PLATFORM;
   jest.mocked(usesHmsLocation).mockReturnValue(false);
+  await act(() => i18n.changeLanguage(AppLocale.EN));
 });
 
 describe("LocationFailureOffer", () => {
@@ -67,6 +69,14 @@ describe("LocationFailureOffer", () => {
   });
 
   it("says the times failed, not the place, when the read succeeded", async () => {
+    await renderOffer(null);
+
+    expect(message("today.failed.title", "today.failed.body")).toBeTruthy();
+  });
+
+  // Urdu ends a sentence with «۔», not a Latin full stop.
+  it("joins what failed and what to do as the language joins two sentences", async () => {
+    await act(() => i18n.changeLanguage(AppLocale.UR));
     await renderOffer(null);
 
     expect(message("today.failed.title", "today.failed.body")).toBeTruthy();

@@ -1,3 +1,4 @@
+import { TASK_RESULT, type TaskResult } from "@/constants/BackgroundTask";
 import type { SchedulingResult } from "@/types/notification";
 
 // A reschedule should be forced only when notification permission has just
@@ -8,7 +9,7 @@ export const shouldForceReschedule = (previouslyGranted: boolean, nowGranted: bo
   nowGranted && !previouslyGranted;
 
 export type SchedulingLogSummary = {
-  result: "success" | "failed" | "skipped";
+  result: TaskResult;
   details: string;
 };
 
@@ -17,13 +18,16 @@ export type SchedulingLogSummary = {
 // so "notifications stopped" reports show which of the two happened.
 export const summarizeSchedulingResult = (result: SchedulingResult): SchedulingLogSummary => {
   if (result.skipReason) {
-    return { result: "skipped", details: `nothing scheduled: ${result.skipReason}` };
+    return { result: TASK_RESULT.SKIPPED, details: `nothing scheduled: ${result.skipReason}` };
   }
   if (!result.success) {
-    return { result: "failed", details: result.error?.message ?? "unknown scheduling error" };
+    return {
+      result: TASK_RESULT.FAILED,
+      details: result.error?.message ?? "unknown scheduling error",
+    };
   }
   return {
-    result: "success",
+    result: TASK_RESULT.SUCCESS,
     details:
       `scheduled ${result.scheduledCount}` +
       (result.lastScheduledAt ? ` through ${result.lastScheduledAt}` : "") +

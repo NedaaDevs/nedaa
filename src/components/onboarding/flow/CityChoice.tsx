@@ -131,6 +131,7 @@ export const StepCityPicker = ({
       <SkyScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}>
         <VStack paddingBottom="$4">
           {coordinates ? (

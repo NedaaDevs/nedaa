@@ -140,9 +140,9 @@ export const LocationRoot = () => {
   );
   const storedFailure = useLocationStore((state) => state.locationDetails.error);
   const lastKnown = useLocationStore(
-    (state) => state.locationDetails.fixSource === FIX_SOURCE.LAST_KNOWN
+    (state) => state.locationDetails.fix?.source === FIX_SOURCE.LAST_KNOWN
   );
-  const fixedAt = useLocationStore((state) => state.locationDetails.fixedAt);
+  const fixedAt = useLocationStore((state) => state.locationDetails.fix?.at ?? null);
   // A read started anywhere, such as at launch, holds the controls too.
   const reading = useLocationStore((state) => state.isGettingLocation);
   const { permission, ask } = useLocationPermission();
@@ -167,7 +167,7 @@ export const LocationRoot = () => {
     permission,
     failedStep,
     storedFailure,
-    updating,
+    reading,
     running,
   });
   // Only the location step fails before the place is written.
