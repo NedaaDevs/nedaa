@@ -29,7 +29,7 @@ const mockSyncWidgetSnapshot = jest.fn(async () => {});
 let mockTimesCoords: Coords | null = null;
 const MOCK_PLACE = { latitude: 24.7136, longitude: 46.6753 };
 
-let mockNow = new Date("2026-08-15T08:00:00Z");
+const mockNow = new Date("2026-08-15T08:00:00Z");
 
 jest.mock("expo-background-task", () => ({
   BackgroundTaskResult: { Success: 1, Failed: 2 },
@@ -128,7 +128,6 @@ const NOT_LANDED = { stands: false, complete: false, fetched: false };
 describe("executeBackgroundRefresh", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockNow = new Date("2026-08-15T08:00:00Z");
     mockTimesCoords = MOCK_PLACE;
     // Every gated store is hydrated unless a test says otherwise.
     mockWaitForHydration.mockImplementation(async () => {});
@@ -302,7 +301,6 @@ describe("single-flight guard", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockNow = new Date("2026-08-15T08:00:00Z");
     mockWaitForHydration.mockImplementation(async () => {});
     mockAwaitPendingReapply.mockResolvedValue(false);
     mockGetByRange.mockResolvedValue(fourRows);
