@@ -10,8 +10,10 @@ import { Text } from "@/components/ui/text";
 import { useIsDarkTheme, useThemeColor } from "@/components/ui/theme-color";
 import { SEGMENTED_PAINT } from "@/components/ui/segmented-choice/paint";
 import { CONTACT_SHADOW } from "@/constants/Elevation";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import type { ColorToken } from "@/constants/Palette";
 import { useRTL } from "@/contexts/RTLContext";
+import { useHaptic } from "@/hooks/useHaptic";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { isolateLatinNumbers, localizeDigits } from "@/utils/digits";
@@ -96,6 +98,7 @@ export const SegmentedChoice = <V extends string | number>({
   disabled = false,
 }: SegmentedChoiceProps<V>) => {
   const { isRTL, direction } = useRTL();
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const locale = useAppStore((state) => state.locale);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
   const [trackWidth, setTrackWidth] = useState(0);
@@ -140,7 +143,9 @@ export const SegmentedChoice = <V extends string | number>({
             accessibilityState={{ selected }}
             disabled={disabled}
             onPress={() => {
-              if (!selected) onChange(option);
+              if (selected) return;
+              void selectionHaptic();
+              onChange(option);
             }}
             alignItems="center"
             justifyContent="center"
