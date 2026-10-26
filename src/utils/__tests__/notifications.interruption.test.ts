@@ -1,4 +1,8 @@
-import { AndroidNotificationPriority, type NotificationContentInput } from "expo-notifications";
+import {
+  AndroidNotificationPriority,
+  SchedulableTriggerInputTypes,
+  type NotificationContentInput,
+} from "expo-notifications";
 import { Platform } from "react-native";
 
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
@@ -25,8 +29,15 @@ const CUSTOM_SOUND = "athan.wav";
 const VIBRATION_PATTERN = [0, 500, 200, 500];
 const ONE_MINUTE_MS = 60_000;
 
-const scheduledContent = () =>
-  (mockScheduleNotificationAsync.mock.calls[0][0] as { content: Record<string, unknown> }).content;
+const scheduledRequest = () =>
+  mockScheduleNotificationAsync.mock.calls[0][0] as {
+    content: Record<string, unknown>;
+    trigger: Record<string, unknown>;
+  };
+const scheduledContent = () => scheduledRequest().content;
+const CHANNEL_ID = "channel";
+/** Expo numbers weekdays from 1 for Sunday. */
+const FRIDAY = 6;
 
 // Both helpers take the same options, so one table drives them.
 const HELPERS = [
@@ -118,4 +129,40 @@ describe.each(HELPERS)("$name and the platform content", ({ schedule }) => {
     await schedule({ categoryId }, { ...CONTENT, data: { kept: true } });
     expect(scheduledContent().data).toEqual({ kept: true, categoryId });
   });
+});
+
+describe.each(HELPERS)("$name and the Android channel", ({ schedule }) => {
+  beforeEach(() => mockScheduleNotificationAsync.mockClear());
+
+  it("puts the caller's channel on the Android trigger", async () => {
+    onPlatform(PlatformType.ANDROID);
+    await schedule({ channelId: CHANNEL_ID });
+    expect(scheduledRequest().trigger.channelId).toBe(CHANNEL_ID);
+  });
+
+  // iOS has no channels.
+  it("leaves the channel off the iOS trigger", async () => {
+    onPlatform(PlatformType.IOS);
+    await schedule({ channelId: CHANNEL_ID });
+    expect(scheduledRequest().trigger.channelId).toBeUndefined();
+  });
+
+  it("leaves the channel off the trigger when the caller gives none", async () => {
+    onPlatform(PlatformType.ANDROID);
+    await schedule();
+    expect(scheduledRequest().trigger.channelId).toBeUndefined();
+  });
+});
+
+// A weekday makes a weekly trigger, which carries the channel too.
+it("puts the caller's channel on a weekly Android trigger", async () => {
+  mockScheduleNotificationAsync.mockClear();
+  onPlatform(PlatformType.ANDROID);
+  await scheduleRecurringNotification(6, 30, CONTENT, { channelId: CHANNEL_ID, weekday: FRIDAY });
+  expect(scheduledRequest().trigger).toEqual(
+    expect.objectContaining({
+      type: SchedulableTriggerInputTypes.WEEKLY,
+      channelId: CHANNEL_ID,
+    })
+  );
 });
