@@ -11,6 +11,7 @@ import { PLACE_HERO_PART } from "@/components/ui/place-hero";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { E2E_ID } from "@/constants/E2E";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   CITY_PICKER_VIEW,
   FIX_SOURCE,
@@ -29,6 +30,7 @@ import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
+import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
 import { placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
@@ -420,6 +422,63 @@ describe("Settings › Location", () => {
       expect(pathname()).toHaveTextContent(
         `${normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href)}?${CITY_PICKER_VIEW.LIST}`
       );
+    });
+  });
+
+  // The mode choice ticks as it is tapped; what it starts adds no second tick.
+  describe("one haptic per tap", () => {
+    const ticks = () =>
+      Object.values(HAPTIC).reduce((sum, fire) => sum + fire.mock.calls.length, 0);
+    const automaticRow = () =>
+      screen.findByRole("button", {
+        name: t("a11y.join", {
+          first: t("onboarding.location.automatic"),
+          second: t("onboarding.location.automaticNote"),
+        }),
+      });
+
+    beforeEach(() => mockAdopt.mockReturnValue(new Promise(() => {})));
+
+    it("ticks once as the mode choice opens the city list", async () => {
+      await renderScreen();
+
+      await userEvent.press(
+        await screen.findByRole("radio", { name: t("onboarding.location.city") })
+      );
+
+      expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SELECTION]);
+      expect(ticks()).toBe(1);
+    });
+
+    it("ticks once as the mode choice moves a chosen city to the device", async () => {
+      useLocationStore.getState().setManualLocation(MAKKAH);
+      await renderScreen();
+
+      await userEvent.press(
+        await screen.findByRole("radio", { name: t("onboarding.location.automatic") })
+      );
+
+      expect(mockAdopt).toHaveBeenCalledTimes(1);
+      expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.SELECTION]);
+      expect(ticks()).toBe(1);
+    });
+
+    it.each([
+      {
+        row: "choose-city",
+        find: () => screen.findByTestId(E2E_ID.LOCATION_CHOOSE_CITY),
+        haptic: HAPTIC_FEEDBACK.SELECTION,
+      },
+      { row: "automatic", find: automaticRow, haptic: HAPTIC_FEEDBACK.MEDIUM },
+    ])("ticks once with $haptic from the $row row", async ({ find, haptic }) => {
+      mockUpdate.mockReturnValue(new Promise(() => {}));
+      permit(false, true);
+      await renderScreen();
+
+      await userEvent.press(await find());
+
+      expect(firedHaptics()).toEqual([haptic]);
+      expect(ticks()).toBe(1);
     });
   });
 
