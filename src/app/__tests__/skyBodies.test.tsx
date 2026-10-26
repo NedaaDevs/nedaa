@@ -10,7 +10,6 @@ import { BOWL_PART } from "@/components/today/Bowl";
 import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
-import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { TODAY_STYLE } from "@/constants/Today";
 import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -18,8 +17,8 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { stepProps } from "@/test-helpers/onboardingStepProps";
+import { UTC_DAY } from "@/test-helpers/prayerDay";
 import { ThemeProvider, renderWithTheme } from "@/test-helpers/theme";
-import type { DayPrayerTimes } from "@/types/prayerTimes";
 import type { HijriDate } from "@/utils/date";
 
 // Renders whole screens under a router.
@@ -41,27 +40,6 @@ jest.mock("@/utils/date", () => {
 });
 // The sky dims its bodies behind measured text; nothing is measured here.
 jest.mock("@/utils/measureInWindow", () => ({ measureInWindow: () => Promise.resolve(null) }));
-
-/** Fajr 04:30, sunrise 05:50, Isha 19:25, in UTC. */
-const DAY: DayPrayerTimes = {
-  date: 20260923,
-  timezone: "UTC",
-  timings: {
-    [PRAYER_ID.FAJR]: "2026-09-23T04:30:00.000Z",
-    [PRAYER_ID.DHUHR]: "2026-09-23T12:00:00.000Z",
-    [PRAYER_ID.ASR]: "2026-09-23T15:20:00.000Z",
-    [PRAYER_ID.MAGHRIB]: "2026-09-23T18:05:00.000Z",
-    [PRAYER_ID.ISHA]: "2026-09-23T19:25:00.000Z",
-  },
-  otherTimings: {
-    [OTHER_TIMING.SUNRISE]: "2026-09-23T05:50:00.000Z",
-    [OTHER_TIMING.SUNSET]: "2026-09-23T18:05:00.000Z",
-    [OTHER_TIMING.IMSAK]: "2026-09-23T04:20:00.000Z",
-    [OTHER_TIMING.MIDNIGHT]: "2026-09-23T23:57:00.000Z",
-    [OTHER_TIMING.FIRST_THIRD]: "2026-09-23T22:00:00.000Z",
-    [OTHER_TIMING.LAST_THIRD]: "2026-09-24T01:55:00.000Z",
-  },
-};
 
 const hidden = { includeHiddenElements: true } as const;
 
@@ -119,7 +97,7 @@ describe("A screen with a bowl over its sky", () => {
     usePreferencesStore.setState({ todayStyle: TODAY_STYLE.BOWL, showImportantDaysOnHome: false });
     usePrayerTimesStore.setState({
       yesterdayTimings: null,
-      todayTimings: DAY,
+      todayTimings: UTC_DAY,
       tomorrowTimings: null,
       usingDefaultLocation: false,
     });
