@@ -1,5 +1,6 @@
 import { useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { useWindowDimensions, type LayoutChangeEvent, type View } from "react-native";
+import { useIsFocused } from "expo-router";
 
 import { Background } from "@/components/ui/background";
 import {
@@ -84,4 +85,10 @@ export const SkyBackground = ({ children, paused = false, bodies = true }: Props
       </LiveSkyContext>
     </Background>
   );
+};
+
+/** A route's sky: held still while another tab or a pushed screen covers it. */
+export const ScreenSky = (props: Omit<Props, "paused">) => {
+  const focused = useIsFocused();
+  return <SkyBackground {...props} paused={!focused} />;
 };

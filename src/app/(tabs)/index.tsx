@@ -4,7 +4,7 @@ import { useIsFocused } from "expo-router";
 // Components
 import { Box } from "@/components/ui/box";
 import { ScreenContent } from "@/components/ui/screen-content";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
 import { LocationNotice } from "@/components/today/LocationNotice";
 import { OtherTimes } from "@/components/today/OtherTimes";
@@ -39,7 +39,7 @@ export default function MainScreen() {
   return (
     <DaySimulator>
       {/* With the bowl, the bowl draws the sun and moon and the sky draws none. */}
-      <SkyBackground paused={!focused} bodies={!bowl}>
+      <ScreenSky bodies={!bowl}>
         {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
         <Box flex={1} paddingTop={insets.top}>
           <ActiveAlarmBanner />
@@ -71,7 +71,7 @@ export default function MainScreen() {
           onClose={detail.close}
           finalFocusRef={detail.openerRef}
         />
-      </SkyBackground>
+      </ScreenSky>
     </DaySimulator>
   );
 }

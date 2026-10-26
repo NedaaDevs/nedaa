@@ -15,7 +15,7 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { TodayStyleChoices } from "@/components/settings/TodayStyleChoices";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { SwitchGroup } from "@/components/ui/switch-group";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -52,9 +52,9 @@ const ChoiceSetting = ({ title, summary, children }: ChoiceSettingProps) => (
 );
 
 const PreferencesScreen = () => (
-  <SkyBackground>
+  <ScreenSky>
     <PreferencesContent />
-  </SkyBackground>
+  </ScreenSky>
 );
 
 export default PreferencesScreen;

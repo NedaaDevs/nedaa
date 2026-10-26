@@ -8,7 +8,7 @@ import CoordinateEntry from "@/components/location/CoordinateEntry";
 import { PlaceHero } from "@/components/ui/place-hero";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import {
@@ -82,9 +82,9 @@ const PickerContent = () => {
 };
 
 const LocationPickerScreen = () => (
-  <SkyBackground>
+  <ScreenSky>
     <PickerContent />
-  </SkyBackground>
+  </ScreenSky>
 );
 
 export default LocationPickerScreen;
