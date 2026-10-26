@@ -5,17 +5,19 @@ import { Text } from "react-native";
 import { usePathname } from "expo-router";
 import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
+import { getTokenValue } from "tamagui";
 
 import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
 import { PRAYER_GRID_PART } from "@/components/today/PrayerGrid";
 import { TODAY_STYLE_PREVIEW_PART } from "@/components/today/TodayStylePreview";
+import { SCREEN_GUTTER } from "@/components/ui/screen-content";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { TODAY_STYLE } from "@/constants/Today";
 import { TAB_ITEMS } from "@/constants/TabBar";
-import { AppLocale, OpeningTab, TextSize } from "@/enums/app";
+import { AppDirection, AppLocale, OpeningTab, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
@@ -25,6 +27,7 @@ import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { YOGA_ERRATA, layOutHost } from "@/test-helpers/yogaPlacement";
 import { LTR_ISOLATE } from "@/utils/digits";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -90,6 +93,18 @@ const toggle = (key: string) => screen.getByRole("switch", { name: new RegExp(`^
 const press = (element: Parameters<ReturnType<typeof userEvent.setup>["press"]>[0]) =>
   userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(element);
 const radio = (key: string) => screen.getByRole("radio", { name: t(key) });
+
+const PHONE_WIDTH = 390;
+/** A grouped row on the phone, inside the screen's gutters. */
+const ROW_WIDTH = PHONE_WIDTH - 2 * getTokenValue(SCREEN_GUTTER, "space");
+const CHOICE_ROWS = [
+  "settings.preferences.todayStyle.title",
+  "settings.preferences.clock.title",
+  "settings.preferences.numerals.title",
+] as const;
+const CHOICE_ROW_CASES = Object.entries(YOGA_ERRATA).flatMap(([model, errata]) =>
+  CHOICE_ROWS.map((row) => ({ model, errata, row }))
+);
 
 describe("Preferences", () => {
   beforeEach(async () => {
@@ -267,6 +282,27 @@ describe("Preferences", () => {
 
       expect(usePreferencesStore.getState().useWesternNumerals).toBe(true);
     });
+
+    // React Native lays out under Yoga's errata; the spec is the other model.
+    it.each(CHOICE_ROW_CASES)(
+      "puts the $row choice full width under its name ($model)",
+      async ({ errata, row }) => {
+        await renderPreferences({ isRTL: true });
+        const group = screen.getByLabelText(t(row));
+        const frame = group.parent;
+        if (!frame) throw new Error("the choice sits in no row");
+
+        const layout = await layOutHost(frame, {
+          width: ROW_WIDTH,
+          direction: AppDirection.RTL,
+          errata,
+        });
+
+        const inside = layout.content(frame);
+        expect(layout.span(within(frame).getByText(t(row)))).toEqual(inside);
+        expect(layout.span(group)).toEqual(inside);
+      }
+    );
 
     // Each option shows the digits it names, whatever the preference is now.
     it("writes the Western option in Western digits", async () => {

@@ -1,10 +1,25 @@
 import type { DimensionValue, ViewStyle } from "react-native";
-import { Align, Direction, Edge, PositionType, loadYoga } from "yoga-layout/load";
+import {
+  Align,
+  Direction,
+  Edge,
+  Errata,
+  FlexDirection,
+  Gutter,
+  PositionType,
+  loadYoga,
+} from "yoga-layout/load";
 
 import { AppDirection } from "@/enums/app";
+import { type HostElement, styleOf } from "@/test-helpers/text";
 
 type Yoga = Awaited<ReturnType<typeof loadYoga>>;
 type YogaNode = ReturnType<Yoga["Node"]["create"]>;
+type YogaConfig = ReturnType<Yoga["Config"]["create"]>;
+
+/** Yoga's spec layout, and the errata React Native lays a screen out with. */
+export const YOGA_ERRATA = { SPEC: Errata.None, REACT_NATIVE: Errata.All } as const;
+export type YogaErrata = (typeof YOGA_ERRATA)[keyof typeof YOGA_ERRATA];
 
 /** A view as Yoga sees it: its style and the views inside it. */
 export type YogaBox = { style: ViewStyle; children?: YogaBox[] };
@@ -25,6 +40,18 @@ const MARGINS = [
   ["marginStart", Edge.Start],
   ["marginEnd", Edge.End],
 ] as const;
+const PADDINGS = [
+  ["padding", Edge.All],
+  ["paddingHorizontal", Edge.Horizontal],
+  ["paddingLeft", Edge.Left],
+  ["paddingRight", Edge.Right],
+  ["paddingStart", Edge.Start],
+  ["paddingEnd", Edge.End],
+] as const;
+const GAPS = [
+  ["gap", Gutter.All],
+  ["columnGap", Gutter.Column],
+] as const;
 
 const ALIGN: Record<NonNullable<ViewStyle["alignSelf"]>, Align> = {
   auto: Align.Auto,
@@ -35,44 +62,116 @@ const ALIGN: Record<NonNullable<ViewStyle["alignSelf"]>, Align> = {
   baseline: Align.Baseline,
 };
 
+const FLEX_DIRECTION: Record<NonNullable<ViewStyle["flexDirection"]>, FlexDirection> = {
+  row: FlexDirection.Row,
+  "row-reverse": FlexDirection.RowReverse,
+  column: FlexDirection.Column,
+  "column-reverse": FlexDirection.ColumnReverse,
+};
+
 const DIRECTION: Record<AppDirection, Direction> = {
   [AppDirection.LTR]: Direction.LTR,
   [AppDirection.RTL]: Direction.RTL,
 };
 
+// The host type React Native measures as one leaf.
+const HOST_TEXT = "Text";
+
 const isPercent = (value: string): value is `${number}%` => value.endsWith("%");
 
-const length = (value: DimensionValue | undefined) =>
+const length = (value: DimensionValue | string | undefined) =>
   typeof value === "number" || (typeof value === "string" && isPercent(value)) ? value : undefined;
 
 let yoga: Promise<Yoga> | undefined;
 
-/** Only the horizontal placement: Yoga's defaults stretch the rest. */
-const build = (engine: Yoga, { style, children = [] }: YogaBox): YogaNode => {
-  const node = engine.Node.create();
+/** Only the horizontal layout: heights stay unset. */
+const build = (engine: Yoga, config: YogaConfig, { style, children = [] }: YogaBox): YogaNode => {
+  const node = engine.Node.create(config);
   if (style.position === "absolute") node.setPositionType(PositionType.Absolute);
-  node.setWidth(length(style.width));
+  if (style.flexDirection) node.setFlexDirection(FLEX_DIRECTION[style.flexDirection]);
+  if (style.alignItems) node.setAlignItems(ALIGN[style.alignItems]);
   if (style.alignSelf) node.setAlignSelf(ALIGN[style.alignSelf]);
+  node.setFlex(style.flex);
+  node.setFlexGrow(style.flexGrow);
+  node.setFlexShrink(style.flexShrink);
+  node.setFlexBasis(length(style.flexBasis));
+  node.setWidth(length(style.width));
+  node.setMinWidth(length(style.minWidth));
   INSETS.forEach(([key, edge]) => node.setPosition(edge, length(style[key])));
   MARGINS.forEach(([key, edge]) => node.setMargin(edge, length(style[key])));
-  children.forEach((child, index) => node.insertChild(build(engine, child), index));
+  PADDINGS.forEach(([key, edge]) => node.setPadding(edge, length(style[key])));
+  GAPS.forEach(([key, gutter]) => node.setGap(gutter, length(style[key])));
+  children.forEach((child, index) => node.insertChild(build(engine, config, child), index));
   return node;
 };
 
-const spans = (node: YogaNode, parentLeft = 0): Span[] => {
+/** Each node's span and the span inside its padding, in tree order. */
+const boxes = (node: YogaNode, parentLeft = 0): { span: Span; content: Span }[] => {
   const left = parentLeft + node.getComputedLeft();
+  const width = node.getComputedWidth();
+  const start = node.getComputedPadding(Edge.Left) + node.getComputedBorder(Edge.Left);
+  const end = node.getComputedPadding(Edge.Right) + node.getComputedBorder(Edge.Right);
   const children = Array.from({ length: node.getChildCount() }, (_, index) =>
-    spans(node.getChild(index), left)
+    boxes(node.getChild(index), left)
   );
-  return [{ left, width: node.getComputedWidth() }, ...children.flat()];
+  return [
+    { span: { left, width }, content: { left: left + start, width: width - start - end } },
+    ...children.flat(),
+  ];
+};
+
+const layOut = async (root: YogaBox, direction: AppDirection, errata: YogaErrata) => {
+  yoga ??= loadYoga();
+  const engine = await yoga;
+  const config = engine.Config.create();
+  config.setErrata(errata);
+  const node = build(engine, config, root);
+  node.calculateLayout(undefined, undefined, DIRECTION[direction]);
+  const result = boxes(node);
+  node.freeRecursive();
+  config.free();
+  return result;
 };
 
 /** Lays the tree out in `direction`; spans list the root, then tree order. */
-export const layOutSpans = async (root: YogaBox, direction: AppDirection): Promise<Span[]> => {
-  yoga ??= loadYoga();
-  const node = build(await yoga, root);
-  node.calculateLayout(undefined, undefined, DIRECTION[direction]);
-  const result = spans(node);
-  node.freeRecursive();
-  return result;
+export const layOutSpans = async (
+  root: YogaBox,
+  direction: AppDirection,
+  errata: YogaErrata = YOGA_ERRATA.SPEC
+): Promise<Span[]> => (await layOut(root, direction, errata)).map(({ span }) => span);
+
+const hostChildren = (element: HostElement): HostElement[] =>
+  element.type === HOST_TEXT
+    ? []
+    : element.children.filter((child): child is HostElement => typeof child !== "string");
+
+const hostBox = (element: HostElement): YogaBox => ({
+  style: styleOf(element) ?? {},
+  children: hostChildren(element).map(hostBox),
+});
+
+const treeOrder = (element: HostElement): HostElement[] => [
+  element,
+  ...hostChildren(element).flatMap(treeOrder),
+];
+
+/** Where each rendered view lands when `element` is laid out `width` wide. */
+export const layOutHost = async (
+  element: HostElement,
+  { width, direction, errata }: { width: number; direction: AppDirection; errata: YogaErrata }
+) => {
+  const box = hostBox(element);
+  const laid = await layOut({ ...box, style: { ...box.style, width } }, direction, errata);
+  const order = treeOrder(element);
+  const at = (view: HostElement) => {
+    const index = order.indexOf(view);
+    if (index < 0) throw new Error("the view is outside the laid-out tree");
+    return laid[index];
+  };
+  return {
+    /** The view's own span. */
+    span: (view: HostElement) => at(view).span,
+    /** The span inside the view's padding and border. */
+    content: (view: HostElement) => at(view).content,
+  };
 };

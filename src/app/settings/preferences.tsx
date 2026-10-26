@@ -36,10 +36,10 @@ const GROUPED = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 
 type ChoiceSettingProps = { title: string; summary: string; children: ReactNode };
 
-/** A grouped row naming a setting, with its choice at the row's end. */
+/** A grouped row naming a setting, with its choice full width below. */
 const ChoiceSetting = ({ title, summary, children }: ChoiceSettingProps) => (
-  <HStack alignItems="center" gap="$3" {...GROUPED.frame}>
-    <VStack flex={1}>
+  <VStack gap="$3" {...GROUPED.frame}>
+    <VStack>
       <Text {...GROUPED.title} color="$fg">
         {title}
       </Text>
@@ -48,7 +48,7 @@ const ChoiceSetting = ({ title, summary, children }: ChoiceSettingProps) => (
       </Text>
     </VStack>
     {children}
-  </HStack>
+  </VStack>
 );
 
 const PreferencesScreen = () => (
