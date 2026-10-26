@@ -5,9 +5,8 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { PLAYER_STATE } from "@/types/athkar-audio";
-import type { AthkarType } from "@/types/athkar";
 
-type Period = Exclude<AthkarType, typeof ATHKAR_TYPE.ALL>;
+type Period = typeof ATHKAR_TYPE.MORNING | typeof ATHKAR_TYPE.EVENING;
 
 const mockStore = {
   setCurrentType: jest.fn(),
