@@ -72,6 +72,7 @@ export const TabBar = ({
   const sideGap = getTokenValue("$3.5", "space");
 
   return (
+    // No blur target, so Android draws the float colour opaque.
     <Material
       testID={TAB_BAR_ITEM_PART.TRACK}
       material={MATERIAL.FLOAT}
