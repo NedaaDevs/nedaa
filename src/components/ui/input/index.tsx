@@ -1,6 +1,6 @@
 import type { Ref } from "react";
-import type { TextInput } from "react-native";
-import { Input as TamaguiInput, type InputProps, type TamaguiElement } from "tamagui";
+import type { TextInputInstance } from "react-native";
+import { Input as TamaguiInput, type InputProps } from "tamagui";
 
 import { useRTL } from "@/contexts/RTLContext";
 
@@ -14,7 +14,7 @@ const SIZE = {
 } as const;
 
 type Props = Omit<InputProps, "size"> & {
-  ref?: Ref<TextInput>;
+  ref?: Ref<TextInputInstance>;
   size?: InputSize;
   invalid?: boolean;
 };
@@ -29,9 +29,7 @@ export const Input = ({ ref, size = "md", invalid, disabled, ...props }: Props) 
 
   return (
     <TamaguiInput
-      // Tamagui types the ref as TamaguiElement; the runtime instance is the RN
-      // TextInput, so callers get the TextInput type for .focus().
-      ref={ref as Ref<TamaguiElement>}
+      ref={ref}
       textAlign={isRTL ? "right" : "left"}
       minHeight={metrics.minHeight}
       paddingHorizontal={metrics.paddingHorizontal}
