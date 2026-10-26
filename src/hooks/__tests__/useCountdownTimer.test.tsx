@@ -41,7 +41,7 @@ describe("useCountdownTimer", () => {
   it("counts to the next prayer, or from the last when flipped", async () => {
     jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
     const { result, rerender } = await renderHook(
-      ({ flipped }: { flipped: boolean }) => useCountdownTimer(flipped),
+      ({ flipped }: { flipped: boolean }) => useCountdownTimer({ flipped }),
       { initialProps: { flipped: false } }
     );
     expect(result.current?.axis).toBe(COUNT_AXIS.UNTIL);
@@ -55,7 +55,7 @@ describe("useCountdownTimer", () => {
   it("ticks each second while seconds show", async () => {
     usePreferencesStore.setState({ showSeconds: true });
     jest.useFakeTimers({ now: new Date("2026-09-23T15:10:00.000Z") });
-    const { result } = await renderHook(() => useCountdownTimer(false));
+    const { result } = await renderHook(() => useCountdownTimer());
     const before = result.current!.seconds;
 
     await act(() => jest.advanceTimersByTime(1000));
@@ -66,7 +66,7 @@ describe("useCountdownTimer", () => {
   it("holds the second clock while paused", async () => {
     usePreferencesStore.setState({ showSeconds: true });
     jest.useFakeTimers({ now: new Date("2026-09-23T15:10:00.000Z") });
-    const { result } = await renderHook(() => useCountdownTimer(false, true));
+    const { result } = await renderHook(() => useCountdownTimer({ paused: true }));
     const before = result.current!.seconds;
 
     await act(() => jest.advanceTimersByTime(1000));
@@ -81,7 +81,7 @@ describe("useCountdownTimer", () => {
         {children}
       </SimulatedClockContext>
     );
-    const { result } = await renderHook(() => useCountdownTimer(false), { wrapper });
+    const { result } = await renderHook(() => useCountdownTimer(), { wrapper });
 
     expect(result.current?.seconds).toBe(140 * 60);
   });
