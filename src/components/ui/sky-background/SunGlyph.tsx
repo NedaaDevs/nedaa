@@ -66,7 +66,7 @@ export const SunGlyph = ({ cx, cy, width, height, reduced, scale = 1 }: Props) =
         style={[
           { position: "absolute", left: cx - reach, top: cy - reach },
           { width: reach * 2, height: reach * 2 },
-          reduced ? null : { transform: [{ rotate }] },
+          { transform: [{ rotate }] },
         ]}>
         <Svg width={reach * 2} height={reach * 2}>
           <Defs>
