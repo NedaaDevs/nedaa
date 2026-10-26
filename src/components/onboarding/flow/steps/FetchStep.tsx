@@ -23,6 +23,7 @@ import {
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import { initDatabases } from "@/services/databases";
 import { useLocationStore } from "@/stores/location";
+import { FINDING_CITY } from "@/stores/locationUpdate";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
@@ -221,9 +222,7 @@ export const FetchStep = ({
       <OnboardingPreview
         loading
         // The place line names the city once one is chosen or found.
-        placeNote={
-          stage === FETCH_STAGE.LOCATING_DEVICE ? t("onboarding.fetch.locatingDevice") : undefined
-        }
+        placeNote={stage === FETCH_STAGE.LOCATING_DEVICE ? t(FINDING_CITY) : undefined}
         timesNote={
           stage === FETCH_STAGE.LOADING_TIMES ? t("onboarding.fetch.loadingTimes") : undefined
         }
