@@ -161,4 +161,30 @@ describe("cities pack store", () => {
 
     expect(signals[1]?.aborted).toBe(true);
   });
+
+  // A native progress event can cross the bridge after its task was aborted.
+  test("a cancelled download's late progress leaves a newer download's meter", async () => {
+    type Progress = (progress: { receivedBytes: number; totalBytes: number }) => void;
+    const firstProgress: { report?: Progress } = {};
+    const abortable = ({ signal }: { signal: AbortSignal }) =>
+      new Promise((_, reject) =>
+        signal.addEventListener("abort", () => reject(new Error("aborted")))
+      );
+    mockDownload
+      .mockImplementationOnce((options: { signal: AbortSignal; onProgress: Progress }) => {
+        firstProgress.report = options.onProgress;
+        return abortable(options);
+      })
+      .mockImplementationOnce(abortable);
+
+    const first = useCitiesPackStore.getState().download();
+    useCitiesPackStore.getState().cancel();
+    await first;
+    const second = useCitiesPackStore.getState().download();
+    firstProgress.report?.({ receivedBytes: 5, totalBytes: 10 });
+
+    expect(useCitiesPackStore.getState()).toMatchObject({ receivedBytes: 0, totalBytes: 0 });
+    useCitiesPackStore.getState().cancel();
+    await second;
+  });
 });
