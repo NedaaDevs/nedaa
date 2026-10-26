@@ -18,6 +18,7 @@ import {
   LOCATION_PICKER,
   UPDATE_START,
   UPDATE_STEP,
+  type FixSource,
 } from "@/constants/Location";
 import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
@@ -115,10 +116,7 @@ const permit = (granted: boolean, canAskAgain = true) =>
   jest.mocked(checkLocationPermission).mockResolvedValue({ granted, canAskAgain });
 
 /** The device found Riyadh `minutesAgo` before now, its times verified. */
-const deviceAt = (
-  minutesAgo = 12,
-  fixSource: (typeof FIX_SOURCE)[keyof typeof FIX_SOURCE] = FIX_SOURCE.FRESH
-) => {
+const deviceAt = (minutesAgo = 12, source: FixSource = FIX_SOURCE.FRESH) => {
   useLocationStore.setState({
     locationMode: LocationMode.DEVICE,
     manualLocation: null,
@@ -126,8 +124,7 @@ const deviceAt = (
     locationDetails: {
       ...initialLocationDetails,
       address: RIYADH,
-      fixSource,
-      fixedAt: Date.now() - minutesAgo * MINUTE,
+      fix: { source, at: Date.now() - minutesAgo * MINUTE },
     },
   });
   placeFacts(false, RIYADH_COORDS);
@@ -908,7 +905,11 @@ describe("Settings › Location", () => {
       );
 
       expect(screen.queryByText(t("today.failed.title"))).toBeNull();
-      expect(announced(`${t("today.failed.title")}. ${t("today.failed.body")}`)).toBe(0);
+      const failed = t("a11y.sentences", {
+        first: t("today.failed.title"),
+        second: t("today.failed.body"),
+      });
+      expect(announced(failed)).toBe(0);
     });
   });
 });
