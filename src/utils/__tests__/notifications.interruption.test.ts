@@ -166,3 +166,14 @@ it("puts the caller's channel on a weekly Android trigger", async () => {
     })
   );
 });
+
+// Only a future date leaves an interval to wait.
+it.each([
+  { case: "a past date", date: new Date(Date.now() - ONE_MINUTE_MS) },
+  { case: "an invalid date", date: new Date(Number.NaN) },
+])("schedules nothing for $case", async ({ date }) => {
+  mockScheduleNotificationAsync.mockClear();
+  const result = await scheduleNotification(date, CONTENT);
+  expect(result.success).toBe(false);
+  expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
+});

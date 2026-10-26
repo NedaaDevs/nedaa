@@ -62,32 +62,19 @@ export const scheduleNotification = async (
   try {
     const content = buildContent(notificationInput, options);
 
-    // trigger type
-    let trigger: Notifications.NotificationTriggerInput;
-
-    if (date) {
-      // Calculate time interval from now
-      const targetDate = typeof date === "string" ? new Date(date) : date;
-      const now = new Date();
-      const secondsFromNow = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
-
-      // Use time interval trigger if the date is in the future
-      if (secondsFromNow > 0) {
-        trigger = {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: secondsFromNow,
-          repeats: false,
-          channelId: androidChannel(options),
-        };
-      } else {
-        // If date is in the past, don't schedule
-        console.warn(`Notification date is in the past: ${date}`);
-        return { success: false, message: "Cannot schedule notification in the past" };
-      }
-    } else {
-      // Immediate notification
-      trigger = null;
+    // A past date, or an invalid one (NaN), schedules nothing.
+    const secondsFromNow = Math.floor((date.getTime() - Date.now()) / 1000);
+    if (!(secondsFromNow > 0)) {
+      console.warn(`Notification date is in the past: ${date}`);
+      return { success: false, message: "Cannot schedule notification in the past" };
     }
+
+    const trigger: Notifications.NotificationTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: secondsFromNow,
+      repeats: false,
+      channelId: androidChannel(options),
+    };
 
     const id = await Notifications.scheduleNotificationAsync({
       content,
