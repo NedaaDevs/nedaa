@@ -30,6 +30,16 @@ describe("Button look", () => {
     expect(frame().paddingLeft).not.toBe(getTokenValue("$section", "space"));
   });
 
+  // A caller that draws a stroke names its colour; the button sets none.
+  it.each(["primary", "secondary", "positive", "negative", "default"] as const)(
+    "sets no border colour of its own (%s)",
+    async (action) => {
+      await renderButton({ action });
+
+      expect(frame().borderTopColor).toBeUndefined();
+    }
+  );
+
   it("rounds every button as a control", async () => {
     await renderButton();
 
