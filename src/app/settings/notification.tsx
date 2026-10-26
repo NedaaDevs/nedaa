@@ -46,7 +46,7 @@ import { getEffectiveConfig } from "@/types/notification";
 
 // Constants
 import { PRAYER_ID } from "@/constants/Prayer";
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { NOTIFICATION_TYPE, SYSTEM_SOUND } from "@/constants/Notification";
 import { Background } from "@/components/ui/background";
 
 // Utils
@@ -413,7 +413,7 @@ const NotificationSettings = () => {
                       } else {
                         const sound =
                           getNotificationSound(NOTIFICATION_TYPE.PRAYER, fajrConfig.sound) ||
-                          "default";
+                          SYSTEM_SOUND;
                         const channelId = getNotificationChannelId(
                           PRAYER_ID.FAJR,
                           NOTIFICATION_TYPE.PRAYER,
