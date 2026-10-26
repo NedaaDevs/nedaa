@@ -23,6 +23,28 @@ const SKY_SCREENS = sources(SRC)
   .filter(([path, text]) => !path.startsWith(HOME) && /<SkyScrollView\b/.test(text))
   .filter(([path]) => !OWN_MEASURE.has(path));
 
+/** A gutter set by hand, in any of the spellings Tamagui reads as one prop. */
+const HAND_GUTTER =
+  /\b(paddingHorizontal|px|paddingStart|paddingEnd|ps|pe)=("\$(4|group|screen)"|\{(16|20)\})/;
+
+describe("hand gutter rule", () => {
+  it.each([
+    'paddingHorizontal="$4"',
+    'px="$group"',
+    'paddingStart="$screen"',
+    "paddingEnd={16}",
+    'ps="$4"',
+    "pe={20}",
+  ])("sees %s", (prop) => {
+    expect(prop).toMatch(HAND_GUTTER);
+  });
+
+  // An inner row's own inset is not the screen's column.
+  it("passes an inner row's inset", () => {
+    expect('paddingHorizontal="$3"').not.toMatch(HAND_GUTTER);
+  });
+});
+
 // A sky screen's header takes the screen gutter, so its content must too.
 describe("screen gutter", () => {
   it("finds the sky screens", () => {
@@ -34,6 +56,6 @@ describe("screen gutter", () => {
   });
 
   it.each(SKY_SCREENS)("%s pads no column by hand", (_path, text) => {
-    expect(text).not.toMatch(/paddingHorizontal="\$(4|group|screen)"/);
+    expect(text).not.toMatch(HAND_GUTTER);
   });
 });
