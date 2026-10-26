@@ -51,7 +51,6 @@ type Setup = {
   useWesternNumerals?: boolean;
   withSpoken?: boolean;
   form?: SegmentedForm;
-  disabled?: boolean;
 };
 
 const renderChoice = ({
@@ -61,7 +60,6 @@ const renderChoice = ({
   useWesternNumerals = true,
   withSpoken = true,
   form = SEGMENTED_FORM.COMPACT,
-  disabled,
 }: Setup = {}) => {
   useAppStore.setState({ locale });
   usePreferencesStore.setState({ useWesternNumerals });
@@ -74,7 +72,6 @@ const renderChoice = ({
       label={String}
       spokenLabel={withSpoken ? spoken : undefined}
       form={form}
-      disabled={disabled}
     />,
     { isRTL: isRTLDirection(getDirection(locale)) }
   );
@@ -108,7 +105,7 @@ describe("SegmentedChoice, compact", () => {
     expect(selected.map((choice) => choice.props.accessibilityLabel)).toEqual([spoken(20)]);
   });
 
-  it("reports the option pressed", async () => {
+  it("reports the option pressed, with one tick", async () => {
     const onChange = jest.fn();
     await renderChoice({ value: 15, onChange });
 
@@ -116,6 +113,7 @@ describe("SegmentedChoice, compact", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(30);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 
   // A write per press reaches the store; the chosen option has nothing to write.
@@ -126,36 +124,13 @@ describe("SegmentedChoice, compact", () => {
     await userEvent.setup().press(screen.getByRole("radio", { name: spoken(15) }));
 
     expect(onChange).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 
   it("gives every choice a role, a name and a 44pt target", async () => {
     await renderChoice();
 
     expect(controlProblems()).toEqual([]);
-  });
-
-  it("ticks once when a new option is chosen", async () => {
-    await renderChoice({ value: 15 });
-
-    await userEvent.setup().press(screen.getByRole("radio", { name: spoken(30) }));
-
-    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not tick for the option already chosen", async () => {
-    await renderChoice({ value: 15 });
-
-    await userEvent.setup().press(screen.getByRole("radio", { name: spoken(15) }));
-
-    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
-  });
-
-  it("does not tick while held still", async () => {
-    await renderChoice({ value: 15, disabled: true });
-
-    await userEvent.setup().press(screen.getByRole("radio", { name: spoken(30) }));
-
-    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 
   // Round at any height: the corner reaches half the pill however tall it grows.
@@ -545,5 +520,6 @@ describe("SegmentedChoice, held still", () => {
     expect(screen.getByRole("radio", { name: "device", selected: true })).toBeDisabled();
     await userEvent.press(city);
     expect(onChange).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 });
