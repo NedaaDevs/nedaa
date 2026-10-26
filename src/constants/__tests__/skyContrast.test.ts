@@ -6,6 +6,7 @@ import {
   type Brightness,
 } from "@/constants/Palette";
 import { HERO_NOTE_INK } from "@/components/ui/place-hero";
+import { SEGMENTED_PAINT } from "@/components/ui/segmented-choice/paint";
 import { PHASE, type Phase } from "@/constants/Phase";
 import { BODY_BEHIND_TEXT, MOON_GLYPH, SUN_GLYPH } from "@/constants/Sky";
 import { flattenOver, skyScene } from "@/utils/sky";
@@ -89,6 +90,13 @@ describe.each(CASES)("%s sky", (_name, brightness, phase) => {
     sky.forEach((ground, i) => {
       expect(contrast(card[i], ground)).toBeGreaterThanOrEqual(CARD_APART);
     });
+  });
+
+  // The raised mark shows the choice; every label sits on the sunken track.
+  it("keeps a segmented choice's labels readable on its track", () => {
+    const track = cardOver(palette[SEGMENTED_PAINT.TRACK].hex, sky);
+
+    expect(worst(palette[SEGMENTED_PAINT.LABEL].hex, track)).toBeGreaterThanOrEqual(AA);
   });
 
   // The next-prayer label, back links, text buttons and tinted pills.
