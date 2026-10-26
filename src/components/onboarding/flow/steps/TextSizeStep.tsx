@@ -11,8 +11,6 @@ import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { nearestTextSize } from "@/constants/TextSize";
 import { TextSize } from "@/enums/app";
-import { useHaptic } from "@/hooks/useHaptic";
-import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePreferencesStore } from "@/stores/preferences";
 import { isLargeOsTextActive } from "@/utils/textSizeOffer";
 
@@ -21,7 +19,6 @@ const TEXT_SIZES = Object.values(TextSize);
 /** The app's text size; the whole frame and the preview follow the choice. */
 export const TextSizeStep = ({ onNext, setPrimary, headingRef, progress }: StepProps) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const textSize = usePreferencesStore((state) => state.textSize);
   const setTextSize = usePreferencesStore((state) => state.setTextSize);
   const markHandled = usePreferencesStore((state) => state.markTextSizeOfferHandled);
@@ -56,10 +53,7 @@ export const TextSizeStep = ({ onNext, setPrimary, headingRef, progress }: StepP
         <SegmentedChoice
           options={TEXT_SIZES}
           value={textSize}
-          onChange={(size) => {
-            hapticSelection();
-            setTextSize(size);
-          }}
+          onChange={setTextSize}
           accessibilityLabel={t("onboarding.textSize.chooseTitle")}
           label={(value) => t(`settings.textSize.options.${value}`)}
         />
