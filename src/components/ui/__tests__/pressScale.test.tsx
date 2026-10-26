@@ -24,7 +24,7 @@ const PRESSABLES = [
 ] as const;
 
 describe("press scale", () => {
-  // The spec's row and card press: .98, on the snap spring.
+  // A pressed row or card shrinks to .98 on the snap spring.
   it.each(PRESSABLES)("%s shrinks to .98 under the finger", async (_name, Surface) => {
     await renderWithTheme(<Surface />);
 

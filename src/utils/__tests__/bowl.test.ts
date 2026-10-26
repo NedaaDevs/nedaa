@@ -1,7 +1,7 @@
 import { BOWL } from "@/constants/Timeline";
 import { bowlPath, bowlPoint } from "@/utils/bowl";
 
-/** The concept's frame: 320 wide, 160 tall. */
+/** A 320 by 160 frame. */
 const [WIDTH, HEIGHT] = [320, 160];
 const horizon = HEIGHT - BOWL.footRoom;
 const point = (share: number, isRTL = false, height = HEIGHT) =>
@@ -15,7 +15,7 @@ describe("bowlPoint", () => {
     expect(point(1).y).toBeCloseTo(horizon);
   });
 
-  it("matches the concept's numbers: half-chord 138, horizon 136, crest 22", () => {
+  it("a 320 by 160 bowl: half-chord 138, horizon 136, crest 22", () => {
     expect((point(1).x - point(0).x) / 2).toBeCloseTo(138);
     expect(horizon).toBe(136);
     expect(point(0.5)).toMatchObject({ x: WIDTH / 2, y: BOWL.crest });
