@@ -256,6 +256,21 @@ describe("Settings › Location", () => {
       expect(hero()).toHaveAccessibleName(noPlaceHero());
     });
 
+    // After a relaunch the found place stands; only its times are missing.
+    it("says Makkah's times stand in until a found place's times load", async () => {
+      placeFacts(true, RIYADH_COORDS);
+      await renderScreen();
+
+      expect(await screen.findByLabelText(t("today.defaultLocation.awaitingTimes"))).toBeTruthy();
+      expect(screen.queryByLabelText(t("today.defaultLocation.body"))).toBeNull();
+      const refresh = t("a11y.join", {
+        first: t("location.device.refresh"),
+        second: t("location.device.lastFound.minutes", { count: 12 }),
+      });
+      expect(screen.getByRole("button", { name: refresh })).toBeTruthy();
+      expect(hero()).toHaveAccessibleName(noPlaceHero());
+    });
+
     // A read runs for seconds; the place cannot change under it.
     it("shows the update's steps while it reads, with no way to change the place", async () => {
       mockUpdate.mockReturnValue(new Promise(() => {}));
@@ -746,6 +761,27 @@ describe("Settings › Location", () => {
       expect(hero()).toHaveAccessibleName(
         heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.deviceNote"))
       );
+    });
+
+    // The read found a place and its times failed: it was found, not missed.
+    it("says a found place's times failed, from no verified place", async () => {
+      placeFacts(true, null);
+      mockUpdate.mockImplementation(async () => {
+        useLocationStore.setState({ lastKnownCoords: RIYADH_COORDS });
+      });
+      mockLoad.mockRejectedValue(new Error("offline"));
+      await renderScreen();
+
+      await userEvent.press(
+        await screen.findByRole("button", {
+          name: new RegExp(`^${t("location.device.refresh")}`),
+        })
+      );
+
+      expect(await screen.findByText(t("today.failed.title"))).toBeTruthy();
+      expect(screen.getByLabelText(t("today.defaultLocation.awaitingTimes"))).toBeTruthy();
+      expect(screen.queryByLabelText(t("today.defaultLocation.body"))).toBeNull();
+      expect(hero()).toHaveAccessibleName(noPlaceHero());
     });
 
     // The times loaded; the step's own line reports it, not the place's panel.

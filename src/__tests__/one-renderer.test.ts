@@ -215,6 +215,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<LocationFailureOffer\b/,
     home: "components/location/LocationFailureOffer.tsx",
   },
+  // Today and Location both say why Makkah's times stand in, and draw it alike.
+  {
+    concept: "the stand-in times notice",
+    shows: /\btoday\.defaultLocation\.(body|awaitingTimes)\b|<StandInNotice\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<StandInNotice\b/,
+    home: "components/location/StandInNotice.tsx",
+  },
   // A screen naming how old a location fix is computes it by the one rule.
   {
     concept: "the age of a location fix",
