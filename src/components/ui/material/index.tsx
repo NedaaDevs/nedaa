@@ -24,10 +24,27 @@ export type MaterialName = (typeof MATERIAL)[keyof typeof MATERIAL];
 const CORNERS = { ALL: "all", TOP: "top" } as const;
 type Corners = (typeof CORNERS)[keyof typeof CORNERS];
 
+type MaterialSpec = {
+  color: string;
+  blur: BlurLevel;
+  corners: Corners;
+  elevation: ElevationLevel;
+};
+
 const MATERIAL_SPEC = {
-  [MATERIAL.FLOAT]: { color: "$surfaceFloat", blur: "FLOAT", corners: CORNERS.ALL },
-  [MATERIAL.SHEET_HEADER]: { color: "$surfaceFloat", blur: "SHEET", corners: CORNERS.TOP },
-} as const satisfies Record<MaterialName, { color: string; blur: BlurLevel; corners: Corners }>;
+  [MATERIAL.FLOAT]: {
+    color: "$surfaceFloat",
+    blur: "FLOAT",
+    corners: CORNERS.ALL,
+    elevation: ELEVATION_LEVEL.E2,
+  },
+  [MATERIAL.SHEET_HEADER]: {
+    color: "$surfaceFloat",
+    blur: "SHEET",
+    corners: CORNERS.TOP,
+    elevation: ELEVATION_LEVEL.E0,
+  },
+} as const satisfies Record<MaterialName, MaterialSpec>;
 
 const cornerRadii = (corners: Corners, radius: number) =>
   corners === CORNERS.TOP
@@ -41,7 +58,6 @@ const opaque = (hex: string): string => `${hex.slice(0, 7)}${OPAQUE_ALPHA}`;
 
 type MaterialProps = ComponentProps<typeof View> & {
   material: MaterialName;
-  elevation?: ElevationLevel;
   radius?: RadiusName;
   /** Android only: the view whose pixels the blur reads. */
   blurTarget?: RefObject<ViewInstance | null>;
@@ -55,7 +71,6 @@ const RING_WIDTH = 0.5;
 /** A tinted, blurred surface with a lit top edge; opaque where blur is unavailable. */
 export const Material = ({
   material,
-  elevation = ELEVATION_LEVEL.E1,
   radius = "card",
   blurTarget,
   ring = false,
@@ -75,7 +90,7 @@ export const Material = ({
     hasBlurTarget: blurTarget != null,
   });
   const radii = cornerRadii(spec.corners, getTokenValue(`$${radius}`, "radius"));
-  const lift = useElevationShadow(elevation);
+  const lift = useElevationShadow(spec.elevation);
   const inner = ring ? `inset 0 0 0 ${RING_WIDTH}px ${hairline}` : undefined;
   const shadow = [lift, inner].filter(Boolean).join(", ") || undefined;
 
