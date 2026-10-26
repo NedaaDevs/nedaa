@@ -9,15 +9,9 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import {
-  PROGRESS_ROW,
-  UPDATE_START,
-  UPDATE_STEP,
-  type ProgressRow,
-  type UpdateStep,
-} from "@/constants/Location";
+import { PROGRESS_ROW, UPDATE_STEP, type ProgressRow, type UpdateStep } from "@/constants/Location";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
-import type { UpdateRun, UpdateStart } from "@/stores/locationUpdate";
+import { FINDING_CITY, findingCity, type UpdateRun } from "@/stores/locationUpdate";
 
 /** Test ids for the parts a test reaches. */
 export const LOCATION_UPDATE_PART = {
@@ -26,29 +20,12 @@ export const LOCATION_UPDATE_PART = {
   MARK: "location-update-mark",
 } as const;
 
-/** The place step's line: a device read is still finding the city. */
-const PLACE_STATUS: Record<UpdateStart["kind"], ParseKeys> = {
-  [UPDATE_START.DEVICE]: "onboarding.fetch.locatingDevice",
-  [UPDATE_START.ADOPT_DEVICE]: "onboarding.fetch.locatingDevice",
-  [UPDATE_START.CITY]: "location.update.step.city",
-};
-
 /** The line naming what runs now, read aloud as it changes. */
-const statusOf = ({ start, step }: UpdateRun): ParseKeys => {
-  switch (step) {
-    case UPDATE_STEP.LOCATION:
-      return PLACE_STATUS[start.kind];
-    case UPDATE_STEP.PRAYER_TIMES:
-      return "location.update.step.prayerTimes";
-    case UPDATE_STEP.NOTIFICATIONS:
-      return "location.update.step.notifications";
-    case UPDATE_STEP.ALARMS:
-      return "location.update.step.alarms";
-    default: {
-      const unhandled: never = step;
-      return unhandled;
-    }
-  }
+const STATUS: Record<UpdateStep, ParseKeys> = {
+  [UPDATE_STEP.LOCATION]: "location.update.step.city",
+  [UPDATE_STEP.PRAYER_TIMES]: "location.update.step.prayerTimes",
+  [UPDATE_STEP.NOTIFICATIONS]: "location.update.step.notifications",
+  [UPDATE_STEP.ALARMS]: "location.update.step.alarms",
 };
 
 /** What a step that threw leaves undone. */
@@ -145,7 +122,7 @@ const StepRow = ({ row, state }: { row: ProgressRow; state: RowState }) => {
 const RunningSteps = ({ run, inSheet }: { run: UpdateRun; inSheet: boolean }) => {
   const { t } = useTranslation();
   const { step } = run;
-  const status = t(statusOf(run));
+  const status = t(findingCity(run) ? FINDING_CITY : STATUS[step]);
   useIosAnnouncement(status);
   return (
     <Card testID={LOCATION_UPDATE_PART.FRAME} variant={inSheet ? "panel" : "plain"} gap="$3">

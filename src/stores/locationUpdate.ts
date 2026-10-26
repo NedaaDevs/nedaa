@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ParseKeys } from "i18next";
 
 import { UPDATE_START, UPDATE_STEP, type UpdateStep } from "@/constants/Location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
@@ -36,6 +37,13 @@ type LocationUpdateStore = {
 
 /** Whether `run` is in flight rather than stopped by a throw. */
 export const isRunning = (run: UpdateRun | null): boolean => run !== null && !run.failed;
+
+/** Whether `run` reads the device at its place step: the city is not known. */
+export const findingCity = (run: UpdateRun | null): boolean =>
+  isRunning(run) && run?.step === UPDATE_STEP.LOCATION && run.start.kind !== UPDATE_START.CITY;
+
+/** The line a device read shows while it finds the city. */
+export const FINDING_CITY: ParseKeys = "onboarding.fetch.locatingDevice";
 
 export const useLocationUpdateStore = create<LocationUpdateStore>()((set, get) => ({
   run: null,
