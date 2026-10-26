@@ -1,6 +1,7 @@
 import { BACKGROUND_EVENT, TASK_RESULT } from "@/constants/BackgroundTask";
 import { TIMES_FETCH } from "@/constants/PrayerTimes";
 import { BACKGROUND_REFRESH_TASK, executeBackgroundRefresh } from "@/tasks/backgroundRefresh";
+import type { Coords } from "@/types/location";
 
 // The factories below read `hydratedPersist` eagerly, at the moment the SUT
 // imports a mocked store. babel-plugin-jest-hoist lifts the `jest.mock` calls
@@ -25,7 +26,7 @@ const mockBgLog = jest.fn();
 const mockWaitForHydration = jest.fn();
 const mockSyncWidgetSnapshot = jest.fn(async () => {});
 /** Where the stored days were fetched; the place is always at MOCK_PLACE. */
-let mockTimesCoords: { latitude: number; longitude: number } | null = null;
+let mockTimesCoords: Coords | null = null;
 const MOCK_PLACE = { latitude: 24.7136, longitude: 46.6753 };
 
 let mockNow = new Date("2026-08-15T08:00:00Z");
