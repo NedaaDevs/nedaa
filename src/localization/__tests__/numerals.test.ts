@@ -38,6 +38,12 @@ describe("numeralPostProcessor", () => {
     expect(translate("settings.preferences.numerals.options.western")).toBe("123");
   });
 
+  // The coordinate fields show Western digits; their copy matches them.
+  it("leaves coordinate copy in Western digits under Arabic numerals", () => {
+    expect(translate("location.coordinates.latitudeRange")).toBe("من \u2066-90\u2069 إلى 90");
+    expect(translate("location.coordinates.latitudeNotNumber")).toContain("21.4225");
+  });
+
   it("leaves licence identifiers alone", () => {
     expect(translate("settings.acknowledgements.cities.body")).toContain("CC BY 4.0");
   });
