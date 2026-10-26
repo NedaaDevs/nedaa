@@ -19,19 +19,16 @@ import { useTextScale } from "@/hooks/useTextScale";
 /** Test ids for the parts a test reaches. */
 export const FAB_PART = { SURFACE: "fab-surface" } as const;
 
-type FabSize = "sm" | "md" | "lg";
-type FabPlacement =
-  | "top right"
-  | "top left"
-  | "bottom right"
-  | "bottom left"
-  | "bottom end"
-  | "top center"
-  | "bottom center";
+/** The frame's box per size; its keys are the sizes a Fab takes. */
+const FAB_FRAME_SIZE = {
+  sm: { width: "$10", height: "$10" },
+  md: { width: "$12", height: "$12" },
+  lg: { width: "$14", height: "$14" },
+} as const;
 
-const FabContext = createStyledContext({
-  size: "md" as FabSize,
-});
+type FabSize = keyof typeof FAB_FRAME_SIZE;
+
+const FabContext = createStyledContext<{ size: FabSize }>({ size: "md" });
 
 const ICON_SIZE: Record<FabSize, IconSize> = {
   sm: "md",
@@ -49,28 +46,18 @@ const FabFrame = styled(View, {
   flexDirection: "row",
   position: "absolute",
   borderRadius: "$pill",
+  // Bottom, at the cross-axis end of a column parent: right in English, left
+  // in Arabic.
+  bottom: "$group",
+  alignSelf: "flex-end",
+  marginEnd: "$group",
 
   variants: {
-    size: {
-      sm: { width: "$10", height: "$10" },
-      md: { width: "$12", height: "$12" },
-      lg: { width: "$14", height: "$14" },
-    },
-    placement: {
-      "top right": { top: "$group", right: "$group" },
-      "top left": { top: "$group", left: "$group" },
-      "bottom right": { bottom: "$group", right: "$group" },
-      "bottom left": { bottom: "$group", left: "$group" },
-      // The cross-axis end of a column: right in English, left in Arabic.
-      "bottom end": { bottom: "$group", alignSelf: "flex-end", marginEnd: "$group" },
-      "top center": { top: "$group", alignSelf: "center" },
-      "bottom center": { bottom: "$group", alignSelf: "center" },
-    },
+    size: FAB_FRAME_SIZE,
   } as const,
 
   defaultVariants: {
     size: "md",
-    placement: "bottom right",
   },
 });
 
@@ -111,12 +98,12 @@ const FabLabelFrame = styled(TamaguiText, {
       sm: {},
       md: {},
       lg: {},
-    },
+    } satisfies Record<FabSize, object>,
   } as const,
 });
 
 // Label font size per Fab size variant; the app text-scale multiplies it.
-const FAB_FONT_SIZE: Record<string, number> = { sm: 10, md: 12, lg: 14 };
+const FAB_FONT_SIZE: Record<FabSize, number> = { sm: 10, md: 12, lg: 14 };
 
 type FabLabelWrapperProps = GetProps<typeof FabLabelFrame>;
 
@@ -124,7 +111,7 @@ const FabLabel = React.forwardRef<React.ComponentRef<typeof FabLabelFrame>, FabL
   ({ fontSize, ...props }, ref) => {
     const ctx = FabContext.useStyledContext();
     const m = useTextScale();
-    const base = typeof fontSize === "number" ? fontSize : (FAB_FONT_SIZE[ctx.size ?? "md"] ?? 12);
+    const base = typeof fontSize === "number" ? fontSize : FAB_FONT_SIZE[ctx.size ?? "md"];
     return <FabLabelFrame ref={ref} {...props} fontSize={base * m} allowFontScaling={false} />;
   }
 );
@@ -161,4 +148,4 @@ const Fab = withStaticProperties(FabRoot, {
 type FabLabelProps = FabLabelWrapperProps;
 
 export { Fab, FabIcon, FabLabel };
-export type { FabProps, FabIconProps, FabLabelProps, FabSize, FabPlacement };
+export type { FabProps, FabIconProps, FabLabelProps, FabSize };

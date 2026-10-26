@@ -237,7 +237,6 @@ const AthkarTabs = () => {
         <Fab
           onPress={() => router.push("/athkar-focus")}
           size="lg"
-          placement="bottom end"
           marginBottom={tabBarInset}
           accessibilityLabel={t("athkar.focus.title")}>
           <FabIcon as={Focus} />
