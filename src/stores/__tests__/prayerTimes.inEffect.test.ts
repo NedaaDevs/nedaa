@@ -126,6 +126,8 @@ describe("the settings the stored times came from", () => {
 });
 
 describe("a failed fetch's log", () => {
+  afterEach(() => jest.restoreAllMocks());
+
   // The API client resolves a failed request as a response, not an Error.
   it("keeps the message of the response the API failed with", async () => {
     const logError = jest.spyOn(AppLogger.create("prayertimes"), "e");
@@ -140,6 +142,5 @@ describe("a failed fetch's log", () => {
       "getAndStorePrayerTimes failed (2027/all)",
       expect.objectContaining({ message: "Network Error" })
     );
-    logError.mockRestore();
   });
 });
