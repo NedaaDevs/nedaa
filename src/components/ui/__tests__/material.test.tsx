@@ -6,7 +6,7 @@ import { MATERIAL, Material } from "@/components/ui/material";
 import { BLUR_INTENSITY } from "@/constants/Blur";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
-import { PlatformType } from "@/enums/app";
+import { AppMode, PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("expo-blur", () => {
@@ -96,7 +96,7 @@ describe("Material", () => {
 
   it("tints the dark theme's blur with the thin dark material", async () => {
     await renderWithTheme(
-      <Theme name="dark">
+      <Theme name={AppMode.DARK}>
         <Material testID="material" material={MATERIAL.FLOAT} />
       </Theme>
     );
