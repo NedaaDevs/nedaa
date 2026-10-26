@@ -252,7 +252,7 @@ describe("Language", () => {
       `${t("today.focus.next")}${t("prayerTimes.asr")}`
     );
     expect(screen.getByTestId(LANGUAGE_HERO_PART.CHIP)).toHaveStyle({
-      backgroundColor: NEDAA_LIGHT.quietTint.hex,
+      backgroundColor: NEDAA_LIGHT.surfaceQuiet.hex,
       alignSelf: "flex-start",
     });
   });

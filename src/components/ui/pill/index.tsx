@@ -1,6 +1,7 @@
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
+import type { ColorToken } from "@/constants/Palette";
 
 export const PILL_TONE = {
   /** A plain fact, such as the app version. */
@@ -15,12 +16,12 @@ export type PillTone = (typeof PILL_TONE)[keyof typeof PILL_TONE];
 /** Test ids for the pill's parts. */
 export const PILL_PART = { DOT: "pill-dot" } as const;
 
-/** `lead` inks the label; a tint, never a line, carries the tone. */
-const TONE_STYLE = {
-  [PILL_TONE.ACCENT]: { fill: "$accentTint", ink: "$accentText", lead: "$accentText" },
-  [PILL_TONE.WARN]: { fill: "$warnTint", ink: "$fg", lead: "$fg" },
-  [PILL_TONE.NEUTRAL]: { fill: "$quietTint", ink: "$fg", lead: "$mutedSky" },
-} as const satisfies Record<PillTone, { fill: string; ink: string; lead: string }>;
+/** Each tone's palette keys; a fill, never a line, carries the tone. */
+export const PILL_PAINT = {
+  [PILL_TONE.ACCENT]: { fill: "accentTint", ink: "accentText", lead: "accentText" },
+  [PILL_TONE.WARN]: { fill: "warnTint", ink: "fg", lead: "fg" },
+  [PILL_TONE.NEUTRAL]: { fill: "surfaceQuiet", ink: "fg", lead: "mutedSky" },
+} as const satisfies Record<PillTone, Record<"fill" | "ink" | "lead", ColorToken>>;
 
 /** No size step is 26; the pill stands this high at least. */
 const PILL_MIN_HEIGHT = 26;
@@ -46,7 +47,7 @@ export const Pill = ({
   alignSelf = "center",
   testID,
 }: Props) => {
-  const { fill, ink, lead } = TONE_STYLE[tone];
+  const { fill, ink, lead } = PILL_PAINT[tone];
 
   return (
     <HStack
@@ -58,7 +59,7 @@ export const Pill = ({
       paddingHorizontal="$2.5"
       paddingVertical="$0.5"
       borderRadius="$pill"
-      backgroundColor={fill}>
+      backgroundColor={`$${fill}`}>
       {dot ? (
         <Box
           testID={PILL_PART.DOT}
@@ -71,11 +72,11 @@ export const Pill = ({
         />
       ) : null}
       {label ? (
-        <Text size="sm" fontWeight="500" color={lead}>
+        <Text size="sm" fontWeight="500" color={`$${lead}`}>
           {label}
         </Text>
       ) : null}
-      <Text size="sm" fontWeight="600" color={ink}>
+      <Text size="sm" fontWeight="600" color={`$${ink}`}>
         {children}
       </Text>
     </HStack>
