@@ -1051,7 +1051,7 @@
   "onboarding.notifications.allowNotifications": "Allow notifications",
   "onboarding.notifications.card": "You can set the alert, sound and timing for each prayer later.",
   "onboarding.notifications.deniedBody": "Notifications are off. You can turn them on later in your device settings.",
-  "onboarding.notifications.focusNote": "The athan comes through Focus modes, such as Sleep.",
+  "onboarding.notifications.focusNote": "The athan can come through Focus modes, such as Sleep.",
   "onboarding.notifications.hearAthan": "Hear the athan",
   "onboarding.notifications.question": "Want prayer alerts?",
   "onboarding.notifications.stopAthan": "Stop the athan",
