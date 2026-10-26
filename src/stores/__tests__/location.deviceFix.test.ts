@@ -54,6 +54,8 @@ const RIYADH = fixAt(24.7136, 46.6753);
 const JEDDAH = fixAt(21.4858, 39.1925);
 // About 30 km from JEDDAH: past the city-change distance, inside the same city.
 const JEDDAH_NORTH = fixAt(21.76, 39.15);
+// About 12 km from RIYADH: past the city-change distance, inside the same city.
+const RIYADH_NORTH = fixAt(24.8, 46.75);
 
 const deviceAddress = (city: string) => ({ city, country: "Saudi Arabia", timezone: null });
 
@@ -340,6 +342,26 @@ describe("device fix in the location store", () => {
         locationDetails: { ...state.locationDetails, address },
       }));
       inJeddah();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    });
+
+    // The API names the city in the app's language, the device geocoder does not.
+    it("offers nothing inside a city the first fix named through the API alone", async () => {
+      useLocationStore.setState({
+        reverseGeocode: jest.fn(async () => ({
+          city: "الرياض",
+          countryName: "السعودية",
+          timezone: "Asia/Riyadh",
+        })),
+      });
+      mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
+      mockReverseGeocodeAsync.mockRejectedValueOnce(new Error("offline"));
+      await useLocationStore.getState().initializeLocation();
+      mockGetLocationWithTimeout.mockResolvedValue(RIYADH_NORTH);
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Riyadh")]);
 
       await useLocationStore.getState().checkAndPromptCityChange();
 
