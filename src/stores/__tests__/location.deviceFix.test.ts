@@ -628,35 +628,42 @@ describe("device fix in the location store", () => {
     });
   });
 
+  /** The state a saved record restores into, through the store's own merge. */
+  const restored = (saved: unknown): LocationStore => {
+    const { merge } = useLocationStore.persist.getOptions();
+    if (!merge) throw new Error("the location store persists with no merge");
+    return merge(saved, useLocationStore.getState());
+  };
+
   it("drops a saved error that is not a failure kind", () => {
-    const merge = useLocationStore.persist.getOptions().merge!;
     const saved = {
       locationDetails: { ...initialLocationDetails, error: "Location request timed out" },
     };
 
-    const merged = merge(saved, useLocationStore.getState()) as LocationStore;
-
-    expect(merged.locationDetails.error).toBeNull();
+    expect(restored(saved).locationDetails.error).toBeNull();
   });
 
   it("gives a saved record with no fix field no fix", () => {
-    const merge = useLocationStore.persist.getOptions().merge!;
     const { fix: _fix, ...withoutFix } = initialLocationDetails;
     const saved = { locationDetails: withoutFix };
 
-    const merged = merge(saved, useLocationStore.getState()) as LocationStore;
+    expect(restored(saved).locationDetails.fix).toBeNull();
+  });
 
-    expect(merged.locationDetails.fix).toBeNull();
+  it("drops the fix fields an older saved record kept", () => {
+    const { fix: _fix, ...details } = { ...initialLocationDetails, coords: RIYADH.coords };
+    const saved = {
+      locationDetails: { ...details, fixSource: FIX_SOURCE.FRESH, fixedAt: RIYADH.timestamp },
+    };
+
+    expect(restored(saved).locationDetails).toEqual({ ...details, fix: null });
   });
 
   it("keeps a saved failure kind", () => {
-    const merge = useLocationStore.persist.getOptions().merge!;
     const saved = {
       locationDetails: { ...initialLocationDetails, error: LOCATION_FAILURE.TIMEOUT },
     };
 
-    const merged = merge(saved, useLocationStore.getState()) as LocationStore;
-
-    expect(merged.locationDetails.error).toBe(LOCATION_FAILURE.TIMEOUT);
+    expect(restored(saved).locationDetails.error).toBe(LOCATION_FAILURE.TIMEOUT);
   });
 });
