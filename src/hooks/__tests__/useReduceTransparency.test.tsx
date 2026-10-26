@@ -1,6 +1,7 @@
 import { AccessibilityInfo, Platform } from "react-native";
 import { act, render } from "@testing-library/react-native";
 
+import { PlatformType } from "@/enums/app";
 import { useReduceTransparency } from "@/hooks/useReduceTransparency";
 
 const results: boolean[] = [];
@@ -23,7 +24,7 @@ beforeEach(() => {
   results.length = 0;
   handler = undefined;
   remove = jest.fn();
-  setPlatform("ios");
+  setPlatform(PlatformType.IOS);
   jest.spyOn(AccessibilityInfo, "isReduceTransparencyEnabled").mockResolvedValue(false);
   jest.spyOn(AccessibilityInfo, "addEventListener").mockImplementation(((
     _event: string,
@@ -74,7 +75,7 @@ describe("useReduceTransparency", () => {
   });
 
   it("is false on Android whatever the query reports", async () => {
-    setPlatform("android");
+    setPlatform(PlatformType.ANDROID);
     jest.spyOn(AccessibilityInfo, "isReduceTransparencyEnabled").mockResolvedValue(true);
     await render(<Probe />);
     await act(() => handler?.(true));
