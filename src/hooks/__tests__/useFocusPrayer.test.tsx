@@ -31,7 +31,7 @@ const at = async (date: string, time: string, flipped?: boolean) => {
     todayTimings: dayOn(date),
     tomorrowTimings: null,
   });
-  const { result } = await renderHook(() => useFocusPrayer(flipped));
+  const { result } = await renderHook(() => useFocusPrayer({ flipped }));
   return result.current;
 };
 
