@@ -20,11 +20,19 @@ export const PRAYER_NOTIFICATION_TYPES = [
 
 /** Android channels with one fixed id; per-prayer channel ids are built. */
 export const NOTIFICATION_CHANNEL_ID = {
-  REMINDER: "reminder",
+  OPEN_APP_REMINDER: "open_app_reminder",
   QURAN_REMINDER: "quran_reminder",
   ATHKAR_MORNING: `${NOTIFICATION_TYPE.ATHKAR}_${ATHKAR_TYPE.MORNING}`,
   ATHKAR_EVENING: `${NOTIFICATION_TYPE.ATHKAR}_${ATHKAR_TYPE.EVENING}`,
 } as const;
+
+/** Fixed channel ids nothing posts on; each channel run deletes them. */
+export const RETIRED_CHANNEL_ID = {
+  PRAYER_REMINDERS: "reminder",
+} as const;
+
+/** expo-notifications' name for the device's own notification sound. */
+export const SYSTEM_SOUND = "default";
 
 /** The id and category of the "open the app" reminder. */
 export const OPEN_APP_REMINDER_ID = "reminder";

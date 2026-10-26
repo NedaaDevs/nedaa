@@ -1,7 +1,11 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { NOTIFICATION_CHANNEL_ID, NOTIFICATION_TYPE } from "@/constants/Notification";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  RETIRED_CHANNEL_ID,
+} from "@/constants/Notification";
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { NotificationSettings } from "@/types/notification";
 import {
@@ -80,6 +84,34 @@ describe("notification channels", () => {
 
     expect(deleted).toHaveBeenCalledWith(id);
   });
+
+  // Nothing posts on a retired channel, so its entry leaves the device's settings.
+  it.each(Object.values(RETIRED_CHANNEL_ID))("deletes the retired channel %s", async (id) => {
+    channels.mockResolvedValue([{ id }]);
+
+    await createNotificationChannels(settings(true));
+
+    expect(deleted).toHaveBeenCalledWith(id);
+  });
+
+  it.each(Object.values(RETIRED_CHANNEL_ID))("never makes the retired channel %s", async (id) => {
+    await createNotificationChannels(settings(true));
+
+    expect(created.mock.calls.map(([made]) => made)).not.toContain(id);
+  });
+
+  it.each(Object.values(RETIRED_CHANNEL_ID))(
+    "asks for an update while the retired channel %s is on the device",
+    async (id) => {
+      await createNotificationChannels(settings(true));
+      channels.mockResolvedValue([
+        ...created.mock.calls.map(([made, { sound }]) => ({ id: made, sound })),
+        { id },
+      ]);
+
+      expect(await shouldUpdateChannels(settings(true))).toBe(true);
+    }
+  );
 
   it("asks for new channels once a vibration setting changes, and only then", async () => {
     await createNotificationChannels(settings(true));

@@ -58,7 +58,10 @@ describe("qada notification channel", () => {
 
   it("leaves every other channel alone", async () => {
     const current = await setupQadaNotificationChannel(SOUND, [], true);
-    channels.mockResolvedValue([{ id: NOTIFICATION_CHANNEL_ID.REMINDER }, { id: current }]);
+    channels.mockResolvedValue([
+      { id: NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER },
+      { id: current },
+    ]);
     deleted.mockClear();
 
     await setupQadaNotificationChannel(SOUND, [], true);
