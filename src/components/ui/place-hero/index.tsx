@@ -6,7 +6,7 @@ import Svg, { Path } from "react-native-svg";
 import { useRestingSurface } from "@/components/ui/material/edge";
 import { Pill, PILL_TONE } from "@/components/ui/pill";
 import { Text } from "@/components/ui/text";
-import { useIsDarkTheme } from "@/components/ui/theme-color";
+import { useBrightness } from "@/components/ui/theme-color";
 import { VStack } from "@/components/ui/vstack";
 import { BRIGHTNESS, PLACE_HERO_PAINT, type Brightness } from "@/constants/Palette";
 import type { PlaceHeroTone } from "@/constants/PlaceHero";
@@ -51,11 +51,10 @@ type Props = {
 /** The place the times are for, on its tone's tinted sky with a skyline. */
 export const PlaceHero = ({ tone, kicker, title, subtitle }: Props) => {
   const { t } = useTranslation();
-  const dark = useIsDarkTheme();
   const resting = useRestingSurface({ owner: PLACE_HERO_PART.FRAME, radius: "$hero" });
   const [size, setSize] = useState({ width: 0, height: 0 });
 
-  const brightness = dark ? BRIGHTNESS.DARK : BRIGHTNESS.LIGHT;
+  const brightness = useBrightness();
   const paint = PLACE_HERO_PAINT[tone][brightness];
   const stops = paint.stops.map(({ color, at }) => `${color.hex} ${at}%`).join(", ");
 
