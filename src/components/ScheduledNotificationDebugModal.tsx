@@ -207,7 +207,7 @@ const NotificationDebugModalBody: FC<Pick<Props, "onClose">> = ({ onClose }) => 
                         <Text color="$typography" fontWeight="600" size="xs">
                           #{index + 1}
                         </Text>
-                        <Badge size="sm" variant="outline">
+                        <Badge size="sm">
                           <Badge.Text size="sm">{getNotificationType(notification)}</Badge.Text>
                         </Badge>
                       </HStack>

@@ -146,7 +146,7 @@ const NotificationTypePanel: FC<Props> = ({
                     {title}
                   </Text>
                   {hasTiming && (
-                    <Badge size="sm" variant="outline">
+                    <Badge size="sm">
                       <Badge.Text>
                         {t("common.minute", {
                           count: (defaults as NotificationWithTiming).timing,
