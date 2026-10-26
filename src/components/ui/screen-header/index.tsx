@@ -151,7 +151,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
         {title}
       </Text>
       {subtitle && (
-        <Text size="sm" typography="helper" color="$muted">
+        <Text size="sm" typography="helper" color="$mutedSky">
           {subtitle}
         </Text>
       )}
