@@ -2,10 +2,11 @@ import { Platform, StyleSheet } from "react-native";
 import { screen } from "@testing-library/react-native";
 import { getTokenValue, Theme } from "tamagui";
 
-import { Material } from "@/components/ui/material";
+import { MATERIAL, Material } from "@/components/ui/material";
 import { BLUR_INTENSITY } from "@/constants/Blur";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
+import { PlatformType } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("expo-blur", () => {
@@ -31,21 +32,21 @@ const fill = () => StyleSheet.flatten(screen.getByTestId("material").props.style
 
 beforeEach(() => {
   mockReduceTransparency = false;
-  setPlatform("ios", "26.0");
+  setPlatform(PlatformType.IOS, "26.0");
 });
 
 afterEach(() => setPlatform(originalOS, originalVersion));
 
 describe("Material", () => {
   it("blurs a float material at the float intensity on iOS", async () => {
-    await renderWithTheme(<Material testID="material" material="float" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(screen.getByTestId("blur-view").props.intensity).toBe(BLUR_INTENSITY.FLOAT);
   });
 
   // BlurView ignores borderRadius unless it clips, so its corners would show.
   it("clips the blur to its rounded corners", async () => {
-    await renderWithTheme(<Material testID="material" material="float" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(StyleSheet.flatten(screen.getByTestId("blur-view").props.style)).toMatchObject({
       overflow: "hidden",
@@ -53,42 +54,42 @@ describe("Material", () => {
   });
 
   it("blurs a sheet header at the sheet intensity", async () => {
-    await renderWithTheme(<Material testID="material" material="sheetHeader" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.SHEET_HEADER} />);
 
     expect(screen.getByTestId("blur-view").props.intensity).toBe(BLUR_INTENSITY.SHEET);
   });
 
   it("tints the blur with the translucent float colour", async () => {
-    await renderWithTheme(<Material testID="material" material="float" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(fill().backgroundColor).toBe(NEDAA_LIGHT.surfaceFloat.hex);
   });
 
   it("draws the float colour at full alpha and no blur under Reduce Transparency", async () => {
     mockReduceTransparency = true;
-    await renderWithTheme(<Material testID="material" material="float" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(screen.queryByTestId("blur-view")).toBeNull();
     expect(fill().backgroundColor).toBe(`${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`);
   });
 
   it("draws no blur on Android 30", async () => {
-    setPlatform("android", 30);
-    await renderWithTheme(<Material testID="material" material="float" />);
+    setPlatform(PlatformType.ANDROID, 30);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(screen.queryByTestId("blur-view")).toBeNull();
   });
 
   it("draws no blur on Android 34 without a blur target", async () => {
-    setPlatform("android", 34);
-    await renderWithTheme(<Material testID="material" material="float" />);
+    setPlatform(PlatformType.ANDROID, 34);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(screen.queryByTestId("blur-view")).toBeNull();
   });
 
   // The float colour carries the tint; the thin material adds saturation.
   it("tints the light theme's blur with the thin light material", async () => {
-    await renderWithTheme(<Material testID="material" material="float" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(screen.getByTestId("blur-view").props.tint).toBe("systemUltraThinMaterialLight");
   });
@@ -96,7 +97,7 @@ describe("Material", () => {
   it("tints the dark theme's blur with the thin dark material", async () => {
     await renderWithTheme(
       <Theme name="dark">
-        <Material testID="material" material="float" />
+        <Material testID="material" material={MATERIAL.FLOAT} />
       </Theme>
     );
 
@@ -105,7 +106,9 @@ describe("Material", () => {
 
   // A sheet header is the top of a sheet: its lower edge meets the body square.
   it("rounds a sheet header and its blur at the top corners only", async () => {
-    await renderWithTheme(<Material testID="material" material="sheetHeader" radius="$sheet" />);
+    await renderWithTheme(
+      <Material testID="material" material={MATERIAL.SHEET_HEADER} radius="$sheet" />
+    );
     const sheet = getTokenValue("$sheet", "radius");
     const blur = StyleSheet.flatten(screen.getByTestId("blur-view").props.style);
 
@@ -119,12 +122,12 @@ describe("Material", () => {
 
   // Android elevation shows through a see-through fill, so it is never set.
   it.each([
-    ["ios", "26.0"],
-    ["android", 34],
-    ["android", 30],
+    [PlatformType.IOS, "26.0"],
+    [PlatformType.ANDROID, 34],
+    [PlatformType.ANDROID, 30],
   ] as const)("lifts with boxShadow alone on %s %s", async (os, version) => {
     setPlatform(os, version);
-    await renderWithTheme(<Material testID="material" material="float" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} />);
 
     expect(fill().boxShadow).toBe(ELEVATION.e2.boxShadow.light);
     expect(fill().elevation ?? 0).toBe(0);
@@ -132,14 +135,14 @@ describe("Material", () => {
 
   // The header lies flat on its own sheet.
   it("lifts a sheet header not at all", async () => {
-    await renderWithTheme(<Material testID="material" material="sheetHeader" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.SHEET_HEADER} />);
 
     expect(fill().boxShadow).toBeUndefined();
   });
 
   // A 999 corner is wider than the bar, so the lit line follows the curve.
   it("lights a pill's top edge along its curve", async () => {
-    await renderWithTheme(<Material testID="material" material="float" radius="$pill" />);
+    await renderWithTheme(<Material testID="material" material={MATERIAL.FLOAT} radius="$pill" />);
     const edge = StyleSheet.flatten(screen.getByTestId("material-highlight").props.style);
     const pill = getTokenValue("$pill", "radius");
 
