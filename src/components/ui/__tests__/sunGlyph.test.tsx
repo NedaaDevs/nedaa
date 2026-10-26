@@ -1,4 +1,5 @@
-import { screen } from "@testing-library/react-native";
+import { Animated } from "react-native";
+import { act, screen } from "@testing-library/react-native";
 
 import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SunGlyph } from "@/components/ui/sky-background/SunGlyph";
@@ -51,5 +52,93 @@ describe("SunGlyph", () => {
     const circles = screen.container.queryAll((node) => node.type === "RNSVGCircle");
 
     expect(circles.map((node) => node.props.r)).toEqual([SUN_GLYPH.bloom, SUN_GLYPH.core]);
+  });
+});
+
+describe("SunGlyph turn", () => {
+  /** The share of a turn the rays stood at when they last stopped. */
+  const STOPPED_AT = 0.25;
+  type Leg = {
+    duration: number | undefined;
+    end: Parameters<Animated.CompositeAnimation["start"]>[0];
+  };
+  let legs: Leg[];
+  let loops: jest.SpyInstance;
+
+  const Sun = ({ reduced = false }: { reduced?: boolean }) => (
+    <SunGlyph cx={50} cy={50} width={300} height={200} reduced={reduced} />
+  );
+
+  /** The rays say they stopped at `at` once the test runs `later`. */
+  const stoppedAt = (at: number) => {
+    let report: () => void = () => {};
+    jest.spyOn(Animated.Value.prototype, "stopAnimation").mockImplementation((done) => {
+      report = () => done?.(at);
+    });
+    return { later: () => report() };
+  };
+
+  beforeEach(() => {
+    legs = [];
+    const timing = Animated.timing;
+    // Jest never runs a native-driver leg; each one ends when a test says so.
+    jest.spyOn(Animated, "timing").mockImplementation((value, config) => {
+      const leg = timing(value, config);
+      return {
+        ...leg,
+        start: (end) => {
+          legs.push({ duration: config.duration, end });
+        },
+      };
+    });
+    loops = jest.spyOn(Animated, "loop");
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it("turns whole turns from rest", async () => {
+    const { later } = stoppedAt(0);
+    await renderWithTheme(<Sun />);
+    later();
+
+    expect(loops).toHaveBeenCalledTimes(1);
+    expect(legs).toEqual([]);
+  });
+
+  // A native loop goes back to the angle it began at on every turn.
+  it("ends the turn it stopped in, then turns whole turns from 0", async () => {
+    const { later } = stoppedAt(STOPPED_AT);
+    const set = jest.spyOn(Animated.Value.prototype, "setValue");
+    await renderWithTheme(<Sun />);
+    later();
+
+    expect(legs.map((leg) => leg.duration)).toEqual([(1 - STOPPED_AT) * SUN_GLYPH.spinMs]);
+    expect(loops).not.toHaveBeenCalled();
+
+    await act(() => legs[0].end?.({ finished: true }));
+
+    expect(set).toHaveBeenCalledWith(0);
+    expect(loops).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts no turn once paused before it reads where it stopped", async () => {
+    const { later } = stoppedAt(STOPPED_AT);
+    const { rerender } = await renderWithTheme(<Sun />);
+
+    await rerender(<Sun reduced />);
+    later();
+
+    expect(legs).toEqual([]);
+    expect(loops).not.toHaveBeenCalled();
+  });
+
+  it("starts no whole turns once paused, though the turn it ended in lands", async () => {
+    const { later } = stoppedAt(STOPPED_AT);
+    const { rerender } = await renderWithTheme(<Sun />);
+    later();
+
+    await rerender(<Sun reduced />);
+    await act(() => legs[0].end?.({ finished: true }));
+
+    expect(loops).not.toHaveBeenCalled();
   });
 });
