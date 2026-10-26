@@ -264,6 +264,29 @@ describe("readLocation", () => {
 
       expect(await failureOf(readLocation(DEADLINE_MS))).toBe(LOCATION_FAILURE.UNAVAILABLE);
     });
+
+    describe("when the cached-fix read stalls", () => {
+      // Longer than any limit the cached-fix read may have.
+      const STALL_MS = 10_000;
+
+      beforeEach(() => {
+        jest.useFakeTimers();
+        mockGetLastKnownPositionAsync.mockReturnValue(never());
+      });
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
+      it("fails as unavailable, not held by the stalled read", async () => {
+        const outcome = outcomeOf(readLocation(DEADLINE_MS));
+
+        await jest.advanceTimersByTimeAsync(STALL_MS);
+
+        expect(outcome).toHaveBeenCalledWith({
+          error: expect.objectContaining({ kind: LOCATION_FAILURE.UNAVAILABLE }),
+        });
+      });
+    });
   });
 
   it("fails as services off with no fallback after a native failure", async () => {
