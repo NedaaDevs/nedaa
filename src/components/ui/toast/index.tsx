@@ -20,7 +20,6 @@ import { TILE_SIZE } from "@/components/ui/icon-tile";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { Text } from "@/components/ui/text";
 import { FONT_SIZES, SIZE_MAP } from "@/components/ui/text/sizing";
-import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { TOAST_KIND, TOAST_MOTION, type ToastKind } from "@/constants/Toast";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { ToastAction } from "@/utils/toast";
@@ -106,7 +105,6 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
     <Material
       testID={TOAST_PART.FRAME}
       material={MATERIAL.FLOAT}
-      elevation={ELEVATION_LEVEL.E2}
       flexDirection="row"
       alignItems="center"
       gap="$2.5"
