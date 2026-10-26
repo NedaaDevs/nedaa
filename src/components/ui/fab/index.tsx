@@ -12,7 +12,6 @@ import type { GetProps } from "tamagui";
 import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { usePressScale } from "@/components/ui/pressable/pressScale";
-import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { PlatformType } from "@/enums/app";
 import { useTextScale } from "@/hooks/useTextScale";
 
@@ -133,7 +132,6 @@ const FabRoot = ({ children, ...props }: FabProps) => {
       <Material
         testID={FAB_PART.SURFACE}
         material={MATERIAL.FLOAT}
-        elevation={ELEVATION_LEVEL.E2}
         radius="pill"
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
