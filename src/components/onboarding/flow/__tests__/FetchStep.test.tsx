@@ -53,7 +53,7 @@ jest.mock(
 const t = i18n.t.bind(i18n);
 const CITY = { locationChoice: LOCATION_CHOICE.CITY };
 
-const mockFix = jest.fn(async () => {});
+const mockFix = jest.fn(async (_wanted?: () => boolean) => {});
 const mockLoad = jest.fn(async (_force?: boolean) => true);
 /** A fetch that lands: the store gets the day for a verified place. */
 const fetchLands = () =>
@@ -452,6 +452,21 @@ it("loads nothing from a try that lost to the deadline when its fix lands during
   await settle();
 
   expect(mockLoad).toHaveBeenCalledTimes(1);
+});
+
+// The late fix would move the place under the retry's load, and no load
+// would follow it.
+it("gives up on its fix once the try loses to the deadline", async () => {
+  silencedWarn();
+  mockFix.mockReturnValue(never());
+  await renderWithTheme(<FetchStep {...stepProps()} />);
+  await settle();
+  const wanted = mockFix.mock.calls[0]?.[0];
+  expect(wanted?.()).toBe(true);
+
+  await act(() => jest.advanceTimersByTimeAsync(FETCH_ATTEMPT_TIMEOUT_MS));
+
+  expect(wanted?.()).toBe(false);
 });
 
 it("offers a city during loading; a fetch that lands after the picker opened does not move on", async () => {

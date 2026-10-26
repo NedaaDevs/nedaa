@@ -6,6 +6,7 @@ import * as Location from "@/adapters/location";
 // Types
 import {
   initialLocationDetails,
+  type Coords,
   type LocationDetails,
   type ManualLocation,
 } from "@/types/location";
@@ -52,8 +53,6 @@ const withKnownError = (details: LocationDetails): LocationDetails => ({
   ...details,
   error: isLocationFailure(details.error) ? details.error : null,
 });
-
-type Coords = { latitude: number; longitude: number };
 
 /** How the place is set: the mode, and the city chosen and when. */
 type PlaceChoice = {
@@ -106,10 +105,7 @@ export type LocationStore = {
   };
   isLocationPermissionGranted: boolean;
   isGettingLocation: boolean;
-  lastKnownCoords: {
-    latitude: number;
-    longitude: number;
-  } | null;
+  lastKnownCoords: Coords | null;
   autoUpdateLocation: boolean;
   locationMode: LocationModeValue;
   manualLocation: ManualLocation | null;
@@ -120,7 +116,8 @@ export type LocationStore = {
   pendingCityChange: CityChangeOffer | null;
   /** The last new city offered this session; it is not offered again. */
   cityOffered: string | null;
-  initializeLocation: () => Promise<void>;
+  /** Takes the device fix; it applies nothing once `wanted` turns false. */
+  initializeLocation: (wanted?: () => boolean) => Promise<void>;
   setAutoUpdateLocation: (value: boolean) => void;
   updateCurrentLocation: () => Promise<void>;
   /** Reads the device position; on success it replaces a chosen city. */
@@ -128,7 +125,7 @@ export type LocationStore = {
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
   updateAddressTranslation: () => Promise<boolean>;
   /** The place's zone, as the times fetched for it state. */
-  setTimezone: (tz: string) => Promise<void>;
+  setTimezone: (tz: string) => void;
   checkAndPromptCityChange: () => Promise<void>;
   /** Puts the city-change sheet up with this offer. */
   offerCityChange: (offer: CityChangeOffer) => void;
@@ -158,9 +155,14 @@ export const useLocationStore = create<LocationStore>()(
         manualLocation: null,
         manualLocationChosenAt: null,
         // Initialize location when permission is granted
-        initializeLocation: async () => {
-          // A city chosen during the fix is the user's; the fix leaves it.
-          const stillAutomatic = () => {
+        initializeLocation: async (wanted = () => true) => {
+          // A city chosen during the fix is the user's, and a caller that gave
+          // up has moved on; either way the fix leaves the place.
+          const applies = () => {
+            if (!wanted()) {
+              log.i("Init", "the caller gave up on the fix; the device place is not applied");
+              return false;
+            }
             if (get().locationMode === LocationMode.DEVICE) return true;
             log.i("Init", "a city was chosen during the fix; the device place is not applied");
             return false;
@@ -173,7 +175,7 @@ export const useLocationStore = create<LocationStore>()(
             const { location, source } = await readLocation();
             read = true;
             log.i("Init", `initial location retrieved (${source})`);
-            if (!stillAutomatic()) return;
+            if (!applies()) return;
 
             // A saved place stands until the fix's timezone resolves; with none, the
             // fix is kept even when address services are unavailable.
@@ -185,8 +187,7 @@ export const useLocationStore = create<LocationStore>()(
                       ...state.locationDetails,
                       coords: location.coords,
                       error: null,
-                      fixSource: source,
-                      fixedAt: location.timestamp,
+                      fix: { source, at: location.timestamp },
                       isLoading: false,
                     },
                     isLocationPermissionGranted: true,
@@ -207,7 +208,7 @@ export const useLocationStore = create<LocationStore>()(
                 return null;
               });
 
-            if (!stillAutomatic()) return;
+            if (!applies()) return;
             const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
             if (!timezone) throw new Error(i18n.t("location.update.error"));
 
@@ -221,8 +222,7 @@ export const useLocationStore = create<LocationStore>()(
                 },
                 timezone,
                 error: null,
-                fixSource: source,
-                fixedAt: location.timestamp,
+                fix: { source, at: location.timestamp },
                 isLoading: false,
               },
               localizedLocation: {
@@ -238,8 +238,8 @@ export const useLocationStore = create<LocationStore>()(
           } catch (error) {
             const cause =
               error instanceof Error ? error : new Error("Failed to initialize location");
-            // A chosen city abandons the fix: an info log, no device error.
-            if (get().locationMode !== LocationMode.DEVICE) {
+            // An abandoned fix: an info log, no device error.
+            if (!wanted() || get().locationMode !== LocationMode.DEVICE) {
               log.i("Init", `abandoned fix failed: ${cause.message}`);
             } else {
               log.e("Init", "initialize location failed", cause);
@@ -289,8 +289,7 @@ export const useLocationStore = create<LocationStore>()(
                 coords: location.coords,
                 address,
                 error: null,
-                fixSource: source,
-                fixedAt: location.timestamp,
+                fix: { source, at: location.timestamp },
               },
               lastKnownCoords: {
                 latitude: location.coords.latitude,
@@ -351,7 +350,7 @@ export const useLocationStore = create<LocationStore>()(
           log.i("Device", "device location adopted over the chosen city");
         },
 
-        setTimezone: async (tz) => {
+        setTimezone: (tz) => {
           set((state) => ({ locationDetails: { ...state.locationDetails, timezone: tz } }));
         },
 
@@ -495,8 +494,7 @@ export const useLocationStore = create<LocationStore>()(
               address: { country: location.country.name, city: location.name },
               timezone: location.timezone,
               error: null,
-              fixSource: null,
-              fixedAt: null,
+              fix: null,
               isLoading: false,
             },
             localizedLocation: { country: location.country.name, city: location.name },

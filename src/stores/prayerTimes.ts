@@ -14,6 +14,7 @@ import {
   Provider,
 } from "@/types/prayerTimes";
 import { ErrorResponse } from "@/types/api";
+import type { Coords } from "@/types/location";
 
 // Api
 import { prayerTimesApi } from "@/api/prayerTimes.api";
@@ -29,10 +30,12 @@ import providerSettingsStore from "@/stores/providerSettings";
 import { dateToInt, timeZonedNow } from "@/utils/date";
 import { earliest, firstAfter, lastBefore, latest } from "@/utils/prayerSelection";
 import { checkLocationPermission } from "@/utils/location";
-import { placeFromFacts, sameCoords, timesMoved, type Coords } from "@/utils/placeFromFacts";
+import { placeFromFacts, timesMoved } from "@/utils/placeFromFacts";
 import { LocationMode } from "@/enums/location";
 import { TIMES_PLACE } from "@/constants/Location";
+import { TIMES_FETCH, type TimesFetch } from "@/constants/PrayerTimes";
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 
 // Adapters
 import { getAdapterByProviderId } from "@/adapters/providers";
@@ -75,10 +78,13 @@ export type PrayerTimesStore = {
   providers: Provider[];
   getPrayerTimes: (yearOverride?: number, month?: number) => Promise<PrayerTimesResponse>;
   getProviders: () => Promise<Provider[]>;
-  getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<boolean>;
-  /** Marks where the stored days were fetched. */
-  markTimesFor: (coords: Coords) => void;
-  /** Resolves false while a year the load fetched is still owed. */
+  getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<TimesFetch>;
+  /** Fetches the place's years; once all land for it, cleans up, then marks. */
+  refetchPlaceTimes: () => Promise<PlaceRefetch>;
+  /**
+   * Resolves false while a year the load fetched is still owed. A load the
+   * place moved under owes none: the move's own load fetches the new place.
+   */
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<boolean>;
   /** Loads for the place the location store holds; takes no device fix. */
   loadPrayerTimesAtCurrentPlace: (forceGetAndStore?: boolean) => Promise<boolean>;
@@ -138,16 +144,28 @@ const takeDeviceFixOnce = async (get: GetTimes): Promise<void> => {
     } catch (error) {
       log.w(
         "Load",
-        `current location failed; falling back to saved or default coordinates: ${(error as Error)?.message ?? error}`
+        `current location failed; falling back to saved or default coordinates: ${errorText(error)}`
       );
     }
   }
 };
 
 /** Whether a refetch lets the load stand, and whether all its days are new. */
-type Refetch = { stands: boolean; complete: boolean };
+type Landed = { stands: boolean; complete: boolean };
+/** A refetch's result, or that the place moved while it ran. */
+export type Refetch = Landed | typeof TIMES_FETCH.SUPERSEDED;
+/** A place refetch's result; `fetched` when this year's days landed. */
+export type PlaceRefetch = (Landed & { fetched: boolean }) | typeof TIMES_FETCH.SUPERSEDED;
 
-const NOT_STORED: Refetch = { stands: false, complete: false };
+const ALL_LANDED: Landed = { stands: true, complete: true };
+const NOT_STORED: Landed = { stands: false, complete: false };
+
+/** One year's fetch; `needed` when a kept or read day is in that year. */
+const yearLanded = (fetch: TimesFetch, needed: boolean): Refetch => {
+  if (fetch === TIMES_FETCH.SUPERSEDED) return fetch;
+  const stored = fetch === TIMES_FETCH.STORED;
+  return { stands: stored || !needed, complete: stored };
+};
 
 /** The load fails if a kept or read day's year fails to land. */
 const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<Refetch> => {
@@ -156,17 +174,15 @@ const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<Refetch> => 
   if (month === 1) {
     // Last year's days older than the kept ones are cleaned up, so none stay.
     const needed = getYear(subDays(now, KEPT_PAST_DAYS)) < year;
-    if (!needed) return { stands: true, complete: true };
-    const stored = await get().getAndStorePrayerTimes(year - 1);
-    return { stands: stored, complete: stored };
+    if (!needed) return ALL_LANDED;
+    return yearLanded(await get().getAndStorePrayerTimes(year - 1), needed);
   }
   if (month === 12) {
     // Next year's days are read later, so they must be this place's too.
     const needed = getYear(addDays(now, READ_AHEAD_DAYS)) > year;
-    const stored = await get().getAndStorePrayerTimes(year + 1);
-    return { stands: stored || !needed, complete: stored };
+    return yearLanded(await get().getAndStorePrayerTimes(year + 1), needed);
   }
-  return { stands: true, complete: true };
+  return ALL_LANDED;
 };
 
 /** The read-ahead window ends in next year on a day not stored. */
@@ -175,8 +191,35 @@ const nextYearUnstored = (now: Date, read: DayPrayerTimes[] | null): boolean => 
   return getYear(last) > getYear(now) && !read?.some(({ date }) => date === dateToInt(last));
 };
 
+/** The place's days from its oldest kept day on, then the adjacent year's. */
+const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch> => {
+  const { coords, timezone } = locationStore.getState().locationDetails;
+  // The fetch reads the place from the store as it starts.
+  const fetchedFor = coordsOf(coords);
+  const now = timeZonedNow(timezone);
+  // This year's fetch starts at the month of its oldest kept day.
+  const oldestKept = subDays(now, KEPT_PAST_DAYS);
+  const firstMonth = getYear(oldestKept) === getYear(now) ? getMonth(oldestKept) + 1 : 1;
+  const thisYear = await get().getAndStorePrayerTimes(undefined, firstMonth);
+  if (thisYear === TIMES_FETCH.SUPERSEDED) return thisYear;
+  const fetched = thisYear === TIMES_FETCH.STORED;
+  const refetch = fetched ? await storeAdjacentYear(get, now) : NOT_STORED;
+  if (refetch === TIMES_FETCH.SUPERSEDED) return refetch;
+  if (!refetch.complete) return { ...refetch, fetched };
+  // A move after this year's fetch sent the adjacent year's for the new place.
+  if (timesMoved(fetchedFor, locationStore.getState().locationDetails.coords)) {
+    log.i("Fetch", "refetch superseded: the place moved between its years");
+    return TIMES_FETCH.SUPERSEDED;
+  }
+  // Rows before the kept days keep the old place; the widget reads the oldest.
+  await get().cleanupOldData();
+  // Marked last: until every year lands, a later refetch runs again.
+  set({ timesCoords: fetchedFor });
+  return { ...refetch, fetched };
+};
+
 /** The best-effort next-year fetch; a load started during it waits for it. */
-let readAhead: Promise<boolean> = Promise.resolve(true);
+let readAhead: Promise<TimesFetch> = Promise.resolve(TIMES_FETCH.STORED);
 
 /** The body of both load verbs; the place to load is read after `takeFix`. */
 const loadTimes = async (
@@ -221,7 +264,7 @@ const loadTimes = async (
     ].filter(Boolean);
     const placeSettled = verified && !placeNewlyVerified;
     if (placeSettled && get().timesCoords === null && (yesterdayTimings || twoWeeksTimings)) {
-      get().markTimesFor(placeBeforeFix);
+      set({ timesCoords: coordsOf(placeBeforeFix) });
     }
     // Days fetched for another place count as missing; a newly verified
     // place stays best effort.
@@ -239,38 +282,31 @@ const loadTimes = async (
             ? "place moved"
             : "place verified";
       log.i("Load", `refetching: ${reason}`);
-      const currentYear = getYear(now);
-      const currentMonth = getMonth(now) + 1;
-      // This year's fetch starts at the month of its oldest kept day.
-      const oldestKept = subDays(now, KEPT_PAST_DAYS);
-      const firstMonth =
-        getYear(oldestKept) === currentYear ? getMonth(oldestKept) + 1 : currentMonth;
-
-      // The fetch reads the place from the store as it starts.
-      const fetchedFor = locationStore.getState().locationDetails.coords;
-      const refetch = (await get().getAndStorePrayerTimes(undefined, firstMonth))
-        ? await storeAdjacentYear(get, now)
-        : NOT_STORED;
-      landed = refetch.complete;
-
-      if (refetch.stands) {
-        await get().refreshTimingsFromDb();
-        // After the refresh, so the old rows never read as verified.
-        set({ usingDefaultLocation: !verified });
-        // Marked last: until every year lands, a later load fetches again.
-        if (refetch.complete) get().markTimesFor(fetchedFor);
-      } else if (required) {
-        throw new Error("Failed to fetch and store prayer times");
+      const refetch = await get().refetchPlaceTimes();
+      if (refetch === TIMES_FETCH.SUPERSEDED) {
+        // The move's own load fetches the new place's days.
+        log.i("Load", "refetch superseded: the place moved during it");
       } else {
-        // The default place's rows and flag stand; the next load retries.
-        log.w("Load", "place-verified refetch failed; the default place's times stay");
+        landed = refetch.complete;
+        if (refetch.stands) {
+          await get().refreshTimingsFromDb();
+          // After the refresh, so the old rows never read as verified.
+          set({ usingDefaultLocation: !verified });
+        } else if (required) {
+          throw new Error("Failed to fetch and store prayer times");
+        } else {
+          // The default place's rows and flag stand; the next load retries.
+          log.w("Load", "place-verified refetch failed; the default place's times stay");
+        }
       }
     } else if (nextYearUnstored(now, twoWeeksTimings)) {
       // Best effort: the stored days stand, and the next load asks again.
       log.i("Load", "refetching: next year's read-ahead days");
       readAhead = get().getAndStorePrayerTimes(getYear(now) + 1);
-      landed = await readAhead;
-      if (landed) await get().refreshTimingsFromDb();
+      const ahead = await readAhead;
+      // A superseded fetch leaves next year's days to the move's own load.
+      landed = ahead !== TIMES_FETCH.FAILED;
+      if (ahead === TIMES_FETCH.STORED) await get().refreshTimingsFromDb();
     }
 
     await get().cleanupOldData();
@@ -360,17 +396,23 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           }
         },
 
-        getAndStorePrayerTimes: async (yearOverride?: number, month?: number): Promise<boolean> => {
+        getAndStorePrayerTimes: async (
+          yearOverride?: number,
+          month?: number
+        ): Promise<TimesFetch> => {
+          const asked = `${yearOverride ?? "current"}/${month ?? "all"}`;
           try {
             // The fetch reads the place from the store as it starts.
             const fetchedFor = coordsOf(locationStore.getState().locationDetails.coords);
             const data = await get().getPrayerTimes(yearOverride, month);
 
-            // A place that moved during the fetch keeps its own zone.
+            // The place moved: the move's own load fetches its days.
             const place = locationStore.getState();
-            if (sameCoords(place.locationDetails.coords, fetchedFor)) {
-              void place.setTimezone(data.timezone);
+            if (timesMoved(fetchedFor, place.locationDetails.coords)) {
+              log.i("Fetch", `superseded: the place moved during the fetch (${asked})`);
+              return TIMES_FETCH.SUPERSEDED;
             }
+            place.setTimezone(data.timezone);
 
             const insertionResult = await PrayerTimesDB.insertPrayerTimes(data);
 
@@ -389,21 +431,19 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
             reloadPrayerWidgets();
             await syncWidgetSnapshot();
 
-            log.i("Fetch", `stored prayer times (${yearOverride ?? "current"}/${month ?? "all"})`);
-            return true;
+            log.i("Fetch", `stored prayer times (${asked})`);
+            return TIMES_FETCH.STORED;
           } catch (error: any) {
             log.e(
               "Fetch",
               "getAndStorePrayerTimes failed",
               error instanceof Error ? error : undefined
             );
-            return false;
+            return TIMES_FETCH.FAILED;
           }
         },
 
-        markTimesFor: (coords) => {
-          set({ timesCoords: coordsOf(coords) });
-        },
+        refetchPlaceTimes: () => refetchYears(set, get),
 
         clearError: () => {
           set({ hasError: false, errorMessage: "" });
@@ -497,7 +537,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             return await PrayerTimesDB.cleanData(cutoffDate);
           } catch (error) {
-            log.w("DB", `cleanup of old rows failed: ${(error as Error)?.message ?? error}`);
+            log.w("DB", `cleanup of old rows failed: ${errorText(error)}`);
             return false;
           }
         },

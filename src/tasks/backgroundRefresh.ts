@@ -5,6 +5,10 @@ import { Platform } from "react-native";
 // Enums
 import { PlatformType } from "@/enums/app";
 
+// Constants
+import { BACKGROUND_EVENT, TASK_RESULT } from "@/constants/BackgroundTask";
+import { TIMES_FETCH } from "@/constants/PrayerTimes";
+
 // Services
 import { PrayerTimesDB } from "@/services/db";
 import { BackgroundTaskLog } from "@/services/background-task-log";
@@ -19,7 +23,7 @@ import { useCustomSoundsStore } from "@/stores/customSounds";
 import { useQuranRemindersStore } from "@/stores/quranReminders";
 
 // Utils
-import { timeZonedNow, dateToInt, getTimezoneMonth, getTimezoneYear } from "@/utils/date";
+import { timeZonedNow, dateToInt } from "@/utils/date";
 import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
 import { timesMoved } from "@/utils/placeFromFacts";
 import { AppLogger } from "@/utils/appLogger";
@@ -56,8 +60,8 @@ const waitForBackgroundStores = async (): Promise<string[]> => {
           timedOut.push(name);
           void BackgroundTaskLog.log(
             BACKGROUND_REFRESH_TASK,
-            "hydration_timeout",
-            "skipped",
+            BACKGROUND_EVENT.HYDRATION_TIMEOUT,
+            TASK_RESULT.SKIPPED,
             `${name} store not hydrated after ${BG_HYDRATION_TIMEOUT_MS}ms`
           );
         },
@@ -75,8 +79,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
   try {
     await BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
-      "task_started",
-      "success",
+      BACKGROUND_EVENT.TASK_STARTED,
+      TASK_RESULT.SUCCESS,
       `Started at ${new Date().toISOString()}`
     );
 
@@ -84,8 +88,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     if (notHydrated.length > 0) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
-        "hydration_incomplete",
-        "failed",
+        BACKGROUND_EVENT.HYDRATION_INCOMPLETE,
+        TASK_RESULT.FAILED,
         `run skipped: ${notHydrated.join(", ")} not hydrated`
       );
       return BackgroundTask.BackgroundTaskResult.Failed;
@@ -95,8 +99,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     if (!timezone) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
-        "no_timezone",
-        "skipped",
+        BACKGROUND_EVENT.NO_TIMEZONE,
+        TASK_RESULT.SKIPPED,
         "No timezone available, skipping"
       );
       return BackgroundTask.BackgroundTaskResult.Failed;
@@ -119,8 +123,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     if (!hasSufficientData || pendingReapply) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
-        "fetching_prayer_times",
-        "success",
+        BACKGROUND_EVENT.FETCHING_PRAYER_TIMES,
+        TASK_RESULT.SUCCESS,
         pendingReapply
           ? "Provider reapply pending, refetching"
           : placeMoved
@@ -129,47 +133,51 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
       );
 
       try {
-        const prayerTimesStore = usePrayerTimesStore.getState();
-        // The fetch reads the place from the store as it starts.
-        const fetchedFor = locationStore.getState().locationDetails.coords;
-        const success = await prayerTimesStore.getAndStorePrayerTimes();
-
-        if (success) {
-          // A late-December window crosses into January and the current-year
-          // fetch cannot cover it; best-effort, the next run retries.
-          const allLanded =
-            getTimezoneMonth(timezone) !== 12 ||
-            (await prayerTimesStore.getAndStorePrayerTimes(getTimezoneYear(timezone) + 1));
-          // Next year's days are read later, so the place mark and the
-          // reapply's clear wait for them too.
-          if (allLanded) {
-            prayerTimesStore.markTimesFor(fetchedFor);
-            if (pendingReapply) useProviderSettingsStore.getState().clearPendingReapply();
-          }
-          fetchedNewData = true;
-          await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "prayer_times_fetched", "success");
-        } else {
+        const refetch = await usePrayerTimesStore.getState().refetchPlaceTimes();
+        if (refetch === TIMES_FETCH.SUPERSEDED) {
+          // The move's own load fetches the new place's days.
           await BackgroundTaskLog.log(
             BACKGROUND_REFRESH_TASK,
-            "prayer_times_fetch_failed",
-            "failed",
-            "getAndStorePrayerTimes returned false"
+            BACKGROUND_EVENT.PRAYER_TIMES_SUPERSEDED,
+            TASK_RESULT.SKIPPED,
+            "the place moved during the fetch"
           );
+        } else {
+          // Another year's days keep the old settings until their fetch lands.
+          if (refetch.complete && pendingReapply) {
+            useProviderSettingsStore.getState().clearPendingReapply();
+          }
+          // This year's days count as fetched, though a next-year miss is owed.
+          if (refetch.fetched) {
+            fetchedNewData = true;
+            await BackgroundTaskLog.log(
+              BACKGROUND_REFRESH_TASK,
+              BACKGROUND_EVENT.PRAYER_TIMES_FETCHED,
+              TASK_RESULT.SUCCESS
+            );
+          } else {
+            await BackgroundTaskLog.log(
+              BACKGROUND_REFRESH_TASK,
+              BACKGROUND_EVENT.PRAYER_TIMES_FETCH_FAILED,
+              TASK_RESULT.FAILED,
+              "refetchPlaceTimes left the stored days"
+            );
+          }
         }
       } catch (fetchError) {
         const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
         await BackgroundTaskLog.log(
           BACKGROUND_REFRESH_TASK,
-          "prayer_times_fetch_error",
-          "failed",
+          BACKGROUND_EVENT.PRAYER_TIMES_FETCH_ERROR,
+          TASK_RESULT.FAILED,
           msg
         );
       }
     } else {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
-        "data_sufficient",
-        "skipped",
+        BACKGROUND_EVENT.DATA_SUFFICIENT,
+        TASK_RESULT.SKIPPED,
         `${futureData.length} days available, no fetch needed`
       );
     }
@@ -192,19 +200,24 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
       const durationMs = Date.now() - startTime;
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
-        "task_completed",
+        BACKGROUND_EVENT.TASK_COMPLETED,
         summary.result,
         `${summary.details}; fetched=${fetchedNewData}`,
         durationMs
       );
       // A skip (permission revoked, notifications off) is a user state, not a
       // system failure — a retry cannot resolve it, so the task reports Success.
-      if (summary.result === "failed") {
+      if (summary.result === TASK_RESULT.FAILED) {
         return BackgroundTask.BackgroundTaskResult.Failed;
       }
     } catch (scheduleError) {
       const msg = scheduleError instanceof Error ? scheduleError.message : String(scheduleError);
-      await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "schedule_failed", "failed", msg);
+      await BackgroundTaskLog.log(
+        BACKGROUND_REFRESH_TASK,
+        BACKGROUND_EVENT.SCHEDULE_FAILED,
+        TASK_RESULT.FAILED,
+        msg
+      );
       return BackgroundTask.BackgroundTaskResult.Failed;
     }
 
@@ -212,7 +225,13 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     const durationMs = Date.now() - startTime;
-    await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "task_error", "failed", msg, durationMs);
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.TASK_ERROR,
+      TASK_RESULT.FAILED,
+      msg,
+      durationMs
+    );
     return BackgroundTask.BackgroundTaskResult.Failed;
   } finally {
     // A headless process can die right after the task returns. The file logger
@@ -236,8 +255,8 @@ export const executeBackgroundRefresh = async (): Promise<BackgroundTask.Backgro
   if (current) {
     await BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
-      "run_coalesced",
-      "skipped",
+      BACKGROUND_EVENT.RUN_COALESCED,
+      TASK_RESULT.SKIPPED,
       "joined the run already in progress"
     );
     return current;
@@ -261,8 +280,8 @@ if (Platform.OS === PlatformType.IOS) {
   BackgroundTask.addExpirationListener(() => {
     void BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
-      "task_expired",
-      "failed",
+      BACKGROUND_EVENT.TASK_EXPIRED,
+      TASK_RESULT.FAILED,
       "iOS stopped the background run before completion"
     );
     AppLogger.flushAll();
@@ -276,8 +295,8 @@ export async function registerBackgroundRefresh(): Promise<boolean> {
       console.warn("[BackgroundRefresh] Background tasks are restricted on this device");
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
-        "registration",
-        "failed",
+        BACKGROUND_EVENT.REGISTRATION,
+        TASK_RESULT.FAILED,
         "Background tasks restricted"
       );
       return false;
@@ -294,12 +313,21 @@ export async function registerBackgroundRefresh(): Promise<boolean> {
     });
 
     console.log("[BackgroundRefresh] Task registered successfully");
-    await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "registered", "success");
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.REGISTERED,
+      TASK_RESULT.SUCCESS
+    );
     return true;
   } catch (error) {
     console.error("[BackgroundRefresh] Registration failed:", error);
     const msg = error instanceof Error ? error.message : String(error);
-    await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "registration_error", "failed", msg);
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.REGISTRATION_ERROR,
+      TASK_RESULT.FAILED,
+      msg
+    );
     return false;
   }
 }
@@ -313,6 +341,11 @@ export async function unregisterBackgroundRefresh(): Promise<void> {
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    await BackgroundTaskLog.log(BACKGROUND_REFRESH_TASK, "unregistration_error", "failed", msg);
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.UNREGISTRATION_ERROR,
+      TASK_RESULT.FAILED,
+      msg
+    );
   }
 }

@@ -1,4 +1,6 @@
-import { executeBackgroundRefresh } from "@/tasks/backgroundRefresh";
+import { BACKGROUND_EVENT, TASK_RESULT } from "@/constants/BackgroundTask";
+import { TIMES_FETCH } from "@/constants/PrayerTimes";
+import { BACKGROUND_REFRESH_TASK, executeBackgroundRefresh } from "@/tasks/backgroundRefresh";
 
 // The factories below read `hydratedPersist` eagerly, at the moment the SUT
 // imports a mocked store. babel-plugin-jest-hoist lifts the `jest.mock` calls
@@ -15,14 +17,13 @@ const hydratedPersist = {
 // rule is satisfied and the consts are initialised before any test calls them.
 const mockScheduleAll = jest.fn();
 const mockRefreshTimings = jest.fn();
-const mockGetAndStore = jest.fn();
+const mockRefetch = jest.fn();
 const mockClearPendingReapply = jest.fn();
 const mockAwaitPendingReapply = jest.fn();
 const mockGetByRange = jest.fn();
 const mockBgLog = jest.fn();
 const mockWaitForHydration = jest.fn();
 const mockSyncWidgetSnapshot = jest.fn(async () => {});
-const mockMarkTimes = jest.fn();
 /** Where the stored days were fetched; the place is always at MOCK_PLACE. */
 let mockTimesCoords: { latitude: number; longitude: number } | null = null;
 const MOCK_PLACE = { latitude: 24.7136, longitude: 46.6753 };
@@ -58,9 +59,8 @@ jest.mock("@/stores/notification", () => ({
 jest.mock("@/stores/prayerTimes", () => ({
   usePrayerTimesStore: {
     getState: () => ({
-      getAndStorePrayerTimes: mockGetAndStore,
+      refetchPlaceTimes: mockRefetch,
       refreshTimingsFromDb: mockRefreshTimings,
-      markTimesFor: mockMarkTimes,
       timesCoords: mockTimesCoords,
     }),
     persist: hydratedPersist,
@@ -104,11 +104,8 @@ jest.mock("@/utils/date", () => {
   const actual = jest.requireActual("@/utils/date");
   return {
     ...actual,
-    // All three read the real clock in production; the tests drive them from
-    // one `mockNow` so the December case is reachable.
+    // Reads the real clock in production; the tests drive it from `mockNow`.
     timeZonedNow: () => mockNow,
-    getTimezoneMonth: () => mockNow.getUTCMonth() + 1,
-    getTimezoneYear: () => mockNow.getUTCFullYear(),
   };
 });
 
@@ -120,6 +117,12 @@ const { addExpirationListener: mockAddExpirationListener } = jest.requireMock(
 
 // 4 rows = the today..today+3 range is fully covered → no fetch needed.
 const fourRows = [{ date: 1 }, { date: 2 }, { date: 3 }, { date: 4 }];
+
+// The refetch's outcomes, as the times store reports them.
+const LANDED = { stands: true, complete: true, fetched: true };
+const YEAR_OWED = { stands: true, complete: false, fetched: true };
+const NEXT_YEAR_FAILED = { stands: false, complete: false, fetched: true };
+const NOT_LANDED = { stands: false, complete: false, fetched: false };
 
 describe("executeBackgroundRefresh", () => {
   beforeEach(() => {
@@ -142,7 +145,7 @@ describe("executeBackgroundRefresh", () => {
     const result = await executeBackgroundRefresh();
 
     expect(result).toBe(2); // Failed
-    expect(mockGetAndStore).not.toHaveBeenCalled();
+    expect(mockRefetch).not.toHaveBeenCalled();
     expect(mockScheduleAll).not.toHaveBeenCalled();
   });
 
@@ -155,7 +158,7 @@ describe("executeBackgroundRefresh", () => {
     expect(mockRefreshTimings.mock.invocationCallOrder[0]).toBeLessThan(
       mockScheduleAll.mock.invocationCallOrder[0]
     );
-    expect(mockGetAndStore).not.toHaveBeenCalled();
+    expect(mockRefetch).not.toHaveBeenCalled();
   });
 
   it("writes the widget snapshot once the window has been refreshed", async () => {
@@ -170,11 +173,11 @@ describe("executeBackgroundRefresh", () => {
 
   it("fetches when the database holds fewer than 3 future days", async () => {
     mockGetByRange.mockResolvedValue([{ date: 1 }]);
-    mockGetAndStore.mockResolvedValue(true);
+    mockRefetch.mockResolvedValue(LANDED);
 
     await executeBackgroundRefresh();
 
-    expect(mockGetAndStore).toHaveBeenCalled();
+    expect(mockRefetch).toHaveBeenCalled();
     expect(mockScheduleAll).toHaveBeenCalledTimes(1);
   });
 
@@ -192,85 +195,87 @@ describe("executeBackgroundRefresh", () => {
 
   it("forces a refetch when a provider reapply is pending, then clears the flag", async () => {
     mockAwaitPendingReapply.mockResolvedValue(true);
-    mockGetAndStore.mockResolvedValue(true);
+    mockRefetch.mockResolvedValue(LANDED);
     // Data is sufficient — the pending reapply alone must force the fetch.
     mockGetByRange.mockResolvedValue(fourRows);
 
     await executeBackgroundRefresh();
 
-    expect(mockGetAndStore).toHaveBeenCalled();
+    expect(mockRefetch).toHaveBeenCalled();
     expect(mockClearPendingReapply).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the reapply flag when the forced fetch fails", async () => {
     mockAwaitPendingReapply.mockResolvedValue(true);
-    mockGetAndStore.mockResolvedValue(false);
+    mockRefetch.mockResolvedValue(NOT_LANDED);
 
     await executeBackgroundRefresh();
 
     expect(mockClearPendingReapply).not.toHaveBeenCalled();
   });
 
-  // Next year's rows hold the old settings until their own fetch lands.
-  it("keeps the reapply flag in December until next year's fetch lands", async () => {
-    mockNow = new Date("2026-12-30T08:00:00Z");
-    // The flag stays pending until the task clears it.
-    mockAwaitPendingReapply.mockImplementation(
-      async () => mockClearPendingReapply.mock.calls.length === 0
-    );
-    mockGetAndStore.mockImplementation(async (year?: number) => year === undefined);
+  // An adjacent year's rows hold the old settings until their own fetch lands.
+  it("keeps the reapply flag while a year the place needs is owed", async () => {
+    mockAwaitPendingReapply.mockResolvedValue(true);
+    mockRefetch.mockResolvedValue(YEAR_OWED);
+
     await executeBackgroundRefresh();
+
     expect(mockClearPendingReapply).not.toHaveBeenCalled();
-    mockGetAndStore.mockReset().mockResolvedValue(true);
-
-    await executeBackgroundRefresh();
-
-    expect(mockGetAndStore).toHaveBeenNthCalledWith(1);
-    expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
-    expect(mockClearPendingReapply).toHaveBeenCalledTimes(1);
   });
 
-  it("also fetches the next year in December", async () => {
-    mockNow = new Date("2026-12-30T08:00:00Z");
+  it.each([
+    ["every year landed", true, LANDED],
+    ["a year is owed but the stored days stand", true, YEAR_OWED],
+    // This year's days landed; a late-December next-year miss is retried later.
+    ["only the needed next year failed", true, NEXT_YEAR_FAILED],
+    ["nothing landed", false, NOT_LANDED],
+  ])("when %s, reports fetched=%s", async (_name, fetched, refetch) => {
     mockGetByRange.mockResolvedValue([{ date: 1 }]);
-    mockGetAndStore.mockResolvedValue(true);
+    mockRefetch.mockResolvedValue(refetch);
 
     await executeBackgroundRefresh();
 
-    // First call: whole current year (no args). Second call: next year.
-    expect(mockGetAndStore).toHaveBeenNthCalledWith(1);
-    expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
+    expect(mockBgLog).toHaveBeenCalledWith(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.TASK_COMPLETED,
+      expect.anything(),
+      expect.stringContaining(`fetched=${fetched}`),
+      expect.anything()
+    );
+  });
+
+  // The move's own load fetches the new place's days.
+  it("logs a refetch the place moved under as skipped, keeping the reapply flag", async () => {
+    mockAwaitPendingReapply.mockResolvedValue(true);
+    mockRefetch.mockResolvedValue(TIMES_FETCH.SUPERSEDED);
+
+    await executeBackgroundRefresh();
+
+    expect(mockBgLog).toHaveBeenCalledWith(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.PRAYER_TIMES_SUPERSEDED,
+      TASK_RESULT.SKIPPED,
+      expect.any(String)
+    );
+    expect(mockClearPendingReapply).not.toHaveBeenCalled();
+    expect(mockBgLog).toHaveBeenCalledWith(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.TASK_COMPLETED,
+      expect.anything(),
+      expect.stringContaining("fetched=false"),
+      expect.anything()
+    );
   });
 
   // A failed update leaves the new place over the old place's days.
   it("fetches when the stored days were fetched for other coordinates", async () => {
     mockTimesCoords = { latitude: 21.4858, longitude: 39.1925 };
-    mockGetAndStore.mockResolvedValue(true);
+    mockRefetch.mockResolvedValue(LANDED);
 
     await executeBackgroundRefresh();
 
-    expect(mockGetAndStore).toHaveBeenCalled();
-    expect(mockMarkTimes).toHaveBeenCalledWith(MOCK_PLACE);
-  });
-
-  it("marks the days only once next year's fetch has landed too", async () => {
-    mockNow = new Date("2026-12-30T08:00:00Z");
-    mockTimesCoords = { latitude: 21.4858, longitude: 39.1925 };
-    mockGetAndStore.mockImplementation(async (year?: number) => year === undefined);
-
-    await executeBackgroundRefresh();
-
-    expect(mockGetAndStore).toHaveBeenNthCalledWith(2, 2027);
-    expect(mockMarkTimes).not.toHaveBeenCalled();
-  });
-
-  it("does not fetch the next year outside December", async () => {
-    mockGetByRange.mockResolvedValue([{ date: 1 }]);
-    mockGetAndStore.mockResolvedValue(true);
-
-    await executeBackgroundRefresh();
-
-    expect(mockGetAndStore).toHaveBeenCalledTimes(1);
+    expect(mockRefetch).toHaveBeenCalled();
   });
 });
 

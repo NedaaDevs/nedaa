@@ -19,6 +19,7 @@ import { LocalPermissionStatus } from "@/enums/location";
 import type { LocationPermission } from "@/types/location";
 
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 import { withDeadline, withTimeout } from "@/utils/withTimeout";
 
 const log = AppLogger.create("location");
@@ -96,7 +97,7 @@ export type LocationFix = { location: LocationObject; source: FixSource };
 // A failed services check gives no verdict, so it counts as services on.
 const servicesEnabled = (): Promise<boolean> =>
   hasServicesEnabledAsync().catch((error: unknown) => {
-    log.w("Position", `services check failed: ${(error as Error)?.message ?? error}`);
+    log.w("Position", `services check failed: ${errorText(error)}`);
     return true;
   });
 
@@ -138,7 +139,7 @@ const mayFallBack = (kind: LocationFailure): boolean => {
 const readLastKnown = (): Promise<LocationObject | null> =>
   withTimeout(
     getLastKnownPositionAsync(LAST_KNOWN_MAX_AGE_MS).catch((error: unknown) => {
-      log.w("Position", `cached fix read failed: ${(error as Error)?.message ?? error}`);
+      log.w("Position", `cached fix read failed: ${errorText(error)}`);
       return null;
     }),
     LAST_KNOWN_REQUEST_TIMEOUT,

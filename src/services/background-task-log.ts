@@ -2,18 +2,22 @@ import * as SQLite from "expo-sqlite";
 import { getDirectory } from "@/services/db";
 import { createSerializedDatabase } from "@/utils/serializedDatabase";
 import { AppLogger } from "@/utils/appLogger";
+import { TASK_RESULT, type TaskResult } from "@/constants/BackgroundTask";
 import { ExpoDiagnosticsModule } from "../../modules/expo-diagnostics/src";
 
 const BG_LOG_DB_NAME = "background_task_logs.db";
 const TABLE_NAME = "task_logs";
 const MAX_LOG_ENTRIES = 100;
+const RESULTS_SQL = Object.values(TASK_RESULT)
+  .map((result) => `'${result}'`)
+  .join(", ");
 
 export type TaskLogEntry = {
   id: number;
   timestamp: string;
   task_name: string;
   action: string;
-  result: "success" | "failed" | "skipped";
+  result: TaskResult;
   details: string | null;
   duration_ms: number | null;
 };
@@ -31,7 +35,7 @@ const sdb = createSerializedDatabase(async () => {
       timestamp TEXT NOT NULL DEFAULT (datetime('now')),
       task_name TEXT NOT NULL,
       action TEXT NOT NULL,
-      result TEXT NOT NULL CHECK(result IN ('success', 'failed', 'skipped')),
+      result TEXT NOT NULL CHECK(result IN (${RESULTS_SQL})),
       details TEXT,
       duration_ms INTEGER
     );`
@@ -45,7 +49,7 @@ export const BackgroundTaskLog = {
   log: (
     taskName: string,
     action: string,
-    result: "success" | "failed" | "skipped",
+    result: TaskResult,
     details?: string,
     durationMs?: number
   ) =>
