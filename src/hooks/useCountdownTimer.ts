@@ -13,8 +13,15 @@ const SECOND_MS = 1000;
 /** Reads a figure at `now` from the stored days. */
 type Counter = (now: Date, days: StoredDays, settings: CountSettings) => FocusCount | null;
 
+export type CountdownOptions = {
+  /** Counts since the last prayer instead of until the next. */
+  flipped?: boolean;
+  /** Holds the second clock while the figure's screen is out of focus. */
+  paused?: boolean;
+};
+
 /** A figure on Today's clock, ticking each second while it shows seconds. */
-const useFigure = (count: Counter, paused: boolean): FocusCount | null => {
+const useFigure = (count: Counter, paused = false): FocusCount | null => {
   const days = useStoredDays();
   const seconds = usePreferencesStore((state) => state.showSeconds);
   const settings: CountSettings = {
@@ -34,9 +41,12 @@ const useFigure = (count: Counter, paused: boolean): FocusCount | null => {
 };
 
 /** The focus figure: until the next prayer, or since the last when flipped. */
-export const useCountdownTimer = (flipped: boolean, paused = false): FocusCount | null =>
+export const useCountdownTimer = ({
+  flipped = false,
+  paused = false,
+}: CountdownOptions = {}): FocusCount | null =>
   useFigure((now, days, settings) => focusCount(now, days, settings, flipped), paused);
 
 /** One prayer's figure, to or from the time its Today card shows. */
 export const usePrayerCountdown = (id: PrayerId, flipped: boolean): FocusCount | null =>
-  useFigure((now, days, settings) => prayerCount(id, now, days, settings, flipped), false);
+  useFigure((now, days, settings) => prayerCount(id, now, days, settings, flipped));

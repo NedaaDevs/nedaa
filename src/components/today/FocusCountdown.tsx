@@ -36,7 +36,7 @@ type Props = {
 export const FocusCountdown = ({ paused = false, layout = FOCUS_LAYOUT.ROW }: Props) => {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
-  const focus = useFocusPrayer(flipped, paused);
+  const focus = useFocusPrayer({ flipped, paused });
   const locale = useAppStore((state) => state.locale);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
 
