@@ -8,6 +8,7 @@ import {
   CITIES_PACK_BYTES,
   CITIES_SEED_CITY_COUNT,
 } from "@/constants/Cities";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useCitiesPackStore } from "@/stores/citiesPack";
@@ -84,7 +85,7 @@ describe("CitiesPackRow", () => {
     await userEvent.press(screen.getByTestId(CITIES_PACK_PART.OFFER));
 
     expect(download).toHaveBeenCalledTimes(1);
-    expect(HAPTIC.medium).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).toHaveBeenCalledTimes(1);
   });
 
   it("says the download has started", async () => {
@@ -158,7 +159,7 @@ describe("CitiesPackRow", () => {
 
     await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
     expect(download).toHaveBeenCalledTimes(1);
-    expect(HAPTIC.medium).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).toHaveBeenCalledTimes(1);
   });
 
   it.each([
