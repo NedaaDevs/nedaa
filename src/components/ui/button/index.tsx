@@ -120,14 +120,11 @@ const ButtonFrame = styled(View, {
 
   variants: {
     action: {
-      primary: { backgroundColor: "$accent", borderColor: "$accent" },
-      secondary: { backgroundColor: "$secondary", borderColor: "$secondary" },
-      positive: { backgroundColor: "$success", borderColor: "$success" },
-      negative: { backgroundColor: "$error", borderColor: "$error" },
-      default: {
-        backgroundColor: "$backgroundMuted",
-        borderColor: "$backgroundMuted",
-      },
+      primary: { backgroundColor: "$accent" },
+      secondary: { backgroundColor: "$secondary" },
+      positive: { backgroundColor: "$success" },
+      negative: { backgroundColor: "$error" },
+      default: { backgroundColor: "$backgroundMuted" },
     },
     // minHeight, not height: the box is a floor that grows with a scaled or
     // wrapped label instead of clipping it.
