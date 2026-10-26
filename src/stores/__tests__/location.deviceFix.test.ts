@@ -7,7 +7,13 @@ import { usePlace } from "@/hooks/usePlace";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
-import { LocationFixError, getLocationWithTimeout, readLocation } from "@/utils/location";
+import { later } from "@/test-helpers/promises";
+import {
+  LocationFixError,
+  getLocationWithTimeout,
+  readLocation,
+  type LocationFix,
+} from "@/utils/location";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -506,6 +512,66 @@ describe("device fix in the location store", () => {
         latitude: OTHER.latitude,
         longitude: OTHER.longitude,
       });
+    });
+  });
+
+  // A try that lost to its deadline leaves its read running while the next runs.
+  describe("the reading flag while device reads overlap", () => {
+    const fresh = (location: LocationObject): LocationFix => ({
+      location,
+      source: FIX_SOURCE.FRESH,
+    });
+
+    beforeEach(() => {
+      useLocationStore.setState({ isGettingLocation: false });
+      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Riyadh")]);
+    });
+
+    it("stays up while the next try's fix runs", async () => {
+      const first = later<LocationFix>();
+      const next = later<LocationFix>();
+      mockReadLocation.mockReturnValueOnce(first.promise).mockReturnValueOnce(next.promise);
+      let wanted = true;
+      const abandoned = useLocationStore.getState().initializeLocation(() => wanted);
+      wanted = false;
+      const retry = useLocationStore.getState().initializeLocation();
+
+      first.release(fresh(RIYADH));
+      await abandoned;
+
+      expect(useLocationStore.getState().isGettingLocation).toBe(true);
+      next.release(fresh(RIYADH));
+      await retry;
+      expect(useLocationStore.getState().isGettingLocation).toBe(false);
+    });
+
+    it("stays up while an update read outlives the first fix", async () => {
+      const first = later<LocationFix>();
+      const update = later<LocationFix>();
+      mockReadLocation.mockReturnValueOnce(first.promise).mockReturnValueOnce(update.promise);
+      const fix = useLocationStore.getState().initializeLocation();
+      const refresh = useLocationStore.getState().updateCurrentLocation();
+
+      first.release(fresh(RIYADH));
+      await fix;
+
+      expect(useLocationStore.getState().isGettingLocation).toBe(true);
+      update.release(fresh(RIYADH));
+      await refresh;
+      expect(useLocationStore.getState().isGettingLocation).toBe(false);
+    });
+
+    it("comes down once a fix its caller gave up on settles with no read after it", async () => {
+      const first = later<LocationFix>();
+      mockReadLocation.mockReturnValueOnce(first.promise);
+      let wanted = true;
+      const abandoned = useLocationStore.getState().initializeLocation(() => wanted);
+      wanted = false;
+
+      first.release(fresh(RIYADH));
+      await abandoned;
+
+      expect(useLocationStore.getState().isGettingLocation).toBe(false);
     });
   });
 
