@@ -1,5 +1,6 @@
 import Storage from "expo-sqlite/kv-store";
 
+import { PLACE_UNKNOWN } from "@/constants/Location";
 import { TIMES_FETCH, type TimesFetch } from "@/constants/PrayerTimes";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
@@ -194,7 +195,8 @@ describe("prayer-time location fail-safe", () => {
     });
   });
 
-  it("keeps an acquired fix and uses API geocoding when device geocoding rejects", async () => {
+  // City-change checks compare stored names from the device geocoder alone.
+  it("keeps an acquired fix, with the API's names for display only, when device geocoding rejects", async () => {
     const acquiredLocation = {
       coords: {
         ...initialLocationDetails.coords,
@@ -219,9 +221,13 @@ describe("prayer-time location fail-safe", () => {
 
     expect(useLocationStore.getState().locationDetails).toMatchObject({
       coords: acquiredLocation.coords,
-      address: { country: "Saudi Arabia", city: "Riyadh" },
+      address: { country: PLACE_UNKNOWN, city: PLACE_UNKNOWN },
       timezone: "Asia/Riyadh",
       error: null,
+    });
+    expect(useLocationStore.getState().localizedLocation).toEqual({
+      country: "Saudi Arabia",
+      city: "Riyadh",
     });
     expect(useLocationStore.getState().lastKnownCoords).toEqual({
       latitude: acquiredLocation.coords.latitude,
@@ -229,7 +235,7 @@ describe("prayer-time location fail-safe", () => {
     });
   });
 
-  it("keeps an acquired fix and uses API geocoding when device geocoding is empty", async () => {
+  it("keeps an acquired fix, with the API's names for display only, when device geocoding is empty", async () => {
     const acquiredLocation = {
       coords: {
         ...initialLocationDetails.coords,
@@ -254,9 +260,13 @@ describe("prayer-time location fail-safe", () => {
 
     expect(useLocationStore.getState().locationDetails).toMatchObject({
       coords: acquiredLocation.coords,
-      address: { country: "Malaysia", city: "Kuala Lumpur" },
+      address: { country: PLACE_UNKNOWN, city: PLACE_UNKNOWN },
       timezone: "Asia/Kuala_Lumpur",
       error: null,
+    });
+    expect(useLocationStore.getState().localizedLocation).toEqual({
+      country: "Malaysia",
+      city: "Kuala Lumpur",
     });
     expect(useLocationStore.getState().lastKnownCoords).toEqual({
       latitude: acquiredLocation.coords.latitude,
