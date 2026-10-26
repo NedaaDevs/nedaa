@@ -7,6 +7,7 @@ import { Platform } from "react-native";
 
 import { SYSTEM_SOUND } from "@/constants/Notification";
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
+import { Weekday, weekdayToExpo } from "@/enums/quranReminders";
 import { scheduleNotification, scheduleRecurringNotification } from "@/utils/notifications";
 import type { NotificationOptions } from "@/types/notification";
 
@@ -36,8 +37,7 @@ const scheduledRequest = () =>
   };
 const scheduledContent = () => scheduledRequest().content;
 const CHANNEL_ID = "channel";
-/** Expo numbers weekdays from 1 for Sunday. */
-const FRIDAY = 6;
+const FRIDAY = weekdayToExpo(Weekday.FRIDAY);
 
 // Both helpers take the same options, so one table drives them.
 const HELPERS = [
