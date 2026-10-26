@@ -109,8 +109,8 @@ const build = (engine: Yoga, config: YogaConfig, { style, children = [] }: YogaB
 const boxes = (node: YogaNode, parentLeft = 0): { span: Span; content: Span }[] => {
   const left = parentLeft + node.getComputedLeft();
   const width = node.getComputedWidth();
-  const start = node.getComputedPadding(Edge.Left) + node.getComputedBorder(Edge.Left);
-  const end = node.getComputedPadding(Edge.Right) + node.getComputedBorder(Edge.Right);
+  const start = node.getComputedPadding(Edge.Left);
+  const end = node.getComputedPadding(Edge.Right);
   const children = Array.from({ length: node.getChildCount() }, (_, index) =>
     boxes(node.getChild(index), left)
   );
@@ -168,7 +168,7 @@ export const layOutHost = async (
   return {
     /** The view's own span. */
     span: (view: HostElement) => at(view).span,
-    /** The span inside the view's padding and border. */
+    /** The span inside the view's padding. */
     content: (view: HostElement) => at(view).content,
   };
 };
