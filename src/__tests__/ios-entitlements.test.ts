@@ -5,7 +5,7 @@ import { REPO_ROOT } from "@/test-helpers/routeTree";
 
 const read = (...path: string[]) => readFileSync(join(REPO_ROOT, ...path), "utf8");
 
-/** Lets a notification marked time-sensitive through a Focus. */
+/** Lets a notification marked time-sensitive ask to come through a Focus. */
 const TIME_SENSITIVE = "com.apple.developer.usernotifications.time-sensitive";
 
 const FROM_APP_JSON: Record<string, unknown> = JSON.parse(read("app.json")).expo.ios.entitlements;

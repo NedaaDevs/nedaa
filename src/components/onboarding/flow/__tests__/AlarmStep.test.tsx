@@ -12,6 +12,7 @@ import {
   ALARM_TYPE,
   type AlarmPermissionId,
 } from "@/constants/Alarm";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { DURATION_MS } from "@/constants/Motion";
 import { NATIVE_READ_TIMEOUT_MS, ONBOARDING_PART } from "@/constants/Onboarding";
 import { NEDAA_LIGHT } from "@/constants/Palette";
@@ -500,11 +501,11 @@ describe("the sequence", () => {
 
     await turnOn();
     await returnFromSettings([E]);
-    expect(HAPTIC.light).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(1);
     await returnFromSettings();
     await returnFromSettings([B]);
 
-    expect(HAPTIC.light).toHaveBeenCalledTimes(2);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(2);
   });
 });
 
