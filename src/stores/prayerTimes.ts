@@ -433,11 +433,11 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
 
             log.i("Fetch", `stored prayer times (${asked})`);
             return TIMES_FETCH.STORED;
-          } catch (error: any) {
+          } catch (error: unknown) {
             log.e(
               "Fetch",
-              "getAndStorePrayerTimes failed",
-              error instanceof Error ? error : undefined
+              `getAndStorePrayerTimes failed (${asked})`,
+              error instanceof Error ? error : new Error(errorText(error))
             );
             return TIMES_FETCH.FAILED;
           }
