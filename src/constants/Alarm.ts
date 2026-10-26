@@ -1,6 +1,4 @@
 import type { Href } from "expo-router";
-import { Bell, Sun, Building2 } from "lucide-react-native";
-import { ScheduledAlarmType } from "@/enums/alarm";
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { AlarmTimingChoices, AlarmType, TimingConfig, TimingMode } from "@/types/alarm";
 
@@ -104,14 +102,4 @@ export const ALARM_DEFAULTS = {
   STALE_ALARM_THRESHOLD_MS: 2 * 60 * 60 * 1000, // 2 hours
   // Clock skew allowed when the alarm screen opens just before the trigger.
   EARLY_OPEN_GRACE_MS: 60 * 1000,
-} as const;
-
-export const ALARM_TYPE_META = {
-  [ScheduledAlarmType.FAJR]: { icon: Sun, title: "Fajr Alarm", colorClass: "text-warning" },
-  [ScheduledAlarmType.JUMMAH]: {
-    icon: Building2,
-    title: "Jummah Alarm",
-    colorClass: "text-success",
-  },
-  [ScheduledAlarmType.CUSTOM]: { icon: Bell, title: "Alarm", colorClass: "text-info" },
 } as const;
