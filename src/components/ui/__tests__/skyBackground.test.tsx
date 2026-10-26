@@ -2,6 +2,7 @@ import { Animated, Text } from "react-native";
 import { act, screen } from "@testing-library/react-native";
 
 import { SKY_PART, ScreenSky, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
+import { useClaimSkyBodies } from "@/components/ui/sky-background/bodies";
 import { BODY_BEHIND_TEXT, SUN_GLYPH } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
@@ -58,12 +59,19 @@ jest.mock("@/utils/measureInWindow", () => ({
 }));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
-type SkyProps = { phase: Phase | undefined; paused?: boolean; bodies?: boolean };
+/** A view that draws the page's sun or moon itself, as a bowl does. */
+const Claim = () => {
+  useClaimSkyBodies(true);
+  return null;
+};
 
-const Sky = ({ phase, paused, bodies }: SkyProps) => (
+type SkyProps = { phase: Phase | undefined; paused?: boolean; claimed?: boolean };
+
+const Sky = ({ phase, paused, claimed = false }: SkyProps) => (
   <PhaseContext value={phase}>
-    <SkyBackground paused={paused} bodies={bodies}>
+    <SkyBackground paused={paused}>
       <Text>Today</Text>
+      {claimed ? <Claim /> : null}
     </SkyBackground>
   </PhaseContext>
 );
@@ -191,11 +199,10 @@ describe("SkyBackground", () => {
     jest.useRealTimers();
   });
 
-  // Today draws its sun and moon on its bowl; the sky draws neither.
-  describe("without its bodies", () => {
+  // A bowl draws the sun and moon on its rim; the sky then draws neither.
+  describe("while a view holds its bodies", () => {
     afterEach(() => jest.useRealTimers());
     beforeEach(() => {
-      mockReduced = true;
       clockAt("10:00");
       usePrayerTimesStore.setState({
         todayTimings: TODAY,
@@ -204,15 +211,16 @@ describe("SkyBackground", () => {
       });
     });
 
-    it("draws no sun or moon", async () => {
-      await renderWithTheme(<Sky phase={PHASE.DAY} bodies={false} />);
+    it("draws no sun or moon from its first frame when the view comes with it", async () => {
+      await renderWithTheme(<Sky phase={PHASE.DAY} claimed />);
 
       expect(part(SKY_PART.BODIES)).toHaveLength(0);
       expect(part(SKY_PART.SUN)).toHaveLength(0);
     });
 
     it("rests the glow in its corner while the hour moves", async () => {
-      await renderWithTheme(<Sky phase={PHASE.DAY} bodies={false} />);
+      mockReduced = true;
+      await renderWithTheme(<Sky phase={PHASE.DAY} claimed />);
       const morning = paints()[0].experimental_backgroundImage;
 
       await act(() => jest.advanceTimersByTime(4 * 60 * 60_000));
@@ -220,7 +228,25 @@ describe("SkyBackground", () => {
       expect(paints()[0].experimental_backgroundImage).toBe(morning);
     });
 
-    it("draws its bodies by default", async () => {
+    it("fades its own out when the view comes later", async () => {
+      const { rerender } = await renderWithTheme(<Sky phase={PHASE.DAY} />);
+
+      await rerender(<Sky phase={PHASE.DAY} claimed />);
+      expect(part(SKY_PART.SUN)).toHaveLength(1);
+      await act(() => jest.advanceTimersByTime(DURATION_MS.GENTLE + 100));
+
+      expect(part(SKY_PART.SUN)).toHaveLength(0);
+    });
+
+    it("draws its own again once the view goes", async () => {
+      const { rerender } = await renderWithTheme(<Sky phase={PHASE.DAY} claimed />);
+
+      await rerender(<Sky phase={PHASE.DAY} />);
+
+      expect(part(SKY_PART.SUN)).toHaveLength(1);
+    });
+
+    it("draws its bodies while no view holds them", async () => {
       await renderWithTheme(<Sky phase={PHASE.DAY} />);
 
       expect(part(SKY_PART.SUN)).toHaveLength(1);
@@ -286,7 +312,7 @@ describe("SkyBackground", () => {
       expect(reset).not.toHaveBeenCalled();
     });
 
-    // RN swaps a physical left in RTL but not SVG x; one space keeps them aligned.
+    // RN swaps a physical left in RTL but not SVG x; one space aligns them.
     it("draws its rays and bloom in one left-to-right space in RTL", async () => {
       await renderWithTheme(<Sky phase={PHASE.DAY} />, { isRTL: true });
 

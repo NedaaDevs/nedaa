@@ -38,8 +38,7 @@ export default function MainScreen() {
 
   return (
     <DaySimulator>
-      {/* With the bowl, the bowl draws the sun and moon and the sky draws none. */}
-      <ScreenSky bodies={!bowl}>
+      <ScreenSky>
         {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
         <Box flex={1} paddingTop={insets.top}>
           <ActiveAlarmBanner />

@@ -57,7 +57,7 @@ const renderAt = async (iso: string, props: Props = {}, isRTL = false) => {
     tomorrowTimings: day("2026-09-24", "2026-09-25"),
   });
   await renderWithTheme(
-    <SkyBackground bodies={false}>
+    <SkyBackground>
       <CelestialRhythm {...props} />
     </SkyBackground>,
     { isRTL }
