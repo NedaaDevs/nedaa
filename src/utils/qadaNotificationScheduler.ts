@@ -20,7 +20,7 @@ import type { NotificationSettings } from "@/types/notification";
 import { PlatformType } from "@/enums/app";
 
 // Constants
-import { QADA_CHANNEL_PREFIX } from "@/constants/Notification";
+import { QADA_CHANNEL_PREFIX, SYSTEM_SOUND } from "@/constants/Notification";
 
 const QADA_CHANNEL_NAME = "Qada Reminders";
 const QADA_DEFAULT_CHANNEL_ID = `${QADA_CHANNEL_PREFIX}_default`;
@@ -43,7 +43,7 @@ const createDefaultSoundChannel = async (vibrationEnabled: boolean): Promise<str
   await Notifications.setNotificationChannelAsync(QADA_DEFAULT_CHANNEL_ID, {
     name: QADA_CHANNEL_NAME,
     importance: Notifications.AndroidImportance.HIGH,
-    sound: "default",
+    sound: SYSTEM_SOUND,
     vibrationPattern: vibrationEnabled ? [0, 500, 200, 500] : undefined,
     enableVibrate: vibrationEnabled,
   });
@@ -55,7 +55,7 @@ const createQadaChannel = async (
   customSounds: CustomSound[],
   vibrationEnabled: boolean
 ): Promise<string> => {
-  if (soundKey === "default") {
+  if (soundKey === SYSTEM_SOUND) {
     return createDefaultSoundChannel(vibrationEnabled);
   }
 
@@ -323,7 +323,7 @@ export const scheduleQadaNotifications = async (
     );
 
     // For iOS, custom sounds aren't supported, always use system default
-    const finalSoundKey = Platform.OS === PlatformType.IOS ? "default" : soundKey;
+    const finalSoundKey = Platform.OS === PlatformType.IOS ? SYSTEM_SOUND : soundKey;
 
     // Schedule notification (either one-time or recurring daily)
     let result: { success: boolean; id?: string; message?: string };
