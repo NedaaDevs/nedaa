@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useIsFocused, useRouter, type Href } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isPinningSupported } from "expo-widgets";
 
@@ -11,7 +11,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { VStack } from "@/components/ui/vstack";
 import { SECTION_KIND } from "@/constants/Section";
 import {
@@ -32,7 +32,6 @@ import { isAthkarSupported } from "@/utils/athkar";
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
@@ -71,7 +70,7 @@ export default function SettingsScreen() {
 
   return (
     // The sky runs under both bars; the content scrolls clear of the tab bar.
-    <SkyBackground paused={!focused}>
+    <ScreenSky>
       <SkyScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -106,6 +105,6 @@ export default function SettingsScreen() {
           </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
-    </SkyBackground>
+    </ScreenSky>
   );
 }
