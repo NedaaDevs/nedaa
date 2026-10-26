@@ -1,13 +1,15 @@
+import type { ComponentProps } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent, within } from "@testing-library/react-native";
 import { withTiming } from "react-native-reanimated";
 
 import { FOCUS_COUNTDOWN_PART, FocusCountdown } from "@/components/today/FocusCountdown";
 import config from "../../../../tamagui.config";
+import { COUNTDOWN_PART } from "@/components/ui/countdown";
 import { ROLE_RATIO } from "@/components/ui/text/sizing";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { APP_STATE } from "@/constants/AppState";
-import { FOCUS_LAYOUT, type FocusLayout } from "@/constants/Countdown";
+import { FOCUS_LAYOUT } from "@/constants/Countdown";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -34,14 +36,18 @@ const day = (date: string): DayPrayerTimes => ({
   } as DayPrayerTimes["otherTimings"],
 });
 
-const renderAt = (date: string, time: string, layout?: FocusLayout) => {
+const renderAt = (
+  date: string,
+  time: string,
+  props: ComponentProps<typeof FocusCountdown> = {}
+) => {
   jest.useFakeTimers({ now: new Date(`${date}T${time}:00.000Z`) });
   usePrayerTimesStore.setState({
     yesterdayTimings: null,
     todayTimings: day(date),
     tomorrowTimings: null,
   });
-  return renderWithTheme(<FocusCountdown layout={layout} />);
+  return renderWithTheme(<FocusCountdown {...props} />);
 };
 const name = (key: string) => i18n.t(key);
 
@@ -201,6 +207,28 @@ describe("FocusCountdown", () => {
     expect(screen.getByRole("togglebutton", { name: name("prayerTimes.jumuah") })).toBeTruthy();
   });
 
+  describe("with seconds", () => {
+    beforeEach(() => usePreferencesStore.setState({ showSeconds: true }));
+
+    /** The digits the figure's reels show. */
+    const drawnDigits = () =>
+      within(screen.getByTestId(FOCUS_COUNTDOWN_PART.FIGURE))
+        .getAllByTestId(COUNTDOWN_PART.SHAPE, hidden)
+        .map((shape) => within(shape).getByText(/./, hidden).props.children);
+
+    it.each([
+      { paused: false, ticks: true },
+      { paused: true, ticks: false },
+    ])("paused $paused, moves each second: $ticks", async ({ paused, ticks }) => {
+      await renderAt("2026-09-23", "14:02", { paused });
+      const before = drawnDigits();
+
+      await act(() => jest.advanceTimersByTime(1000));
+
+      expect(drawnDigits().join("") !== before.join("")).toBe(ticks);
+    });
+  });
+
   it("shows nothing until the day's times are known", async () => {
     jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
     usePrayerTimesStore.setState({
@@ -281,7 +309,7 @@ describe("FocusCountdown", () => {
   // In the bowl the block stands centred: label, name, figure, caption.
   describe("centred, in the bowl", () => {
     it("stacks and centres its four lines", async () => {
-      await renderAt("2026-09-23", "14:02", FOCUS_LAYOUT.CENTRED);
+      await renderAt("2026-09-23", "14:02", { layout: FOCUS_LAYOUT.CENTRED });
 
       expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROOT)).toHaveStyle({ alignItems: "center" });
       expect(screen.getByTestId(FOCUS_COUNTDOWN_PART.ROW)).toHaveStyle({
@@ -300,7 +328,7 @@ describe("FocusCountdown", () => {
     });
 
     it("flips the figure from a tap and from the screen reader", async () => {
-      await renderAt("2026-09-23", "14:10", FOCUS_LAYOUT.CENTRED);
+      await renderAt("2026-09-23", "14:10", { layout: FOCUS_LAYOUT.CENTRED });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const since = i18n.t("today.focus.since", { prayer: name("prayerTimes.dhuhr") });
 
@@ -320,7 +348,7 @@ describe("FocusCountdown", () => {
     // A long name wraps under itself; neither it nor the figure shrinks away.
     it.each(Object.values(TextSize))("at text size %s never clips the name", async (textSize) => {
       usePreferencesStore.setState({ textSize });
-      await renderAt("2026-09-23", "14:02", FOCUS_LAYOUT.CENTRED);
+      await renderAt("2026-09-23", "14:02", { layout: FOCUS_LAYOUT.CENTRED });
       const named = screen.getByText(name("prayerTimes.asr"));
 
       expect(named.props.numberOfLines).toBeUndefined();
@@ -328,7 +356,7 @@ describe("FocusCountdown", () => {
     });
 
     it("gives every control a role, a name and a 44pt target", async () => {
-      await renderAt("2026-09-23", "14:02", FOCUS_LAYOUT.CENTRED);
+      await renderAt("2026-09-23", "14:02", { layout: FOCUS_LAYOUT.CENTRED });
 
       expect(controlProblems()).toEqual([]);
     });

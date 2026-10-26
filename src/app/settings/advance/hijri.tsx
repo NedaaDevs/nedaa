@@ -8,7 +8,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Section } from "@/components/ui/section";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { SteppedSlider } from "@/components/ui/stepped-slider";
 import { Text } from "@/components/ui/text";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
@@ -105,9 +105,9 @@ const HijriContent = () => {
 };
 
 const HijriSettings = () => (
-  <SkyBackground>
+  <ScreenSky>
     <HijriContent />
-  </SkyBackground>
+  </ScreenSky>
 );
 
 export default HijriSettings;

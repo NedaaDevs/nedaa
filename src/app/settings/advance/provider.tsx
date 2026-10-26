@@ -14,7 +14,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { StickyActionBar } from "@/components/ui/sticky-action-bar";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -182,9 +182,9 @@ const CalculationContent = () => {
 };
 
 const CalculationSettings = () => (
-  <SkyBackground>
+  <ScreenSky>
     <CalculationContent />
-  </SkyBackground>
+  </ScreenSky>
 );
 
 export default CalculationSettings;

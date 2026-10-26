@@ -209,7 +209,7 @@ describe("Today", () => {
 
   // Every other sky screen keeps the sky's own sun and moon.
   it("is the only screen that hides the sky's bodies", () => {
-    const hiding = /<SkyBackground\b[^>]*bodies=\{(?!true\})/;
+    const hiding = /<(SkyBackground|ScreenSky)\b[^>]*bodies=\{(?!true\})/;
     const hiders = skySources().filter((text) => hiding.test(text));
 
     expect(hiders).toHaveLength(1);

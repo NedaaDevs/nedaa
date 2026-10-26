@@ -5,7 +5,7 @@ import { AppearanceChoices } from "@/components/settings/AppearanceChoices";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { usePageSky } from "@/components/ui/sky-background/useLiveSky";
 import { SkyHero } from "@/components/ui/sky-preview";
 import { Text } from "@/components/ui/text";
@@ -16,9 +16,9 @@ import { appearancePreview } from "@/utils/appearancePreview";
 
 export default function AppearanceScreen() {
   return (
-    <SkyBackground>
+    <ScreenSky>
       <AppearanceContent />
-    </SkyBackground>
+    </ScreenSky>
   );
 }
 

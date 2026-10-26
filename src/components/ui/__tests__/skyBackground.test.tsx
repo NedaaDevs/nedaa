@@ -1,7 +1,7 @@
 import { Animated, Text } from "react-native";
 import { act, screen } from "@testing-library/react-native";
 
-import { SKY_PART, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
+import { SKY_PART, ScreenSky, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
 import { BODY_BEHIND_TEXT, SUN_GLYPH } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
@@ -44,6 +44,12 @@ jest.mock("@/utils/date", () => ({
 }));
 
 let mockReduced = false;
+// A route screen stays mounted, out of focus, under a push or another tab.
+let mockFocused = true;
+jest.mock("expo-router", () => ({
+  ...jest.requireActual("expo-router"),
+  useIsFocused: () => mockFocused,
+}));
 
 // Where each text block reports itself, in window points.
 let mockTextBox = { x: 0, y: 0, width: 0, height: 0 };
@@ -81,6 +87,7 @@ const underlays = () => paints().map((paint) => paint.backgroundColor);
 describe("SkyBackground", () => {
   beforeEach(() => {
     mockReduced = false;
+    mockFocused = true;
     useAppStore.setState({ mode: AppMode.LIGHT });
   });
 
@@ -286,6 +293,20 @@ describe("SkyBackground", () => {
       await renderWithTheme(<Sky phase={PHASE.DAY} paused />);
 
       expect(raysTurn()).toBe(false);
+    });
+
+    it.each([
+      { focused: true, turns: true },
+      { focused: false, turns: false },
+    ])("on a route in focus $focused, turns its rays: $turns", async ({ focused, turns }) => {
+      mockFocused = focused;
+      await renderWithTheme(
+        <PhaseContext value={PHASE.DAY}>
+          <ScreenSky />
+        </PhaseContext>
+      );
+
+      expect(raysTurn()).toBe(turns);
     });
 
     it("holds its rays still under reduced motion", async () => {

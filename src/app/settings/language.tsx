@@ -6,15 +6,15 @@ import { LanguageHero } from "@/components/settings/LanguageHero";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { SECTION_KIND } from "@/constants/Section";
 
 export default function LanguageScreen() {
   return (
-    <SkyBackground>
+    <ScreenSky>
       <LanguageContent />
-    </SkyBackground>
+    </ScreenSky>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useIsFocused, useRouter, type Href } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlarmClock,
@@ -18,7 +18,7 @@ import { ListRow } from "@/components/ui/list-row";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { Tile } from "@/components/ui/tile";
 import { VStack } from "@/components/ui/vstack";
 import KaabaIcon from "@/components/umrah/icons/KaabaIcon";
@@ -89,7 +89,6 @@ const TOOLS: readonly ToolItem[] = [
 export default function ToolsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const focused = useIsFocused();
   const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const alarmSupported = useAlarmSupported();
   const insets = useSafeAreaInsets();
@@ -114,7 +113,7 @@ export default function ToolsScreen() {
 
   return (
     // The sky runs under both bars; the content scrolls clear of the tab bar.
-    <SkyBackground paused={!focused}>
+    <ScreenSky>
       <SkyScrollView
         contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarInset }}>
         <SkyOccluder>
@@ -176,6 +175,6 @@ export default function ToolsScreen() {
           </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
-    </SkyBackground>
+    </ScreenSky>
   );
 }

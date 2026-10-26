@@ -22,7 +22,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { SkyBackground, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { SECTION_KIND } from "@/constants/Section";
@@ -75,7 +75,7 @@ export default function PrivacyScreen() {
 
   return (
     // The sky runs under the status bar; the content pads itself clear of it.
-    <SkyBackground>
+    <ScreenSky>
       <SkyScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -178,6 +178,6 @@ export default function PrivacyScreen() {
           </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>
-    </SkyBackground>
+    </ScreenSky>
   );
 }
