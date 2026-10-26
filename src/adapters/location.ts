@@ -7,6 +7,7 @@ import type {
   LocationPermissionResponse,
   LocationSubscription,
 } from "@/types/location";
+import { withDeadline } from "@/utils/withTimeout";
 
 export { LocationAccuracy } from "@/enums/location";
 export type {
@@ -85,6 +86,15 @@ export const watchPositionAsync = (
 ): Promise<LocationSubscription> =>
   getLocationProvider().watchPositionAsync(options, callback, errorCallback);
 
+/** The same limit as Location Kit's own geocoder. */
+export const REVERSE_GEOCODE_TIMEOUT_MS = 10_000;
+
+// Android 13+ can drop a geocoder error, so an unanswered call times out.
 export const reverseGeocodeAsync = (
   location: ReverseGeocodeInput
-): Promise<LocationGeocodedAddress[]> => getLocationProvider().reverseGeocodeAsync(location);
+): Promise<LocationGeocodedAddress[]> =>
+  withDeadline(
+    () => getLocationProvider().reverseGeocodeAsync(location),
+    REVERSE_GEOCODE_TIMEOUT_MS,
+    "reverse geocode timed out"
+  );

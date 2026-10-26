@@ -155,4 +155,49 @@ describe("location adapter", () => {
       await expect(loadAdapter().getLastKnownPositionAsync(MAX_AGE_MS)).resolves.toBeNull();
     });
   });
+
+  // Android 13+ can drop a geocoder error unanswered, so the call has a limit.
+  describe("reverseGeocodeAsync", () => {
+    const POINT = { latitude: 24.7136, longitude: 46.6753 };
+    const ADDRESS = { city: "Riyadh" };
+
+    const loadWithGeocoder = (geocode: () => Promise<unknown>) => {
+      jest.doMock("expo-hms-location", () => ({ ExpoHmsLocationModule: { isAvailable: false } }));
+      jest.doMock("expo-location", () => ({ reverseGeocodeAsync: jest.fn(geocode) }));
+      let isolated: typeof import("@/adapters/location") | undefined;
+      jest.isolateModules(() => {
+        isolated = jest.requireActual<typeof import("@/adapters/location")>("@/adapters/location");
+      });
+      return isolated!;
+    };
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("passes on the geocoder's answer", async () => {
+      const Location = loadWithGeocoder(() => Promise.resolve([ADDRESS]));
+
+      await expect(Location.reverseGeocodeAsync(POINT)).resolves.toEqual([ADDRESS]);
+    });
+
+    it("rejects once the geocoder gives no answer within the limit", async () => {
+      const Location = loadWithGeocoder(() => new Promise(() => {}));
+      const geocode = Location.reverseGeocodeAsync(POINT);
+
+      jest.advanceTimersByTime(Location.REVERSE_GEOCODE_TIMEOUT_MS);
+
+      await expect(geocode).rejects.toThrow();
+    });
+
+    it("takes an answer that arrives just inside the limit", async () => {
+      let answer: (addresses: unknown) => void = () => {};
+      const Location = loadWithGeocoder(() => new Promise((resolve) => (answer = resolve)));
+      const geocode = Location.reverseGeocodeAsync(POINT);
+
+      jest.advanceTimersByTime(Location.REVERSE_GEOCODE_TIMEOUT_MS - 1);
+      answer([ADDRESS]);
+
+      await expect(geocode).resolves.toEqual([ADDRESS]);
+    });
+  });
 });
