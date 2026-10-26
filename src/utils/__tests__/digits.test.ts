@@ -1,4 +1,5 @@
-import { LTR_ISOLATE, groupCount, isolateLatinNumbers } from "@/utils/digits";
+import { AppLocale } from "@/enums/app";
+import { LTR_ISOLATE, countText, isolateLatinNumbers } from "@/utils/digits";
 
 const isolated = (number: string) => `${LTR_ISOLATE.OPEN}${number}${LTR_ISOLATE.CLOSE}`;
 
@@ -21,15 +22,15 @@ describe("isolateLatinNumbers", () => {
   });
 });
 
-describe("groupCount", () => {
+describe("countText", () => {
   // Arabic-Indic digits go ungrouped, as the Quran download sizes are written.
   it.each([
-    [999, "en", false, "999"],
-    [2500, "en", false, "2,500"],
-    [1234567, "en", false, "1,234,567"],
-    [69537, "ar", true, "69,537"],
-    [69537, "ar", false, "٦٩٥٣٧"],
+    [999, AppLocale.EN, false, "999"],
+    [2500, AppLocale.EN, false, "2,500"],
+    [1234567, AppLocale.EN, false, "1,234,567"],
+    [69537, AppLocale.AR, true, "69,537"],
+    [69537, AppLocale.AR, false, "٦٩٥٣٧"],
   ])("writes %p in %s (Western numerals: %p) as %p", (count, locale, western, expected) => {
-    expect(groupCount(count, locale, western)).toBe(expected);
+    expect(countText(count, locale, western)).toBe(expected);
   });
 });
