@@ -22,7 +22,6 @@ import {
   FIX_AGE_UNIT,
   FIX_SOURCE,
   LOCATION_ROOT_STATE,
-  UPDATE_START,
   UPDATE_STEP,
   locationPickerRoute,
   type CityPickerView,
@@ -39,7 +38,7 @@ import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { usePlace } from "@/hooks/usePlace";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
 import { useLocationStore } from "@/stores/location";
-import { isRunning } from "@/stores/locationUpdate";
+import { FINDING_CITY, findingCity, isRunning } from "@/stores/locationUpdate";
 import { fixAgeOf } from "@/utils/fixAge";
 
 type Hero = { tone: PlaceHeroTone; kicker: ParseKeys; note: ParseKeys };
@@ -76,9 +75,6 @@ const SAVED_HERO: Hero = {
   note: "location.hero.savedNote",
 };
 
-/** A device read in progress, in the words onboarding's fetch uses. */
-const FINDING_NOTE: ParseKeys = "onboarding.fetch.locatingDevice";
-
 type HeroFacts = {
   chosenCity: boolean;
   /** No city chosen and no verified place: the times are Makkah's. */
@@ -97,10 +93,10 @@ const heroFor = (
   switch (state) {
     // The title is the run's target once its first step has set the place.
     case LOCATION_ROOT_STATE.UPDATING:
-      if (finding && noPlace) return { ...ASK_HERO, note: FINDING_NOTE };
+      if (finding && noPlace) return { ...ASK_HERO, note: FINDING_CITY };
       return {
         ...(chosenCity ? CITY_HERO : DEVICE_HERO),
-        note: finding ? FINDING_NOTE : "location.hero.updatingNote",
+        note: finding ? FINDING_CITY : "location.hero.updatingNote",
       };
     case LOCATION_ROOT_STATE.CHECKING:
     case LOCATION_ROOT_STATE.DEVICE:
@@ -176,8 +172,7 @@ export const LocationRoot = () => {
   // Only the location step fails before the place is written.
   const placeChanged = failedStep !== null && failedStep !== UPDATE_STEP.LOCATION;
   const noPlace = !chosenCity && !verified;
-  const finding =
-    running && run?.step === UPDATE_STEP.LOCATION && run.start.kind !== UPDATE_START.CITY;
+  const finding = findingCity(run);
   const hero = heroFor(state, { chosenCity, noPlace, placeChanged, finding });
   // A run names its target once the read is done; else only a verified place.
   const named = !noPlace || (state === LOCATION_ROOT_STATE.UPDATING && !finding);
