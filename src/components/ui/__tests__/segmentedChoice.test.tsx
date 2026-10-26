@@ -369,11 +369,12 @@ describe("SegmentedChoice, framed", () => {
     expect(controlProblems()).toEqual([]);
   });
 
-  it("sets the chosen label in the ink and the rest muted, at 14", async () => {
+  // The raised mark alone shows the choice, so every label keeps the ink.
+  it("sets every label in the ink, chosen or not, at 14", async () => {
     await renderFramed({ value: "dark" });
 
     expect(screen.getByText("dark")).toHaveStyle({ color: NEDAA_LIGHT.fg.hex, fontSize: 14 });
-    expect(screen.getByText("light")).toHaveStyle({ color: NEDAA_LIGHT.muted.hex });
+    expect(screen.getByText("light")).toHaveStyle({ color: NEDAA_LIGHT.fg.hex });
   });
 
   // Nothing is measured before layout, so no indicator can sit in the wrong place.
