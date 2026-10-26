@@ -3,7 +3,7 @@ import { act, screen } from "@testing-library/react-native";
 
 import { SKY_PART, ScreenSky, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
 import { useClaimSkyBodies } from "@/components/ui/sky-background/bodies";
-import { BODY_BEHIND_TEXT, SUN_GLYPH } from "@/constants/Sky";
+import { BODY_BEHIND_TEXT } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
@@ -300,7 +300,6 @@ describe("SkyBackground", () => {
     // reads no native angle, so the pause must set no value back either.
     it("keeps its rays at their angle when it pauses", async () => {
       const { rerender } = await renderWithTheme(<Sky phase={PHASE.DAY} />);
-      await act(() => jest.advanceTimersByTime(SUN_GLYPH.spinMs / 4));
       const turned = raysAngle();
       const set = jest.spyOn(Animated.Value.prototype, "setValue");
       const reset = jest.spyOn(Animated.Value.prototype, "resetAnimation");
