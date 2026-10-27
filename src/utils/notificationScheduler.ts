@@ -390,7 +390,7 @@ export const scheduleAllNotifications = async (
     // Every alert is an instant, so "passed" reads the real now.
     const now = new Date();
     const fired = readLedger(FIRED_LEDGER.NOTIFICATIONS, now.getTime());
-    // The prayer alerts of this run, keyed to the entry each records.
+    // The alerts of this run that the ledger records, each with its entry.
     const occurrences = new Map<NotificationScheduleItem, LedgerEntry>();
     let firedCount = 0;
 
@@ -398,6 +398,16 @@ export const scheduleAllNotifications = async (
 
     // Collect all notifications to schedule
     const notificationsToSchedule: NotificationScheduleItem[] = [];
+
+    // Queues an alert unless one of the same key fired for this occurrence.
+    const queueUnfired = (item: NotificationScheduleItem, key: string): void => {
+      if (hasFired(fired, key, item.time.getTime(), now.getTime())) {
+        firedCount++;
+        return;
+      }
+      occurrences.set(item, { key, at: item.time.getTime() });
+      notificationsToSchedule.push(item);
+    };
 
     //  for each day
     for (const dayPrayerTimes of daysPrayerTimes) {
@@ -421,18 +431,9 @@ export const scheduleAllNotifications = async (
         );
 
         for (const item of prayerNotifications) {
-          const key = notificationKey(item.type, item.prayerId);
-          if (hasFired(fired, key, item.time.getTime(), now.getTime())) {
-            firedCount++;
-            continue;
-          }
-          occurrences.set(item, { key, at: item.time.getTime() });
-          notificationsToSchedule.push(item);
+          queueUnfired(item, notificationKey(item.type, item.prayerId));
         }
       }
-    }
-    if (firedCount > 0) {
-      log.i("Scheduler", `${firedCount} alerts already fired for their prayer — not booked again`);
     }
 
     // Generate other timing notifications
@@ -446,10 +447,13 @@ export const scheduleAllNotifications = async (
 
           const notification = generateOtherTimingNotification(timingId, time, now, t);
           if (notification) {
-            notificationsToSchedule.push(notification);
+            queueUnfired(notification, notificationKey(notification.type, timingId));
           }
         }
       }
+    }
+    if (firedCount > 0) {
+      log.i("Scheduler", `${firedCount} alerts already fired — not booked again`);
     }
 
     await scheduleAthkarNotifications(athkarSettings, timezone, t);

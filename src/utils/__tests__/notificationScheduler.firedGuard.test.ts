@@ -7,7 +7,11 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PlatformType } from "@/enums/app";
 import { readLedger } from "@/services/firedPrayerLedger";
 import { memoryKvFailure, resetMemoryKv } from "@/test-helpers/memoryKvStore";
-import type { NotificationSettings, NotificationType } from "@/types/notification";
+import type {
+  NotificationSettings,
+  NotificationType,
+  OtherTimingNotifications,
+} from "@/types/notification";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { notificationKey } from "@/utils/firedPrayerGuard";
 import { cancelAllScheduledNotifications, scheduleNotification } from "@/utils/notifications";
@@ -139,20 +143,50 @@ const ledgerOn26 = (type: NotificationType) =>
     .map((e) => new Date(e.at).toISOString())
     .filter((at) => at.startsWith("2026-10-26"));
 const landed = { success: true, id: "booked" } as const;
+// Imsak alone among the other timings.
+const IMSAK_ONLY: OtherTimingNotifications = {
+  ishraq: false,
+  duha: false,
+  midnight: false,
+  firstthird: false,
+  lastthird: false,
+  imsak: true,
+};
+const withImsak = (row: DayPrayerTimes, imsak: string): DayPrayerTimes => ({
+  ...row,
+  otherTimings: { ...row.otherTimings, imsak },
+});
+const RIYADH_IMSAK = [
+  withImsak(RIYADH[0], "2026-10-26T01:30:00Z"),
+  withImsak(RIYADH[1], "2026-10-27T01:31:00Z"),
+];
+const JEDDAH_IMSAK = [
+  withImsak(JEDDAH[0], "2026-10-26T01:56:00Z"),
+  withImsak(JEDDAH[1], "2026-10-27T01:57:00Z"),
+];
+// Runs at iso with imsak on; returns the imsak instants that run booked.
+const imsakAt = async (iso: string, rows: DayPrayerTimes[]) => {
+  jest.setSystemTime(new Date(iso));
+  jest.mocked(scheduleNotification).mockClear();
+  await scheduleAllNotifications(SETTINGS, ATHKAR, rows, ZONE, null, {}, {}, IMSAK_ONLY);
+  return bookings()
+    .filter((b) => b.type === NOTIFICATION_TYPE.OTHER_TIMING && b.prayerId === "imsak")
+    .map((b) => b.at);
+};
+
+beforeEach(() => {
+  resetMemoryKv();
+  jest.clearAllMocks();
+  jest.replaceProperty(Platform, "OS", PlatformType.IOS);
+  jest.useFakeTimers({ now: new Date("2026-10-26T14:00:00Z") });
+});
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 // Maghrib pre-athan, athan, iqama: Riyadh 14:15, 14:30, 14:40;
 // Jeddah 14:41, 14:56, 15:06.
 describe("a reschedule after a prayer's alerts fired", () => {
-  beforeEach(() => {
-    resetMemoryKv();
-    jest.clearAllMocks();
-    jest.replaceProperty(Platform, "OS", PlatformType.IOS);
-    jest.useFakeTimers({ now: new Date("2026-10-26T14:00:00Z") });
-  });
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   it("does not book an athan or pre-athan again after a same-day move west", async () => {
     await run(RIYADH);
     await moveAt("2026-10-26T14:35:00Z", JEDDAH);
@@ -320,6 +354,26 @@ describe("a reschedule after a prayer's alerts fired", () => {
     // Only the 14:40 iqama is still due.
     expect(maghribOn26()).toEqual([
       { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T14:40:00.000Z" },
+    ]);
+  });
+});
+
+// Imsak: Riyadh 01:30, Jeddah 01:56 on the 26th.
+describe("a reschedule after another timing fired", () => {
+  it("a same-day move west does not book a fired imsak again", async () => {
+    await imsakAt("2026-10-26T01:00:00Z", RIYADH_IMSAK);
+    expect(await imsakAt("2026-10-26T01:35:00Z", JEDDAH_IMSAK)).toEqual([
+      "2026-10-27T01:57:00.000Z",
+    ]);
+  });
+
+  it("books an imsak cancelled before its time", async () => {
+    await imsakAt("2026-10-26T01:00:00Z", RIYADH_IMSAK);
+    jest.setSystemTime(new Date("2026-10-26T01:20:00Z"));
+    await cancelAllAlerts();
+    expect(await imsakAt("2026-10-26T01:35:00Z", JEDDAH_IMSAK)).toEqual([
+      "2026-10-26T01:56:00.000Z",
+      "2026-10-27T01:57:00.000Z",
     ]);
   });
 });
