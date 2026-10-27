@@ -109,7 +109,7 @@ When planning a new feature, **check this table first** to see if a similar capa
 - **Tab UI pattern:** pill-shaped `Pressable` in an `HStack`. See `components/athkar/AthkarTabs.tsx` for the canonical example.
 - **Card surfaces go through `components/ui/card`** (plain / grouped / pressable variants, 16px radius). Home, Tools, Settings, Athkar, Quran, Umrah, Qada and Hijri were all moved onto it — don't hand-roll another bordered `YStack`.
 - **Settings rows go through `components/settings/SettingsToggleRow.tsx` and `SettingsChoiceRow.tsx`.**
-- **Deprecated APIs fail lint** (`no-deprecated`). Reanimated: `scheduleOnUI` / `scheduleOnRN`, not `runOnUI` / `runOnJS`. Tests run the same check. Only the Gesture Handler 3 builder names (`Gesture`, `Tap`, `Pan` …) are allow-listed in `eslint.config.js`.
+- **Deprecated APIs fail lint**: `no-deprecated` warns, and CI and the Lefthook hooks run with `--max-warnings 0`. Reanimated: `scheduleOnUI` / `scheduleOnRN`, not `runOnUI` / `runOnJS`. Tests run the same check. Only the Gesture Handler 3 builder names (`Gesture`, `Tap`, `Pan` …) are allow-listed in `eslint.config.js`.
 
 - **Alarms arm only at a verified place.** `utils/timesPlace.ts` is the one rule (both persisted stores hydrated + `usingDefaultLocation` false); the scheduler, `canTurnOnAlarm` and `useAlarmOn` read it. A switch reads On when enabled and (verified or an alarm is armed), so it never shows Off while something will ring.
 - **ms.json / ur.json belong to Crowdin.** New keys go into en.json + ar.json only; missing ms/ur keys fall back to English.
