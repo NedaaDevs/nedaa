@@ -75,10 +75,16 @@ describe("alarm store cancels and the fired ledger", () => {
     expect(ledger()).toEqual([RANG]);
   });
 
-  it("a refused native cancel keeps the booking", async () => {
+  it("a refused native cancel forgets the booking", async () => {
     mockResults.cancelAlarm = false;
     await useAlarmStore.getState().cancelAlarmsByType(ScheduledAlarmType.FAJR);
-    expect(ledger()).toEqual([RANG, NEXT]);
+    expect(ledger()).toEqual([RANG]);
+  });
+
+  it("a thrown native cancel forgets the booking", async () => {
+    mockResults.cancelAlarm = new Error("bridge");
+    await useAlarmStore.getState().cancelAlarmsByType(ScheduledAlarmType.FAJR);
+    expect(ledger()).toEqual([RANG]);
   });
 
   it("cancelling one alarm forgets only its own booking", async () => {
@@ -101,6 +107,12 @@ describe("alarm store cancels and the fired ledger", () => {
   });
 
   it("cancelling every alarm forgets every booking that had not rung", async () => {
+    await useAlarmStore.getState().cancelAllAlarms();
+    expect(ledger()).toEqual([RANG]);
+  });
+
+  it("cancelling every alarm forgets the unrung bookings when the native cancel throws", async () => {
+    mockResults.cancelAllAlarms = new Error("bridge");
     await useAlarmStore.getState().cancelAllAlarms();
     expect(ledger()).toEqual([RANG]);
   });
