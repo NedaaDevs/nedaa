@@ -26,10 +26,10 @@ export interface ScheduledAlarm {
   isPreview?: boolean;
 }
 
-// Runs whatever the native cancel reports: a kept entry can drop the moved
-// alarm, and a forgotten one can only let a second alarm ring.
-const forgetCancelled = (alarm: ScheduledAlarm): void =>
-  forgetBooking(FIRED_LEDGER.ALARMS, { key: alarm.alarmType, at: alarm.triggerTime }, Date.now());
+// Whatever the cancel reports, forgotten from its start time: a kept entry
+// can drop the moved alarm, a forgotten one only lets a second alarm ring.
+const forgetCancelled = (alarm: ScheduledAlarm, startedAt: number): void =>
+  forgetBooking(FIRED_LEDGER.ALARMS, { key: alarm.alarmType, at: alarm.triggerTime }, startedAt);
 
 export interface SnoozeResult {
   snoozeId: string;
@@ -242,13 +242,14 @@ export const useAlarmStore = create<AlarmState>()(
 
         cancelAlarm: async (alarmId) => {
           const alarm = get().scheduledAlarms[alarmId];
+          const startedAt = Date.now();
           try {
             await ExpoAlarm.cancelAlarm(alarmId);
             ExpoAlarm.deleteAlarmFromDB(alarmId);
           } catch (error) {
             alarmLog.e("Store", `cancelAlarm: native cancel failed for ${alarmId}`, error as Error);
           }
-          if (alarm) forgetCancelled(alarm);
+          if (alarm) forgetCancelled(alarm, startedAt);
 
           set((state) => {
             const newAlarms = { ...state.scheduledAlarms };
@@ -264,6 +265,7 @@ export const useAlarmStore = create<AlarmState>()(
           );
 
           const cancelledIds: string[] = [];
+          const startedAt = Date.now();
           for (const alarm of toCancel) {
             try {
               if (await ExpoAlarm.cancelAlarm(alarm.alarmId)) {
@@ -279,7 +281,7 @@ export const useAlarmStore = create<AlarmState>()(
                 error as Error
               );
             }
-            forgetCancelled(alarm);
+            forgetCancelled(alarm, startedAt);
           }
 
           set((state) => {
@@ -293,6 +295,7 @@ export const useAlarmStore = create<AlarmState>()(
         },
 
         cancelAllAlarms: async () => {
+          const startedAt = Date.now();
           try {
             await ExpoAlarm.cancelAllAlarms();
             await ExpoAlarm.cancelAllBackups();
@@ -301,7 +304,7 @@ export const useAlarmStore = create<AlarmState>()(
             alarmLog.e("Store", "cancelAllAlarms: native cancel failed", error as Error);
           }
           // Whatever the native cancel reports, as for a single alarm.
-          forgetUnfired(FIRED_LEDGER.ALARMS, Date.now());
+          forgetUnfired(FIRED_LEDGER.ALARMS, startedAt);
           set({ scheduledAlarms: {} });
         },
 
