@@ -54,15 +54,9 @@ jest.mock("@/utils/customSoundManager", () => ({
   createChannelWithCustomSound: jest.fn(),
 }));
 
-const mockLogError = jest.fn();
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: {
-    create: () => ({
-      d: jest.fn(),
-      i: jest.fn(),
-      w: jest.fn(),
-      e: (...args: unknown[]) => mockLogError(...args),
-    }),
+    create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }),
   },
 }));
 jest.mock(
