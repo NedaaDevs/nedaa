@@ -948,7 +948,7 @@
   "location.picker.resultCountCapped_few": "تعرض القائمة أول {{count}} مدن مطابقة للبحث",
   "location.picker.resultCountCapped_many": "تعرض القائمة أول {{count}} مدينة مطابقة للبحث",
   "location.picker.resultCountCapped_other": "تعرض القائمة أول {{count}} مدينة مطابقة للبحث",
-  "location.picker.searchExample": "بالعربية أو الإنجليزية، مثل: الرياض أو ⁦Riyadh⁩.",
+  "location.picker.searchExample": "بالعربية أو الإنجليزية، مثل: مكة المكرمة أو ⁦Makkah⁩.",
   "location.picker.searchFailed.body": "يُرجى إعادة المحاولة بعد قليل.",
   "location.picker.searchFailed.title": "تعذّر البحث في قائمة المدن",
   "location.picker.searching": "جارٍ البحث…",

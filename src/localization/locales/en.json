@@ -805,7 +805,7 @@
   "location.picker.resultCount_other": "{{count}} cities found",
   "location.picker.resultCountCapped_one": "Showing the first city that matches",
   "location.picker.resultCountCapped_other": "Showing the first {{count}} cities that match",
-  "location.picker.searchExample": "In Arabic or English, such as Riyadh or الرياض.",
+  "location.picker.searchExample": "In Arabic or English, such as Makkah or مكة المكرمة.",
   "location.picker.searchFailed.body": "Try again in a moment.",
   "location.picker.searchFailed.title": "Cities couldn't be searched",
   "location.picker.searching": "Searching…",
