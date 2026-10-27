@@ -79,6 +79,7 @@ describe("Feedback", () => {
 
     expect(await screen.findByText(t("feedback.success.title"))).toBeTruthy();
     const [first, retry] = jest.mocked(submitFeedback).mock.calls.map(([input]) => input);
+    expect(first.clientKey).toEqual(expect.any(String));
     expect(retry.clientKey).toBe(first.clientKey);
   });
 });
