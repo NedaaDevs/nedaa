@@ -125,6 +125,28 @@ describe("alarm store cancels and the fired ledger", () => {
     expect(ledger()).toEqual([RANG]);
   });
 
+  it("cancelling by type forgets a booking recorded while it runs", async () => {
+    mockResults.cancelAlarm = () => {
+      recordBooked(FIRED_LEDGER.ALARMS, [NEXT], Date.now());
+      return true;
+    };
+    await useAlarmStore.getState().cancelAlarmsByType(ScheduledAlarmType.FAJR);
+    expect(ledger()).toEqual([RANG]);
+  });
+
+  it("cancelling every alarm forgets a booking recorded while it runs", async () => {
+    mockResults.cancelAllAlarms = () => {
+      recordBooked(
+        FIRED_LEDGER.ALARMS,
+        [{ key: ScheduledAlarmType.FAJR, at: NOW + 2 * HOUR }],
+        NOW
+      );
+      return true;
+    };
+    await useAlarmStore.getState().cancelAllAlarms();
+    expect(ledger()).toEqual([RANG]);
+  });
+
   it("cancelling every alarm forgets every booking that had not rung", async () => {
     await useAlarmStore.getState().cancelAllAlarms();
     expect(ledger()).toEqual([RANG]);

@@ -315,6 +315,46 @@ describe("a reschedule after a prayer's alerts fired", () => {
     ]);
   });
 
+  it("forgets a booking whose instant passes while the native athan cancel runs", async () => {
+    jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
+    await run(RIYADH);
+    jest.setSystemTime(new Date("2026-10-26T14:20:00Z"));
+    jest.mocked(cancelAllAthans).mockImplementationOnce(async () => {
+      jest.setSystemTime(new Date("2026-10-26T14:31:00Z"));
+      return true;
+    });
+    await cancelAllAlerts();
+    await moveAt("2026-10-26T14:45:00Z", JEDDAH);
+    expect(maghribOn26()).toEqual([
+      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
+      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+    ]);
+  });
+
+  it("a late cancel forgets the bookings a run recorded under it", async () => {
+    let releaseCancel: () => void = () => {};
+    jest.mocked(cancelAllScheduledNotifications).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseCancel = resolve;
+        })
+    );
+    const first = run(JEDDAH);
+    while (jest.mocked(cancelAllScheduledNotifications).mock.calls.length === 0) {
+      await Promise.resolve();
+    }
+    // Books and records Riyadh's 14:15, 14:30 and 14:40 under the held cancel.
+    await run(RIYADH);
+    releaseCancel();
+    await first;
+    await moveAt("2026-10-26T14:35:00Z", JEDDAH);
+    expect(maghribOn26().map((b) => b.type)).toEqual([
+      NOTIFICATION_TYPE.PRE_ATHAN,
+      NOTIFICATION_TYPE.PRAYER,
+      NOTIFICATION_TYPE.IQAMA,
+    ]);
+  });
+
   it("records nothing for a run that another run cancelled under it", async () => {
     let release: () => void = () => {};
     jest.mocked(scheduleNotification).mockImplementationOnce(
