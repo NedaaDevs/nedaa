@@ -17,7 +17,6 @@ import {
   checkPermissions,
   scheduleRecurringNotification,
 } from "@/utils/notifications";
-import { timeZonedNow } from "@/utils/date";
 import { AppLogger } from "@/utils/appLogger";
 import { scheduleQadaNotifications } from "@/utils/qadaNotificationScheduler";
 
@@ -62,6 +61,11 @@ import { useQuranRemindersStore } from "@/stores/quranReminders";
 import { weekdayToExpo } from "@/enums/quranReminders";
 import { enabledQuranReminderCount } from "@/utils/reminders/reminderBudget";
 import type { QuranReminder } from "@/types/quranReminders";
+
+// Fired-prayer guard
+import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
+import { forgetUnfired, readLedger, recordBooked } from "@/services/firedPrayerLedger";
+import { hasFired, notificationKey, type LedgerEntry } from "@/utils/firedPrayerGuard";
 
 const log = AppLogger.create("notifications");
 
@@ -291,12 +295,20 @@ const scheduleQuranReminderNotifications = async (
   }
 };
 
+// A run records its bookings only while no later cancel has started.
+let cancelGeneration = 0;
+
 /** Cancels every booked notification and, on Android, every native athan. */
 export const cancelAllAlerts = async (): Promise<void> => {
+  cancelGeneration++;
   const athansCancelled = Platform.OS !== PlatformType.ANDROID || (await cancelAllAthans([]));
   await cancelAllScheduledNotifications();
   // A failed native cancel leaves athans armed after their notifications are gone.
-  if (!athansCancelled) log.e("Scheduler", "native athan cancel failed; athans may still fire");
+  if (!athansCancelled) {
+    log.e("Scheduler", "native athan cancel failed; athans may still fire");
+    return; // an armed athan still fires, so its booking stays in the ledger
+  }
+  forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, Date.now());
 };
 
 /**
@@ -340,6 +352,8 @@ export const scheduleAllNotifications = async (
     return { success: true, scheduledCount: 0 };
   }
 
+  const booked: LedgerEntry[] = [];
+  let generation: number | null = null;
   try {
     // Get custom sounds (Android only, empty array for iOS)
     const storeState = useCustomSoundsStore.getState();
@@ -367,9 +381,17 @@ export const scheduleAllNotifications = async (
     const fullIqamaEnabled =
       Platform.OS === PlatformType.ANDROID && (androidOptions.fullIqamaPlayback ?? false);
 
-    await cancelAllAlerts();
+    // cancelAllAlerts bumps the generation before its first await.
+    const cancelling = cancelAllAlerts();
+    generation = cancelGeneration;
+    await cancelling;
 
-    const now = timeZonedNow(timezone);
+    // Every alert is an instant, so "passed" reads the real now.
+    const now = new Date();
+    const fired = readLedger(FIRED_LEDGER.NOTIFICATIONS, now.getTime());
+    // The prayer alerts of this run, keyed to the entry each records.
+    const occurrences = new Map<NotificationScheduleItem, LedgerEntry>();
+    let firedCount = 0;
 
     const daysPrayerTimes = data;
 
@@ -400,8 +422,19 @@ export const scheduleAllNotifications = async (
           fullIqamaEnabled
         );
 
-        notificationsToSchedule.push(...prayerNotifications);
+        for (const item of prayerNotifications) {
+          const key = notificationKey(item.type, item.prayerId);
+          if (hasFired(fired, key, item.time.getTime(), now.getTime())) {
+            firedCount++;
+            continue;
+          }
+          occurrences.set(item, { key, at: item.time.getTime() });
+          notificationsToSchedule.push(item);
+        }
       }
+    }
+    if (firedCount > 0) {
+      log.i("Scheduler", `${firedCount} alerts already fired for their prayer — not booked again`);
     }
 
     // Generate other timing notifications
@@ -507,6 +540,8 @@ export const scheduleAllNotifications = async (
       if (result.success) {
         scheduledCount++;
         lastScheduledTime = notification.time;
+        const occurrence = occurrences.get(notification);
+        if (occurrence) booked.push(occurrence);
 
         // Per-item trace for shared diagnostic bundles. DEBUG level: written only
         // in dev builds or when debug mode is on; the flag persists, so it also
@@ -602,6 +637,11 @@ export const scheduleAllNotifications = async (
       scheduledCount: 0,
       error: error instanceof Error ? error : new Error("Unknown error"),
     };
+  } finally {
+    // Bookings made before a throw still landed.
+    if (generation === cancelGeneration) {
+      recordBooked(FIRED_LEDGER.NOTIFICATIONS, booked, Date.now());
+    }
   }
 };
 
