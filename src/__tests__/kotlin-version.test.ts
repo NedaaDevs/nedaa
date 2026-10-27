@@ -14,8 +14,13 @@ const KOTLIN_PLUGIN = {
 // The Groovy variable the root build reads android.kotlinVersion into.
 const VERSION_FROM_PROPERTY = "$kotlinVersion";
 
-// A plugins-block entry takes only a literal version.
-const KOTLIN_PLUGIN_WITH_LITERAL = /id\s+['"]org\.jetbrains\.kotlin[^'"]*['"]\s+version\b/;
+// The Groovy line that reads android.kotlinVersion into that variable.
+const VARIABLE_FROM_PROPERTY =
+  /def\s+kotlinVersion\s*=\s*findProperty\(\s*['"]android\.kotlinVersion['"]\s*\)/;
+
+// A plugins-block entry, `id "…"` or `id("…")`, takes only a literal version.
+const KOTLIN_PLUGIN_WITH_LITERAL =
+  /id\s*\(?\s*['"]org\.jetbrains\.kotlin[^'"]*['"]\s*\)?\s*version\b/;
 
 /** The root build minus its block comments and its comment lines. */
 const rootBuild = () =>
@@ -31,6 +36,10 @@ const classpathVersion = (source: string, coordinate: string) => {
 };
 
 describe("Kotlin plugin versions", () => {
+  it("reads the version variable from android.kotlinVersion", () => {
+    expect(rootBuild()).toMatch(VARIABLE_FROM_PROPERTY);
+  });
+
   it.each(Object.values(KOTLIN_PLUGIN))("%s takes android.kotlinVersion", (coordinate) => {
     expect(classpathVersion(rootBuild(), coordinate)).toBe(VERSION_FROM_PROPERTY);
   });
