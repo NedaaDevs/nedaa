@@ -90,7 +90,12 @@ const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** The list row that opens one alarm's page; its name starts with the title. */
 const alarmRow = (title: string) =>
   screen.findByRole("button", { name: new RegExp(`^${literal(title)}, `) });
-const DAY_MS = 24 * 60 * 60 * 1000;
+/** Now, `days` calendar days on; a clock change cannot move it a day. */
+const daysFromNow = (days: number) => {
+  const at = new Date();
+  at.setDate(at.getDate() + days);
+  return at;
+};
 /** Any emoji; a screen reader says each one by its long Unicode name. */
 const EMOJI = /\p{Extended_Pictographic}/u;
 /** Clock digits in either digit set, such as "1:05" or «١:٠٥». */
@@ -98,7 +103,7 @@ const CLOCK_DIGITS = /[0-9٠-٩]+:[0-9٠-٩]+/;
 
 /** Two days out at 13:05 on the device's clock, an afternoon ring time. */
 const afternoonRing = () => {
-  const at = new Date(Date.now() + 2 * DAY_MS);
+  const at = daysFromNow(2);
   at.setHours(13, 5, 0, 0);
   return at.getTime();
 };
@@ -261,7 +266,7 @@ describe("Alarm settings list", () => {
   // A rehearsal a few seconds out is not when the alarm rings.
   it("gives the real alarm's ring time while a rehearsal is pending", async () => {
     useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
-    const rings = Date.now() + 2 * DAY_MS;
+    const rings = daysFromNow(2).getTime();
     const rehearsal = fajrRecord("fajr-rehearsal", Date.now() + 30 * 1000, true);
     const real = fajrRecord("fajr-real", rings);
     useAlarmStore.setState({
@@ -279,7 +284,7 @@ describe("Alarm settings list", () => {
   it("speaks every other line the row draws, in reading order", async () => {
     useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
     useAlarmStreakStore.setState({ streak: 3 });
-    const rings = Date.now() + 2 * DAY_MS;
+    const rings = daysFromNow(2).getTime();
     const real = fajrRecord("fajr-real", rings);
     useAlarmStore.setState({ scheduledAlarms: { [real.alarmId]: real } });
     await renderScreen();
@@ -363,7 +368,7 @@ describe("Alarm settings list", () => {
   it("leaves out a streak the row does not draw", async () => {
     useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
     useAlarmStreakStore.setState({ streak: 1 });
-    const rings = Date.now() + 2 * DAY_MS;
+    const rings = daysFromNow(2).getTime();
     const real = fajrRecord("fajr-real", rings);
     useAlarmStore.setState({ scheduledAlarms: { [real.alarmId]: real } });
     await renderScreen();
