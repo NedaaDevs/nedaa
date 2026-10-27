@@ -9,6 +9,8 @@ import { generateDeterministicUUID, getSnoozeKey } from "@/utils/alarmId";
 import { toSettingsAlarmType } from "@/utils/alarmTypes";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
+import { forgetBooking, forgetUnfired } from "@/services/firedPrayerLedger";
 
 export interface ScheduledAlarm {
   alarmId: string;
@@ -23,6 +25,10 @@ export interface ScheduledAlarm {
   // A settings preview; solving it is not a wake-up.
   isPreview?: boolean;
 }
+
+// A cancel that lands before the trigger means the alarm never rang.
+const forgetCancelled = (alarm: ScheduledAlarm): void =>
+  forgetBooking(FIRED_LEDGER.ALARMS, { key: alarm.alarmType, at: alarm.triggerTime }, Date.now());
 
 export interface SnoozeResult {
   snoozeId: string;
@@ -234,9 +240,11 @@ export const useAlarmStore = create<AlarmState>()(
         },
 
         cancelAlarm: async (alarmId) => {
+          const alarm = get().scheduledAlarms[alarmId];
           try {
-            await ExpoAlarm.cancelAlarm(alarmId);
+            const cancelled = await ExpoAlarm.cancelAlarm(alarmId);
             ExpoAlarm.deleteAlarmFromDB(alarmId);
+            if (cancelled && alarm) forgetCancelled(alarm);
           } catch (error) {
             alarmLog.e("Store", `cancelAlarm: native cancel failed for ${alarmId}`, error as Error);
           }
@@ -260,6 +268,7 @@ export const useAlarmStore = create<AlarmState>()(
               if (await ExpoAlarm.cancelAlarm(alarm.alarmId)) {
                 ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
                 cancelledIds.push(alarm.alarmId);
+                forgetCancelled(alarm);
               } else {
                 alarmLog.e("Store", `cancelAlarmsByType: native refused ${alarm.alarmId}`);
               }
@@ -285,6 +294,9 @@ export const useAlarmStore = create<AlarmState>()(
         cancelAllAlarms: async () => {
           try {
             await ExpoAlarm.cancelAllAlarms();
+            // Backups belong to alarms that rang, so a failed backup cancel
+            // leaves no unfired booking armed.
+            forgetUnfired(FIRED_LEDGER.ALARMS, Date.now());
             await ExpoAlarm.cancelAllBackups();
             await ExpoAlarm.endAllLiveActivities();
           } catch (error) {

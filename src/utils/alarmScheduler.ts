@@ -7,8 +7,11 @@ import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
-import { pickNextTrigger } from "@/utils/alarmTrigger";
+import { applyTimingOffset, pickNextTrigger } from "@/utils/alarmTrigger";
 import type { TimingConfig } from "@/types/alarm";
+import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
+import { readLedger, recordBooked } from "@/services/firedPrayerLedger";
+import { hasFired } from "@/utils/firedPrayerGuard";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
 
@@ -97,6 +100,33 @@ export async function schedulePrayerAlarm(
   return armNextOccurrences(candidates, timing, alarmType, i18next.t(`prayerTimes.${prayerName}`));
 }
 
+// Drops each future candidate whose occurrence already rang under the
+// schedule this one replaces.
+const withoutRungOccurrences = (
+  candidates: (Date | null)[],
+  timing: TimingConfig | null | undefined,
+  alarmType: ScheduledAlarmType,
+  now: number
+): (Date | null)[] => {
+  const armedBefore = readLedger(FIRED_LEDGER.ALARMS, now);
+  // By instant: today and tomorrow appear twice among the candidates.
+  const rung = new Set<number>();
+  const kept = candidates.map((prayerDate) => {
+    if (!prayerDate) return null;
+    const trigger = applyTimingOffset(prayerDate, timing).getTime();
+    if (trigger <= now || !hasFired(armedBefore, alarmType, trigger, now)) return prayerDate;
+    rung.add(trigger);
+    return null;
+  });
+  if (rung.size > 0) {
+    alarmLog.i(
+      "Scheduler",
+      `${alarmType}: ${rung.size} occurrence(s) already rang — not armed again`
+    );
+  }
+  return kept;
+};
+
 // Arms the next occurrence and the one after it. The second rings even when the
 // first one's completion never reaches JS, which is what schedules the next.
 async function armNextOccurrences(
@@ -105,19 +135,25 @@ async function armNextOccurrences(
   alarmType: ScheduledAlarmType,
   title: string
 ): Promise<string | null> {
-  const next = pickNextTrigger(candidates, timing);
+  const now = Date.now();
+  const unrung = withoutRungOccurrences(candidates, timing, alarmType, now);
+  const next = pickNextTrigger(unrung, timing, now);
   if (!next) {
     alarmLog.w("Scheduler", `${alarmType}: no future trigger — alarm not scheduled`);
     return null;
   }
-  const following = pickNextTrigger(candidates, timing, next.triggerDate.getTime());
+  const following = pickNextTrigger(unrung, timing, next.triggerDate.getTime());
 
+  // The alarm ledger's one writer: previews, test alarms and snoozes book
+  // through the store and never count as a rung occurrence.
   const arm = async (triggerDate: Date): Promise<string | null> => {
     const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
     const success = await useAlarmStore
       .getState()
       .scheduleAlarm({ id, triggerDate, title, alarmType });
-    return success ? id : null;
+    if (!success) return null;
+    recordBooked(FIRED_LEDGER.ALARMS, [{ key: alarmType, at: triggerDate.getTime() }], Date.now());
+    return id;
   };
 
   const firstId = await arm(next.triggerDate);
