@@ -14,8 +14,11 @@ jest.mock(
       {
         get: (_target, name) => {
           if (name === "__esModule") return true;
-          return (..._args: unknown[]) =>
-            Promise.resolve(String(name) in mockResults ? mockResults[String(name)] : true);
+          return (..._args: unknown[]) => {
+            const result = String(name) in mockResults ? mockResults[String(name)] : true;
+            if (result instanceof Error) throw result;
+            return Promise.resolve(result);
+          };
         },
       }
     )
@@ -83,6 +86,18 @@ describe("alarm store cancels and the fired ledger", () => {
     recordBooked(FIRED_LEDGER.ALARMS, [friday], NOW);
     await useAlarmStore.getState().cancelAlarm("next");
     expect(ledger()).toEqual([RANG, friday]);
+  });
+
+  it("forgets a cancelled booking when the database delete throws", async () => {
+    mockResults.deleteAlarmFromDB = new Error("db");
+    await useAlarmStore.getState().cancelAlarm("next");
+    expect(ledger()).toEqual([RANG]);
+  });
+
+  it("forgets the bookings cancelled by type when the database delete throws", async () => {
+    mockResults.deleteAlarmFromDB = new Error("db");
+    await useAlarmStore.getState().cancelAlarmsByType(ScheduledAlarmType.FAJR);
+    expect(ledger()).toEqual([RANG]);
   });
 
   it("cancelling every alarm forgets every booking that had not rung", async () => {
