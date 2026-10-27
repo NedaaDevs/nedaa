@@ -243,8 +243,8 @@ export const useAlarmStore = create<AlarmState>()(
           const alarm = get().scheduledAlarms[alarmId];
           try {
             const cancelled = await ExpoAlarm.cancelAlarm(alarmId);
-            ExpoAlarm.deleteAlarmFromDB(alarmId);
             if (cancelled && alarm) forgetCancelled(alarm);
+            ExpoAlarm.deleteAlarmFromDB(alarmId);
           } catch (error) {
             alarmLog.e("Store", `cancelAlarm: native cancel failed for ${alarmId}`, error as Error);
           }
@@ -266,9 +266,9 @@ export const useAlarmStore = create<AlarmState>()(
           for (const alarm of toCancel) {
             try {
               if (await ExpoAlarm.cancelAlarm(alarm.alarmId)) {
+                forgetCancelled(alarm);
                 ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
                 cancelledIds.push(alarm.alarmId);
-                forgetCancelled(alarm);
               } else {
                 alarmLog.e("Store", `cancelAlarmsByType: native refused ${alarm.alarmId}`);
               }
