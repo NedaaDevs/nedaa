@@ -276,15 +276,17 @@ describe("a reschedule after a prayer's alerts fired", () => {
     });
   });
 
-  it("keeps unfired bookings when the native athan cancel fails", async () => {
+  it("books the moved athan and iqama after a failed native athan cancel", async () => {
     jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
-    await run(RIYADH, { fullAthanPlayback: true });
-    jest.setSystemTime(new Date("2026-10-26T14:20:00Z"));
+    await run(RIYADH);
     jest.mocked(cancelAllAthans).mockResolvedValueOnce(false);
-    // Riyadh's 14:30 native athan stays armed and plays.
-    await cancelAllAlerts();
-    await moveAt("2026-10-26T14:35:00Z", JEDDAH, { fullAthanPlayback: true });
-    expect(maghribOn26().map((b) => b.type)).toEqual([NOTIFICATION_TYPE.IQAMA]);
+    // The move cancels Riyadh's notifications; the native cancel fails.
+    await moveAt("2026-10-26T14:10:00Z", JEDDAH);
+    await moveAt("2026-10-26T14:45:00Z", JEDDAH);
+    expect(maghribOn26()).toEqual([
+      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
+      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+    ]);
   });
 
   it("records nothing for a run that another run cancelled under it", async () => {
@@ -329,6 +331,33 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await second;
     releaseBooking();
     await first;
+    expect(ledgerOn26(NOTIFICATION_TYPE.PRE_ATHAN)).toEqual(["2026-10-26T14:20:00.000Z"]);
+  });
+
+  it("records nothing for a run that an earlier run's late cancel landed under", async () => {
+    const cancels: (() => void)[] = [];
+    const holdCancel = () => new Promise<void>((resolve) => cancels.push(resolve));
+    jest
+      .mocked(cancelAllScheduledNotifications)
+      .mockImplementationOnce(holdCancel)
+      .mockImplementationOnce(holdCancel);
+    let releaseBooking: () => void = () => {};
+    jest.mocked(scheduleNotification).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseBooking = () => resolve(landed);
+        })
+    );
+    const first = run(RIYADH, {}, withPreAthanBefore(10)); // pre-athan 14:20
+    const second = run(RIYADH); // pre-athan 14:15
+    while (cancels.length < 2) await Promise.resolve();
+    cancels[1]();
+    while (jest.mocked(scheduleNotification).mock.calls.length === 0) await Promise.resolve();
+    // The first cancel lands while the second run's 14:15 booking is in flight.
+    cancels[0]();
+    await first;
+    releaseBooking();
+    await second;
     expect(ledgerOn26(NOTIFICATION_TYPE.PRE_ATHAN)).toEqual(["2026-10-26T14:20:00.000Z"]);
   });
 

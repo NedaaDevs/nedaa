@@ -295,21 +295,24 @@ const scheduleQuranReminderNotifications = async (
   }
 };
 
-// A run records its bookings only while no later cancel has started.
+// Moves as each cancel starts and ends. A run records its bookings only when
+// it has not moved since the run's own cancel ended.
 let cancelGeneration = 0;
 
 /** Cancels every booked notification and, on Android, every native athan. */
 export const cancelAllAlerts = async (): Promise<void> => {
   cancelGeneration++;
-  const athansCancelled = Platform.OS !== PlatformType.ANDROID || (await cancelAllAthans([]));
-  await cancelAllScheduledNotifications();
-  // A failed native cancel leaves athans armed after their notifications are gone.
-  if (!athansCancelled) {
-    log.e("Scheduler", "native athan cancel failed; athans may still fire");
-    // An armed athan still fires, so no unfired booking is forgotten.
-    return;
+  try {
+    const athansCancelled = Platform.OS !== PlatformType.ANDROID || (await cancelAllAthans([]));
+    await cancelAllScheduledNotifications();
+    // A failed native cancel leaves athans armed without their notifications.
+    if (!athansCancelled) log.e("Scheduler", "native athan cancel failed; athans may still fire");
+    // Forget unfired bookings even then: a stale athan plays at its old time,
+    // and the moved one must still play at its own.
+    forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, Date.now());
+  } finally {
+    cancelGeneration++;
   }
-  forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, Date.now());
 };
 
 /**
@@ -382,10 +385,8 @@ export const scheduleAllNotifications = async (
     const fullIqamaEnabled =
       Platform.OS === PlatformType.ANDROID && (androidOptions.fullIqamaPlayback ?? false);
 
-    // cancelAllAlerts bumps the generation before its first await.
-    const cancelling = cancelAllAlerts();
+    await cancelAllAlerts();
     generation = cancelGeneration;
-    await cancelling;
 
     // Every alert is an instant, so "passed" reads the real now.
     const now = new Date();
