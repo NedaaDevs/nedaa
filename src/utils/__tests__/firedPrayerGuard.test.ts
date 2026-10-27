@@ -1,13 +1,14 @@
 import { fromZonedTime } from "date-fns-tz";
 import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/PrayerOccurrence";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { PRAYER_ID } from "@/constants/Prayer";
 import { hasFired, notificationKey, pruneLedger } from "@/utils/firedPrayerGuard";
 
 const at = (iso: string) => new Date(iso).getTime();
 const wall = (local: string, zone: string) => fromZonedTime(local, zone).getTime();
 const MINUTE = 60_000;
-const MAGHRIB = notificationKey(NOTIFICATION_TYPE.PRAYER, "maghrib");
-const ISHA = notificationKey(NOTIFICATION_TYPE.PRAYER, "isha");
+const MAGHRIB = notificationKey(NOTIFICATION_TYPE.PRAYER, PRAYER_ID.MAGHRIB);
+const ISHA = notificationKey(NOTIFICATION_TYPE.PRAYER, PRAYER_ID.ISHA);
 const FIRED = [{ key: MAGHRIB, at: at("2026-10-26T14:30:00Z") }];
 
 describe("hasFired", () => {
@@ -34,9 +35,9 @@ describe("hasFired", () => {
   it("matches only the same alert kind and prayer", () => {
     const next = at("2026-10-26T14:56:00Z");
     const now = at("2026-10-26T14:35:00Z");
-    expect(hasFired(FIRED, notificationKey(NOTIFICATION_TYPE.IQAMA, "maghrib"), next, now)).toBe(
-      false
-    );
+    expect(
+      hasFired(FIRED, notificationKey(NOTIFICATION_TYPE.IQAMA, PRAYER_ID.MAGHRIB), next, now)
+    ).toBe(false);
     expect(hasFired(FIRED, ISHA, next, now)).toBe(false);
   });
   it("splits the same occurrence from the next one at 12 hours", () => {
