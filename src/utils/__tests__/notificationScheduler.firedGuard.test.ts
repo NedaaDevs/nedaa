@@ -179,6 +179,23 @@ describe("a reschedule after a prayer's alerts fired", () => {
     expect(maghribOn26().map((b) => b.type)).toEqual([NOTIFICATION_TYPE.IQAMA]);
   });
 
+  it("a reschedule after Maghrib's athan and before its iqama books the iqama", async () => {
+    await run(RIYADH);
+    await moveAt("2026-10-26T14:35:00Z", RIYADH);
+    expect(maghribOn26()).toEqual([
+      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T14:40:00.000Z" },
+    ]);
+  });
+
+  it("an iqama that already fired is not booked again", async () => {
+    await run(RIYADH);
+    // Riyadh's 14:40 iqama fired; a 20-minute iqama falls at 14:50.
+    jest.setSystemTime(new Date("2026-10-26T14:45:00Z"));
+    jest.mocked(scheduleNotification).mockClear();
+    await run(RIYADH, {}, withIqamaAfter(20));
+    expect(maghribOn26()).toEqual([]);
+  });
+
   it("books the athan when the earlier one was cancelled before its time", async () => {
     await run(RIYADH);
     jest.setSystemTime(new Date("2026-10-26T14:10:00Z"));
@@ -300,7 +317,9 @@ describe("a reschedule after a prayer's alerts fired", () => {
   it("does not book a passed athan again when the place zone is behind the process zone", async () => {
     // An empty ledger, as on the first run after an update.
     await moveAt("2026-10-26T14:35:00Z", RIYADH, {}, BEHIND_ZONE);
-    // The iqama follows its athan's passed check, which this test does not pin.
-    expect(maghribOn26().filter((b) => b.type !== NOTIFICATION_TYPE.IQAMA)).toEqual([]);
+    // Only the 14:40 iqama is still due.
+    expect(maghribOn26()).toEqual([
+      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T14:40:00.000Z" },
+    ]);
   });
 });

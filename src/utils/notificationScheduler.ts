@@ -408,10 +408,7 @@ export const scheduleAllNotifications = async (
 
         const prayerDate = parseISO(prayerTimeString);
 
-        // Skip prayers that have already passed
-        if (!isAfter(prayerDate, now)) continue;
-
-        // Generate notifications for this prayer with its settings
+        // Each alert checks its own time: an iqama outlives its athan.
         const prayerNotifications = generatePrayerNotifications(
           prayerId,
           prayerDate,
