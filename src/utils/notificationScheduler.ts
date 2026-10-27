@@ -302,6 +302,8 @@ let cancelGeneration = 0;
 /** Cancels every booked notification and, on Android, every native athan. */
 export const cancelAllAlerts = async (): Promise<void> => {
   cancelGeneration++;
+  // Read before the cancel: an alert due while it runs may be one it removed.
+  const startedAt = Date.now();
   try {
     const athansCancelled = Platform.OS !== PlatformType.ANDROID || (await cancelAllAthans([]));
     await cancelAllScheduledNotifications();
@@ -310,7 +312,7 @@ export const cancelAllAlerts = async (): Promise<void> => {
   } finally {
     // Forgotten whatever the cancel did: a stale athan plays at its old time,
     // and the moved one must still play at its own.
-    forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, Date.now());
+    forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, startedAt);
     cancelGeneration++;
   }
 };
