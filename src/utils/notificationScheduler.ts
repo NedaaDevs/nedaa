@@ -306,7 +306,8 @@ export const cancelAllAlerts = async (): Promise<void> => {
   // A failed native cancel leaves athans armed after their notifications are gone.
   if (!athansCancelled) {
     log.e("Scheduler", "native athan cancel failed; athans may still fire");
-    return; // an armed athan still fires, so its booking stays in the ledger
+    // An armed athan still fires, so no unfired booking is forgotten.
+    return;
   }
   forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, Date.now());
 };
