@@ -74,6 +74,12 @@ const DIRECTION: Record<AppDirection, Direction> = {
   [AppDirection.RTL]: Direction.RTL,
 };
 
+const STYLE_DIRECTION: Record<NonNullable<ViewStyle["direction"]>, Direction> = {
+  inherit: Direction.Inherit,
+  ltr: Direction.LTR,
+  rtl: Direction.RTL,
+};
+
 // The host type React Native measures as one leaf.
 const HOST_TEXT = "Text";
 
@@ -87,6 +93,7 @@ let yoga: Promise<Yoga> | undefined;
 /** Only the horizontal layout: heights stay unset. */
 const build = (engine: Yoga, config: YogaConfig, { style, children = [] }: YogaBox): YogaNode => {
   const node = engine.Node.create(config);
+  if (style.direction) node.setDirection(STYLE_DIRECTION[style.direction]);
   if (style.position === "absolute") node.setPositionType(PositionType.Absolute);
   if (style.flexDirection) node.setFlexDirection(FLEX_DIRECTION[style.flexDirection]);
   if (style.alignItems) node.setAlignItems(ALIGN[style.alignItems]);

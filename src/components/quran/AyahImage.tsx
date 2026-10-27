@@ -112,7 +112,10 @@ const AyahImage = ({
         const segWidth = (s.maxX - s.minX) * scale;
         const segHeight = srcLineHeight * scale;
         return (
-          <View key={s.line} style={{ width: segWidth, height: segHeight, overflow: "hidden" }}>
+          // The offset counts from the image's left edge in every direction.
+          <View
+            key={s.line}
+            style={{ width: segWidth, height: segHeight, overflow: "hidden", direction: "ltr" }}>
             <Image
               source={{
                 uri: isPageMode
