@@ -90,8 +90,7 @@ export default function AddCustomSoundModal({
   const choose = (file: DocumentPicker.DocumentPickerAsset | null) => {
     if (!file) return;
 
-    // Refused at pick time, so a name is never typed for a file that cannot
-    // be added.
+    // A file over the size limit is refused before a name is typed for it.
     if (validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
       setSelectedFile(null);
       setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
