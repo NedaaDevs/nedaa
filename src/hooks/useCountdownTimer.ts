@@ -14,7 +14,8 @@ const SECOND_MS = 1000;
 type Counter = (now: Date, days: StoredDays, settings: CountSettings) => FocusCount | null;
 
 export type CountdownOptions = {
-  /** Counts since the last prayer instead of until the next. */
+  /** Swaps the count: until the next prayer while one is in focus, else
+   * since the last. */
   flipped?: boolean;
   /** Holds the second clock while the figure's screen is out of focus. */
   paused?: boolean;
@@ -40,7 +41,7 @@ const useFigure = (count: Counter, paused = false): FocusCount | null => {
   return ticking ? count(latest, days, settings) : coarse;
 };
 
-/** The focus figure: until the next prayer, or since the last when flipped. */
+/** The focus figure, or the opposite count when flipped (see focusCount). */
 export const useCountdownTimer = ({
   flipped = false,
   paused = false,
