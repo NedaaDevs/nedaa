@@ -307,10 +307,10 @@ export const cancelAllAlerts = async (): Promise<void> => {
     await cancelAllScheduledNotifications();
     // A failed native cancel leaves athans armed without their notifications.
     if (!athansCancelled) log.e("Scheduler", "native athan cancel failed; athans may still fire");
-    // Forget unfired bookings even then: a stale athan plays at its old time,
+  } finally {
+    // Forgotten whatever the cancel did: a stale athan plays at its old time,
     // and the moved one must still play at its own.
     forgetUnfired(FIRED_LEDGER.NOTIFICATIONS, Date.now());
-  } finally {
     cancelGeneration++;
   }
 };

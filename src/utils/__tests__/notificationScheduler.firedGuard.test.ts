@@ -289,6 +289,18 @@ describe("a reschedule after a prayer's alerts fired", () => {
     ]);
   });
 
+  it("books the moved athan and iqama after the notification cancel throws", async () => {
+    await run(RIYADH);
+    jest.setSystemTime(new Date("2026-10-26T14:10:00Z"));
+    jest.mocked(cancelAllScheduledNotifications).mockRejectedValueOnce(new Error("cancel"));
+    await expect(cancelAllAlerts()).rejects.toThrow("cancel");
+    await moveAt("2026-10-26T14:45:00Z", JEDDAH);
+    expect(maghribOn26()).toEqual([
+      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
+      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+    ]);
+  });
+
   it("records nothing for a run that another run cancelled under it", async () => {
     let release: () => void = () => {};
     jest.mocked(scheduleNotification).mockImplementationOnce(
