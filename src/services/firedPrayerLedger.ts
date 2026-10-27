@@ -72,13 +72,14 @@ export const recordBooked = (
   rewrite(ledger, now, (stored) => [...stored, ...entries]);
 };
 
-// A booking cancelled before its instant never fired.
-export const forgetUnfired = (ledger: FiredLedger, now: number): void =>
-  rewrite(ledger, now, (stored) => stored.filter((entry) => entry.at <= now));
+// Drops bookings due after `since`, fired or not: a kept one can block the
+// moved alert, and a forgotten one only lets a second alert play.
+export const forgetUnfired = (ledger: FiredLedger, since: number): void =>
+  rewrite(ledger, since, (stored) => stored.filter((entry) => entry.at <= since));
 
-export const forgetBooking = (ledger: FiredLedger, booking: LedgerEntry, now: number): void => {
-  if (booking.at <= now) return;
-  rewrite(ledger, now, (stored) =>
+export const forgetBooking = (ledger: FiredLedger, booking: LedgerEntry, since: number): void => {
+  if (booking.at <= since) return;
+  rewrite(ledger, since, (stored) =>
     stored.filter((entry) => entry.key !== booking.key || entry.at !== booking.at)
   );
 };
