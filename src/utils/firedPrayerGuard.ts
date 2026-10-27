@@ -1,12 +1,14 @@
 import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/FiredPrayerGuard";
-import type { NotificationType } from "@/types/notification";
+import type { NotificationType, OtherTimingId } from "@/types/notification";
 import type { PrayerName } from "@/types/prayerTimes";
 
 // One alert handed to the OS: what it is and the instant it fires.
 export type LedgerEntry = { key: string; at: number };
 
-export const notificationKey = (type: NotificationType, prayerId: PrayerName): string =>
-  `${type}:${prayerId}`;
+export const notificationKey = (
+  type: NotificationType,
+  timingId: PrayerName | OtherTimingId
+): string => `${type}:${timingId}`;
 
 // The OS fires a booking at its instant, so a booking at or before now
 // counts as fired; one under the window before nextAt is the same occurrence.
