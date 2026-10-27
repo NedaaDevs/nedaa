@@ -236,7 +236,8 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await run(RIYADH, { fullAthanPlayback: true });
     jest.setSystemTime(new Date("2026-10-26T14:20:00Z"));
     jest.mocked(cancelAllAthans).mockResolvedValueOnce(false);
-    await cancelAllAlerts(); // Riyadh's 14:30 native athan stays armed and plays
+    // Riyadh's 14:30 native athan stays armed and plays.
+    await cancelAllAlerts();
     await moveAt("2026-10-26T14:35:00Z", JEDDAH, { fullAthanPlayback: true });
     expect(maghribOn26().map((b) => b.type)).toEqual([NOTIFICATION_TYPE.IQAMA]);
   });
@@ -252,7 +253,8 @@ describe("a reschedule after a prayer's alerts fired", () => {
     // Held at its first booking, the 14:15 pre-athan; its iqama is 14:40.
     const first = run(RIYADH);
     while (jest.mocked(scheduleNotification).mock.calls.length === 0) await Promise.resolve();
-    await run(RIYADH, {}, withIqamaAfter(20)); // cancels, then books iqama 14:50
+    // Cancels, then books iqama 14:50.
+    await run(RIYADH, {}, withIqamaAfter(20));
     release();
     await first;
     expect(ledgerOn26(NOTIFICATION_TYPE.IQAMA)).toEqual(["2026-10-26T14:50:00.000Z"]);
@@ -286,7 +288,8 @@ describe("a reschedule after a prayer's alerts fired", () => {
   });
 
   it("books Maghrib due in 30 minutes when the place zone is not the process zone", async () => {
-    await run(RIYADH, {}, SETTINGS, AHEAD_ZONE); // 14:00Z; the Maghrib athan is at 14:30Z
+    // 14:00Z; the Maghrib athan is at 14:30Z.
+    await run(RIYADH, {}, SETTINGS, AHEAD_ZONE);
     expect(maghribOn26()).toContainEqual({
       type: NOTIFICATION_TYPE.PRAYER,
       prayerId: "maghrib",
