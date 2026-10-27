@@ -17,12 +17,11 @@ const VERSION_FROM_PROPERTY = "$kotlinVersion";
 // A plugins-block entry takes only a literal version.
 const KOTLIN_PLUGIN_WITH_LITERAL = /id\s+['"]org\.jetbrains\.kotlin[^'"]*['"]\s+version\b/;
 
-/** The root build minus comment lines; a commented-out entry never counts. */
+/** The root build minus its block comments and its comment lines. */
 const rootBuild = () =>
   readFileSync(join(REPO_ROOT, "android", "build.gradle"), "utf8")
-    .split("\n")
-    .filter((line) => !/^\s*(\/\/|\/?\*)/.test(line))
-    .join("\n");
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
 
 /** The version written after `<coordinate>:` in the root build, if any. */
 const classpathVersion = (source: string, coordinate: string) => {
