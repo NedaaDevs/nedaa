@@ -148,6 +148,35 @@ describe("prayer alarms after a reschedule", () => {
     ]);
   });
 
+  it("arms the moved Fajr after re-arming its day replaced the earlier time", async () => {
+    jest.useFakeTimers({ now: new Date("2026-10-26T00:00:00Z") });
+    setDays([
+      prayerDay("2026-10-26", "01:40"),
+      prayerDay("2026-10-27", "01:41"),
+      prayerDay("2026-10-28", "01:42"),
+    ]);
+    await scheduleFajrAlarm(); // 01:40 on the 26th and 01:41 on the 27th
+    // The times move with no reschedule; the rung alarm's completion re-arms.
+    jest.setSystemTime(new Date("2026-10-26T01:45:00Z"));
+    setDays([
+      prayerDay("2026-10-26", "01:54"),
+      prayerDay("2026-10-27", "01:55"),
+      prayerDay("2026-10-28", "01:56"),
+    ]);
+    await scheduleFajrAlarm(); // 01:55 takes the 27th's id from 01:41
+    jest.setSystemTime(new Date("2026-10-27T01:45:00Z"));
+    setDays([
+      prayerDay("2026-10-27", "01:55"),
+      prayerDay("2026-10-28", "01:56"),
+      prayerDay("2026-10-29", "01:57"),
+    ]);
+    await rescheduleAllAlarms();
+    expect(armed(ScheduledAlarmType.FAJR)).toEqual([
+      "2026-10-27T01:55:00.000Z",
+      "2026-10-28T01:56:00.000Z",
+    ]);
+  });
+
   it("a rehearsal or a test alarm does not count as a rung Fajr", async () => {
     jest.useFakeTimers({ now: new Date("2026-10-25T21:00:00Z") });
     await schedulePreviewAlarm(ScheduledAlarmType.FAJR, 30);

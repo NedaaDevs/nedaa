@@ -10,7 +10,7 @@ import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
 import { applyTimingOffset, pickNextTrigger } from "@/utils/alarmTrigger";
 import type { TimingConfig } from "@/types/alarm";
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
-import { readLedger, recordBooked } from "@/services/firedPrayerLedger";
+import { forgetBooking, readLedger, recordBooked } from "@/services/firedPrayerLedger";
 import { hasFired } from "@/utils/firedPrayerGuard";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
@@ -127,6 +127,22 @@ const withoutRungOccurrences = (
   return kept;
 };
 
+// An alarm id names one day, so arming it cancels that day's other booking,
+// whatever the native side reports.
+const forgetReplaced = (
+  alarmType: ScheduledAlarmType,
+  alarmKey: string,
+  at: number,
+  startedAt: number
+): void => {
+  for (const entry of readLedger(FIRED_LEDGER.ALARMS, startedAt)) {
+    const sameDay = getAlarmKey(alarmType, new Date(entry.at)) === alarmKey;
+    if (entry.key === alarmType && entry.at !== at && sameDay) {
+      forgetBooking(FIRED_LEDGER.ALARMS, entry, startedAt);
+    }
+  }
+};
+
 // Arms the next occurrence and the one after it. The second rings even when the
 // first one's completion never reaches JS, which is what schedules the next.
 async function armNextOccurrences(
@@ -147,10 +163,13 @@ async function armNextOccurrences(
   // The alarm ledger's one writer: previews, test alarms and snoozes book
   // through the store and never count as a rung occurrence.
   const arm = async (triggerDate: Date): Promise<string | null> => {
-    const id = generateDeterministicUUID(getAlarmKey(alarmType, triggerDate));
+    const alarmKey = getAlarmKey(alarmType, triggerDate);
+    const id = generateDeterministicUUID(alarmKey);
+    const startedAt = Date.now();
     const success = await useAlarmStore
       .getState()
       .scheduleAlarm({ id, triggerDate, title, alarmType });
+    forgetReplaced(alarmType, alarmKey, triggerDate.getTime(), startedAt);
     if (!success) return null;
     recordBooked(FIRED_LEDGER.ALARMS, [{ key: alarmType, at: triggerDate.getTime() }], Date.now());
     return id;
