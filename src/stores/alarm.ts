@@ -54,6 +54,9 @@ interface AlarmState {
   completeAlarm: (alarmId: string) => Promise<void>;
   snoozeAlarm: (alarmId: string, snoozeDurationMinutes?: number) => Promise<SnoozeResult | null>;
   cancelAlarm: (alarmId: string) => Promise<void>;
+  // Skips ids with no record. False when an alarm could not be cancelled;
+  // its record is kept.
+  cancelAlarms: (alarmIds: readonly string[]) => Promise<boolean>;
   // False when an alarm could not be cancelled; its records are kept.
   cancelAlarmsByType: (alarmType: ScheduledAlarmType) => Promise<boolean>;
   cancelAllAlarms: () => Promise<void>;
@@ -258,11 +261,12 @@ export const useAlarmStore = create<AlarmState>()(
           });
         },
 
-        cancelAlarmsByType: async (alarmType) => {
+        cancelAlarms: async (alarmIds) => {
           const { scheduledAlarms } = get();
-          const toCancel = Object.values(scheduledAlarms).filter(
-            (alarm) => alarm.alarmType === alarmType
-          );
+          const toCancel = alarmIds.flatMap((alarmId) => {
+            const alarm = scheduledAlarms[alarmId];
+            return alarm ? [alarm] : [];
+          });
 
           const cancelledIds: string[] = [];
           const startedAt = Date.now();
@@ -272,12 +276,12 @@ export const useAlarmStore = create<AlarmState>()(
                 ExpoAlarm.deleteAlarmFromDB(alarm.alarmId);
                 cancelledIds.push(alarm.alarmId);
               } else {
-                alarmLog.e("Store", `cancelAlarmsByType: native refused ${alarm.alarmId}`);
+                alarmLog.e("Store", `cancelAlarms: native refused ${alarm.alarmId}`);
               }
             } catch (error) {
               alarmLog.e(
                 "Store",
-                `cancelAlarmsByType: native cancel failed for ${alarm.alarmId} (${alarmType})`,
+                `cancelAlarms: native cancel failed for ${alarm.alarmId} (${alarm.alarmType})`,
                 error as Error
               );
             }
@@ -293,6 +297,13 @@ export const useAlarmStore = create<AlarmState>()(
           });
           return cancelledIds.length === toCancel.length;
         },
+
+        cancelAlarmsByType: (alarmType) =>
+          get().cancelAlarms(
+            Object.values(get().scheduledAlarms)
+              .filter((alarm) => alarm.alarmType === alarmType)
+              .map((alarm) => alarm.alarmId)
+          ),
 
         cancelAllAlarms: async () => {
           const startedAt = Date.now();

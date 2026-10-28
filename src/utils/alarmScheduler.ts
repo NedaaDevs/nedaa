@@ -1,16 +1,18 @@
 import { ALARM_OUTCOME, type AlarmOutcome } from "expo-alarm";
 import i18next from "@/localization/i18n";
 import { ScheduledAlarmType } from "@/enums/alarm";
-import { useAlarmStore } from "@/stores/alarm";
+import { type ScheduledAlarm, useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { generateDeterministicUUID, getAlarmKey } from "@/utils/alarmId";
+import { generateDeterministicUUID, getAlarmKey, getLegacyAlarmKey } from "@/utils/alarmId";
 import { applyTimingOffset, pickNextTrigger } from "@/utils/alarmTrigger";
+import { toSettingsAlarmType } from "@/utils/alarmTypes";
 import type { TimingConfig } from "@/types/alarm";
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
-import { forgetBooking, readLedger, recordBooked } from "@/services/firedPrayerLedger";
+import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/PrayerOccurrence";
+import { readLedger, recordBooked } from "@/services/firedPrayerLedger";
 import { hasFired } from "@/utils/firedPrayerGuard";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
@@ -72,32 +74,27 @@ function getFridayDhuhrCandidates(): Date[] {
 
 export async function schedulePrayerAlarm(
   prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha",
-  alarmType: ScheduledAlarmType = ScheduledAlarmType.CUSTOM
+  alarmType: ScheduledAlarmType = ScheduledAlarmType.CUSTOM,
+  after = 0
 ): Promise<string | null> {
-  const alarmSettings = useAlarmSettingsStore.getState();
-
-  const settingsType =
-    alarmType === ScheduledAlarmType.JUMMAH
-      ? "friday"
-      : alarmType === ScheduledAlarmType.FAJR
-        ? "fajr"
-        : null;
-  if (settingsType && !alarmSettings[settingsType].enabled) {
-    return null;
-  }
-
   // Select by *trigger* time (prayer minus offset), not prayer time: right after a
   // before-prayer alarm fires, today's prayer is still future but its trigger is past,
   // and the next occurrence must come from tomorrow's data.
   // Later days too: an offset can put tomorrow's trigger before midnight.
-  const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
-  const timing = settingsType ? alarmSettings[settingsType]?.timing : null;
-  const candidates = [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].map((day) => {
-    const iso = day?.timings[prayerName];
-    return iso ? new Date(iso) : null;
-  });
+  const readCandidates = (): (Date | null)[] => {
+    const { todayTimings, tomorrowTimings, twoWeeksTimings } = usePrayerTimesStore.getState();
+    return [todayTimings, tomorrowTimings, ...(twoWeeksTimings || [])].map((day) => {
+      const iso = day?.timings[prayerName];
+      return iso ? new Date(iso) : null;
+    });
+  };
 
-  return armNextOccurrences(candidates, timing, alarmType, i18next.t(`prayerTimes.${prayerName}`));
+  return armNextOccurrences(
+    alarmType,
+    i18next.t(`prayerTimes.${prayerName}`),
+    readCandidates,
+    after
+  );
 }
 
 // Drops each future candidate whose occurrence already rang under the
@@ -127,77 +124,113 @@ const withoutRungOccurrences = (
   return kept;
 };
 
-// An alarm id names one day, so arming it cancels that day's other booking,
-// whatever the native side reports.
-const forgetReplaced = (
-  alarmType: ScheduledAlarmType,
-  alarmKey: string,
-  at: number,
-  startedAt: number
-): void => {
-  for (const entry of readLedger(FIRED_LEDGER.ALARMS, startedAt)) {
-    const sameDay = getAlarmKey(alarmType, new Date(entry.at)) === alarmKey;
-    if (entry.key === alarmType && entry.at !== at && sameDay) {
-      forgetBooking(FIRED_LEDGER.ALARMS, entry, startedAt);
-    }
-  }
+const occurrenceId = (alarmType: ScheduledAlarmType, at: number): string =>
+  generateDeterministicUUID(getAlarmKey(alarmType, new Date(at)));
+
+// TODO(alarm-id-migration): a 2.x id names an occurrence by its UTC date.
+const isLegacyOccurrence = (alarm: ScheduledAlarm): boolean =>
+  alarm.alarmId ===
+  generateDeterministicUUID(getLegacyAlarmKey(alarm.alarmType, new Date(alarm.triggerTime)));
+
+// Snoozes, rehearsals and test alarms carry ids no trigger instant produces.
+const isOccurrence = (alarm: ScheduledAlarm): boolean =>
+  alarm.alarmId === occurrenceId(alarm.alarmType, alarm.triggerTime) || isLegacyOccurrence(alarm);
+
+let planTail: Promise<unknown> = Promise.resolve();
+
+// One plan at a time: two plans of different times cancel each other.
+const serially = <T>(task: () => Promise<T>): Promise<T> => {
+  const run = planTail.then(task);
+  planTail = run.catch(() => undefined);
+  return run;
 };
+
+type ArmedOccurrence = { id: string; at: number };
+
+// Future occurrences within the window of an alarm this plan armed. Only a
+// successful arm replaces one, so a failed arm never removes a ring.
+const replacedOccurrenceIds = (
+  alarmType: ScheduledAlarmType,
+  armed: readonly ArmedOccurrence[],
+  now: number
+): string[] =>
+  Object.values(useAlarmStore.getState().scheduledAlarms)
+    .filter(
+      (alarm) =>
+        alarm.alarmType === alarmType &&
+        alarm.triggerTime > now &&
+        isOccurrence(alarm) &&
+        !armed.some(({ id }) => id === alarm.alarmId) &&
+        armed.some(({ at }) => Math.abs(at - alarm.triggerTime) < SAME_OCCURRENCE_WINDOW_MS)
+    )
+    .map((alarm) => alarm.alarmId);
 
 // Arms the next occurrence and the one after it. The second rings even when the
 // first one's completion never reaches JS, which is what schedules the next.
-async function armNextOccurrences(
-  candidates: (Date | null)[],
-  timing: TimingConfig | null | undefined,
+const armNextOccurrences = (
   alarmType: ScheduledAlarmType,
-  title: string
-): Promise<string | null> {
-  const now = Date.now();
-  const unrung = withoutRungOccurrences(candidates, timing, alarmType, now);
-  const next = pickNextTrigger(unrung, timing, now);
-  if (!next) {
-    alarmLog.w("Scheduler", `${alarmType}: no future trigger — alarm not scheduled`);
-    return null;
-  }
-  const following = pickNextTrigger(unrung, timing, next.triggerDate.getTime());
+  title: string,
+  readCandidates: () => (Date | null)[],
+  after: number
+): Promise<string | null> =>
+  serially(async () => {
+    const settingsType = toSettingsAlarmType(alarmType);
+    const settings = settingsType ? useAlarmSettingsStore.getState()[settingsType] : null;
+    if (settings && !settings.enabled) return null;
+    const timing = settings?.timing;
 
-  // The alarm ledger's one writer: previews, test alarms and snoozes book
-  // through the store and never count as a rung occurrence.
-  const arm = async (triggerDate: Date): Promise<string | null> => {
-    const alarmKey = getAlarmKey(alarmType, triggerDate);
-    const id = generateDeterministicUUID(alarmKey);
-    const startedAt = Date.now();
-    const success = await useAlarmStore
+    // A solved trigger can still be ahead of now; arm only what follows it.
+    const from = Math.max(Date.now(), after);
+    const unrung = withoutRungOccurrences(readCandidates(), timing, alarmType, from);
+    const next = pickNextTrigger(unrung, timing, from);
+    if (!next) {
+      alarmLog.w("Scheduler", `${alarmType}: no future trigger — alarm not scheduled`);
+      return null;
+    }
+    const following = pickNextTrigger(unrung, timing, next.triggerDate.getTime());
+
+    const armed: ArmedOccurrence[] = [];
+    for (const { triggerDate } of following ? [next, following] : [next]) {
+      const id = occurrenceId(alarmType, triggerDate.getTime());
+      const success = await useAlarmStore
+        .getState()
+        .scheduleAlarm({ id, triggerDate, title, alarmType });
+      if (success) armed.push({ id, at: triggerDate.getTime() });
+    }
+
+    await useAlarmStore
       .getState()
-      .scheduleAlarm({ id, triggerDate, title, alarmType });
-    forgetReplaced(alarmType, alarmKey, triggerDate.getTime(), startedAt);
-    if (!success) return null;
-    recordBooked(FIRED_LEDGER.ALARMS, [{ key: alarmType, at: triggerDate.getTime() }], Date.now());
-    return id;
-  };
+      .cancelAlarms(replacedOccurrenceIds(alarmType, armed, Date.now()));
+    // After the cancel, which forgets a cancelled 2.x alarm's instant; only
+    // what is still stored, as a cancel by type can run while this plan waits.
+    const { scheduledAlarms } = useAlarmStore.getState();
+    recordBooked(
+      FIRED_LEDGER.ALARMS,
+      armed.filter(({ id }) => id in scheduledAlarms).map(({ at }) => ({ key: alarmType, at })),
+      Date.now()
+    );
+    const nextAt = next.triggerDate.getTime();
+    return armed.find(({ at }) => at === nextAt)?.id ?? null;
+  });
 
-  const firstId = await arm(next.triggerDate);
-  if (following) await arm(following.triggerDate);
-  return firstId;
-}
-
-export async function scheduleFajrAlarm(): Promise<string | null> {
+export async function scheduleFajrAlarm(after = 0): Promise<string | null> {
   const settings = useAlarmSettingsStore.getState().fajr;
   if (!settings.enabled) return null;
 
-  return schedulePrayerAlarm("fajr", ScheduledAlarmType.FAJR);
+  return schedulePrayerAlarm("fajr", ScheduledAlarmType.FAJR, after);
 }
 
-export async function scheduleFridayAlarm(): Promise<string | null> {
+export async function scheduleFridayAlarm(after = 0): Promise<string | null> {
   const settings = useAlarmSettingsStore.getState().friday;
   if (!settings.enabled) return null;
 
   // Friday always uses beforePrayerTime; selecting by trigger lets a passed offset
   // roll over to the next Friday in the two-week window.
   return armNextOccurrences(
-    getFridayDhuhrCandidates(),
-    settings.timing,
     ScheduledAlarmType.JUMMAH,
-    i18next.t("prayerTimes.jumuah")
+    i18next.t("prayerTimes.jumuah"),
+    getFridayDhuhrCandidates,
+    after
   );
 }
 
@@ -247,11 +280,14 @@ export async function completeAndRescheduleAlarm(
     useAlarmStreakStore.getState().recordFajrSuccess(alarm.triggerTime);
   }
 
+  // The alarm screen opens up to a minute early, so a challenge can be solved
+  // before its trigger. The plan skips that trigger so it does not ring again.
+  const after = alarm?.triggerTime ?? 0;
   try {
     if (alarmType === ScheduledAlarmType.FAJR) {
-      await scheduleFajrAlarm();
+      await scheduleFajrAlarm(after);
     } else if (alarmType === ScheduledAlarmType.JUMMAH) {
-      await scheduleFridayAlarm();
+      await scheduleFridayAlarm(after);
     }
   } catch (error) {
     alarmLog.e(
@@ -262,14 +298,23 @@ export async function completeAndRescheduleAlarm(
   }
 }
 
+// TODO(alarm-id-migration): a future 2.x alarm plans its type again, and the
+// plan cancels it.
+const hasLegacyOccurrence = (alarmType: ScheduledAlarmType, now: number): boolean =>
+  Object.values(useAlarmStore.getState().scheduledAlarms).some(
+    (alarm) => alarm.alarmType === alarmType && alarm.triggerTime > now && isLegacyOccurrence(alarm)
+  );
+
 export async function ensureAlarmsScheduled(): Promise<void> {
   const alarmSettings = useAlarmSettingsStore.getState();
   const alarmStore = useAlarmStore.getState();
+  const needsPlan = (alarmType: ScheduledAlarmType): boolean =>
+    !alarmStore.getAlarmByType(alarmType) || hasLegacyOccurrence(alarmType, Date.now());
 
-  if (alarmSettings.fajr.enabled && !alarmStore.getAlarmByType(ScheduledAlarmType.FAJR)) {
+  if (alarmSettings.fajr.enabled && needsPlan(ScheduledAlarmType.FAJR)) {
     await scheduleFajrAlarm();
   }
-  if (alarmSettings.friday.enabled && !alarmStore.getAlarmByType(ScheduledAlarmType.JUMMAH)) {
+  if (alarmSettings.friday.enabled && needsPlan(ScheduledAlarmType.JUMMAH)) {
     await scheduleFridayAlarm();
   }
 }

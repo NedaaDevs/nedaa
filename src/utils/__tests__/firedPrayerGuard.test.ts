@@ -1,5 +1,5 @@
 import { fromZonedTime } from "date-fns-tz";
-import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/FiredPrayerGuard";
+import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/PrayerOccurrence";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { hasFired, notificationKey, pruneLedger } from "@/utils/firedPrayerGuard";
 
