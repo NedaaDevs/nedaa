@@ -2,6 +2,7 @@ import type { ComponentProps } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 
 export type DigitTextProps = Omit<ComponentProps<typeof Text>, "children">;
 
@@ -11,16 +12,11 @@ const DIGIT_SETS = ["0123456789", "٠١٢٣٤٥٦٧٨٩", "۰۱۲۳۴۵۶۷۸۹"
 /** The digits of `character`'s script; undefined if it is not a digit. */
 export const digitsOf = (character: string) => DIGIT_SETS.find((set) => set.includes(character));
 
-const HIDDEN = {
-  accessibilityElementsHidden: true,
-  importantForAccessibility: "no-hide-descendants",
-} as const;
-
 type SizerProps = { digits: string; textProps: DigitTextProps; testID?: string };
 
 /** Every digit of its script in a column, which is as wide as the widest. */
 export const DigitSizer = ({ digits, textProps, testID }: SizerProps) => (
-  <View testID={testID} {...HIDDEN} style={styles.sizer}>
+  <View testID={testID} {...HIDDEN_FROM_READER} style={styles.sizer}>
     {[...digits].map((digit) => (
       <Text key={digit} {...textProps}>
         {digit}
