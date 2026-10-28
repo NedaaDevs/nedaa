@@ -155,6 +155,7 @@ describe("DaySimulator", () => {
   });
 
   // Only today is stored; the moon's arc still runs a day on to the next Fajr.
+  // About 290 ticks, one render each; a full parallel run passes 5 s.
   it("runs the clock from before Fajr to the next Fajr, then back to live", async () => {
     await renderSimulator();
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
@@ -175,7 +176,7 @@ describe("DaySimulator", () => {
 
     expect(new Date(clock()).getMinutes()).toBe(new Date().getMinutes());
     expect(new Date(clock()).getHours()).toBe(new Date().getHours());
-  });
+  }, 20_000);
 
   // Past Fajr, with tomorrow stored, the run still plays today's day.
   it("the debug run still moves 5 minutes per tick", async () => {
