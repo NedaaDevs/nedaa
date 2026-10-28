@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
-import { act, fireEvent, renderHook, screen, userEvent } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  renderHook,
+  screen,
+  userEvent,
+  within,
+} from "@testing-library/react-native";
 
 import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
 import { DAY_RUN_TRACK_PART } from "@/components/onboarding/flow/DayRunTrack";
@@ -20,7 +27,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
-import { PHASE_NAME } from "@/utils/appearancePreview";
+import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
 import { spokenClockTime } from "@/utils/spokenClockTime";
 
 jest.mock("expo-blur", () => {
@@ -190,6 +197,7 @@ describe("DayRunPlayer", () => {
     expect(result.current.run?.phase).toBe(PHASE.DAY);
 
     await adjust(A11Y_ACTION.DECREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
     expect(result.current.run?.phase).toBe(PHASE.DAWN);
     await phasesPass(1);
     expect(result.current.run?.phase).toBe(PHASE.DAWN);
@@ -337,29 +345,96 @@ describe("DayRunPlayer", () => {
     expect(screen.queryByTestId(DAY_RUN_PLAYER_PART.STATUS, hidden)).toBeNull();
   });
 
-  it("says the pause and the end in a live region on Android", async () => {
+  // One region, mounted throughout; only its words change.
+  it("says the pause and the end in one live region on Android", async () => {
     setPlatform(PlatformType.ANDROID);
     mockReduced = true;
     const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
     announce.mockClear();
-    const status = () => screen.queryByTestId(DAY_RUN_PLAYER_PART.STATUS);
+    const status = () => screen.getByTestId(DAY_RUN_PLAYER_PART.STATUS);
+    const copy = () => screen.getByTestId(DAY_RUN_PLAYER_PART.COPY);
     const { result } = await renderPlayer();
     await start(result);
+    const region = status();
+    expect(region).toHaveProp("accessibilityLiveRegion", "polite");
+    expect(region).toHaveProp("importantForAccessibility", "yes");
+    expect(region).toHaveProp("accessibilityLabel", "");
+    expect(region).toHaveProp("accessible", false);
     await phasesPass(2);
-    expect(status()).toBeNull();
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", "");
 
     await act(() => result.current.run?.pause());
-    expect(status()).toHaveProp("accessibilityLiveRegion", "polite");
-    expect(status()).toHaveAccessibleName(
-      screen.getByTestId(DAY_RUN_PLAYER_PART.COPY).props.accessibilityLabel
-    );
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", copy().props.accessibilityLabel);
+    expect(status()).toHaveProp("accessible", true);
+    expect(copy().props.accessibilityLiveRegion).toBeUndefined();
 
     await act(() => result.current.run?.resume());
-    expect(status()).toBeNull();
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", "");
+
     await playToTheEnd();
-    expect(status()).toHaveProp("accessibilityLiveRegion", "polite");
-    expect(status()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.ended"));
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", t("a11y.onboarding.dayPreview.ended"));
+    expect(copy().props.accessibilityLiveRegion).toBeUndefined();
     expect(announce).not.toHaveBeenCalled();
+  });
+
+  it("offers no adjusting once the run has ended", async () => {
+    setPlatform(PlatformType.ANDROID);
+    mockReduced = true;
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(track().props.accessibilityActions).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: A11Y_ACTION.INCREMENT })])
+    );
+
+    await playToTheEnd();
+
+    expect(track().props.accessibilityActions).toBeUndefined();
+    expect(track()).toHaveAccessibilityValue({ now: PHASES.length - 1 });
+  });
+
+  // The cell holds every copy unseen, so a longer note never moves the toggle.
+  it("keeps the copy's height with every copy the run can show", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const sizers = screen.getAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER, hidden);
+    expect(screen.queryAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER)).toHaveLength(0);
+    const texts = sizers.map((sizer) =>
+      within(sizer)
+        .getAllByText(/./, hidden)
+        .map((text) => text.props.children)
+        .join(" | ")
+    );
+    expect(texts).toHaveLength(PHASES.length + 1);
+    for (const phase of PHASES) {
+      const { kicker, note } = appearancePreview(t, AppMode.ADAPTIVE, null, phase);
+      expect(texts).toContainEqual(expect.stringContaining(kicker));
+      expect(texts).toContainEqual(expect.stringContaining(note));
+    }
+    expect(texts).toContainEqual(
+      expect.stringContaining(t(`settings.themes.${AppMode.ADAPTIVE}.description`))
+    );
+    const layer = screen.getByTestId(DAY_RUN_PLAYER_PART.COPY_SIZERS, hidden);
+    expect(layer).toHaveProp("accessibilityElementsHidden", true);
+    expect(layer).toHaveProp("importantForAccessibility", "no-hide-descendants");
+    expect(layer).toHaveProp("pointerEvents", "none");
+    expect(StyleSheet.flatten(layer.props.style).opacity).toBe(0);
+  });
+
+  // Each name is one word: it shrinks to fit rather than break.
+  it("fits each phase name on one line", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    for (const name of screen.getAllByTestId(DAY_RUN_TRACK_PART.NAME, hidden)) {
+      expect(name).toHaveProp("numberOfLines", 1);
+      expect(name).toHaveProp("adjustsFontSizeToFit", true);
+      expect(name).toHaveProp("minimumFontScale", 0.75);
+    }
   });
 
   // The prelude is the night before Fajr: the track has not reached its start.
