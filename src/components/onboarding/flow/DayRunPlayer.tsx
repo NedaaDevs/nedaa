@@ -44,6 +44,7 @@ export const DAY_RUN_PLAYER_PART = {
   COPY: "day-run-player-copy",
   COPY_SIZERS: "day-run-player-copy-sizers",
   COPY_SIZER: "day-run-player-copy-sizer",
+  TIME_SLOT: "day-run-player-time-slot",
   CLOCK_RESERVE: "day-run-player-clock-reserve",
   DIGIT_SIZER: "day-run-player-digit-sizer",
   STATUS: "day-run-player-status",
@@ -158,6 +159,7 @@ type SlotProps = { time: string; onWidth: (width: number) => void };
 /** The time, flush at the end of a slot wide enough for any clock. */
 const TimeSlot = ({ time, onWidth }: SlotProps) => (
   <View
+    testID={DAY_RUN_PLAYER_PART.TIME_SLOT}
     style={styles.timeSlot}
     onLayout={({ nativeEvent }: LayoutChangeEvent) => onWidth(nativeEvent.layout.width)}>
     <TimeText>{time}</TimeText>
