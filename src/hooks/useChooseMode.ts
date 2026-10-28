@@ -2,7 +2,7 @@ import { Appearance } from "react-native";
 
 import { useThemeTransition } from "@/components/ui/theme-transition/context";
 import { NATIVE_SCHEME, PIN_REPORT_LIMIT_MS, type NativeScheme } from "@/constants/Appearance";
-import { usePhase } from "@/contexts/PhaseContext";
+import { useLivePhase } from "@/contexts/LivePhaseContext";
 import type { AppMode } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { nativeColorSchemeFor } from "@/utils/appearance";
@@ -30,11 +30,12 @@ const pinNativeScheme = (next: NativeScheme): Promise<void> => {
 /**
  * Applies an appearance mode under the theme dissolve. The native pin moves
  * first, so the phone's scheme is shown with the mode, not after the fade.
+ * It pins the real phase, not the one a day run draws.
  */
 export const useChooseMode = () => {
   const mode = useAppStore((state) => state.mode);
   const setMode = useAppStore((state) => state.setMode);
-  const phase = usePhase();
+  const phase = useLivePhase();
   const withThemeTransition = useThemeTransition();
   return async (next: AppMode) => {
     if (next === mode) return;
