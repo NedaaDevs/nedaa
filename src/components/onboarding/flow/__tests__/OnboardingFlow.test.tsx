@@ -1,10 +1,13 @@
-import { AccessibilityInfo, BackHandler } from "react-native";
+import { AccessibilityInfo, BackHandler, Pressable } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { useSharedValue, withTiming } from "react-native-reanimated";
 
 import { OnboardingFlow } from "@/components/onboarding/flow/OnboardingFlow";
+import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { CompleteStep } from "@/components/onboarding/flow/steps/CompleteStep";
 import { enterOffset } from "@/components/onboarding/flow/StepTransition";
+import { useDayRun } from "@/components/today/DaySimulator";
+import { DAY_RUN, DAY_RUN_KIND } from "@/constants/DayRun";
 import {
   ONBOARDING_LOADING_DELAY_MS,
   ONBOARDING_PART,
@@ -15,9 +18,10 @@ import {
   type OnboardingStepId,
 } from "@/constants/Onboarding";
 import { RTLProvider } from "@/contexts/RTLContext";
-import { AppLocale } from "@/enums/app";
+import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics, HAPTIC } from "@/test-helpers/hapticMock";
@@ -26,6 +30,7 @@ import {
   propsOf,
   realSteps,
   resetStepStubs,
+  stubMounts,
 } from "@/test-helpers/onboardingStepStubs";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -739,5 +744,102 @@ describe("OnboardingFlow", () => {
     expect(useSharedValue).toHaveBeenCalledWith(enterOffset(STEP_DIRECTION.FORWARD, true));
     expectEntry(STEP_MOTION.FORWARD_MS);
     expect(mockSkyMounts).toBe(1);
+  });
+
+  describe("a day run", () => {
+    const START_RUN = "start-run";
+    const PREVIEW = DAY_RUN[DAY_RUN_KIND.PREVIEW];
+    /** A step that starts the flow's run, as Appearance's button does. */
+    const RunStartStep = () => {
+      const run = useDayRun();
+      return <Pressable testID={START_RUN} onPress={run?.start} />;
+    };
+    const startRun = () => act(async () => fireEvent.press(screen.getByTestId(START_RUN)));
+    const player = () => screen.queryByTestId(DAY_RUN_PLAYER_PART.FRAME);
+    /** Android back as React Native sends it: the newest handler first. */
+    const androidBack = () => {
+      const handlers = new Set<() => boolean | null | undefined>();
+      jest.spyOn(BackHandler, "addEventListener").mockImplementation((_, handler) => {
+        const press = handler as () => boolean | null | undefined;
+        handlers.add(press);
+        return { remove: () => handlers.delete(press) };
+      });
+      return () =>
+        act(async () => {
+          [...handlers].reverse().some((handler) => handler());
+        });
+    };
+
+    beforeEach(() => {
+      // Date stays real: the step lock reads the spied Date.now.
+      jest.useFakeTimers({ doNotFake: ["Date"] });
+      usePrayerTimesStore.setState({ todayTimings: null, usingDefaultLocation: false });
+      useAppStore.setState({ onboardingStep: S.APPEARANCE, mode: AppMode.SYSTEM });
+      realSteps.set(S.APPEARANCE, RunStartStep);
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("the player replaces Back and Continue during a run", async () => {
+      await renderWithTheme(<OnboardingFlow />);
+      expect(player()).toBeNull();
+
+      await startRun();
+      expect(player()).toBeOnTheScreen();
+      expect(screen.queryByTestId(ONBOARDING_PART.BACK)).toBeNull();
+      expect(screen.queryByTestId(ONBOARDING_PART.CONTINUE)).toBeNull();
+      expect(screen.getByTestId(ONBOARDING_PART.SKIP)).toBeOnTheScreen();
+
+      await act(async () => fireEvent.press(screen.getByTestId(DAY_RUN_PLAYER_PART.DONE)));
+      expect(player()).toBeNull();
+      expect(screen.getByTestId(ONBOARDING_PART.BACK)).toBeOnTheScreen();
+      expect(screen.getByTestId(ONBOARDING_PART.CONTINUE)).toBeOnTheScreen();
+    });
+
+    it("hardware back ends a run and stays on the step", async () => {
+      const back = androidBack();
+      await renderWithTheme(<OnboardingFlow />);
+      await startRun();
+
+      await back();
+      expect(player()).toBeNull();
+      expect(currentStep()).toBe(S.APPEARANCE);
+
+      await back();
+      expect(currentStep()).toBe(S.NUMERALS);
+    });
+
+    it("VoiceOver's escape ends a run and stays on the step", async () => {
+      await renderWithTheme(<OnboardingFlow />);
+      await startRun();
+
+      await escape();
+
+      expect(player()).toBeNull();
+      expect(currentStep()).toBe(S.APPEARANCE);
+    });
+
+    it("Skip ends a run and moves on", async () => {
+      await renderWithTheme(<OnboardingFlow />);
+      await startRun();
+
+      await act(async () => fireEvent.press(screen.getByTestId(ONBOARDING_PART.SKIP)));
+
+      expect(currentStep()).toBe(S.COMPLETE);
+      expect(player()).toBeNull();
+    });
+
+    it("the sky mounts once across a run", async () => {
+      await renderWithTheme(<OnboardingFlow />);
+      await startRun();
+      for (let step = 0; step < 5; step++) {
+        await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
+      }
+      await act(async () => fireEvent.press(screen.getByTestId(DAY_RUN_PLAYER_PART.DONE)));
+
+      expect(mockSkyMounts).toBe(1);
+      expect(stubMounts[S.APPEARANCE]).toBe(1);
+    });
   });
 });

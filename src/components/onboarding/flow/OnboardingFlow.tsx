@@ -1,9 +1,10 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type ComponentProps } from "react";
 import { BackHandler, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { countedPlace, resolveIndex, stepRank } from "@/components/onboarding/column";
 import { dropCityTriedSince } from "@/components/onboarding/flow/CityChoice";
+import { DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
 import { OnboardingFrame } from "@/components/onboarding/flow/OnboardingFrame";
 import { OnboardingLoading } from "@/components/onboarding/flow/OnboardingLoading";
 import { StepTransition } from "@/components/onboarding/flow/StepTransition";
@@ -14,7 +15,9 @@ import {
   type StepProps,
 } from "@/components/onboarding/flow/types";
 import { useOnboardingColumn } from "@/components/onboarding/flow/useOnboardingColumn";
+import { DaySimulator, useDayRun } from "@/components/today/DaySimulator";
 import { SkyBackground } from "@/components/ui/sky-background";
+import { DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import {
   FRAME_MODE,
   ONBOARDING_LOADING_DELAY_MS,
@@ -39,6 +42,18 @@ const claimFor =
 /** A fetch that has stored the day; the flow passes it both ways. */
 const isSettledFetch = (column: readonly OnboardingStepId[], at: number) =>
   column[at] === ONBOARDING_STEP.FETCH && column.includes(ONBOARDING_STEP.CALCULATION);
+
+/** The frame; in a day run the player takes its bar and back ends the run. */
+const RunFrame = (props: ComponentProps<typeof OnboardingFrame>) => {
+  const run = useDayRun();
+  if (!run || run.status === DAY_RUN_STATUS.IDLE) return <OnboardingFrame {...props} />;
+  // A run belongs to its step: moving on ends it.
+  const skip = () => {
+    run.done();
+    props.onSkip();
+  };
+  return <OnboardingFrame {...props} onBack={run.done} onSkip={skip} bar={<DayRunPlayer />} />;
+};
 
 type Props = {
   /** The gate is fading it out: Android back passes through to the app. */
@@ -176,8 +191,13 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
     return () => subscription.remove();
   }, []);
 
+  // Both returns draw the same tree above the sky, so the sky mounts once.
   if (column === null || current === undefined) {
-    return <SkyBackground>{showLoading ? <OnboardingLoading /> : null}</SkyBackground>;
+    return (
+      <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
+        <SkyBackground>{showLoading ? <OnboardingLoading /> : null}</SkyBackground>
+      </DaySimulator>
+    );
   }
 
   // Welcome and Completion have no place: the bars stay off them.
@@ -210,22 +230,24 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   const Step = STEP_COMPONENT[current];
 
   return (
-    <SkyBackground>
-      <OnboardingFrame
-        mode={place ? FRAME_MODE.CHROME : FRAME_MODE.BARE}
-        progress={progress}
-        fraction={place ? place.current / place.total : 0}
-        canGoBack={index > 0}
-        busy={busy}
-        showPrimary={primaryHiddenFor !== current}
-        primaryLabel={ownPrimary?.label ?? t("onboarding.continue")}
-        onPrimary={primary}
-        onBack={back}
-        onSkip={skip}>
-        <StepTransition key={current} direction={direction}>
-          <Step {...stepProps} />
-        </StepTransition>
-      </OnboardingFrame>
-    </SkyBackground>
+    <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
+      <SkyBackground>
+        <RunFrame
+          mode={place ? FRAME_MODE.CHROME : FRAME_MODE.BARE}
+          progress={progress}
+          fraction={place ? place.current / place.total : 0}
+          canGoBack={index > 0}
+          busy={busy}
+          showPrimary={primaryHiddenFor !== current}
+          primaryLabel={ownPrimary?.label ?? t("onboarding.continue")}
+          onPrimary={primary}
+          onBack={back}
+          onSkip={skip}>
+          <StepTransition key={current} direction={direction}>
+            <Step {...stepProps} />
+          </StepTransition>
+        </RunFrame>
+      </SkyBackground>
+    </DaySimulator>
   );
 };

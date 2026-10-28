@@ -1,3 +1,4 @@
+import { Pressable } from "react-native";
 import { act, fireEvent, screen, within } from "@testing-library/react-native";
 import { withSpring, withTiming } from "react-native-reanimated";
 
@@ -9,7 +10,10 @@ import {
   Rolling,
   reelStep,
 } from "@/components/ui/countdown";
+import { DaySimulator, useDayRun } from "@/components/today/DaySimulator";
 import { SPIN } from "@/constants/Countdown";
+import { DAY_RUN_KIND } from "@/constants/DayRun";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -183,6 +187,45 @@ describe("Countdown", () => {
     await rerender(figure("1:17"));
 
     expect(shown()).toBe("117");
+    expect(withTiming).not.toHaveBeenCalled();
+    expect(withSpring).not.toHaveBeenCalled();
+  });
+});
+
+describe("Countdown in a day run", () => {
+  const START_RUN = "start-run";
+  /** Starts the run around it, as the Appearance step's button does. */
+  const StartRun = () => {
+    const run = useDayRun();
+    return <Pressable testID={START_RUN} onPress={run?.start} />;
+  };
+  const inRun = (value: string) => (
+    <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
+      <StartRun />
+      {figure(value)}
+    </DaySimulator>
+  );
+
+  beforeEach(() => {
+    mockReduced = false;
+    jest.clearAllMocks();
+    // The timers hold the run's clock still between the figure's changes.
+    jest.useFakeTimers();
+    usePrayerTimesStore.setState({ todayTimings: null, usingDefaultLocation: false });
+  });
+  afterEach(() => jest.useRealTimers());
+
+  // A run moves the clock hours at a tick, faster than any reel can turn.
+  it("countdown does not roll while a run plays", async () => {
+    const { rerender } = await renderWithTheme(inRun("1:18"));
+    await layOut();
+    await act(async () => fireEvent.press(screen.getByTestId(START_RUN)));
+    jest.clearAllMocks();
+
+    await rerender(inRun("1:17"));
+    await rerender(inRun("4:02"));
+
+    expect(shown()).toBe("402");
     expect(withTiming).not.toHaveBeenCalled();
     expect(withSpring).not.toHaveBeenCalled();
   });
