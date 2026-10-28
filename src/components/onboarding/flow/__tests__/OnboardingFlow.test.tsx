@@ -7,6 +7,7 @@ import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { CompleteStep } from "@/components/onboarding/flow/steps/CompleteStep";
 import { enterOffset } from "@/components/onboarding/flow/StepTransition";
 import { DAY_RUN, DAY_RUN_KIND } from "@/constants/DayRun";
+import { PHASE } from "@/constants/Phase";
 import {
   ONBOARDING_LOADING_DELAY_MS,
   ONBOARDING_PART,
@@ -830,12 +831,17 @@ describe("OnboardingFlow", () => {
       expect(player()).toBeNull();
     });
 
+    // Reduce Motion holds each phase for one timer, so five timers end the run.
     it("the sky mounts once across a run", async () => {
+      mockReduced = true;
       await renderWithTheme(<OnboardingFlow />);
       await startRun();
-      for (let step = 0; step < 5; step++) {
+      for (let step = 0; step < Object.values(PHASE).length; step++) {
         await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
       }
+      expect(screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE)).toHaveAccessibleName(
+        t("a11y.onboarding.dayPreview.replay")
+      );
       await act(async () => fireEvent.press(screen.getByTestId(DAY_RUN_PLAYER_PART.DONE)));
 
       expect(mockSkyMounts).toBe(1);
