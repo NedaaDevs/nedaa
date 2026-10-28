@@ -1,4 +1,4 @@
-import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/FiredPrayerGuard";
+import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/PrayerOccurrence";
 import type { NotificationType, OtherTimingId } from "@/types/notification";
 import type { PrayerName } from "@/types/prayerTimes";
 

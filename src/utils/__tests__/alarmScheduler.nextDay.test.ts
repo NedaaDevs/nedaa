@@ -18,7 +18,11 @@ jest.mock("@/utils/alarmReport", () => ({
 jest.mock("@/stores/alarmStreak", () => ({ useAlarmStreakStore: { getState: jest.fn() } }));
 jest.mock("@/stores/alarm", () => ({
   useAlarmStore: {
-    getState: () => ({ scheduleAlarm: mockScheduleAlarm }),
+    getState: () => ({
+      scheduledAlarms: {},
+      scheduleAlarm: mockScheduleAlarm,
+      cancelAlarms: () => Promise.resolve(true),
+    }),
     persist: {},
   },
 }));

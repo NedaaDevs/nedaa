@@ -1,7 +1,8 @@
 import { ScheduledAlarmType } from "@/enums/alarm";
-import { useAlarmStore } from "@/stores/alarm";
+import { type ScheduledAlarm, useAlarmStore } from "@/stores/alarm";
 import { resetMemoryKv } from "@/test-helpers/memoryKvStore";
 import { DEFAULT_TIMING_CONFIG, type TimingConfig } from "@/types/alarm";
+import { generateDeterministicUUID, getLegacyAlarmKey } from "@/utils/alarmId";
 import {
   rescheduleAllAlarms,
   scheduleFajrAlarm,
@@ -68,6 +69,15 @@ const setDays = (days: ReturnType<typeof prayerDay>[]) =>
     tomorrowTimings: days[1],
     twoWeeksTimings: days,
   });
+// TODO(alarm-id-migration): a 2.x alarm, its id keyed on the UTC date.
+const legacyFajr = (at: string): ScheduledAlarm => ({
+  alarmId: generateDeterministicUUID(getLegacyAlarmKey(ScheduledAlarmType.FAJR, new Date(at))),
+  alarmType: ScheduledAlarmType.FAJR,
+  title: ScheduledAlarmType.FAJR,
+  triggerTime: new Date(at).getTime(),
+  liveActivityId: null,
+  snoozeCount: 0,
+});
 const armed = (type: ScheduledAlarmType) =>
   Object.values(useAlarmStore.getState().scheduledAlarms)
     .filter((a) => a.alarmType === type && !a.isPreview)
@@ -148,7 +158,7 @@ describe("prayer alarms after a reschedule", () => {
     ]);
   });
 
-  it("arms the moved Fajr after re-arming its day replaced the earlier time", async () => {
+  it("arms the moved Fajr after a re-plan cancelled the earlier time", async () => {
     jest.useFakeTimers({ now: new Date("2026-10-26T00:00:00Z") });
     setDays([
       prayerDay("2026-10-26", "01:40"),
@@ -163,7 +173,7 @@ describe("prayer alarms after a reschedule", () => {
       prayerDay("2026-10-27", "01:55"),
       prayerDay("2026-10-28", "01:56"),
     ]);
-    await scheduleFajrAlarm(); // 01:55 takes the 27th's id from 01:41
+    await scheduleFajrAlarm(); // 01:55 replaces and cancels the 27th's 01:41
     jest.setSystemTime(new Date("2026-10-27T01:45:00Z"));
     setDays([
       prayerDay("2026-10-27", "01:55"),
@@ -174,6 +184,31 @@ describe("prayer alarms after a reschedule", () => {
     expect(armed(ScheduledAlarmType.FAJR)).toEqual([
       "2026-10-27T01:55:00.000Z",
       "2026-10-28T01:56:00.000Z",
+    ]);
+  });
+
+  it("a migrated occurrence stays booked after its 2.x alarm is cancelled", async () => {
+    jest.useFakeTimers({ now: new Date("2026-10-26T00:00:00Z") });
+    setDays([
+      prayerDay("2026-10-26", "01:40"),
+      prayerDay("2026-10-27", "01:41"),
+      prayerDay("2026-10-28", "01:42"),
+    ]);
+    const legacy = ["2026-10-26T01:40:00Z", "2026-10-27T01:41:00Z"].map(legacyFajr);
+    useAlarmStore.setState({
+      scheduledAlarms: Object.fromEntries(legacy.map((alarm) => [alarm.alarmId, alarm])),
+    });
+    await scheduleFajrAlarm(); // arms both instants, then cancels the 2.x ids
+    jest.setSystemTime(new Date("2026-10-26T01:50:00Z"));
+    setDays([
+      prayerDay("2026-10-26", "02:05"),
+      prayerDay("2026-10-27", "02:06"),
+      prayerDay("2026-10-28", "02:07"),
+    ]);
+    await rescheduleAllAlarms();
+    expect(armed(ScheduledAlarmType.FAJR)).toEqual([
+      "2026-10-27T02:06:00.000Z",
+      "2026-10-28T02:07:00.000Z",
     ]);
   });
 

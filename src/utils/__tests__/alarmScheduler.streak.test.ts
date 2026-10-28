@@ -19,6 +19,7 @@ jest.mock("@/stores/alarm", () => ({
       scheduledAlarms: mockAlarms,
       completeAlarm: jest.fn(() => Promise.resolve()),
       scheduleAlarm: (params: object) => mockScheduleAlarm(params),
+      cancelAlarms: () => Promise.resolve(true),
     }),
     persist: {},
   },

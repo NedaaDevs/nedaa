@@ -2,7 +2,7 @@
  * Generate a deterministic UUID from any input string.
  * Uses a simple hash algorithm - not cryptographic, but consistent.
  */
-export function generateDeterministicUUID(input: string): string {
+export const generateDeterministicUUID = (input: string): string => {
   // Simple hash using two different multipliers for better distribution
   let hash1 = 0;
   let hash2 = 0;
@@ -28,14 +28,17 @@ export function generateDeterministicUUID(input: string): string {
   ]
     .join("-")
     .toLowerCase();
-}
+};
 
-export function getAlarmKey(alarmType: string, triggerDate: Date): string {
-  const dateStr = triggerDate.toISOString().split("T")[0]; // YYYY-MM-DD
-  return `${alarmType}_${dateStr}`;
-}
+// One key per trigger instant, so two occurrences of a type never share an id.
+export const getAlarmKey = (alarmType: string, triggerDate: Date): string =>
+  `${alarmType}_${triggerDate.toISOString()}`;
 
-export function getSnoozeKey(alarmType: string, triggerDate: Date, snoozeCount: number): string {
+// TODO(alarm-id-migration): the 2.x key, one per UTC date of the trigger.
+export const getLegacyAlarmKey = (alarmType: string, triggerDate: Date): string =>
+  `${alarmType}_${triggerDate.toISOString().split("T")[0]}`;
+
+export const getSnoozeKey = (alarmType: string, triggerDate: Date, snoozeCount: number): string => {
   const dateStr = triggerDate.toISOString().split("T")[0];
   return `${alarmType}_${dateStr}_snooze${snoozeCount}`;
-}
+};
