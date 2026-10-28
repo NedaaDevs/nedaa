@@ -69,11 +69,11 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
   // The prelude is the night before Fajr, short of the track's first phase.
   const prelude = phase === PHASE.NIGHT && progress === 0;
   // Past the end the run sits on the last phase.
-  const at = phase === undefined ? LAST : prelude ? -1 : PHASES.indexOf(phase);
+  const position = phase === undefined ? LAST : prelude ? -1 : PHASES.indexOf(phase);
   const lit = prelude ? undefined : phase;
 
   const step = (by: number) => {
-    const to = at + by;
+    const to = position + by;
     if (to >= 0 && to <= LAST) onJump?.(PHASES[to]);
   };
   const handleAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
@@ -86,8 +86,9 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={t("a11y.onboarding.dayPreview.track")}
-      accessibilityValue={{ min: 0, max: LAST, now: Math.max(0, at), text: valueText }}
-      accessibilityActions={adjustActions()}
+      accessibilityValue={{ min: 0, max: LAST, now: Math.max(0, position), text: valueText }}
+      // Past the end there is nothing to adjust; the value still reads.
+      accessibilityActions={onJump ? adjustActions() : undefined}
       onAccessibilityAction={handleAccessibilityAction}
       // Set here too, so the phases run from the reading start in any host.
       style={{ direction }}>
@@ -138,6 +139,8 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
               typography="helper"
               textAlign="center"
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
               fontWeight={each === lit ? "700" : "500"}
               color={each === lit ? "$accentText" : "$muted"}>
               {t(PHASE_NAME[each])}
