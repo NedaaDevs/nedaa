@@ -385,7 +385,7 @@ describe("DayRunPlayer", () => {
     expect(announce).not.toHaveBeenCalled();
   });
 
-  // A native view keeps its last role and actions on null, so each is sent.
+  // Android keeps actions and iOS keeps the role on null, so each is sent.
   it.each([PlatformType.ANDROID, PlatformType.IOS])(
     "offers no adjusting once the run has ended (%s)",
     async (os) => {
@@ -498,15 +498,26 @@ describe("DayRunPlayer", () => {
     }
   });
 
+  // The samples sit in a column of no height, so they set only the slot's width.
+  it("gives the clock reserve no height", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const [row] = within(screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT)).getAllByTestId(
+      DAY_RUN_PLAYER_PART.CLOCK_RESERVE,
+      hidden
+    );
+    expect(StyleSheet.flatten(row.parent?.props.style)).toEqual(
+      expect.objectContaining({ height: 0, overflow: "hidden" })
+    );
+  });
+
   // The sizers reserve the live slot's width, so their kickers wrap as it does.
   it("gives each phase's sizer the live time slot's width", async () => {
     const { result } = await renderPlayer();
     await start(result);
-    const slot = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getAllByTestId(
-      DAY_RUN_PLAYER_PART.CLOCK_RESERVE,
-      hidden
-    )[0].parent;
-    if (!slot) throw new Error("expected the reserve inside the time slot");
+    const slot = screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT);
+    expect(slot.props.onLayout).toEqual(expect.any(Function));
     const SLOT_WIDTH = 64;
 
     await act(async () => {
