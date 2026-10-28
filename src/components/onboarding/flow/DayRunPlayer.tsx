@@ -24,7 +24,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE } from "@/constants/Phase";
-import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
 import { AppMode, PlatformType } from "@/enums/app";
@@ -52,25 +52,22 @@ export const DAY_RUN_PLAYER_PART = {
   USE_ADAPTIVE: "day-run-player-use-adaptive",
 } as const;
 
-/** The toggle in each status of a started run: what it shows, says and does. */
+/** The toggle in each status of a started run: what it shows and says. */
 const TOGGLE = {
   [DAY_RUN_STATUS.PLAYING]: {
     glyph: Pause,
     label: "common.pause",
     hint: "a11y.onboarding.dayPreview.pauseHint",
-    press: (run: DayRun) => run.pause(),
   },
   [DAY_RUN_STATUS.PAUSED]: {
     glyph: Play,
     label: "common.play",
     hint: "a11y.onboarding.dayPreview.playHint",
-    press: (run: DayRun) => run.resume(),
   },
   [DAY_RUN_STATUS.ENDED]: {
     glyph: RotateCcw,
     label: "a11y.onboarding.dayPreview.replay",
     hint: undefined,
-    press: (run: DayRun) => run.start(),
   },
 } as const;
 
@@ -248,9 +245,16 @@ export const DayRunPlayer = () => {
 
   if (!run || status === DAY_RUN_STATUS.IDLE) return null;
 
+  // The run's methods are stable from tick to tick; the run itself is not.
+  const { pause, resume, start, jumpTo, done, progress } = run;
   const toggle = TOGGLE[status];
+  const press = {
+    [DAY_RUN_STATUS.PLAYING]: pause,
+    [DAY_RUN_STATUS.PAUSED]: resume,
+    [DAY_RUN_STATUS.ENDED]: start,
+  }[status];
   const chooseAdaptive = () => {
-    run.done();
+    done();
     void chooseMode(AppMode.ADAPTIVE);
   };
 
@@ -271,7 +275,7 @@ export const DayRunPlayer = () => {
           accessibilityRole="button"
           accessibilityLabel={t(toggle.label)}
           accessibilityHint={toggle.hint && t(toggle.hint)}
-          onPress={() => toggle.press(run)}
+          onPress={press}
           width="$target"
           height="$target"
           borderRadius="$pill"
@@ -311,7 +315,7 @@ export const DayRunPlayer = () => {
           testID={DAY_RUN_PLAYER_PART.DONE}
           action="primary"
           variant="link"
-          onPress={run.done}
+          onPress={done}
           accessibilityRole="button"
           accessibilityLabel={t("onboarding.dayPreview.done")}
           accessibilityHint={t("a11y.onboarding.dayPreview.doneHint")}>
@@ -320,9 +324,9 @@ export const DayRunPlayer = () => {
       </HStack>
       <DayRunTrack
         phase={phase}
-        progress={run.progress}
+        progress={progress}
         valueText={valueText}
-        onJump={status === DAY_RUN_STATUS.ENDED ? undefined : run.jumpTo}
+        onJump={status === DAY_RUN_STATUS.ENDED ? undefined : jumpTo}
       />
       {mode === AppMode.ADAPTIVE ? null : (
         // Offered for the whole run, so the card keeps one height.
