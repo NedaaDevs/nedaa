@@ -16,6 +16,7 @@ import {
   type DigitTextProps,
 } from "@/components/ui/digit-reserve";
 import { Text } from "@/components/ui/text";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { SPIN } from "@/constants/Countdown";
 import { DAY_RUN_STATUS } from "@/constants/DayRun";
 import { useDayRun } from "@/contexts/DayRunContext";
@@ -48,11 +49,6 @@ const BOUNCE = { damping: 13, stiffness: 220, mass: 0.7 };
 const WHIRL = { duration: SPIN.ms, easing: Easing.out(Easing.cubic) };
 /** How far past its digit a whirl runs before it bounces back, in digits. */
 const WHIRL_OVERSHOOT = 0.3;
-
-const HIDDEN = {
-  accessibilityElementsHidden: true,
-  importantForAccessibility: "no-hide-descendants",
-} as const;
 
 /** Steps a reel turns from one digit to the next, the way the figure counts. */
 export const reelStep = (from: number, to: number, direction: CountDirection) =>
@@ -116,12 +112,15 @@ const Reel = ({ digit, digits, textProps, direction, openKey, switchKey }: ReelP
       <DigitSizer digits={digits} textProps={textProps} testID={COUNTDOWN_PART.SIZER} />
       <View
         testID={COUNTDOWN_PART.SHAPE}
-        {...HIDDEN}
+        {...HIDDEN_FROM_READER}
         style={styles.hiddenCopy}
         onLayout={({ nativeEvent }: LayoutChangeEvent) => setLine(nativeEvent.layout.height)}>
         <Text {...textProps}>{digit}</Text>
       </View>
-      <Animated.View testID={COUNTDOWN_PART.REEL} {...HIDDEN} style={[styles.strip, strip]}>
+      <Animated.View
+        testID={COUNTDOWN_PART.REEL}
+        {...HIDDEN_FROM_READER}
+        style={[styles.strip, strip]}>
         {[...digits.repeat(3)].map((reelDigit, i) => (
           <Text key={i} {...textProps}>
             {reelDigit}
@@ -159,7 +158,7 @@ export const Countdown = ({
 
   return (
     <View>
-      <View {...HIDDEN} style={styles.reserve}>
+      <View {...HIDDEN_FROM_READER} style={styles.reserve}>
         {[...reserve].map((character, i) => (
           <DigitSlot
             key={i}
@@ -230,13 +229,13 @@ export const Rolling = ({ value, ...textProps }: DigitTextProps & { value: strin
   const animate = !useReducedMotion();
   return (
     <View style={styles.slot}>
-      <Text {...textProps} {...HIDDEN} style={styles.hiddenCopy}>
+      <Text {...textProps} {...HIDDEN_FROM_READER} style={styles.hiddenCopy}>
         {value}
       </Text>
       <Animated.View
         key={value}
         testID={COUNTDOWN_PART.GLYPH}
-        {...HIDDEN}
+        {...HIDDEN_FROM_READER}
         entering={animate ? rollIn : undefined}
         exiting={animate ? rollOut : undefined}
         style={styles.glyph}>

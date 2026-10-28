@@ -11,6 +11,7 @@ import {
   reelStep,
 } from "@/components/ui/countdown";
 import { DaySimulator } from "@/components/today/DaySimulator";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { SPIN } from "@/constants/Countdown";
 import { DAY_RUN_KIND } from "@/constants/DayRun";
 import { useDayRun } from "@/contexts/DayRunContext";
@@ -124,6 +125,19 @@ describe("Countdown", () => {
     );
     expect(sizers.length).toBeGreaterThan(0);
     sizers.forEach((digits) => expect(digits).toBe(set));
+  });
+
+  // The figure is drawing; the label of the screen that shows it speaks for it.
+  it("keeps its sizers, shapes and reels out of the reader", async () => {
+    await renderWithTheme(figure("1:18"));
+
+    for (const id of [COUNTDOWN_PART.SIZER, COUNTDOWN_PART.SHAPE, COUNTDOWN_PART.REEL]) {
+      const nodes = part(id);
+      expect(nodes.length).toBeGreaterThan(0);
+      for (const node of nodes) {
+        expect(node.props).toEqual(expect.objectContaining(HIDDEN_FROM_READER));
+      }
+    }
   });
 
   // Three turns of digits let a reel pass 9 to 0 with no visible seam.
