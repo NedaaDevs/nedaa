@@ -258,7 +258,7 @@ const ONE_RENDERER: readonly Rule[] = [
   {
     concept: "the appearance kicker and phase note",
     shows: /\bsettings\.themes\.(preview|phases)\.|\bappearancePreview\(/,
-    within: /\.tsx$/,
+    within: /^(app|components|hooks)\//,
     drawsWith: /\bappearancePreview\(/,
     home: "utils/appearancePreview.ts",
   },
