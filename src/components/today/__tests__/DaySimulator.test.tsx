@@ -58,6 +58,7 @@ jest.mock("@/stores/debugMode", () => {
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: jest.fn(() => false) }));
 
 const NOW = new Date("2026-09-23T02:00:00.000Z");
+const MINUTE_MS = 60_000;
 const DEBUG = DAY_RUN[DAY_RUN_KIND.DEBUG];
 const PREVIEW = DAY_RUN[DAY_RUN_KIND.PREVIEW];
 const FAJR_MS = parseISO(DAY.timings[PRAYER_ID.FAJR]).getTime();
@@ -242,6 +243,33 @@ describe("DaySimulator", () => {
 
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
     expect(mounted).toHaveBeenCalledTimes(1);
+  });
+
+  // A part that reads the run renders again when the run changes, not each minute.
+  it.each([
+    [DAY_RUN_KIND.DEBUG, {}],
+    [DAY_RUN_KIND.PREVIEW, { todayTimings: null }],
+  ])("keeps a %s run's context through a minute at rest", async (kind, stored) => {
+    usePrayerTimesStore.setState(stored);
+    const { result } = await renderRun(kind);
+    const atRest = result.current.run;
+
+    await act(() => jest.advanceTimersByTime(MINUTE_MS));
+
+    expect(result.current.run).toBe(atRest);
+  });
+
+  // With only today stored, no stored night comes before Fajr; the run draws one.
+  it("a preview prelude is night with only today stored", async () => {
+    const { result } = await renderRun(DAY_RUN_KIND.PREVIEW);
+    await act(() => result.current.run?.start());
+
+    expect(result.current.phase).toBe(PHASE.NIGHT);
+    expect(result.current.run?.phase).toBe(PHASE.NIGHT);
+    expect(result.current.background).toBe(config.themes.dark.background.val);
+
+    await advance(PREVIEW.tickMs, previewTicksTo(PHASE.DAWN));
+    expect(result.current.run?.phase).toBe(PHASE.DAWN);
   });
 
   it("a preview run draws Adaptive while the stored mode is Light", async () => {
