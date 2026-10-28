@@ -2,9 +2,9 @@ import { Animated, StyleSheet, Text } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import { SKY_PART } from "@/components/ui/sky-background";
-import { SkyHero, SkySwatch } from "@/components/ui/sky-preview";
+import { SKY_SWATCH_ID, SkyHero, SkySwatch } from "@/components/ui/sky-preview";
 import { PHASE } from "@/constants/Phase";
-import { ADAPTIVE_SWATCH_WEIGHT } from "@/constants/Sky";
+import { ADAPTIVE_SWATCH_WEIGHT, SKY_SWATCH_SIZE, type SkySwatchSize } from "@/constants/Sky";
 import { AppMode } from "@/enums/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { skySwatchFor } from "@/utils/sky";
@@ -30,6 +30,41 @@ describe("SkySwatch", () => {
     const weights = Object.values(PHASE).map((phase) => ADAPTIVE_SWATCH_WEIGHT[phase]);
 
     expect(widths[1] / widths[0]).toBeCloseTo(weights[1] / weights[0]);
+  });
+
+  // A mode's row, the day preview's button and the Today card, from the design.
+  it.each([
+    [SKY_SWATCH_SIZE.CHOICE, 77, 58, 12],
+    [SKY_SWATCH_SIZE.BUTTON, 44, 30, 8],
+    [SKY_SWATCH_SIZE.CARD, 52, 40, 8],
+  ] as [SkySwatchSize, number, number, number][])(
+    "draws the %s size at its frame",
+    async (size, width, height, borderRadius) => {
+      await renderWithTheme(
+        <SkySwatch bands={skySwatchFor(AppMode.ADAPTIVE)} hijriDay={3} isRTL={false} size={size} />
+      );
+
+      expect(flat(screen.getByTestId(SKY_SWATCH_ID))).toEqual(
+        expect.objectContaining({ width, height, borderTopLeftRadius: borderRadius })
+      );
+    }
+  );
+
+  // Each size shrinks one painted sky, so the swatches read as one sky.
+  it("paints the same sky at every size", async () => {
+    const paintedWidth = async (size: SkySwatchSize) => {
+      const view = await renderWithTheme(
+        <SkySwatch bands={skySwatchFor(AppMode.LIGHT)} hijriDay={3} isRTL={false} size={size} />
+      );
+      const width = Number(flat(part(SKY_PART.PAINT)[0]).width);
+      await view.unmount();
+      return width;
+    };
+    const choice = await paintedWidth(SKY_SWATCH_SIZE.CHOICE);
+
+    for (const size of Object.values(SKY_SWATCH_SIZE)) {
+      expect(await paintedWidth(size)).toBeCloseTo(choice);
+    }
   });
 
   // Jest never steps a native-driver animation, so the spin is the loop the
