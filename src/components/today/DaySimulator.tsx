@@ -14,7 +14,7 @@ import {
   type DayRunKind,
   type DayRunStatus,
 } from "@/constants/DayRun";
-import type { Phase } from "@/constants/Phase";
+import { PHASE, type Phase } from "@/constants/Phase";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { DrawnModeContext } from "@/contexts/DrawnModeContext";
 import { PhaseContext, usePhase } from "@/contexts/PhaseContext";
@@ -22,7 +22,7 @@ import { useAppScheme } from "@/contexts/SchemeContext";
 import { AppMode } from "@/enums/app";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { SampleDaysContext } from "@/hooks/useStoredDays";
-import { SimulatedClockContext, useTodayClock } from "@/hooks/useTodayClock";
+import { SimulatedClockContext, useClockOverride } from "@/hooks/useTodayClock";
 import { useTodayStored } from "@/hooks/useTodayStored";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
@@ -112,7 +112,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
   const own = useTodayStored();
-  const now = useTodayClock();
+  const pinned = useClockOverride();
   const mode = useAppStore((state) => state.mode);
   const scheme = useAppScheme();
   const parentPhase = usePhase();
@@ -120,10 +120,11 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   const holdMs = holdMsFor(kind, useReducedMotion());
   const [run, setRun] = useState<Run | null>(null);
 
-  // A preview shows the user's own day once it is stored, else a sample one.
-  const days =
-    kind === DAY_RUN_KIND.PREVIEW && !own ? sampleDays(now) : { yesterday, today, tomorrow };
-  const schedule = runSchedule(days);
+  const storeDays = { yesterday, today, tomorrow };
+  // A preview plays a sample day until the user's own times are stored.
+  const sample = kind === DAY_RUN_KIND.PREVIEW && !own;
+  // A sample day is always whole; stored days can end before the day does.
+  const available = sample || runSchedule(storeDays) !== null;
 
   useEffect(() => {
     if (run?.status !== DAY_RUN_STATUS.PLAYING) return;
@@ -147,8 +148,8 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   const drawing =
     run?.status === DAY_RUN_STATUS.PLAYING || run?.status === DAY_RUN_STATUS.PAUSED ? run : null;
   const clock = drawing && dayRunClockAt(drawing.schedule, kind, drawing.elapsedMs);
-  const runPhase = drawing && clock ? phaseAt(clock, drawing.days) : undefined;
-  // The margin before a first stored Fajr has no phase; the parent's stands in.
+  // Before a first stored Fajr the margin has no phase; it is the night before.
+  const runPhase = drawing && clock ? (phaseAt(clock, drawing.days) ?? PHASE.NIGHT) : undefined;
   const phase = runPhase ?? parentPhase;
   const drawnMode = drawing && kind === DAY_RUN_KIND.PREVIEW ? AppMode.ADAPTIVE : null;
 
@@ -156,8 +157,11 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
     kind,
     status: run?.status ?? DAY_RUN_STATUS.IDLE,
     phase: runPhase,
-    available: schedule !== null,
+    available,
     start: () => {
+      // The day is read at the press, so no clock re-renders the run at rest.
+      const days = sample ? sampleDays(pinned ?? new Date()) : storeDays;
+      const schedule = runSchedule(days);
       if (!schedule) return;
       const first = holdMs === null ? 0 : dayRunPhaseStartMs(schedule, kind, schedule.phases[0]);
       setRun({ days, schedule, status: DAY_RUN_STATUS.PLAYING, elapsedMs: first });
