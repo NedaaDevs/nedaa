@@ -1,11 +1,20 @@
-import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
-import { BackHandler, Platform, StyleSheet, View, type ViewInstance } from "react-native";
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
+import {
+  BackHandler,
+  Platform,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  type ViewInstance,
+} from "react-native";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Pause, Play, RotateCcw } from "lucide-react-native";
 
 import { DayRunTrack } from "@/components/onboarding/flow/DayRunTrack";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
+import { digitsOf, DigitSlot, type DigitTextProps } from "@/components/ui/digit-reserve";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Material, MATERIAL } from "@/components/ui/material";
@@ -13,7 +22,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
-import { DAY_RUN_STATUS, DAY_RUN_WIDEST_CLOCK } from "@/constants/DayRun";
+import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE } from "@/constants/Phase";
 import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { useRTL } from "@/contexts/RTLContext";
@@ -35,6 +44,8 @@ export const DAY_RUN_PLAYER_PART = {
   COPY: "day-run-player-copy",
   COPY_SIZERS: "day-run-player-copy-sizers",
   COPY_SIZER: "day-run-player-copy-sizer",
+  CLOCK_RESERVE: "day-run-player-clock-reserve",
+  DIGIT_SIZER: "day-run-player-digit-sizer",
   STATUS: "day-run-player-status",
   DONE: "day-run-player-done",
   USE_ADAPTIVE: "day-run-player-use-adaptive",
@@ -67,39 +78,121 @@ const MIRROR = { transform: [{ scaleX: -1 }] };
 
 const PHASES = Object.values(PHASE);
 
+const TIME_TEXT = {
+  size: "md",
+  typography: "helper",
+  fontWeight: "600",
+  color: "$muted",
+  numeric: true,
+} as const satisfies DigitTextProps;
+
 /** A clock time as the card draws it. */
-const TimeText = ({ children }: { children: ReactNode }) => (
-  <Text size="md" typography="helper" fontWeight="600" color="$muted" numeric>
-    {children}
-  </Text>
-);
+const TimeText = ({ children }: { children: ReactNode }) => <Text {...TIME_TEXT}>{children}</Text>;
 
-type Copy = { kicker: string; time: string | null; note: string };
+/** A clock's digits one by one, and the text between them in runs. */
+const clockRuns = (clock: string): string[] => {
+  const runs: string[] = [];
+  for (const character of clock) {
+    const last = runs.length - 1;
+    const joins = last >= 0 && !digitsOf(character) && !digitsOf(runs[last].slice(-1));
+    if (joins) runs[last] += character;
+    else runs.push(character);
+  }
+  return runs;
+};
 
-/** The card's words: the kicker with the time beside it, then the note. */
-const CopyLines = ({ kicker, time, note, widest }: Copy & { widest: readonly string[] }) => (
+/** Each clock sample, every digit as wide as its script's widest; no height. */
+const ClockReserve = () => {
+  const clockTime = useClockTime();
+  // A two-digit hour, morning and evening, in the reader's clock and digits.
+  const samples = DAY_RUN_CLOCK_SAMPLES.ISOS.map(
+    (iso) => clockTime(new Date(iso), DAY_RUN_CLOCK_SAMPLES.TIMEZONE).shown
+  );
+  return (
+    <View style={styles.reserve} {...HIDDEN_FROM_READER}>
+      {samples.map((sample, index) => (
+        <HStack key={index} testID={DAY_RUN_PLAYER_PART.CLOCK_RESERVE}>
+          {clockRuns(sample).map((run, at) =>
+            digitsOf(run) ? (
+              <DigitSlot
+                key={at}
+                text={run}
+                textProps={TIME_TEXT}
+                sizerTestID={DAY_RUN_PLAYER_PART.DIGIT_SIZER}
+              />
+            ) : (
+              <TimeText key={at}>{run}</TimeText>
+            )
+          )}
+        </HStack>
+      ))}
+    </View>
+  );
+};
+
+type Copy = { kicker: string; note: string };
+
+/** The copy past the end of a run: Adaptive itself. */
+const adaptiveCopy = (t: TFunction): Copy => ({
+  kicker: t(`settings.themes.${AppMode.ADAPTIVE}.title`),
+  note: t(`settings.themes.${AppMode.ADAPTIVE}.description`),
+});
+
+/** The card's words: the kicker with `trailing` beside it, then the note. */
+const CopyLines = ({ kicker, note, trailing }: Copy & { trailing: ReactNode }) => (
   <>
     <HStack alignItems="baseline" gap="$2">
       <Text flex={1} size="label" typography="helper" fontWeight="600" color="$fg">
         {kicker}
       </Text>
-      {time === null ? null : (
-        <View>
-          <TimeText>{time}</TimeText>
-          {/* As wide as the widest time, no taller: the kicker wraps alike. */}
-          <View style={styles.widest} {...HIDDEN_FROM_READER}>
-            {widest.map((each) => (
-              <TimeText key={each}>{each}</TimeText>
-            ))}
-          </View>
-        </View>
-      )}
+      {trailing}
     </HStack>
     <Text size="helper" typography="helper" fontWeight="500" color="$muted">
       {note}
     </Text>
   </>
 );
+
+type SlotProps = { time: string; onWidth: (width: number) => void };
+
+/** The time, flush at the end of a slot wide enough for any clock. */
+const TimeSlot = ({ time, onWidth }: SlotProps) => (
+  <View
+    style={styles.timeSlot}
+    onLayout={({ nativeEvent }: LayoutChangeEvent) => onWidth(nativeEvent.layout.width)}>
+    <TimeText>{time}</TimeText>
+    <ClockReserve />
+  </View>
+);
+
+/** Every copy the run can show, unseen: the cell holds the tallest's height. */
+const CopySizers = ({ slotWidth }: { slotWidth: number }) => {
+  const { t } = useTranslation();
+  const scheme = useAppScheme();
+  // A phase's kicker shares its line with the time slot; the end's has none.
+  const slot = <View style={{ width: slotWidth }} />;
+  const copies = [
+    ...PHASES.map((each) => {
+      const { kicker, note } = appearancePreview(t, AppMode.ADAPTIVE, scheme, each);
+      return { key: each, kicker, note, trailing: slot };
+    }),
+    { key: DAY_RUN_STATUS.ENDED, ...adaptiveCopy(t), trailing: null },
+  ];
+  return (
+    <HStack
+      testID={DAY_RUN_PLAYER_PART.COPY_SIZERS}
+      overflow="hidden"
+      opacity={0}
+      pointerEvents="none"
+      {...HIDDEN_FROM_READER}>
+      {copies.map(({ key, ...copy }) => (
+        <VStack key={key} testID={DAY_RUN_PLAYER_PART.COPY_SIZER} width="100%" flexShrink={0}>
+          <CopyLines {...copy} />
+        </VStack>
+      ))}
+    </HStack>
+  );
+};
 
 /** A day run's controls, drawn by the frame in place of its bottom bar. */
 export const DayRunPlayer = () => {
@@ -112,32 +205,17 @@ export const DayRunPlayer = () => {
   const { now, day } = useShownDay();
   const { isRTL } = useRTL();
   const toggleRef = useRef<ViewInstance>(null);
+  // The live slot's width, which the sizers reserve beside each kicker.
+  const [slotWidth, setSlotWidth] = useState(0);
 
   const status = run?.status ?? DAY_RUN_STATUS.IDLE;
   const phase = run?.phase;
   const join = (first: string, second: string) => t("a11y.join", { first, second });
 
   // The phase the run draws; past the end, Adaptive itself.
-  const adaptive: Copy = {
-    kicker: t(`settings.themes.${AppMode.ADAPTIVE}.title`),
-    time: null,
-    note: t(`settings.themes.${AppMode.ADAPTIVE}.description`),
-  };
-  const lines = phase ? appearancePreview(t, AppMode.ADAPTIVE, scheme, phase) : null;
-  const kicker = lines?.kicker ?? adaptive.kicker;
-  const note = lines?.note ?? adaptive.note;
+  const lines = phase ? appearancePreview(t, AppMode.ADAPTIVE, scheme, phase) : adaptiveCopy(t);
+  const { kicker, note } = lines;
   const time = phase && day ? clockTime(now, day.timezone) : null;
-  const widest = DAY_RUN_WIDEST_CLOCK.ISOS.map(
-    (iso) => clockTime(new Date(iso), DAY_RUN_WIDEST_CLOCK.TIMEZONE).shown
-  );
-  // Every copy the run can show, so the cell holds the tallest one's height.
-  const sizers = [
-    ...PHASES.map((each) => {
-      const preview = appearancePreview(t, AppMode.ADAPTIVE, scheme, each);
-      return { key: each, kicker: preview.kicker, time: widest[0], note: preview.note };
-    }),
-    { key: DAY_RUN_STATUS.ENDED, ...adaptive },
-  ];
   const copyLabel = join(time ? join(kicker, time.spoken) : kicker, note);
   const phaseName = phase ? t(PHASE_NAME[phase]) : kicker;
   const valueText = time ? join(phaseName, time.spoken) : phaseName;
@@ -211,18 +289,7 @@ export const DayRunPlayer = () => {
           </View>
         </Pressable>
         <Box flex={1}>
-          <HStack
-            testID={DAY_RUN_PLAYER_PART.COPY_SIZERS}
-            overflow="hidden"
-            opacity={0}
-            pointerEvents="none"
-            {...HIDDEN_FROM_READER}>
-            {sizers.map(({ key, ...copy }) => (
-              <VStack key={key} testID={DAY_RUN_PLAYER_PART.COPY_SIZER} width="100%" flexShrink={0}>
-                <CopyLines {...copy} widest={widest} />
-              </VStack>
-            ))}
-          </HStack>
+          <CopySizers slotWidth={slotWidth} />
           <VStack
             testID={DAY_RUN_PLAYER_PART.COPY}
             position="absolute"
@@ -231,7 +298,11 @@ export const DayRunPlayer = () => {
             right={0}
             accessible
             accessibilityLabel={copyLabel}>
-            <CopyLines kicker={kicker} time={time?.shown ?? null} note={note} widest={widest} />
+            <CopyLines
+              kicker={kicker}
+              note={note}
+              trailing={time ? <TimeSlot time={time.shown} onWidth={setSlotWidth} /> : null}
+            />
           </VStack>
         </Box>
         <Button
@@ -286,6 +357,7 @@ export const DayRunPlayer = () => {
 };
 
 const styles = StyleSheet.create({
-  // No height, so the widest times set only the slot's width.
-  widest: { height: 0, overflow: "hidden" },
+  timeSlot: { alignItems: "flex-end" },
+  // No height, so the samples set only the slot's width.
+  reserve: { height: 0, overflow: "hidden" },
 });
