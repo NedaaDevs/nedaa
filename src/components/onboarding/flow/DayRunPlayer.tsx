@@ -1,9 +1,10 @@
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { BackHandler, Platform, StyleSheet, View, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Pause, Play, RotateCcw } from "lucide-react-native";
 
 import { DayRunTrack } from "@/components/onboarding/flow/DayRunTrack";
+import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
@@ -11,7 +12,9 @@ import { Material, MATERIAL } from "@/components/ui/material";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { DAY_RUN_STATUS } from "@/constants/DayRun";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
+import { DAY_RUN_STATUS, DAY_RUN_WIDEST_CLOCK } from "@/constants/DayRun";
+import { PHASE } from "@/constants/Phase";
 import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
@@ -30,6 +33,8 @@ export const DAY_RUN_PLAYER_PART = {
   TOGGLE: "day-run-player-toggle",
   GLYPH: "day-run-player-glyph",
   COPY: "day-run-player-copy",
+  COPY_SIZERS: "day-run-player-copy-sizers",
+  COPY_SIZER: "day-run-player-copy-sizer",
   STATUS: "day-run-player-status",
   DONE: "day-run-player-done",
   USE_ADAPTIVE: "day-run-player-use-adaptive",
@@ -60,6 +65,42 @@ const TOGGLE = {
 // The play triangle points along the reading direction.
 const MIRROR = { transform: [{ scaleX: -1 }] };
 
+const PHASES = Object.values(PHASE);
+
+/** A clock time as the card draws it. */
+const TimeText = ({ children }: { children: ReactNode }) => (
+  <Text size="md" typography="helper" fontWeight="600" color="$muted" numeric>
+    {children}
+  </Text>
+);
+
+type Copy = { kicker: string; time: string | null; note: string };
+
+/** The card's words: the kicker with the time beside it, then the note. */
+const CopyLines = ({ kicker, time, note, widest }: Copy & { widest: readonly string[] }) => (
+  <>
+    <HStack alignItems="baseline" gap="$2">
+      <Text flex={1} size="label" typography="helper" fontWeight="600" color="$fg">
+        {kicker}
+      </Text>
+      {time === null ? null : (
+        <View>
+          <TimeText>{time}</TimeText>
+          {/* As wide as the widest time, no taller: the kicker wraps alike. */}
+          <View style={styles.widest} {...HIDDEN_FROM_READER}>
+            {widest.map((each) => (
+              <TimeText key={each}>{each}</TimeText>
+            ))}
+          </View>
+        </View>
+      )}
+    </HStack>
+    <Text size="helper" typography="helper" fontWeight="500" color="$muted">
+      {note}
+    </Text>
+  </>
+);
+
 /** A day run's controls, drawn by the frame in place of its bottom bar. */
 export const DayRunPlayer = () => {
   const { t } = useTranslation();
@@ -77,10 +118,26 @@ export const DayRunPlayer = () => {
   const join = (first: string, second: string) => t("a11y.join", { first, second });
 
   // The phase the run draws; past the end, Adaptive itself.
+  const adaptive: Copy = {
+    kicker: t(`settings.themes.${AppMode.ADAPTIVE}.title`),
+    time: null,
+    note: t(`settings.themes.${AppMode.ADAPTIVE}.description`),
+  };
   const lines = phase ? appearancePreview(t, AppMode.ADAPTIVE, scheme, phase) : null;
-  const kicker = lines?.kicker ?? t(`settings.themes.${AppMode.ADAPTIVE}.title`);
-  const note = lines?.note ?? t(`settings.themes.${AppMode.ADAPTIVE}.description`);
+  const kicker = lines?.kicker ?? adaptive.kicker;
+  const note = lines?.note ?? adaptive.note;
   const time = phase && day ? clockTime(now, day.timezone) : null;
+  const widest = DAY_RUN_WIDEST_CLOCK.ISOS.map(
+    (iso) => clockTime(new Date(iso), DAY_RUN_WIDEST_CLOCK.TIMEZONE).shown
+  );
+  // Every copy the run can show, so the cell holds the tallest one's height.
+  const sizers = [
+    ...PHASES.map((each) => {
+      const preview = appearancePreview(t, AppMode.ADAPTIVE, scheme, each);
+      return { key: each, kicker: preview.kicker, time: widest[0], note: preview.note };
+    }),
+    { key: DAY_RUN_STATUS.ENDED, ...adaptive },
+  ];
   const copyLabel = join(time ? join(kicker, time.spoken) : kicker, note);
   const phaseName = phase ? t(PHASE_NAME[phase]) : kicker;
   const valueText = time ? join(phaseName, time.spoken) : phaseName;
@@ -127,17 +184,6 @@ export const DayRunPlayer = () => {
       paddingTop="$2.5"
       paddingHorizontal="$3"
       paddingBottom="$3">
-      {announcement && Platform.OS === PlatformType.ANDROID ? (
-        // Drawn first, so it sits behind the controls and draws nothing.
-        <View
-          testID={DAY_RUN_PLAYER_PART.STATUS}
-          accessible
-          accessibilityLabel={announcement}
-          accessibilityLiveRegion="polite"
-          pointerEvents="none"
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
       <HStack alignItems="center" gap="$2.5">
         <Pressable
           ref={toggleRef}
@@ -164,25 +210,30 @@ export const DayRunPlayer = () => {
             />
           </View>
         </Pressable>
-        <VStack
-          testID={DAY_RUN_PLAYER_PART.COPY}
-          flex={1}
-          accessible
-          accessibilityLabel={copyLabel}>
-          <HStack alignItems="baseline" gap="$2">
-            <Text flex={1} size="label" typography="helper" fontWeight="600" color="$fg">
-              {kicker}
-            </Text>
-            {time ? (
-              <Text size="md" typography="helper" fontWeight="600" color="$muted" numeric>
-                {time.shown}
-              </Text>
-            ) : null}
+        <Box flex={1}>
+          <HStack
+            testID={DAY_RUN_PLAYER_PART.COPY_SIZERS}
+            overflow="hidden"
+            opacity={0}
+            pointerEvents="none"
+            {...HIDDEN_FROM_READER}>
+            {sizers.map(({ key, ...copy }) => (
+              <VStack key={key} testID={DAY_RUN_PLAYER_PART.COPY_SIZER} width="100%" flexShrink={0}>
+                <CopyLines {...copy} widest={widest} />
+              </VStack>
+            ))}
           </HStack>
-          <Text size="helper" typography="helper" fontWeight="500" color="$muted">
-            {note}
-          </Text>
-        </VStack>
+          <VStack
+            testID={DAY_RUN_PLAYER_PART.COPY}
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            accessible
+            accessibilityLabel={copyLabel}>
+            <CopyLines kicker={kicker} time={time?.shown ?? null} note={note} widest={widest} />
+          </VStack>
+        </Box>
         <Button
           testID={DAY_RUN_PLAYER_PART.DONE}
           action="primary"
@@ -215,6 +266,26 @@ export const DayRunPlayer = () => {
           <Button.Text>{t("onboarding.dayPreview.useAdaptive")}</Button.Text>
         </Button>
       )}
+      {Platform.OS === PlatformType.ANDROID ? (
+        // Mounted for the player's life: Android says a changed label.
+        <Box
+          testID={DAY_RUN_PLAYER_PART.STATUS}
+          position="absolute"
+          bottom={0}
+          width="$0.5"
+          height="$0.5"
+          pointerEvents="none"
+          importantForAccessibility="yes"
+          accessible={announcement !== null}
+          accessibilityLabel={announcement ?? ""}
+          accessibilityLiveRegion="polite"
+        />
+      ) : null}
     </Material>
   );
 };
+
+const styles = StyleSheet.create({
+  // No height, so the widest times set only the slot's width.
+  widest: { height: 0, overflow: "hidden" },
+});
