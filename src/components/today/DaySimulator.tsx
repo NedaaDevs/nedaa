@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import { use, useEffect, useState, type ReactNode } from "react";
 import { AppState } from "react-native";
 import { parseISO } from "date-fns";
 
@@ -12,10 +12,10 @@ import {
   DAY_RUN_PACE,
   DAY_RUN_STATUS,
   type DayRunKind,
-  type DayRunStatus,
 } from "@/constants/DayRun";
-import { PHASE, type Phase } from "@/constants/Phase";
+import { PHASE } from "@/constants/Phase";
 import { PRAYER_ID } from "@/constants/Prayer";
+import { DayRunContext, useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { DrawnModeContext } from "@/contexts/DrawnModeContext";
 import { PhaseContext, usePhase } from "@/contexts/PhaseContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
@@ -38,24 +38,6 @@ import {
 import { phaseAt, type StoredDays } from "@/utils/phase";
 import { sampleDays } from "@/utils/sampleDays";
 
-/** A day run, as the parts inside a `DaySimulator` drive and show it. */
-export type DayRun = {
-  kind: DayRunKind;
-  status: DayRunStatus;
-  /** The phase the run's clock is in; undefined while no run draws. */
-  phase: Phase | undefined;
-  /** How far the run is through its phases, 0 to 1; 0 in the prelude. */
-  progress: number;
-  /** False when the run has no whole day to play through. */
-  available: boolean;
-  start(): void;
-  pause(): void;
-  resume(): void;
-  /** Moves the clock to the start of `phase` and holds it there. */
-  jumpTo(phase: Phase): void;
-  done(): void;
-};
-
 /** The statuses of a started run; IDLE is no run at all. */
 type RunStatus =
   typeof DAY_RUN_STATUS.PLAYING | typeof DAY_RUN_STATUS.PAUSED | typeof DAY_RUN_STATUS.ENDED;
@@ -67,11 +49,6 @@ type Run = {
   status: RunStatus;
   elapsedMs: number;
 };
-
-const DayRunContext = createContext<DayRun | null>(null);
-
-/** The run of the nearest `DaySimulator`; null outside one. */
-export const useDayRun = (): DayRun | null => use(DayRunContext);
 
 /** A run through the stored day, from before its Fajr to the next one. */
 const runSchedule = (days: StoredDays): DayRunSchedule | null => {

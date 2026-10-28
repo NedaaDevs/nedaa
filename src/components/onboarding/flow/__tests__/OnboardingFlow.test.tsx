@@ -6,7 +6,6 @@ import { OnboardingFlow } from "@/components/onboarding/flow/OnboardingFlow";
 import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { CompleteStep } from "@/components/onboarding/flow/steps/CompleteStep";
 import { enterOffset } from "@/components/onboarding/flow/StepTransition";
-import { useDayRun } from "@/components/today/DaySimulator";
 import { DAY_RUN, DAY_RUN_KIND } from "@/constants/DayRun";
 import {
   ONBOARDING_LOADING_DELAY_MS,
@@ -17,6 +16,7 @@ import {
   STEP_MOTION,
   type OnboardingStepId,
 } from "@/constants/Onboarding";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";

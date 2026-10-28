@@ -4,12 +4,13 @@ import { act, fireEvent, renderHook, screen, userEvent } from "@testing-library/
 
 import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
 import { DAY_RUN_TRACK_PART } from "@/components/onboarding/flow/DayRunTrack";
-import { DaySimulator, useDayRun } from "@/components/today/DaySimulator";
+import { DaySimulator } from "@/components/today/DaySimulator";
 import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
 import { DAY_RUN, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE, type Phase } from "@/constants/Phase";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { useDrawnMode } from "@/contexts/DrawnModeContext";
 import { AppLocale, AppMode } from "@/enums/app";
 import { useShownDay } from "@/hooks/useShownDay";
