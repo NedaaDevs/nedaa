@@ -19,6 +19,7 @@ import { skySwatchFor, type SwatchBand } from "@/utils/sky";
 export const DAY_RUN_TRACK_PART = {
   SEGMENT: "day-run-track-segment",
   PLAYHEAD: "day-run-track-playhead",
+  NAME: "day-run-track-name",
 } as const;
 
 const PHASES = Object.values(PHASE);
@@ -65,12 +66,15 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
   const { t } = useTranslation();
   const { isRTL, direction } = useRTL();
   const bands = skySwatchFor(AppMode.ADAPTIVE);
+  // The prelude is the night before Fajr, short of the track's first phase.
+  const prelude = phase === PHASE.NIGHT && progress === 0;
   // Past the end the run sits on the last phase.
-  const index = phase === undefined ? LAST : PHASES.indexOf(phase);
+  const at = phase === undefined ? LAST : prelude ? -1 : PHASES.indexOf(phase);
+  const lit = prelude ? undefined : phase;
 
   const step = (by: number) => {
-    const to = Math.min(LAST, Math.max(0, index + by));
-    if (to !== index) onJump?.(PHASES[to]);
+    const to = at + by;
+    if (to >= 0 && to <= LAST) onJump?.(PHASES[to]);
   };
   const handleAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
     if (nativeEvent.actionName === A11Y_ACTION.INCREMENT) step(1);
@@ -82,7 +86,7 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={t("a11y.onboarding.dayPreview.track")}
-      accessibilityValue={{ min: 0, max: LAST, now: index, text: valueText }}
+      accessibilityValue={{ min: 0, max: LAST, now: Math.max(0, at), text: valueText }}
       accessibilityActions={adjustActions()}
       onAccessibilityAction={handleAccessibilityAction}
       // Set here too, so the phases run from the reading start in any host.
@@ -128,13 +132,14 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
           {PHASES.map((each) => (
             <Text
               key={each}
+              testID={DAY_RUN_TRACK_PART.NAME}
               flex={1}
               size="sm"
               typography="helper"
               textAlign="center"
               numberOfLines={1}
-              fontWeight={each === phase ? "700" : "500"}
-              color={each === phase ? "$accentText" : "$muted"}>
+              fontWeight={each === lit ? "700" : "500"}
+              color={each === lit ? "$accentText" : "$muted"}>
               {t(PHASE_NAME[each])}
             </Text>
           ))}

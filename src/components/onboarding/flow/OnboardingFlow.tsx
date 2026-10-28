@@ -48,7 +48,7 @@ const isSettledFetch = (column: readonly OnboardingStepId[], at: number) =>
 const RunFrame = (props: ComponentProps<typeof OnboardingFrame>) => {
   const run = useDayRun();
   if (!run || run.status === DAY_RUN_STATUS.IDLE) return <OnboardingFrame {...props} />;
-  // A run belongs to its step: moving on ends it.
+  // Skip ends the run, then moves on.
   const skip = () => {
     run.done();
     props.onSkip();

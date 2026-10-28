@@ -254,6 +254,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<LocationUpdateProgress\b/,
     home: "components/LocationUpdateProgress.tsx",
   },
+  // Settings › Appearance and the day run's player say a mode and its phase.
+  {
+    concept: "the appearance kicker and phase note",
+    shows: /\bsettings\.themes\.(preview|phases)\.|\bappearancePreview\(/,
+    within: /\.tsx$/,
+    drawsWith: /\bappearancePreview\(/,
+    home: "utils/appearancePreview.ts",
+  },
   // A file that plays a sound sample draws SoundPreview. The five files
   // `within` leaves out draw their own control through useSoundPreview.
   {

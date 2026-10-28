@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef } from "react";
-import { BackHandler, View, type ViewInstance } from "react-native";
+import { BackHandler, Platform, StyleSheet, View, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Pause, Play, RotateCcw } from "lucide-react-native";
 
@@ -15,7 +15,7 @@ import { DAY_RUN_STATUS } from "@/constants/DayRun";
 import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
-import { AppMode } from "@/enums/app";
+import { AppMode, PlatformType } from "@/enums/app";
 import { useChooseMode } from "@/hooks/useChooseMode";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
@@ -30,6 +30,7 @@ export const DAY_RUN_PLAYER_PART = {
   TOGGLE: "day-run-player-toggle",
   GLYPH: "day-run-player-glyph",
   COPY: "day-run-player-copy",
+  STATUS: "day-run-player-status",
   DONE: "day-run-player-done",
   USE_ADAPTIVE: "day-run-player-use-adaptive",
 } as const;
@@ -85,13 +86,14 @@ export const DayRunPlayer = () => {
   const valueText = time ? join(phaseName, time.spoken) : phaseName;
 
   // Said where the run stops; a phase passes too fast to say each one.
-  useIosAnnouncement(
+  const announcement =
     status === DAY_RUN_STATUS.PAUSED
       ? copyLabel
       : status === DAY_RUN_STATUS.ENDED
         ? t("a11y.onboarding.dayPreview.ended")
-        : null
-  );
+        : null;
+  // Android speaks the live region below; iOS has no live regions.
+  useIosAnnouncement(announcement);
 
   useEffect(() => {
     focusOn(toggleRef.current);
@@ -125,6 +127,17 @@ export const DayRunPlayer = () => {
       paddingTop="$2.5"
       paddingHorizontal="$3"
       paddingBottom="$3">
+      {announcement && Platform.OS === PlatformType.ANDROID ? (
+        // Drawn first, so it sits behind the controls and draws nothing.
+        <View
+          testID={DAY_RUN_PLAYER_PART.STATUS}
+          accessible
+          accessibilityLabel={announcement}
+          accessibilityLiveRegion="polite"
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       <HStack alignItems="center" gap="$2.5">
         <Pressable
           ref={toggleRef}
@@ -155,16 +168,9 @@ export const DayRunPlayer = () => {
           testID={DAY_RUN_PLAYER_PART.COPY}
           flex={1}
           accessible
-          accessibilityLabel={copyLabel}
-          accessibilityLiveRegion={status === DAY_RUN_STATUS.PLAYING ? "none" : "polite"}>
+          accessibilityLabel={copyLabel}>
           <HStack alignItems="baseline" gap="$2">
-            <Text
-              flex={1}
-              size="label"
-              typography="helper"
-              fontWeight="600"
-              color="$fg"
-              numberOfLines={1}>
+            <Text flex={1} size="label" typography="helper" fontWeight="600" color="$fg">
               {kicker}
             </Text>
             {time ? (
@@ -173,7 +179,7 @@ export const DayRunPlayer = () => {
               </Text>
             ) : null}
           </HStack>
-          <Text size="helper" typography="helper" fontWeight="500" color="$muted" numberOfLines={1}>
+          <Text size="helper" typography="helper" fontWeight="500" color="$muted">
             {note}
           </Text>
         </VStack>
