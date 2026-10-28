@@ -44,7 +44,8 @@ type TextProps = TamaguiTextProps & {
   size?: TextSize;
   /** Tabular figures, so digits keep a fixed advance width in aligned columns. */
   numeric?: boolean;
-  /** A lone character, measured exactly: no room added on Android. */
+  /** Measured exactly, with none of the end room: a lone character, or a piece
+   *  of a row that adds the room itself. */
   glyph?: boolean;
   /** Line box as a ratio of the font size. Not `role`, which is accessibility. */
   typography?: TextRole;
@@ -60,6 +61,9 @@ const resolveFontWeight = (
 };
 
 const IS_ANDROID = Platform.OS === PlatformType.ANDROID;
+
+/** The room a running Text gets at its end; Android measures Arabic short. */
+export const TEXT_END_ROOM = IS_ANDROID ? 8 : 0;
 
 const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>(
   (
@@ -109,7 +113,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         allowFontScaling={false}
         // Android mismeasures Arabic glyph widths; "simple" break strategy
         // uses a more generous width calculation in StaticLayout.
-        {...(IS_ANDROID && !glyph && { textBreakStrategy: "simple", paddingEnd: 8 })}
+        {...(IS_ANDROID && !glyph && { textBreakStrategy: "simple", paddingEnd: TEXT_END_ROOM })}
         style={[
           !IS_ANDROID && { writingDirection },
           underline && { textDecorationLine: "underline" as const },
