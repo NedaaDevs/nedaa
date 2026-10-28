@@ -17,6 +17,7 @@ import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
 
 // Constants
+import { DAY_RUN_KIND } from "@/constants/DayRun";
 import { TODAY_SCREEN_PART, TODAY_STYLE } from "@/constants/Today";
 
 // Hooks
@@ -37,7 +38,7 @@ export default function MainScreen() {
   const detail = usePrayerDetail();
 
   return (
-    <DaySimulator>
+    <DaySimulator kind={DAY_RUN_KIND.DEBUG}>
       <ScreenSky>
         {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
         <Box flex={1} paddingTop={insets.top}>

@@ -13,7 +13,7 @@ import { TODAY_STYLE } from "@/constants/Today";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { SampleDaysContext } from "@/hooks/useStoredDays";
 import { useTodayClock } from "@/hooks/useTodayClock";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { useTodayStored } from "@/hooks/useTodayStored";
 import { usePreferencesStore } from "@/stores/preferences";
 import { sampleDays } from "@/utils/sampleDays";
 
@@ -34,11 +34,10 @@ type Props = {
 export const TodayStylePreview = ({ sampleUnlessOwn = false }: Props) => {
   const { t } = useTranslation();
   const todayStyle = usePreferencesStore((state) => state.todayStyle);
-  const stored = usePrayerTimesStore((state) => state.todayTimings);
   // Times for the default place are not the user's.
-  const usingDefault = usePrayerTimesStore((state) => state.usingDefaultLocation);
+  const own = useTodayStored();
   const now = useTodayClock();
-  const sample = sampleUnlessOwn && (!stored || usingDefault);
+  const sample = sampleUnlessOwn && !own;
 
   const reduced = useReducedMotion();
   const opacity = useSharedValue(1);

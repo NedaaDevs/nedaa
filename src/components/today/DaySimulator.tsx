@@ -1,90 +1,212 @@
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import { AppState } from "react-native";
 import { parseISO } from "date-fns";
 
 import { BrightnessTheme } from "@/components/ui/brightness-theme";
 import { Button } from "@/components/ui/button";
+import { APP_STATE } from "@/constants/AppState";
+import {
+  DAY_RUN,
+  DAY_RUN_DEBUG_LABEL,
+  DAY_RUN_KIND,
+  DAY_RUN_PACE,
+  DAY_RUN_STATUS,
+  type DayRunKind,
+  type DayRunStatus,
+} from "@/constants/DayRun";
+import type { Phase } from "@/constants/Phase";
 import { PRAYER_ID } from "@/constants/Prayer";
-import { PhaseContext } from "@/contexts/PhaseContext";
+import { DrawnModeContext } from "@/contexts/DrawnModeContext";
+import { PhaseContext, usePhase } from "@/contexts/PhaseContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
-import { SimulatedClockContext } from "@/hooks/useTodayClock";
+import { AppMode } from "@/enums/app";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { SampleDaysContext } from "@/hooks/useStoredDays";
+import { SimulatedClockContext, useTodayClock } from "@/hooks/useTodayClock";
+import { useTodayStored } from "@/hooks/useTodayStored";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { isDarkMode } from "@/utils/appearance";
-import { ONE_DAY_MS, phaseAt } from "@/utils/phase";
+import {
+  dayRunClockAt,
+  dayRunLengthMs,
+  dayRunPhaseStartMs,
+  dayRunSchedule,
+  type DayRunSchedule,
+} from "@/utils/dayRun";
+import { phaseAt, type StoredDays } from "@/utils/phase";
+import { sampleDays } from "@/utils/sampleDays";
 
-/** A debug run through the day: 5 minutes every 50ms, about 15s in all. */
-export const DAY_SIMULATION = {
-  label: "Simulate a day",
-  tickMs: 50,
-  stepMs: 5 * 60_000,
-  /** How far before Fajr the run starts. */
-  marginMs: 30 * 60_000,
-} as const;
+/** A day run, as the parts inside a `DaySimulator` drive and show it. */
+export type DayRun = {
+  kind: DayRunKind;
+  status: DayRunStatus;
+  /** The phase the run's clock is in; undefined while no run draws. */
+  phase: Phase | undefined;
+  /** False when the run has no whole day to play through. */
+  available: boolean;
+  start(): void;
+  pause(): void;
+  resume(): void;
+  /** Moves the clock to the start of `phase` and holds it there. */
+  jumpTo(phase: Phase): void;
+  done(): void;
+};
 
-/** Starts a run; null while one plays or the day's times are unknown. */
-const StartContext = createContext<(() => void) | null>(null);
+/** The statuses of a started run; IDLE is no run at all. */
+type RunStatus =
+  typeof DAY_RUN_STATUS.PLAYING | typeof DAY_RUN_STATUS.PAUSED | typeof DAY_RUN_STATUS.ENDED;
 
-/** Plays Today's clock through a whole day for everything inside it. */
-export const DaySimulator = ({ children }: { children: ReactNode }) => {
+/** A started run: its days and schedule, fixed at start, and how far it is. */
+type Run = {
+  days: StoredDays;
+  schedule: DayRunSchedule;
+  status: RunStatus;
+  elapsedMs: number;
+};
+
+const DayRunContext = createContext<DayRun | null>(null);
+
+/** The run of the nearest `DaySimulator`; null outside one. */
+export const useDayRun = (): DayRun | null => use(DayRunContext);
+
+/** A run through the stored day, from before its Fajr to the next one. */
+const runSchedule = (days: StoredDays): DayRunSchedule | null => {
+  if (!days.today) return null;
+  // Just before today's Fajr, so a run plays today even after Fajr has passed.
+  const fajr = parseISO(days.today.timings[PRAYER_ID.FAJR]).getTime();
+  return dayRunSchedule(days, new Date(fajr - 1));
+};
+
+/** How long Reduce Motion holds each phase start; null for a run that moves. */
+const holdMsFor = (kind: DayRunKind, reduced: boolean): number | null => {
+  const config = DAY_RUN[kind];
+  return reduced && config.pace === DAY_RUN_PACE.EQUAL_PHASES ? config.phaseMs : null;
+};
+
+/** A playing run one step on, ENDED past its end; any other run as it is. */
+const stepped = (run: Run | null, kind: DayRunKind, holdMs: number | null): Run | null => {
+  if (run?.status !== DAY_RUN_STATUS.PLAYING) return run;
+  const { schedule, elapsedMs } = run;
+  const toMs =
+    holdMs === null
+      ? elapsedMs + DAY_RUN[kind].tickMs
+      : schedule.phases
+          .map((phase) => dayRunPhaseStartMs(schedule, kind, phase))
+          .find((start) => start > elapsedMs);
+  return toMs === undefined || toMs > dayRunLengthMs(schedule, kind)
+    ? { ...run, status: DAY_RUN_STATUS.ENDED }
+    : { ...run, elapsedMs: toMs };
+};
+
+/** Moves a run in status `from` to `to`; any other run as it is. */
+const moved =
+  (from: RunStatus, to: RunStatus) =>
+  (run: Run | null): Run | null =>
+    run?.status === from ? { ...run, status: to } : run;
+
+/** Plays a day through for everything inside: a debug run or a preview. */
+export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: DayRunKind }) => {
   const yesterday = usePrayerTimesStore((state) => state.yesterdayTimings);
   const today = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
+  const own = useTodayStored();
+  const now = useTodayClock();
   const mode = useAppStore((state) => state.mode);
   const scheme = useAppScheme();
-  const [simulated, setSimulated] = useState<Date | null>(null);
+  const parentPhase = usePhase();
+  const parentDays = use(SampleDaysContext);
+  const holdMs = holdMsFor(kind, useReducedMotion());
+  const [run, setRun] = useState<Run | null>(null);
+
+  // A preview shows the user's own day once it is stored, else a sample one.
+  const days =
+    kind === DAY_RUN_KIND.PREVIEW && !own ? sampleDays(now) : { yesterday, today, tomorrow };
+  const schedule = runSchedule(days);
 
   useEffect(() => {
-    if (!simulated || !today) return;
-    // The run ends at the next Fajr, where the moon's arc ends.
-    const end = tomorrow
-      ? parseISO(tomorrow.timings[PRAYER_ID.FAJR]).getTime()
-      : parseISO(today.timings[PRAYER_ID.FAJR]).getTime() + ONE_DAY_MS;
-    const timer = setTimeout(() => {
-      const next = simulated.getTime() + DAY_SIMULATION.stepMs;
-      setSimulated(next > end ? null : new Date(next));
-    }, DAY_SIMULATION.tickMs);
+    if (run?.status !== DAY_RUN_STATUS.PLAYING) return;
+    const timer = setTimeout(
+      () => setRun((current) => stepped(current, kind, holdMs)),
+      holdMs ?? DAY_RUN[kind].tickMs
+    );
     return () => clearTimeout(timer);
-  }, [simulated, today, tomorrow]);
+  }, [run, kind, holdMs]);
 
-  const start =
-    today && !simulated
-      ? () => {
-          const fajr = parseISO(today.timings[PRAYER_ID.FAJR]).getTime();
-          setSimulated(new Date(fajr - DAY_SIMULATION.marginMs));
-        }
-      : null;
+  const playing = run?.status === DAY_RUN_STATUS.PLAYING;
+  // Leaving the app pauses a run, so it waits where it was for the user.
+  useEffect(() => {
+    if (!playing) return;
+    const subscription = AppState.addEventListener("change", (next) => {
+      if (next !== APP_STATE.ACTIVE) setRun(moved(DAY_RUN_STATUS.PLAYING, DAY_RUN_STATUS.PAUSED));
+    });
+    return () => subscription.remove();
+  }, [playing]);
 
-  const content = <StartContext value={start}>{children}</StartContext>;
-  const phase = simulated && phaseAt(simulated, { yesterday, today, tomorrow });
+  const drawing =
+    run?.status === DAY_RUN_STATUS.PLAYING || run?.status === DAY_RUN_STATUS.PAUSED ? run : null;
+  const clock = drawing && dayRunClockAt(drawing.schedule, kind, drawing.elapsedMs);
+  const runPhase = drawing && clock ? phaseAt(clock, drawing.days) : undefined;
+  // The margin before a first stored Fajr has no phase; the parent's stands in.
+  const phase = runPhase ?? parentPhase;
+  const drawnMode = drawing && kind === DAY_RUN_KIND.PREVIEW ? AppMode.ADAPTIVE : null;
 
+  const dayRun: DayRun = {
+    kind,
+    status: run?.status ?? DAY_RUN_STATUS.IDLE,
+    phase: runPhase,
+    available: schedule !== null,
+    start: () => {
+      if (!schedule) return;
+      const first = holdMs === null ? 0 : dayRunPhaseStartMs(schedule, kind, schedule.phases[0]);
+      setRun({ days, schedule, status: DAY_RUN_STATUS.PLAYING, elapsedMs: first });
+    },
+    pause: () => setRun(moved(DAY_RUN_STATUS.PLAYING, DAY_RUN_STATUS.PAUSED)),
+    resume: () => setRun(moved(DAY_RUN_STATUS.PAUSED, DAY_RUN_STATUS.PLAYING)),
+    jumpTo: (to) =>
+      setRun(
+        (current) =>
+          current && {
+            ...current,
+            status: DAY_RUN_STATUS.PAUSED,
+            elapsedMs: dayRunPhaseStartMs(current.schedule, kind, to),
+          }
+      ),
+    done: () => setRun(null),
+  };
+
+  // Every provider renders at rest too, so nothing inside remounts with a run.
   return (
-    <SimulatedClockContext value={simulated}>
-      {phase ? (
-        // Adaptive draws by the phase, so a run brings its own phase and theme.
+    <DayRunContext value={dayRun}>
+      <SimulatedClockContext value={clock}>
         <PhaseContext value={phase}>
-          <BrightnessTheme dark={isDarkMode(mode, scheme, phase)}>{content}</BrightnessTheme>
+          <DrawnModeContext value={drawnMode}>
+            <SampleDaysContext value={drawing ? drawing.days : parentDays}>
+              <BrightnessTheme dark={isDarkMode(drawnMode ?? mode, scheme, phase)}>
+                {children}
+              </BrightnessTheme>
+            </SampleDaysContext>
+          </DrawnModeContext>
         </PhaseContext>
-      ) : (
-        content
-      )}
-    </SimulatedClockContext>
+      </SimulatedClockContext>
+    </DayRunContext>
   );
 };
 
 /** The button that starts a run, shown only in debug mode. */
 export const DaySimulatorButton = () => {
   const debug = useDebugModeStore((state) => state.isEnabled);
-  const start = use(StartContext);
-  if (!debug) return null;
+  const run = useDayRun();
+  if (!debug || !run) return null;
 
   return (
     <Button
-      onPress={() => start?.()}
-      disabled={!start}
+      onPress={run.start}
+      disabled={!run.available || run.status === DAY_RUN_STATUS.PLAYING}
       accessibilityRole="button"
-      accessibilityLabel={DAY_SIMULATION.label}>
-      <Button.Text>{DAY_SIMULATION.label}</Button.Text>
+      accessibilityLabel={DAY_RUN_DEBUG_LABEL}>
+      <Button.Text>{DAY_RUN_DEBUG_LABEL}</Button.Text>
     </Button>
   );
 };
