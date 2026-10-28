@@ -6,6 +6,7 @@ import { DaySimulator } from "@/components/today/DaySimulator";
 import { TODAY_STYLE_PREVIEW_PART, TodayStylePreview } from "@/components/today/TodayStylePreview";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { DAY_RUN, DAY_RUN_KIND } from "@/constants/DayRun";
+import { PHASE } from "@/constants/Phase";
 import { TODAY_STYLE } from "@/constants/Today";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -96,13 +97,16 @@ describe("TodayStylePreview", () => {
     });
 
     // The sky reads the run's days; the preview must not count its own.
+    // Reduce Motion holds each phase for one timer; each timer moves a phase.
     it("draws the run's days, held from the run's start", async () => {
+      jest.mocked(useReducedMotion).mockReturnValue(true);
       const { result } = await renderInRun();
       await act(() => result.current.run?.start());
-      for (let tick = 0; tick < 3; tick++) {
+      for (let step = 0; step < 2; step++) {
         await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
       }
 
+      expect(result.current.run?.phase).toBe(PHASE.ASR);
       expect(result.current.days.today).toEqual(sampleDays(NOON).today);
       expect(mockHeroDays.at(-1)).toBe(result.current.days);
     });

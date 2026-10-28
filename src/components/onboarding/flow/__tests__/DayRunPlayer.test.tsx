@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AccessibilityInfo, StyleSheet } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { act, fireEvent, renderHook, screen, userEvent } from "@testing-library/react-native";
 
 import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
@@ -12,7 +12,7 @@ import { DAY_RUN, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE, type Phase } from "@/constants/Phase";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { useDrawnMode } from "@/contexts/DrawnModeContext";
-import { AppLocale, AppMode } from "@/enums/app";
+import { AppDirection, AppLocale, AppMode, PlatformType } from "@/enums/app";
 import { useShownDay } from "@/hooks/useShownDay";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -40,6 +40,9 @@ const mockTransition = jest.fn(async (fn: () => void | Promise<void>) => {
   await fn();
 });
 const realSetMode = useAppStore.getState().setMode;
+const originalOS = Platform.OS;
+const setPlatform = (os: string) =>
+  Object.defineProperty(Platform, "OS", { configurable: true, get: () => os });
 
 /** Draws the player while a run is on, as the onboarding frame does. */
 const Player = () => {
@@ -92,6 +95,11 @@ const adjust = (actionName: string) =>
     // userEvent has no accessibility actions, so the action is fired.
     fireEvent(track(), "accessibilityAction", { nativeEvent: { actionName } });
   });
+/** Each phase name's style, in the track's order. */
+const nameStyles = () =>
+  screen
+    .getAllByTestId(DAY_RUN_TRACK_PART.NAME, hidden)
+    .map((name) => StyleSheet.flatten(name.props.style));
 /** Plays a Reduce Motion run on through to its end. */
 const playToTheEnd = () => phasesPass(PHASES.length);
 
@@ -109,6 +117,7 @@ describe("DayRunPlayer", () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
+    setPlatform(originalOS);
     useAppStore.setState({ setMode: realSetMode });
   });
 
@@ -273,8 +282,8 @@ describe("DayRunPlayer", () => {
   });
 
   it.each([
-    [false, "ltr", undefined],
-    [true, "rtl", [{ scaleX: -1 }]],
+    [false, AppDirection.LTR, undefined],
+    [true, AppDirection.RTL, [{ scaleX: -1 }]],
   ])("the track runs from the reading start (RTL: %s)", async (isRTL, direction, transform) => {
     const { result } = await renderPlayer({ isRTL });
     await start(result);
@@ -296,7 +305,12 @@ describe("DayRunPlayer", () => {
     await start(result);
 
     expect(focus).toHaveBeenCalledTimes(1);
-    expect(focus).toHaveBeenCalledWith(expect.anything(), "focus");
+    expect(focus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        props: expect.objectContaining({ testID: DAY_RUN_PLAYER_PART.TOGGLE }),
+      }),
+      "focus"
+    );
   });
 
   it("announces a pause and the end, never a phase", async () => {
@@ -319,6 +333,53 @@ describe("DayRunPlayer", () => {
     await playToTheEnd();
     expect(announce).toHaveBeenCalledTimes(2);
     expect(announce).toHaveBeenLastCalledWith(t("a11y.onboarding.dayPreview.ended"));
+    // iOS has no live regions; the announcement says it all.
+    expect(screen.queryByTestId(DAY_RUN_PLAYER_PART.STATUS, hidden)).toBeNull();
+  });
+
+  it("says the pause and the end in a live region on Android", async () => {
+    setPlatform(PlatformType.ANDROID);
+    mockReduced = true;
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
+    announce.mockClear();
+    const status = () => screen.queryByTestId(DAY_RUN_PLAYER_PART.STATUS);
+    const { result } = await renderPlayer();
+    await start(result);
+    await phasesPass(2);
+    expect(status()).toBeNull();
+
+    await act(() => result.current.run?.pause());
+    expect(status()).toHaveProp("accessibilityLiveRegion", "polite");
+    expect(status()).toHaveAccessibleName(
+      screen.getByTestId(DAY_RUN_PLAYER_PART.COPY).props.accessibilityLabel
+    );
+
+    await act(() => result.current.run?.resume());
+    expect(status()).toBeNull();
+    await playToTheEnd();
+    expect(status()).toHaveProp("accessibilityLiveRegion", "polite");
+    expect(status()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.ended"));
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  // The prelude is the night before Fajr: the track has not reached its start.
+  it("holds the track at its start through the prelude", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(result.current.run?.phase).toBe(PHASE.NIGHT);
+    expect(track()).toHaveAccessibilityValue({ now: 0 });
+    // No phase name is lit: all five are drawn alike.
+    expect(new Set(nameStyles().map((style) => JSON.stringify(style))).size).toBe(1);
+
+    await adjust(A11Y_ACTION.DECREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+
+    await adjust(A11Y_ACTION.INCREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
+    expect(result.current.run?.phase).toBe(PHASE.DAWN);
+    expect(track()).toHaveAccessibilityValue({ now: 0 });
+    const [fajr, ...rest] = nameStyles();
+    expect(fajr).not.toEqual(rest[0]);
   });
 
   it.each([[PHASE.DAWN], [PHASE.MAGHRIB]] as [Phase][])(
