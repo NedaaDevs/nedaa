@@ -32,11 +32,10 @@ describe("SkySwatch", () => {
     expect(widths[1] / widths[0]).toBeCloseTo(weights[1] / weights[0]);
   });
 
-  // A mode's row, the day preview's button and the Today card, from the design.
+  // A mode's row and the day preview's button, from the design.
   it.each([
     [SKY_SWATCH_SIZE.CHOICE, 77, 58, 12],
     [SKY_SWATCH_SIZE.BUTTON, 44, 30, 8],
-    [SKY_SWATCH_SIZE.CARD, 52, 40, 8],
   ] as [SkySwatchSize, number, number, number][])(
     "draws the %s size at its frame",
     async (size, width, height, borderRadius) => {
