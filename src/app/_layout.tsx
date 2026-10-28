@@ -23,6 +23,7 @@ import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { LivePhaseContext } from "@/contexts/LivePhaseContext";
 import { PhaseContext, usePrayerPhaseSource } from "@/contexts/PhaseContext";
 import { SchemeContext } from "@/contexts/SchemeContext";
 import type { Phase } from "@/constants/Phase";
@@ -136,19 +137,21 @@ const AppTheme = ({ livePhase }: { livePhase: Phase | undefined }) => {
 
   return (
     <PhaseContext value={phase}>
-      <SchemeContext value={scheme}>
-        <TamaguiProvider config={tamaguiConfig} defaultTheme={theme}>
-          <FontLanguage
-            body={arabicScript ? "ar" : "default"}
-            heading={arabicScript ? "ar" : "default"}>
-            <RTLProvider>
-              <FontProvider>
-                <AppShell />
-              </FontProvider>
-            </RTLProvider>
-          </FontLanguage>
-        </TamaguiProvider>
-      </SchemeContext>
+      <LivePhaseContext value={phase}>
+        <SchemeContext value={scheme}>
+          <TamaguiProvider config={tamaguiConfig} defaultTheme={theme}>
+            <FontLanguage
+              body={arabicScript ? "ar" : "default"}
+              heading={arabicScript ? "ar" : "default"}>
+              <RTLProvider>
+                <FontProvider>
+                  <AppShell />
+                </FontProvider>
+              </RTLProvider>
+            </FontLanguage>
+          </TamaguiProvider>
+        </SchemeContext>
+      </LivePhaseContext>
     </PhaseContext>
   );
 };
