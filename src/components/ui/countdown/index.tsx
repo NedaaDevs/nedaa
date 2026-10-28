@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import Animated, {
   Easing,
@@ -9,6 +9,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import {
+  DigitSizer,
+  DigitSlot,
+  digitsOf,
+  type DigitTextProps,
+} from "@/components/ui/digit-reserve";
 import { Text } from "@/components/ui/text";
 import { SPIN } from "@/constants/Countdown";
 import { DAY_RUN_STATUS } from "@/constants/DayRun";
@@ -33,10 +39,6 @@ export type CountDirection = (typeof COUNT_DIRECTION)[keyof typeof COUNT_DIRECTI
 /** A tick's glide, and a label's roll: short and small. */
 export const COUNTDOWN = { tickMs: 600, rollMs: 200, rise: 8 } as const;
 
-type TextProps = Omit<ComponentProps<typeof Text>, "children">;
-
-/** The digits of each script a figure may use: Latin, Arabic, Persian, Urdu. */
-const DIGIT_SETS = ["0123456789", "٠١٢٣٤٥٦٧٨٩", "۰۱۲۳۴۵۶۷۸۹"] as const;
 const TURN = 10;
 
 // Gentle at both ends, so a tick glides and the digit then rests to be read.
@@ -56,32 +58,10 @@ const HIDDEN = {
 export const reelStep = (from: number, to: number, direction: CountDirection) =>
   direction === COUNT_DIRECTION.UP ? (to - from + TURN) % TURN : -((from - to + TURN) % TURN);
 
-/** Every digit of its script in a column, which is as wide as the widest. */
-const Sizer = ({ digits, textProps }: { digits: string; textProps: TextProps }) => (
-  <View testID={COUNTDOWN_PART.SIZER} {...HIDDEN} style={styles.sizer}>
-    {[...digits].map((digit) => (
-      <Text key={digit} {...textProps}>
-        {digit}
-      </Text>
-    ))}
-  </View>
-);
-
-/** A character that never moves: a separator, or the reserve's hidden copy. */
-const Still = ({ text, textProps }: { text: string; textProps: TextProps }) => {
-  const digits = DIGIT_SETS.find((set) => set.includes(text));
-  return (
-    <View style={styles.slot}>
-      {digits && <Sizer digits={digits} textProps={textProps} />}
-      <Text {...textProps}>{text}</Text>
-    </View>
-  );
-};
-
 type ReelProps = {
   digit: string;
   digits: string;
-  textProps: TextProps;
+  textProps: DigitTextProps;
   direction: CountDirection;
   openKey: number;
   switchKey: string;
@@ -133,7 +113,7 @@ const Reel = ({ digit, digits, textProps, direction, openKey, switchKey }: ReelP
 
   return (
     <View style={styles.slot}>
-      <Sizer digits={digits} textProps={textProps} />
+      <DigitSizer digits={digits} textProps={textProps} testID={COUNTDOWN_PART.SIZER} />
       <View
         testID={COUNTDOWN_PART.SHAPE}
         {...HIDDEN}
@@ -152,7 +132,7 @@ const Reel = ({ digit, digits, textProps, direction, openKey, switchKey }: ReelP
   );
 };
 
-type CountdownProps = TextProps & {
+type CountdownProps = DigitTextProps & {
   value: string;
   /** The widest value it shows, held as its width so nothing beside it moves. */
   reserve: string;
@@ -181,13 +161,18 @@ export const Countdown = ({
     <View>
       <View {...HIDDEN} style={styles.reserve}>
         {[...reserve].map((character, i) => (
-          <Still key={i} text={character} textProps={figures} />
+          <DigitSlot
+            key={i}
+            text={character}
+            textProps={figures}
+            sizerTestID={COUNTDOWN_PART.SIZER}
+          />
         ))}
       </View>
       {/* Left to right in every language, from the reading start of the reserve. */}
       <View testID={COUNTDOWN_PART.ROW} style={[styles.row, isRTL && styles.rowRTL]}>
         {characters.map((character, i) => {
-          const digits = DIGIT_SETS.find((set) => set.includes(character));
+          const digits = digitsOf(character);
           // Keyed from the end, so 10:00 to 9:59 turns each place against itself.
           const key = characters.length - i;
           return digits ? (
@@ -201,7 +186,12 @@ export const Countdown = ({
               switchKey={switchKey}
             />
           ) : (
-            <Still key={key} text={character} textProps={figures} />
+            <DigitSlot
+              key={key}
+              text={character}
+              textProps={figures}
+              sizerTestID={COUNTDOWN_PART.SIZER}
+            />
           );
         })}
       </View>
@@ -235,7 +225,7 @@ const rollOut = () => {
 };
 
 /** A label that rolls as one piece when its text changes. */
-export const Rolling = ({ value, ...textProps }: TextProps & { value: string }) => {
+export const Rolling = ({ value, ...textProps }: DigitTextProps & { value: string }) => {
   // Reduce Motion holds a layout animation at its start; it must get none.
   const animate = !useReducedMotion();
   return (
@@ -258,8 +248,6 @@ export const Rolling = ({ value, ...textProps }: TextProps & { value: string }) 
 
 const styles = StyleSheet.create({
   slot: { alignItems: "center", overflow: "hidden" },
-  // As wide as its widest digit, and no height, so it sizes only the width.
-  sizer: { height: 0, overflow: "hidden" },
   hiddenCopy: { opacity: 0 },
   strip: { position: "absolute", top: 0, start: 0, end: 0, alignItems: "center" },
   glyph: { ...StyleSheet.absoluteFill, alignItems: "center" },
