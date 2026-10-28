@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Pause, Play, RotateCcw } from "lucide-react-native";
 
 import { DayRunTrack } from "@/components/onboarding/flow/DayRunTrack";
-import { useDayRun, type DayRun } from "@/components/today/DaySimulator";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
@@ -13,6 +12,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { DAY_RUN_STATUS } from "@/constants/DayRun";
+import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
 import { AppMode } from "@/enums/app";

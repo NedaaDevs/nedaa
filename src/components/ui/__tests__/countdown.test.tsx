@@ -10,9 +10,10 @@ import {
   Rolling,
   reelStep,
 } from "@/components/ui/countdown";
-import { DaySimulator, useDayRun } from "@/components/today/DaySimulator";
+import { DaySimulator } from "@/components/today/DaySimulator";
 import { SPIN } from "@/constants/Countdown";
 import { DAY_RUN_KIND } from "@/constants/DayRun";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 
