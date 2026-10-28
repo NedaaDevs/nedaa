@@ -28,6 +28,7 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import { endRoomOf, hostNodesIn } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
 import { formatPrayerTime } from "@/utils/date";
@@ -112,6 +113,15 @@ const nameStyles = () =>
     .map((name) => StyleSheet.flatten(name.props.style));
 /** Plays a Reduce Motion run on through to its end. */
 const playToTheEnd = () => phasesPass(PHASES.length);
+/** The run's clock as the card shows it, in the English 12-hour layout. */
+const liveTime = (result: View) => {
+  const { now, day } = result.current.shown;
+  return localizeDigits(
+    formatPrayerTime(now, day?.timezone ?? "", { locale: AppLocale.EN, use24HourTime: false }),
+    AppLocale.EN,
+    true
+  );
+};
 
 describe("DayRunPlayer", () => {
   beforeEach(async () => {
@@ -526,16 +536,11 @@ describe("DayRunPlayer", () => {
       });
     });
 
-    type Node = ReturnType<typeof screen.getByTestId>;
-    const nodesIn = (node: Node): Node[] => [
-      node,
-      ...node.children.flatMap((child) => (typeof child === "string" ? [] : nodesIn(child))),
-    ];
     const spacers = screen
       .getAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER, hidden)
       .map(
         (sizer) =>
-          nodesIn(sizer).filter(
+          hostNodesIn(sizer).filter(
             (node) => StyleSheet.flatten(node.props.style)?.width === SLOT_WIDTH
           ).length
       );
@@ -547,14 +552,21 @@ describe("DayRunPlayer", () => {
     const { result } = await renderPlayer();
     await start(result);
 
-    const { now, day } = result.current.shown;
-    const shownTime = localizeDigits(
-      formatPrayerTime(now, day?.timezone ?? "", { locale: AppLocale.EN, use24HourTime: false }),
-      AppLocale.EN,
-      true
-    );
-    const time = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getByText(shownTime);
+    const time = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getByText(liveTime(result));
     expect(StyleSheet.flatten(time.parent?.props.style).alignItems).toBe("flex-end");
+  });
+
+  // The live time is one Text; a reserve row has the same room at its end as it.
+  it("gives each reserve row the live time's end room", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const slot = screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT);
+    const live = within(slot).getByText(liveTime(result));
+    for (const row of within(slot).getAllByTestId(DAY_RUN_PLAYER_PART.CLOCK_RESERVE, hidden)) {
+      const rooms = hostNodesIn(row).map(endRoomOf);
+      expect(rooms.reduce((sum, room) => sum + room, 0)).toBe(endRoomOf(live));
+    }
   });
 
   // Small but on screen, and last, so swiping reaches the controls first.
