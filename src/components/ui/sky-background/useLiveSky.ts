@@ -1,32 +1,34 @@
 import { createContext, use } from "react";
+import { useDrawnMode } from "@/contexts/DrawnModeContext";
 import { usePhase } from "@/contexts/PhaseContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useStoredDays } from "@/hooks/useStoredDays";
 import { useClockOverride } from "@/hooks/useTodayClock";
 import { useAppStore } from "@/stores/app";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { celestialPositionAt } from "@/utils/celestial";
 import { hijriDayAt } from "@/utils/moonPhase";
 import { phaseAt } from "@/utils/phase";
 import { skySceneFor } from "@/utils/sky";
 
-/** What the sky paints now: the app's mode at this phase and hour. */
+/**
+ * What the sky paints now: the drawn mode at this phase and hour. `mode` is the
+ * user's choice, which a day run does not move.
+ */
 export const useLiveSky = () => {
   const { isRTL } = useRTL();
   const reduced = useReducedMotion();
   const clock = useMinuteClock();
   const override = useClockOverride();
   const now = override ?? clock;
-  const yesterday = usePrayerTimesStore((state) => state.yesterdayTimings);
-  const today = usePrayerTimesStore((state) => state.todayTimings);
-  const tomorrow = usePrayerTimesStore((state) => state.tomorrowTimings);
-  const days = { yesterday, today, tomorrow };
+  const days = useStoredDays();
   // A pinned moment paints its own phase; the live one comes from the root.
   const livePhase = usePhase();
   const phase = (override && phaseAt(override, days)) || livePhase;
   const mode = useAppStore((state) => state.mode);
+  const drawnMode = useDrawnMode();
   const scheme = useAppScheme();
   const hijriOffset = useAppStore((state) => state.hijriDaysOffset);
 
@@ -34,9 +36,9 @@ export const useLiveSky = () => {
     mode,
     scheme,
     phase,
-    scene: skySceneFor(mode, scheme, phase),
+    scene: skySceneFor(drawnMode, scheme, phase),
     celestial: celestialPositionAt(now, days),
-    hijriDay: today ? hijriDayAt(now, today.timezone, hijriOffset) : undefined,
+    hijriDay: days.today ? hijriDayAt(now, days.today.timezone, hijriOffset) : undefined,
     isRTL,
     reduced,
   };

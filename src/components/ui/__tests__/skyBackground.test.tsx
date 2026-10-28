@@ -3,11 +3,14 @@ import { act, screen } from "@testing-library/react-native";
 
 import { SKY_PART, ScreenSky, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
 import { useClaimSkyBodies } from "@/components/ui/sky-background/bodies";
+import { usePageSky } from "@/components/ui/sky-background/useLiveSky";
 import { BODY_BEHIND_TEXT } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
+import { DrawnModeContext } from "@/contexts/DrawnModeContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
+import { SampleDaysContext } from "@/hooks/useStoredDays";
 import { SimulatedClockContext } from "@/hooks/useTodayClock";
 import { AppMode } from "@/enums/app";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
@@ -15,7 +18,7 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
-import { phaseAt } from "@/utils/phase";
+import { phaseAt, type StoredDays } from "@/utils/phase";
 import { skyScene } from "@/utils/sky";
 
 /** Fajr 04:00, sunrise 06:00, Maghrib 18:00, in UTC. */
@@ -535,6 +538,89 @@ describe("SkyBackground", () => {
       await act(() => jest.advanceTimersByTime(DURATION_MS.SKY + 100));
 
       expect(underlays()).toEqual([skyScene(BRIGHTNESS.DARK, PHASE.DAY).underlay]);
+    });
+  });
+
+  // A day run draws days and a mode of its own over the stored ones.
+  describe("while a day run draws", () => {
+    afterEach(() => jest.useRealTimers());
+    beforeEach(() => {
+      mockHijriDay = 3;
+      useAppStore.setState({ hijriDaysOffset: 0 });
+      usePrayerTimesStore.setState({
+        todayTimings: null,
+        yesterdayTimings: null,
+        tomorrowTimings: null,
+      });
+    });
+
+    const SAMPLE: StoredDays = { today: TODAY };
+
+    /** The mode the sky reports, which the user's choice must keep. */
+    const ModeProbe = () => <Text testID="reported-mode">{usePageSky().mode}</Text>;
+
+    type RunProps = { phase: Phase | undefined; drawn?: AppMode | null; days?: StoredDays | null };
+
+    const Run = ({ phase, drawn = null, days = null }: RunProps) => (
+      <SampleDaysContext value={days}>
+        <DrawnModeContext value={drawn}>
+          <PhaseContext value={phase}>
+            <SkyBackground>
+              <ModeProbe />
+            </SkyBackground>
+          </PhaseContext>
+        </DrawnModeContext>
+      </SampleDaysContext>
+    );
+
+    /** Where the sun's rays sit once the sky has drawn this stored day. */
+    const sunSpotWith = async (stored: DayPrayerTimes | null, days: StoredDays | null) => {
+      usePrayerTimesStore.setState({ todayTimings: stored });
+      const { unmount } = await renderWithTheme(<Run phase={PHASE.DAY} days={days} />);
+      const { left, top } = Object.assign({}, ...[part(SKY_PART.SUN_RAYS)[0].props.style].flat());
+      await unmount();
+      return { left, top };
+    };
+
+    // Without a day the sun rests in its corner; with one it follows the hour.
+    it("draws the sun from sample days when no times are stored", async () => {
+      clockAt("10:00");
+      const resting = await sunSpotWith(null, null);
+      const fromStored = await sunSpotWith(TODAY, null);
+
+      expect(fromStored).not.toEqual(resting);
+      expect(await sunSpotWith(null, SAMPLE)).toEqual(fromStored);
+    });
+
+    it("draws the moon from sample days when no times are stored", async () => {
+      useAppStore.setState({ mode: AppMode.DARK });
+      clockAt("22:00");
+      await renderWithTheme(<Run phase={PHASE.NIGHT} days={SAMPLE} />);
+
+      expect(part(SKY_PART.MOON)).toHaveLength(1);
+    });
+
+    it("reads the simulated clock's phase from sample days", async () => {
+      useAppStore.setState({ mode: AppMode.ADAPTIVE });
+      const afternoon = at("16:00");
+      await renderWithTheme(
+        <SimulatedClockContext value={afternoon}>
+          <Run phase={PHASE.DAY} days={SAMPLE} />
+        </SimulatedClockContext>
+      );
+
+      expect(paints()[0].backgroundColor).toBe(skyScene(BRIGHTNESS.LIGHT, PHASE.ASR).underlay);
+    });
+
+    it("paints the drawn mode's scene while mode stays the stored one", async () => {
+      useAppStore.setState({ mode: AppMode.LIGHT });
+      await renderWithTheme(<Run phase={PHASE.MAGHRIB} drawn={AppMode.ADAPTIVE} />);
+
+      const scene = skyScene(BRIGHTNESS.DARK, PHASE.MAGHRIB);
+
+      expect(paints()[0].backgroundColor).toBe(scene.underlay);
+      expect(paints()[0].experimental_backgroundImage).toContain(scene.base.stops[1].color);
+      expect(screen.getByTestId("reported-mode")).toHaveTextContent(AppMode.LIGHT);
     });
   });
 });
