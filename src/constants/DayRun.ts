@@ -59,3 +59,9 @@ export const DAY_RUN = {
 
 /** The label of the debug run's button on Today. */
 export const DAY_RUN_DEBUG_LABEL = "Simulate a day";
+
+/** Two-digit hours, morning and evening: as wide as any clock a run shows. */
+export const DAY_RUN_WIDEST_CLOCK = {
+  ISOS: ["2026-01-01T10:58:00.000Z", "2026-01-01T22:58:00.000Z"],
+  TIMEZONE: "UTC",
+} as const;
