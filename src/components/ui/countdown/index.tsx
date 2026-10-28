@@ -9,10 +9,10 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { useDayRun } from "@/components/today/DaySimulator";
 import { Text } from "@/components/ui/text";
 import { SPIN } from "@/constants/Countdown";
 import { DAY_RUN_STATUS } from "@/constants/DayRun";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 

@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 import { act, renderHook, screen } from "@testing-library/react-native";
 import { withTiming } from "react-native-reanimated";
 
-import { DaySimulator, useDayRun } from "@/components/today/DaySimulator";
+import { DaySimulator } from "@/components/today/DaySimulator";
 import { TODAY_STYLE_PREVIEW_PART, TodayStylePreview } from "@/components/today/TodayStylePreview";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { DAY_RUN, DAY_RUN_KIND } from "@/constants/DayRun";
 import { TODAY_STYLE } from "@/constants/Today";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useStoredDays } from "@/hooks/useStoredDays";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
