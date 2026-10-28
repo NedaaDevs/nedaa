@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
+import { getTokenValue } from "tamagui";
 import {
   act,
   fireEvent,
@@ -12,10 +13,11 @@ import {
 import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
 import { DAY_RUN_TRACK_PART } from "@/components/onboarding/flow/DayRunTrack";
 import { DaySimulator } from "@/components/today/DaySimulator";
+import { digitsOf } from "@/components/ui/digit-reserve";
 import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
-import { DAY_RUN, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
+import { DAY_RUN, DAY_RUN_CLOCK_SAMPLES, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE, type Phase } from "@/constants/Phase";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { useDrawnMode } from "@/contexts/DrawnModeContext";
@@ -28,6 +30,8 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
+import { formatPrayerTime } from "@/utils/date";
+import { localizeDigits } from "@/utils/digits";
 import { spokenClockTime } from "@/utils/spokenClockTime";
 
 jest.mock("expo-blur", () => {
@@ -82,7 +86,6 @@ const tick = async (count = 1) => {
     await act(() => jest.advanceTimersByTime(PREVIEW.tickMs));
   }
 };
-const PRELUDE_TICKS = PREVIEW.preludeMs / PREVIEW.tickMs;
 /** Lets `count` phases pass; Reduce Motion holds each for one timer. */
 const phasesPass = async (count: number) => {
   for (let step = 0; step < count; step++) {
@@ -94,7 +97,7 @@ const start = (result: View) => act(() => result.current.run?.start());
 const press = (testID: string) =>
   userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(screen.getByTestId(testID));
 const toggle = () => screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE);
-const track = () => screen.getByRole("adjustable", { name: t("a11y.onboarding.dayPreview.track") });
+const track = () => screen.getByTestId(DAY_RUN_TRACK_PART.TRACK);
 const useAdaptive = () =>
   screen.queryByRole("button", { name: t("onboarding.dayPreview.useAdaptive") });
 const adjust = (actionName: string) =>
@@ -185,10 +188,11 @@ describe("DayRunPlayer", () => {
     expect(screen.queryByTestId(DAY_RUN_PLAYER_PART.FRAME)).toBeNull();
   });
 
+  // Reduce Motion starts the run at Fajr, playing.
   it("the track jumps a phase and pauses", async () => {
+    mockReduced = true;
     const { result } = await renderPlayer();
     await start(result);
-    await tick(PRELUDE_TICKS + 3);
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
     expect(result.current.run?.phase).toBe(PHASE.DAWN);
 
@@ -381,20 +385,32 @@ describe("DayRunPlayer", () => {
     expect(announce).not.toHaveBeenCalled();
   });
 
-  it("offers no adjusting once the run has ended", async () => {
-    setPlatform(PlatformType.ANDROID);
-    mockReduced = true;
-    const { result } = await renderPlayer();
-    await start(result);
-    expect(track().props.accessibilityActions).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: A11Y_ACTION.INCREMENT })])
-    );
+  // A native view keeps its last role and actions on null, so each is sent.
+  it.each([PlatformType.ANDROID, PlatformType.IOS])(
+    "offers no adjusting once the run has ended (%s)",
+    async (os) => {
+      setPlatform(os);
+      mockReduced = true;
+      const { result } = await renderPlayer();
+      await start(result);
+      expect(track()).toHaveProp("accessibilityRole", "adjustable");
+      expect(track()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.track"));
+      expect(track().props.accessibilityActions).toEqual(
+        os === PlatformType.ANDROID
+          ? expect.arrayContaining([expect.objectContaining({ name: A11Y_ACTION.INCREMENT })])
+          : []
+      );
 
-    await playToTheEnd();
+      await playToTheEnd();
 
-    expect(track().props.accessibilityActions).toBeUndefined();
-    expect(track()).toHaveAccessibilityValue({ now: PHASES.length - 1 });
-  });
+      expect(track()).toHaveProp("accessibilityRole", "text");
+      expect(track().props.accessibilityActions).toEqual([]);
+      expect(track()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.track"));
+      expect(track().props.accessibilityValue).toEqual({
+        text: t(`settings.themes.${AppMode.ADAPTIVE}.title`),
+      });
+    }
+  );
 
   // The cell holds every copy unseen, so a longer note never moves the toggle.
   it("keeps the copy's height with every copy the run can show", async () => {
@@ -422,7 +438,127 @@ describe("DayRunPlayer", () => {
     expect(layer).toHaveProp("accessibilityElementsHidden", true);
     expect(layer).toHaveProp("importantForAccessibility", "no-hide-descendants");
     expect(layer).toHaveProp("pointerEvents", "none");
-    expect(StyleSheet.flatten(layer.props.style).opacity).toBe(0);
+    // Side by side, each the cell's width: the row is as tall as the tallest.
+    expect(StyleSheet.flatten(layer.props.style)).toEqual(
+      expect.objectContaining({ opacity: 0, flexDirection: "row", overflow: "hidden" })
+    );
+    for (const sizer of sizers) {
+      expect(StyleSheet.flatten(sizer.props.style)).toEqual(
+        expect.objectContaining({ width: "100%", flexShrink: 0 })
+      );
+    }
+  });
+
+  // A slot as wide as any clock, so the kicker beside it never reflows.
+  it.each([
+    [AppLocale.EN, true],
+    [AppLocale.AR, false],
+  ])("reserves every digit of a morning and an evening clock (%s)", async (locale, western) => {
+    await act(() => i18n.changeLanguage(locale));
+    useAppStore.setState({ locale });
+    usePreferencesStore.setState({ useWesternNumerals: western });
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const samples = DAY_RUN_CLOCK_SAMPLES.ISOS.map((iso) =>
+      localizeDigits(
+        formatPrayerTime(new Date(iso), DAY_RUN_CLOCK_SAMPLES.TIMEZONE, {
+          locale,
+          use24HourTime: false,
+        }),
+        locale,
+        western
+      )
+    );
+    const rows = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getAllByTestId(
+      DAY_RUN_PLAYER_PART.CLOCK_RESERVE,
+      hidden
+    );
+    const shown = (row: (typeof rows)[number]) =>
+      within(row)
+        .getAllByText(/./, hidden)
+        .filter((text) => text.parent?.props.testID !== DAY_RUN_PLAYER_PART.DIGIT_SIZER)
+        .map((text) => text.props.children)
+        .join("");
+    expect(rows.map(shown)).toEqual(samples);
+    expect(new Set(samples).size).toBe(2);
+
+    for (const [index, row] of rows.entries()) {
+      const digits = [...samples[index]].filter((character) => digitsOf(character));
+      const columns = within(row).getAllByTestId(DAY_RUN_PLAYER_PART.DIGIT_SIZER, hidden);
+      expect(columns).toHaveLength(digits.length);
+      for (const [at, column] of columns.entries()) {
+        expect(
+          within(column)
+            .getAllByText(/./, hidden)
+            .map((text) => text.props.children)
+            .join("")
+        ).toBe(digitsOf(digits[at]));
+      }
+    }
+  });
+
+  // The sizers reserve the live slot's width, so their kickers wrap as it does.
+  it("gives each phase's sizer the live time slot's width", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+    const slot = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getAllByTestId(
+      DAY_RUN_PLAYER_PART.CLOCK_RESERVE,
+      hidden
+    )[0].parent;
+    if (!slot) throw new Error("expected the reserve inside the time slot");
+    const SLOT_WIDTH = 64;
+
+    await act(async () => {
+      fireEvent(slot, "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: SLOT_WIDTH, height: 20 } },
+      });
+    });
+
+    type Node = ReturnType<typeof screen.getByTestId>;
+    const nodesIn = (node: Node): Node[] => [
+      node,
+      ...node.children.flatMap((child) => (typeof child === "string" ? [] : nodesIn(child))),
+    ];
+    const spacers = screen
+      .getAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER, hidden)
+      .map(
+        (sizer) =>
+          nodesIn(sizer).filter(
+            (node) => StyleSheet.flatten(node.props.style)?.width === SLOT_WIDTH
+          ).length
+      );
+    expect(spacers).toEqual([...PHASES.map(() => 1), 0]);
+  });
+
+  // The live time sits flush at the copy's trailing edge as its width changes.
+  it("holds the time at the slot's end", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const { now, day } = result.current.shown;
+    const shownTime = localizeDigits(
+      formatPrayerTime(now, day?.timezone ?? "", { locale: AppLocale.EN, use24HourTime: false }),
+      AppLocale.EN,
+      true
+    );
+    const time = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getByText(shownTime);
+    expect(StyleSheet.flatten(time.parent?.props.style).alignItems).toBe("flex-end");
+  });
+
+  // Small but on screen, and last, so swiping reaches the controls first.
+  it("draws the Android region small and last in the card", async () => {
+    setPlatform(PlatformType.ANDROID);
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const status = screen.getByTestId(DAY_RUN_PLAYER_PART.STATUS);
+    const side = getTokenValue("$0.5", "size");
+    expect(side).toBeGreaterThan(0);
+    expect(StyleSheet.flatten(status.props.style)).toEqual(
+      expect.objectContaining({ width: side, height: side, position: "absolute" })
+    );
+    expect(screen.getByTestId(DAY_RUN_PLAYER_PART.FRAME).children.at(-1)).toBe(status);
   });
 
   // Each name is one word: it shrinks to fit rather than break.
