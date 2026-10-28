@@ -346,6 +346,26 @@ describe("DaySimulator", () => {
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
   });
 
+  // Equal time per phase: each phase's start is its share of the five.
+  it("reports how far a run is through its phases", async () => {
+    const phases = Object.values(PHASE);
+    const { result } = await renderRun(DAY_RUN_KIND.PREVIEW);
+    expect(result.current.run?.progress).toBe(0);
+
+    await act(() => result.current.run?.start());
+    expect(result.current.run?.progress).toBe(0);
+
+    await advance(PREVIEW.tickMs, previewTicksTo(PHASE.ASR));
+    expect(result.current.run?.progress).toBeCloseTo(phases.indexOf(PHASE.ASR) / phases.length);
+
+    await advance(PREVIEW.tickMs, PREVIEW_TICKS - previewTicksTo(PHASE.ASR) + 1);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.ENDED);
+    expect(result.current.run?.progress).toBe(1);
+
+    await act(() => result.current.run?.done());
+    expect(result.current.run?.progress).toBe(0);
+  });
+
   // The run waits where it was; it neither runs on nor jumps ahead on return.
   it("going to the background pauses a run", async () => {
     captureAppState();

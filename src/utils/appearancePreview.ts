@@ -7,7 +7,7 @@ import { AppMode } from "@/enums/app";
 import { isDarkMode } from "@/utils/appearance";
 
 /** A phase that begins at a prayer goes by the prayer's name. */
-const PHASE_NAME = {
+export const PHASE_NAME = {
   [PHASE.DAWN]: `prayerTimes.${PRAYER_ID.FAJR}`,
   [PHASE.DAY]: `settings.themes.phases.${PHASE.DAY}.name`,
   [PHASE.ASR]: `prayerTimes.${PRAYER_ID.ASR}`,

@@ -44,6 +44,8 @@ export type DayRun = {
   status: DayRunStatus;
   /** The phase the run's clock is in; undefined while no run draws. */
   phase: Phase | undefined;
+  /** How far the run is through its phases, 0 to 1; 0 in the prelude. */
+  progress: number;
   /** False when the run has no whole day to play through. */
   available: boolean;
   start(): void;
@@ -98,6 +100,16 @@ const stepped = (run: Run | null, kind: DayRunKind, holdMs: number | null): Run 
   return toMs === undefined || toMs > dayRunLengthMs(schedule, kind)
     ? { ...run, status: DAY_RUN_STATUS.ENDED }
     : { ...run, elapsedMs: toMs };
+};
+
+/** How far a run is from its first phase's start to its end, 0 to 1. */
+const progressOf = (run: Run | null, kind: DayRunKind): number => {
+  if (!run) return 0;
+  if (run.status === DAY_RUN_STATUS.ENDED) return 1;
+  const { schedule, elapsedMs } = run;
+  const from = dayRunPhaseStartMs(schedule, kind, schedule.phases[0]);
+  const span = dayRunLengthMs(schedule, kind) - from;
+  return span > 0 ? Math.min(1, Math.max(0, (elapsedMs - from) / span)) : 0;
 };
 
 /** Moves a run in status `from` to `to`; any other run as it is. */
@@ -157,6 +169,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
     kind,
     status: run?.status ?? DAY_RUN_STATUS.IDLE,
     phase: runPhase,
+    progress: progressOf(run, kind),
     available,
     start: () => {
       // The day is read at the press, so no clock re-renders the run at rest.

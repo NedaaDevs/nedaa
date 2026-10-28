@@ -9,8 +9,10 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { useDayRun } from "@/components/today/DaySimulator";
 import { Text } from "@/components/ui/text";
 import { SPIN } from "@/constants/Countdown";
+import { DAY_RUN_STATUS } from "@/constants/DayRun";
 import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -90,9 +92,12 @@ type Aim = { target: number; index: number; openKey?: number; switchKey?: string
 /** A window over three turns of digits; the strip slides to the digit shown. */
 const Reel = ({ digit, digits, textProps, direction, openKey, switchKey }: ReelProps) => {
   const reduced = useReducedMotion();
+  const run = useDayRun();
+  // A playing day run moves the clock faster than a reel turns: digits are set.
+  const still = reduced || run?.status === DAY_RUN_STATUS.PLAYING;
   const index = digits.indexOf(digit);
   const [line, setLine] = useState(0);
-  const position = useSharedValue(reduced ? index : 0);
+  const position = useSharedValue(still ? index : 0);
   // Where the reel last aimed; with no open seen yet, the first effect whirls.
   const last = useRef<Aim>({ target: 0, index: 0 });
 
@@ -112,13 +117,13 @@ const Reel = ({ digit, digits, textProps, direction, openKey, switchKey }: ReelP
     const past = target + Math.sign(target - start) * WHIRL_OVERSHOOT;
     const whirl = () => withSequence(withTiming(past, WHIRL), withSpring(target, BOUNCE));
 
-    if (reduced) position.set(target);
+    if (still) position.set(target);
     else if (opened) {
       position.set(0);
       position.set(whirl());
     } else if (switched) position.set(whirl());
     else if (target !== seen.target) position.set(withTiming(target, GLIDE));
-  }, [index, openKey, switchKey, direction, reduced, position]);
+  }, [index, openKey, switchKey, direction, still, position]);
 
   const strip = useAnimatedStyle(() => {
     // The strip repeats every turn, so wrapping the position shows no seam.
