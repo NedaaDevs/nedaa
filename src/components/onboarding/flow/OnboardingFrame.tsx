@@ -31,6 +31,8 @@ type Props = {
   onPrimary: () => void;
   onBack: () => void;
   onSkip: () => void;
+  /** Drawn in place of Back and Continue, such as a day run's player. */
+  bar?: ReactNode;
   children: ReactNode;
 };
 
@@ -46,6 +48,7 @@ export const OnboardingFrame = ({
   onPrimary,
   onBack,
   onSkip,
+  bar,
   children,
 }: Props) => {
   const { t } = useTranslation();
@@ -103,7 +106,11 @@ export const OnboardingFrame = ({
 
       <Box flex={1}>{children}</Box>
 
-      {chrome ? (
+      {chrome && bar ? (
+        <Box paddingHorizontal={SCREEN_GUTTER} paddingTop="$2" paddingBottom="$2">
+          {bar}
+        </Box>
+      ) : chrome ? (
         <HStack
           paddingHorizontal={SCREEN_GUTTER}
           paddingTop="$2"
