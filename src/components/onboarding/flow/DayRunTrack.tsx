@@ -17,6 +17,7 @@ import { skySwatchFor, type SwatchBand } from "@/utils/sky";
 
 /** Test ids for the parts that take touches or move. */
 export const DAY_RUN_TRACK_PART = {
+  TRACK: "day-run-track",
   SEGMENT: "day-run-track-segment",
   PLAYHEAD: "day-run-track-playhead",
   NAME: "day-run-track-name",
@@ -84,11 +85,17 @@ export const DayRunTrack = ({ phase, progress, valueText, onJump }: Props) => {
   return (
     <VStack
       accessible
-      accessibilityRole="adjustable"
+      testID={DAY_RUN_TRACK_PART.TRACK}
+      // Past the end the track reads as text: no adjustable role, no actions.
+      accessibilityRole={onJump ? "adjustable" : "text"}
       accessibilityLabel={t("a11y.onboarding.dayPreview.track")}
-      accessibilityValue={{ min: 0, max: LAST, now: Math.max(0, position), text: valueText }}
-      // Past the end there is nothing to adjust; the value still reads.
-      accessibilityActions={onJump ? adjustActions() : undefined}
+      accessibilityValue={
+        onJump
+          ? { min: 0, max: LAST, now: Math.max(0, position), text: valueText }
+          : { text: valueText }
+      }
+      // Each value is explicit: a native view keeps its last actions on null.
+      accessibilityActions={onJump ? (adjustActions() ?? []) : []}
       onAccessibilityAction={handleAccessibilityAction}
       // Set here too, so the phases run from the reading start in any host.
       style={{ direction }}>
