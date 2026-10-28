@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef } from "react";
+import { use, useEffect, useEffectEvent, useRef } from "react";
 import { View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -37,6 +37,8 @@ export const TodayStylePreview = ({ sampleUnlessOwn = false }: Props) => {
   // Times for the default place are not the user's.
   const own = useTodayStored();
   const now = useTodayClock();
+  // Days held above it, such as a day run's, so the preview and the sky agree.
+  const heldDays = use(SampleDaysContext);
   const sample = sampleUnlessOwn && !own;
 
   const reduced = useReducedMotion();
@@ -73,7 +75,7 @@ export const TodayStylePreview = ({ sampleUnlessOwn = false }: Props) => {
 
   // Sample times are not the user's, so no reader hears them as such.
   return (
-    <SampleDaysContext value={sampleDays(now)}>
+    <SampleDaysContext value={heldDays ?? sampleDays(now)}>
       <VStack gap="$2">
         <View style={NO_TOUCHES} {...HIDDEN_FROM_READER}>
           {preview}
