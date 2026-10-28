@@ -4,7 +4,7 @@ import { Theme } from "tamagui";
 import { act, renderHook, screen, userEvent } from "@testing-library/react-native";
 import { parseISO } from "date-fns";
 
-import { DaySimulator, DaySimulatorButton, useDayRun } from "@/components/today/DaySimulator";
+import { DaySimulator, DaySimulatorButton } from "@/components/today/DaySimulator";
 import config from "../../../../tamagui.config";
 import { useTheme } from "@/components/ui/theme-color";
 import { APP_STATE } from "@/constants/AppState";
@@ -18,6 +18,7 @@ import {
 } from "@/constants/DayRun";
 import { PHASE, type Phase } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { useDrawnMode } from "@/contexts/DrawnModeContext";
 import { PhaseContext, usePhase } from "@/contexts/PhaseContext";
 import { AppMode } from "@/enums/app";

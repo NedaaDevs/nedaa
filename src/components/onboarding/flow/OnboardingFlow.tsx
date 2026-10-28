@@ -15,7 +15,7 @@ import {
   type StepProps,
 } from "@/components/onboarding/flow/types";
 import { useOnboardingColumn } from "@/components/onboarding/flow/useOnboardingColumn";
-import { DaySimulator, useDayRun } from "@/components/today/DaySimulator";
+import { DaySimulator } from "@/components/today/DaySimulator";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import {
@@ -27,6 +27,7 @@ import {
   type OnboardingStepId,
   type StepDirection,
 } from "@/constants/Onboarding";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
