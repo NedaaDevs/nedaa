@@ -30,14 +30,12 @@ type DayRunConfig =
   | {
       pace: typeof DAY_RUN_PACE.LINEAR;
       tickMs: number;
-      marginMs: number;
       /** Clock time that passes in one tick. */
       stepMs: number;
     }
   | {
       pace: typeof DAY_RUN_PACE.EQUAL_PHASES;
       tickMs: number;
-      marginMs: number;
       /** Real time each phase takes. */
       phaseMs: number;
       /** Real time the lead-in before Fajr takes. */
@@ -50,14 +48,12 @@ export const DAY_RUN = {
     pace: DAY_RUN_PACE.LINEAR,
     tickMs: 50,
     stepMs: 5 * 60_000,
-    marginMs: DAY_RUN_MARGIN_MS,
   },
   [DAY_RUN_KIND.PREVIEW]: {
     pace: DAY_RUN_PACE.EQUAL_PHASES,
     tickMs: 50,
     phaseMs: 2000,
     preludeMs: 700,
-    marginMs: DAY_RUN_MARGIN_MS,
   },
 } as const satisfies Record<DayRunKind, DayRunConfig>;
 
