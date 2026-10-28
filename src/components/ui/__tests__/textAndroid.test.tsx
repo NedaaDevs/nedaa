@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react-native";
 
-import { Text } from "@/components/ui/text";
+import { Text, TEXT_END_ROOM } from "@/components/ui/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 // The primitive reads the platform once, as it loads; this file runs as Android.
@@ -15,13 +15,14 @@ describe("Text on Android", () => {
   it("gives running text room at its end", async () => {
     await renderWithTheme(<Text>العصر</Text>);
 
-    expect(screen.getByText("العصر")).toHaveStyle({ paddingEnd: 8 });
+    expect(TEXT_END_ROOM).toBeGreaterThan(0);
+    expect(screen.getByText("العصر")).toHaveStyle({ paddingEnd: TEXT_END_ROOM });
   });
 
   // A lone digit or separator is measured right; the room would space it apart.
   it("sets a glyph exactly, with no room added", async () => {
     await renderWithTheme(<Text glyph>7</Text>);
 
-    expect(screen.getByText("7")).not.toHaveStyle({ paddingEnd: 8 });
+    expect(screen.getByText("7")).not.toHaveStyle({ paddingEnd: TEXT_END_ROOM });
   });
 });

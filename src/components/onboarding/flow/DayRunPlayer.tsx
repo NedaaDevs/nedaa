@@ -19,7 +19,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { Pressable } from "@/components/ui/pressable";
-import { Text } from "@/components/ui/text";
+import { Text, TEXT_END_ROOM } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS } from "@/constants/DayRun";
@@ -87,6 +87,9 @@ const TIME_TEXT = {
   numeric: true,
 } as const satisfies DigitTextProps;
 
+/** A piece of the reserve, measured exactly; its row adds the end room once. */
+const RESERVE_TEXT = { ...TIME_TEXT, glyph: true } as const satisfies DigitTextProps;
+
 /** A clock time as the card draws it. */
 const TimeText = ({ children }: { children: ReactNode }) => <Text {...TIME_TEXT}>{children}</Text>;
 
@@ -112,19 +115,16 @@ const ClockReserve = () => {
   return (
     <View style={styles.reserve} {...HIDDEN_FROM_READER}>
       {samples.map((sample, index) => (
-        <HStack key={index} testID={DAY_RUN_PLAYER_PART.CLOCK_RESERVE}>
-          {clockRuns(sample).map((run, at) =>
-            digitsOf(run) ? (
-              <DigitSlot
-                key={at}
-                text={run}
-                textProps={TIME_TEXT}
-                sizerTestID={DAY_RUN_PLAYER_PART.DIGIT_SIZER}
-              />
-            ) : (
-              <TimeText key={at}>{run}</TimeText>
-            )
-          )}
+        // The live time is one Text with the end room once; so is each row.
+        <HStack key={index} testID={DAY_RUN_PLAYER_PART.CLOCK_RESERVE} paddingEnd={TEXT_END_ROOM}>
+          {clockRuns(sample).map((run, at) => (
+            <DigitSlot
+              key={at}
+              text={run}
+              textProps={RESERVE_TEXT}
+              sizerTestID={DAY_RUN_PLAYER_PART.DIGIT_SIZER}
+            />
+          ))}
         </HStack>
       ))}
     </View>
