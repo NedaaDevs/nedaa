@@ -174,6 +174,15 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<Bowl\b/,
     home: "components/today/Bowl.tsx",
   },
+  // The Appearance rows, the day button and Today's upgrade card show a
+  // mode's swatch; the day run's track paints each phase as its own segment.
+  {
+    concept: "a mode's sky swatch",
+    shows: /\bskySwatchFor\(/,
+    within: /^(app|components)\/(?!onboarding\/flow\/DayRunTrack\.tsx$).*\.tsx$/,
+    drawsWith: /<SkySwatch\b/,
+    home: "components/ui/sky-preview/index.tsx",
+  },
   // Today and the style previews draw Today's head, bowl or row, alike.
   {
     concept: "Today's head in its style",
