@@ -1,4 +1,4 @@
-/** The first-run steps, in the order the flow can show them. */
+/** Every step: the first run's in order, then the upgrade path's own two. */
 export const ONBOARDING_STEP = {
   WELCOME: "welcome",
   LANGUAGE: "language",
@@ -13,12 +13,32 @@ export const ONBOARDING_STEP = {
   FAJR_ALARM: "fajrAlarm",
   FRIDAY_ALARM: "fridayAlarm",
   COMPLETE: "complete",
+  UPGRADE_WELCOME: "upgradeWelcome",
+  UPGRADE_COMPLETE: "upgradeComplete",
 } as const;
 
 export type OnboardingStepId = (typeof ONBOARDING_STEP)[keyof typeof ONBOARDING_STEP];
 
-/** Every step id in the fixed order; a column is a subsequence of it. */
+/** Every step id; a first-run column is a subsequence of it. */
 export const ONBOARDING_STEP_IDS: readonly OnboardingStepId[] = Object.values(ONBOARDING_STEP);
+
+const S = ONBOARDING_STEP;
+
+/** The upgrade path's steps in its order; its column is a subsequence of it. */
+export const UPGRADE_STEP_ORDER = [
+  S.UPGRADE_WELCOME,
+  S.APPEARANCE,
+  S.TEXT_SIZE,
+  S.NUMERALS,
+  S.LOCATION,
+  S.LOCATION_PERMISSION,
+  S.FETCH,
+  S.CALCULATION,
+  S.NOTIFICATIONS,
+  S.UPGRADE_COMPLETE,
+] as const satisfies readonly OnboardingStepId[];
+
+export type UpgradeStepId = (typeof UPGRADE_STEP_ORDER)[number];
 
 /** Whether a saved value names a step this build can show. */
 export const isOnboardingStepId = (value: unknown): value is OnboardingStepId =>
@@ -27,6 +47,18 @@ export const isOnboardingStepId = (value: unknown): value is OnboardingStepId =>
 /** The gate's walk: the whole first run, or a 2.x user's V3 choices. */
 export const ONBOARDING_PATH = { FIRST_RUN: "firstRun", UPGRADE: "upgrade" } as const;
 export type OnboardingPath = (typeof ONBOARDING_PATH)[keyof typeof ONBOARDING_PATH];
+
+/** The order each walk ranks its steps in. */
+export const STEP_ORDER: Record<OnboardingPath, readonly OnboardingStepId[]> = {
+  [ONBOARDING_PATH.FIRST_RUN]: ONBOARDING_STEP_IDS,
+  [ONBOARDING_PATH.UPGRADE]: UPGRADE_STEP_ORDER,
+};
+
+/** The last step of each walk; moving on from it ends the walk. */
+export const LAST_STEP: Record<OnboardingPath, OnboardingStepId> = {
+  [ONBOARDING_PATH.FIRST_RUN]: S.COMPLETE,
+  [ONBOARDING_PATH.UPGRADE]: S.UPGRADE_COMPLETE,
+};
 
 /** testIDs of the flow's parts, for the Maestro flows and the tests. */
 export const ONBOARDING_PART = {

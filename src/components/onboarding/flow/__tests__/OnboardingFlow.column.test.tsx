@@ -10,13 +10,17 @@ import { E2E_ID } from "@/constants/E2E";
 import {
   LOCATION_CHOICE,
   ONBOARDING_PART,
+  ONBOARDING_PATH,
   ONBOARDING_STEP as S,
   STEP_LOCK_MS,
+  isOnboardingStepId,
+  type OnboardingStepId,
 } from "@/constants/Onboarding";
 import { AppLocale } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { UPGRADE_PATH_STATE } from "@/constants/UpgradePath";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -70,7 +74,7 @@ const mockGrants = { location: false, notifications: false };
 let mockNow = 0;
 
 const renderFlow = async () => {
-  await renderWithTheme(<OnboardingFlow />);
+  await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
   await screen.findByTestId(new RegExp(`^${STEP_STUB_PREFIX}`));
 };
 /** An iOS system prompt closing: the app goes inactive, then active. */
@@ -334,5 +338,71 @@ describe("OnboardingFlow with the real column", () => {
 
     expect(currentStep()).toBe(S.CALCULATION);
     expect(stubMounts[S.FETCH]).toBeUndefined();
+  });
+
+  describe("on the upgrade path", () => {
+    const renderUpgrade = async () => {
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.UPGRADE} />);
+      await screen.findByTestId(new RegExp(`^${STEP_STUB_PREFIX}`));
+    };
+    /** The step on screen moves on, as its own button would. */
+    const moveOn = async () => {
+      const at = currentStep();
+      if (!isOnboardingStepId(at)) throw new Error(`no step id: ${at}`);
+      mockNow += STEP_LOCK_MS;
+      await act(async () => propsOf(at).onNext());
+    };
+    const walkTo = async (id: OnboardingStepId) => {
+      while (currentStep() !== id) await moveOn();
+    };
+
+    beforeEach(() => {
+      useAppStore.setState({ isFirstRun: false, upgradePath: UPGRADE_PATH_STATE.PENDING });
+      useLocationStore.setState({ lastKnownCoords: { latitude: 21.4, longitude: 39.8 } });
+      usePrayerTimesStore.setState({ todayTimings: RIYADH_DAY });
+    });
+
+    it("walks a stored city's upgrader through the V3 choices only", async () => {
+      mockGrants.notifications = true;
+      await renderUpgrade();
+
+      const seen: string[] = [currentStep()];
+      while (currentStep() !== S.UPGRADE_COMPLETE) {
+        await moveOn();
+        seen.push(currentStep());
+      }
+
+      expect(seen).toEqual([
+        S.UPGRADE_WELCOME,
+        S.APPEARANCE,
+        S.TEXT_SIZE,
+        S.NUMERALS,
+        S.UPGRADE_COMPLETE,
+      ]);
+    });
+
+    // A no in this run keeps the step, so its answer stays on screen.
+    it("keeps the notifications step after a no on the path", async () => {
+      await renderUpgrade();
+      await walkTo(S.NOTIFICATIONS);
+
+      jest
+        .mocked(checkPermissions)
+        .mockClear()
+        .mockResolvedValue({ status: PermissionStatus.DENIED });
+      await returnToApp();
+      await waitFor(() => expect(checkPermissions).toHaveBeenCalledTimes(1));
+
+      expect(currentStep()).toBe(S.NOTIFICATIONS);
+    });
+
+    it("asks a user who said no in 2.x nothing about notifications", async () => {
+      jest.mocked(checkPermissions).mockResolvedValue({ status: PermissionStatus.DENIED });
+      useAppStore.setState({ upgradePath: UPGRADE_PATH_STATE.RESUMED });
+      await renderUpgrade();
+      await walkTo(S.UPGRADE_COMPLETE);
+
+      expect(stubMounts[S.NOTIFICATIONS]).toBeUndefined();
+    });
   });
 });
