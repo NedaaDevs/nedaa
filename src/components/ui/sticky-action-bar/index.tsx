@@ -4,6 +4,7 @@ import { getTokenValue } from "tamagui";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
+import { LiveRegion } from "@/components/ui/live-region";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { STICKY_ACTION_STATE, type StickyActionState } from "@/constants/StickyActionBar";
@@ -36,23 +37,21 @@ export const StickyActionBar = ({ state, label, busyStatus, onPress }: Props) =>
   return (
     <VStack
       testID={STICKY_ACTION_PART.ROOT}
-      gap="$tight"
       paddingHorizontal="$group"
       paddingTop="$2.5"
       paddingBottom={insets.bottom + getTokenValue("$2.5", "space")}
       backgroundColor="$bar">
-      {busy ? (
-        <HStack
-          testID={STICKY_ACTION_PART.STATUS}
-          accessibilityLiveRegion="polite"
-          alignItems="center"
-          gap="$1.5">
-          <Box width="$2" height="$2" borderRadius="$pill" backgroundColor="$accent" />
-          <Text flex={1} size="xs" color="$muted">
-            {busyStatus}
-          </Text>
-        </HStack>
-      ) : null}
+      <LiveRegion testID={STICKY_ACTION_PART.STATUS} message={busy ? busyStatus : null}>
+        {busy ? (
+          // The row brings its own space, so an idle region takes none.
+          <HStack alignItems="center" gap="$1.5" marginBottom="$tight">
+            <Box width="$2" height="$2" borderRadius="$pill" backgroundColor="$accent" />
+            <Text flex={1} size="xs" color="$muted">
+              {busyStatus}
+            </Text>
+          </HStack>
+        ) : null}
+      </LiveRegion>
       <Button
         action="primary"
         variant="solid"
