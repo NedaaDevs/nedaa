@@ -95,6 +95,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   );
   const primaryPress = useRef<(() => void) | null>(null);
   const backPress = useRef<(() => void) | null>(null);
+  const { ref: headingRef, onLayout: onHeadingLayout, focus: focusHeading } = useLayoutFocus();
   const shown = useRef<OnboardingStepId | null>(null);
   const lockUntil = useRef(0);
   const ending = useRef(false);
@@ -123,8 +124,6 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   if (backFor !== null && backFor !== current) setBackFor(null);
   const ownPrimary = primaryFor !== null && primaryFor.step === current ? primaryFor : null;
   const ownsBack = current !== undefined && backFor === current;
-  // Each arrival's heading takes reader focus from its first layout.
-  const { ref: headingRef, onLayout: onHeadingLayout } = useLayoutFocus(current);
 
   // Settles on the step drawn, so a removed id that returns cannot pull back.
   if (current !== undefined && stepId !== current) setStepId(current);
@@ -147,6 +146,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   const arrive = useEffectEvent(() => {
     if (current === undefined) return;
     if (saved === null || stepRank(current) > stepRank(saved)) setOnboardingStep(current);
+    focusHeading();
     if (shown.current !== null) {
       // Completion plays its own success haptic in place of the step tap.
       if (current !== ONBOARDING_STEP.COMPLETE) void haptic();
@@ -236,6 +236,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
     },
     headingRef,
     onHeadingLayout,
+    focusHeading,
     progress,
   };
   const Step = STEP_COMPONENT[current];

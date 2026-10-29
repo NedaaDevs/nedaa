@@ -25,13 +25,14 @@ export const LocationPermissionStep = ({
   setBack,
   headingRef,
   onHeadingLayout,
+  focusHeading,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
   const [denied, setDenied] = useState(false);
   const [picking, setPicking] = useState(false);
   const { request } = useBusyRequest(setBusy);
-  useViewFocus(picking, headingRef);
+  useViewFocus(picking, focusHeading);
   const deniedBody = t("onboarding.location.deniedBody");
   useIosAnnouncement(denied ? deniedBody : null);
 
@@ -57,6 +58,7 @@ export const LocationPermissionStep = ({
       <StepCityPicker
         headingRef={headingRef}
         onHeadingLayout={onHeadingLayout}
+        focusHeading={focusHeading}
         progress={progress}
         setBack={setBack}
         setBusy={setBusy}

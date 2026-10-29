@@ -21,6 +21,7 @@ import {
   updateStub,
 } from "@/test-helpers/cityPickerStubs";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
+import { layOut, stepHeading } from "@/test-helpers/layout";
 import {
   lastBack,
   lastPrimary,
@@ -312,21 +313,29 @@ describe("LocationStep", () => {
     expect(primaryHidden(props.setPrimaryHidden)).toBe(false);
   });
 
+  // A heading drawn with the new view takes focus once it is laid out.
   it("moves reader focus to the heading on each view change", async () => {
     const focus = focusSpy();
     const props = stepProps();
     await renderWithTheme(<LocationStep {...props} />);
+    await layOut(stepHeading());
     expect(focus).not.toHaveBeenCalled();
 
     await openLocationPicker(props);
+    expect(focus).not.toHaveBeenCalled();
+    await layOut(stepHeading());
     expect(focus).toHaveBeenCalledTimes(1);
     expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
 
+    // The picker keeps its heading for coordinates, so focus moves at once.
     await act(async () => pickerStub.onEnterCoordinates?.());
     expect(focus).toHaveBeenCalledTimes(2);
 
     await stepBack(props);
+    expect(focus).toHaveBeenCalledTimes(3);
     await stepBack(props);
+    expect(focus).toHaveBeenCalledTimes(3);
+    await layOut(stepHeading());
     expect(focus).toHaveBeenCalledTimes(4);
     expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
   });
@@ -415,11 +424,16 @@ describe("LocationPermissionStep", () => {
     const focus = focusSpy();
     const props = stepProps();
     await renderWithTheme(<LocationPermissionStep {...props} />);
+    await layOut(stepHeading());
     await openDeniedPicker(props);
+    expect(focus).not.toHaveBeenCalled();
+    await layOut(stepHeading());
     expect(focus).toHaveBeenCalledTimes(1);
     expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
 
     await stepBack(props);
+    expect(focus).toHaveBeenCalledTimes(1);
+    await layOut(stepHeading());
     expect(focus).toHaveBeenCalledTimes(2);
   });
 
