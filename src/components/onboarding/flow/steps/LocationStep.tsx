@@ -30,13 +30,14 @@ export const LocationStep = ({
   dropTriedCity,
   headingRef,
   onHeadingLayout,
+  focusHeading,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [choice, setChoice] = useState<LocationChoice>(LOCATION_CHOICE.AUTOMATIC);
   const [view, setView] = useState<LocationStepView>(LOCATION_STEP_VIEW.CHOICE);
-  useViewFocus(view, headingRef);
+  useViewFocus(view, focusHeading);
 
   const choose = (next: LocationChoice) => {
     hapticSelection();
@@ -69,6 +70,7 @@ export const LocationStep = ({
       <StepCityPicker
         headingRef={headingRef}
         onHeadingLayout={onHeadingLayout}
+        focusHeading={focusHeading}
         progress={progress}
         setBack={setBack}
         setBusy={setBusy}

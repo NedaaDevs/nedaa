@@ -54,8 +54,10 @@ export type StepProps = {
   dropTriedCity: () => void;
   /** The step's heading view; it takes reader focus when the step arrives. */
   headingRef: RefObject<ViewInstance | null>;
-  /** The heading view's layout: the arrival's focus waits for it. */
+  /** The heading view's layout: a focus on it waits for this. */
   onHeadingLayout: () => void;
+  /** Moves reader focus to the heading, once the heading is laid out. */
+  focusHeading: () => void;
   /** "N of M", read with the heading; empty on Welcome and Completion. */
   progress: string;
 };

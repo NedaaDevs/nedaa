@@ -1,7 +1,11 @@
-import { createRef } from "react";
-import type { ViewInstance } from "react-native";
-
 import { NEW_SESSION, type StepPrimary, type StepProps } from "@/components/onboarding/flow/types";
+import { layoutFocus } from "@/utils/layoutFocus";
+
+/** The flow's heading focus, as a step receives it. */
+const headingFocus = () => {
+  const { ref, onLayout, focus } = layoutFocus();
+  return { headingRef: ref, onHeadingLayout: onLayout, focusHeading: focus };
+};
 
 /** Step props whose callbacks are mocks; a test overrides what it reads. */
 export const stepProps = (overrides: Partial<StepProps> = {}): StepProps => ({
@@ -14,8 +18,7 @@ export const stepProps = (overrides: Partial<StepProps> = {}): StepProps => ({
   setPrimaryHidden: jest.fn(),
   setBack: jest.fn(),
   dropTriedCity: jest.fn(),
-  headingRef: createRef<ViewInstance>(),
-  onHeadingLayout: jest.fn(),
+  ...headingFocus(),
   progress: "",
   ...overrides,
 });

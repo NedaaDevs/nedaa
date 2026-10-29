@@ -215,8 +215,9 @@ export const DayRunPlayer = () => {
   const clockTime = useClockTime();
   const { now, day } = useShownDay();
   const playFlip = usePlayFlip();
-  // Reader focus goes to the toggle once laid out, once per player.
-  const { ref: toggleRef, onLayout: focusToggle } = useLayoutFocus();
+  const { ref: toggleRef, onLayout: onToggleLayout, focus: focusToggle } = useLayoutFocus();
+  // Reader focus goes to the toggle as the card appears, once it is laid out.
+  useEffect(() => focusToggle(), [focusToggle]);
   // The live slot's width, which the sizers reserve beside each kicker.
   const [slotWidth, setSlotWidth] = useState(0);
 
@@ -285,7 +286,7 @@ export const DayRunPlayer = () => {
           accessibilityLabel={t(toggle.label)}
           accessibilityHint={toggle.hint && t(toggle.hint)}
           onPress={toggleAction(run)}
-          onLayout={focusToggle}
+          onLayout={onToggleLayout}
           width="$target"
           height="$target"
           borderRadius="$pill"

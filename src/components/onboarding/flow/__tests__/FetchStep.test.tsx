@@ -23,6 +23,7 @@ import {
   stepProps,
 } from "@/test-helpers/onboardingStepProps";
 import { coordinatesStub, pickerStub, resetPickerStubs } from "@/test-helpers/cityPickerStubs";
+import { layOut, stepHeading } from "@/test-helpers/layout";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
 import { later, never } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -629,13 +630,17 @@ it("moves reader focus to the heading when the error and then the picker show", 
   const props = stepProps();
   const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   await renderWithTheme(<FetchStep {...props} />);
+  await layOut(stepHeading());
   expect(focus).not.toHaveBeenCalled();
 
+  // The error keeps the loading view's heading, so focus moves at once.
   await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
   expect(focus).toHaveBeenCalledTimes(1);
   expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
 
   await user.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
+  expect(focus).toHaveBeenCalledTimes(1);
+  await layOut(stepHeading());
   expect(focus).toHaveBeenCalledTimes(2);
 });
 

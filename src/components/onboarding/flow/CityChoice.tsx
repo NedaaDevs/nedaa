@@ -52,7 +52,13 @@ export const ChooseCityButton = ({ onPress }: { onPress: () => void }) => {
 
 type PickerProps = Pick<
   StepProps,
-  "headingRef" | "onHeadingLayout" | "progress" | "setBack" | "setBusy" | "setPrimaryHidden"
+  | "headingRef"
+  | "onHeadingLayout"
+  | "focusHeading"
+  | "progress"
+  | "setBack"
+  | "setBusy"
+  | "setPrimaryHidden"
 > & {
   /** The host's own success: its session write, then on. */
   onDone: () => void;
@@ -66,6 +72,7 @@ type PickerProps = Pick<
 export const StepCityPicker = ({
   headingRef,
   onHeadingLayout,
+  focusHeading,
   progress,
   setBack,
   setBusy,
@@ -107,7 +114,7 @@ export const StepCityPicker = ({
 
   // Back walks out one view at a time: coordinates, the list, then the host.
   useStepBack(setBack, listBehind ? () => setView(CITY_PICKER_VIEW.LIST) : close);
-  useViewFocus(view, headingRef);
+  useViewFocus(view, focusHeading);
 
   // A pick is the way on and Skip the way out: the frame's primary steps aside.
   const hidePrimary = useEffectEvent((hidden: boolean) => setPrimaryHidden(hidden));

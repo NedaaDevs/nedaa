@@ -7,6 +7,7 @@ import { LocationFailureOffer } from "@/components/location/LocationFailureOffer
 import { failedAtPlaceOrTimes } from "@/components/location/rootState";
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { useViewFocus } from "@/hooks/useViewFocus";
+import { focusOn } from "@/utils/accessibilityFocus";
 import {
   Actionsheet,
   ActionsheetContent,
@@ -137,8 +138,9 @@ const viewOf = (run: UpdateRun | null): CityChangeView => {
 /** The two cities, what an update changes, then the offer or the run. */
 const CityChangeBody = ({ offer, run, busy, onUpdate, onKeep, ...runView }: BodyProps) => {
   const { t } = useTranslation();
-  // Content swaps under the reader; focus goes back to the title.
-  useViewFocus(viewOf(run), useActionsheetTitle());
+  const title = useActionsheetTitle();
+  // Content swaps under the reader, never the title; focus goes back to it.
+  useViewFocus(viewOf(run), () => focusOn(title.current));
   return (
     <VStack gap="$4">
       <VStack alignItems="center" gap="$2">

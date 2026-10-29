@@ -91,6 +91,7 @@ export const FetchStep = ({
   dropTriedCity,
   headingRef,
   onHeadingLayout,
+  focusHeading,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
@@ -154,7 +155,7 @@ export const FetchStep = ({
     };
   }, []);
 
-  useViewFocus(phase, headingRef);
+  useViewFocus(phase, focusHeading);
 
   const retry = () => {
     setPhase(FETCH_PHASE.LOADING);
@@ -178,6 +179,7 @@ export const FetchStep = ({
       <StepCityPicker
         headingRef={headingRef}
         onHeadingLayout={onHeadingLayout}
+        focusHeading={focusHeading}
         progress={progress}
         setBack={setBack}
         setBusy={setBusy}
