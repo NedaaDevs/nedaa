@@ -2,6 +2,7 @@ import { useNavigation, useRouter } from "expo-router";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
+import { isRunning, useLocationUpdateStore } from "@/stores/locationUpdate";
 import type { ManualLocation } from "@/types/location";
 
 const PICKER = BACK_DESTINATION.SETTINGS_LOCATION_PICKER;
@@ -14,6 +15,8 @@ export const usePlaceHandOver = () => {
   const { applyManualLocation } = useLocationUpdate();
 
   return (place: ManualLocation) => {
+    // A run in flight would refuse the place; the picker stays open on it.
+    if (isRunning(useLocationUpdateStore.getState().run)) return;
     // The run takes its lock before this returns, so Location opens on it.
     void applyManualLocation(place);
 
