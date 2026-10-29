@@ -1,3 +1,5 @@
+import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 
@@ -109,3 +111,7 @@ export const CITY_CHECK_REASON = {
   ...CITY_CHECK_OFFER,
 } as const;
 export type CityCheckReason = (typeof CITY_CHECK_REASON)[keyof typeof CITY_CHECK_REASON];
+
+/** The timings the yearly shift compares, in the server rows' order. */
+export const SHIFT_TIMING = { ...PRAYER_ID, SUNRISE: OTHER_TIMING.SUNRISE } as const;
+export type ShiftTiming = (typeof SHIFT_TIMING)[keyof typeof SHIFT_TIMING];
