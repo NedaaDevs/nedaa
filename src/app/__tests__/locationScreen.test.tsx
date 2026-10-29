@@ -31,10 +31,10 @@ import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
 import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
-import { placeFacts } from "@/test-helpers/place";
+import { MAKKAH_CITY, RIYADH_CITY, placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
-import { initialLocationDetails, type ManualLocation } from "@/types/location";
+import { initialLocationDetails } from "@/types/location";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import {
   LocationFixError,
@@ -74,30 +74,10 @@ const MD_BUTTON_HEIGHT = 50;
 const RIYADH = { city: "Riyadh", country: "Saudi Arabia" };
 const JEDDAH = { city: "Jeddah", country: "Saudi Arabia" };
 const RIYADH_COORDS = { latitude: 24.7136, longitude: 46.6753 };
-const MAKKAH: ManualLocation = {
-  cityId: 104515,
-  name: "Makkah",
-  names: { ar: "مكة المكرمة", ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
-  latitude: 21.4225,
-  longitude: 39.8262,
-  timezone: "Asia/Riyadh",
-};
-
-const RIYADH_CITY: ManualLocation = {
-  ...MAKKAH,
-  cityId: 108410,
-  name: "Riyadh",
-  names: { ar: "الرياض", ur: null, ms: null },
-  latitude: 24.68773,
-  longitude: 46.72185,
-};
 
 /** Makkah chosen and its times landed. */
 const makkahSettled = () => {
-  useLocationStore.getState().setManualLocation(MAKKAH);
+  useLocationStore.getState().setManualLocation(MAKKAH_CITY);
   useLocationStore.getState().settlePlace(useLocationStore.getState().placeRevision);
 };
 
@@ -109,7 +89,7 @@ const makkahOverRiyadhTimes = () => {
     timesCoords: { latitude: RIYADH_CITY.latitude, longitude: RIYADH_CITY.longitude },
   });
   location.settlePlace(useLocationStore.getState().placeRevision);
-  location.setManualLocation(MAKKAH);
+  location.setManualLocation(MAKKAH_CITY);
 };
 
 const mockUpdate = jest.fn(async () => {});
@@ -399,10 +379,10 @@ describe("Settings › Location", () => {
 
     // The run lives in a store: a screen opened mid-run shows where it goes.
     it("names a city's run on the hero when opened while its times load", async () => {
-      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
       useLocationUpdateStore.setState({
         run: {
-          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          start: { kind: UPDATE_START.CITY, city: MAKKAH_CITY },
           step: UPDATE_STEP.PRAYER_TIMES,
           failed: false,
         },
@@ -413,7 +393,7 @@ describe("Settings › Location", () => {
       expect(hero()).toHaveAccessibleName(
         heroName(
           t("location.hero.cityKicker"),
-          t("place.name", { city: MAKKAH.name, country: MAKKAH.country.name }),
+          t("place.name", { city: MAKKAH_CITY.name, country: MAKKAH_CITY.country.name }),
           t("location.hero.updatingNote")
         )
       );
@@ -423,7 +403,7 @@ describe("Settings › Location", () => {
       makkahOverRiyadhTimes();
       useLocationUpdateStore.setState({
         run: {
-          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          start: { kind: UPDATE_START.CITY, city: MAKKAH_CITY },
           step: UPDATE_STEP.PRAYER_TIMES,
           failed: false,
         },
@@ -434,7 +414,7 @@ describe("Settings › Location", () => {
       expect(hero()).toHaveAccessibleName(
         heroName(
           t("location.hero.cityKicker"),
-          t("place.name", { city: MAKKAH.name, country: MAKKAH.country.name }),
+          t("place.name", { city: MAKKAH_CITY.name, country: MAKKAH_CITY.country.name }),
           t("location.hero.updatingNote")
         )
       );
@@ -442,7 +422,7 @@ describe("Settings › Location", () => {
 
     // The hero names the device's place, so it wears the device's kicker.
     it("draws the previous place's own hero while its times stand", async () => {
-      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
       await renderScreen();
 
       expect(await screen.findByLabelText(t("location.manual.notice"))).toBeTruthy();
@@ -468,7 +448,7 @@ describe("Settings › Location", () => {
       ["the device's location", () => permit(true)],
       ["no permission yet", () => permit(false, true)],
       ["a refused permission", () => permit(false, false)],
-      ["a chosen city", () => useLocationStore.getState().setManualLocation(MAKKAH)],
+      ["a chosen city", () => useLocationStore.getState().setManualLocation(MAKKAH_CITY)],
       [
         "a failed read",
         () =>
@@ -512,7 +492,7 @@ describe("Settings › Location", () => {
     });
 
     it("ticks once as the mode choice moves a chosen city to the device", async () => {
-      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
       await renderScreen();
 
       await userEvent.press(
@@ -613,7 +593,7 @@ describe("Settings › Location", () => {
         screen.getByRole("button", { name: t("location.permission.openSettings") })
       );
       expect(openSettings).toHaveBeenCalledTimes(1);
-      expect(useLocationStore.getState().manualLocation).toEqual(MAKKAH);
+      expect(useLocationStore.getState().manualLocation).toEqual(MAKKAH_CITY);
     });
 
     // A live region speaks on Android only; VoiceOver hears it said.
@@ -705,7 +685,7 @@ describe("Settings › Location", () => {
       })
     );
 
-    await act(async () => useLocationStore.getState().setManualLocation(MAKKAH));
+    await act(async () => useLocationStore.getState().setManualLocation(MAKKAH_CITY));
 
     expect(await screen.findByLabelText(t("location.manual.notice"))).toBeTruthy();
     expect(screen.queryByLabelText(t("location.manual.deviceRefused"))).toBeNull();
@@ -797,7 +777,7 @@ describe("Settings › Location", () => {
       expect(hero()).toHaveAccessibleName(
         heroName(
           t("location.hero.savedKicker"),
-          t("place.name", { city: MAKKAH.name, country: MAKKAH.country.name }),
+          t("place.name", { city: MAKKAH_CITY.name, country: MAKKAH_CITY.country.name }),
           t("location.hero.savedNote")
         )
       );
@@ -887,7 +867,7 @@ describe("Settings › Location", () => {
       makkahOverRiyadhTimes();
       useLocationUpdateStore.setState({
         run: {
-          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          start: { kind: UPDATE_START.CITY, city: MAKKAH_CITY },
           step: UPDATE_STEP.PRAYER_TIMES,
           failed: true,
         },
@@ -962,10 +942,10 @@ describe("Settings › Location", () => {
 
     // A failed run stays in its store: retry repeats its city, not the device.
     it("shows a failed city run on opening, and retries that city", async () => {
-      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
       useLocationUpdateStore.setState({
         run: {
-          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          start: { kind: UPDATE_START.CITY, city: MAKKAH_CITY },
           step: UPDATE_STEP.PRAYER_TIMES,
           failed: true,
         },
@@ -982,10 +962,10 @@ describe("Settings › Location", () => {
 
     // Its retry would bring back a city the user has since left.
     it("shows no failed city run once that city was dropped", async () => {
-      useLocationStore.getState().setManualLocation(MAKKAH);
+      useLocationStore.getState().setManualLocation(MAKKAH_CITY);
       useLocationUpdateStore.setState({
         run: {
-          start: { kind: UPDATE_START.CITY, city: MAKKAH },
+          start: { kind: UPDATE_START.CITY, city: MAKKAH_CITY },
           step: UPDATE_STEP.PRAYER_TIMES,
           failed: true,
         },
@@ -1075,7 +1055,7 @@ describe("Settings › Location", () => {
       await act(() =>
         useLocationUpdateStore
           .getState()
-          .withRun({ kind: UPDATE_START.CITY, city: MAKKAH }, async (runStep) => {
+          .withRun({ kind: UPDATE_START.CITY, city: MAKKAH_CITY }, async (runStep) => {
             await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
               throw new Error("offline");
             });
