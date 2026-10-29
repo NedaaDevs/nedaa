@@ -8,6 +8,15 @@ export const ALARM_TYPE = {
   FRIDAY: "friday",
 } as const;
 
+/** The routes of the ringing alarm and of its completion. */
+export const ALARM_SCREEN_PATH = { RING: "/alarm", COMPLETE: "/alarm-complete" } as const;
+export type AlarmScreenPath = (typeof ALARM_SCREEN_PATH)[keyof typeof ALARM_SCREEN_PATH];
+
+const ALARM_SCREEN_PATHS: readonly string[] = Object.values(ALARM_SCREEN_PATH);
+
+/** Whether a route path is one of the alarm screens. */
+export const isAlarmScreenPath = (path: string): boolean => ALARM_SCREEN_PATHS.includes(path);
+
 /** How long an alarm path waits for a store to load from disk. */
 export const ALARM_HYDRATION_TIMEOUT_MS = 5000;
 

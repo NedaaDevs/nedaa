@@ -2,8 +2,14 @@ import { Pressable, Text } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { OnboardingGate } from "@/components/onboarding/flow/OnboardingGate";
-import { LANDING_MS, ONBOARDING_PART } from "@/constants/Onboarding";
+import {
+  LANDING_MS,
+  ONBOARDING_PART,
+  ONBOARDING_PATH,
+  type OnboardingPath,
+} from "@/constants/Onboarding";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useAppStore } from "@/stores/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 type MockShared = { get: () => unknown };
@@ -43,8 +49,8 @@ jest.mock("@/components/onboarding/flow/OnboardingFlow", () => {
 });
 
 const appPress = jest.fn();
-const Gate = ({ show }: { show: boolean }) => (
-  <OnboardingGate showOnboarding={show}>
+const Gate = ({ show, path }: { show?: boolean; path?: OnboardingPath | null }) => (
+  <OnboardingGate path={path !== undefined ? path : show ? ONBOARDING_PATH.FIRST_RUN : null}>
     <Pressable testID={APP_ID} accessibilityRole="button" onPress={appPress}>
       <Text>{APP_ID}</Text>
     </Pressable>
@@ -65,6 +71,7 @@ beforeEach(() => {
   mockFlow.leaving = undefined;
   mockMade.length = 0;
   appPress.mockClear();
+  useAppStore.setState({ upgradeShownThisLaunch: false });
   jest.mocked(useReducedMotion).mockReturnValue(false);
 });
 afterEach(() => {
@@ -166,4 +173,26 @@ it("readies a later landing to start from the flow when the first run starts aga
   await view.rerender(<Gate show />);
 
   expect(shared()).toEqual({ app: 0, flow: 1 });
+});
+
+it("marks the launch as shown when the upgrade path opens", async () => {
+  const view = await renderWithTheme(<Gate path={null} />);
+  expect(useAppStore.getState().upgradeShownThisLaunch).toBe(false);
+
+  await view.rerender(<Gate path={ONBOARDING_PATH.UPGRADE} />);
+
+  expect(useAppStore.getState().upgradeShownThisLaunch).toBe(true);
+});
+
+it("leaves the launch unmarked on a first run", async () => {
+  await renderWithTheme(<Gate show />);
+
+  expect(useAppStore.getState().upgradeShownThisLaunch).toBe(false);
+});
+
+// An alarm found after the first frame navigates the app's stack.
+it("keeps the app mounted on the upgrade path", async () => {
+  await renderWithTheme(<Gate path={ONBOARDING_PATH.UPGRADE} />);
+
+  expect(find(APP_ID)).toBeTruthy();
 });

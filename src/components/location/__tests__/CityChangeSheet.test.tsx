@@ -19,7 +19,6 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppLocale } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
-import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
@@ -58,16 +57,16 @@ const Picker = () => {
   );
 };
 
-const renderSheet = ({ isRTL = false, dark = false } = {}) =>
+const renderSheet = ({ isRTL = false, dark = false, onboarding = false } = {}) =>
   renderRouter(
     {
       index: () =>
         dark ? (
           <Theme name="dark">
-            <CityChangeSheet />
+            <CityChangeSheet onboarding={onboarding} />
           </Theme>
         ) : (
-          <CityChangeSheet />
+          <CityChangeSheet onboarding={onboarding} />
         ),
       [BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route]: () => <Picker />,
     },
@@ -111,7 +110,6 @@ beforeEach(async () => {
   await act(() => i18n.changeLanguage(AppLocale.EN));
   mockUpdate.mockResolvedValue(undefined);
   mockLoad.mockResolvedValue(true);
-  useAppStore.setState({ isFirstRun: false });
   useLocationUpdateStore.setState({ run: null });
   useLocationStore.setState({
     locationMode: LocationMode.DEVICE,
@@ -152,8 +150,7 @@ describe("CityChangeSheet", () => {
   });
 
   it("never shows over onboarding", async () => {
-    useAppStore.setState({ isFirstRun: true });
-    await renderSheet();
+    await renderSheet({ onboarding: true });
 
     expect(title()).toBeNull();
   });
