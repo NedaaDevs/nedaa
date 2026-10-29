@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { PlayDayButton } from "@/components/onboarding/flow/PlayDayButton";
 import { StepBody } from "@/components/onboarding/flow/StepBody";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
@@ -10,7 +11,7 @@ import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 
-/** Today's style over a preview of it, then the four modes of Settings. */
+/** Today's style over a preview of it, a day of Adaptive, then the modes. */
 export const AppearanceStep = ({ headingRef, progress }: StepProps) => {
   const { t } = useTranslation();
 
@@ -23,6 +24,9 @@ export const AppearanceStep = ({ headingRef, progress }: StepProps) => {
         body={t("onboarding.appearance.body")}
       />
       <TodayStylePreview sampleUnlessOwn />
+      <SkyOccluder>
+        <PlayDayButton />
+      </SkyOccluder>
       <SkyOccluder>
         <VStack gap="$2">
           <Text size="sm" fontWeight="600" color="$fg">

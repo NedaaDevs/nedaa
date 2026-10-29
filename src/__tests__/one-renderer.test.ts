@@ -262,6 +262,16 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\bappearancePreview\(/,
     home: "utils/appearancePreview.ts",
   },
+  // Today's debug run and onboarding's preview pass the day by one simulator:
+  // the run's schedule, or a phase or clock moved on by a timer.
+  {
+    concept: "the day passing",
+    shows:
+      /<DaySimulator\b|\bdayRun(Schedule|ClockAt|PhaseStartMs|LengthMs)\(|\bDAY_RUN\[|<(PhaseContext|SimulatedClockContext)\b[\s\S]*\bset(Timeout|Interval)\(|\bset(Timeout|Interval)\([\s\S]*<(PhaseContext|SimulatedClockContext)\b/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /<DaySimulator\b/,
+    home: "components/today/DaySimulator.tsx",
+  },
   // A file that plays a sound sample draws SoundPreview. The five files
   // `within` leaves out draw their own control through useSoundPreview.
   {
