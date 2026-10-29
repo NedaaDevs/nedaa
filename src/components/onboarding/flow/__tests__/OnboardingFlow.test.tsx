@@ -755,7 +755,7 @@ describe("OnboardingFlow", () => {
     /** A step that starts the flow's run, as Appearance's button does. */
     const RunStartStep = () => {
       const run = useDayRun();
-      return <Pressable testID={START_RUN} onPress={run?.start} />;
+      return <Pressable testID={START_RUN} onPress={() => run?.start()} />;
     };
     const startRun = () => act(async () => fireEvent.press(screen.getByTestId(START_RUN)));
     const player = () => screen.queryByTestId(DAY_RUN_PLAYER_PART.FRAME);
@@ -867,6 +867,8 @@ describe("OnboardingFlow", () => {
 
         expect(player()).toBeNull();
         expect(currentStep()).toBe(S.APPEARANCE);
+        // The button kept its view through the run, so the event has a target.
+        expect(stubMounts[S.APPEARANCE]).toBe(1);
         expect(focus).toHaveBeenCalledTimes(1);
         expect(focus).toHaveBeenCalledWith(
           expect.objectContaining({
