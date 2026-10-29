@@ -18,7 +18,7 @@ import { ThemeTransitionContext } from "@/components/ui/theme-transition/context
 import { APPEARANCE_ORDER, PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
 import { DAY_RUN, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import { CLOCK_SAMPLE } from "@/constants/Onboarding";
+import { CLOCK_SAMPLE, ONBOARDING_PART } from "@/constants/Onboarding";
 import { PHASE } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { CLOCK_FORMAT } from "@/constants/Preferences";
@@ -385,8 +385,9 @@ describe("AppearanceStep", () => {
       await renderUnder({ available: false });
 
       expect(screen.queryByTestId(PLAY_DAY_PART.BUTTON, hidden)).toBeNull();
-      const preview = screen.getByTestId(TODAY_STYLE_PREVIEW_PART.ROOT, hidden);
-      expect(preview.parent?.children).toEqual([preview]);
+      const group = screen.getByTestId(ONBOARDING_PART.APPEARANCE_PREVIEW, hidden);
+      expect(group.children).toHaveLength(1);
+      expect(within(group).getByTestId(TODAY_STYLE_PREVIEW_PART.ROOT, hidden)).toBeTruthy();
     });
 
     it("choosing a look during a run ends the run first", async () => {
