@@ -8,6 +8,7 @@ import type { AppMode } from "@/enums/app";
 import { useChooseMode } from "@/hooks/useChooseMode";
 import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { useDayRun } from "@/contexts/DayRunContext";
 import { skySwatchFor } from "@/utils/sky";
 
 /** The appearance modes, each with its sky; a choice applies at once. */
@@ -16,9 +17,12 @@ export const AppearanceChoices = () => {
   const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const chooseMode = useChooseMode();
   const sky = usePageSky();
+  const run = useDayRun();
 
   const choose = (mode: AppMode) => {
     hapticSelection();
+    // A run ends first, so the chosen look replaces the one it draws.
+    run?.done();
     void chooseMode(mode);
   };
 

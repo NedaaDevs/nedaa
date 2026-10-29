@@ -4,8 +4,10 @@ import { useSharedValue, withTiming } from "react-native-reanimated";
 
 import { OnboardingFlow } from "@/components/onboarding/flow/OnboardingFlow";
 import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
+import { PLAY_DAY_PART, PlayDayButton } from "@/components/onboarding/flow/PlayDayButton";
 import { CompleteStep } from "@/components/onboarding/flow/steps/CompleteStep";
 import { enterOffset } from "@/components/onboarding/flow/StepTransition";
+import { LiveSkyContext, useLiveSky } from "@/components/ui/sky-background/useLiveSky";
 import { DAY_RUN, DAY_RUN_KIND } from "@/constants/DayRun";
 import { PHASE } from "@/constants/Phase";
 import {
@@ -829,6 +831,63 @@ describe("OnboardingFlow", () => {
 
       expect(currentStep()).toBe(S.COMPLETE);
       expect(player()).toBeNull();
+    });
+
+    describe("from the Appearance step's button", () => {
+      /** The real button, over a page sky; the stubbed background has none. */
+      const PlayDayStep = () => {
+        const sky = useLiveSky();
+        return (
+          <LiveSkyContext value={sky}>
+            <PlayDayButton />
+          </LiveSkyContext>
+        );
+      };
+      const focusSpy = () =>
+        jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockImplementation(() => {});
+      const pressPlayDay = () =>
+        userEvent
+          .setup({ advanceTimers: jest.advanceTimersByTime })
+          .press(screen.getByTestId(PLAY_DAY_PART.BUTTON));
+
+      beforeEach(() => realSteps.set(S.APPEARANCE, PlayDayStep));
+
+      it.each([
+        ["hardware back", (back: () => Promise<void>) => back()],
+        ["VoiceOver's escape", () => escape()],
+      ])("%s gives reader focus back to the button", async (_case, close) => {
+        const back = androidBack();
+        const focus = focusSpy();
+        await renderWithTheme(<OnboardingFlow />);
+        await pressPlayDay();
+        expect(player()).toBeOnTheScreen();
+        focus.mockClear();
+
+        await close(back);
+
+        expect(player()).toBeNull();
+        expect(currentStep()).toBe(S.APPEARANCE);
+        expect(focus).toHaveBeenCalledTimes(1);
+        expect(focus).toHaveBeenCalledWith(
+          expect.objectContaining({
+            props: expect.objectContaining({ testID: PLAY_DAY_PART.BUTTON }),
+          }),
+          "focus"
+        );
+      });
+
+      it("Skip takes reader focus to the next step, not back to the button", async () => {
+        const focus = focusSpy();
+        await renderWithTheme(<OnboardingFlow />);
+        await pressPlayDay();
+        focus.mockClear();
+
+        await act(async () => fireEvent.press(screen.getByTestId(ONBOARDING_PART.SKIP)));
+
+        expect(currentStep()).toBe(S.COMPLETE);
+        expect(focus).toHaveBeenCalledTimes(1);
+        expect(focus).toHaveBeenCalledWith(propsOf(S.COMPLETE).headingRef.current, "focus");
+      });
     });
 
     // Reduce Motion holds each phase for one timer, so five timers end the run.
