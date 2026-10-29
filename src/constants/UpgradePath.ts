@@ -10,7 +10,7 @@ export const UPGRADE_PATH_STATE = {
 
 export type UpgradePathState = (typeof UPGRADE_PATH_STATE)[keyof typeof UPGRADE_PATH_STATE];
 
-export const UPGRADE_PATH_STATES: readonly UpgradePathState[] = Object.values(UPGRADE_PATH_STATE);
+const UPGRADE_PATH_STATES: readonly UpgradePathState[] = Object.values(UPGRADE_PATH_STATE);
 
 /** Whether a saved value names a state this build knows. */
 export const isUpgradePathState = (value: unknown): value is UpgradePathState =>
