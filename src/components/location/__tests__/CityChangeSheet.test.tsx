@@ -119,7 +119,7 @@ beforeEach(async () => {
     cityOffered: null,
   });
   useLocationStore.getState().offerCityChange(OFFER);
-  usePrayerTimesStore.setState({ loadPrayerTimes: mockLoad });
+  usePrayerTimesStore.setState({ loadPrayerTimesAtCurrentPlace: mockLoad });
   useNotificationStore.setState({
     scheduleAllNotifications: jest.fn(async () => ({ success: true, scheduledCount: 0 })),
   });

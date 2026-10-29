@@ -191,8 +191,13 @@ describe("Settings › Location › city picker", () => {
       ["typed coordinates", coordinatesUrl, SAVE],
     ])("shows the update on Location for %s, then the new place", async (_, url, control) => {
       const times = later<boolean>();
-      const load = jest.fn(() => times.promise);
-      usePrayerTimesStore.setState({ loadPrayerTimes: load });
+      // The real load settles the place once its days are read back.
+      const load = jest.fn(async () => {
+        const landed = await times.promise;
+        useLocationStore.getState().settlePlace(useLocationStore.getState().placeRevision);
+        return landed;
+      });
+      usePrayerTimesStore.setState({ loadPrayerTimesAtCurrentPlace: load });
       const opened = await openFromRoot(url);
 
       await userEvent.press(screen.getByTestId(control));
@@ -220,7 +225,7 @@ describe("Settings › Location › city picker", () => {
     });
 
     it("returns past the list when coordinates were reached through it", async () => {
-      usePrayerTimesStore.setState({ loadPrayerTimes: jest.fn(async () => true) });
+      usePrayerTimesStore.setState({ loadPrayerTimesAtCurrentPlace: jest.fn(async () => true) });
       const opened = await openFromRoot(PICKER_HREF);
       await userEvent.press(screen.getByTestId(TO_COORDINATES));
 
@@ -237,7 +242,7 @@ describe("Settings › Location › city picker", () => {
       ["a city from the list", [PICK]],
       ["coordinates reached through the list", [TO_COORDINATES, SAVE]],
     ])("goes back past Location to the screen under the picker for %s", async (_, controls) => {
-      usePrayerTimesStore.setState({ loadPrayerTimes: jest.fn(async () => true) });
+      usePrayerTimesStore.setState({ loadPrayerTimesAtCurrentPlace: jest.fn(async () => true) });
       const opened = await openOver(BACK_DESTINATION.HOME.href, PICKER_HREF);
 
       for (const control of controls) await userEvent.press(screen.getByTestId(control));
@@ -251,7 +256,7 @@ describe("Settings › Location › city picker", () => {
 
     it("lands a failed update in Location's failure card", async () => {
       usePrayerTimesStore.setState({
-        loadPrayerTimes: jest.fn(async () => {
+        loadPrayerTimesAtCurrentPlace: jest.fn(async () => {
           throw new Error("offline");
         }),
       });

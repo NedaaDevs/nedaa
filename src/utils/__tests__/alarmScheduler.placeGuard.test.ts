@@ -14,6 +14,8 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { holdHydration } from "@/test-helpers/hydration";
 import { resetMemoryKv } from "@/test-helpers/memoryKvStore";
 import { later, until } from "@/test-helpers/promises";
+import { fetchLandingAs } from "@/test-helpers/timesFetch";
+import { PrayerTimesDB } from "@/services/db";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { alarmLog } from "@/utils/alarmReport";
 import { applyTimingOffset } from "@/utils/alarmTrigger";
@@ -467,10 +469,9 @@ describe("alarms armed before the place became the default one", () => {
 
 // The default place's days stay stored until the verified place's replace them.
 describe("a place verified while the default place's days are stored", () => {
-  const { refreshTimingsFromDb, cleanupOldData, getAndStorePrayerTimes } =
-    usePrayerTimesStore.getState();
+  const { refreshTimingsFromDb, cleanupOldData, getPrayerTimes } = usePrayerTimesStore.getState();
   afterEach(() =>
-    usePrayerTimesStore.setState({ refreshTimingsFromDb, cleanupOldData, getAndStorePrayerTimes })
+    usePrayerTimesStore.setState({ refreshTimingsFromDb, cleanupOldData, getPrayerTimes })
   );
 
   /** Default rows for every day, a verified place, and `fetching` to fetch. */
@@ -480,12 +481,13 @@ describe("a place verified while the default place's days are stored", () => {
       yesterdayTimings: day(-1),
       refreshTimingsFromDb: jest.fn(async () => WEEK),
       cleanupOldData: jest.fn(async () => true),
-      getAndStorePrayerTimes: jest.fn(fetching),
+      getPrayerTimes: fetchLandingAs(fetching),
     });
+    jest.spyOn(PrayerTimesDB, "insertPrayerTimes").mockResolvedValue({ success: true } as never);
     useLocationStore.setState({ lastKnownCoords: COORDS });
   };
   const fetchCalls = () =>
-    (usePrayerTimesStore.getState().getAndStorePrayerTimes as jest.Mock).mock.calls.length;
+    (usePrayerTimesStore.getState().getPrayerTimes as jest.Mock).mock.calls.length;
 
   it("arms nothing while its refetch runs, and arms once the days land", async () => {
     const fetch = later<TimesFetch>();
