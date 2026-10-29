@@ -49,6 +49,8 @@ export const ONBOARDING_PART = {
   ALARM_TICK: "onboarding-alarm-tick",
   ALARM_BAR_ON: "onboarding-alarm-bar-on",
   ALARM_BAR_OFF: "onboarding-alarm-bar-off",
+  /** The appearance step's Today preview and the day button under it. */
+  APPEARANCE_PREVIEW: "onboarding-appearance-preview",
   COMPLETE_OPEN: "onboarding-complete-open",
   LANDING_FLOW: "onboarding-landing-flow",
   LOADING: "onboarding-loading",
