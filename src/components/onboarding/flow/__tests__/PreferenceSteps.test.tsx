@@ -372,13 +372,17 @@ describe("AppearanceStep", () => {
       expect(run.start).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON));
     });
 
-    it("holds the button while a run is on", async () => {
-      const run = await renderUnder({ status: DAY_RUN_STATUS.PLAYING });
+    // The run closes back to the button, so it stays while the run is on.
+    it.each([true, false])(
+      "holds the button while a run is on (a whole day: %s)",
+      async (available) => {
+        const run = await renderUnder({ status: DAY_RUN_STATUS.PLAYING, available });
 
-      expect(playDay()).toBeDisabled();
-      await press(PLAY_DAY_PART.BUTTON);
-      expect(run.start).not.toHaveBeenCalled();
-    });
+        expect(playDay()).toBeDisabled();
+        await press(PLAY_DAY_PART.BUTTON);
+        expect(run.start).not.toHaveBeenCalled();
+      }
+    );
 
     // A button that cannot play reads as broken, so there is none to see.
     it("draws no button, and no room for one, while the run has no whole day", async () => {
