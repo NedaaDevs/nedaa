@@ -74,7 +74,6 @@ export const RUN_END = {
   /** Another update was in flight, so this one never started. */
   REFUSED: "refused",
 } as const;
-export type RunEnd = (typeof RUN_END)[keyof typeof RUN_END];
 
 /** Where a location update takes its place from. */
 export const UPDATE_START = {
