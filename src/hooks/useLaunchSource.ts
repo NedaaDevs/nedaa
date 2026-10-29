@@ -3,22 +3,13 @@ import { Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { getSnoozeQueue } from "expo-alarm";
 
-import { isAlarmScreenPath } from "@/constants/Alarm";
 import { NATIVE_READ_TIMEOUT_MS } from "@/constants/Onboarding";
 import { PlatformType } from "@/enums/app";
-
-const SCHEME_END = "://";
-
-/** A custom-scheme link's route path: `app://alarm?x=1` is `/alarm`. */
-const linkPath = (url: string) => {
-  const rest = url.slice(url.indexOf(SCHEME_END) + SCHEME_END.length);
-  const [path = ""] = rest.split(/[?#]/);
-  return `/${path.replace(/^\/+|\/+$/g, "")}`;
-};
+import { isAlarmLink } from "@/utils/alarmLink";
 
 const alarmLinkLaunch = async () => {
   const url = await Linking.getInitialURL();
-  return !!url && isAlarmScreenPath(linkPath(url));
+  return !!url && isAlarmLink(url);
 };
 
 // The Android overlay opens the app with no link after a snooze. The queue
