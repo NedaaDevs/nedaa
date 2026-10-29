@@ -13,6 +13,7 @@ import { PHASE } from "@/constants/Phase";
 import {
   ONBOARDING_LOADING_DELAY_MS,
   ONBOARDING_PART,
+  ONBOARDING_PATH,
   ONBOARDING_STEP as S,
   STEP_DIRECTION,
   STEP_LOCK_MS,
@@ -23,9 +24,11 @@ import { useDayRun } from "@/contexts/DayRunContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 import { AppLocale, AppMode } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { UPGRADE_PATH_STATE } from "@/constants/UpgradePath";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
+import { upgradeColumnFor } from "@/test-helpers/onboardingColumn";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import {
@@ -184,7 +187,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("shows the bare sky, not the loading state, before the delay", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await act(() => jest.advanceTimersByTimeAsync(ONBOARDING_LOADING_DELAY_MS - 1));
 
       expect(screen.queryByTestId(ONBOARDING_PART.LOADING)).toBeNull();
@@ -194,11 +197,11 @@ describe("OnboardingFlow", () => {
     });
 
     it("never draws the loading state for a column read before the delay", async () => {
-      const view = await renderWithTheme(<OnboardingFlow />);
+      const view = await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await act(() => jest.advanceTimersByTimeAsync(ONBOARDING_LOADING_DELAY_MS - 1));
 
       mockColumn = [S.WELCOME, S.NUMERALS, S.COMPLETE];
-      await view.rerender(<OnboardingFlow />);
+      await view.rerender(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await act(() => jest.advanceTimersByTimeAsync(ONBOARDING_LOADING_DELAY_MS * 2));
 
       expect(currentStep()).toBe(S.WELCOME);
@@ -206,7 +209,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("shows the loading state over the sky once the delay passes", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await pastTheDelay();
 
       expect(screen.getByTestId(ONBOARDING_PART.LOADING)).toHaveAccessibleName(
@@ -218,7 +221,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("speaks the loading state as one element", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await pastTheDelay();
 
       expect(screen.getAllByLabelText(t("onboarding.loading"))).toHaveLength(1);
@@ -227,7 +230,7 @@ describe("OnboardingFlow", () => {
 
     it("keeps the loading icon still under Reduce Motion", async () => {
       mockReduced = true;
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await pastTheDelay();
 
       expect(screen.getByTestId(ONBOARDING_PART.LOADING)).toBeTruthy();
@@ -235,12 +238,12 @@ describe("OnboardingFlow", () => {
     });
 
     it("replaces a shown loading state with the first step on the same sky", async () => {
-      const view = await renderWithTheme(<OnboardingFlow />);
+      const view = await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await pastTheDelay();
       expect(screen.getByTestId(ONBOARDING_PART.LOADING)).toBeTruthy();
 
       mockColumn = [S.WELCOME, S.NUMERALS, S.COMPLETE];
-      await view.rerender(<OnboardingFlow />);
+      await view.rerender(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       expect(screen.queryByTestId(ONBOARDING_PART.LOADING)).toBeNull();
       expect(currentStep()).toBe(S.WELCOME);
@@ -249,7 +252,7 @@ describe("OnboardingFlow", () => {
   });
 
   it("advances and goes back one step at a time", async () => {
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await leaveWelcome();
     expect(currentStep()).toBe(S.NUMERALS);
@@ -260,7 +263,7 @@ describe("OnboardingFlow", () => {
   // The step-change lock absorbs a second tap that lands during the move.
   it("moves once for a double tap, and again after the step settles", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await userEvent.press(screen.getByTestId(ONBOARDING_PART.CONTINUE));
     await userEvent.press(screen.getByTestId(ONBOARDING_PART.CONTINUE));
@@ -272,7 +275,7 @@ describe("OnboardingFlow", () => {
   });
 
   it("saves the furthest step and never lowers it on back", async () => {
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     await leaveWelcome();
     await press(ONBOARDING_PART.CONTINUE);
     expect(useAppStore.getState().onboardingStep).toBe(S.APPEARANCE);
@@ -285,14 +288,14 @@ describe("OnboardingFlow", () => {
 
   it("resumes at the saved step", async () => {
     useAppStore.setState({ onboardingStep: S.APPEARANCE });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     expect(currentStep()).toBe(S.APPEARANCE);
   });
 
   it("holds back and skip while the step is busy, but not the step's own onNext", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     await act(async () => propsOf(S.NUMERALS).setBusy(true));
 
     await press(ONBOARDING_PART.BACK);
@@ -306,7 +309,7 @@ describe("OnboardingFlow", () => {
   it("Android back moves back, is held while busy, and leaves on the first step", async () => {
     const backPress = hardwareBack();
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await act(async () => propsOf(S.NUMERALS).setBusy(true));
     expect(await backPress()).toBe(true);
@@ -324,7 +327,7 @@ describe("OnboardingFlow", () => {
   it("a removed current step resolves forward and leaves its primary and busy behind", async () => {
     mockColumn = [S.WELCOME, S.NOTIFICATIONS, S.FAJR_ALARM, S.COMPLETE];
     useAppStore.setState({ onboardingStep: S.NOTIFICATIONS });
-    const view = await renderWithTheme(<OnboardingFlow />);
+    const view = await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     const onPress = jest.fn();
     await act(async () => {
       propsOf(S.NOTIFICATIONS).setPrimary({ label: STUB_PRIMARY, onPress });
@@ -333,7 +336,7 @@ describe("OnboardingFlow", () => {
     expect(screen.getByRole("button", { name: STUB_PRIMARY })).toBeTruthy();
 
     mockColumn = [S.WELCOME, S.FAJR_ALARM, S.COMPLETE];
-    await view.rerender(<OnboardingFlow />);
+    await view.rerender(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     expect(currentStep()).toBe(S.FAJR_ALARM);
     expect(screen.getByRole("button", { name: t("onboarding.continue") })).toBeTruthy();
@@ -345,7 +348,7 @@ describe("OnboardingFlow", () => {
 
   it("lets a step's own primary replace Continue", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     const onPress = jest.fn();
     await act(async () => propsOf(S.NUMERALS).setPrimary({ label: STUB_PRIMARY, onPress }));
 
@@ -357,7 +360,7 @@ describe("OnboardingFlow", () => {
 
   it("hides Continue for the step that asked, keeps Back, and shows it again on a step change", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await act(async () => propsOf(S.NUMERALS).setPrimaryHidden(true));
     expect(screen.queryByTestId(ONBOARDING_PART.CONTINUE)).toBeNull();
@@ -374,7 +377,7 @@ describe("OnboardingFlow", () => {
 
   it("holds a step's own skip while busy and during the step lock, so a double tap moves once", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await act(async () => propsOf(S.NUMERALS).onSkip());
     expect(currentStep()).toBe(S.APPEARANCE);
@@ -393,7 +396,7 @@ describe("OnboardingFlow", () => {
 
   it("skips on, and offers no skip on the last step", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     await press(ONBOARDING_PART.SKIP);
     expect(currentStep()).toBe(S.APPEARANCE);
 
@@ -404,7 +407,7 @@ describe("OnboardingFlow", () => {
 
   it("ends the first run from the last step's own button", async () => {
     useAppStore.setState({ onboardingStep: S.COMPLETE });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await act(async () => propsOf(S.COMPLETE).onNext());
 
@@ -414,7 +417,7 @@ describe("OnboardingFlow", () => {
   it("ignores Completion's button during the step lock, then ends the first run once", async () => {
     const end = jest.fn(realSetIsFirstRun);
     useAppStore.setState({ onboardingStep: S.APPEARANCE, setIsFirstRun: end });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     await userEvent.press(screen.getByTestId(ONBOARDING_PART.CONTINUE));
     expect(currentStep()).toBe(S.COMPLETE);
 
@@ -433,7 +436,7 @@ describe("OnboardingFlow", () => {
   it("taps light on a step change, and plays only the success haptic on arrival at Completion", async () => {
     realSteps.set(S.COMPLETE, CompleteStep);
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     await press(ONBOARDING_PART.CONTINUE);
     expect(currentStep()).toBe(S.APPEARANCE);
@@ -449,7 +452,7 @@ describe("OnboardingFlow", () => {
   it("lets Android back through while it is leaving", async () => {
     const backPress = hardwareBack();
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow leaving />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} leaving />);
 
     expect(await backPress()).toBe(false);
     expect(currentStep()).toBe(S.NUMERALS);
@@ -459,7 +462,7 @@ describe("OnboardingFlow", () => {
     it("takes the frame's Back, Android back and the escape gesture while it is set", async () => {
       const backPress = hardwareBack();
       useAppStore.setState({ onboardingStep: S.NUMERALS });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       const toParent = jest.fn();
       await act(async () => propsOf(S.NUMERALS).setBack(toParent));
 
@@ -474,7 +477,7 @@ describe("OnboardingFlow", () => {
     it("gives every back to the flow once it is cleared", async () => {
       const backPress = hardwareBack();
       useAppStore.setState({ onboardingStep: S.APPEARANCE });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       const toParent = jest.fn();
       await act(async () => propsOf(S.APPEARANCE).setBack(toParent));
       await act(async () => propsOf(S.APPEARANCE).setBack(null));
@@ -489,7 +492,7 @@ describe("OnboardingFlow", () => {
 
     it("is dropped on a step change", async () => {
       useAppStore.setState({ onboardingStep: S.NUMERALS });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       const toParent = jest.fn();
       await act(async () => propsOf(S.NUMERALS).setBack(toParent));
 
@@ -507,7 +510,7 @@ describe("OnboardingFlow", () => {
   describe("the frame around a counted step", () => {
     it("gives every control a role, a name and a 44pt target", async () => {
       useAppStore.setState({ onboardingStep: S.NUMERALS });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       expect(screen.getByTestId(ONBOARDING_PART.CONTINUE)).toBeOnTheScreen();
       expect(controlProblems()).toEqual([]);
@@ -515,7 +518,7 @@ describe("OnboardingFlow", () => {
 
     it("moves back on VoiceOver's escape gesture", async () => {
       useAppStore.setState({ onboardingStep: S.NUMERALS });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       await escape();
 
@@ -524,7 +527,7 @@ describe("OnboardingFlow", () => {
 
     it("draws the count with digits of one width", async () => {
       useAppStore.setState({ onboardingStep: S.NUMERALS });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       expect(progressText()).toHaveStyle({ fontVariant: ["tabular-nums"] });
     });
@@ -533,7 +536,7 @@ describe("OnboardingFlow", () => {
   // A late onNext from a step already left must not move the user.
   it("ignores a request from a step the user has left", async () => {
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     const left = propsOf(S.NUMERALS);
 
     await press(ONBOARDING_PART.SKIP);
@@ -548,7 +551,7 @@ describe("OnboardingFlow", () => {
     it("is passed going forward, as it is going back", async () => {
       mockColumn = [S.WELCOME, S.LOCATION, S.FETCH, S.CALCULATION, S.NOTIFICATIONS, S.COMPLETE];
       useAppStore.setState({ onboardingStep: S.LOCATION });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       await press(ONBOARDING_PART.CONTINUE);
 
@@ -558,7 +561,7 @@ describe("OnboardingFlow", () => {
     it("still runs going forward while no day is stored", async () => {
       mockColumn = [S.WELCOME, S.LOCATION, S.FETCH, S.NOTIFICATIONS, S.COMPLETE];
       useAppStore.setState({ onboardingStep: S.LOCATION });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       await press(ONBOARDING_PART.CONTINUE);
 
@@ -577,7 +580,7 @@ describe("OnboardingFlow", () => {
       S.COMPLETE,
     ];
     useAppStore.setState({ onboardingStep: S.LOCATION });
-    const view = await renderWithTheme(<OnboardingFlow />);
+    const view = await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     const place = (current: number, total: number) => t("onboarding.progress", { current, total });
     expect(propsOf(S.LOCATION).progress).toBe(place(2, 4));
 
@@ -586,7 +589,7 @@ describe("OnboardingFlow", () => {
 
     // The grant takes the prime out of the column and brings the fetch in.
     mockColumn = [S.WELCOME, S.NUMERALS, S.LOCATION, S.FETCH, S.NOTIFICATIONS, S.COMPLETE];
-    await view.rerender(<OnboardingFlow />);
+    await view.rerender(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
     expect(currentStep()).toBe(S.FETCH);
     expect(propsOf(S.FETCH).progress).toBe(place(4, 5));
@@ -598,14 +601,14 @@ describe("OnboardingFlow", () => {
     it("comes from the order: a column move forward after a Back plays forward", async () => {
       mockColumn = [S.WELCOME, S.NUMERALS, S.APPEARANCE, S.NOTIFICATIONS, S.COMPLETE];
       useAppStore.setState({ onboardingStep: S.NOTIFICATIONS });
-      const view = await renderWithTheme(<OnboardingFlow />);
+      const view = await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await press(ONBOARDING_PART.BACK);
       expect(currentStep()).toBe(S.APPEARANCE);
       jest.mocked(useSharedValue).mockClear();
 
       jest.mocked(withTiming).mockClear();
       mockColumn = [S.WELCOME, S.NUMERALS, S.NOTIFICATIONS, S.COMPLETE];
-      await view.rerender(<OnboardingFlow />);
+      await view.rerender(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       expect(currentStep()).toBe(S.NOTIFICATIONS);
       expect(useSharedValue).toHaveBeenCalledWith(enterOffset(FORWARD, false));
@@ -615,7 +618,7 @@ describe("OnboardingFlow", () => {
 
     it("plays back for a Back, and forward for Continue", async () => {
       useAppStore.setState({ onboardingStep: S.APPEARANCE });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       jest.mocked(useSharedValue).mockClear();
       jest.mocked(withTiming).mockClear();
@@ -633,14 +636,14 @@ describe("OnboardingFlow", () => {
 
   describe("Welcome and Completion are bare and uncounted", () => {
     it("draws no brand, skip, back, continue or progress on Welcome", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       expect(currentStep()).toBe(S.WELCOME);
       expectBareFrame();
     });
 
     it("counts the pages between Welcome and Completion; the last before Completion is N of N", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       const place = (current: number) => t("onboarding.progress", { current, total: 2 });
 
       await leaveWelcome();
@@ -650,7 +653,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("hands the step the same numbers, and Welcome and Completion none", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       expect(propsOf(S.WELCOME).progress).toBe("");
 
       await leaveWelcome();
@@ -665,7 +668,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("fills the bar by the counted place", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       const fill = () =>
         screen.getByTestId(ONBOARDING_PART.PROGRESS_FILL, { includeHiddenElements: true });
@@ -678,7 +681,7 @@ describe("OnboardingFlow", () => {
 
     it("draws no brand, skip, back, continue or progress on Completion", async () => {
       useAppStore.setState({ onboardingStep: S.APPEARANCE });
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       await press(ONBOARDING_PART.CONTINUE);
 
@@ -687,7 +690,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("brings the frame in after Welcome and takes it away on the way back", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 
       await leaveWelcome();
       expect(screen.getByTestId(ONBOARDING_PART.SKIP)).toBeOnTheScreen();
@@ -704,7 +707,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("slides the first counted step in from the reading start, inside the frame", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       const welcome = screen.getByTestId(ONBOARDING_PART.TRANSITION);
       jest.mocked(useSharedValue).mockClear();
       jest.mocked(withTiming).mockClear();
@@ -724,7 +727,7 @@ describe("OnboardingFlow", () => {
     const focus = jest
       .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
       .mockImplementation(() => {});
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     await layOutHeading(S.WELCOME);
     focus.mockClear();
 
@@ -742,7 +745,7 @@ describe("OnboardingFlow", () => {
       .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
       .mockImplementation(() => {});
     useAppStore.setState({ onboardingStep: S.NUMERALS });
-    await renderWithTheme(<OnboardingFlow />);
+    await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
     await layOutHeading(S.NUMERALS);
     await press(ONBOARDING_PART.CONTINUE);
     await layOutHeading(S.APPEARANCE);
@@ -759,7 +762,7 @@ describe("OnboardingFlow", () => {
   it("enters the next step from the new reading start after a language change, on one sky", async () => {
     await renderWithTheme(
       <RTLProvider>
-        <OnboardingFlow />
+        <OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />
       </RTLProvider>
     );
     jest.mocked(withTiming).mockClear();
@@ -810,7 +813,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("the player replaces Back and Continue during a run", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       expect(player()).toBeNull();
 
       await startRun();
@@ -827,7 +830,7 @@ describe("OnboardingFlow", () => {
 
     it("hardware back ends a run and stays on the step", async () => {
       const back = androidBack();
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await startRun();
 
       await back();
@@ -839,7 +842,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("VoiceOver's escape ends a run and stays on the step", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await startRun();
 
       await escape();
@@ -849,7 +852,7 @@ describe("OnboardingFlow", () => {
     });
 
     it("Skip ends a run and moves on", async () => {
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await startRun();
 
       await act(async () => fireEvent.press(screen.getByTestId(ONBOARDING_PART.SKIP)));
@@ -870,7 +873,7 @@ describe("OnboardingFlow", () => {
         });
       const toggleSays = (key: string) =>
         expect(screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE)).toHaveAccessibleName(t(key));
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       expect(frame().props.onMagicTap).toBeUndefined();
 
       await startRun();
@@ -916,7 +919,7 @@ describe("OnboardingFlow", () => {
       ])("%s gives reader focus back to the button", async (_case, close) => {
         const back = androidBack();
         const focus = focusSpy();
-        await renderWithTheme(<OnboardingFlow />);
+        await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
         await pressPlayDay();
         expect(player()).toBeOnTheScreen();
         focus.mockClear();
@@ -938,7 +941,7 @@ describe("OnboardingFlow", () => {
 
       it("Skip takes reader focus to the next step, not back to the button", async () => {
         const focus = focusSpy();
-        await renderWithTheme(<OnboardingFlow />);
+        await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
         await pressPlayDay();
         focus.mockClear();
 
@@ -955,7 +958,7 @@ describe("OnboardingFlow", () => {
     // Reduce Motion holds each phase for one timer, so five timers end the run.
     it("the sky mounts once across a run", async () => {
       mockReduced = true;
-      await renderWithTheme(<OnboardingFlow />);
+      await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
       await startRun();
       for (let step = 0; step < Object.values(PHASE).length; step++) {
         await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
@@ -967,6 +970,108 @@ describe("OnboardingFlow", () => {
 
       expect(mockSkyMounts).toBe(1);
       expect(stubMounts[S.APPEARANCE]).toBe(1);
+    });
+  });
+  describe("the upgrade path", () => {
+    const UPGRADE = ONBOARDING_PATH.UPGRADE;
+    const renderUpgrade = () => renderWithTheme(<OnboardingFlow path={UPGRADE} />);
+
+    beforeEach(() => {
+      useAppStore.setState({ isFirstRun: false, upgradePath: UPGRADE_PATH_STATE.PENDING });
+      mockColumn = upgradeColumnFor();
+    });
+
+    it("opens at the upgrade welcome", async () => {
+      await renderUpgrade();
+
+      expect(currentStep()).toBe(S.UPGRADE_WELCOME);
+      expectBareFrame();
+    });
+
+    it("Appearance is step 1 of 3", async () => {
+      await renderUpgrade();
+      await act(async () => propsOf(S.UPGRADE_WELCOME).onNext());
+      afterTheLock();
+
+      expect(currentStep()).toBe(S.APPEARANCE);
+      expect(progressText()).toHaveTextContent(t("onboarding.progress", { current: 1, total: 3 }));
+    });
+
+    it("a resumed path opens at Appearance", async () => {
+      useAppStore.setState({ upgradePath: UPGRADE_PATH_STATE.RESUMED });
+      await renderUpgrade();
+
+      expect(currentStep()).toBe(S.APPEARANCE);
+    });
+
+    it("hands each step the path it walks", async () => {
+      await renderUpgrade();
+
+      expect(propsOf(S.UPGRADE_WELCOME).path).toBe(UPGRADE);
+    });
+
+    // Numerals comes after Text size here, though before it on a first run.
+    it("plays forward from Text size to Numerals", async () => {
+      useAppStore.setState({ upgradePath: UPGRADE_PATH_STATE.RESUMED });
+      await renderUpgrade();
+      await press(ONBOARDING_PART.CONTINUE);
+      expect(currentStep()).toBe(S.TEXT_SIZE);
+
+      jest.mocked(useSharedValue).mockClear();
+      await press(ONBOARDING_PART.CONTINUE);
+
+      expect(currentStep()).toBe(S.NUMERALS);
+      expect(useSharedValue).toHaveBeenCalledWith(enterOffset(STEP_DIRECTION.FORWARD, false));
+      expect(useSharedValue).not.toHaveBeenCalledWith(enterOffset(STEP_DIRECTION.BACK, false));
+    });
+
+    it.each([
+      [UPGRADE_PATH_STATE.PENDING, S.UPGRADE_WELCOME],
+      [UPGRADE_PATH_STATE.RESUMED, S.APPEARANCE],
+    ])("a killed path reopens at its start and records no step (%s)", async (state, start) => {
+      // A first run's saved step has no say over the upgrade path.
+      useAppStore.setState({ upgradePath: state, onboardingStep: S.TEXT_SIZE });
+      const view = await renderUpgrade();
+      if (start === S.UPGRADE_WELCOME) {
+        await act(async () => propsOf(S.UPGRADE_WELCOME).onNext());
+        afterTheLock();
+      }
+      await press(ONBOARDING_PART.CONTINUE);
+      await press(ONBOARDING_PART.CONTINUE);
+      expect(currentStep()).toBe(S.NUMERALS);
+      expect(useAppStore.getState().onboardingStep).toBe(S.TEXT_SIZE);
+
+      await view.unmount();
+      resetStepStubs();
+      await renderUpgrade();
+
+      expect(currentStep()).toBe(start);
+    });
+
+    it("finishing the path writes done", async () => {
+      useAppStore.setState({ upgradePath: UPGRADE_PATH_STATE.RESUMED });
+      mockColumn = [S.UPGRADE_WELCOME, S.APPEARANCE, S.UPGRADE_COMPLETE];
+      await renderUpgrade();
+      await press(ONBOARDING_PART.CONTINUE);
+      expect(currentStep()).toBe(S.UPGRADE_COMPLETE);
+
+      await act(async () => propsOf(S.UPGRADE_COMPLETE).onNext());
+
+      expect(useAppStore.getState().upgradePath).toBe(UPGRADE_PATH_STATE.DONE);
+      expect(useAppStore.getState().isFirstRun).toBe(false);
+    });
+
+    // The completion step plays its own success haptic.
+    it("plays no step haptic on arriving at the upgrade completion", async () => {
+      useAppStore.setState({ upgradePath: UPGRADE_PATH_STATE.RESUMED });
+      mockColumn = [S.UPGRADE_WELCOME, S.APPEARANCE, S.UPGRADE_COMPLETE];
+      await renderUpgrade();
+      clearHaptics();
+
+      await press(ONBOARDING_PART.CONTINUE);
+
+      expect(currentStep()).toBe(S.UPGRADE_COMPLETE);
+      expect(firedHaptics()).toEqual([]);
     });
   });
 });

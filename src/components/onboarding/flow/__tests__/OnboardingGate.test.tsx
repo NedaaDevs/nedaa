@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Pressable, Text } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
@@ -32,16 +33,23 @@ jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: jest.fn(() => f
 const MOCK_FLOW_ID = "flow";
 const APP_ID = "app";
 /** What the stub flow last rendered with. */
-const mockFlow: { mounts: number; leaving?: boolean } = { mounts: 0 };
+const mockFlow: { mounts: number; leaving?: boolean; path?: OnboardingPath } = { mounts: 0 };
 jest.mock("@/components/onboarding/flow/OnboardingFlow", () => {
   const { createElement: h, useEffect } = jest.requireActual("react");
   const { Text: RNText } = jest.requireActual("react-native");
-  const OnboardingFlowStub = ({ leaving = false }: { leaving?: boolean }) => {
+  const OnboardingFlowStub = ({
+    leaving = false,
+    path,
+  }: {
+    leaving?: boolean;
+    path: OnboardingPath;
+  }) => {
     useEffect(() => {
       mockFlow.mounts += 1;
     }, []);
     useEffect(() => {
       mockFlow.leaving = leaving;
+      mockFlow.path = path;
     });
     return h(RNText, { testID: MOCK_FLOW_ID }, MOCK_FLOW_ID);
   };
@@ -69,6 +77,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   mockFlow.mounts = 0;
   mockFlow.leaving = undefined;
+  mockFlow.path = undefined;
   mockMade.length = 0;
   appPress.mockClear();
   useAppStore.setState({ upgradeShownThisLaunch: false });
@@ -195,4 +204,60 @@ it("keeps the app mounted on the upgrade path", async () => {
   await renderWithTheme(<Gate path={ONBOARDING_PATH.UPGRADE} />);
 
   expect(find(APP_ID)).toBeTruthy();
+});
+
+it("draws the flow for the upgrade path over an app it hides and blocks", async () => {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  await renderWithTheme(<Gate path={ONBOARDING_PATH.UPGRADE} />);
+
+  expect(screen.queryByTestId(MOCK_FLOW_ID)).toBeTruthy();
+  expect(mockFlow.path).toBe(ONBOARDING_PATH.UPGRADE);
+  expect(screen.queryByTestId(APP_ID)).toBeNull();
+  await user.press(screen.getByTestId(APP_ID, { includeHiddenElements: true }));
+  expect(appPress).not.toHaveBeenCalled();
+});
+
+it("hands a first run its path", async () => {
+  await renderWithTheme(<Gate show />);
+
+  expect(mockFlow.path).toBe(ONBOARDING_PATH.FIRST_RUN);
+});
+
+// An alarm screen or a tap closes the path while the app runs.
+it("lifts the upgrade overlay when the path closes mid-launch", async () => {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  const view = await renderWithTheme(<Gate path={ONBOARDING_PATH.UPGRADE} />);
+
+  await view.rerender(<Gate path={null} />);
+  expect(mockFlow.leaving).toBe(true);
+  expect(mockFlow.path).toBe(ONBOARDING_PATH.UPGRADE);
+  await act(() => jest.advanceTimersByTimeAsync(LANDING_MS));
+
+  expect(find(MOCK_FLOW_ID)).toBeNull();
+  expect(mockFlow.mounts).toBe(1);
+  expect(screen.queryByTestId(APP_ID)).toBeTruthy();
+  await user.press(screen.getByTestId(APP_ID));
+  expect(appPress).toHaveBeenCalledTimes(1);
+});
+
+it("keeps one app across the upgrade path and after it", async () => {
+  const mounts = jest.fn();
+  const App = () => {
+    useEffect(mounts, []);
+    return null;
+  };
+  const view = await renderWithTheme(
+    <OnboardingGate path={ONBOARDING_PATH.UPGRADE}>
+      <App />
+    </OnboardingGate>
+  );
+
+  await view.rerender(
+    <OnboardingGate path={null}>
+      <App />
+    </OnboardingGate>
+  );
+  await act(() => jest.advanceTimersByTimeAsync(LANDING_MS));
+
+  expect(mounts).toHaveBeenCalledTimes(1);
 });

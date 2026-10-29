@@ -11,14 +11,20 @@ import {
 } from "@/components/onboarding/flow/useOnboardingColumn";
 import { ALARM_TYPE } from "@/constants/Alarm";
 import { APP_STATE } from "@/constants/AppState";
-import { NATIVE_READ_TIMEOUT_MS, ONBOARDING_STEP as S } from "@/constants/Onboarding";
+import {
+  LOCATION_CHOICE,
+  NATIVE_READ_TIMEOUT_MS,
+  ONBOARDING_PATH,
+  ONBOARDING_STEP as S,
+  type OnboardingPath,
+} from "@/constants/Onboarding";
 import { LocationMode } from "@/enums/location";
 import { initDatabases } from "@/services/databases";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
-import { columnFor } from "@/test-helpers/onboardingColumn";
+import { columnFor, upgradeColumnFor } from "@/test-helpers/onboardingColumn";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
 import { later, never } from "@/test-helpers/promises";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
@@ -33,7 +39,7 @@ jest.mock("@/utils/location", () => ({
 }));
 // The real module warns about Expo Go on import; the hook reads only these.
 jest.mock("expo-notifications", () => ({
-  PermissionStatus: { GRANTED: "granted", UNDETERMINED: "undetermined" },
+  PermissionStatus: { GRANTED: "granted", UNDETERMINED: "undetermined", DENIED: "denied" },
 }));
 jest.mock("@/utils/notifications", () => ({ checkPermissions: jest.fn() }));
 jest.mock("@/utils/alarmSupport", () => ({ alarmSupport: jest.fn() }));
@@ -64,8 +70,8 @@ const NOTIFICATIONS_UNDETERMINED = { status: PermissionStatus.UNDETERMINED };
 
 const silencedWarn = () => jest.spyOn(AppLogger.create("app"), "w").mockImplementation(() => {});
 const advance = (ms: number) => act(() => jest.advanceTimersByTimeAsync(ms));
-const renderColumn = async () => {
-  const view = await renderHook(() => useOnboardingColumn(NEW_SESSION));
+const renderColumn = async (path: OnboardingPath = ONBOARDING_PATH.FIRST_RUN) => {
+  const view = await renderHook(() => useOnboardingColumn(NEW_SESSION, path));
   await advance(0);
   return view;
 };
@@ -387,7 +393,12 @@ describe("toColumnInput", () => {
     fajrAlarmOn: false,
     fridayAlarmOn: true,
   };
-  const SUPPORTED: DeviceRead = { location: false, notifications: false, alarmsSupported: true };
+  const SUPPORTED: DeviceRead = {
+    location: false,
+    notifications: false,
+    notificationsUndetermined: false,
+    alarmsSupported: true,
+  };
   const input = (device: DeviceRead, todayStored: boolean) =>
     toColumnInput({ session: NEW_SESSION, atStart: AT_START, device, todayStored });
 
@@ -399,9 +410,68 @@ describe("toColumnInput", () => {
     expect(input(device, todayStored).alarmsOffered).toBe(offered);
   });
 
+  it("passes the city stored at the start apart from one picked on the path", () => {
+    const picked = toColumnInput({
+      session: { ...NEW_SESSION, locationChoice: LOCATION_CHOICE.CITY },
+      atStart: { ...AT_START, hasCity: false },
+      device: SUPPORTED,
+      todayStored: true,
+    });
+
+    expect(input(SUPPORTED, true)).toMatchObject({ hasCity: true, hadCity: true });
+    expect(picked).toMatchObject({ hasCity: true, hadCity: false });
+  });
+
+  it("passes the device's never-asked notifications", () => {
+    const undetermined = input({ ...SUPPORTED, notificationsUndetermined: true }, true);
+
+    expect(undetermined.notificationsUndetermined).toBe(true);
+  });
+
   it("passes the alarms' own state at the start, whatever the device", () => {
     const unsupported = input({ ...SUPPORTED, alarmsSupported: false }, true);
 
     expect(unsupported).toMatchObject({ fajrAlarmOn: false, fridayAlarmOn: true });
+  });
+});
+
+describe("useOnboardingColumn on the upgrade path", () => {
+  const NOTIFICATIONS_DENIED = { status: PermissionStatus.DENIED };
+  const withCity = () =>
+    useLocationStore.setState({ lastKnownCoords: { latitude: 21.4, longitude: 39.8 } });
+
+  it("draws the upgrade column", async () => {
+    withCity();
+    const { result } = await renderColumn(ONBOARDING_PATH.UPGRADE);
+
+    expect(result.current).toEqual(
+      upgradeColumnFor({ notificationsGranted: true, notificationsUndetermined: false })
+    );
+  });
+
+  it("asks about notifications only when the OS never asked", async () => {
+    withCity();
+    jest.mocked(checkPermissions).mockResolvedValue(NOTIFICATIONS_UNDETERMINED);
+    const asked = await renderColumn(ONBOARDING_PATH.UPGRADE);
+    expect(asked.result.current).toContain(S.NOTIFICATIONS);
+    await asked.unmount();
+
+    jest.mocked(checkPermissions).mockResolvedValue(NOTIFICATIONS_DENIED);
+    const denied = await renderColumn(ONBOARDING_PATH.UPGRADE);
+    expect(denied.result.current).not.toContain(S.NOTIFICATIONS);
+  });
+
+  // The step that asks stays while its answer shows.
+  it("keeps the never-asked answer of the first read through a later no", async () => {
+    withCity();
+    jest.mocked(checkPermissions).mockResolvedValue(NOTIFICATIONS_UNDETERMINED);
+    const { result } = await renderColumn(ONBOARDING_PATH.UPGRADE);
+
+    jest.mocked(checkPermissions).mockResolvedValue(NOTIFICATIONS_DENIED);
+    await returnToApp();
+    await advance(0);
+
+    expect(checkPermissions).toHaveBeenCalledTimes(2);
+    expect(result.current).toContain(S.NOTIFICATIONS);
   });
 });

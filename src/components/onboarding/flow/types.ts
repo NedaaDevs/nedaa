@@ -5,6 +5,7 @@ import {
   LOCATION_CHOICE,
   ONBOARDING_STEP,
   type LocationChoice,
+  type OnboardingPath,
   type OnboardingStepId,
 } from "@/constants/Onboarding";
 
@@ -60,4 +61,6 @@ export type StepProps = {
   focusHeading: () => void;
   /** "N of M", read with the heading; empty on Welcome and Completion. */
   progress: string;
+  /** The walk this step is part of. */
+  path: OnboardingPath;
 };

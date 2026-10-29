@@ -1,4 +1,5 @@
 import { NEW_SESSION, type StepPrimary, type StepProps } from "@/components/onboarding/flow/types";
+import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { layoutFocus } from "@/utils/layoutFocus";
 
 /** The flow's heading focus, as a step receives it. */
@@ -20,6 +21,7 @@ export const stepProps = (overrides: Partial<StepProps> = {}): StepProps => ({
   dropTriedCity: jest.fn(),
   ...headingFocus(),
   progress: "",
+  path: ONBOARDING_PATH.FIRST_RUN,
   ...overrides,
 });
 
