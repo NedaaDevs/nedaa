@@ -16,7 +16,8 @@ export const AppearanceChoices = () => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const chooseMode = useChooseMode();
-  const sky = usePageSky();
+  // Only what the rows read, so a run's tick leaves the rows as they are.
+  const { mode: chosen, hijriDay, isRTL } = usePageSky();
   const endRun = useDayRun()?.end;
 
   const choose = (mode: AppMode) => {
@@ -33,11 +34,9 @@ export const AppearanceChoices = () => {
           key={mode}
           title={t(`settings.themes.${mode}.title`)}
           subtitle={t(`settings.themes.${mode}.description`)}
-          selected={sky.mode === mode}
+          selected={chosen === mode}
           onPress={() => choose(mode)}
-          leading={
-            <SkySwatch bands={skySwatchFor(mode)} hijriDay={sky.hijriDay} isRTL={sky.isRTL} />
-          }
+          leading={<SkySwatch bands={skySwatchFor(mode)} hijriDay={hijriDay} isRTL={isRTL} />}
         />
       ))}
     </ChoiceGroup>
