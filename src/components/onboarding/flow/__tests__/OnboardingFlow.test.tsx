@@ -858,7 +858,7 @@ describe("OnboardingFlow", () => {
       expect(player()).toBeNull();
     });
 
-    // VoiceOver sends a magic tap up from the focused element until one takes it.
+    // UIKit offers a magic tap to the focused element, then to its ancestors.
     it("a magic tap anywhere on the step does what the player's toggle does", async () => {
       mockReduced = true;
       const frame = () =>

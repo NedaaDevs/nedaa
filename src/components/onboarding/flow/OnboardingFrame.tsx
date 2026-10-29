@@ -31,7 +31,7 @@ type Props = {
   onPrimary: () => void;
   onBack: () => void;
   onSkip: () => void;
-  /** VoiceOver's magic tap anywhere in the frame, such as a day run's toggle. */
+  /** VoiceOver's magic tap while focus is anywhere inside the frame. */
   onMagicTap?: () => void;
   /** Drawn in place of Back and Continue, such as a day run's player. */
   bar?: ReactNode;
