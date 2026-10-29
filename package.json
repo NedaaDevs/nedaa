@@ -166,7 +166,8 @@
   "patchedDependencies": {
     "react-native-worklets@0.13.0": "patches/react-native-worklets@0.13.0.patch",
     "moti@0.30.0": "patches/moti@0.30.0.patch",
-    "@tamagui/web@2.7.7": "patches/@tamagui%2Fweb@2.7.7.patch"
+    "@tamagui/web@2.7.7": "patches/@tamagui%2Fweb@2.7.7.patch",
+    "react-native@0.88.0": "patches/react-native@0.88.0.patch"
   },
   "expo": {
     "autolinking": {
