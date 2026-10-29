@@ -31,6 +31,8 @@ type Props = {
   onPrimary: () => void;
   onBack: () => void;
   onSkip: () => void;
+  /** VoiceOver's magic tap anywhere in the frame, such as a day run's toggle. */
+  onMagicTap?: () => void;
   /** Drawn in place of Back and Continue, such as a day run's player. */
   bar?: ReactNode;
   children: ReactNode;
@@ -48,6 +50,7 @@ export const OnboardingFrame = ({
   onPrimary,
   onBack,
   onSkip,
+  onMagicTap,
   bar,
   children,
 }: Props) => {
@@ -60,7 +63,8 @@ export const OnboardingFrame = ({
     <View
       testID={ONBOARDING_PART.FRAME}
       style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
-      onAccessibilityEscape={onBack}>
+      onAccessibilityEscape={onBack}
+      onMagicTap={onMagicTap}>
       {chrome ? (
         <SkyOccluder>
           <HStack
