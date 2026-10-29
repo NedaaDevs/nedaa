@@ -28,6 +28,7 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import { layOut } from "@/test-helpers/layout";
 import { endRoomOf, hostNodesIn } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
@@ -412,6 +413,7 @@ describe("DayRunPlayer", () => {
     const { result } = await renderPlayer();
     await start(result);
     const region = status();
+    await layOut(region);
     expect(region).toHaveProp("accessibilityLiveRegion", "polite");
     expect(region).toHaveProp("importantForAccessibility", "yes");
     expect(region).toHaveProp("accessibilityLabel", "");
