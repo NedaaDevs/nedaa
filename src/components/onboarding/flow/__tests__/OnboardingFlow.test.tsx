@@ -833,6 +833,39 @@ describe("OnboardingFlow", () => {
       expect(player()).toBeNull();
     });
 
+    // VoiceOver sends a magic tap up from the focused element until one takes it.
+    it("a magic tap anywhere on the step does what the player's toggle does", async () => {
+      mockReduced = true;
+      const frame = () =>
+        screen.getByTestId(ONBOARDING_PART.FRAME, { includeHiddenElements: true });
+      const magicTap = (testID: string) =>
+        act(async () => {
+          // userEvent has no accessibility actions, so the magic tap is fired.
+          fireEvent(screen.getByTestId(testID), "magicTap");
+        });
+      const toggleSays = (key: string) =>
+        expect(screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE)).toHaveAccessibleName(t(key));
+      await renderWithTheme(<OnboardingFlow />);
+      expect(frame().props.onMagicTap).toBeUndefined();
+
+      await startRun();
+      toggleSays("common.pause");
+      await magicTap(START_RUN);
+      toggleSays("common.play");
+      await magicTap(DAY_RUN_PLAYER_PART.DONE);
+      toggleSays("common.pause");
+      for (let step = 0; step < Object.values(PHASE).length; step++) {
+        await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
+      }
+      toggleSays("a11y.onboarding.dayPreview.replay");
+      await magicTap(START_RUN);
+      toggleSays("common.pause");
+
+      await act(async () => fireEvent.press(screen.getByTestId(DAY_RUN_PLAYER_PART.DONE)));
+      expect(player()).toBeNull();
+      expect(frame().props.onMagicTap).toBeUndefined();
+    });
+
     describe("from the Appearance step's button", () => {
       /** The real button, over a page sky; the stubbed background has none. */
       const PlayDayStep = () => {

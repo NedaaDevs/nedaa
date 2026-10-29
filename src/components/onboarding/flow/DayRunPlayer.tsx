@@ -25,7 +25,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE } from "@/constants/Phase";
-import { useDayRun } from "@/contexts/DayRunContext";
+import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
 import { AppMode, PlatformType } from "@/enums/app";
 import { useChooseMode } from "@/hooks/useChooseMode";
@@ -71,6 +71,20 @@ const TOGGLE = {
     hint: undefined,
   },
 } as const;
+
+/** What the toggle does in each status; nothing while no run is on. */
+export const toggleAction = ({ status, pause, resume, replay }: DayRun) => {
+  switch (status) {
+    case DAY_RUN_STATUS.PLAYING:
+      return pause;
+    case DAY_RUN_STATUS.PAUSED:
+      return resume;
+    case DAY_RUN_STATUS.ENDED:
+      return replay;
+    case DAY_RUN_STATUS.IDLE:
+      return undefined;
+  }
+};
 
 const PHASES = Object.values(PHASE);
 
@@ -247,13 +261,8 @@ export const DayRunPlayer = () => {
   if (!run || status === DAY_RUN_STATUS.IDLE) return null;
 
   // The run's methods are stable from tick to tick; the run itself is not.
-  const { pause, resume, replay, jumpTo, close, progress } = run;
+  const { jumpTo, close, progress } = run;
   const toggle = TOGGLE[status];
-  const press = {
-    [DAY_RUN_STATUS.PLAYING]: pause,
-    [DAY_RUN_STATUS.PAUSED]: resume,
-    [DAY_RUN_STATUS.ENDED]: replay,
-  }[status];
   const chooseAdaptive = () => {
     close();
     void chooseMode(AppMode.ADAPTIVE);
@@ -276,7 +285,7 @@ export const DayRunPlayer = () => {
           accessibilityRole="button"
           accessibilityLabel={t(toggle.label)}
           accessibilityHint={toggle.hint && t(toggle.hint)}
-          onPress={press}
+          onPress={toggleAction(run)}
           onLayout={focusToggle}
           width="$target"
           height="$target"
