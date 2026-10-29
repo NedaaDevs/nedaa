@@ -10,7 +10,7 @@ import { Icon } from "@/components/ui/icon";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { VStack } from "@/components/ui/vstack";
-import { ONBOARDING_PART } from "@/constants/Onboarding";
+import { ONBOARDING_PART, ONBOARDING_PATH } from "@/constants/Onboarding";
 import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePlace } from "@/hooks/usePlace";
@@ -19,7 +19,13 @@ import { useTodayStored } from "@/hooks/useTodayStored";
 const GROW = { flexGrow: 1 };
 
 /** The last page: what was set up, and the way into the app. */
-export const CompleteStep = ({ onNext, headingRef, onHeadingLayout, progress }: StepProps) => {
+export const CompleteStep = ({
+  onNext,
+  headingRef,
+  onHeadingLayout,
+  progress,
+  path,
+}: StepProps) => {
   const { t } = useTranslation();
   const city = usePlace().city;
   const todayStored = useTodayStored();
@@ -33,6 +39,13 @@ export const CompleteStep = ({ onNext, headingRef, onHeadingLayout, progress }: 
   }, []);
 
   const open = t("onboarding.complete.open");
+  // An upgrader's city and alerts are theirs from 2.x; the body says they stay.
+  const body =
+    path === ONBOARDING_PATH.UPGRADE
+      ? t("onboarding.upgrade.completeBody")
+      : city && todayStored
+        ? t("onboarding.complete.body")
+        : t("onboarding.complete.bodyNoCity");
 
   return (
     <SkyScrollView contentContainerStyle={GROW} showsVerticalScrollIndicator={false}>
@@ -57,11 +70,7 @@ export const CompleteStep = ({ onNext, headingRef, onHeadingLayout, progress }: 
             progress={progress}
             centered
             title={t("onboarding.complete.title")}
-            body={
-              city && todayStored
-                ? t("onboarding.complete.body")
-                : t("onboarding.complete.bodyNoCity")
-            }
+            body={body}
           />
         </VStack>
 

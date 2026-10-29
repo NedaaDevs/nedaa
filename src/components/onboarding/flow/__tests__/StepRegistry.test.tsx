@@ -117,7 +117,7 @@ const TITLE_KEY: Record<OnboardingStepId, string> = {
   [S.FAJR_ALARM]: "onboarding.alarm.fajr.title",
   [S.FRIDAY_ALARM]: "onboarding.alarm.friday.title",
   [S.COMPLETE]: "onboarding.complete.title",
-  [S.UPGRADE_WELCOME]: "onboarding.welcome.title",
+  [S.UPGRADE_WELCOME]: "onboarding.upgrade.title",
   [S.UPGRADE_COMPLETE]: "onboarding.complete.title",
 };
 

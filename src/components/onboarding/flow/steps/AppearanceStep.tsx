@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PlayDayButton } from "@/components/onboarding/flow/PlayDayButton";
@@ -10,11 +11,15 @@ import { TodayStylePreview } from "@/components/today/TodayStylePreview";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { ONBOARDING_PART } from "@/constants/Onboarding";
+import { ONBOARDING_PART, ONBOARDING_PATH } from "@/constants/Onboarding";
+import { useAppStore } from "@/stores/app";
 
 /** Today's preview, a day of Adaptive, Today's style, then the modes. */
-export const AppearanceStep = ({ headingRef, onHeadingLayout, progress }: StepProps) => {
+export const AppearanceStep = ({ headingRef, onHeadingLayout, progress, path }: StepProps) => {
   const { t } = useTranslation();
+  // The mode stored when the step opens, marked for an upgrader.
+  const [storedMode] = useState(() => useAppStore.getState().mode);
+  const currentMark = path === ONBOARDING_PATH.UPGRADE ? storedMode : undefined;
 
   return (
     <StepBody>
@@ -38,7 +43,7 @@ export const AppearanceStep = ({ headingRef, onHeadingLayout, progress }: StepPr
         </VStack>
       </SkyOccluder>
       <SkyOccluder>
-        <AppearanceChoices />
+        <AppearanceChoices currentMark={currentMark} />
       </SkyOccluder>
     </StepBody>
   );
