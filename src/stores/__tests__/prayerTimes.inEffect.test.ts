@@ -141,7 +141,7 @@ describe("a failed fetch's log", () => {
 
     expect(logError).toHaveBeenCalledWith(
       "Fetch",
-      "getAndStorePrayerTimes failed (2027/all)",
+      "prayer times fetch failed (2027/all)",
       expect.objectContaining({ message: "Network Error" })
     );
   });
