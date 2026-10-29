@@ -8,9 +8,9 @@ export type ApplyProviderSettingsDeps<Saved> = {
   saveSettings: () => Promise<Saved>;
   /** Resolves false while a year it fetched is still owed. */
   loadPrayerTimes: (forceGetAndStore: boolean) => Promise<boolean>;
-  // Result intentionally unused here; the apply flow only needs completion.
+  // The alert steps' results are unused here; the apply needs only completion.
   scheduleAllNotifications: () => Promise<unknown>;
-  rescheduleAllAlarms: () => Promise<void>;
+  rescheduleAllAlarms: () => Promise<unknown>;
   reloadPrayerWidgets: () => void;
   markSettingsApplied: (saved: Saved) => void;
 };

@@ -3,14 +3,20 @@ import { AccessibilityInfo } from "react-native";
 import { reloadPrayerWidgets } from "expo-widget";
 
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
+import { STEP_OUTCOME, UPDATE_START, UPDATE_STEP } from "@/constants/Location";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationStore } from "@/stores/location";
-import { useLocationUpdateStore, type UpdateStart } from "@/stores/locationUpdate";
+import {
+  updateLanded,
+  useLocationUpdateStore,
+  type UpdateResult,
+  type UpdateStart,
+} from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { ManualLocation } from "@/types/location";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
+import { notificationsOutcome } from "@/utils/updateOutcome";
 
 const DEVICE_START: UpdateStart = { kind: UPDATE_START.DEVICE };
 
@@ -32,16 +38,27 @@ const takePlace = async (start: UpdateStart): Promise<void> => {
   }
 };
 
-/** Place, times, notifications, alarms; a throw stops the rest of the run. */
-const runUpdate = (start: UpdateStart): Promise<boolean> =>
-  useLocationUpdateStore.getState().withRun(start, async (enter) => {
-    await takePlace(start);
-    enter(UPDATE_STEP.PRAYER_TIMES);
-    await usePrayerTimesStore.getState().loadPrayerTimes(true);
-    enter(UPDATE_STEP.NOTIFICATIONS);
-    await useNotificationStore.getState().scheduleAllNotifications();
-    enter(UPDATE_STEP.ALARMS);
-    await rescheduleAllAlarms();
+/** Place, times, notifications, alarms; the alerts need the place and times. */
+const runUpdate = (start: UpdateStart): Promise<UpdateResult> =>
+  useLocationUpdateStore.getState().withRun(start, async (runStep) => {
+    const placed = await runStep(UPDATE_STEP.LOCATION, async () => {
+      await takePlace(start);
+      return STEP_OUTCOME.DONE;
+    });
+    if (placed === STEP_OUTCOME.FAILED) return;
+    // False while next year's days are owed; the window is the new place's.
+    const times = await runStep(UPDATE_STEP.PRAYER_TIMES, async () =>
+      (await usePrayerTimesStore.getState().loadPrayerTimes(true))
+        ? STEP_OUTCOME.DONE
+        : STEP_OUTCOME.PARTIAL
+    );
+    // Notifications read the stored days, which a failed load leaves stale.
+    if (times === STEP_OUTCOME.FAILED) return;
+    await runStep(UPDATE_STEP.NOTIFICATIONS, async () =>
+      notificationsOutcome(await useNotificationStore.getState().scheduleAllNotifications())
+    );
+    // Runs after a failed notifications step, so no alarm keeps the old time.
+    await runStep(UPDATE_STEP.ALARMS, rescheduleAllAlarms);
     reloadPrayerWidgets();
   });
 
@@ -52,16 +69,18 @@ export const useLocationUpdate = () => {
   const run = useLocationUpdateStore((state) => state.run);
   const dismissFailure = useLocationUpdateStore((state) => state.dismissFailure);
 
-  // Resolves whether this call's run landed; the screen then shows the place.
-  const update = async (start: UpdateStart): Promise<boolean> => {
-    const landed = await runUpdate(start);
-    if (landed) {
-      void successHaptic();
-      // The status line and its live region leave with the run; say the end.
-      AccessibilityInfo.announceForAccessibility(t("location.update.step.done"));
-    }
-    return landed;
+  // Confirms a landed run by touch and voice; resolves whether it landed.
+  const confirmLanded = (result: UpdateResult): boolean => {
+    if (!updateLanded(result)) return false;
+    void successHaptic();
+    // The status line and its live region leave with the run; say the end.
+    AccessibilityInfo.announceForAccessibility(t("location.update.step.done"));
+    return true;
   };
+
+  // Resolves whether this call's run landed; the screen then shows the place.
+  const update = async (start: UpdateStart): Promise<boolean> =>
+    confirmLanded(await runUpdate(start));
 
   return {
     run,

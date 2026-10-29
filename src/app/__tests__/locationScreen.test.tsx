@@ -54,7 +54,11 @@ jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
 jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 // Reached through the notification store; its database never opens here.
 jest.mock("@/stores/athkar", () => ({ useAthkarStore: { getState: jest.fn() } }));
-jest.mock("@/utils/alarmScheduler", () => ({ rescheduleAllAlarms: jest.fn(async () => {}) }));
+jest.mock("@/utils/alarmScheduler", () => ({
+  rescheduleAllAlarms: jest.fn(
+    async () => jest.requireActual("@/constants/Location").STEP_OUTCOME.DONE
+  ),
+}));
 jest.mock("@/utils/location", () => ({
   ...jest.requireActual("@/utils/location"),
   checkLocationPermission: jest.fn(),
@@ -991,9 +995,10 @@ describe("Settings › Location", () => {
       await act(() =>
         useLocationUpdateStore
           .getState()
-          .withRun({ kind: UPDATE_START.CITY, city: MAKKAH }, async (enter) => {
-            enter(UPDATE_STEP.PRAYER_TIMES);
-            throw new Error("offline");
+          .withRun({ kind: UPDATE_START.CITY, city: MAKKAH }, async (runStep) => {
+            await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
+              throw new Error("offline");
+            });
           })
       );
 
