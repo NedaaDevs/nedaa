@@ -233,9 +233,9 @@ export const DayRunPlayer = () => {
     focusOn(toggleRef.current);
   }, []);
 
-  // Android back ends the run, as Done does, and stays on the step.
+  // Android back closes the run, as Done does, and stays on the step.
   const onBack = useEffectEvent(() => {
-    run?.done();
+    run?.close();
     return true;
   });
   useEffect(() => {
@@ -246,15 +246,15 @@ export const DayRunPlayer = () => {
   if (!run || status === DAY_RUN_STATUS.IDLE) return null;
 
   // The run's methods are stable from tick to tick; the run itself is not.
-  const { pause, resume, start, jumpTo, done, progress } = run;
+  const { pause, resume, replay, jumpTo, close, progress } = run;
   const toggle = TOGGLE[status];
   const press = {
     [DAY_RUN_STATUS.PLAYING]: pause,
     [DAY_RUN_STATUS.PAUSED]: resume,
-    [DAY_RUN_STATUS.ENDED]: start,
+    [DAY_RUN_STATUS.ENDED]: replay,
   }[status];
   const chooseAdaptive = () => {
-    done();
+    close();
     void chooseMode(AppMode.ADAPTIVE);
   };
 
@@ -315,7 +315,7 @@ export const DayRunPlayer = () => {
           testID={DAY_RUN_PLAYER_PART.DONE}
           action="primary"
           variant="link"
-          onPress={done}
+          onPress={close}
           accessibilityRole="button"
           accessibilityLabel={t("onboarding.dayPreview.done")}
           accessibilityHint={t("a11y.onboarding.dayPreview.doneHint")}>

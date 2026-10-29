@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react-native";
@@ -13,7 +13,6 @@ import { DAY_RUN_STATUS } from "@/constants/DayRun";
 import { SKY_SWATCH_SIZE } from "@/constants/Sky";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { AppMode } from "@/enums/app";
-import { focusOn } from "@/utils/accessibilityFocus";
 import { skySwatchFor } from "@/utils/sky";
 
 /** Test ids for the button's parts. */
@@ -25,27 +24,17 @@ export const PLAY_DAY_PART = {
 // The play triangle points along the reading direction.
 const MIRROR = { transform: [{ scaleX: -1 }] };
 
-/** Plays a day of Adaptive; reader focus comes back when the player closes. */
+/** Plays a day of Adaptive; the player's own close brings focus back here. */
 export const PlayDayButton = () => {
   const { t } = useTranslation();
   const run = useDayRun();
   const sky = usePageSky();
   const buttonRef = useRef<ViewInstance>(null);
-  // Set while the player shows, so its close is told from the first render.
-  const shown = useRef(false);
-  const running = run !== null && run.status !== DAY_RUN_STATUS.IDLE;
-
-  useEffect(() => {
-    if (running) {
-      shown.current = true;
-    } else if (shown.current) {
-      shown.current = false;
-      focusOn(buttonRef.current);
-    }
-  }, [running]);
 
   if (!run) return null;
 
+  // The run's methods are stable from tick to tick; the run itself is not.
+  const { start } = run;
   const label = t("onboarding.appearance.playDay");
 
   return (
@@ -54,8 +43,8 @@ export const PlayDayButton = () => {
       testID={PLAY_DAY_PART.BUTTON}
       action="primary"
       variant="outline"
-      disabled={running || !run.available}
-      onPress={run.start}
+      disabled={run.status !== DAY_RUN_STATUS.IDLE || !run.available}
+      onPress={() => start(buttonRef.current)}
       justifyContent="flex-start"
       gap="$3"
       paddingVertical="$2.5"

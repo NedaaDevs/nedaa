@@ -308,10 +308,12 @@ describe("AppearanceStep", () => {
         progress: 0,
         available: true,
         start: jest.fn(),
+        replay: jest.fn(),
         pause: jest.fn(),
         resume: jest.fn(),
         jumpTo: jest.fn(),
         done: jest.fn(),
+        close: jest.fn(),
         ...overrides,
       };
       await renderWithTheme(
@@ -352,7 +354,6 @@ describe("AppearanceStep", () => {
     });
 
     it("the button starts a run", async () => {
-      const focus = focusSpy();
       await renderRun();
       expect(player()).toBeNull();
 
@@ -360,8 +361,15 @@ describe("AppearanceStep", () => {
 
       expect(player()).toBeOnTheScreen();
       expect(playDay()).toBeDisabled();
-      // The player takes reader focus to its toggle as it appears.
-      expect(focus).toHaveBeenLastCalledWith(viewWith(DAY_RUN_PLAYER_PART.TOGGLE), "focus");
+    });
+
+    it("the button starts the run as its starter", async () => {
+      const run = await renderUnder({});
+
+      await press(PLAY_DAY_PART.BUTTON);
+
+      expect(run.start).toHaveBeenCalledTimes(1);
+      expect(run.start).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON));
     });
 
     it.each([
@@ -382,15 +390,19 @@ describe("AppearanceStep", () => {
       await settleLook();
 
       expect(run.done).toHaveBeenCalledTimes(1);
+      expect(run.close).not.toHaveBeenCalled();
       expect(mockTransition).toHaveBeenCalledTimes(1);
       const [doneAt] = jest.mocked(run.done).mock.invocationCallOrder;
       expect(doneAt).toBeLessThan(mockTransition.mock.invocationCallOrder[0]);
       expect(useAppStore.getState().mode).toBe(AppMode.DARK);
     });
 
-    it("a look chosen during a run applies with the run closed", async () => {
+    // The chosen row stays on screen, so reader focus stays on it.
+    it("a look chosen during a run applies with the run ended, focus left on it", async () => {
+      const focus = focusSpy();
       await renderRun();
       await press(PLAY_DAY_PART.BUTTON);
+      focus.mockClear();
 
       await chooseLook(AppMode.DARK);
       await settleLook();
@@ -398,19 +410,19 @@ describe("AppearanceStep", () => {
       expect(player()).toBeNull();
       expect(playDay()).toBeEnabled();
       expect(useAppStore.getState().mode).toBe(AppMode.DARK);
+      expect(focus).not.toHaveBeenCalled();
     });
 
     it.each([
       ["Done", DAY_RUN_PLAYER_PART.DONE],
       ["Use Adaptive", DAY_RUN_PLAYER_PART.USE_ADAPTIVE],
-      ["a look chosen", null],
     ])("gives reader focus back to the button when %s closes the player", async (_case, part) => {
       const focus = focusSpy();
       await renderRun();
       await press(PLAY_DAY_PART.BUTTON);
       focus.mockClear();
 
-      await (part ? press(part) : chooseLook(AppMode.DARK));
+      await press(part);
       await settleLook();
 
       expect(player()).toBeNull();
@@ -419,7 +431,7 @@ describe("AppearanceStep", () => {
     });
 
     // With Adaptive chosen, the end still waits for Done.
-    it("keeps the player open at the end of the day until Done", async () => {
+    it("keeps the player open at the end; a replay still closes to the button", async () => {
       mockReduced = true;
       useAppStore.setState({ mode: AppMode.ADAPTIVE });
       const focus = focusSpy();
@@ -437,6 +449,16 @@ describe("AppearanceStep", () => {
       expect(screen.getByTestId(DAY_RUN_PLAYER_PART.DONE)).toBeOnTheScreen();
       expect(playDay()).toBeDisabled();
       expect(focus).not.toHaveBeenCalled();
+
+      // A replayed day closes back to the same button.
+      await press(DAY_RUN_PLAYER_PART.TOGGLE);
+      expect(screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE)).toHaveAccessibleName(
+        t("common.pause")
+      );
+      await press(DAY_RUN_PLAYER_PART.DONE);
+      expect(player()).toBeNull();
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(focus).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON), "focus");
     });
 
     it.each([
