@@ -1,18 +1,22 @@
 import { addDays } from "date-fns";
 
 import { ALARM_DEFAULTS, ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
-import { TIMES_PLACE } from "@/constants/Location";
+import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
+import { STEP_OUTCOME, TIMES_PLACE } from "@/constants/Location";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { TIMES_FETCH, type TimesFetch } from "@/constants/PrayerTimes";
 import { ScheduledAlarmType } from "@/enums/alarm";
+import { recordBooked } from "@/services/firedPrayerLedger";
 import { useAlarmStore, type ScheduledAlarm } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { holdHydration } from "@/test-helpers/hydration";
+import { resetMemoryKv } from "@/test-helpers/memoryKvStore";
 import { later, until } from "@/test-helpers/promises";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { alarmLog } from "@/utils/alarmReport";
+import { applyTimingOffset } from "@/utils/alarmTrigger";
 import {
   ensureAlarmsScheduled,
   rescheduleAllAlarms,
@@ -24,6 +28,11 @@ import {
 
 // The load publishes to widgets when it ends; widgets are not under test here.
 jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
+// The fired-prayer ledger reads what it stored; the global mock stores nothing.
+jest.mock(
+  "expo-sqlite/kv-store",
+  () => jest.requireActual("@/test-helpers/memoryKvStore").memoryKvStoreModule
+);
 
 const ZONE = "UTC";
 // A Wednesday noon: Fajr is next tomorrow, Jumuah on Friday.
@@ -102,6 +111,7 @@ let warn: jest.SpyInstance;
 
 beforeEach(() => {
   jest.useFakeTimers({ now: NOW });
+  resetMemoryKv();
   mockSchedule.mockClear();
   mockCancel.mockClear();
   useAlarmStore.setState({
@@ -153,7 +163,7 @@ describe("at the default location's times", () => {
 
   // An alarm at the fallback times is wrong, so a reschedule only cancels.
   it("rescheduleAllAlarms cancels and arms nothing", async () => {
-    await rescheduleAllAlarms();
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.FAILED);
 
     expect(mockCancel.mock.calls).toEqual([[ScheduledAlarmType.FAJR], [ScheduledAlarmType.JUMMAH]]);
     expect(mockSchedule).not.toHaveBeenCalled();
@@ -191,6 +201,60 @@ describe("at a verified place's times", () => {
       ([params]) => (params as { alarmType: string }).alarmType
     );
     expect(new Set(types)).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+  });
+
+  it("rescheduleAllAlarms reports done when both alarms arm", async () => {
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.DONE);
+  });
+
+  // Each type arms its next occurrence, then the following one; Fajr first.
+  it("rescheduleAllAlarms reports partial when one enabled alarm does not arm", async () => {
+    mockSchedule.mockResolvedValueOnce(false);
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.PARTIAL);
+  });
+
+  it("rescheduleAllAlarms reports failed when no enabled alarm arms", async () => {
+    mockSchedule
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.FAILED);
+  });
+
+  it("rescheduleAllAlarms reports skipped, cancelling nothing, with both alarms off", async () => {
+    const settings = useAlarmSettingsStore.getInitialState();
+    useAlarmSettingsStore.setState({
+      [ALARM_TYPE.FAJR]: { ...settings[ALARM_TYPE.FAJR], enabled: false },
+      [ALARM_TYPE.FRIDAY]: { ...settings[ALARM_TYPE.FRIDAY], enabled: false },
+    });
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.SKIPPED);
+    expect(mockCancel).not.toHaveBeenCalled();
+  });
+
+  it("rescheduleAllAlarms reports done when the guard skips a Fajr that already rang", async () => {
+    const moved = {
+      ...WEEK[0],
+      timings: {
+        ...WEEK[0].timings,
+        [PRAYER_ID.FAJR]: new Date(NOW.getTime() + HOUR_MS).toISOString(),
+      },
+    };
+    usePrayerTimesStore.setState({
+      todayTimings: moved,
+      twoWeeksTimings: [moved, ...WEEK.slice(1)],
+    });
+    recordBooked(
+      FIRED_LEDGER.ALARMS,
+      [{ key: ScheduledAlarmType.FAJR, at: NOW.getTime() - HOUR_MS }],
+      NOW.getTime()
+    );
+
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.DONE);
+
+    const timing = useAlarmSettingsStore.getState()[ALARM_TYPE.FAJR].timing;
+    expect((mockSchedule.mock.calls[0][0] as { triggerDate: Date }).triggerDate).toEqual(
+      applyTimingOffset(new Date(WEEK[1].timings[PRAYER_ID.FAJR]), timing)
+    );
   });
 
   it("schedulePreviewAlarm arms", async () => {

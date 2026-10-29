@@ -1,12 +1,27 @@
-import { UPDATE_START, UPDATE_STEP, type UpdateStep } from "@/constants/Location";
+import {
+  RUN_END,
+  STEP_OUTCOME,
+  UPDATE_START,
+  UPDATE_STEP,
+  type StepOutcome,
+  type UpdateStep,
+} from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
-import { isRunning, useLocationUpdateStore, type UpdateStart } from "@/stores/locationUpdate";
+import {
+  isRunning,
+  useLocationUpdateStore,
+  type UpdateStart,
+  type UpdateSteps,
+} from "@/stores/locationUpdate";
 import type { ManualLocation } from "@/types/location";
 
-jest.mock("@/utils/appLogger", () => ({
-  AppLogger: { create: () => ({ d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
-}));
+jest.mock("@/utils/appLogger", () => {
+  const log = { d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() };
+  return { AppLogger: { create: () => log } };
+});
+/** The one logger every module in this suite writes to. */
+const mockLog: { w: jest.Mock } = jest.requireMock("@/utils/appLogger").AppLogger.create();
 
 const DEVICE: UpdateStart = { kind: UPDATE_START.DEVICE };
 const MAKKAH: ManualLocation = {
@@ -21,26 +36,25 @@ const MAKKAH: ManualLocation = {
   timezone: "Asia/Riyadh",
 };
 
-/** Steps that wait for the test to let them finish or throw. */
-const heldSteps = () => {
-  let finish: () => void = () => {};
+/** One step whose work waits for the test to finish it or make it throw. */
+const heldSteps = (step: UpdateStep = UPDATE_STEP.LOCATION) => {
+  let finish: (outcome: StepOutcome) => void = () => {};
   let fail: (error: Error) => void = () => {};
-  const done = new Promise<void>((resolve, reject) => {
+  const work = new Promise<StepOutcome>((resolve, reject) => {
     finish = resolve;
     fail = reject;
   });
-  let enter: (step: UpdateStep) => void = () => {};
-  const steps = (onStep: (step: UpdateStep) => void) => {
-    enter = onStep;
-    return done;
+  const steps: UpdateSteps = async (runStep) => {
+    await runStep(step, () => work);
   };
   return {
     steps,
-    finish: () => finish(),
+    finish: (outcome: StepOutcome = STEP_OUTCOME.DONE) => finish(outcome),
     fail: (error: Error) => fail(error),
-    enter: (s: UpdateStep) => enter(s),
   };
 };
+const LANDED = expect.objectContaining({ end: RUN_END.LANDED });
+const STOPPED = expect.objectContaining({ end: RUN_END.STOPPED });
 
 const run = () => useLocationUpdateStore.getState().run;
 
@@ -54,19 +68,17 @@ describe("the location update lock", () => {
 
     const refused = await useLocationUpdateStore.getState().withRun(DEVICE, second);
 
-    expect(refused).toBe(false);
+    expect(refused).toEqual({ end: RUN_END.REFUSED });
     expect(second).not.toHaveBeenCalled();
     first.finish();
-    await expect(running).resolves.toBe(true);
+    await expect(running).resolves.toEqual(LANDED);
   });
 
   // A screen opened mid-run reads the store, not its own state.
   it("shows a reader the run in flight and its current step", async () => {
-    const held = heldSteps();
+    const held = heldSteps(UPDATE_STEP.PRAYER_TIMES);
     const city: UpdateStart = { kind: UPDATE_START.CITY, city: MAKKAH };
     void useLocationUpdateStore.getState().withRun(city, held.steps);
-
-    held.enter(UPDATE_STEP.PRAYER_TIMES);
 
     expect(run()).toEqual({ start: city, step: UPDATE_STEP.PRAYER_TIMES, failed: false });
     expect(isRunning(run())).toBe(true);
@@ -80,26 +92,25 @@ describe("the location update lock", () => {
   });
 
   it("clears the run once every step has run", async () => {
-    await useLocationUpdateStore.getState().withRun(DEVICE, async (enter) => {
-      enter(UPDATE_STEP.ALARMS);
+    await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+      await runStep(UPDATE_STEP.ALARMS, async () => STEP_OUTCOME.DONE);
     });
 
     expect(run()).toBeNull();
   });
 
   it("keeps the step a throw stopped at, and lets the next run start", async () => {
-    const held = heldSteps();
+    const held = heldSteps(UPDATE_STEP.NOTIFICATIONS);
     const running = useLocationUpdateStore.getState().withRun(DEVICE, held.steps);
-    held.enter(UPDATE_STEP.NOTIFICATIONS);
 
     held.fail(new Error("denied"));
 
-    await expect(running).resolves.toBe(false);
+    await expect(running).resolves.toEqual(STOPPED);
     expect(run()).toEqual({ start: DEVICE, step: UPDATE_STEP.NOTIFICATIONS, failed: true });
     expect(isRunning(run())).toBe(false);
-    await expect(useLocationUpdateStore.getState().withRun(DEVICE, async () => {})).resolves.toBe(
-      true
-    );
+    await expect(
+      useLocationUpdateStore.getState().withRun(DEVICE, async () => {})
+    ).resolves.toEqual(LANDED);
   });
 
   // Every way out releases the lock, a synchronous throw included.
@@ -108,8 +119,29 @@ describe("the location update lock", () => {
       throw new Error("no store");
     });
 
-    expect(ran).toBe(false);
+    expect(ran).toEqual(STOPPED);
     expect(isRunning(run())).toBe(false);
+  });
+
+  it("releases the lock when logging a throw throws too", async () => {
+    mockLog.w.mockImplementation(() => {
+      throw new Error("log full");
+    });
+    try {
+      const failing = useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+        await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
+          throw new Error("offline");
+        });
+      });
+      await expect(failing).rejects.toThrow("log full");
+    } finally {
+      mockLog.w.mockReset();
+    }
+
+    expect(isRunning(run())).toBe(false);
+    await expect(
+      useLocationUpdateStore.getState().withRun(DEVICE, async () => {})
+    ).resolves.toEqual(LANDED);
   });
 
   it("closes a failed run on dismiss, and leaves a running one", async () => {
@@ -126,6 +158,63 @@ describe("the location update lock", () => {
     expect(isRunning(run())).toBe(true);
     held.finish();
   });
+
+  it("resolves landed with every step's outcome", async () => {
+    const result = await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+      await runStep(UPDATE_STEP.LOCATION, async () => STEP_OUTCOME.DONE);
+      await runStep(UPDATE_STEP.PRAYER_TIMES, async () => STEP_OUTCOME.PARTIAL);
+    });
+
+    expect(result).toEqual({
+      end: RUN_END.LANDED,
+      outcomes: {
+        [UPDATE_STEP.LOCATION]: STEP_OUTCOME.DONE,
+        [UPDATE_STEP.PRAYER_TIMES]: STEP_OUTCOME.PARTIAL,
+      },
+    });
+    expect(run()).toBeNull();
+  });
+
+  it("stops at the first stopping outcome, after running the steps behind it", async () => {
+    const alarms = jest.fn(async () => STEP_OUTCOME.DONE);
+    const result = await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+      await runStep(UPDATE_STEP.NOTIFICATIONS, async () => STEP_OUTCOME.FAILED);
+      await runStep(UPDATE_STEP.ALARMS, alarms);
+    });
+
+    expect(alarms).toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({ end: RUN_END.STOPPED, step: UPDATE_STEP.NOTIFICATIONS })
+    );
+    expect(run()).toEqual({ start: DEVICE, step: UPDATE_STEP.NOTIFICATIONS, failed: true });
+  });
+
+  it("keeps a finished step's outcome when a throw follows it", async () => {
+    const result = await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+      await runStep(UPDATE_STEP.ALARMS, async () => STEP_OUTCOME.DONE);
+      throw new Error("widgets");
+    });
+
+    expect(result).toEqual({
+      end: RUN_END.LANDED,
+      outcomes: { [UPDATE_STEP.ALARMS]: STEP_OUTCOME.DONE },
+    });
+    expect(run()).toBeNull();
+  });
+
+  it("records a throw as a failed outcome at its step", async () => {
+    const result = await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+      await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
+        throw new Error("offline");
+      });
+    });
+
+    expect(result).toEqual({
+      end: RUN_END.STOPPED,
+      step: UPDATE_STEP.PRAYER_TIMES,
+      outcomes: { [UPDATE_STEP.PRAYER_TIMES]: STEP_OUTCOME.FAILED },
+    });
+  });
 });
 
 // A retry repeats the run's start; once the place changes another way, that
@@ -134,10 +223,14 @@ describe("a failed run after the place changes", () => {
   const failCity = () =>
     useLocationUpdateStore
       .getState()
-      .withRun({ kind: UPDATE_START.CITY, city: MAKKAH }, async (enter) => {
-        useLocationStore.getState().setManualLocation(MAKKAH);
-        enter(UPDATE_STEP.PRAYER_TIMES);
-        throw new Error("offline");
+      .withRun({ kind: UPDATE_START.CITY, city: MAKKAH }, async (runStep) => {
+        await runStep(UPDATE_STEP.LOCATION, async () => {
+          useLocationStore.getState().setManualLocation(MAKKAH);
+          return STEP_OUTCOME.DONE;
+        });
+        await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
+          throw new Error("offline");
+        });
       });
 
   beforeEach(() =>
