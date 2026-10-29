@@ -316,15 +316,19 @@ describe("DayRunPlayer", () => {
     expect(StyleSheet.flatten(glyph.props.style)?.transform).toEqual(transform);
   });
 
-  it("moves reader focus to its toggle when it appears", async () => {
+  // A focus event sent before the toggle's native view exists reaches nothing.
+  it("moves reader focus to its toggle once the toggle is laid out", async () => {
     const focus = jest
       .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
       .mockImplementation(() => {});
     focus.mockClear();
+    const layout = { nativeEvent: { layout: { x: 0, y: 0, width: 44, height: 44 } } };
     const { result } = await renderPlayer();
+    await start(result);
     expect(focus).not.toHaveBeenCalled();
 
-    await start(result);
+    await act(async () => fireEvent(toggle(), "layout", layout));
+    await act(async () => fireEvent(toggle(), "layout", layout));
 
     expect(focus).toHaveBeenCalledTimes(1);
     expect(focus).toHaveBeenCalledWith(

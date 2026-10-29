@@ -204,6 +204,13 @@ export const DayRunPlayer = () => {
   const { now, day } = useShownDay();
   const { isRTL } = useRTL();
   const toggleRef = useRef<ViewInstance>(null);
+  // Reader focus goes to the toggle once its view exists, once per player.
+  const toggleFocused = useRef(false);
+  const focusToggle = () => {
+    if (toggleFocused.current) return;
+    toggleFocused.current = true;
+    focusOn(toggleRef.current);
+  };
   // The live slot's width, which the sizers reserve beside each kicker.
   const [slotWidth, setSlotWidth] = useState(0);
 
@@ -228,10 +235,6 @@ export const DayRunPlayer = () => {
         : null;
   // Android speaks the live region below; iOS has no live regions.
   useIosAnnouncement(announcement);
-
-  useEffect(() => {
-    focusOn(toggleRef.current);
-  }, []);
 
   // Android back closes the run, as Done does, and stays on the step.
   const onBack = useEffectEvent(() => {
@@ -276,6 +279,7 @@ export const DayRunPlayer = () => {
           accessibilityLabel={t(toggle.label)}
           accessibilityHint={toggle.hint && t(toggle.hint)}
           onPress={press}
+          onLayout={focusToggle}
           width="$target"
           height="$target"
           borderRadius="$pill"
