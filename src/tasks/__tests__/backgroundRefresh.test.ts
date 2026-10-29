@@ -30,6 +30,8 @@ const mockRescheduleAlarms = jest.fn();
 const mockWaitForAlarmStores = jest.fn();
 /** The location store's place revision as the run starts. */
 const MOCK_REVISION = 4;
+/** The revision now; a write to the place moves it past MOCK_REVISION. */
+let mockPlaceRevision = MOCK_REVISION;
 /** Where the stored days were fetched; the place is always at MOCK_PLACE. */
 let mockTimesCoords: Coords | null = null;
 const MOCK_PLACE = { latitude: 24.7136, longitude: 46.6753 };
@@ -77,7 +79,7 @@ jest.mock("@/stores/location", () => ({
   default: {
     getState: () => ({
       locationDetails: { timezone: "Asia/Riyadh", coords: MOCK_PLACE },
-      placeRevision: MOCK_REVISION,
+      placeRevision: mockPlaceRevision,
       settlePlace: mockSettlePlace,
     }),
     persist: hydratedPersist,
@@ -142,6 +144,7 @@ describe("executeBackgroundRefresh", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockTimesCoords = MOCK_PLACE;
+    mockPlaceRevision = MOCK_REVISION;
     // Every gated store is hydrated unless a test says otherwise.
     mockWaitForHydration.mockImplementation(async () => {});
     mockAwaitPendingReapply.mockResolvedValue(false);
@@ -318,6 +321,23 @@ describe("executeBackgroundRefresh", () => {
     expect(mockSettlePlace.mock.invocationCallOrder[0]).toBeLessThan(
       mockRescheduleAlarms.mock.invocationCallOrder[0]
     );
+  });
+
+  // The newer place's own load moves the alarms once its times land.
+  it.each([
+    ["the refetch", mockRefetch],
+    ["the alarm stores' hydration", mockWaitForAlarmStores],
+  ])("leaves the alarms when the place moves again during %s", async (_name, step) => {
+    mockTimesCoords = { latitude: 21.4858, longitude: 39.1925 };
+    mockRefetch.mockResolvedValue(LANDED);
+    step.mockImplementationOnce(async () => {
+      mockPlaceRevision = MOCK_REVISION + 1;
+      return LANDED;
+    });
+
+    await executeBackgroundRefresh();
+
+    expect(mockRescheduleAlarms).not.toHaveBeenCalled();
   });
 
   it.each([
