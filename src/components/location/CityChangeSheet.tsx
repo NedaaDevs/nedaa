@@ -30,7 +30,6 @@ import {
 } from "@/constants/Location";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
-import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { isRunning, useLocationUpdateStore, type UpdateRun } from "@/stores/locationUpdate";
 
@@ -168,15 +167,19 @@ const CityChangeBody = ({ offer, run, busy, onUpdate, onKeep, ...runView }: Body
   );
 };
 
+type Props = {
+  /** The onboarding gate covers the app; the offer waits until it leaves. */
+  onboarding: boolean;
+};
+
 /** Offers the times for the city the device is in, or keeps the saved one. */
-export const CityChangeSheet = () => {
+export const CityChangeSheet = ({ onboarding }: Props) => {
   const router = useRouter();
   const mediumHaptic = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const offer = useLocationStore((state) => state.pendingCityChange);
   const up = useLocationStore((state) => state.showCityChangeModal);
   const closeCityChange = useLocationStore((state) => state.closeCityChange);
   const clearCityChange = useLocationStore((state) => state.clearCityChange);
-  const onboarding = useAppStore((state) => state.isFirstRun);
   const { run, executeUpdate, retry, dismissFailure } = useLocationUpdate();
   // Set only when this sheet's update takes the lock, so only its run is drawn.
   const [started, setStarted] = useState(false);

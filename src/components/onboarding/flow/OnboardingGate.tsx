@@ -4,18 +4,26 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-na
 
 import { OnboardingFlow } from "@/components/onboarding/flow/OnboardingFlow";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
-import { LANDING_MS, ONBOARDING_PART } from "@/constants/Onboarding";
+import {
+  LANDING_MS,
+  ONBOARDING_PART,
+  ONBOARDING_PATH,
+  type OnboardingPath,
+} from "@/constants/Onboarding";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useAppStore } from "@/stores/app";
 
 const LANDING = { duration: LANDING_MS };
 const NO_TOUCHES = { pointerEvents: "none" } as const;
 const TRANSPARENT = 0;
 const OPAQUE = 1;
 
-type Props = { showOnboarding: boolean; children: ReactNode };
+type Props = { path: OnboardingPath | null; children: ReactNode };
 
 /** The flow during the first run, then the app, with one crossfade between. */
-export const OnboardingGate = ({ showOnboarding, children }: Props) => {
+export const OnboardingGate = ({ path, children }: Props) => {
+  const showOnboarding = path === ONBOARDING_PATH.FIRST_RUN;
+  const markUpgradeShown = useAppStore((state) => state.markUpgradeShown);
   const reduced = useReducedMotion();
   const [shownBefore, setShownBefore] = useState(showOnboarding);
   const [leaving, setLeaving] = useState(false);
@@ -36,6 +44,11 @@ export const OnboardingGate = ({ showOnboarding, children }: Props) => {
     app.set(TRANSPARENT);
     flow.set(OPAQUE);
   }, [showOnboarding, app, flow]);
+
+  // What's New stays away for the rest of a launch that met the upgrade path.
+  useEffect(() => {
+    if (path === ONBOARDING_PATH.UPGRADE) markUpgradeShown();
+  }, [path, markUpgradeShown]);
 
   const land = useEffectEvent(() => {
     app.set(withTiming(OPAQUE, LANDING));
