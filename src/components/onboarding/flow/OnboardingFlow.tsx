@@ -44,16 +44,16 @@ const claimFor =
 const isSettledFetch = (column: readonly OnboardingStepId[], at: number) =>
   column[at] === ONBOARDING_STEP.FETCH && column.includes(ONBOARDING_STEP.CALCULATION);
 
-/** The frame; in a day run the player takes its bar and back ends the run. */
+/** The frame; in a day run the player takes its bar and back closes the run. */
 const RunFrame = (props: ComponentProps<typeof OnboardingFrame>) => {
   const run = useDayRun();
   if (!run || run.status === DAY_RUN_STATUS.IDLE) return <OnboardingFrame {...props} />;
-  // Skip ends the run, then moves on.
+  // Skip ends the run with no focus move: the next step takes focus.
   const skip = () => {
     run.done();
     props.onSkip();
   };
-  return <OnboardingFrame {...props} onBack={run.done} onSkip={skip} bar={<DayRunPlayer />} />;
+  return <OnboardingFrame {...props} onBack={run.close} onSkip={skip} bar={<DayRunPlayer />} />;
 };
 
 type Props = {
