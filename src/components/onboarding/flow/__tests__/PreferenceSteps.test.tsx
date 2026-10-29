@@ -1,15 +1,22 @@
-import { PixelRatio } from "react-native";
+import type { ReactNode } from "react";
+import { AccessibilityInfo, PixelRatio, StyleSheet } from "react-native";
 import { act, screen, userEvent, waitFor, within } from "@testing-library/react-native";
 
+import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
+import { PLAY_DAY_PART } from "@/components/onboarding/flow/PlayDayButton";
 import { AppearanceStep } from "@/components/onboarding/flow/steps/AppearanceStep";
 import { NumeralsStep } from "@/components/onboarding/flow/steps/NumeralsStep";
 import { TextSizeStep } from "@/components/onboarding/flow/steps/TextSizeStep";
 import { BOWL_FRAME_PART } from "@/components/today/CelestialRhythm";
+import { DaySimulator } from "@/components/today/DaySimulator";
 import { PRAYER_GRID_PART, PrayerGrid } from "@/components/today/PrayerGrid";
 import { TODAY_STYLE_PREVIEW_PART } from "@/components/today/TodayStylePreview";
 import { SkyBackground } from "@/components/ui/sky-background";
+import { SKY_PART } from "@/components/ui/sky-background/parts";
+import { SKY_SWATCH_ID } from "@/components/ui/sky-preview";
 import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
-import { APPEARANCE_ORDER } from "@/constants/Appearance";
+import { APPEARANCE_ORDER, PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
+import { DAY_RUN, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { CLOCK_SAMPLE } from "@/constants/Onboarding";
 import { PHASE } from "@/constants/Phase";
@@ -17,20 +24,29 @@ import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { CLOCK_FORMAT } from "@/constants/Preferences";
 import { nearestTextSize } from "@/constants/TextSize";
 import { TODAY_STYLE } from "@/constants/Today";
+import { DayRunContext, useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
 import { AppLocale, AppMode, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
+import { controlProblems } from "@/test-helpers/controls";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import { lastPrimary, stepProps } from "@/test-helpers/onboardingStepProps";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { sampleDays } from "@/utils/sampleDays";
+import { skySwatchFor } from "@/utils/sky";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
-jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => false }));
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
+jest.mock("expo-blur", () => {
+  const { createElement } = jest.requireActual("react");
+  const { View } = jest.requireActual("react-native");
+  return { BlurView: (props: object) => createElement(View, props) };
+});
 jest.mock("@/utils/date", () => jest.requireActual("@/test-helpers/hijriDateMock"));
 // The sky dims its bodies behind measured text; nothing is measured here.
 jest.mock("@/utils/measureInWindow", () => ({ measureInWindow: () => Promise.resolve(null) }));
@@ -43,6 +59,7 @@ const mockTransition = jest.fn(async (fn: () => void | Promise<void>) => {
 let scaleSpy: jest.SpyInstance<number, []>;
 
 beforeEach(async () => {
+  mockReduced = false;
   await act(() => i18n.changeLanguage(AppLocale.EN));
   useAppStore.setState({ locale: AppLocale.EN, mode: AppMode.SYSTEM });
   usePreferencesStore.setState({
@@ -240,6 +257,197 @@ describe("AppearanceStep", () => {
     await waitFor(() => expect(useAppStore.getState().mode).toBe(AppMode.DARK));
     expect(mockTransition).toHaveBeenCalledTimes(1);
     expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
+  });
+
+  describe("a day run", () => {
+    const PREVIEW = DAY_RUN[DAY_RUN_KIND.PREVIEW];
+    const PHASES = Object.values(PHASE);
+    const playDay = () => screen.getByTestId(PLAY_DAY_PART.BUTTON);
+    const player = () => screen.queryByTestId(DAY_RUN_PLAYER_PART.FRAME);
+    const tap = (element: ReturnType<typeof screen.getByTestId>) =>
+      userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(element);
+    const press = (testID: string) => tap(screen.getByTestId(testID));
+    const chooseLook = (mode: AppMode) => tap(screen.getByRole("radio", { name: rowName(mode) }));
+    /** Lets a mode's native pin settle, as the phone would report it. */
+    const settleLook = () => act(() => jest.advanceTimersByTime(PIN_REPORT_LIMIT_MS));
+    const focusSpy = () =>
+      jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockImplementation(() => {});
+    /** A view as reader focus receives it, known by its testID. */
+    const viewWith = (testID: string) =>
+      expect.objectContaining({ props: expect.objectContaining({ testID }) });
+
+    /** Draws the player while a run is on, as the onboarding frame does. */
+    const Player = () => {
+      const run = useDayRun();
+      return run && run.status !== DAY_RUN_STATUS.IDLE ? <DayRunPlayer /> : null;
+    };
+    const Frame = ({ children }: { children: ReactNode }) => (
+      <ThemeTransitionContext value={mockTransition}>
+        <PhaseContext value={PHASE.ASR}>{children}</PhaseContext>
+      </ThemeTransitionContext>
+    );
+    /** The step inside the flow's run, with the player below it. */
+    const renderRun = ({ isRTL = false } = {}) =>
+      renderWithTheme(
+        <Frame>
+          <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
+            <SkyBackground>
+              <AppearanceStep {...stepProps()} />
+              <Player />
+            </SkyBackground>
+          </DaySimulator>
+        </Frame>,
+        { isRTL }
+      );
+    /** The step under a stand-in run, its methods mocks. */
+    const renderUnder = async (overrides: Partial<DayRun>) => {
+      const run: DayRun = {
+        kind: DAY_RUN_KIND.PREVIEW,
+        status: DAY_RUN_STATUS.IDLE,
+        phase: undefined,
+        progress: 0,
+        available: true,
+        start: jest.fn(),
+        pause: jest.fn(),
+        resume: jest.fn(),
+        jumpTo: jest.fn(),
+        done: jest.fn(),
+        ...overrides,
+      };
+      await renderWithTheme(
+        <Frame>
+          <SkyBackground>
+            <DayRunContext value={run}>
+              <AppearanceStep {...stepProps()} />
+            </DayRunContext>
+          </SkyBackground>
+        </Frame>
+      );
+      return run;
+    };
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("the Appearance step offers to play a day", async () => {
+      await renderRun();
+
+      const button = screen.getByRole("button", { name: t("onboarding.appearance.playDay") });
+      expect(button).toBe(playDay());
+      expect(button).toBeEnabled();
+      expect(button.props.accessibilityHint).toBe(t("a11y.onboarding.playDayHint"));
+      expect(within(button).getByText(t("onboarding.appearance.playDay"))).toBeTruthy();
+      // Adaptive's sky leads the button, one painted band per part of its day.
+      const swatch = within(button).getByTestId(SKY_SWATCH_ID, hidden);
+      expect(within(swatch).getAllByTestId(SKY_PART.PREVIEW, hidden)).toHaveLength(
+        skySwatchFor(AppMode.ADAPTIVE).length
+      );
+      expect(controlProblems()).toEqual([]);
+    });
+
+    it("draws no button outside a run's simulator", async () => {
+      await renderAppearance();
+
+      expect(screen.queryByTestId(PLAY_DAY_PART.BUTTON)).toBeNull();
+    });
+
+    it("the button starts a run", async () => {
+      const focus = focusSpy();
+      await renderRun();
+      expect(player()).toBeNull();
+
+      await press(PLAY_DAY_PART.BUTTON);
+
+      expect(player()).toBeOnTheScreen();
+      expect(playDay()).toBeDisabled();
+      // The player takes reader focus to its toggle as it appears.
+      expect(focus).toHaveBeenLastCalledWith(viewWith(DAY_RUN_PLAYER_PART.TOGGLE), "focus");
+    });
+
+    it.each([
+      ["a run is on", { status: DAY_RUN_STATUS.PLAYING }],
+      ["the run has no whole day", { available: false }],
+    ])("holds the button while %s", async (_case, overrides) => {
+      const run = await renderUnder(overrides);
+
+      expect(playDay()).toBeDisabled();
+      await press(PLAY_DAY_PART.BUTTON);
+      expect(run.start).not.toHaveBeenCalled();
+    });
+
+    it("choosing a look during a run ends the run first", async () => {
+      const run = await renderUnder({ status: DAY_RUN_STATUS.PLAYING });
+
+      await chooseLook(AppMode.DARK);
+      await settleLook();
+
+      expect(run.done).toHaveBeenCalledTimes(1);
+      expect(mockTransition).toHaveBeenCalledTimes(1);
+      const [doneAt] = jest.mocked(run.done).mock.invocationCallOrder;
+      expect(doneAt).toBeLessThan(mockTransition.mock.invocationCallOrder[0]);
+      expect(useAppStore.getState().mode).toBe(AppMode.DARK);
+    });
+
+    it("a look chosen during a run applies with the run closed", async () => {
+      await renderRun();
+      await press(PLAY_DAY_PART.BUTTON);
+
+      await chooseLook(AppMode.DARK);
+      await settleLook();
+
+      expect(player()).toBeNull();
+      expect(playDay()).toBeEnabled();
+      expect(useAppStore.getState().mode).toBe(AppMode.DARK);
+    });
+
+    it.each([
+      ["Done", DAY_RUN_PLAYER_PART.DONE],
+      ["Use Adaptive", DAY_RUN_PLAYER_PART.USE_ADAPTIVE],
+      ["a look chosen", null],
+    ])("gives reader focus back to the button when %s closes the player", async (_case, part) => {
+      const focus = focusSpy();
+      await renderRun();
+      await press(PLAY_DAY_PART.BUTTON);
+      focus.mockClear();
+
+      await (part ? press(part) : chooseLook(AppMode.DARK));
+      await settleLook();
+
+      expect(player()).toBeNull();
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(focus).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON), "focus");
+    });
+
+    // With Adaptive chosen, the end still waits for Done.
+    it("keeps the player open at the end of the day until Done", async () => {
+      mockReduced = true;
+      useAppStore.setState({ mode: AppMode.ADAPTIVE });
+      const focus = focusSpy();
+      await renderRun();
+      await press(PLAY_DAY_PART.BUTTON);
+      focus.mockClear();
+
+      for (let step = 0; step < PHASES.length; step++) {
+        await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
+      }
+
+      expect(screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE)).toHaveAccessibleName(
+        t("a11y.onboarding.dayPreview.replay")
+      );
+      expect(screen.getByTestId(DAY_RUN_PLAYER_PART.DONE)).toBeOnTheScreen();
+      expect(playDay()).toBeDisabled();
+      expect(focus).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [false, undefined],
+      [true, [{ scaleX: -1 }]],
+    ])("points the play mark along the reading direction (RTL: %s)", async (isRTL, transform) => {
+      await renderRun({ isRTL });
+
+      const mark = screen.getByTestId(PLAY_DAY_PART.MARK, hidden);
+      expect(StyleSheet.flatten(mark.props.style)?.transform).toEqual(transform);
+    });
   });
 });
 
