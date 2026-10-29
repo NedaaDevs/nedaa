@@ -15,6 +15,7 @@ import { StepBody } from "@/components/onboarding/flow/StepBody";
 import { StepHeading } from "@/components/onboarding/flow/StepHeading";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { useBusyRequest } from "@/components/onboarding/flow/useBusyRequest";
+import { useLayoutFocus } from "@/hooks/useLayoutFocus";
 import { useViewFocus } from "@/hooks/useViewFocus";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
@@ -162,16 +163,18 @@ type ResultProps = {
   /** The whole result as one sentence; the step moves reader focus here. */
   label: string;
   cardRef: RefObject<ViewInstance | null>;
+  onCardLayout: () => void;
 };
 
 /** How far it got: N of this device's M items, then what that means. */
-const ResultCard = ({ items, on, line, label, cardRef }: ResultProps) => {
+const ResultCard = ({ items, on, line, label, cardRef, onCardLayout }: ResultProps) => {
   const { t } = useTranslation();
   const count = grantedCount(items);
 
   return (
     <VStack
       ref={cardRef}
+      onLayout={onCardLayout}
       testID={ONBOARDING_PART.ALARM_RESULT}
       accessible
       accessibilityLabel={label}
@@ -218,6 +221,7 @@ export const AlarmStep = ({
   setPrimaryHidden,
   headingRef,
   onHeadingLayout,
+  focusHeading,
   progress,
 }: Props) => {
   const { t } = useTranslation();
@@ -232,7 +236,7 @@ export const AlarmStep = ({
   const { request, requesting } = useBusyRequest(setBusy);
   // Aborts when the step leaves: a run in flight stops acting, a wait ends.
   const leave = useRef<AbortController | null>(null);
-  const resultRef = useRef<ViewInstance>(null);
+  const { ref: resultRef, onLayout: onResultLayout, focus: focusResult } = useLayoutFocus();
 
   const settle = (items: AlarmPermission[]) => {
     const ringable = canRing(items);
@@ -349,7 +353,7 @@ export const AlarmStep = ({
   // The check on arrival is part of it, so its first result moves nothing.
   useViewFocus(
     phase === ALARM_STEP_PHASE.CHECK ? null : (result?.label ?? phase),
-    result ? resultRef : headingRef
+    result ? focusResult : focusHeading
   );
 
   const inSequence = phase === ALARM_STEP_PHASE.SEQUENCE;
@@ -423,6 +427,7 @@ export const AlarmStep = ({
                   line={result.line}
                   label={result.label}
                   cardRef={resultRef}
+                  onCardLayout={onResultLayout}
                 />
               </VStack>
             ) : null}

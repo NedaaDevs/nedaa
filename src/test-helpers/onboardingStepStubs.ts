@@ -1,9 +1,10 @@
 import { createElement as h, useEffect, type ComponentType } from "react";
 import { Text, View } from "react-native";
-import { act, fireEvent, screen } from "@testing-library/react-native";
+import { screen } from "@testing-library/react-native";
 
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { ONBOARDING_STEP, type OnboardingStepId } from "@/constants/Onboarding";
+import { layOut } from "@/test-helpers/layout";
 
 /** The testID each stub draws: this prefix, then its step's id. */
 export const STEP_STUB_PREFIX = "step-";
@@ -52,11 +53,7 @@ export const currentStep = () =>
 
 /** Lays out `id`'s stub heading, as the native view reports it once drawn. */
 export const layOutHeading = (id: OnboardingStepId) =>
-  act(async () => {
-    fireEvent(screen.getByTestId(`${STEP_HEADING_STUB_PREFIX}${id}`), "layout", {
-      nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 44 } },
-    });
-  });
+  layOut(screen.getByTestId(`${STEP_HEADING_STUB_PREFIX}${id}`));
 
 /** The props `id` last rendered with; throws when it never rendered. */
 export const propsOf = (id: OnboardingStepId) => {
