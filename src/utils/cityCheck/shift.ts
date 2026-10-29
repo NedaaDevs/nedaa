@@ -1,7 +1,7 @@
 import { toZonedTime } from "date-fns-tz";
 
 import { SHIFT_HORIZON_DAYS, SHIFT_TIMING, type ShiftTiming } from "@/constants/CityCheck";
-import { METHOD_ANGLES, type MethodAngles } from "@/constants/aladhanMethods";
+import { METHOD_ANGLES } from "@/constants/aladhanMethods";
 import type { ShiftCalc } from "@/types/cityCheck";
 import type { Coords } from "@/types/location";
 
@@ -32,7 +32,7 @@ const acot = (x: number) => Math.atan(1 / x) / RAD;
 const wrap = (a: number, b: number) => a - b * Math.floor(a / b);
 const wrapHour = (h: number) => wrap(h, HOURS_PER_DAY);
 
-type CalendarDay = { year: number; month: number; day: number };
+export type CalendarDay = { year: number; month: number; day: number };
 
 const julianDate = ({ year, month, day }: CalendarDay): number => {
   const y = month <= 2 ? year - 1 : year;
@@ -85,13 +85,15 @@ const ishaKnots = (lat: number): Knots => {
   return [75 + 25.6 * l, 75 + 2.05 * l, 75 - 9.21 * l, 75 + 6.14 * l];
 };
 
-/** One day's timings at a place, as UTC instants in ms. */
-const dayTimings = (
+/** One calendar day's timings at a place, as UTC instants in ms. */
+export const dayTimings = (
   { latitude, longitude }: Coords,
   date: CalendarDay,
-  method: MethodAngles,
-  shadowLength: number
+  { method: methodId, school }: ShiftCalc
 ): Record<ShiftTiming, number> => {
+  const method = METHOD_ANGLES[methodId];
+  // A shadow of school + 1 object lengths starts Asr.
+  const shadowLength = school + 1;
   const jd = julianDate(date) - longitude / (DEGREES_PER_HOUR * HOURS_PER_DAY);
   const at = (hour: number) => sunPosition(jd + hour / HOURS_PER_DAY);
   const midDay = (hour: number) => wrapHour(12 - at(hour).equation);
@@ -178,19 +180,16 @@ export const yearlyShiftByTiming = (
   from: Coords,
   to: Coords,
   fromZone: string,
-  { method, school }: ShiftCalc,
+  calc: ShiftCalc,
   startAt: number
 ): Record<ShiftTiming, number> => {
-  const angles = METHOD_ANGLES[method];
-  // A shadow of school + 1 object lengths starts Asr.
-  const shadowLength = school + 1;
   const wall = toZonedTime(startAt, fromZone);
   const firstDay = { year: wall.getFullYear(), month: wall.getMonth() + 1, day: wall.getDate() };
   const largest = byTiming(() => 0);
   for (let offset = 0; offset < SHIFT_HORIZON_DAYS; offset++) {
     const date = addDays(firstDay, offset);
-    const a = dayTimings(from, date, angles, shadowLength);
-    const b = dayTimings(to, date, angles, shadowLength);
+    const a = dayTimings(from, date, calc);
+    const b = dayTimings(to, date, calc);
     for (const timing of TIMINGS) {
       largest[timing] = Math.max(largest[timing], Math.abs(b[timing] - a[timing]) / MS_PER_MINUTE);
     }
