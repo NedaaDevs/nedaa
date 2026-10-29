@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
+import { phoneZoneReadings } from "@/utils/phoneZone";
 
 const log = AppLogger.create("app");
 
@@ -32,6 +33,14 @@ export const registerDevMenu = (): Promise<void> => {
           currentCity: location.locationDetails.address?.city ?? DEBUG_COPY.SAMPLE_SAVED_CITY,
           newCity: DEBUG_COPY.SAMPLE_NEW_CITY,
         });
+      },
+      shouldCollapse: true,
+    },
+    {
+      name: DEBUG_COPY.LOG_PHONE_ZONE,
+      callback: () => {
+        const { intl, calendar } = phoneZoneReadings();
+        log.i("DevMenu", `phone zone: intl=${intl} calendar=${calendar}`);
       },
       shouldCollapse: true,
     },
