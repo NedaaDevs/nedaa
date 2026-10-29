@@ -474,4 +474,42 @@ describe("useOnboardingColumn on the upgrade path", () => {
     expect(checkPermissions).toHaveBeenCalledTimes(2);
     expect(result.current).toContain(S.NOTIFICATIONS);
   });
+
+  // A first read that stalls is no answer, so the next answer decides.
+  it("takes the first answer that arrives after a read that timed out", async () => {
+    silencedWarn();
+    withCity();
+    jest
+      .mocked(checkPermissions)
+      .mockReturnValueOnce(never())
+      .mockResolvedValue(NOTIFICATIONS_UNDETERMINED);
+    const { result } = await renderColumn(ONBOARDING_PATH.UPGRADE);
+    await advance(NATIVE_READ_TIMEOUT_MS);
+    expect(result.current).not.toContain(S.NOTIFICATIONS);
+
+    await returnToApp();
+    await advance(0);
+
+    expect(result.current).toContain(S.NOTIFICATIONS);
+  });
+
+  it("keeps a first answer after a timeout through a later no", async () => {
+    silencedWarn();
+    withCity();
+    jest
+      .mocked(checkPermissions)
+      .mockReturnValueOnce(never())
+      .mockResolvedValueOnce(NOTIFICATIONS_UNDETERMINED)
+      .mockResolvedValue(NOTIFICATIONS_DENIED);
+    const { result } = await renderColumn(ONBOARDING_PATH.UPGRADE);
+    await advance(NATIVE_READ_TIMEOUT_MS);
+    await returnToApp();
+    await advance(0);
+
+    await returnToApp();
+    await advance(0);
+
+    expect(checkPermissions).toHaveBeenCalledTimes(3);
+    expect(result.current).toContain(S.NOTIFICATIONS);
+  });
 });
