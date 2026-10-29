@@ -80,8 +80,8 @@ const readAtStart = async (): Promise<AtStart> => {
 export type DeviceRead = {
   location: boolean;
   notifications: boolean;
-  /** The OS had never asked for notifications when the run started. */
-  notificationsUndetermined: boolean;
+  /** The first answer: the OS had never asked; null until one arrives. */
+  notificationsUndetermined: boolean | null;
   alarmsSupported: boolean;
 };
 type DeviceAnswers = { [K in keyof DeviceRead]: boolean | null };
@@ -113,10 +113,8 @@ const readDevice = async (): Promise<DeviceAnswers> => {
 const merge = (known: DeviceRead | null, answers: DeviceAnswers): DeviceRead => ({
   location: answers.location ?? known?.location ?? false,
   notifications: answers.notifications ?? known?.notifications ?? false,
-  // The first read holds, so an answer given in this run keeps its step.
-  notificationsUndetermined: known
-    ? known.notificationsUndetermined
-    : (answers.notificationsUndetermined ?? false),
+  // The first answer holds, so one given in this run keeps its step.
+  notificationsUndetermined: known?.notificationsUndetermined ?? answers.notificationsUndetermined,
   // Alarm support only grows, so an alarm step once offered never vanishes.
   alarmsSupported: answers.alarmsSupported === true || known?.alarmsSupported === true,
 });
@@ -145,7 +143,7 @@ export const toColumnInput = ({
   todayStored,
   fetchStarted: session.fetchStarted,
   notificationsGranted: device.notifications,
-  notificationsUndetermined: device.notificationsUndetermined,
+  notificationsUndetermined: device.notificationsUndetermined === true,
   // An alarm turns on only where it can ring, at a verified place's times.
   alarmsOffered: device.alarmsSupported && todayStored,
   fajrAlarmOn: atStart.fajrAlarmOn,
