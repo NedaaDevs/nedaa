@@ -25,9 +25,7 @@ export const AppearanceStep = ({ headingRef, progress }: StepProps) => {
       />
       <VStack gap="$3.5">
         <TodayStylePreview sampleUnlessOwn />
-        <SkyOccluder>
-          <PlayDayButton />
-        </SkyOccluder>
+        <PlayDayButton />
       </VStack>
       <SkyOccluder>
         <VStack gap="$2">
