@@ -47,13 +47,15 @@ export const confirmedFix = (fixes: readonly CityCheckFix[]): CityCheckFix | nul
   return confirms(first, last) ? last : null;
 };
 
+const sameCountry = (a: string, b: string) => a.toUpperCase() === b.toUpperCase();
+
 const offerReasons = (facts: CityCheckFacts, candidate: CityCandidate): CityCheckOfferReason[] => {
   const { saved, methods, calc, now } = facts;
   const shift = maxYearlyShiftMinutes(saved.point, candidate.point, saved.zone, calc, now);
   const countryChanges =
     saved.countryCode !== null &&
     candidate.countryCode !== null &&
-    saved.countryCode !== candidate.countryCode;
+    !sameCountry(saved.countryCode, candidate.countryCode);
   return [
     ...(methods && methods.saved !== methods.candidate ? [CITY_CHECK_OFFER.METHOD_CHANGES] : []),
     ...(shift >= SHIFT_GATE_MINUTES ? [CITY_CHECK_OFFER.SHIFT] : []),
