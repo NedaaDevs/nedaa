@@ -18,7 +18,7 @@ import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
 import { readTimesPlace } from "@/utils/timesPlace";
 import { ALARM_DEFAULTS, ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
-import { TIMES_PLACE, type TimesPlace } from "@/constants/Location";
+import { STEP_OUTCOME, TIMES_PLACE, type StepOutcome, type TimesPlace } from "@/constants/Location";
 import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 
 // Alarm stores rehydrate asynchronously; startup readers (scheduling, native
@@ -358,16 +358,23 @@ export async function ensureAlarmsScheduled(): Promise<void> {
   }
 }
 
-export async function rescheduleAllAlarms(): Promise<void> {
+// Re-arms each enabled alarm at the stored times. Skipped with none enabled;
+// else done, partial or failed by how many types armed their next occurrence.
+export async function rescheduleAllAlarms(): Promise<StepOutcome> {
   const alarmSettings = useAlarmSettingsStore.getState();
   const alarmStore = useAlarmStore.getState();
+  const armed: boolean[] = [];
 
   if (alarmSettings.fajr.enabled) {
     await alarmStore.cancelAlarmsByType(ScheduledAlarmType.FAJR);
-    await scheduleFajrAlarm();
+    armed.push((await scheduleFajrAlarm()) !== null);
   }
   if (alarmSettings.friday.enabled) {
     await alarmStore.cancelAlarmsByType(ScheduledAlarmType.JUMMAH);
-    await scheduleFridayAlarm();
+    armed.push((await scheduleFridayAlarm()) !== null);
   }
+
+  if (armed.length === 0) return STEP_OUTCOME.SKIPPED;
+  if (armed.every(Boolean)) return STEP_OUTCOME.DONE;
+  return armed.some(Boolean) ? STEP_OUTCOME.PARTIAL : STEP_OUTCOME.FAILED;
 }

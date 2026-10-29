@@ -54,6 +54,28 @@ export const UPDATE_STEP = {
 } as const;
 export type UpdateStep = (typeof UPDATE_STEP)[keyof typeof UPDATE_STEP];
 
+/** What one update step did. */
+export const STEP_OUTCOME = {
+  DONE: "done",
+  /** The step had nothing to do: off, or not allowed. */
+  SKIPPED: "skipped",
+  /** Some of the step's work landed. */
+  PARTIAL: "partial",
+  FAILED: "failed",
+} as const;
+export type StepOutcome = (typeof STEP_OUTCOME)[keyof typeof STEP_OUTCOME];
+
+/** How a location update ended. */
+export const RUN_END = {
+  /** Every step ran and none stopped the run. */
+  LANDED: "landed",
+  /** A step's outcome stopped the run. */
+  STOPPED: "stopped",
+  /** Another update was in flight, so this one never started. */
+  REFUSED: "refused",
+} as const;
+export type RunEnd = (typeof RUN_END)[keyof typeof RUN_END];
+
 /** Where a location update takes its place from. */
 export const UPDATE_START = {
   /** A fresh device read, in device mode. */
