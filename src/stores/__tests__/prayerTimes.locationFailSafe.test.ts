@@ -1,7 +1,6 @@
 import Storage from "expo-sqlite/kv-store";
 
 import { PLACE_UNKNOWN } from "@/constants/Location";
-import { TIMES_FETCH, type TimesFetch } from "@/constants/PrayerTimes";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -139,8 +138,8 @@ describe("prayer-time location fail-safe", () => {
   });
 
   it("does not mark location acquired when acquisition fails", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
+    const fetchLands = jest.fn(async () => true);
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchLands) });
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
@@ -157,14 +156,14 @@ describe("prayer-time location fail-safe", () => {
    * default coordinates (Makkah) stand in until the user sets a location.
    */
   it("falls back to the default location when the permission is declined", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
+    const fetchLands = jest.fn(async () => true);
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchLands) });
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(usePrayerTimesStore.getState().hasError).toBe(false);
-    expect(refreshPrayerTimes).toHaveBeenCalled();
+    expect(fetchLands).toHaveBeenCalled();
     // The fix was never verified, so the app keeps trying to acquire a real one.
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
     expect(useLocationStore.getState().lastKnownCoords).toBeNull();
@@ -277,12 +276,12 @@ describe("prayer-time location fail-safe", () => {
 
   /**
    * The fix itself is good — only its timezone failed to resolve. Loading still
-   * proceeds against those coordinates, and `getAndStorePrayerTimes` corrects the
+   * proceeds against those coordinates, and the stored fetch corrects the
    * zone from the API response, which carries it. The fix stays unverified so a
    * later load retries geocoding.
    */
   it("persists a fresh fix and still loads when its timezone is unresolved", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
+    const fetchLands = jest.fn(async () => true);
     const acquiredLocation = {
       coords: {
         ...initialLocationDetails.coords,
@@ -292,7 +291,7 @@ describe("prayer-time location fail-safe", () => {
       },
       timestamp: 1_750_000_000_000,
     };
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchLands) });
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockResolvedValue(acquiredLocation);
     mockReverseGeocodeAsync.mockRejectedValue(new Error("Android geocoder unavailable"));
@@ -304,11 +303,11 @@ describe("prayer-time location fail-safe", () => {
     expect(useLocationStore.getState().locationDetails.coords).toEqual(acquiredLocation.coords);
     expect(useLocationStore.getState().lastKnownCoords).toBeNull();
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(false);
-    expect(refreshPrayerTimes).toHaveBeenCalled();
+    expect(fetchLands).toHaveBeenCalled();
   });
 
   it("restores a verified saved location when a new fix has no resolved timezone", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
+    const fetchLands = jest.fn(async () => true);
     const savedCoords = {
       ...initialLocationDetails.coords,
       latitude: 51.5072,
@@ -331,7 +330,7 @@ describe("prayer-time location fail-safe", () => {
       },
       timestamp: 1_750_000_000_000,
     };
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchLands) });
     useLocationStore.setState({
       locationDetails: savedLocationDetails,
       localizedLocation: savedLocalizedLocation,
@@ -356,18 +355,18 @@ describe("prayer-time location fail-safe", () => {
       longitude: savedCoords.longitude,
     });
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
-    expect(refreshPrayerTimes).toHaveBeenCalledTimes(1);
+    expect(fetchLands).toHaveBeenCalledTimes(1);
   });
 
   it("uses verified persisted coordinates when an allowed current refresh fails", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
+    const fetchLands = jest.fn(async () => true);
     const persistedCoords = {
       ...initialLocationDetails.coords,
       latitude: 24.7136,
       longitude: 46.6753,
       accuracy: 20,
     };
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchLands) });
     useLocationStore.setState({
       locationDetails: { ...initialLocationDetails, coords: persistedCoords },
       lastKnownCoords: { latitude: persistedCoords.latitude, longitude: persistedCoords.longitude },
@@ -379,12 +378,12 @@ describe("prayer-time location fail-safe", () => {
 
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
     expect(useLocationStore.getState().locationDetails.coords).toEqual(persistedCoords);
-    expect(refreshPrayerTimes).toHaveBeenCalledTimes(1);
+    expect(fetchLands).toHaveBeenCalledTimes(1);
   });
 
   it("uses a persisted verified location when current permission is unavailable", async () => {
-    const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
+    const fetchLands = jest.fn(async () => true);
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchLands) });
     useLocationStore.setState({
       locationDetails: {
         ...initialLocationDetails,
@@ -402,7 +401,7 @@ describe("prayer-time location fail-safe", () => {
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(usePrayerTimesStore.getState().didGetCurrentLocation).toBe(true);
-    expect(refreshPrayerTimes).toHaveBeenCalledTimes(1);
+    expect(fetchLands).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -613,7 +612,7 @@ describe("one position read per fetch attempt", () => {
     mockReverseGeocodeAsync.mockResolvedValue([]);
     mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
     usePrayerTimesStore.setState({
-      getPrayerTimes: fetchLandingAs(async () => TIMES_FETCH.STORED),
+      getPrayerTimes: fetchLandingAs(async () => true),
     });
   });
 
@@ -643,14 +642,14 @@ const storedDay = (date: number) => ({ ...RIYADH_DAY, date });
 describe("a place verified after the default place's days were stored", () => {
   /** A fetch the test settles; records the flag held when it starts. */
   const pendingFetch = () => {
-    const fetch = later<TimesFetch>();
+    const fetch = later<boolean>();
     const flagAtFetch: boolean[] = [];
-    const getAndStorePrayerTimes = jest.fn(() => {
+    const fetchAsked = jest.fn(() => {
       flagAtFetch.push(usePrayerTimesStore.getState().usingDefaultLocation);
       return fetch.promise;
     });
-    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(getAndStorePrayerTimes) });
-    return { fetch, flagAtFetch, getAndStorePrayerTimes };
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(fetchAsked) });
+    return { fetch, flagAtFetch, fetchAsked };
   };
   const usingDefault = () => usePrayerTimesStore.getState().usingDefaultLocation;
   const verifyPlace = () =>
@@ -681,19 +680,19 @@ describe("a place verified after the default place's days were stored", () => {
 
     expect(flagAtFetch).toEqual([true]);
     expect(usingDefault()).toBe(true);
-    fetch.release(TIMES_FETCH.STORED);
+    fetch.release(true);
     await load;
     expect(usingDefault()).toBe(false);
   });
 
   // Best effort, so a launch with no network still runs the rest of its setup.
   it("keeps the default flag and rows, and resolves, when that refetch fails", async () => {
-    const { fetch, getAndStorePrayerTimes } = pendingFetch();
-    fetch.release(TIMES_FETCH.FAILED);
+    const { fetch, fetchAsked } = pendingFetch();
+    fetch.release(false);
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes()).resolves.toBe(false);
 
-    expect(getAndStorePrayerTimes).toHaveBeenCalled();
+    expect(fetchAsked).toHaveBeenCalled();
     expect(usingDefault()).toBe(true);
     expect(usePrayerTimesStore.getState().todayTimings).toEqual(storedDay(TODAY));
     expect(usePrayerTimesStore.getState().hasError).toBe(false);
@@ -703,7 +702,7 @@ describe("a place verified after the default place's days were stored", () => {
   it("still throws when that refetch fails with a day missing", async () => {
     mockGetPrayerTimesByDate.mockResolvedValue(null);
     const { fetch } = pendingFetch();
-    fetch.release(TIMES_FETCH.FAILED);
+    fetch.release(false);
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
 
@@ -713,7 +712,7 @@ describe("a place verified after the default place's days were stored", () => {
 
   it("still throws when a forced refetch fails", async () => {
     const { fetch } = pendingFetch();
-    fetch.release(TIMES_FETCH.FAILED);
+    fetch.release(false);
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).rejects.toThrow();
 
@@ -728,7 +727,7 @@ describe("a place verified after the default place's days were stored", () => {
     await until(() => flagAtFetch.length > 0);
 
     expect(flagAtFetch).toEqual([true]);
-    fetch.release(TIMES_FETCH.STORED);
+    fetch.release(true);
     await load;
     expect(usingDefault()).toBe(false);
   });
@@ -736,21 +735,21 @@ describe("a place verified after the default place's days were stored", () => {
   it("does not refetch a verified place whose days are all stored", async () => {
     verifyPlace();
     usePrayerTimesStore.setState({ usingDefaultLocation: false, didGetCurrentLocation: true });
-    const { getAndStorePrayerTimes } = pendingFetch();
+    const { fetchAsked } = pendingFetch();
 
     await usePrayerTimesStore.getState().loadPrayerTimes();
 
-    expect(getAndStorePrayerTimes).not.toHaveBeenCalled();
+    expect(fetchAsked).not.toHaveBeenCalled();
     expect(usingDefault()).toBe(false);
   });
 
   it("does not refetch the default place's stored days while no fix lands", async () => {
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
-    const { getAndStorePrayerTimes } = pendingFetch();
+    const { fetchAsked } = pendingFetch();
 
     await usePrayerTimesStore.getState().loadPrayerTimes();
 
-    expect(getAndStorePrayerTimes).not.toHaveBeenCalled();
+    expect(fetchAsked).not.toHaveBeenCalled();
     expect(usingDefault()).toBe(true);
   });
 });
