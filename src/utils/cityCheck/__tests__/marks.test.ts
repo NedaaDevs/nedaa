@@ -1,4 +1,4 @@
-import { KEPT_MAX, KEPT_MAX_AGE_MS } from "@/constants/CityCheck";
+import { KEPT_MAX, KEPT_MAX_AGE_MS, MOVE_MIN_KM, SHIFT_GATE_MINUTES } from "@/constants/CityCheck";
 import { FIX_SOURCE } from "@/constants/Location";
 import { ASR_SCHOOL } from "@/constants/providers";
 import type { CityCheckFix, PlaceMark, ShiftCalc } from "@/types/cityCheck";
@@ -13,6 +13,7 @@ import {
   toPlaceMark,
   withMark,
 } from "@/utils/cityCheck/marks";
+import { maxYearlyShiftMinutes } from "@/utils/cityCheck/shift";
 
 const KM_PER_DEGREE = 111.195;
 const RAD = Math.PI / 180;
@@ -105,6 +106,17 @@ describe("place marks", () => {
     expect(
       keptAfterFix([mark(JEDDAH)], fresh(JEDDAH_2), RIYADH_ZONE, UMM_AL_QURA, NOW)
     ).toHaveLength(1));
+
+  it("keeps a kept trip on a far fix with no time change", () => {
+    const entry = mark(RIYADH);
+    expect(conservativeKm(EAST_15KM, FIX_ACCURACY_KM, markPoint(entry), null)).toBeGreaterThan(
+      MOVE_MIN_KM
+    );
+    expect(
+      maxYearlyShiftMinutes(markPoint(entry), EAST_15KM, RIYADH_ZONE, UMM_AL_QURA, NOW)
+    ).toBeLessThan(SHIFT_GATE_MINUTES);
+    expect(keptAfterFix([entry], fresh(EAST_15KM), RIYADH_ZONE, UMM_AL_QURA, NOW)).toEqual([entry]);
+  });
 
   it("ends a kept trip after 30 days", () =>
     expect(
