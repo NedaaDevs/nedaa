@@ -10,6 +10,7 @@ import {
   type OnboardingPath,
 } from "@/constants/Onboarding";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useScreenLive } from "@/hooks/useScreenLive";
 import { useAppStore } from "@/stores/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -29,6 +30,7 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: jest.fn(() => false) }));
+jest.mock("expo-router", () => ({ useIsFocused: () => true }));
 
 const MOCK_FLOW_ID = "flow";
 const APP_ID = "app";
@@ -238,6 +240,29 @@ it("lifts the upgrade overlay when the path closes mid-launch", async () => {
   expect(screen.queryByTestId(APP_ID)).toBeTruthy();
   await user.press(screen.getByTestId(APP_ID));
   expect(appPress).toHaveBeenCalledTimes(1);
+});
+
+// Two skies would run at once: the app's under the flow's.
+it("holds the app's live work under the upgrade path, and resumes it after", async () => {
+  const seen: boolean[] = [];
+  const Live = () => {
+    seen.push(useScreenLive());
+    return null;
+  };
+  const view = await renderWithTheme(
+    <OnboardingGate path={ONBOARDING_PATH.UPGRADE}>
+      <Live />
+    </OnboardingGate>
+  );
+  expect(seen.at(-1)).toBe(false);
+
+  await view.rerender(
+    <OnboardingGate path={null}>
+      <Live />
+    </OnboardingGate>
+  );
+
+  expect(seen.at(-1)).toBe(true);
 });
 
 it("keeps one app across the upgrade path and after it", async () => {
