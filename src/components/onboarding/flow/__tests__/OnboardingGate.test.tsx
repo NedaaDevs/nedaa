@@ -11,6 +11,7 @@ import {
 } from "@/constants/Onboarding";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScreenLive } from "@/hooks/useScreenLive";
+import { UPGRADE_PATH_WHATS_NEW_IDS } from "@/constants/UpgradePath";
 import { useAppStore } from "@/stores/app";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -82,7 +83,7 @@ beforeEach(() => {
   mockFlow.path = undefined;
   mockMade.length = 0;
   appPress.mockClear();
-  useAppStore.setState({ upgradeShownThisLaunch: false });
+  useAppStore.setState({ upgradeShownThisLaunch: false, dismissedFeatureCards: [] });
   jest.mocked(useReducedMotion).mockReturnValue(false);
 });
 afterEach(() => {
@@ -199,6 +200,13 @@ it("leaves the launch unmarked on a first run", async () => {
   await renderWithTheme(<Gate show />);
 
   expect(useAppStore.getState().upgradeShownThisLaunch).toBe(false);
+  expect(useAppStore.getState().dismissedFeatureCards).toEqual([]);
+});
+
+it("marks the What's New entries the path covers as seen when it opens", async () => {
+  await renderWithTheme(<Gate path={ONBOARDING_PATH.UPGRADE} />);
+
+  expect(useAppStore.getState().dismissedFeatureCards).toEqual(UPGRADE_PATH_WHATS_NEW_IDS);
 });
 
 // An alarm found after the first frame navigates the app's stack.
