@@ -1,3 +1,4 @@
+import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 
@@ -26,6 +27,7 @@ export function seedScreenshotState(locale: "en" | "ar" = "en") {
       timezone: "Asia/Riyadh",
       error: null,
       fix: null,
+      countryCode: COUNTRY_CODE.SAUDI_ARABIA,
       isLoading: false,
     },
     localizedLocation: {

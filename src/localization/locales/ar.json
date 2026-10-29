@@ -864,6 +864,7 @@
   "location.cityChange.now": "المدينة التي أنت فيها",
   "location.cityChange.update": "تحديث الموقع",
   "location.cityChange.keep": "الإبقاء على المدينة المحفوظة",
+  "location.cityChange.unnamedPlace": "على بُعد {{distance}} كم من المكان المحفوظ",
   "location.coordinates.description": "درجات عشرية، مثلًا 24.6877 و46.7219.",
   "location.coordinates.latitude": "خط العرض",
   "location.coordinates.latitudeInvalid": "يجب أن يكون خط العرض بين ⁦-90⁩ و90.",

@@ -6,6 +6,7 @@ import {
   type StepOutcome,
   type UpdateStep,
 } from "@/constants/Location";
+import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 import {
@@ -269,7 +270,7 @@ describe("a failed run after the place changes", () => {
   it("stays while the place it wrote stands", async () => {
     await failCity();
 
-    useLocationStore.getState().setAutoUpdateLocation(false);
+    useLocationStore.getState().setTravelMode(TRAVEL_MODE.OFF);
 
     expect(run()).toEqual(expect.objectContaining({ failed: true }));
   });
