@@ -15,6 +15,7 @@ export const stepProps = (overrides: Partial<StepProps> = {}): StepProps => ({
   setBack: jest.fn(),
   dropTriedCity: jest.fn(),
   headingRef: createRef<ViewInstance>(),
+  onHeadingLayout: jest.fn(),
   progress: "",
   ...overrides,
 });
