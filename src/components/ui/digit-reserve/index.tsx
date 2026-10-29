@@ -27,7 +27,7 @@ export const DigitSizer = ({ digits, textProps, testID }: SizerProps) => (
 
 type SlotProps = { text: string; textProps: DigitTextProps; sizerTestID?: string };
 
-/** A character that never moves; a digit is as wide as its script's widest. */
+/** A digit as wide as its script's widest, or a run of other text as it is. */
 export const DigitSlot = ({ text, textProps, sizerTestID }: SlotProps) => {
   const digits = digitsOf(text);
   return (
