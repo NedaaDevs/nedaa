@@ -51,6 +51,10 @@ const endsTrip = (
   conservativeKm(fix.point, fix.accuracyKm, markPoint(entry), null) > MOVE_MIN_KM &&
   maxYearlyShiftMinutes(markPoint(entry), fix.point, zone, calc, now) >= SHIFT_GATE_MINUTES;
 
+/** A kept entry lasts `KEPT_MAX_AGE_MS` from when it was made. */
+export const isLiveKept = (entry: PlaceMark, now: number): boolean =>
+  now - entry.at <= KEPT_MAX_AGE_MS;
+
 /** The kept entries still live after a confirmed fix. */
 export const keptAfterFix = (
   kept: PlaceMark[],
@@ -59,9 +63,7 @@ export const keptAfterFix = (
   calc: ShiftCalc,
   now: number
 ): PlaceMark[] =>
-  kept.filter(
-    (entry) => now - entry.at <= KEPT_MAX_AGE_MS && !endsTrip(fix, entry, zone, calc, now)
-  );
+  kept.filter((entry) => isLiveKept(entry, now) && !endsTrip(fix, entry, zone, calc, now));
 
 /** The mark first, in place of any entry it matches, capped at `max`. */
 export const withMark = (list: PlaceMark[], mark: PlaceMark, max: number): PlaceMark[] => [
