@@ -1,6 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useWindowDimensions, type LayoutChangeEvent, type ViewInstance } from "react-native";
-import { useIsFocused } from "expo-router";
 
 import { Background } from "@/components/ui/background";
 import { SkyBodiesContext, useSkyBodyClaims } from "@/components/ui/sky-background/bodies";
@@ -13,6 +12,7 @@ import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SkyPaint } from "@/components/ui/sky-background/SkyPaint";
 import { useBodyOpacity } from "@/components/ui/sky-background/useBodyOpacity";
 import { LiveSkyContext, useLiveSky } from "@/components/ui/sky-background/useLiveSky";
+import { useScreenLive } from "@/hooks/useScreenLive";
 import { measureInWindow } from "@/utils/measureInWindow";
 import type { WindowRect } from "@/utils/sky";
 
@@ -97,8 +97,8 @@ export const SkyBackground = ({ children, paused = false }: Props) => {
   );
 };
 
-/** A route's sky: held still while another tab or a pushed screen covers it. */
+/** A route's sky: held still while out of focus or hidden by an overlay. */
 export const ScreenSky = (props: Omit<Props, "paused">) => {
-  const focused = useIsFocused();
-  return <SkyBackground {...props} paused={!focused} />;
+  const live = useScreenLive();
+  return <SkyBackground {...props} paused={!live} />;
 };
