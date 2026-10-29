@@ -50,7 +50,7 @@ const RunFrame = (props: ComponentProps<typeof OnboardingFrame>) => {
   if (!run || run.status === DAY_RUN_STATUS.IDLE) return <OnboardingFrame {...props} />;
   // Skip ends the run with no focus move: the next step takes focus.
   const skip = () => {
-    run.done();
+    run.end();
     props.onSkip();
   };
   return (

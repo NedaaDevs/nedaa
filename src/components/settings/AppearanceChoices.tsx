@@ -17,8 +17,7 @@ export const AppearanceChoices = () => {
   const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const chooseMode = useChooseMode();
   const sky = usePageSky();
-  // Only the stable method: the run itself is new on every tick.
-  const endRun = useDayRun()?.done;
+  const endRun = useDayRun()?.end;
 
   const choose = (mode: AppMode) => {
     hapticSelection();

@@ -313,7 +313,7 @@ describe("AppearanceStep", () => {
         pause: jest.fn(),
         resume: jest.fn(),
         jumpTo: jest.fn(),
-        done: jest.fn(),
+        end: jest.fn(),
         close: jest.fn(),
         ...overrides,
       };
@@ -401,11 +401,11 @@ describe("AppearanceStep", () => {
       await chooseLook(AppMode.DARK);
       await settleLook();
 
-      expect(run.done).toHaveBeenCalledTimes(1);
+      expect(run.end).toHaveBeenCalledTimes(1);
       expect(run.close).not.toHaveBeenCalled();
       expect(mockTransition).toHaveBeenCalledTimes(1);
-      const [doneAt] = jest.mocked(run.done).mock.invocationCallOrder;
-      expect(doneAt).toBeLessThan(mockTransition.mock.invocationCallOrder[0]);
+      const [endAt] = jest.mocked(run.end).mock.invocationCallOrder;
+      expect(endAt).toBeLessThan(mockTransition.mock.invocationCallOrder[0]);
       expect(useAppStore.getState().mode).toBe(AppMode.DARK);
     });
 

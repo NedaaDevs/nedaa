@@ -188,7 +188,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
             elapsedMs: dayRunPhaseStartMs(current.schedule, kind, to),
           }
       ),
-    done: () => setRun(null),
+    end: () => setRun(null),
     close: () => {
       setReturnTo(starter.current);
       setRun(null);
