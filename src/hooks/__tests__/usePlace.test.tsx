@@ -1,10 +1,11 @@
 import { act, renderHook } from "@testing-library/react-native";
 
-import { usePlace } from "@/hooks/usePlace";
+import { useNewestPlace, usePlace } from "@/hooks/usePlace";
 import { PLACE_UNKNOWN } from "@/constants/Location";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { LocationMode } from "@/enums/location";
 import type { ManualLocation } from "@/types/location";
 
@@ -32,6 +33,22 @@ const RIYADH_CITY: ManualLocation = {
   longitude: 46.72185,
   timezone: "Asia/Riyadh",
 };
+
+const MAKKAH_CITY: ManualLocation = {
+  cityId: 104515,
+  name: "Makkah",
+  names: { ar: "مكة المكرمة", ur: null, ms: null },
+  region: null,
+  countryCode: "SA",
+  country: RIYADH_CITY.country,
+  latitude: 21.4225,
+  longitude: 39.8262,
+  timezone: "Asia/Riyadh",
+};
+
+/** Marks the stored times as fetched at `city`. */
+const moveTimesTo = ({ latitude, longitude }: ManualLocation) =>
+  usePrayerTimesStore.setState({ timesCoords: { latitude, longitude } });
 
 describe("usePlace", () => {
   beforeEach(async () => {
@@ -128,5 +145,69 @@ describe("usePlace", () => {
     const { result } = await renderHook(() => usePlace());
 
     expect(result.current).toEqual({ city: undefined, country: undefined, name: undefined });
+  });
+});
+
+describe("the place the times belong to", () => {
+  beforeEach(async () => {
+    await act(() => i18n.changeLanguage(AppLocale.EN));
+    useLocationStore.setState({
+      locationMode: LocationMode.DEVICE,
+      manualLocation: null,
+      lastKnownCoords: null,
+      previousPlace: null,
+    });
+    usePrayerTimesStore.setState({ timesCoords: null });
+    // Riyadh's times landed, then Makkah was chosen.
+    useLocationStore.getState().setManualLocation(RIYADH_CITY);
+    moveTimesTo(RIYADH_CITY);
+    useLocationStore.getState().settlePlace(useLocationStore.getState().placeRevision);
+    useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+  });
+
+  afterEach(() => {
+    useLocationStore.setState({ previousPlace: null });
+    usePrayerTimesStore.setState({ timesCoords: null });
+  });
+
+  it("names the previous city while the stored times are still its", async () => {
+    const { result } = await renderHook(() => usePlace());
+
+    expect(result.current.city).toBe(RIYADH_CITY.name);
+  });
+
+  // The mark lands before the days are read back; the settle comes after.
+  it("names the previous city while the new times are marked, not settled", async () => {
+    const { result } = await renderHook(() => usePlace());
+
+    await act(() => moveTimesTo(MAKKAH_CITY));
+
+    expect(result.current.city).toBe(RIYADH_CITY.name);
+  });
+
+  it("names the new city once its times are settled", async () => {
+    const { result } = await renderHook(() => usePlace());
+
+    await act(() => {
+      moveTimesTo(MAKKAH_CITY);
+      useLocationStore.getState().settlePlace(useLocationStore.getState().placeRevision);
+    });
+
+    expect(result.current.city).toBe(MAKKAH_CITY.name);
+  });
+
+  // A language switch while the previous place is named.
+  it("names the previous city in the app's language", async () => {
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+
+    const { result } = await renderHook(() => usePlace());
+
+    expect(result.current.city).toBe(RIYADH_CITY.names.ar);
+  });
+
+  it("names the newest place for a run's target", async () => {
+    const { result } = await renderHook(() => useNewestPlace());
+
+    expect(result.current.city).toBe(MAKKAH_CITY.name);
   });
 });

@@ -46,12 +46,15 @@ const runUpdate = (start: UpdateStart): Promise<UpdateResult> =>
       return STEP_OUTCOME.DONE;
     });
     if (placed === STEP_OUTCOME.FAILED) return;
-    // False while next year's days are owed; the window is the new place's.
-    const times = await runStep(UPDATE_STEP.PRAYER_TIMES, async () =>
-      (await usePrayerTimesStore.getState().loadPrayerTimes(true))
-        ? STEP_OUTCOME.DONE
-        : STEP_OUTCOME.PARTIAL
-    );
+    const times = await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
+      const { placeRevision } = useLocationStore.getState();
+      // The place step set the place; a second device fix would move it.
+      const landed = await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
+      // A newer place owns the times; this run's place never got them.
+      if (useLocationStore.getState().placeRevision !== placeRevision) return STEP_OUTCOME.FAILED;
+      // False while next year's days are owed; the window is the new place's.
+      return landed ? STEP_OUTCOME.DONE : STEP_OUTCOME.PARTIAL;
+    });
     // Notifications read the stored days, which a failed load leaves stale.
     if (times === STEP_OUTCOME.FAILED) return;
     await runStep(UPDATE_STEP.NOTIFICATIONS, async () =>

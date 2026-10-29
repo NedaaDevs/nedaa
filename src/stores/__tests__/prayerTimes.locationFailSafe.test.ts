@@ -7,6 +7,7 @@ import { useLocationStore, type LocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
+import { fetchLandingAs } from "@/test-helpers/timesFetch";
 import { later, until } from "@/test-helpers/promises";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -53,7 +54,7 @@ jest.mock("@/stores/app", () => ({
 jest.mock("@/stores/providerSettings", () => ({
   __esModule: true,
   default: {
-    getState: () => ({ currentProviderId: "aladhan" }),
+    getState: () => ({ currentProviderId: "aladhan", setInEffect: () => {} }),
   },
 }));
 
@@ -71,13 +72,13 @@ jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
     getPrayerTimesByDateRange: (...args: unknown[]) => mockGetPrayerTimesByDateRange(...args),
     getPrayerTimesByDate: (...args: unknown[]) => mockGetPrayerTimesByDate(...args),
-    insertPrayerTimes: jest.fn(),
+    insertPrayerTimes: jest.fn(async () => ({ success: true })),
     cleanData: jest.fn(() => Promise.resolve(true)),
   },
 }));
 
 jest.mock("@/adapters/providers", () => ({
-  getAdapterByProviderId: jest.fn(),
+  getAdapterByProviderId: () => ({ fromApplied: () => null }),
 }));
 
 // One logger per domain, so a test can read what a store logged.
@@ -139,7 +140,7 @@ describe("prayer-time location fail-safe", () => {
 
   it("does not mark location acquired when acquisition fails", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
 
@@ -157,7 +158,7 @@ describe("prayer-time location fail-safe", () => {
    */
   it("falls back to the default location when the permission is declined", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
     mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: false });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
@@ -291,7 +292,7 @@ describe("prayer-time location fail-safe", () => {
       },
       timestamp: 1_750_000_000_000,
     };
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
     mockGetLocationWithTimeout.mockResolvedValue(acquiredLocation);
     mockReverseGeocodeAsync.mockRejectedValue(new Error("Android geocoder unavailable"));
@@ -330,7 +331,7 @@ describe("prayer-time location fail-safe", () => {
       },
       timestamp: 1_750_000_000_000,
     };
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
     useLocationStore.setState({
       locationDetails: savedLocationDetails,
       localizedLocation: savedLocalizedLocation,
@@ -366,7 +367,7 @@ describe("prayer-time location fail-safe", () => {
       longitude: 46.6753,
       accuracy: 20,
     };
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
     useLocationStore.setState({
       locationDetails: { ...initialLocationDetails, coords: persistedCoords },
       lastKnownCoords: { latitude: persistedCoords.latitude, longitude: persistedCoords.longitude },
@@ -383,7 +384,7 @@ describe("prayer-time location fail-safe", () => {
 
   it("uses a persisted verified location when current permission is unavailable", async () => {
     const refreshPrayerTimes = jest.fn(() => Promise.resolve(TIMES_FETCH.STORED));
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: refreshPrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(refreshPrayerTimes) });
     useLocationStore.setState({
       locationDetails: {
         ...initialLocationDetails,
@@ -612,7 +613,7 @@ describe("one position read per fetch attempt", () => {
     mockReverseGeocodeAsync.mockResolvedValue([]);
     mockReverseGeocodeApi.mockResolvedValue(RIYADH_GEOCODE);
     usePrayerTimesStore.setState({
-      getAndStorePrayerTimes: jest.fn(() => Promise.resolve(TIMES_FETCH.STORED)),
+      getPrayerTimes: fetchLandingAs(async () => TIMES_FETCH.STORED),
     });
   });
 
@@ -648,7 +649,7 @@ describe("a place verified after the default place's days were stored", () => {
       flagAtFetch.push(usePrayerTimesStore.getState().usingDefaultLocation);
       return fetch.promise;
     });
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes });
+    usePrayerTimesStore.setState({ getPrayerTimes: fetchLandingAs(getAndStorePrayerTimes) });
     return { fetch, flagAtFetch, getAndStorePrayerTimes };
   };
   const usingDefault = () => usePrayerTimesStore.getState().usingDefaultLocation;

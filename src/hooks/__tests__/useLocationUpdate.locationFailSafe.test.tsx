@@ -42,7 +42,9 @@ jest.mock("@/api/geocodeApi", () => ({
 }));
 
 jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: { getState: () => ({ loadPrayerTimes: mockLoadPrayerTimes }) },
+  usePrayerTimesStore: {
+    getState: () => ({ loadPrayerTimesAtCurrentPlace: mockLoadPrayerTimes }),
+  },
 }));
 
 jest.mock("@/stores/notification", () => ({

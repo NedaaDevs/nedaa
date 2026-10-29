@@ -3,6 +3,7 @@ import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
 import { TIMES_FETCH } from "@/constants/PrayerTimes";
+import { fetchLandingAs } from "@/test-helpers/timesFetch";
 
 const mockGetLocationWithTimeout = jest.fn();
 const mockCheckLocationPermission = jest.fn();
@@ -39,7 +40,7 @@ jest.mock("@/stores/app", () => ({
 
 jest.mock("@/stores/providerSettings", () => ({
   __esModule: true,
-  default: { getState: () => ({ currentProviderId: "aladhan" }) },
+  default: { getState: () => ({ currentProviderId: "aladhan", setInEffect: () => {} }) },
 }));
 
 jest.mock("@/api/geocodeApi", () => ({
@@ -54,12 +55,14 @@ jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
     getPrayerTimesByDateRange: (...args: unknown[]) => mockGetPrayerTimesByDateRange(...args),
     getPrayerTimesByDate: (...args: unknown[]) => mockGetPrayerTimesByDate(...args),
-    insertPrayerTimes: jest.fn(),
+    insertPrayerTimes: jest.fn(async () => ({ success: true })),
     cleanData: jest.fn(() => Promise.resolve(true)),
   },
 }));
 
-jest.mock("@/adapters/providers", () => ({ getAdapterByProviderId: jest.fn() }));
+jest.mock("@/adapters/providers", () => ({
+  getAdapterByProviderId: () => ({ fromApplied: () => null }),
+}));
 
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: {
@@ -108,7 +111,7 @@ describe("prayer times with a manual location", () => {
     mockGetPrayerTimesByDateRange.mockResolvedValue([]);
     mockGetPrayerTimesByDate.mockResolvedValue(null);
     usePrayerTimesStore.setState({
-      getAndStorePrayerTimes: jest.fn(() => Promise.resolve(TIMES_FETCH.STORED)),
+      getPrayerTimes: fetchLandingAs(async () => TIMES_FETCH.STORED),
     });
   });
 

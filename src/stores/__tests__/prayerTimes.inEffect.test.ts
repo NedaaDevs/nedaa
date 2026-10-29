@@ -95,12 +95,14 @@ describe("the settings the stored times came from", () => {
   it("writes nothing when the place moves while the fetch is out", async () => {
     useProviderSettingsStore.setState({ inEffect: { method: MWL } });
     mockGet.mockImplementation(async () => {
-      useLocationStore.setState({
+      // A write of a new point, as every place writer makes it.
+      useLocationStore.setState((state) => ({
         locationDetails: {
           ...locationDetails,
           coords: { ...locationDetails.coords, latitude: locationDetails.coords.latitude + 1 },
         },
-      });
+        placeRevision: state.placeRevision + 1,
+      }));
       return response({ method: MAKKAH });
     });
 
