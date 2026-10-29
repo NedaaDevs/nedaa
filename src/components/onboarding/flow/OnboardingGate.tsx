@@ -10,6 +10,7 @@ import {
   ONBOARDING_PATH,
   type OnboardingPath,
 } from "@/constants/Onboarding";
+import { AppHiddenContext } from "@/contexts/AppHiddenContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useAppStore } from "@/stores/app";
 
@@ -77,7 +78,8 @@ export const OnboardingGate = ({ path, children }: Props) => {
         <Animated.View
           style={[StyleSheet.absoluteFill, appStyle, (leaving || showOnboarding) && NO_TOUCHES]}
           {...(showOnboarding ? HIDDEN_FROM_READER : {})}>
-          {children}
+          {/* The hidden app holds its sky and clocks still under the flow's. */}
+          <AppHiddenContext value={showOnboarding}>{children}</AppHiddenContext>
         </Animated.View>
       ) : null}
       {flowPath !== null && (showOnboarding || leaving) ? (

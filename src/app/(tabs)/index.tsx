@@ -1,5 +1,4 @@
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useIsFocused } from "expo-router";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -23,13 +22,14 @@ import { TODAY_SCREEN_PART, TODAY_STYLE } from "@/constants/Today";
 
 // Hooks
 import { usePrayerDetail } from "@/hooks/usePrayerDetail";
+import { useScreenLive } from "@/hooks/useScreenLive";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 
 // Stores
 import { usePreferencesStore } from "@/stores/preferences";
 
 export default function MainScreen() {
-  const focused = useIsFocused();
+  const live = useScreenLive();
   const insets = useSafeAreaInsets();
   const tabBarInset = useTabBarInset();
   const showOccasions = usePreferencesStore((state) => state.showImportantDaysOnHome);
@@ -53,7 +53,7 @@ export default function MainScreen() {
               <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
                 {/* The countdown sits inside the bowl that draws the day, or alone. */}
                 <Box testID={TODAY_SCREEN_PART.FOCUS}>
-                  <TodayHero todayStyle={todayStyle} selected={detail.prayerId} paused={!focused} />
+                  <TodayHero todayStyle={todayStyle} selected={detail.prayerId} paused={!live} />
                 </Box>
                 <SkyOccluder>
                   <LocationNotice />

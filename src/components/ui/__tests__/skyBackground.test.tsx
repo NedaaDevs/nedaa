@@ -8,6 +8,7 @@ import { BODY_BEHIND_TEXT } from "@/constants/Sky";
 import { DURATION_MS } from "@/constants/Motion";
 import { BRIGHTNESS } from "@/constants/Palette";
 import { PHASE, type Phase } from "@/constants/Phase";
+import { AppHiddenContext } from "@/contexts/AppHiddenContext";
 import { DrawnModeContext } from "@/contexts/DrawnModeContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
 import { SampleDaysContext } from "@/hooks/useStoredDays";
@@ -340,6 +341,18 @@ describe("SkyBackground", () => {
       );
 
       expect(raysTurn()).toBe(turns);
+    });
+
+    it("holds its rays still while an overlay hides the app", async () => {
+      await renderWithTheme(
+        <AppHiddenContext value>
+          <PhaseContext value={PHASE.DAY}>
+            <ScreenSky />
+          </PhaseContext>
+        </AppHiddenContext>
+      );
+
+      expect(raysTurn()).toBe(false);
     });
 
     it("holds its rays still under reduced motion", async () => {
