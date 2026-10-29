@@ -13,6 +13,7 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 import { RTL_LOCALES } from "@/constants/Locales";
 import { isOnboardingStepId } from "@/constants/Onboarding";
 import { ALL_WHATS_NEW_IDS } from "@/constants/WhatsNew";
+import { UPGRADE_PATH_STATE, isUpgradePathState } from "@/constants/UpgradePath";
 
 // Types
 import { AppState } from "@/types/app";
@@ -58,6 +59,8 @@ export const useAppStore = create<AppState>()(
           direction: initialDirection,
           hijriDaysOffset: 0,
           dismissedFeatureCards: [],
+          upgradePath: UPGRADE_PATH_STATE.PENDING,
+          upgradeShownThisLaunch: false,
 
           setIsFirstRun(isFirstRun: boolean) {
             // Completing first-run seeds every current feature card as dismissed:
@@ -66,6 +69,8 @@ export const useAppStore = create<AppState>()(
             set((state) => ({
               isFirstRun,
               onboardingStep: isFirstRun ? state.onboardingStep : null,
+              // Onboarding already walks every V3 choice, so the path closes.
+              upgradePath: isFirstRun ? state.upgradePath : UPGRADE_PATH_STATE.DONE,
               dismissedFeatureCards: isFirstRun
                 ? state.dismissedFeatureCards
                 : [...new Set([...state.dismissedFeatureCards, ...ALL_WHATS_NEW_IDS])],
@@ -73,6 +78,10 @@ export const useAppStore = create<AppState>()(
           },
 
           setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
+
+          setUpgradePath: (upgradePath) => set({ upgradePath }),
+
+          markUpgradeShown: () => set({ upgradeShownThisLaunch: true }),
 
           // One write, so no state holds a first run with a stale saved step.
           restartOnboarding: () => set({ isFirstRun: true, onboardingStep: null }),
@@ -109,6 +118,7 @@ export const useAppStore = create<AppState>()(
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
             hijriDaysOffset: state.hijriDaysOffset,
+            upgradePath: state.upgradePath,
           }),
           merge: (persisted, current) => {
             const saved = (persisted ?? {}) as Partial<AppState>;
@@ -117,7 +127,11 @@ export const useAppStore = create<AppState>()(
               saved.onboardingStep === undefined || isOnboardingStepId(saved.onboardingStep)
                 ? (saved.onboardingStep ?? current.onboardingStep)
                 : null;
-            return { ...current, ...saved, onboardingStep };
+            // A missing or unknown saved state opens the path.
+            const upgradePath = isUpgradePathState(saved.upgradePath)
+              ? saved.upgradePath
+              : UPGRADE_PATH_STATE.PENDING;
+            return { ...current, ...saved, onboardingStep, upgradePath };
           },
           onRehydrateStorage: () => (state, error) => {
             if (error) {
