@@ -44,6 +44,8 @@ import { useLoadFonts } from "@/config/fonts";
 import { useNotificationListeners } from "@/hooks/useNotificationListeners";
 import { useNotificationResponses } from "@/hooks/useNotificationResponses";
 import { useAlarmDeepLink } from "@/hooks/useAlarmDeepLink";
+import { useLaunchSource } from "@/hooks/useLaunchSource";
+import { useOnboardingPath } from "@/hooks/useOnboardingPath";
 import { ScreenshotModeWrapper } from "@/screenshot-mode/ScreenshotModeWrapper";
 import { installScreenshotRouter } from "@/screenshot-mode/router";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
@@ -67,10 +69,10 @@ SplashScreen.setOptions({
 });
 SplashScreen.preventAutoHideAsync();
 
-function AppShell() {
+function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
   const theme = useTheme();
   const themeName = useThemeName();
-  const isFirstRun = useAppStore((state) => state.isFirstRun);
+  const path = useOnboardingPath(launchedByAlert);
 
   const segments = useSegments();
   const isQuranScreen = isQuranSegments(segments);
@@ -82,7 +84,7 @@ function AppShell() {
   const safeAreaBg = readerImmersive
     ? QURAN_THEME_COLORS[quranTheme].background
     : theme.background.val;
-  const showOnboarding = isFirstRun && !IS_SCREENSHOT_MODE;
+  const showOnboarding = path !== null && !IS_SCREENSHOT_MODE;
   const safeAreaEdges = rootSafeAreaEdges({
     sky: isSkySegments(segments),
     onboarding: showOnboarding,
@@ -108,9 +110,9 @@ function AppShell() {
             importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
             <StatusBar animated style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
 
-            <CityChangeSheet />
+            <CityChangeSheet onboarding={showOnboarding} />
 
-            <OnboardingGate showOnboarding={showOnboarding}>
+            <OnboardingGate path={showOnboarding ? path : null}>
               <Stack
                 screenOptions={{
                   headerShown: false,
@@ -130,7 +132,13 @@ function AppShell() {
 }
 
 /** The app in the theme it shows; a light/dark flip waits for its dissolve. */
-const AppTheme = ({ livePhase }: { livePhase: Phase | undefined }) => {
+const AppTheme = ({
+  livePhase,
+  launchedByAlert,
+}: {
+  livePhase: Phase | undefined;
+  launchedByAlert: boolean;
+}) => {
   const locale = useAppStore((state) => state.locale);
   const { phase, scheme, theme } = useRootAppearance(livePhase);
   const arabicScript = isArabicScript(locale);
@@ -145,7 +153,7 @@ const AppTheme = ({ livePhase }: { livePhase: Phase | undefined }) => {
               heading={arabicScript ? "ar" : "default"}>
               <RTLProvider>
                 <FontProvider>
-                  <AppShell />
+                  <AppShell launchedByAlert={launchedByAlert} />
                 </FontProvider>
               </RTLProvider>
             </FontLanguage>
@@ -161,6 +169,7 @@ export default function RootLayout() {
 
   const [fontsLoaded, fontError] = useLoadFonts();
   const prefsHydrated = usePreferencesHydrated();
+  const launch = useLaunchSource();
   useInitialSetup();
 
   const phase = usePrayerPhaseSource();
@@ -180,7 +189,9 @@ export default function RootLayout() {
   // Both persisted stores gate the first frame: the app store carries theme
   // and first-run state; the preferences store carries the text-size preset
   // and offer flag, which must not render as defaults and then reflow.
-  const isReady = (fontsLoaded || fontError) && hasHydrated && prefsHydrated;
+  const storesReady = (fontsLoaded || fontError) && hasHydrated && prefsHydrated;
+  // The launch source decides whether the upgrade path covers the first frame.
+  const isReady = storesReady && launch.ready;
 
   useEffect(() => {
     if (isReady) {
@@ -195,7 +206,7 @@ export default function RootLayout() {
   return (
     <ScreenshotModeWrapper>
       <ThemeTransitionProvider>
-        <AppTheme livePhase={phase} />
+        <AppTheme livePhase={phase} launchedByAlert={launch.launchedByAlert} />
       </ThemeTransitionProvider>
     </ScreenshotModeWrapper>
   );
