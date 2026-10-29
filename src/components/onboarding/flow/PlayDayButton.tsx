@@ -13,6 +13,7 @@ import { DAY_RUN_STATUS } from "@/constants/DayRun";
 import { SKY_SWATCH_SIZE } from "@/constants/Sky";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { AppMode } from "@/enums/app";
+import { usePlayFlip } from "@/hooks/usePlayFlip";
 import { skySwatchFor } from "@/utils/sky";
 
 /** Test ids for the button's parts. */
@@ -21,14 +22,12 @@ export const PLAY_DAY_PART = {
   MARK: "play-day-mark",
 } as const;
 
-// The play triangle points along the reading direction.
-const MIRROR = { transform: [{ scaleX: -1 }] };
-
 /** Plays a day of Adaptive; the player's own close brings focus back here. */
 export const PlayDayButton = () => {
   const { t } = useTranslation();
   const run = useDayRun();
   const sky = usePageSky();
+  const playFlip = usePlayFlip();
   const buttonRef = useRef<ViewInstance>(null);
 
   if (!run) return null;
@@ -69,7 +68,7 @@ export const PlayDayButton = () => {
         backgroundColor="$accent"
         alignItems="center"
         justifyContent="center"
-        style={sky.isRTL ? MIRROR : undefined}>
+        style={playFlip}>
         <Icon as={Play} size="xs" color="$bg" fill="$bg" />
       </Box>
     </Button>
