@@ -9,6 +9,7 @@ import {
   type Coords,
   type LocationDetails,
   type ManualLocation,
+  type PlaceRecord,
 } from "@/types/location";
 import {
   LOCATION_FAILURE,
@@ -109,6 +110,12 @@ const deviceAddressAt = async ({ latitude, longitude }: Coords): Promise<DeviceG
 
 export type LocationStore = {
   locationDetails: LocationDetails;
+  /** The place the stored times belong to, until the new place's land. */
+  previousPlace: PlaceRecord | null;
+  /** Moves on every write of the place's point. */
+  placeRevision: number;
+  /** Clears `previousPlace` once times land for `revision`'s place. */
+  settlePlace: (revision: number) => void;
   localizedLocation: {
     country: string;
     city: string;
@@ -149,6 +156,31 @@ export type LocationStore = {
 
 type SetLocation = (partial: Partial<LocationStore>) => void;
 
+/** The saved place as a whole; null before any place is verified. */
+const placeRecordOf = (state: LocationStore): PlaceRecord | null => {
+  if (state.lastKnownCoords === null) return null;
+  const { coords, address, timezone, fix } = state.locationDetails;
+  return {
+    coords,
+    address,
+    timezone,
+    fixSource: fix?.source ?? null,
+    fixedAt: fix?.at ?? null,
+    localizedLocation: state.localizedLocation,
+    locationMode: state.locationMode,
+    manualLocation: state.manualLocation,
+  };
+};
+
+// Spread into every write of a new point. The first place written since the
+// times last landed stays the previous one.
+const placeWrite = (
+  state: LocationStore
+): Pick<LocationStore, "placeRevision" | "previousPlace"> => ({
+  placeRevision: state.placeRevision + 1,
+  previousPlace: state.previousPlace ?? placeRecordOf(state),
+});
+
 // Reads overlap, and one its caller gave up on still settles; only the
 // newest read takes the flag down.
 let readsStarted = 0;
@@ -170,6 +202,8 @@ export const useLocationStore = create<LocationStore>()(
     persist(
       (set, get) => ({
         locationDetails: initialLocationDetails,
+        previousPlace: null,
+        placeRevision: 0,
         localizedLocation: { country: "", city: "" },
         isLocationPermissionGranted: false,
         isGettingLocation: false,
@@ -211,6 +245,7 @@ export const useLocationStore = create<LocationStore>()(
                 state.lastKnownCoords
                   ? { isLocationPermissionGranted: true }
                   : {
+                      ...placeWrite(state),
                       locationDetails: {
                         ...state.locationDetails,
                         coords: location.coords,
@@ -221,6 +256,7 @@ export const useLocationStore = create<LocationStore>()(
                       isLocationPermissionGranted: true,
                     }
               );
+              const revision = get().placeRevision;
 
               const geocodedAddress = (await deviceAddressAt(location.coords)).address;
 
@@ -237,10 +273,16 @@ export const useLocationStore = create<LocationStore>()(
                 });
 
               if (!applies()) return;
+              // A newer point was written while this one was named.
+              if (get().placeRevision !== revision) {
+                log.i("Init", "the place moved during the naming; the fix is not applied");
+                return;
+              }
               const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
               if (!timezone) throw new Error(i18n.t("location.update.error"));
 
-              set({
+              set((state) => ({
+                ...placeWrite(state),
                 locationDetails: {
                   coords: location.coords,
                   address: {
@@ -262,7 +304,7 @@ export const useLocationStore = create<LocationStore>()(
                   longitude: location.coords.longitude,
                 },
                 isLocationPermissionGranted: true,
-              });
+              }));
             } catch (error) {
               const cause =
                 error instanceof Error ? error : new Error("Failed to initialize location");
@@ -310,6 +352,7 @@ export const useLocationStore = create<LocationStore>()(
                     city: geocoded.address.city ?? PLACE_UNKNOWN,
                   };
               set((state) => ({
+                ...placeWrite(state),
                 locationDetails: {
                   ...state.locationDetails,
                   coords: location.coords,
@@ -371,6 +414,10 @@ export const useLocationStore = create<LocationStore>()(
           log.i("Device", "device location adopted over the chosen city");
         },
 
+        settlePlace: (revision) => {
+          set((state) => (revision === state.placeRevision ? { previousPlace: null } : {}));
+        },
+
         setTimezone: (tz) => {
           set((state) => ({ locationDetails: { ...state.locationDetails, timezone: tz } }));
         },
@@ -383,6 +430,7 @@ export const useLocationStore = create<LocationStore>()(
         updateAddressTranslation: async () => {
           const location = get().locationDetails;
           const asked = appStore.getState().locale;
+          const revision = get().placeRevision;
 
           const geocodeAdd = await get()
             .reverseGeocode({
@@ -396,6 +444,8 @@ export const useLocationStore = create<LocationStore>()(
 
           // A later language switch owns the name; this answer is for the old one.
           if (appStore.getState().locale !== asked) return false;
+          // The answer names a point that is not the saved one.
+          if (get().placeRevision !== revision) return false;
 
           if (geocodeAdd) {
             // Update localizedLocation with localized strings
@@ -501,6 +551,7 @@ export const useLocationStore = create<LocationStore>()(
         // times store keeps reporting the default Makkah fallback.
         setManualLocation: (location) => {
           set((state) => ({
+            ...placeWrite(state),
             locationMode: LocationMode.MANUAL,
             manualLocation: location,
             manualLocationChosenAt: Date.now(),
@@ -525,12 +576,13 @@ export const useLocationStore = create<LocationStore>()(
         },
 
         clearManualLocation: () => {
-          set({
+          set((state) => ({
+            ...placeWrite(state),
             locationMode: LocationMode.DEVICE,
             manualLocation: null,
             manualLocationChosenAt: null,
             lastKnownCoords: null,
-          });
+          }));
           log.i("Manual", "manual location cleared; the device location will be used");
         },
       }),
@@ -546,6 +598,8 @@ export const useLocationStore = create<LocationStore>()(
           locationMode: state.locationMode,
           manualLocation: state.manualLocation,
           manualLocationChosenAt: state.manualLocationChosenAt,
+          previousPlace: state.previousPlace,
+          placeRevision: state.placeRevision,
         }),
         // A saved DEVICE mode would read the device position in a screenshot build.
         merge: (persisted, current) => {

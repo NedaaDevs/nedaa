@@ -35,7 +35,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationPermission } from "@/hooks/useLocationPermission";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
-import { usePlace } from "@/hooks/usePlace";
+import { useNewestPlace, usePlace } from "@/hooks/usePlace";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
 import { useLocationStore } from "@/stores/location";
 import { FINDING_CITY, findingCity, isRunning } from "@/stores/locationUpdate";
@@ -68,7 +68,7 @@ const DENIED_HERO: Hero = {
   note: "location.hero.deniedNote",
 };
 
-/** A failed read leaves the saved place as it was. */
+/** A failed run leaves the times with the place they belong to. */
 const SAVED_HERO: Hero = {
   tone: PLACE_HERO_TONE.DEVICE,
   kicker: "location.hero.savedKicker",
@@ -77,10 +77,10 @@ const SAVED_HERO: Hero = {
 
 type HeroFacts = {
   chosenCity: boolean;
+  /** The named place is a chosen city: the previous place while it is named. */
+  namedCity: boolean;
   /** No city chosen and no verified place: the times are Makkah's. */
   noPlace: boolean;
-  /** The last run read the place, then failed at the times. */
-  placeChanged: boolean;
   /** A run reads the device; the place it moves to is not known yet. */
   finding: boolean;
 };
@@ -88,8 +88,9 @@ type HeroFacts = {
 /** The hero says only what holds: whose place, or that none is found. */
 const heroFor = (
   state: LocationRootState,
-  { chosenCity, noPlace, placeChanged, finding }: HeroFacts
+  { chosenCity, namedCity, noPlace, finding }: HeroFacts
 ): Hero => {
+  const placeHero = namedCity ? CITY_HERO : DEVICE_HERO;
   switch (state) {
     // The title is the run's target once its first step has set the place.
     case LOCATION_ROOT_STATE.UPDATING:
@@ -100,17 +101,16 @@ const heroFor = (
       };
     case LOCATION_ROOT_STATE.CHECKING:
     case LOCATION_ROOT_STATE.DEVICE:
-      return noPlace ? ASK_HERO : DEVICE_HERO;
+      return noPlace ? ASK_HERO : placeHero;
     case LOCATION_ROOT_STATE.MANUAL:
-      return CITY_HERO;
+      return placeHero;
     case LOCATION_ROOT_STATE.PERMISSION:
       return ASK_HERO;
     case LOCATION_ROOT_STATE.DENIED:
       return DENIED_HERO;
     case LOCATION_ROOT_STATE.FAILURE:
       if (noPlace) return ASK_HERO;
-      if (placeChanged) return chosenCity ? CITY_HERO : DEVICE_HERO;
-      return chosenCity ? { ...SAVED_HERO, tone: PLACE_HERO_TONE.CITY } : SAVED_HERO;
+      return namedCity ? { ...SAVED_HERO, tone: PLACE_HERO_TONE.CITY } : SAVED_HERO;
     default: {
       const unhandled: never = state;
       return unhandled;
@@ -132,11 +132,14 @@ export const LocationRoot = () => {
   const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const mediumHaptic = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
   const place = usePlace();
+  const newestPlace = useNewestPlace();
   const verified = useVerifiedPlace();
   const now = useMinuteClock();
   const chosenCity = useLocationStore(
     (state) => state.locationMode === LocationMode.MANUAL && state.manualLocation !== null
   );
+  // The previous place is named until the new place's times land.
+  const previousMode = useLocationStore((state) => state.previousPlace?.locationMode ?? null);
   const storedFailure = useLocationStore((state) => state.locationDetails.error);
   const fix = useLocationStore((state) => state.locationDetails.fix);
   const lastKnown = fix?.source === FIX_SOURCE.LAST_KNOWN;
@@ -171,10 +174,13 @@ export const LocationRoot = () => {
   const placeChanged = failedStep !== null && failedStep !== UPDATE_STEP.LOCATION;
   const noPlace = !chosenCity && !verified;
   const finding = findingCity(run);
-  const hero = heroFor(state, { chosenCity, noPlace, placeChanged, finding });
+  const namedCity = previousMode === null ? chosenCity : previousMode === LocationMode.MANUAL;
+  const hero = heroFor(state, { chosenCity, namedCity, noPlace, finding });
+  const showsRun = state === LOCATION_ROOT_STATE.UPDATING;
   // A run names its target once the read is done; else only a verified place.
-  const named = !noPlace || (state === LOCATION_ROOT_STATE.UPDATING && !finding);
-  const title = named && place.name ? place.name : t("onboarding.location.question");
+  const named = !noPlace || (showsRun && !finding);
+  const titlePlace = showsRun ? newestPlace : place;
+  const title = named && titlePlace.name ? titlePlace.name : t("onboarding.location.question");
   const failure = placeChanged ? null : storedFailure;
   const age = fix && fixAgeOf(fix.at, now.getTime());
 

@@ -3,7 +3,7 @@ import { renderHook } from "@testing-library/react-native";
 import { reverseGeocodeAsync } from "@/adapters/location";
 import { FIX_SOURCE, LOCATION_FAILURE, PLACE_UNKNOWN, knownPlaceName } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
-import { usePlace } from "@/hooks/usePlace";
+import { useNewestPlace } from "@/hooks/usePlace";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
@@ -36,7 +36,7 @@ jest.mock("@/utils/location", () => ({
 
 jest.mock("@/utils/appLogger", () => {
   const log = { d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() };
-  return { AppLogger: { create: () => log } };
+  return { AppLogger: { create: () => log, registerReportSection: jest.fn() } };
 });
 
 const mockReadLocation = readLocation as jest.Mock;
@@ -221,7 +221,7 @@ describe("device fix in the location store", () => {
       const state = useLocationStore.getState();
       expect(state.locationDetails.address).toEqual({ country: "Saudi Arabia", city: "Riyadh" });
       expect(state.localizedLocation).toEqual(localized);
-      const { result } = await renderHook(() => usePlace());
+      const { result } = await renderHook(() => useNewestPlace());
       expect(result.current.city).toBe(localized.city);
     });
 
@@ -233,7 +233,7 @@ describe("device fix in the location store", () => {
       expect(
         knownPlaceName(useLocationStore.getState().locationDetails.address?.city)
       ).toBeUndefined();
-      const { result } = await renderHook(() => usePlace());
+      const { result } = await renderHook(() => useNewestPlace());
       expect(result.current.city).toBeUndefined();
     });
 
@@ -294,7 +294,7 @@ describe("device fix in the location store", () => {
     expect(
       knownPlaceName(useLocationStore.getState().locationDetails.address?.city)
     ).toBeUndefined();
-    const { result } = await renderHook(() => usePlace());
+    const { result } = await renderHook(() => useNewestPlace());
     expect(result.current.city).toBeUndefined();
   });
 

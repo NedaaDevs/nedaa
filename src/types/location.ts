@@ -1,5 +1,5 @@
 // Enum
-import type { LocalPermissionStatus } from "@/enums/location";
+import type { LocalPermissionStatus, LocationModeValue } from "@/enums/location";
 import { KAABA_COORDINATES } from "@/utils/compass";
 import type { CityCountry, CityRegion, LocalizedNames } from "@/types/cities";
 import type { FixSource, LocationFailure } from "@/constants/Location";
@@ -116,4 +116,16 @@ export type ManualLocation = {
   latitude: number;
   longitude: number;
   timezone: string;
+};
+
+/** A whole saved place: its point, names, zone, fix and how it was set. */
+export type PlaceRecord = {
+  coords: LocationObjectCoords;
+  address: Address | null;
+  timezone: string;
+  fixSource: FixSource | null;
+  fixedAt: number | null;
+  localizedLocation: Address;
+  locationMode: LocationModeValue;
+  manualLocation: ManualLocation | null;
 };
