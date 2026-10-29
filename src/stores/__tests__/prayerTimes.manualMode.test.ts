@@ -2,7 +2,6 @@ import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
-import { TIMES_FETCH } from "@/constants/PrayerTimes";
 import { fetchLandingAs } from "@/test-helpers/timesFetch";
 
 const mockGetLocationWithTimeout = jest.fn();
@@ -111,7 +110,7 @@ describe("prayer times with a manual location", () => {
     mockGetPrayerTimesByDateRange.mockResolvedValue([]);
     mockGetPrayerTimesByDate.mockResolvedValue(null);
     usePrayerTimesStore.setState({
-      getPrayerTimes: fetchLandingAs(async () => TIMES_FETCH.STORED),
+      getPrayerTimes: fetchLandingAs(async () => true),
     });
   });
 
