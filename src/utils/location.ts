@@ -6,6 +6,7 @@ import {
   requestForegroundPermissionsAsync,
   LocationAccuracy,
   type LocationObject,
+  type LocationOptions,
 } from "@/adapters/location";
 import {
   FIX_SOURCE,
@@ -101,8 +102,15 @@ const servicesEnabled = (): Promise<boolean> =>
     return true;
   });
 
+const ACTIVE_READ: LocationOptions = { accuracy: LocationAccuracy.LOW };
+// A check the user did not start never opens the location settings dialog.
+const PASSIVE_READ: LocationOptions = { ...ACTIVE_READ, mayShowUserSettingsDialog: false };
+
 // One gate for every read: an unpermitted native read logs as a failure.
-const readPosition = async (inTime: () => boolean): Promise<LocationObject> => {
+const readPosition = async (
+  inTime: () => boolean,
+  options: LocationOptions
+): Promise<LocationObject> => {
   const { granted } = await checkLocationPermission();
   if (!granted) {
     log.w("Position", "location request skipped; permission not granted");
@@ -111,7 +119,7 @@ const readPosition = async (inTime: () => boolean): Promise<LocationObject> => {
   // A check that answers after the deadline starts no fix; nobody waits for it.
   if (!inTime()) throw new LocationFixError(LOCATION_FAILURE.TIMEOUT);
   try {
-    return await getCurrentPositionAsync({ accuracy: LocationAccuracy.LOW });
+    return await getCurrentPositionAsync(options);
   } catch (error) {
     const kind = (await servicesEnabled())
       ? LOCATION_FAILURE.UNAVAILABLE
@@ -136,9 +144,15 @@ const mayFallBack = (kind: LocationFailure): boolean => {
   }
 };
 
-const readLastKnown = (): Promise<LocationObject | null> =>
+// The deadline's own rejection is the only error that is not a LocationFixError.
+const asFixError = (error: unknown): LocationFixError =>
+  error instanceof LocationFixError
+    ? error
+    : new LocationFixError(LOCATION_FAILURE.TIMEOUT, { cause: error });
+
+const readLastKnown = (maxAgeMs: number): Promise<LocationObject | null> =>
   withTimeout(
-    getLastKnownPositionAsync(LAST_KNOWN_MAX_AGE_MS).catch((error: unknown) => {
+    getLastKnownPositionAsync(maxAgeMs).catch((error: unknown) => {
       log.w("Position", `cached fix read failed: ${errorText(error)}`);
       return null;
     }),
@@ -156,18 +170,18 @@ export const readLocation = async (
   let failure: LocationFixError;
   try {
     // One deadline covers the permission check and the fix; either can stall.
-    const location = await withDeadline(readPosition, timeoutMs, TIMED_OUT);
+    const location = await withDeadline(
+      (inTime) => readPosition(inTime, ACTIVE_READ),
+      timeoutMs,
+      TIMED_OUT
+    );
     return { location, source: FIX_SOURCE.FRESH };
   } catch (error) {
-    // The deadline's own rejection is the only error that is not a LocationFixError.
-    failure =
-      error instanceof LocationFixError
-        ? error
-        : new LocationFixError(LOCATION_FAILURE.TIMEOUT, { cause: error });
+    failure = asFixError(error);
   }
 
   if (mayFallBack(failure.kind)) {
-    const lastKnown = await readLastKnown();
+    const lastKnown = await readLastKnown(LAST_KNOWN_MAX_AGE_MS);
     if (lastKnown) {
       log.i("Position", `fresh fix failed (${failure.kind}); using the cached fix`);
       return { location: lastKnown, source: FIX_SOURCE.LAST_KNOWN };
@@ -180,6 +194,23 @@ export const readLocation = async (
   }
   throw failure;
 };
+
+/** A fresh fix with no settings dialog and no cached fallback. */
+export const readPassiveFix = async (timeoutMs: number): Promise<LocationObject> => {
+  try {
+    return await withDeadline((inTime) => readPosition(inTime, PASSIVE_READ), timeoutMs, TIMED_OUT);
+  } catch (error) {
+    throw asFixError(error);
+  }
+};
+
+/** The device's cached fix no older than `maxAgeMs`, or null; never throws. */
+export const readCachedFix = (maxAgeMs: number): Promise<LocationObject | null> =>
+  withTimeout(
+    checkLocationPermission().then(({ granted }) => (granted ? readLastKnown(maxAgeMs) : null)),
+    LAST_KNOWN_REQUEST_TIMEOUT,
+    null
+  );
 
 /** The device position alone, for a caller that does not record its source. */
 export const getLocationWithTimeout = async (

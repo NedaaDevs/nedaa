@@ -3,8 +3,10 @@ import {
   getForegroundPermissionsAsync,
   getLastKnownPositionAsync,
   hasServicesEnabledAsync,
+  LocationAccuracy,
 } from "@/adapters/location";
 
+import { CACHED_FIX_MAX_AGE_MS, FRESH_FIX_TIMEOUT_MS } from "@/constants/CityCheck";
 import { FIX_SOURCE, LOCATION_FAILURE, type LocationFailure } from "@/constants/Location";
 
 // Enums
@@ -18,7 +20,9 @@ import {
   LocationFixError,
   LocationPermissionError,
   getLocationWithTimeout,
+  readCachedFix,
   readLocation,
+  readPassiveFix,
 } from "@/utils/location";
 
 jest.mock("@/adapters/location", () => ({
@@ -308,5 +312,74 @@ describe("readLocation", () => {
     mockGetLastKnownPositionAsync.mockResolvedValue(mockLocation);
 
     await expect(getLocationWithTimeout(DEADLINE_MS)).resolves.toEqual(mockLocation);
+  });
+});
+
+describe("passive reads", () => {
+  const GRANTED = { status: LocalPermissionStatus.GRANTED, canAskAgain: true };
+  const DENIED = { status: LocalPermissionStatus.DENIED, canAskAgain: true };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetForegroundPermissionsAsync.mockResolvedValue(GRANTED);
+    mockGetCurrentPositionAsync.mockResolvedValue(mockLocation);
+    mockGetLastKnownPositionAsync.mockResolvedValue(mockLocation);
+    mockHasServicesEnabledAsync.mockResolvedValue(true);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("reads a passive fix without the location settings dialog", async () => {
+    await expect(readPassiveFix(FRESH_FIX_TIMEOUT_MS)).resolves.toEqual(mockLocation);
+    expect(mockGetCurrentPositionAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accuracy: LocationAccuracy.LOW,
+        mayShowUserSettingsDialog: false,
+      })
+    );
+  });
+
+  it("fails a passive read as denied with no native call", async () => {
+    mockGetForegroundPermissionsAsync.mockResolvedValue(DENIED);
+    await expect(readPassiveFix(FRESH_FIX_TIMEOUT_MS)).rejects.toMatchObject({
+      kind: LOCATION_FAILURE.DENIED,
+    });
+    expect(mockGetCurrentPositionAsync).not.toHaveBeenCalled();
+  });
+
+  it("fails a timed-out passive read with no cached fallback", async () => {
+    jest.useFakeTimers();
+    mockGetCurrentPositionAsync.mockReturnValue(never());
+    const outcome = outcomeOf(readPassiveFix(FRESH_FIX_TIMEOUT_MS));
+
+    await jest.advanceTimersByTimeAsync(FRESH_FIX_TIMEOUT_MS);
+
+    expect(outcome).toHaveBeenCalledWith({
+      error: expect.objectContaining({ kind: LOCATION_FAILURE.TIMEOUT }),
+    });
+    expect(mockGetLastKnownPositionAsync).not.toHaveBeenCalled();
+  });
+
+  it("reads no cached fix without permission", async () => {
+    mockGetForegroundPermissionsAsync.mockResolvedValue(DENIED);
+    await expect(readCachedFix(CACHED_FIX_MAX_AGE_MS)).resolves.toBeNull();
+    expect(mockGetLastKnownPositionAsync).not.toHaveBeenCalled();
+  });
+
+  it("asks for a cached fix no older than the limit", async () => {
+    await expect(readCachedFix(CACHED_FIX_MAX_AGE_MS)).resolves.toEqual(mockLocation);
+    expect(mockGetLastKnownPositionAsync).toHaveBeenCalledWith(CACHED_FIX_MAX_AGE_MS);
+  });
+
+  it("reads no cached fix when the read fails or stalls", async () => {
+    mockGetLastKnownPositionAsync.mockRejectedValueOnce(new Error("cache read failed"));
+    await expect(readCachedFix(CACHED_FIX_MAX_AGE_MS)).resolves.toBeNull();
+
+    jest.useFakeTimers();
+    mockGetLastKnownPositionAsync.mockReturnValue(never());
+    const outcome = outcomeOf(readCachedFix(CACHED_FIX_MAX_AGE_MS));
+    await jest.advanceTimersByTimeAsync(LAST_KNOWN_REQUEST_TIMEOUT);
+    expect(outcome).toHaveBeenCalledWith({ value: null });
   });
 });
