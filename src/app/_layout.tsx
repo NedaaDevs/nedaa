@@ -24,6 +24,7 @@ import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { AlertLaunchContext } from "@/contexts/AlertLaunchContext";
 import { LivePhaseContext } from "@/contexts/LivePhaseContext";
 import { PhaseContext, usePrayerPhaseSource } from "@/contexts/PhaseContext";
 import { SchemeContext } from "@/contexts/SchemeContext";
@@ -73,7 +74,7 @@ SplashScreen.preventAutoHideAsync();
 function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
   const theme = useTheme();
   const themeName = useThemeName();
-  const path = useOnboardingPath(launchedByAlert);
+  const { path, alertLaunch } = useOnboardingPath(launchedByAlert);
 
   const segments = useSegments();
   const isQuranScreen = isQuranSegments(segments);
@@ -115,14 +116,16 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
 
             <CityChangeSheet onboarding={showOnboarding} />
 
-            <OnboardingGate path={gatePath}>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}>
-                <Stack.Screen name="(tabs)" />
-              </Stack>
-            </OnboardingGate>
+            <AlertLaunchContext value={alertLaunch}>
+              <OnboardingGate path={gatePath}>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                  }}>
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+              </OnboardingGate>
+            </AlertLaunchContext>
             <PlayerBottomSheet />
             <CrashReportPrompt />
             <WhatsNewSheet />
