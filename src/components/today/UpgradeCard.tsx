@@ -1,3 +1,4 @@
+import { use } from "react";
 import type { AccessibilityActionEvent } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
@@ -15,6 +16,7 @@ import { VStack } from "@/components/ui/vstack";
 import { A11Y_ACTION, HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { SKY_SWATCH_SIZE } from "@/constants/Sky";
 import { UPGRADE_PATH_STATE } from "@/constants/UpgradePath";
+import { AlertLaunchContext } from "@/contexts/AlertLaunchContext";
 import { AppMode } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { skySwatchFor } from "@/utils/sky";
@@ -31,8 +33,10 @@ export const UpgradeCard = () => {
   const sky = usePageSky();
   const later = useAppStore((state) => state.upgradePath === UPGRADE_PATH_STATE.LATER);
   const setUpgradePath = useAppStore((state) => state.setUpgradePath);
+  // An alert's launch opens no path, so the card waits for the next.
+  const alertLaunch = use(AlertLaunchContext);
 
-  if (!later) return null;
+  if (!later || alertLaunch) return null;
 
   const title = t("onboarding.upgrade.title");
   const body = t("onboarding.upgrade.cardBody");
@@ -51,7 +55,9 @@ export const UpgradeCard = () => {
           onPress={() => setUpgradePath(UPGRADE_PATH_STATE.RESUMED)}
           accessibilityLabel={t("a11y.join", { first: title, second: body })}
           accessibilityHint={t("a11y.today.upgradeCardHint")}
-          accessibilityActions={[{ name: A11Y_ACTION.DISMISS, label: t("onboarding.upgrade.keep") }]}
+          accessibilityActions={[
+            { name: A11Y_ACTION.DISMISS, label: t("onboarding.upgrade.keep") },
+          ]}
           onAccessibilityAction={onAccessibilityAction}>
           <SkySwatch
             bands={skySwatchFor(AppMode.ADAPTIVE)}

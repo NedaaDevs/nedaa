@@ -38,7 +38,7 @@ describe("useOnboardingPath", () => {
   it("opens the upgrade path on a normal launch", async () => {
     const { result } = await mount();
 
-    expect(result.current).toBe(ONBOARDING_PATH.UPGRADE);
+    expect(result.current.path).toBe(ONBOARDING_PATH.UPGRADE);
   });
 
   it("the alarm screen hides the path for the launch", async () => {
@@ -46,11 +46,11 @@ describe("useOnboardingPath", () => {
 
     mockPathname = ALARM_SCREEN_PATH.RING;
     await rerender({ alert: false });
-    expect(result.current).toBeNull();
+    expect(result.current.path).toBeNull();
 
     mockPathname = HOME;
     await rerender({ alert: false });
-    expect(result.current).toBeNull();
+    expect(result.current.path).toBeNull();
   });
 
   it("the alarm-complete screen hides the path too", async () => {
@@ -59,19 +59,19 @@ describe("useOnboardingPath", () => {
     mockPathname = ALARM_SCREEN_PATH.COMPLETE;
     await rerender({ alert: false });
 
-    expect(result.current).toBeNull();
+    expect(result.current.path).toBeNull();
   });
 
   it("opens the path again on the next normal launch", async () => {
     mockPathname = ALARM_SCREEN_PATH.RING;
     const alarmLaunch = await mount();
-    expect(alarmLaunch.result.current).toBeNull();
+    expect(alarmLaunch.result.current.path).toBeNull();
     await alarmLaunch.unmount();
 
     mockPathname = HOME;
     const { result } = await mount();
 
-    expect(result.current).toBe(ONBOARDING_PATH.UPGRADE);
+    expect(result.current.path).toBe(ONBOARDING_PATH.UPGRADE);
   });
 
   it("follows the store when the path closes", async () => {
@@ -79,17 +79,17 @@ describe("useOnboardingPath", () => {
 
     await act(() => useAppStore.getState().setUpgradePath(UPGRADE_PATH_STATE.LATER));
 
-    expect(result.current).toBeNull();
+    expect(result.current.path).toBeNull();
   });
 
   it("a tapped notification closes the path for the launch", async () => {
     const { result, rerender } = await mount();
 
     await tap();
-    expect(result.current).toBeNull();
+    expect(result.current.path).toBeNull();
 
     await rerender({ alert: false });
-    expect(result.current).toBeNull();
+    expect(result.current.path).toBeNull();
   });
 
   it("a tapped notification leaves a first run in place", async () => {
@@ -98,7 +98,27 @@ describe("useOnboardingPath", () => {
 
     await tap();
 
-    expect(result.current).toBe(ONBOARDING_PATH.FIRST_RUN);
+    expect(result.current.path).toBe(ONBOARDING_PATH.FIRST_RUN);
+  });
+
+  // The Today card reads the same latch, so it never offers a path that waits.
+  it("latches an alert for the launch: a link, an alarm screen or a tap", async () => {
+    const normal = await mount();
+    expect(normal.result.current.alertLaunch).toBe(false);
+    await normal.rerender({ alert: true });
+    expect(normal.result.current.alertLaunch).toBe(true);
+    await normal.unmount();
+
+    mockPathname = ALARM_SCREEN_PATH.RING;
+    const alarm = await mount();
+    mockPathname = HOME;
+    await alarm.rerender({ alert: false });
+    expect(alarm.result.current.alertLaunch).toBe(true);
+    await alarm.unmount();
+
+    const tapped = await mount();
+    await tap();
+    expect(tapped.result.current.alertLaunch).toBe(true);
   });
 
   it("stops listening for taps when it unmounts", async () => {

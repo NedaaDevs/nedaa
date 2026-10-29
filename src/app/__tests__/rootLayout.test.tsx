@@ -41,10 +41,18 @@ jest.mock("@gorhom/bottom-sheet", () => ({ BottomSheetModalProvider: passThrough
 const mockLaunch = { ready: true, launchedByAlert: false };
 jest.mock("@/hooks/useLaunchSource", () => ({ useLaunchSource: () => mockLaunch }));
 let mockPath: OnboardingPath | null = null;
-jest.mock("@/hooks/useOnboardingPath", () => ({ useOnboardingPath: () => mockPath }));
+let mockAlertLaunch = false;
+jest.mock("@/hooks/useOnboardingPath", () => ({
+  useOnboardingPath: () => ({ path: mockPath, alertLaunch: mockAlertLaunch }),
+}));
 
 /** What each wired part was last handed. */
-const mockSeen: { sheetOnboarding?: boolean; gatePath?: unknown; canNavigate?: boolean } = {};
+const mockSeen: {
+  sheetOnboarding?: boolean;
+  gatePath?: unknown;
+  canNavigate?: boolean;
+  alertLaunch?: boolean;
+} = {};
 jest.mock("@/hooks/useNotificationResponses", () => ({
   useNotificationResponses: (canNavigate: boolean) => {
     mockSeen.canNavigate = canNavigate;
@@ -59,6 +67,10 @@ jest.mock("@/components/location/CityChangeSheet", () => ({
 jest.mock("@/components/onboarding/flow/OnboardingGate", () => ({
   OnboardingGate: ({ path }: { path: unknown }) => {
     mockSeen.gatePath = path;
+    // The app under the gate reads the launch's alert latch.
+    const { use } = jest.requireActual("react");
+    const { AlertLaunchContext } = jest.requireActual("@/contexts/AlertLaunchContext");
+    mockSeen.alertLaunch = use(AlertLaunchContext);
     return null;
   },
 }));
@@ -74,6 +86,7 @@ beforeEach(() => {
   mockLaunch.ready = true;
   mockLaunch.launchedByAlert = false;
   mockPath = null;
+  mockAlertLaunch = false;
   for (const key of Object.keys(mockSeen)) delete mockSeen[key as keyof typeof mockSeen];
   useAppStore.setState({ hasHydrated: true });
 });
@@ -109,6 +122,13 @@ describe("RootLayout wiring", () => {
     expect(mockSeen.gatePath).toBe(ONBOARDING_PATH.FIRST_RUN);
     expect(mockSeen.sheetOnboarding).toBe(true);
     expect(mockSeen.canNavigate).toBe(false);
+  });
+
+  it.each([true, false])("hands the app the launch's alert latch (%s)", async (latched) => {
+    mockAlertLaunch = latched;
+    await renderRoot();
+
+    expect(mockSeen.alertLaunch).toBe(latched);
   });
 
   it("shows the app with no path", async () => {
