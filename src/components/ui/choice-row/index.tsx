@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_STYLE, LIST_ROW_VARIANT } from "@/components/ui/list-row";
+import { Pill } from "@/components/ui/pill";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -82,6 +83,8 @@ type Props = {
   onPress: () => void;
   /** Drawn at the start of the row, such as a preview of the choice. */
   leading?: ReactNode;
+  /** A short note on the row, such as the user's own setting; read last. */
+  badge?: string;
   testID?: string;
 };
 
@@ -93,12 +96,14 @@ export const ChoiceRow = ({
   selected,
   onPress,
   leading,
+  badge,
   testID,
 }: Props) => {
   const { t } = useTranslation();
   const grouped = use(VariantContext) === LIST_ROW_VARIANT.GROUPED;
   // A row in a group lies flat on it; a choice alone is a card of its own.
   const Frame = grouped ? Pressable : Card.Pressable;
+  const named = subtitle ? t("a11y.join", { first: title, second: subtitle }) : title;
 
   return (
     <Frame
@@ -106,7 +111,7 @@ export const ChoiceRow = ({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={subtitle ? t("a11y.join", { first: title, second: subtitle }) : title}
+      accessibilityLabel={badge ? t("a11y.join", { first: named, second: badge }) : named}
       flexDirection="row"
       alignItems="center"
       gap="$3"
@@ -125,6 +130,11 @@ export const ChoiceRow = ({
               {subtitle}
             </Text>
           </SubtitleFace>
+        ) : null}
+        {badge ? (
+          <VStack paddingTop="$1.5">
+            <Pill alignSelf="flex-start">{badge}</Pill>
+          </VStack>
         ) : null}
       </VStack>
       <ChoiceCheck selected={selected} />
