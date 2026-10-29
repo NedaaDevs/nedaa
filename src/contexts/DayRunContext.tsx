@@ -1,7 +1,7 @@
 import { createContext, use } from "react";
 import type { HostInstance } from "react-native";
 
-import type { DayRunKind, DayRunStatus } from "@/constants/DayRun";
+import type { DayRunStatus } from "@/constants/DayRun";
 import type { Phase } from "@/constants/Phase";
 
 /**
@@ -9,7 +9,6 @@ import type { Phase } from "@/constants/Phase";
  * Its methods are stable from tick to tick; the run itself is not.
  */
 export type DayRun = {
-  kind: DayRunKind;
   status: DayRunStatus;
   /** The phase the run's clock is in; undefined while no run draws. */
   phase: Phase | undefined;
