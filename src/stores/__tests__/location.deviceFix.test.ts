@@ -1,19 +1,14 @@
 import { renderHook } from "@testing-library/react-native";
 
 import { reverseGeocodeAsync } from "@/adapters/location";
-import { FIX_SOURCE, LOCATION_FAILURE, PLACE_UNKNOWN, knownPlaceName } from "@/constants/Location";
+import { FIX_SOURCE, LOCATION_FAILURE, knownPlaceName } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
 import { useNewestPlace } from "@/hooks/usePlace";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject } from "@/types/location";
 import { later } from "@/test-helpers/promises";
-import {
-  LocationFixError,
-  getLocationWithTimeout,
-  readLocation,
-  type LocationFix,
-} from "@/utils/location";
+import { LocationFixError, readLocation, type LocationFix } from "@/utils/location";
 import { MAKKAH_CITY } from "@/test-helpers/place";
 
 jest.mock("expo-sqlite/kv-store", () => ({
@@ -32,7 +27,6 @@ jest.mock("@/adapters/location", () => ({
 jest.mock("@/utils/location", () => ({
   ...jest.requireActual("@/utils/location"),
   readLocation: jest.fn(),
-  getLocationWithTimeout: jest.fn(),
 }));
 
 jest.mock("@/utils/appLogger", () => {
@@ -41,7 +35,6 @@ jest.mock("@/utils/appLogger", () => {
 });
 
 const mockReadLocation = readLocation as jest.Mock;
-const mockGetLocationWithTimeout = getLocationWithTimeout as jest.Mock;
 const mockReverseGeocodeAsync = reverseGeocodeAsync as jest.Mock;
 
 const fixAt = (latitude: number, longitude: number): LocationObject => ({
@@ -59,10 +52,6 @@ const fixAt = (latitude: number, longitude: number): LocationObject => ({
 
 const RIYADH = fixAt(24.7136, 46.6753);
 const JEDDAH = fixAt(21.4858, 39.1925);
-// About 30 km from JEDDAH: past the city-change distance, inside the same city.
-const JEDDAH_NORTH = fixAt(21.76, 39.15);
-// About 12 km from RIYADH: past the city-change distance, inside the same city.
-const RIYADH_NORTH = fixAt(24.8, 46.75);
 
 const deviceAddress = (city: string) => ({ city, country: "Saudi Arabia", timezone: null });
 
@@ -84,9 +73,6 @@ describe("device fix in the location store", () => {
         address: { country: "Saudi Arabia", city: "Riyadh" },
       },
       lastKnownCoords: { latitude: RIYADH.coords.latitude, longitude: RIYADH.coords.longitude },
-      showCityChangeModal: false,
-      pendingCityChange: null,
-      cityOffered: null,
       reverseGeocode,
     });
     useAppStore.setState({ isFirstRun: false });
@@ -133,29 +119,6 @@ describe("device fix in the location store", () => {
     await useLocationStore.getState().updateCurrentLocation();
 
     expect(useLocationStore.getState().locationDetails.address?.city).toBe("Jeddah");
-  });
-
-  it("prompts for no city change inside the city an update moved to", async () => {
-    mockReadLocation.mockResolvedValue({ location: JEDDAH, source: FIX_SOURCE.FRESH });
-    mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
-    await useLocationStore.getState().updateCurrentLocation();
-
-    mockGetLocationWithTimeout.mockResolvedValue(JEDDAH_NORTH);
-    await useLocationStore.getState().checkAndPromptCityChange();
-
-    expect(useLocationStore.getState().pendingCityChange).toBeNull();
-  });
-
-  it("skips the city-change prompt quietly when the geocoder names nothing", async () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
-    mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
-    mockReverseGeocodeAsync.mockResolvedValue([]);
-
-    await useLocationStore.getState().checkAndPromptCityChange();
-
-    expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    expect(consoleError).not.toHaveBeenCalled();
-    consoleError.mockRestore();
   });
 
   // A move drops the old translated name; the new one's lands later.
@@ -226,19 +189,6 @@ describe("device fix in the location store", () => {
       expect(result.current.city).toBeUndefined();
     });
 
-    it("still offers a city change once the device moves", async () => {
-      await useLocationStore.getState().updateCurrentLocation();
-      mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
-      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).toEqual({
-        currentCity: "Riyadh",
-        newCity: "Jeddah",
-      });
-    });
-
     // A chosen city's name was never the device geocoder's.
     it("leaves the device's place unnamed when it replaces a chosen city", async () => {
       useLocationStore.getState().setManualLocation(MAKKAH_CITY);
@@ -291,136 +241,6 @@ describe("device fix in the location store", () => {
     useLocationStore.getState().setTimezone("Asia/Dubai");
 
     expect(useLocationStore.getState().locationDetails.timezone).toBe("Asia/Dubai");
-  });
-
-  describe("the city-change offer", () => {
-    /** The device now reads Jeddah, named by the device geocoder. */
-    const inJeddah = () => {
-      mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
-      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
-    };
-
-    it("offers the new city against the saved one", async () => {
-      inJeddah();
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      const state = useLocationStore.getState();
-      expect(state.pendingCityChange).toEqual({ currentCity: "Riyadh", newCity: "Jeddah" });
-      expect(state.showCityChangeModal).toBe(true);
-    });
-
-    it("logs through the app logger, not the console", async () => {
-      const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
-      inJeddah();
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(consoleLog).not.toHaveBeenCalled();
-      consoleLog.mockRestore();
-    });
-
-    // A shared log names no place.
-    it("logs the offer without the cities' names", async () => {
-      const log = jest.requireMock("@/utils/appLogger").AppLogger.create();
-      inJeddah();
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).not.toBeNull();
-      const lines = JSON.stringify([log.d.mock.calls, log.i.mock.calls, log.w.mock.calls]);
-      expect(lines).not.toMatch(/Riyadh|Jeddah/);
-    });
-
-    it("offers nothing while onboarding runs", async () => {
-      useAppStore.setState({ isFirstRun: true });
-      inJeddah();
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    });
-
-    it.each([
-      ["no saved address", null],
-      ["an unnamed saved city", { country: "Saudi Arabia", city: PLACE_UNKNOWN }],
-    ])("offers nothing against %s", async (_case, address) => {
-      useLocationStore.setState((state) => ({
-        locationDetails: { ...state.locationDetails, address },
-      }));
-      inJeddah();
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    });
-
-    // The API names the city in the app's language; device geocoding does not.
-    it("offers nothing inside a city the first fix named through the API alone", async () => {
-      useLocationStore.setState({
-        reverseGeocode: jest.fn(async () => ({
-          city: "الرياض",
-          countryName: "السعودية",
-          timezone: "Asia/Riyadh",
-        })),
-      });
-      mockReadLocation.mockResolvedValue({ location: RIYADH, source: FIX_SOURCE.FRESH });
-      mockReverseGeocodeAsync.mockRejectedValueOnce(new Error("offline"));
-      await useLocationStore.getState().initializeLocation();
-      mockGetLocationWithTimeout.mockResolvedValue(RIYADH_NORTH);
-      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Riyadh")]);
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    });
-
-    it("offers nothing for a new place the geocoder cannot name", async () => {
-      mockGetLocationWithTimeout.mockResolvedValue(JEDDAH);
-      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress(PLACE_UNKNOWN)]);
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    });
-
-    // Saved coordinates that moved during the read are not the ones compared.
-    it("offers nothing when the saved place moved during the check", async () => {
-      mockGetLocationWithTimeout.mockImplementation(async () => {
-        useLocationStore.getState().setManualLocation(MAKKAH_CITY);
-        useLocationStore.setState({ locationMode: LocationMode.DEVICE });
-        return JEDDAH;
-      });
-      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Jeddah")]);
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    });
-
-    it("keeps the offer drawn while the sheet closes", async () => {
-      inJeddah();
-      await useLocationStore.getState().checkAndPromptCityChange();
-
-      useLocationStore.getState().closeCityChange();
-
-      const state = useLocationStore.getState();
-      expect(state.showCityChangeModal).toBe(false);
-      expect(state.pendingCityChange).toEqual({ currentCity: "Riyadh", newCity: "Jeddah" });
-    });
-
-    it("offers a closed city no more this session, and offers another", async () => {
-      inJeddah();
-      await useLocationStore.getState().checkAndPromptCityChange();
-      useLocationStore.getState().clearCityChange();
-
-      await useLocationStore.getState().checkAndPromptCityChange();
-      expect(useLocationStore.getState().pendingCityChange).toBeNull();
-
-      mockReverseGeocodeAsync.mockResolvedValue([deviceAddress("Taif")]);
-      await useLocationStore.getState().checkAndPromptCityChange();
-      expect(useLocationStore.getState().pendingCityChange?.newCity).toBe("Taif");
-    });
   });
 
   it("records when the first fix was observed", async () => {

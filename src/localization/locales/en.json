@@ -745,6 +745,7 @@
   "location.cityChange.now": "City you're in",
   "location.cityChange.update": "Update my location",
   "location.cityChange.keep": "Keep the saved city",
+  "location.cityChange.unnamedPlace": "{{distance}} km from the saved place",
   "location.coordinates.description": "Decimal degrees, for example 24.6877 and 46.7219.",
   "location.coordinates.latitude": "Latitude",
   "location.coordinates.latitudeInvalid": "Latitude must be between -90 and 90.",

@@ -19,7 +19,6 @@ import {
   LAST_KNOWN_REQUEST_TIMEOUT,
   LocationFixError,
   LocationPermissionError,
-  getLocationWithTimeout,
   readCachedFix,
   readLocation,
   readPassiveFix,
@@ -60,20 +59,22 @@ const mockLocation = {
   mocked: false,
 };
 
+const FRESH_FIX = { location: mockLocation, source: FIX_SOURCE.FRESH };
+
 describe("location permission gating", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetLastKnownPositionAsync.mockResolvedValue(null);
   });
 
-  describe("getLocationWithTimeout", () => {
+  describe("readLocation's permission check", () => {
     it("throws LocationPermissionError without calling the native provider when permission is not granted", async () => {
       mockGetForegroundPermissionsAsync.mockResolvedValue({
         status: LocalPermissionStatus.DENIED,
         canAskAgain: true,
       });
 
-      await expect(getLocationWithTimeout()).rejects.toThrow(LocationPermissionError);
+      await expect(readLocation()).rejects.toThrow(LocationPermissionError);
       expect(mockGetCurrentPositionAsync).not.toHaveBeenCalled();
     });
 
@@ -84,7 +85,7 @@ describe("location permission gating", () => {
       });
       mockGetCurrentPositionAsync.mockResolvedValue(mockLocation);
 
-      await expect(getLocationWithTimeout()).resolves.toEqual(mockLocation);
+      await expect(readLocation()).resolves.toEqual(FRESH_FIX);
     });
 
     it("logs a denied permission as a skip, not as a failed request", async () => {
@@ -93,14 +94,14 @@ describe("location permission gating", () => {
         canAskAgain: true,
       });
 
-      await expect(getLocationWithTimeout()).rejects.toThrow(LocationPermissionError);
+      await expect(readLocation()).rejects.toThrow(LocationPermissionError);
       expect(log.w).toHaveBeenCalledTimes(1);
       expect(log.e).not.toHaveBeenCalled();
     });
   });
 
   // One deadline covers the permission check and the fix together.
-  describe("getLocationWithTimeout's deadline", () => {
+  describe("readLocation's deadline", () => {
     const DEADLINE_MS = 1000;
     const GRANTED = { status: LocalPermissionStatus.GRANTED, canAskAgain: true };
     /** A permission check that answers granted after `ms`. */
@@ -118,7 +119,7 @@ describe("location permission gating", () => {
 
     it("rejects at its timeout when the permission check never answers", async () => {
       mockGetForegroundPermissionsAsync.mockReturnValue(never());
-      const outcome = outcomeOf(getLocationWithTimeout(DEADLINE_MS));
+      const outcome = outcomeOf(readLocation(DEADLINE_MS));
 
       await jest.advanceTimersByTimeAsync(DEADLINE_MS - 1);
       expect(outcome).not.toHaveBeenCalled();
@@ -133,7 +134,7 @@ describe("location permission gating", () => {
     it("counts the check's time against the same deadline as the fix", async () => {
       grantedAfter(DEADLINE_MS / 2);
       mockGetCurrentPositionAsync.mockReturnValue(never());
-      const outcome = outcomeOf(getLocationWithTimeout(DEADLINE_MS));
+      const outcome = outcomeOf(readLocation(DEADLINE_MS));
 
       await jest.advanceTimersByTimeAsync(DEADLINE_MS - 1);
       expect(mockGetCurrentPositionAsync).toHaveBeenCalledTimes(1);
@@ -147,7 +148,7 @@ describe("location permission gating", () => {
 
     it("starts no fix when the check answers after the deadline", async () => {
       grantedAfter(DEADLINE_MS * 2);
-      const outcome = outcomeOf(getLocationWithTimeout(DEADLINE_MS));
+      const outcome = outcomeOf(readLocation(DEADLINE_MS));
 
       await jest.advanceTimersByTimeAsync(DEADLINE_MS * 3);
 
@@ -159,7 +160,7 @@ describe("location permission gating", () => {
       mockGetForegroundPermissionsAsync.mockResolvedValue(GRANTED);
       mockGetCurrentPositionAsync.mockResolvedValue(mockLocation);
 
-      await expect(getLocationWithTimeout(DEADLINE_MS)).resolves.toEqual(mockLocation);
+      await expect(readLocation(DEADLINE_MS)).resolves.toEqual(FRESH_FIX);
       expect(jest.getTimerCount()).toBe(0);
     });
   });
@@ -305,13 +306,6 @@ describe("readLocation", () => {
     mockGetLastKnownPositionAsync.mockRejectedValue(new Error("cache read failed"));
 
     expect(await failureOf(readLocation(DEADLINE_MS))).toBe(LOCATION_FAILURE.UNAVAILABLE);
-  });
-
-  it("returns only the position through getLocationWithTimeout", async () => {
-    mockGetCurrentPositionAsync.mockRejectedValue(nativeFailure);
-    mockGetLastKnownPositionAsync.mockResolvedValue(mockLocation);
-
-    await expect(getLocationWithTimeout(DEADLINE_MS)).resolves.toEqual(mockLocation);
   });
 });
 
