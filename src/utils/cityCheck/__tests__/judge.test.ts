@@ -328,6 +328,18 @@ describe("confirmedFix", () => {
     expect(confirmedFix([f1, second])).toBeNull()
   );
 
+  it.each([
+    ["an agreeing pair", [f1, f2]],
+    ["an early second fix", [f1, F2_EARLY]],
+    ["a far second fix", [f1, F2_FAR]],
+    ["a second fix with no accuracy", [f1, F2_NO_ACCURACY]],
+    ["one fix", [f1]],
+  ])("agrees with the judge on %s", (_case, fixes) =>
+    expect(reasonOf({ fixes }) === CITY_CHECK_NEED.NEEDS_CANDIDATE).toBe(
+      confirmedFix(fixes) !== null
+    )
+  );
+
   it("confirms nothing for one fix or a cached pair", () => {
     expect(confirmedFix([f1])).toBeNull();
     expect(
