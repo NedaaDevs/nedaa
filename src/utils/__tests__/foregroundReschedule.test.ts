@@ -13,6 +13,7 @@ jest.mock("@/services/widgetSnapshot", () => ({
   syncWidgetSnapshot: () => mockSyncWidgetSnapshot(),
 }));
 const mockEnsureAlarms = jest.fn();
+const mockRescheduleAlarms = jest.fn();
 const mockWaitForAlarmStores = jest.fn();
 const mockLogError = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
@@ -72,6 +73,7 @@ jest.mock("@/stores/location", () => ({
 jest.mock("@/utils/location", () => ({ checkLocationPermission: mockCheckPermission }));
 jest.mock("@/utils/alarmScheduler", () => ({
   ensureAlarmsScheduled: mockEnsureAlarms,
+  rescheduleAllAlarms: mockRescheduleAlarms,
   waitForAlarmStores: mockWaitForAlarmStores,
 }));
 jest.mock("@/utils/appLogger", () => ({ AppLogger: { create: () => ({ e: mockLogError }) } }));
@@ -102,6 +104,7 @@ beforeEach(() => {
   mockRefreshTimings.mockClear().mockResolvedValue([]);
   mockRescheduleIfNeeded.mockClear().mockResolvedValue(undefined);
   mockEnsureAlarms.mockClear().mockResolvedValue(undefined);
+  mockRescheduleAlarms.mockClear().mockResolvedValue(undefined);
   mockWaitForAlarmStores.mockClear().mockResolvedValue(undefined);
   mockLogError.mockClear();
   mockLoadPrayerTimes.mockClear().mockResolvedValue(undefined);
@@ -263,6 +266,35 @@ describe("registerForegroundReschedule", () => {
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
     expect(mockRefreshTimings).not.toHaveBeenCalled();
+  });
+
+  // The top-up keeps an armed alarm; only a reschedule moves it.
+  it("moves the alarms once a repair brings the times to the saved place", async () => {
+    mockLocationState.locationDetails = { coords: { latitude: 21.4858, longitude: 39.1925 } };
+    mockLoadPrayerTimes.mockImplementation(async () => {
+      mockPrayerTimesState.timesCoords = mockLocationState.locationDetails.coords;
+      return true;
+    });
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+
+    expect(mockWaitForAlarmStores).toHaveBeenCalled();
+    expect(mockRescheduleAlarms).toHaveBeenCalledTimes(1);
+    expect(mockEnsureAlarms).not.toHaveBeenCalled();
+  });
+
+  it("only tops up the alarms when the repair leaves the times elsewhere", async () => {
+    mockLocationState.locationDetails = { coords: { latitude: 21.4858, longitude: 39.1925 } };
+    mockLoadPrayerTimes.mockRejectedValue(new Error("offline"));
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+
+    expect(mockRescheduleAlarms).not.toHaveBeenCalled();
+    expect(mockEnsureAlarms).toHaveBeenCalledTimes(1);
   });
 
   it("leaves a manually picked location alone", async () => {
