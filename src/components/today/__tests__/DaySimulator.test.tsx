@@ -241,13 +241,13 @@ describe("DaySimulator", () => {
     await act(() => result.current.run?.start());
     await advance(PREVIEW.tickMs, PREVIEW_TICKS + 1);
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.ENDED);
-    await act(() => result.current.run?.done());
+    await act(() => result.current.run?.end());
 
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
     expect(mounted).toHaveBeenCalledTimes(1);
   });
 
-  // A part that reads the run renders again when the run changes, not each minute.
+  // A part that reads the run renders when the run changes, not each minute.
   it.each([
     [DAY_RUN_KIND.DEBUG, {}],
     [DAY_RUN_KIND.PREVIEW, { todayTimings: null }],
@@ -261,7 +261,7 @@ describe("DaySimulator", () => {
     expect(result.current.run).toBe(atRest);
   });
 
-  // With only today stored, no stored night comes before Fajr; the run draws one.
+  // With only today stored, no night is stored before Fajr; the run draws one.
   it("a preview prelude is night with only today stored", async () => {
     const { result } = await renderRun(DAY_RUN_KIND.PREVIEW);
     await act(() => result.current.run?.start());
@@ -344,7 +344,7 @@ describe("DaySimulator", () => {
     expect(result.current.drawn).toBe(AppMode.LIGHT);
     expect(result.current.days.today).toBe(DAY);
 
-    await act(() => result.current.run?.done());
+    await act(() => result.current.run?.end());
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
   });
 
@@ -364,7 +364,7 @@ describe("DaySimulator", () => {
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.ENDED);
     expect(result.current.run?.progress).toBe(1);
 
-    await act(() => result.current.run?.done());
+    await act(() => result.current.run?.end());
     expect(result.current.run?.progress).toBe(0);
   });
 
@@ -409,7 +409,7 @@ describe("DaySimulator", () => {
     const { result } = await renderRun(DAY_RUN_KIND.PREVIEW, <View ref={starter} />);
 
     await act(() => result.current.run?.start(starter.current));
-    await act(() => result.current.run?.done());
+    await act(() => result.current.run?.end());
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
     expect(focus).not.toHaveBeenCalled();
 
