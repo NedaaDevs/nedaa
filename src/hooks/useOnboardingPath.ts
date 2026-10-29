@@ -23,7 +23,7 @@ export const useOnboardingPath = (launchedByAlert: boolean): LaunchPath => {
   const [alarmScreenSeen, setAlarmScreenSeen] = useState(false);
   if (!alarmScreenSeen && isAlarmScreenPath(pathname)) setAlarmScreenSeen(true);
   // A tap opens its own screen, the cold-launch tap included when it is late.
-  const [tapped, setTapped] = useState(false);
+  const [tapped, setTapped] = useState(() => Notifications.getLastNotificationResponse() !== null);
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(() =>
       setTapped(true)
