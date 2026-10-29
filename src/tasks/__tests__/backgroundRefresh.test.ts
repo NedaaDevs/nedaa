@@ -26,6 +26,8 @@ const mockBgLog = jest.fn();
 const mockWaitForHydration = jest.fn();
 const mockSyncWidgetSnapshot = jest.fn(async () => {});
 const mockSettlePlace = jest.fn();
+const mockRescheduleAlarms = jest.fn();
+const mockWaitForAlarmStores = jest.fn();
 /** The location store's place revision as the run starts. */
 const MOCK_REVISION = 4;
 /** Where the stored days were fetched; the place is always at MOCK_PLACE. */
@@ -80,6 +82,10 @@ jest.mock("@/stores/location", () => ({
     }),
     persist: hydratedPersist,
   },
+}));
+jest.mock("@/utils/alarmScheduler", () => ({
+  waitForAlarmStores: () => mockWaitForAlarmStores(),
+  rescheduleAllAlarms: () => mockRescheduleAlarms(),
 }));
 jest.mock("@/stores/providerSettings", () => ({
   useProviderSettingsStore: {
@@ -298,6 +304,33 @@ describe("executeBackgroundRefresh", () => {
     await executeBackgroundRefresh();
 
     expect(mockSettlePlace).not.toHaveBeenCalled();
+  });
+
+  // The top-up keeps an armed alarm; only a reschedule moves it.
+  it("moves the alarms to a place that settles here", async () => {
+    mockTimesCoords = { latitude: 21.4858, longitude: 39.1925 };
+    mockRefetch.mockResolvedValue(LANDED);
+
+    await executeBackgroundRefresh();
+
+    expect(mockWaitForAlarmStores).toHaveBeenCalled();
+    expect(mockRescheduleAlarms).toHaveBeenCalledTimes(1);
+    expect(mockSettlePlace.mock.invocationCallOrder[0]).toBeLessThan(
+      mockRescheduleAlarms.mock.invocationCallOrder[0]
+    );
+  });
+
+  it.each([
+    ["the place did not move", MOCK_PLACE, LANDED],
+    ["the moved place's fetch failed", { latitude: 21.4858, longitude: 39.1925 }, NOT_LANDED],
+  ])("leaves the alarms when %s", async (_name, timesCoords, refetch) => {
+    mockTimesCoords = timesCoords;
+    mockGetByRange.mockResolvedValue([{ date: 1 }]);
+    mockRefetch.mockResolvedValue(refetch);
+
+    await executeBackgroundRefresh();
+
+    expect(mockRescheduleAlarms).not.toHaveBeenCalled();
   });
 
   // A failed update leaves the new place over the old place's days.
