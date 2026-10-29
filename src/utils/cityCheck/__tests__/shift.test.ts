@@ -47,6 +47,13 @@ const RIYADH_ZONE = zone("riyadh");
 const UMM_AL_QURA = calcOf("riyadh");
 const START = startOf("riyadh");
 
+// A border pair whose zones are an hour apart, about 17 km apart on the map.
+const BADAJOZ: Coords = { latitude: 38.8794, longitude: -6.9707 };
+const ELVAS: Coords = { latitude: 38.881, longitude: -7.163 };
+const MADRID_ZONE = "Europe/Madrid";
+// 00:30 on 2 March in Madrid, still 23:30 on 1 March in Lisbon.
+const SPLIT_DATE_AT = Date.UTC(2026, 2, 1, 23, 30);
+
 const PAIRS = [
   ["makkah", "jeddah"],
   ["makkahHanafi", "jeddahHanafi"],
@@ -62,7 +69,7 @@ describe("yearly prayer-time shift", () => {
   it.each(PAIRS)(
     "agrees with server rows to 1 minute for each timing, Asr included: %s → %s",
     (a, b) => {
-      const estimate = yearlyShiftByTiming(pt(a), pt(b), zone(a), zone(b), calcOf(a), startOf(a));
+      const estimate = yearlyShiftByTiming(pt(a), pt(b), zone(a), calcOf(a), startOf(a));
       const misses = TIMINGS.filter(
         (timing) => Math.abs(estimate[timing] - serverShift(a, b, timing)) > SERVER_AGREE_MINUTES
       );
@@ -75,7 +82,6 @@ describe("yearly prayer-time shift", () => {
       pt("makkah"),
       pt("jeddah"),
       RIYADH_ZONE,
-      RIYADH_ZONE,
       UMM_AL_QURA,
       START
     );
@@ -87,35 +93,19 @@ describe("yearly prayer-time shift", () => {
       pt("riyadh"),
       pt("diriyah"),
       RIYADH_ZONE,
-      RIYADH_ZONE,
       UMM_AL_QURA,
       START
     );
     expect(shift).toBeLessThan(SHIFT_GATE_MINUTES);
   });
 
-  it("measures no shift for the same point", () => {
-    const p = pt("riyadh");
-    expect(maxYearlyShiftMinutes(p, p, RIYADH_ZONE, RIYADH_ZONE, UMM_AL_QURA, START)).toBe(0);
+  it("compares the same calendar day when the two zones are on different dates", () => {
+    const shift = maxYearlyShiftMinutes(BADAJOZ, ELVAS, MADRID_ZONE, UMM_AL_QURA, SPLIT_DATE_AT);
+    expect(shift).toBeLessThan(SHIFT_GATE_MINUTES);
   });
 
-  it("reads the start place's zone when the candidate's zone is unknown", () => {
-    const known = maxYearlyShiftMinutes(
-      pt("makkah"),
-      pt("jeddah"),
-      RIYADH_ZONE,
-      RIYADH_ZONE,
-      UMM_AL_QURA,
-      START
-    );
-    const unknown = maxYearlyShiftMinutes(
-      pt("makkah"),
-      pt("jeddah"),
-      RIYADH_ZONE,
-      null,
-      UMM_AL_QURA,
-      START
-    );
-    expect(unknown).toBe(known);
+  it("measures no shift for the same point", () => {
+    const p = pt("riyadh");
+    expect(maxYearlyShiftMinutes(p, p, RIYADH_ZONE, UMM_AL_QURA, START)).toBe(0);
   });
 });
