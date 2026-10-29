@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from "react";
-import { Text } from "react-native";
+import { createRef, useEffect, type ReactNode } from "react";
+import { AccessibilityInfo, Text, View, type ViewInstance } from "react-native";
 import { Theme } from "tamagui";
 import { act, renderHook, screen, userEvent } from "@testing-library/react-native";
 import { parseISO } from "date-fns";
@@ -397,6 +397,49 @@ describe("DaySimulator", () => {
 
     expect(result.current.clock?.getTime()).toBe(fajrMs(sample) - DAY_RUN_MARGIN_MS);
     expect(result.current.days.today).toEqual(sample.today);
+  });
+
+  it("close gives reader focus back to the run's starter; done does not", async () => {
+    const focus = jest
+      .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
+      .mockImplementation(() => {});
+    // The preset's mock keeps calls from earlier tests.
+    focus.mockClear();
+    const starter = createRef<ViewInstance>();
+    const { result } = await renderRun(DAY_RUN_KIND.PREVIEW, <View ref={starter} />);
+
+    await act(() => result.current.run?.start(starter.current));
+    await act(() => result.current.run?.done());
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
+    expect(focus).not.toHaveBeenCalled();
+
+    await act(() => result.current.run?.start(starter.current));
+    await act(() => result.current.run?.close());
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith(starter.current, "focus");
+  });
+
+  it("a replay plays the day again for the same starter", async () => {
+    jest.mocked(useReducedMotion).mockReturnValue(true);
+    const focus = jest
+      .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
+      .mockImplementation(() => {});
+    // The preset's mock keeps calls from earlier tests.
+    focus.mockClear();
+    const starter = createRef<ViewInstance>();
+    const { result } = await renderRun(DAY_RUN_KIND.PREVIEW, <View ref={starter} />);
+    await act(() => result.current.run?.start(starter.current));
+    await advance(PREVIEW.phaseMs, PHASE_STARTS.length);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.ENDED);
+
+    await act(() => result.current.run?.replay());
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+    expect(result.current.clock).toEqual(PHASE_STARTS[0]);
+    await act(() => result.current.run?.close());
+
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith(starter.current, "focus");
   });
 
   it("Reduce Motion steps through the five phase starts", async () => {
