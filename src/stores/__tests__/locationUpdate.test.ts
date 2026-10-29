@@ -189,17 +189,38 @@ describe("the location update lock", () => {
     expect(run()).toEqual({ start: DEVICE, step: UPDATE_STEP.NOTIFICATIONS, failed: true });
   });
 
-  it("keeps a finished step's outcome when a throw follows it", async () => {
+  const EVERY_STEP = Object.values(UPDATE_STEP);
+
+  // The widgets reload after the last step; every step's alerts landed.
+  it("lands when a throw follows every step", async () => {
     const result = await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
-      await runStep(UPDATE_STEP.ALARMS, async () => STEP_OUTCOME.DONE);
+      for (const step of EVERY_STEP) await runStep(step, async () => STEP_OUTCOME.DONE);
       throw new Error("widgets");
     });
 
     expect(result).toEqual({
       end: RUN_END.LANDED,
-      outcomes: { [UPDATE_STEP.ALARMS]: STEP_OUTCOME.DONE },
+      outcomes: Object.fromEntries(EVERY_STEP.map((step) => [step, STEP_OUTCOME.DONE])),
     });
     expect(run()).toBeNull();
+  });
+
+  // The steps after the throw never ran, so the run did not land.
+  it("stops at the first step left unrun by a throw between steps", async () => {
+    const result = await useLocationUpdateStore.getState().withRun(DEVICE, async (runStep) => {
+      await runStep(UPDATE_STEP.LOCATION, async () => STEP_OUTCOME.DONE);
+      throw new Error("between");
+    });
+
+    expect(result).toEqual({
+      end: RUN_END.STOPPED,
+      step: UPDATE_STEP.PRAYER_TIMES,
+      outcomes: {
+        [UPDATE_STEP.LOCATION]: STEP_OUTCOME.DONE,
+        [UPDATE_STEP.PRAYER_TIMES]: STEP_OUTCOME.FAILED,
+      },
+    });
+    expect(run()).toEqual({ start: DEVICE, step: UPDATE_STEP.PRAYER_TIMES, failed: true });
   });
 
   it("records a throw as a failed outcome at its step", async () => {
