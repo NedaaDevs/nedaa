@@ -6,8 +6,11 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { AppLogger } from "@/utils/appLogger";
 import { registerDevMenu } from "@/utils/devMenu";
+import { phoneZoneReadings } from "@/utils/phoneZone";
 
 jest.mock("expo-dev-menu", () => ({ registerDevMenuItems: jest.fn(() => Promise.resolve()) }));
+
+jest.mock("@/utils/phoneZone", () => ({ phoneZoneReadings: jest.fn() }));
 
 const devBuild = __DEV__;
 /** `__DEV__` is a read-only global in the types; the test build may set it. */
@@ -51,6 +54,7 @@ it("adds Show city change, offering a sample city against the saved one", () => 
   expect(items.map(({ name }) => name)).toEqual([
     DEBUG_COPY.RESTART_ONBOARDING,
     DEBUG_COPY.SHOW_CITY_CHANGE,
+    DEBUG_COPY.LOG_PHONE_ZONE,
   ]);
   items[1]?.callback();
   const state = useLocationStore.getState();
@@ -76,6 +80,19 @@ it("offers no city change over a chosen city, as the launch check does", () => {
   items.find(({ name }) => name === DEBUG_COPY.SHOW_CITY_CHANGE)?.callback();
   expect(useLocationStore.getState().showCityChangeModal).toBe(false);
   expect(useLocationStore.getState().pendingCityChange).toBeNull();
+});
+
+it("adds Log the phone zone, logging both readings", () => {
+  setDevBuild(true);
+  const info = jest.spyOn(AppLogger.create("app"), "i").mockImplementation(() => {});
+  jest.mocked(phoneZoneReadings).mockReturnValue({ intl: "Asia/Dubai", calendar: "Asia/Riyadh" });
+
+  registerDevMenu();
+
+  const items = jest.mocked(registerDevMenuItems).mock.lastCall?.[0] ?? [];
+  items.find(({ name }) => name === DEBUG_COPY.LOG_PHONE_ZONE)?.callback();
+  expect(info).toHaveBeenCalledWith("DevMenu", expect.stringContaining("Asia/Dubai"));
+  expect(info).toHaveBeenCalledWith("DevMenu", expect.stringContaining("Asia/Riyadh"));
 });
 
 it("adds nothing outside a dev build", () => {
