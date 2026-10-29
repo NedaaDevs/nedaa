@@ -1,4 +1,5 @@
 import type { MethodId } from "@/types/providers/aladhan";
+import type { Coords } from "@/types/location";
 
 /** Sun depression below the horizon, in degrees. */
 type Degrees = { degrees: number };
@@ -54,4 +55,42 @@ export const METHOD_ANGLES: Record<MethodId, MethodAngles> = {
   21: angles(19, 17),
   22: { fajr: { degrees: 18 }, isha: { minutes: 77 }, maghrib: { minutes: 3 } },
   23: { fajr: { degrees: 18 }, isha: { degrees: 18 }, maghrib: { minutes: 5 } },
+};
+
+const point = (latitude: number, longitude: number): Coords => ({ latitude, longitude });
+
+// Each method's authority, from the same Method.php; null is never a default.
+export const METHOD_AUTHORITY: Record<MethodId, Coords | null> = {
+  0: point(34.6415764, 50.8746035),
+  1: point(24.8614622, 67.0099388),
+  2: point(39.70421229999999, -86.39943869999999),
+  3: point(51.5194682, -0.1360365),
+  4: point(21.3890824, 39.8579118),
+  5: point(30.0444196, 31.2357116),
+  7: point(35.6891975, 51.3889736),
+  8: point(24.1323638, 53.3199527),
+  9: point(29.375859, 47.9774052),
+  10: point(25.2854473, 51.5310398),
+  11: point(1.352083, 103.819836),
+  12: point(48.856614, 2.3522219),
+  13: point(39.9333635, 32.8597419),
+  14: point(54.73479099999999, 55.9578555),
+  15: null,
+  16: point(25.0762677, 55.087404),
+  17: point(3.139003, 101.686855),
+  18: point(36.8064948, 10.1815316),
+  19: point(36.753768, 3.0587561),
+  20: point(-6.2087634, 106.845599),
+  21: point(33.9715904, -6.8498129),
+  22: point(38.7222524, -9.1393366),
+  23: point(31.9461222, 35.923844),
+};
+
+/** ISO 3166 codes, upper case, as the device geocoder gives them. */
+export const COUNTRY_CODE = { SAUDI_ARABIA: "SA" } as const;
+export type CountryCode = (typeof COUNTRY_CODE)[keyof typeof COUNTRY_CODE];
+
+/** Countries where AlAdhan's default is one method, whatever is nearest. */
+export const METHOD_BY_COUNTRY: Record<CountryCode, MethodId> = {
+  [COUNTRY_CODE.SAUDI_ARABIA]: 4,
 };
