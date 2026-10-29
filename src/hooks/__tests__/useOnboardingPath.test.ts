@@ -13,8 +13,10 @@ jest.mock("expo-router", () => ({ usePathname: () => mockPathname }));
 const TAP_ID = "tap";
 const TAP = { notification: { request: { identifier: TAP_ID } } };
 let mockTapListener: ((response: unknown) => void) | null = null;
+let mockLastResponse: unknown = null;
 const mockRemove = jest.fn();
 jest.mock("expo-notifications", () => ({
+  getLastNotificationResponse: () => mockLastResponse,
   addNotificationResponseReceivedListener: (listener: (response: unknown) => void) => {
     mockTapListener = listener;
     return { remove: mockRemove };
@@ -30,6 +32,7 @@ const mount = () =>
 beforeEach(() => {
   mockPathname = HOME;
   mockTapListener = null;
+  mockLastResponse = null;
   mockRemove.mockClear();
   useAppStore.setState({ isFirstRun: false, upgradePath: UPGRADE_PATH_STATE.PENDING });
 });
@@ -72,6 +75,13 @@ describe("useOnboardingPath", () => {
     const { result } = await mount();
 
     expect(result.current.path).toBe(ONBOARDING_PATH.UPGRADE);
+  });
+
+  it("a tap kept from before the hook mounts closes the path", async () => {
+    mockLastResponse = TAP;
+    const { result } = await mount();
+
+    expect(result.current.path).toBeNull();
   });
 
   it("follows the store when the path closes", async () => {
