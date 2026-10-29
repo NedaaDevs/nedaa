@@ -25,6 +25,9 @@ const mockGetByRange = jest.fn();
 const mockBgLog = jest.fn();
 const mockWaitForHydration = jest.fn();
 const mockSyncWidgetSnapshot = jest.fn(async () => {});
+const mockSettlePlace = jest.fn();
+/** The location store's place revision as the run starts. */
+const MOCK_REVISION = 4;
 /** Where the stored days were fetched; the place is always at MOCK_PLACE. */
 let mockTimesCoords: Coords | null = null;
 const MOCK_PLACE = { latitude: 24.7136, longitude: 46.6753 };
@@ -70,7 +73,11 @@ jest.mock("@/stores/prayerTimes", () => ({
 jest.mock("@/stores/location", () => ({
   __esModule: true,
   default: {
-    getState: () => ({ locationDetails: { timezone: "Asia/Riyadh", coords: MOCK_PLACE } }),
+    getState: () => ({
+      locationDetails: { timezone: "Asia/Riyadh", coords: MOCK_PLACE },
+      placeRevision: MOCK_REVISION,
+      settlePlace: mockSettlePlace,
+    }),
     persist: hydratedPersist,
   },
 }));
@@ -266,6 +273,31 @@ describe("executeBackgroundRefresh", () => {
       expect.stringContaining("fetched=false"),
       expect.anything()
     );
+  });
+
+  it("settles the place once the fetched days are read back", async () => {
+    mockGetByRange.mockResolvedValue([{ date: 1 }]);
+    mockRefetch.mockResolvedValue(LANDED);
+
+    await executeBackgroundRefresh();
+
+    expect(mockSettlePlace).toHaveBeenCalledWith(MOCK_REVISION);
+    expect(mockRefreshTimings.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSettlePlace.mock.invocationCallOrder[0]
+    );
+  });
+
+  it.each([
+    ["the fetch fails", NOT_LANDED],
+    ["a needed next year fails", NEXT_YEAR_FAILED],
+    ["the place moves during it", TIMES_FETCH.SUPERSEDED],
+  ])("keeps the previous place when %s", async (_name, refetch) => {
+    mockGetByRange.mockResolvedValue([{ date: 1 }]);
+    mockRefetch.mockResolvedValue(refetch);
+
+    await executeBackgroundRefresh();
+
+    expect(mockSettlePlace).not.toHaveBeenCalled();
   });
 
   // A failed update leaves the new place over the old place's days.
