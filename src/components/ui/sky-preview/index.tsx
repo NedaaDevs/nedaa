@@ -18,6 +18,8 @@ const HERO = { minHeight: 153, edge: 1 } as const;
 
 const SWATCH = {
   [SKY_SWATCH_SIZE.CHOICE]: { width: 77, height: 58, radius: "$control" },
+  // As tall as the 44pt card target, in the choice's proportions.
+  [SKY_SWATCH_SIZE.CARD]: { width: 58, height: 44, radius: "$control" },
   [SKY_SWATCH_SIZE.BUTTON]: { width: 44, height: 30, radius: "$chip" },
 } as const satisfies Record<SkySwatchSize, { width: number; height: number; radius: string }>;
 /** The sky every size shrinks into its frame: a choice's, at 0.3. */

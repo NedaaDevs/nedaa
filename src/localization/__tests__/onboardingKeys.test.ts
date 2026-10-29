@@ -35,6 +35,7 @@ const FLOW_DIR = join(__dirname, "..", "..", "components", "onboarding", "flow")
 // Parts outside the flow that draw its copy, such as the fetch error's offer.
 const SHARED_PARTS = [
   join(__dirname, "..", "..", "components", "location", "LocationFailureOffer.tsx"),
+  join(__dirname, "..", "..", "components", "today", "UpgradeCard.tsx"),
 ];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

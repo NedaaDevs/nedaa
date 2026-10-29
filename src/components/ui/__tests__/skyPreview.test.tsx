@@ -35,6 +35,7 @@ describe("SkySwatch", () => {
   // A mode's row and the day preview's button, from the design.
   it.each([
     [SKY_SWATCH_SIZE.CHOICE, 77, 58, 12],
+    [SKY_SWATCH_SIZE.CARD, 58, 44, 12],
     [SKY_SWATCH_SIZE.BUTTON, 44, 30, 8],
   ] as [SkySwatchSize, number, number, number][])(
     "draws the %s size at its frame",
