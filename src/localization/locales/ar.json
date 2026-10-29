@@ -1254,7 +1254,7 @@
   "onboarding.skip": "تخطي",
   "onboarding.textSize.chooseBody": "اختر حجم الخط الأوضح لك. يمكنك تغييره لاحقًا من التفضيلات.",
   "onboarding.textSize.chooseTitle": "قراءة مريحة من البداية",
-  "onboarding.upgrade.body": "خذ دقيقة لتختار ما يناسبك.",
+  "onboarding.upgrade.body": "اختر ما يناسبك في دقيقة.",
   "onboarding.upgrade.cardBody": "اختر المظهر وحجم الخط والأرقام في دقيقة تقريبًا.",
   "onboarding.upgrade.completeBody": "سيبدأ $t(brand.name) بالمظهر والحجم والأرقام التي اخترتها، وتبقى مدينتك وتنبيهاتك ومنبّهاتك كما كانت.",
   "onboarding.upgrade.currentSetting": "إعدادك الحالي",
