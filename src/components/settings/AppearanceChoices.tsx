@@ -17,12 +17,13 @@ export const AppearanceChoices = () => {
   const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const chooseMode = useChooseMode();
   const sky = usePageSky();
-  const run = useDayRun();
+  // Only the stable method: the run itself is new on every tick.
+  const endRun = useDayRun()?.done;
 
   const choose = (mode: AppMode) => {
     hapticSelection();
     // A run ends first, so the chosen look replaces the one it draws.
-    run?.done();
+    endRun?.();
     void chooseMode(mode);
   };
 
