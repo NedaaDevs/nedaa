@@ -17,9 +17,8 @@ jest.mock("expo/src/environment/ExpoGo", () => ({
 
 // The persisted stores write through expo-sqlite's kv-store, a native module absent
 // under jest. A suite that needs stored values mocks it again in its own file.
-jest.mock("expo-sqlite/kv-store", () => ({
-  __esModule: true,
-  default: {
+jest.mock("expo-sqlite/kv-store", () => {
+  const storage = () => ({
     getItem: jest.fn(() => Promise.resolve(null)),
     setItem: jest.fn(() => Promise.resolve()),
     removeItem: jest.fn(() => Promise.resolve()),
@@ -27,5 +26,7 @@ jest.mock("expo-sqlite/kv-store", () => ({
     getItemSync: jest.fn(() => null),
     setItemSync: jest.fn(),
     removeItemSync: jest.fn(),
-  },
-}));
+  });
+  // A store with its own database file builds a SQLiteStorage.
+  return { __esModule: true, default: storage(), SQLiteStorage: jest.fn(storage) };
+});
