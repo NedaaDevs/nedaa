@@ -11,9 +11,7 @@ import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { nearestTextSize } from "@/constants/TextSize";
-import { WhatsNewId } from "@/constants/WhatsNew";
 import { TextSize } from "@/enums/app";
-import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { isLargeOsTextActive } from "@/utils/textSizeOffer";
 
@@ -32,7 +30,6 @@ export const TextSizeStep = ({
   const textSize = usePreferencesStore((state) => state.textSize);
   const setTextSize = usePreferencesStore((state) => state.setTextSize);
   const markHandled = usePreferencesStore((state) => state.markTextSizeOfferHandled);
-  const dismissFeatureCards = useAppStore((state) => state.dismissFeatureCards);
   // An upgrader starts from their own size; only a change of it is written.
   const upgrading = path === ONBOARDING_PATH.UPGRADE;
   const [initialSize] = useState(textSize);
@@ -47,12 +44,6 @@ export const TextSizeStep = ({
   useEffect(() => {
     seed();
   }, []);
-
-  // An upgrader who leaves the step has met the choice What's New offers.
-  useEffect(() => {
-    if (!upgrading) return;
-    return () => dismissFeatureCards([WhatsNewId.TEXT_SIZE]);
-  }, [upgrading, dismissFeatureCards]);
 
   useStepPrimary(setPrimary, {
     label: t("onboarding.continue"),
