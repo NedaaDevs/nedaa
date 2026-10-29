@@ -222,6 +222,28 @@ describe("at a verified place's times", () => {
     await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.FAILED);
   });
 
+  // The new alarms arm, but the old place's stays armed beside them.
+  it.each([
+    ["Fajr's", [false, true]],
+    ["every type's", [false, false]],
+  ])("rescheduleAllAlarms reports partial when %s old alarm stays", async (_name, cancels) => {
+    cancels.forEach((cancelled) => mockCancel.mockResolvedValueOnce(cancelled));
+
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.PARTIAL);
+
+    expect(scheduledTypes()).toEqual(new Set([ScheduledAlarmType.FAJR, ScheduledAlarmType.JUMMAH]));
+  });
+
+  it("rescheduleAllAlarms reports failed when an old alarm stays and none arms", async () => {
+    mockCancel.mockResolvedValueOnce(false);
+    mockSchedule
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+
+    await expect(rescheduleAllAlarms()).resolves.toBe(STEP_OUTCOME.FAILED);
+  });
+
   it("rescheduleAllAlarms reports skipped, cancelling nothing, with both alarms off", async () => {
     const settings = useAlarmSettingsStore.getInitialState();
     useAlarmSettingsStore.setState({

@@ -358,23 +358,31 @@ export async function ensureAlarmsScheduled(): Promise<void> {
   }
 }
 
+/** Cancels a type's alarms, then arms its next ones; partial if one stays. */
+const rescheduleType = async (
+  type: ScheduledAlarmType,
+  schedule: () => Promise<string | null>
+): Promise<StepOutcome> => {
+  const cancelled = await useAlarmStore.getState().cancelAlarmsByType(type);
+  if ((await schedule()) === null) return STEP_OUTCOME.FAILED;
+  return cancelled ? STEP_OUTCOME.DONE : STEP_OUTCOME.PARTIAL;
+};
+
 // Re-arms each enabled alarm at the stored times. Skipped with none enabled;
-// else done, partial or failed by how many types armed their next occurrence.
+// else done, partial or failed by how many types moved cleanly.
 export async function rescheduleAllAlarms(): Promise<StepOutcome> {
   const alarmSettings = useAlarmSettingsStore.getState();
-  const alarmStore = useAlarmStore.getState();
-  const armed: boolean[] = [];
+  const moved: StepOutcome[] = [];
 
   if (alarmSettings.fajr.enabled) {
-    await alarmStore.cancelAlarmsByType(ScheduledAlarmType.FAJR);
-    armed.push((await scheduleFajrAlarm()) !== null);
+    moved.push(await rescheduleType(ScheduledAlarmType.FAJR, scheduleFajrAlarm));
   }
   if (alarmSettings.friday.enabled) {
-    await alarmStore.cancelAlarmsByType(ScheduledAlarmType.JUMMAH);
-    armed.push((await scheduleFridayAlarm()) !== null);
+    moved.push(await rescheduleType(ScheduledAlarmType.JUMMAH, scheduleFridayAlarm));
   }
 
-  if (armed.length === 0) return STEP_OUTCOME.SKIPPED;
-  if (armed.every(Boolean)) return STEP_OUTCOME.DONE;
-  return armed.some(Boolean) ? STEP_OUTCOME.PARTIAL : STEP_OUTCOME.FAILED;
+  if (moved.length === 0) return STEP_OUTCOME.SKIPPED;
+  if (moved.every((outcome) => outcome === STEP_OUTCOME.DONE)) return STEP_OUTCOME.DONE;
+  if (moved.every((outcome) => outcome === STEP_OUTCOME.FAILED)) return STEP_OUTCOME.FAILED;
+  return STEP_OUTCOME.PARTIAL;
 }
