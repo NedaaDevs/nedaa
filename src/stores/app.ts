@@ -13,7 +13,11 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 import { RTL_LOCALES } from "@/constants/Locales";
 import { isOnboardingStepId } from "@/constants/Onboarding";
 import { ALL_WHATS_NEW_IDS } from "@/constants/WhatsNew";
-import { UPGRADE_PATH_STATE, isUpgradePathState } from "@/constants/UpgradePath";
+import {
+  UPGRADE_PATH_STATE,
+  UPGRADE_PATH_WHATS_NEW_IDS,
+  isUpgradePathState,
+} from "@/constants/UpgradePath";
 
 // Types
 import { AppState } from "@/types/app";
@@ -81,7 +85,14 @@ export const useAppStore = create<AppState>()(
 
           setUpgradePath: (upgradePath) => set({ upgradePath }),
 
-          markUpgradeShown: () => set({ upgradeShownThisLaunch: true }),
+          // The path takes the place of the entries it covers, whichever exit.
+          markUpgradeShown: () =>
+            set((state) => ({
+              upgradeShownThisLaunch: true,
+              dismissedFeatureCards: [
+                ...new Set([...state.dismissedFeatureCards, ...UPGRADE_PATH_WHATS_NEW_IDS]),
+              ],
+            })),
 
           // One write, so no state holds a first run with a stale saved step.
           restartOnboarding: () => set({ isFirstRun: true, onboardingStep: null }),
