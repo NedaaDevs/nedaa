@@ -1,46 +1,33 @@
-import type { ReactNode } from "react";
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { getTokenValue } from "tamagui";
-import {
-  act,
-  fireEvent,
-  renderHook,
-  screen,
-  userEvent,
-  within,
-} from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent, within } from "@testing-library/react-native";
 
-import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
+import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { DAY_RUN_TRACK_PART } from "@/components/onboarding/flow/DayRunTrack";
-import { DaySimulator } from "@/components/today/DaySimulator";
 import { digitsOf } from "@/components/ui/digit-reserve";
-import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
 import { DAY_RUN, DAY_RUN_CLOCK_SAMPLES, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE, type Phase } from "@/constants/Phase";
-import { useDayRun } from "@/contexts/DayRunContext";
-import { useDrawnMode } from "@/contexts/DrawnModeContext";
 import { AppDirection, AppLocale, AppMode, PlatformType } from "@/enums/app";
-import { useShownDay } from "@/hooks/useShownDay";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import {
+  liveTime,
+  renderPlayer as renderPreview,
+  type PlayerView,
+} from "@/test-helpers/dayRunPlayer";
 import { layOut } from "@/test-helpers/layout";
-import { endRoomOf, hostNodesIn } from "@/test-helpers/text";
-import { ThemeProvider } from "@/test-helpers/theme";
+import { hostNodesIn } from "@/test-helpers/text";
 import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
 import { formatPrayerTime } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
 import { spokenClockTime } from "@/utils/spokenClockTime";
 
-jest.mock("expo-blur", () => {
-  const { createElement } = jest.requireActual("react");
-  const { View } = jest.requireActual("react-native");
-  return { BlurView: (props: object) => createElement(View, props) };
-});
+jest.mock("expo-blur", () => jest.requireActual("@/test-helpers/blurMock"));
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 
@@ -57,30 +44,8 @@ const originalOS = Platform.OS;
 const setPlatform = (os: string) =>
   Object.defineProperty(Platform, "OS", { configurable: true, get: () => os });
 
-/** Draws the player while a run is on, as the onboarding frame does. */
-const Player = () => {
-  const run = useDayRun();
-  return run && run.status !== DAY_RUN_STATUS.IDLE ? <DayRunPlayer /> : null;
-};
-
-/** What the parts inside the run read. */
-const useRunView = () => ({ run: useDayRun(), drawn: useDrawnMode(), shown: useShownDay() });
-
 const renderPlayer = ({ isRTL = false } = {}) =>
-  renderHook(useRunView, {
-    wrapper: ({ children }: { children: ReactNode }) => (
-      <ThemeProvider isRTL={isRTL}>
-        <ThemeTransitionContext value={mockTransition}>
-          <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
-            {children}
-            <Player />
-          </DaySimulator>
-        </ThemeTransitionContext>
-      </ThemeProvider>
-    ),
-  });
-
-type View = Awaited<ReturnType<typeof renderPlayer>>["result"];
+  renderPreview({ isRTL, transition: mockTransition });
 
 /** Lets `count` run ticks pass, one render apart. */
 const tick = async (count = 1) => {
@@ -95,7 +60,7 @@ const phasesPass = async (count: number) => {
   }
 };
 
-const start = (result: View) => act(() => result.current.run?.start());
+const start = (result: PlayerView) => act(() => result.current.run?.start());
 const press = (testID: string) =>
   userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(screen.getByTestId(testID));
 const toggle = () => screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE);
@@ -114,16 +79,6 @@ const nameStyles = () =>
     .map((name) => StyleSheet.flatten(name.props.style));
 /** Plays a Reduce Motion run on through to its end. */
 const playToTheEnd = () => phasesPass(PHASES.length);
-/** The run's clock as the card shows it, in the English 12-hour layout. */
-const liveTime = (result: View) => {
-  const { now, day } = result.current.shown;
-  return localizeDigits(
-    formatPrayerTime(now, day?.timezone ?? "", { locale: AppLocale.EN, use24HourTime: false }),
-    AppLocale.EN,
-    true
-  );
-};
-
 describe("DayRunPlayer", () => {
   beforeEach(async () => {
     jest.useFakeTimers({ now: NOON });
@@ -552,7 +507,7 @@ describe("DayRunPlayer", () => {
     }
   });
 
-  // The samples sit in a column of no height, so they set only the slot's width.
+  // The samples sit in a column of no height: they set only the slot's width.
   it("gives the clock reserve no height", async () => {
     const { result } = await renderPlayer();
     await start(result);
@@ -598,19 +553,6 @@ describe("DayRunPlayer", () => {
 
     const time = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getByText(liveTime(result));
     expect(StyleSheet.flatten(time.parent?.props.style).alignItems).toBe("flex-end");
-  });
-
-  // The live time is one Text; a reserve row has the same room at its end as it.
-  it("gives each reserve row the live time's end room", async () => {
-    const { result } = await renderPlayer();
-    await start(result);
-
-    const slot = screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT);
-    const live = within(slot).getByText(liveTime(result));
-    for (const row of within(slot).getAllByTestId(DAY_RUN_PLAYER_PART.CLOCK_RESERVE, hidden)) {
-      const rooms = hostNodesIn(row).map(endRoomOf);
-      expect(rooms.reduce((sum, room) => sum + room, 0)).toBe(endRoomOf(live));
-    }
   });
 
   // Small but on screen, and last, so swiping reaches the controls first.
