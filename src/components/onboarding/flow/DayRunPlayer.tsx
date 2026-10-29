@@ -23,7 +23,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text, TEXT_END_ROOM } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
-import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS } from "@/constants/DayRun";
+import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS, type DayRunStatus } from "@/constants/DayRun";
 import { PHASE } from "@/constants/Phase";
 import { useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
@@ -74,16 +74,13 @@ const TOGGLE = {
 
 /** What the toggle does in each status; nothing while no run is on. */
 export const toggleAction = ({ status, pause, resume, replay }: DayRun) => {
-  switch (status) {
-    case DAY_RUN_STATUS.PLAYING:
-      return pause;
-    case DAY_RUN_STATUS.PAUSED:
-      return resume;
-    case DAY_RUN_STATUS.ENDED:
-      return replay;
-    case DAY_RUN_STATUS.IDLE:
-      return undefined;
-  }
+  const actions = {
+    [DAY_RUN_STATUS.PLAYING]: pause,
+    [DAY_RUN_STATUS.PAUSED]: resume,
+    [DAY_RUN_STATUS.ENDED]: replay,
+    [DAY_RUN_STATUS.IDLE]: undefined,
+  } satisfies Record<DayRunStatus, (() => void) | undefined>;
+  return actions[status];
 };
 
 const PHASES = Object.values(PHASE);
