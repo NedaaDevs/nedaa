@@ -33,8 +33,8 @@ export const PlayDayButton = () => {
 
   if (!run) return null;
   const idle = run.status === DAY_RUN_STATUS.IDLE;
-  // Nothing to offer with no whole day; a run on closes back to this button.
-  if (idle && !run.available) return null;
+  // No whole day hides it, though not before a closing run's focus is back.
+  if (idle && !run.available && !run.returning) return null;
 
   // The run's methods are stable from tick to tick; the run itself is not.
   const { start } = run;

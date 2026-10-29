@@ -307,6 +307,7 @@ describe("AppearanceStep", () => {
         phase: undefined,
         progress: 0,
         available: true,
+        returning: false,
         start: jest.fn(),
         replay: jest.fn(),
         pause: jest.fn(),
@@ -474,6 +475,7 @@ describe("AppearanceStep", () => {
     });
 
     // With Adaptive chosen, the end still waits for Done.
+    // Plays a whole day and a replay; a full parallel run passes 5 s.
     it("keeps the player open at the end; a replay still closes to the button", async () => {
       mockReduced = true;
       useAppStore.setState({ mode: AppMode.ADAPTIVE });
@@ -502,6 +504,45 @@ describe("AppearanceStep", () => {
       expect(player()).toBeNull();
       expect(focus).toHaveBeenCalledTimes(1);
       expect(focus).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON), "focus");
+    }, 20_000);
+
+    // The close returns focus to the button, so it outlives the run.
+    it("keeps the button for the close's focus when the day is gone mid-run", async () => {
+      let whole = true;
+      /** The flow's run, its whole day read from `whole`. */
+      const Availability = ({ children }: { children: ReactNode }) => {
+        const run = useDayRun();
+        return (
+          <DayRunContext value={run && { ...run, available: whole }}>{children}</DayRunContext>
+        );
+      };
+      const mountedAtFocus: boolean[] = [];
+      jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockImplementation(() => {
+        mountedAtFocus.push(screen.queryByTestId(PLAY_DAY_PART.BUTTON) !== null);
+      });
+      await renderWithTheme(
+        <Frame>
+          <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
+            <SkyBackground>
+              <Availability>
+                <AppearanceStep {...stepProps()} />
+                <Player />
+              </Availability>
+            </SkyBackground>
+          </DaySimulator>
+        </Frame>
+      );
+      await press(PLAY_DAY_PART.BUTTON);
+      whole = false;
+      await act(() => jest.advanceTimersByTime(PREVIEW.tickMs));
+      expect(playDay()).toBeDisabled();
+      mountedAtFocus.length = 0;
+
+      await press(DAY_RUN_PLAYER_PART.DONE);
+      expect(mountedAtFocus).toEqual([true]);
+      await act(() => jest.advanceTimersByTime(0));
+
+      expect(screen.queryByTestId(PLAY_DAY_PART.BUTTON)).toBeNull();
     });
 
     it.each([
