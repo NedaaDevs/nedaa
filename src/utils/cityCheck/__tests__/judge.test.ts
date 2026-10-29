@@ -223,6 +223,13 @@ describe("judgeCityChange", () => {
       ]);
     });
 
+    it("reads country codes in any case", () => {
+      expectDiriyahUnderGate();
+      expect(reasonOf(diriyah({ countryCode: SA.toLowerCase() }))).toBe(
+        CITY_CHECK_END.SHIFT_BELOW_GATE
+      );
+    });
+
     it("asks for the country when the shift does not decide", () => {
       expectDiriyahUnderGate();
       expect(reasonOf({ ...diriyah({ countryCode: null }), countryLooked: false })).toBe(
