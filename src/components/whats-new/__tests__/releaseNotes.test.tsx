@@ -15,7 +15,8 @@ import {
   type WhatsNewEntry,
 } from "@/constants/WhatsNew";
 import i18n from "@/localization/i18n";
-import { UPGRADE_PATH_STATE } from "@/constants/UpgradePath";
+import { UPGRADE_PATH_STATE, type UpgradePathState } from "@/constants/UpgradePath";
+import { OS_FONT_SCALE_OFFER_THRESHOLD } from "@/constants/TextSize";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
@@ -323,6 +324,28 @@ describe("What's New and the upgrade path", () => {
     });
 
     expect(await launchCards()).toHaveLength(0);
+  });
+
+  // A 2.x user with large text who saw every other entry, upgrading to V3.
+  describe.each<[string, UpgradePathState]>([
+    ["Keep my settings", UPGRADE_PATH_STATE.DONE],
+    ["Later, then the card's dismiss", UPGRADE_PATH_STATE.LATER],
+  ])("after %s", (_exit, exit) => {
+    it("the next launch shows no Text-size sheet", async () => {
+      jest.spyOn(PixelRatio, "getFontScale").mockReturnValue(OS_FONT_SCALE_OFFER_THRESHOLD);
+      useAppStore.setState({
+        isFirstRun: false,
+        upgradePath: UPGRADE_PATH_STATE.PENDING,
+        dismissedFeatureCards: ALL_WHATS_NEW_IDS.filter((id) => id !== WhatsNewId.TEXT_SIZE),
+      });
+      // The first V3 launch shows the path, and the user leaves it.
+      useAppStore.getState().markUpgradeShown();
+      useAppStore.getState().setUpgradePath(exit);
+      // A later launch, with the path done for good.
+      useAppStore.setState({ upgradePath: UPGRADE_PATH_STATE.DONE, upgradeShownThisLaunch: false });
+
+      expect(await launchCards()).toHaveLength(0);
+    });
   });
 
   it("What's New shows once the path is done on a later launch", async () => {

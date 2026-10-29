@@ -29,7 +29,6 @@ import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { CLOCK_FORMAT } from "@/constants/Preferences";
 import { nearestTextSize } from "@/constants/TextSize";
 import { TODAY_STYLE } from "@/constants/Today";
-import { WhatsNewId } from "@/constants/WhatsNew";
 import { DayRunContext, useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
 import { AppLocale, AppMode, TextSize } from "@/enums/app";
@@ -631,9 +630,6 @@ describe("TextSizeStep", () => {
 
   describe("on the upgrade path", () => {
     const upgradeProps = () => stepProps({ path: ONBOARDING_PATH.UPGRADE });
-    const seen = () => useAppStore.getState().dismissedFeatureCards;
-
-    beforeEach(() => useAppStore.setState({ dismissedFeatureCards: [] }));
 
     it("the upgrade text-size step writes nothing without a change", async () => {
       scaleSpy.mockReturnValue(1.3);
@@ -664,26 +660,6 @@ describe("TextSizeStep", () => {
         textSize: TextSize.LARGE,
         textSizeOfferHandled: true,
       });
-    });
-
-    // Continue and Skip both take the step away; the flow unmounts it.
-    it("passing the text-size step marks its What's New entry seen", async () => {
-      const props = upgradeProps();
-      const { unmount } = await renderWithTheme(<TextSizeStep {...props} />);
-      expect(seen()).not.toContain(WhatsNewId.TEXT_SIZE);
-
-      await act(async () => lastPrimary(props.setPrimary)?.onPress());
-      await unmount();
-
-      expect(seen()).toContain(WhatsNewId.TEXT_SIZE);
-    });
-
-    it("leaves What's New alone on the first run", async () => {
-      const { unmount } = await renderWithTheme(<TextSizeStep {...stepProps()} />);
-
-      await unmount();
-
-      expect(seen()).not.toContain(WhatsNewId.TEXT_SIZE);
     });
   });
 
