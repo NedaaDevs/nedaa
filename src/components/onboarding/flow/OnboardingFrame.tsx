@@ -60,6 +60,7 @@ export const OnboardingFrame = ({
 
   return (
     // VoiceOver's escape gesture moves back, as the back control does.
+    // React Native's View: only it passes the magic tap flag to iOS Fabric.
     <View
       testID={ONBOARDING_PART.FRAME}
       style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
