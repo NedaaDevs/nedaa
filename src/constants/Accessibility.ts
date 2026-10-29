@@ -16,6 +16,7 @@ export const A11Y_ACTION = {
   ACTIVATE: "activate",
   INCREMENT: "increment",
   DECREMENT: "decrement",
+  DISMISS: "dismiss",
 } as const;
 
 // TalkBack adjusts only through listed actions. VoiceOver adjusts without them,
