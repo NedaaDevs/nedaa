@@ -1,22 +1,14 @@
-import type { ReactNode } from "react";
-import { act, renderHook, screen, within } from "@testing-library/react-native";
+import { act, screen, within } from "@testing-library/react-native";
 
-import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
-import { DaySimulator } from "@/components/today/DaySimulator";
+import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { TEXT_END_ROOM } from "@/components/ui/text";
-import { ThemeTransitionContext } from "@/components/ui/theme-transition/context";
-import { DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
-import { useDayRun } from "@/contexts/DayRunContext";
 import { AppLocale, AppMode } from "@/enums/app";
-import { useShownDay } from "@/hooks/useShownDay";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
+import { liveTime, renderPlayer } from "@/test-helpers/dayRunPlayer";
 import { endRoomOf, hostNodesIn } from "@/test-helpers/text";
-import { ThemeProvider } from "@/test-helpers/theme";
-import { formatPrayerTime } from "@/utils/date";
-import { localizeDigits } from "@/utils/digits";
 
 // Text reads the platform once, as it loads; this file runs as Android.
 jest.mock("react-native", () => {
@@ -25,41 +17,12 @@ jest.mock("react-native", () => {
   native.Platform.OS = PlatformType.ANDROID;
   return native;
 });
-jest.mock("expo-blur", () => {
-  const { createElement } = jest.requireActual("react");
-  const { View } = jest.requireActual("react-native");
-  return { BlurView: (props: object) => createElement(View, props) };
-});
+jest.mock("expo-blur", () => jest.requireActual("@/test-helpers/blurMock"));
 // A Reduce Motion run starts at Fajr, playing, with a time to show.
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => true }));
 
 const NOON = new Date(2026, 9, 24, 12, 30);
 const hidden = { includeHiddenElements: true };
-const transition = async (fn: () => void | Promise<void>) => {
-  await fn();
-};
-
-/** Draws the player while a run is on, as the onboarding frame does. */
-const Player = () => {
-  const run = useDayRun();
-  return run && run.status !== DAY_RUN_STATUS.IDLE ? <DayRunPlayer /> : null;
-};
-
-const useRunView = () => ({ run: useDayRun(), shown: useShownDay() });
-
-const renderPlayer = () =>
-  renderHook(useRunView, {
-    wrapper: ({ children }: { children: ReactNode }) => (
-      <ThemeProvider>
-        <ThemeTransitionContext value={transition}>
-          <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>
-            {children}
-            <Player />
-          </DaySimulator>
-        </ThemeTransitionContext>
-      </ThemeProvider>
-    ),
-  });
 
 describe("DayRunPlayer on Android", () => {
   beforeEach(async () => {
@@ -82,13 +45,7 @@ describe("DayRunPlayer on Android", () => {
     expect(TEXT_END_ROOM).toBeGreaterThan(0);
 
     const slot = screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT);
-    const { now, day } = result.current.shown;
-    const shownTime = localizeDigits(
-      formatPrayerTime(now, day?.timezone ?? "", { locale: AppLocale.EN, use24HourTime: false }),
-      AppLocale.EN,
-      true
-    );
-    const live = within(slot).getByText(shownTime);
+    const live = within(slot).getByText(liveTime(result));
     expect(endRoomOf(live)).toBe(TEXT_END_ROOM);
 
     const rows = within(slot).getAllByTestId(DAY_RUN_PLAYER_PART.CLOCK_RESERVE, hidden);

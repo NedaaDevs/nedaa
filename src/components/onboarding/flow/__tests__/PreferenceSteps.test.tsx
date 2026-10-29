@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { AccessibilityInfo, PixelRatio, StyleSheet } from "react-native";
 import { act, screen, userEvent, waitFor, within } from "@testing-library/react-native";
 
-import { DAY_RUN_PLAYER_PART, DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
+import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { PLAY_DAY_PART } from "@/components/onboarding/flow/PlayDayButton";
 import { AppearanceStep } from "@/components/onboarding/flow/steps/AppearanceStep";
 import { NumeralsStep } from "@/components/onboarding/flow/steps/NumeralsStep";
@@ -32,6 +32,7 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import { Player } from "@/test-helpers/dayRunPlayer";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import { lastPrimary, stepProps } from "@/test-helpers/onboardingStepProps";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -42,11 +43,7 @@ import { skySwatchFor } from "@/utils/sky";
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
-jest.mock("expo-blur", () => {
-  const { createElement } = jest.requireActual("react");
-  const { View } = jest.requireActual("react-native");
-  return { BlurView: (props: object) => createElement(View, props) };
-});
+jest.mock("expo-blur", () => jest.requireActual("@/test-helpers/blurMock"));
 jest.mock("@/utils/date", () => jest.requireActual("@/test-helpers/hijriDateMock"));
 // The sky dims its bodies behind measured text; nothing is measured here.
 jest.mock("@/utils/measureInWindow", () => ({ measureInWindow: () => Promise.resolve(null) }));
@@ -276,11 +273,6 @@ describe("AppearanceStep", () => {
     const viewWith = (testID: string) =>
       expect.objectContaining({ props: expect.objectContaining({ testID }) });
 
-    /** Draws the player while a run is on, as the onboarding frame does. */
-    const Player = () => {
-      const run = useDayRun();
-      return run && run.status !== DAY_RUN_STATUS.IDLE ? <DayRunPlayer /> : null;
-    };
     const Frame = ({ children }: { children: ReactNode }) => (
       <ThemeTransitionContext value={mockTransition}>
         <PhaseContext value={PHASE.ASR}>{children}</PhaseContext>
