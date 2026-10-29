@@ -82,8 +82,8 @@ export type PrayerTimesStore = {
   /** Fetches the place's years; once all land for it, cleans up, then marks. */
   refetchPlaceTimes: () => Promise<PlaceRefetch>;
   /**
-   * Resolves false while a year the load fetched is still owed. A load the
-   * place moved under owes none: the move's own load fetches the new place.
+   * Resolves false while a year the load fetched is still owed, or when the
+   * place moved under it: the move's own load fetches the new place.
    */
   loadPrayerTimes: (forceGetAndStore?: boolean) => Promise<boolean>;
   /** Loads for the place the location store holds; takes no device fix. */
@@ -152,37 +152,93 @@ const takeDeviceFixOnce = async (get: GetTimes): Promise<void> => {
 
 /** Whether a refetch lets the load stand, and whether all its days are new. */
 type Landed = { stands: boolean; complete: boolean };
-/** A refetch's result, or that the place moved while it ran. */
-type Refetch = Landed | typeof TIMES_FETCH.SUPERSEDED;
 /** A place refetch's result; `fetched` when this year's days landed. */
 export type PlaceRefetch = (Landed & { fetched: boolean }) | typeof TIMES_FETCH.SUPERSEDED;
 
 const ALL_LANDED: Landed = { stands: true, complete: true };
 const NOT_STORED: Landed = { stands: false, complete: false };
 
-/** One year's fetch; `needed` when a kept or read day is in that year. */
-const yearLanded = (fetch: TimesFetch, needed: boolean): Refetch => {
-  if (fetch === TIMES_FETCH.SUPERSEDED) return fetch;
-  const stored = fetch === TIMES_FETCH.STORED;
-  return { stands: stored || !needed, complete: stored };
-};
+/** One year's store; `needed` when a kept or read day is in that year. */
+const yearLanded = (stored: boolean, needed: boolean): Landed => ({
+  stands: stored || !needed,
+  complete: stored,
+});
 
-/** The load fails if a kept or read day's year fails to land. */
-const storeAdjacentYear = async (get: GetTimes, now: Date): Promise<Refetch> => {
+/** The adjacent year a refetch fetches, if any, and whether the window needs it. */
+const adjacentYearOf = (now: Date): { year: number; needed: boolean } | null => {
   const year = getYear(now);
   const month = getMonth(now) + 1;
   if (month === 1) {
     // Last year's days older than the kept ones are cleaned up, so none stay.
     const needed = getYear(subDays(now, KEPT_PAST_DAYS)) < year;
-    if (!needed) return ALL_LANDED;
-    return yearLanded(await get().getAndStorePrayerTimes(year - 1), needed);
+    return needed ? { year: year - 1, needed } : null;
   }
   if (month === 12) {
     // Next year's days are read later, so they must be this place's too.
-    const needed = getYear(addDays(now, READ_AHEAD_DAYS)) > year;
-    return yearLanded(await get().getAndStorePrayerTimes(year + 1), needed);
+    return { year: year + 1, needed: getYear(addDays(now, READ_AHEAD_DAYS)) > year };
   }
-  return ALL_LANDED;
+  return null;
+};
+
+/** What a fetch asked for, as its log lines name it. */
+const askedOf = (yearOverride?: number, month?: number) =>
+  `${yearOverride ?? "current"}/${month ?? "all"}`;
+
+/** One year's days from the API; null when the request failed. */
+const fetchYear = async (
+  get: GetTimes,
+  yearOverride?: number,
+  month?: number
+): Promise<PrayerTimesResponse | null> => {
+  try {
+    return await get().getPrayerTimes(yearOverride, month);
+  } catch (error: unknown) {
+    log.e(
+      "Fetch",
+      `getAndStorePrayerTimes failed (${askedOf(yearOverride, month)})`,
+      error instanceof Error ? error : new Error(errorText(error))
+    );
+    return null;
+  }
+};
+
+/** Stores fetched days as the saved place's, with their zone. */
+const storeYear = async (
+  data: PrayerTimesResponse,
+  yearOverride?: number,
+  month?: number
+): Promise<TimesFetch> => {
+  const asked = askedOf(yearOverride, month);
+  try {
+    locationStore.getState().setTimezone(data.timezone);
+    const insertionResult = await PrayerTimesDB.insertPrayerTimes(data);
+    if (!insertionResult.success) {
+      throw new Error("Failed to save prayer times", { cause: insertionResult.error });
+    }
+    // Only the current year's fetch holds today, so only it reports on today.
+    if (yearOverride === undefined) {
+      const { currentProviderId, setInEffect } = providerSettingsStore.getState();
+      setInEffect(getAdapterByProviderId(currentProviderId).fromApplied(data.applied));
+    }
+    reloadPrayerWidgets();
+    await syncWidgetSnapshot();
+    log.i("Fetch", `stored prayer times (${asked})`);
+    return TIMES_FETCH.STORED;
+  } catch (error: unknown) {
+    log.e(
+      "Fetch",
+      `getAndStorePrayerTimes failed (${asked})`,
+      error instanceof Error ? error : new Error(errorText(error))
+    );
+    return TIMES_FETCH.FAILED;
+  }
+};
+
+/** Whether the place was written since `revision`; logs the drop. */
+const placeMovedSince = (revision: number, what: string): boolean => {
+  if (locationStore.getState().placeRevision === revision) return false;
+  log.i("Fetch", `superseded: the place moved during ${what}`);
+  return true;
 };
 
 /** The read-ahead window ends in next year on a day not stored. */
@@ -193,24 +249,33 @@ const nextYearUnstored = (now: Date, read: DayPrayerTimes[] | null): boolean => 
 
 /** The place's days from its oldest kept day on, then the adjacent year's. */
 const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch> => {
-  const { coords, timezone } = locationStore.getState().locationDetails;
+  const { locationDetails, placeRevision } = locationStore.getState();
+  const { coords, timezone } = locationDetails;
   // The fetch reads the place from the store as it starts.
   const fetchedFor = coordsOf(coords);
   const now = timeZonedNow(timezone);
   // This year's fetch starts at the month of its oldest kept day.
   const oldestKept = subDays(now, KEPT_PAST_DAYS);
   const firstMonth = getYear(oldestKept) === getYear(now) ? getMonth(oldestKept) + 1 : 1;
-  const thisYear = await get().getAndStorePrayerTimes(undefined, firstMonth);
-  if (thisYear === TIMES_FETCH.SUPERSEDED) return thisYear;
-  const fetched = thisYear === TIMES_FETCH.STORED;
-  const refetch = fetched ? await storeAdjacentYear(get, now) : NOT_STORED;
-  if (refetch === TIMES_FETCH.SUPERSEDED) return refetch;
+  const thisYear = await fetchYear(get, undefined, firstMonth);
+  if (thisYear === null) return { ...NOT_STORED, fetched: false };
+  const adjacent = adjacentYearOf(now);
+  const adjacentDays = adjacent && (await fetchYear(get, adjacent.year));
+  // A needed year missing would leave half the window at another place.
+  if (adjacent?.needed && adjacentDays === null) return { ...NOT_STORED, fetched: false };
+  // Both years are fetched before either is stored: a move between them
+  // leaves no year of the replaced place behind.
+  if (placeMovedSince(placeRevision, "the refetch")) return TIMES_FETCH.SUPERSEDED;
+  const fetched = (await storeYear(thisYear, undefined, firstMonth)) === TIMES_FETCH.STORED;
+  if (!fetched) return { ...NOT_STORED, fetched };
+  const adjacentStored =
+    adjacent !== null &&
+    adjacentDays !== null &&
+    (await storeYear(adjacentDays, adjacent.year)) === TIMES_FETCH.STORED;
+  const refetch = adjacent ? yearLanded(adjacentStored, adjacent.needed) : ALL_LANDED;
   if (!refetch.complete) return { ...refetch, fetched };
-  // A move after this year's fetch sent the adjacent year's for the new place.
-  if (timesMoved(fetchedFor, locationStore.getState().locationDetails.coords)) {
-    log.i("Fetch", "refetch superseded: the place moved between its years");
-    return TIMES_FETCH.SUPERSEDED;
-  }
+  // A move during the stores leaves the place unmarked.
+  if (placeMovedSince(placeRevision, "the refetch's stores")) return TIMES_FETCH.SUPERSEDED;
   // Rows before the kept days keep the old place; the widget reads the oldest.
   await get().cleanupOldData();
   // Marked last: until every year lands, a later refetch runs again.
@@ -238,7 +303,7 @@ const loadTimes = async (
     const placeBeforeFix = locationStore.getState().locationDetails.coords;
     await takeFix();
 
-    const { locationDetails, lastKnownCoords } = locationStore.getState();
+    const { locationDetails, lastKnownCoords, placeRevision } = locationStore.getState();
     const verified = lastKnownCoords !== null;
     // No verified fix: Makkah stands in; loadPrayerTimes retries the fix later.
     if (!verified) {
@@ -283,30 +348,41 @@ const loadTimes = async (
             : "place verified";
       log.i("Load", `refetching: ${reason}`);
       const refetch = await get().refetchPlaceTimes();
-      if (refetch === TIMES_FETCH.SUPERSEDED) {
-        // The move's own load fetches the new place's days.
+      if (
+        refetch === TIMES_FETCH.SUPERSEDED ||
+        locationStore.getState().placeRevision !== placeRevision
+      ) {
+        // The move's own load fetches, marks and settles the new place.
         log.i("Load", "refetch superseded: the place moved during it");
-      } else {
-        landed = refetch.complete;
-        if (refetch.stands) {
-          await get().refreshTimingsFromDb();
-          // After the refresh, so the old rows never read as verified.
-          set({ usingDefaultLocation: !verified });
-        } else if (required) {
-          throw new Error("Failed to fetch and store prayer times");
-        } else {
-          // The default place's rows and flag stand; the next load retries.
-          log.w("Load", "place-verified refetch failed; the default place's times stay");
-        }
+        return false;
       }
-    } else if (nextYearUnstored(now, twoWeeksTimings)) {
-      // Best effort: the stored days stand, and the next load asks again.
-      log.i("Load", "refetching: next year's read-ahead days");
-      readAhead = get().getAndStorePrayerTimes(getYear(now) + 1);
-      const ahead = await readAhead;
-      // A superseded fetch leaves next year's days to the move's own load.
-      landed = ahead !== TIMES_FETCH.FAILED;
-      if (ahead === TIMES_FETCH.STORED) await get().refreshTimingsFromDb();
+      landed = refetch.complete;
+      if (refetch.stands) {
+        await get().refreshTimingsFromDb();
+        // After the refresh, so the old rows never read as verified.
+        set({ usingDefaultLocation: !verified });
+        // The window read back is this place's, though a later year is owed.
+        locationStore.getState().settlePlace(placeRevision);
+      } else if (required) {
+        throw new Error("Failed to fetch and store prayer times");
+      } else {
+        // The default place's rows and flag stand; the next load retries.
+        log.w("Load", "place-verified refetch failed; the default place's times stay");
+      }
+    } else {
+      // The days read back are this place's: marked for it, none missing.
+      if (placeSettled && get().timesCoords !== null) {
+        locationStore.getState().settlePlace(placeRevision);
+      }
+      if (nextYearUnstored(now, twoWeeksTimings)) {
+        // Best effort: the stored days stand, and the next load asks again.
+        log.i("Load", "refetching: next year's read-ahead days");
+        readAhead = get().getAndStorePrayerTimes(getYear(now) + 1);
+        const ahead = await readAhead;
+        // A superseded fetch leaves next year's days to the move's own load.
+        landed = ahead !== TIMES_FETCH.FAILED;
+        if (ahead === TIMES_FETCH.STORED) await get().refreshTimingsFromDb();
+      }
     }
 
     await get().cleanupOldData();
@@ -400,47 +476,15 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
           yearOverride?: number,
           month?: number
         ): Promise<TimesFetch> => {
-          const asked = `${yearOverride ?? "current"}/${month ?? "all"}`;
-          try {
-            // The fetch reads the place from the store as it starts.
-            const fetchedFor = coordsOf(locationStore.getState().locationDetails.coords);
-            const data = await get().getPrayerTimes(yearOverride, month);
-
-            // The place moved: the move's own load fetches its days.
-            const place = locationStore.getState();
-            if (timesMoved(fetchedFor, place.locationDetails.coords)) {
-              log.i("Fetch", `superseded: the place moved during the fetch (${asked})`);
-              return TIMES_FETCH.SUPERSEDED;
-            }
-            place.setTimezone(data.timezone);
-
-            const insertionResult = await PrayerTimesDB.insertPrayerTimes(data);
-
-            if (!insertionResult.success) {
-              throw new Error("Failed to save prayer times", {
-                cause: insertionResult.error,
-              });
-            }
-
-            // Only the current year's fetch holds today, so only it reports on today.
-            if (yearOverride === undefined) {
-              const { currentProviderId, setInEffect } = providerSettingsStore.getState();
-              setInEffect(getAdapterByProviderId(currentProviderId).fromApplied(data.applied));
-            }
-
-            reloadPrayerWidgets();
-            await syncWidgetSnapshot();
-
-            log.i("Fetch", `stored prayer times (${asked})`);
-            return TIMES_FETCH.STORED;
-          } catch (error: unknown) {
-            log.e(
-              "Fetch",
-              `getAndStorePrayerTimes failed (${asked})`,
-              error instanceof Error ? error : new Error(errorText(error))
-            );
-            return TIMES_FETCH.FAILED;
+          // The fetch is for the place saved as it starts.
+          const { placeRevision } = locationStore.getState();
+          const data = await fetchYear(get, yearOverride, month);
+          if (data === null) return TIMES_FETCH.FAILED;
+          // The place moved: the move's own load fetches its days.
+          if (placeMovedSince(placeRevision, `the fetch (${askedOf(yearOverride, month)})`)) {
+            return TIMES_FETCH.SUPERSEDED;
           }
+          return storeYear(data, yearOverride, month);
         },
 
         refetchPlaceTimes: () => refetchYears(set, get),

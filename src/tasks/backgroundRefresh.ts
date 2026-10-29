@@ -96,7 +96,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
       return BackgroundTask.BackgroundTaskResult.Failed;
     }
 
-    const { timezone, coords } = locationStore.getState().locationDetails;
+    const { locationDetails, placeRevision } = locationStore.getState();
+    const { timezone, coords } = locationDetails;
     if (!timezone) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
@@ -121,6 +122,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     const hasSufficientData = futureData.length >= MIN_FUTURE_DAYS && !placeMoved;
 
     let fetchedNewData = false;
+    // The window read back below is this place's once its fetch stands.
+    let settles = false;
     if (!hasSufficientData || pendingReapply) {
       await BackgroundTaskLog.log(
         BACKGROUND_REFRESH_TASK,
@@ -148,6 +151,7 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
           if (refetch.complete && pendingReapply) {
             useProviderSettingsStore.getState().clearPendingReapply();
           }
+          settles = refetch.stands;
           // This year's days count as fetched, though a next-year miss is owed.
           if (refetch.fetched) {
             fetchedNewData = true;
@@ -186,6 +190,7 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     // input is the window persisted at the last foreground launch, which ends
     // 13 days after that launch even when the database holds fresh rows.
     await usePrayerTimesStore.getState().refreshTimingsFromDb();
+    if (settles) locationStore.getState().settlePlace(placeRevision);
 
     // A day with no app launch still gets today's timings onto the Android home screen.
     // Android-only by construction; iOS widgets read the database and get no reload here.

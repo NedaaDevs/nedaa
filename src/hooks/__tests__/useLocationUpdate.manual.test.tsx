@@ -23,6 +23,15 @@ import i18n from "@/localization/i18n";
 
 const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
+// The load that first takes a device fix: a point write, as the real one is.
+const mockLoadWithFix = jest.fn(async () => {
+  jest
+    .requireActual("@/stores/location")
+    .useLocationStore.setState((state: { placeRevision: number }) => ({
+      placeRevision: state.placeRevision + 1,
+    }));
+  return true;
+});
 const mockScheduleNotifications = jest.fn();
 const mockRescheduleAlarms = jest.fn();
 const mockReloadPrayerWidgets = jest.fn();
@@ -57,7 +66,12 @@ jest.mock("@/api/geocodeApi", () => ({
 }));
 
 jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: { getState: () => ({ loadPrayerTimes: mockLoadPrayerTimes }) },
+  usePrayerTimesStore: {
+    getState: () => ({
+      loadPrayerTimes: mockLoadWithFix,
+      loadPrayerTimesAtCurrentPlace: mockLoadPrayerTimes,
+    }),
+  },
 }));
 
 jest.mock("@/stores/notification", () => ({
@@ -282,6 +296,23 @@ describe("switchToDevice", () => {
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  // A failed first fix leaves the times store owing a device fix.
+  it("lands a device update without taking a second fix", async () => {
+    useLocationStore.getState().clearManualLocation();
+    mockReadLocation.mockResolvedValue(DEVICE_FIX);
+    const { result } = await mountHook();
+
+    let updated: boolean | undefined;
+    await act(async () => {
+      updated = await result.current.executeUpdate();
+    });
+
+    expect(updated).toBe(true);
+    expect(mockLoadWithFix).not.toHaveBeenCalled();
+    expect(mockScheduleNotifications).toHaveBeenCalled();
+    expect(result.current.run).toBeNull();
   });
 
   it("replaces the chosen city with the device's fix and refreshes everything after it", async () => {
@@ -530,5 +561,23 @@ describe("what the run reports", () => {
     const { applied } = await applyRiyadh();
 
     expect(applied).toBe(true);
+  });
+
+  it("stops at the times step when the place is replaced during it", async () => {
+    mockLoadPrayerTimes.mockImplementationOnce(async () => {
+      useLocationStore.setState((state) => ({ placeRevision: state.placeRevision + 1 }));
+      return false;
+    });
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+
+    const { result, applied } = await applyRiyadh();
+
+    expect(applied).toBe(false);
+    expect(result.current.run).toEqual(
+      expect.objectContaining({ step: UPDATE_STEP.PRAYER_TIMES, failed: true })
+    );
+    expect(mockScheduleNotifications).not.toHaveBeenCalled();
+    expect(announce).not.toHaveBeenCalledWith(i18n.t("location.update.step.done"));
+    announce.mockRestore();
   });
 });

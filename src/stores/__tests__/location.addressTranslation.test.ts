@@ -2,6 +2,7 @@ import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
+import type { ManualLocation } from "@/types/location";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -11,6 +12,18 @@ jest.mock("expo-sqlite/kv-store", () => ({
     removeItem: jest.fn(() => Promise.resolve()),
   },
 }));
+
+const DUBAI_CITY: ManualLocation = {
+  cityId: 292223,
+  name: "Dubai",
+  names: { ar: "دبي", ur: null, ms: null },
+  region: null,
+  countryCode: "AE",
+  country: { name: "United Arab Emirates", names: { ar: "الإمارات", ur: null, ms: null } },
+  latitude: 25.07725,
+  longitude: 55.30927,
+  timezone: "Asia/Dubai",
+};
 
 const NAMES: Record<string, { city: string; countryName: string }> = {
   [AppLocale.AR]: { city: "الرياض", countryName: "السعودية" },
@@ -62,5 +75,19 @@ describe("updateAddressTranslation", () => {
 
     await expect(arabic).resolves.toBe(true);
     expect(useLocationStore.getState().localizedLocation.city).toBe("الرياض");
+  });
+
+  it("drops an answer for a place replaced while it was asked", async () => {
+    const arabic = lookUpIn(AppLocale.AR);
+    useLocationStore.getState().setManualLocation(DUBAI_CITY);
+
+    pending.get(AppLocale.AR)?.();
+
+    await expect(arabic).resolves.toBe(false);
+    expect(useLocationStore.getState().localizedLocation).toEqual({
+      city: DUBAI_CITY.name,
+      country: DUBAI_CITY.country.name,
+    });
+    expect(useLocationStore.getState().locationDetails.timezone).toBe(DUBAI_CITY.timezone);
   });
 });
