@@ -111,7 +111,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   const [run, setRun] = useState<Run | null>(null);
   // What started the run, and what a close gives reader focus to once it ends.
   const starter = useRef<HostInstance | null>(null);
-  const focusOnEnd = useRef<HostInstance | null>(null);
+  const [returnTo, setReturnTo] = useState<HostInstance | null>(null);
 
   const storeDays = { yesterday, today, tomorrow };
   // A preview plays a sample day until the user's own times are stored.
@@ -130,10 +130,12 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
 
   const idle = run === null;
   useEffect(() => {
-    if (!idle) return;
-    focusOn(focusOnEnd.current);
-    focusOnEnd.current = null;
-  }, [idle]);
+    if (!idle || returnTo === null) return;
+    focusOn(returnTo);
+    // Cleared after the focus is sent, so its target stays drawn until then.
+    const timer = setTimeout(() => setReturnTo(null), 0);
+    return () => clearTimeout(timer);
+  }, [idle, returnTo]);
 
   const playing = run?.status === DAY_RUN_STATUS.PLAYING;
   // Leaving the app pauses a run, so it waits where it was for the user.
@@ -159,6 +161,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
     const schedule = runSchedule(days);
     if (!schedule) return;
     const first = holdMs === null ? 0 : dayRunPhaseStartMs(schedule, kind, schedule.phases[0]);
+    setReturnTo(null);
     setRun({ days, schedule, status: DAY_RUN_STATUS.PLAYING, elapsedMs: first });
   };
 
@@ -168,6 +171,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
     phase: runPhase,
     progress: progressOf(run, kind),
     available,
+    returning: returnTo !== null,
     start: (from) => {
       starter.current = from ?? null;
       begin();
@@ -186,7 +190,7 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
       ),
     done: () => setRun(null),
     close: () => {
-      focusOnEnd.current = starter.current;
+      setReturnTo(starter.current);
       setRun(null);
     },
   };
