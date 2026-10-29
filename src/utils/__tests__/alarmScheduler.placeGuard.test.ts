@@ -469,9 +469,10 @@ describe("alarms armed before the place became the default one", () => {
 // The default place's days stay stored until the verified place's replace them.
 describe("a place verified while the default place's days are stored", () => {
   const { refreshTimingsFromDb, cleanupOldData, getPrayerTimes } = usePrayerTimesStore.getState();
-  afterEach(() =>
-    usePrayerTimesStore.setState({ refreshTimingsFromDb, cleanupOldData, getPrayerTimes })
-  );
+  afterEach(() => {
+    usePrayerTimesStore.setState({ refreshTimingsFromDb, cleanupOldData, getPrayerTimes });
+    jest.mocked(PrayerTimesDB.insertPrayerTimes).mockRestore();
+  });
 
   /** Default rows for every day, a verified place, and `fetching` to fetch. */
   const verifyWhileDefaultStored = (fetching: () => Promise<boolean>) => {
@@ -482,7 +483,9 @@ describe("a place verified while the default place's days are stored", () => {
       cleanupOldData: jest.fn(async () => true),
       getPrayerTimes: fetchLandingAs(fetching),
     });
-    jest.spyOn(PrayerTimesDB, "insertPrayerTimes").mockResolvedValue({ success: true } as never);
+    jest
+      .spyOn(PrayerTimesDB, "insertPrayerTimes")
+      .mockResolvedValue({ success: true, insertedCount: 0 });
     useLocationStore.setState({ lastKnownCoords: COORDS });
   };
   const fetchCalls = () =>
