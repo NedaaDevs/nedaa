@@ -5,7 +5,6 @@ import type { PrayerTimesStore } from "@/stores/prayerTimes";
 import type { NotificationStore } from "@/stores/notification";
 
 // Stores
-import { useLocationStore } from "@/stores/location";
 import { useQadaStore } from "@/stores/qada";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/providerSettings";
@@ -25,8 +24,6 @@ import { BackgroundTaskLog } from "@/services/background-task-log";
 // DB cleanup
 import { UmrahDB } from "@/services/umrah-db";
 import { cleanupManager } from "@/services/cleanup";
-
-import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 export const appSetup = async (
   prayerStore: PrayerTimesStore,
@@ -51,13 +48,6 @@ export const appSetup = async (
     await waitForAlarmStores();
     registerAlarmCopySync();
     await ensureAlarmsScheduled();
-
-    // Check for city changes (if auto-update is enabled). Skipped in screenshot
-    // mode: location is seeded, and the GMS settings check pops a native dialog.
-    const locationStore = useLocationStore.getState();
-    if (!IS_SCREENSHOT_MODE && locationStore.autoUpdateLocation) {
-      await locationStore.checkAndPromptCityChange();
-    }
 
     // Load qada data (needed for notification scheduling)
     const qadaStore = useQadaStore.getState();

@@ -78,6 +78,8 @@ export type LocationDetails = {
   error: LocationFailure | null;
   /** How and when the device found its position; null for a chosen city. */
   fix: { source: FixSource; at: number } | null;
+  /** The place's ISO country code, upper case; null until it is known. */
+  countryCode: string | null;
   isLoading: boolean;
 };
 
@@ -97,6 +99,7 @@ export const initialLocationDetails: LocationDetails = {
   timezone: "Asia/Riyadh",
   error: null,
   fix: null,
+  countryCode: null,
   isLoading: false,
 };
 
@@ -125,6 +128,7 @@ export type PlaceRecord = {
   timezone: string;
   fixSource: FixSource | null;
   fixedAt: number | null;
+  countryCode: string | null;
   localizedLocation: Address;
   locationMode: LocationModeValue;
   manualLocation: ManualLocation | null;
