@@ -28,9 +28,8 @@ const pinNativeScheme = (next: NativeScheme): Promise<void> => {
 };
 
 /**
- * Applies an appearance mode under the theme dissolve. The native pin moves
- * first, so the phone's scheme is shown with the mode, not after the fade.
- * It pins the real phase, not the one a day run draws.
+ * Applies a mode under the theme dissolve. The native pin, for the real phase
+ * and not a day run's, moves first, so the scheme shows with the mode.
  */
 export const useChooseMode = () => {
   const mode = useAppStore((state) => state.mode);
