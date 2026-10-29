@@ -202,6 +202,24 @@ describe("DayRunPlayer", () => {
     expect(setMode.mock.invocationCallOrder[0]).toBeLessThan(announce.mock.invocationCallOrder[0]);
   });
 
+  // A look stored while the dissolve runs is the look that stays.
+  it("Use Adaptive says nothing when another look is stored by then", async () => {
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+    announce.mockClear();
+    mockTransition.mockImplementationOnce(async (fn) => {
+      await fn();
+      useAppStore.setState({ mode: AppMode.DARK });
+    });
+    const { result } = await renderPlayer();
+    await start(result);
+
+    await press(DAY_RUN_PLAYER_PART.USE_ADAPTIVE);
+    await act(() => jest.advanceTimersByTime(PIN_REPORT_LIMIT_MS));
+
+    expect(useAppStore.getState().mode).toBe(AppMode.DARK);
+    expect(announce).not.toHaveBeenCalled();
+  });
+
   it("Done restores the chosen look", async () => {
     useAppStore.setState({ mode: AppMode.LIGHT });
     const { result } = await renderPlayer();
