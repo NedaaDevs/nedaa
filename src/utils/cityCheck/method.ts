@@ -19,7 +19,8 @@ const distanceKm = (a: Coords, b: Coords) =>
 
 /** AlAdhan's default method: the country's own, else the nearest authority. */
 export const providerMethodAt = (point: Coords, countryCode: string | null): MethodId => {
-  if (countryCode && hasCountryMethod(countryCode)) return METHOD_BY_COUNTRY[countryCode];
+  const code = countryCode?.toUpperCase() ?? null;
+  if (code && hasCountryMethod(code)) return METHOD_BY_COUNTRY[code];
   const nearest = AUTHORITIES.reduce((best, authority) =>
     distanceKm(point, authority.point) < distanceKm(point, best.point) ? authority : best
   );
