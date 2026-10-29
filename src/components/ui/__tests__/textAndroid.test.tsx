@@ -3,10 +3,11 @@ import { screen } from "@testing-library/react-native";
 import { Text, TEXT_END_ROOM } from "@/components/ui/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
-// The primitive reads the platform once, as it loads; this file runs as Android.
+// The primitive reads the platform once, at load; this file runs as Android.
 jest.mock("react-native", () => {
   const native = jest.requireActual("react-native");
-  native.Platform.OS = "android";
+  const { PlatformType } = jest.requireActual("@/enums/app");
+  native.Platform.OS = PlatformType.ANDROID;
   return native;
 });
 
