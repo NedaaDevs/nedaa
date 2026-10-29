@@ -20,7 +20,7 @@ const CLOCK_FORMATS = Object.values(CLOCK_FORMAT);
 const NUMERAL_STYLES = Object.values(NUMERAL_STYLE);
 
 /** The digits and the clock, the Settings controls, with a sample time. */
-export const NumeralsStep = ({ headingRef, progress }: StepProps) => {
+export const NumeralsStep = ({ headingRef, onHeadingLayout, progress }: StepProps) => {
   const { t } = useTranslation();
   const locale = useAppStore((state) => state.locale);
   const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
@@ -34,6 +34,7 @@ export const NumeralsStep = ({ headingRef, progress }: StepProps) => {
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.numerals.title")}
         body={t("onboarding.numerals.body")}

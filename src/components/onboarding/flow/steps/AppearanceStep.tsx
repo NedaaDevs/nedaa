@@ -12,13 +12,14 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 
 /** Today's preview, a day of Adaptive, Today's style, then the modes. */
-export const AppearanceStep = ({ headingRef, progress }: StepProps) => {
+export const AppearanceStep = ({ headingRef, onHeadingLayout, progress }: StepProps) => {
   const { t } = useTranslation();
 
   return (
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.appearance.title")}
         body={t("onboarding.appearance.body")}

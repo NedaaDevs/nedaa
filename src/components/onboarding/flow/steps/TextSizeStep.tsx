@@ -17,7 +17,13 @@ import { isLargeOsTextActive } from "@/utils/textSizeOffer";
 const TEXT_SIZES = Object.values(TextSize);
 
 /** The app's text size; the whole frame and the preview follow the choice. */
-export const TextSizeStep = ({ onNext, setPrimary, headingRef, progress }: StepProps) => {
+export const TextSizeStep = ({
+  onNext,
+  setPrimary,
+  headingRef,
+  onHeadingLayout,
+  progress,
+}: StepProps) => {
   const { t } = useTranslation();
   const textSize = usePreferencesStore((state) => state.textSize);
   const setTextSize = usePreferencesStore((state) => state.setTextSize);
@@ -45,6 +51,7 @@ export const TextSizeStep = ({ onNext, setPrimary, headingRef, progress }: StepP
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.textSize.chooseTitle")}
         body={t("onboarding.textSize.chooseBody")}

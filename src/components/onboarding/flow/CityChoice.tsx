@@ -52,7 +52,7 @@ export const ChooseCityButton = ({ onPress }: { onPress: () => void }) => {
 
 type PickerProps = Pick<
   StepProps,
-  "headingRef" | "progress" | "setBack" | "setBusy" | "setPrimaryHidden"
+  "headingRef" | "onHeadingLayout" | "progress" | "setBack" | "setBusy" | "setPrimaryHidden"
 > & {
   /** The host's own success: its session write, then on. */
   onDone: () => void;
@@ -65,6 +65,7 @@ type PickerProps = Pick<
 /** A step's city list or coordinate entry, drawn in place of its body. */
 export const StepCityPicker = ({
   headingRef,
+  onHeadingLayout,
   progress,
   setBack,
   setBusy,
@@ -123,6 +124,7 @@ export const StepCityPicker = ({
     <ScreenContent flex={1} paddingTop="$4" gap="$3">
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t(coordinates ? "location.coordinates.title" : "location.picker.title")}
       />

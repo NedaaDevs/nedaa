@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState, type ComponentProps } from "react";
-import { BackHandler, type ViewInstance } from "react-native";
+import { BackHandler } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { countedPlace, resolveIndex, stepRank } from "@/components/onboarding/column";
@@ -30,9 +30,9 @@ import {
 import { useDayRun } from "@/contexts/DayRunContext";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useLayoutFocus } from "@/hooks/useLayoutFocus";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
-import { focusOn } from "@/utils/accessibilityFocus";
 
 /** Gives `step` the claim, or drops a claim that `step` holds. */
 const claimFor =
@@ -95,7 +95,6 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   );
   const primaryPress = useRef<(() => void) | null>(null);
   const backPress = useRef<(() => void) | null>(null);
-  const headingRef = useRef<ViewInstance>(null);
   const shown = useRef<OnboardingStepId | null>(null);
   const lockUntil = useRef(0);
   const ending = useRef(false);
@@ -124,6 +123,8 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   if (backFor !== null && backFor !== current) setBackFor(null);
   const ownPrimary = primaryFor !== null && primaryFor.step === current ? primaryFor : null;
   const ownsBack = current !== undefined && backFor === current;
+  // Each arrival's heading takes reader focus from its first layout.
+  const { ref: headingRef, onLayout: onHeadingLayout } = useLayoutFocus(current);
 
   // Settles on the step drawn, so a removed id that returns cannot pull back.
   if (current !== undefined && stepId !== current) setStepId(current);
@@ -146,7 +147,6 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   const arrive = useEffectEvent(() => {
     if (current === undefined) return;
     if (saved === null || stepRank(current) > stepRank(saved)) setOnboardingStep(current);
-    focusOn(headingRef.current);
     if (shown.current !== null) {
       // Completion plays its own success haptic in place of the step tap.
       if (current !== ONBOARDING_STEP.COMPLETE) void haptic();
@@ -235,6 +235,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
       });
     },
     headingRef,
+    onHeadingLayout,
     progress,
   };
   const Step = STEP_COMPONENT[current];

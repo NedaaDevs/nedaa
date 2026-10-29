@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import {
   AccessibilityInfo,
   BackHandler,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   View,
   type LayoutChangeEvent,
-  type ViewInstance,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -32,10 +31,10 @@ import { AppMode, PlatformType } from "@/enums/app";
 import { useChooseMode } from "@/hooks/useChooseMode";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
+import { useLayoutFocus } from "@/hooks/useLayoutFocus";
 import { usePlayFlip } from "@/hooks/usePlayFlip";
 import { useShownDay } from "@/hooks/useShownDay";
 import { useAppStore } from "@/stores/app";
-import { focusOn } from "@/utils/accessibilityFocus";
 import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
 
 /** Test ids for the player's parts. */
@@ -216,14 +215,8 @@ export const DayRunPlayer = () => {
   const clockTime = useClockTime();
   const { now, day } = useShownDay();
   const playFlip = usePlayFlip();
-  const toggleRef = useRef<ViewInstance>(null);
-  // Reader focus goes to the toggle once its view exists, once per player.
-  const toggleFocused = useRef(false);
-  const focusToggle = () => {
-    if (toggleFocused.current) return;
-    toggleFocused.current = true;
-    focusOn(toggleRef.current);
-  };
+  // Reader focus goes to the toggle once laid out, once per player.
+  const { ref: toggleRef, onLayout: focusToggle } = useLayoutFocus();
   // The live slot's width, which the sizers reserve beside each kicker.
   const [slotWidth, setSlotWidth] = useState(0);
 

@@ -145,6 +145,8 @@ const expectHeading = (props: StepProps, titleKey: string) => {
   const view = props.headingRef.current as unknown as { props: ViewProps } | null;
   expect(view?.props.accessibilityRole).toBe("header");
   expect([undefined, name]).toContain(view?.props.accessibilityLabel);
+  // Arrival focus waits for this view's layout, so it reports its own.
+  expect(view?.props.onLayout).toBe(props.onHeadingLayout);
 };
 /** Every alarm item the device has, granted or not; set in the app. */
 const alarmItems = (granted: boolean, canRequestInApp: boolean): AlarmPermission[] =>
