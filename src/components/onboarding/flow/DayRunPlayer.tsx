@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { digitsOf, DigitSlot, type DigitTextProps } from "@/components/ui/digit-reserve";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
+import { LiveRegion } from "@/components/ui/live-region";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { Pressable } from "@/components/ui/pressable";
 import { Text, TEXT_END_ROOM } from "@/components/ui/text";
@@ -346,17 +347,14 @@ export const DayRunPlayer = () => {
       )}
       {Platform.OS === PlatformType.ANDROID ? (
         // Mounted for the player's life: Android says a changed label.
-        <Box
+        <LiveRegion
           testID={DAY_RUN_PLAYER_PART.STATUS}
+          message={announcement}
           position="absolute"
           bottom={0}
           width="$0.5"
           height="$0.5"
           pointerEvents="none"
-          importantForAccessibility="yes"
-          accessible={announcement !== null}
-          accessibilityLabel={announcement ?? ""}
-          accessibilityLiveRegion="polite"
         />
       ) : null}
     </Material>
