@@ -25,12 +25,12 @@ import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { DAY_RUN_CLOCK_SAMPLES, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { PHASE } from "@/constants/Phase";
 import { useDayRun } from "@/contexts/DayRunContext";
-import { useRTL } from "@/contexts/RTLContext";
 import { useAppScheme } from "@/contexts/SchemeContext";
 import { AppMode, PlatformType } from "@/enums/app";
 import { useChooseMode } from "@/hooks/useChooseMode";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
+import { usePlayFlip } from "@/hooks/usePlayFlip";
 import { useShownDay } from "@/hooks/useShownDay";
 import { useAppStore } from "@/stores/app";
 import { focusOn } from "@/utils/accessibilityFocus";
@@ -70,9 +70,6 @@ const TOGGLE = {
     hint: undefined,
   },
 } as const;
-
-// The play triangle points along the reading direction.
-const MIRROR = { transform: [{ scaleX: -1 }] };
 
 const PHASES = Object.values(PHASE);
 
@@ -202,7 +199,7 @@ export const DayRunPlayer = () => {
   const chooseMode = useChooseMode();
   const clockTime = useClockTime();
   const { now, day } = useShownDay();
-  const { isRTL } = useRTL();
+  const playFlip = usePlayFlip();
   const toggleRef = useRef<ViewInstance>(null);
   // Reader focus goes to the toggle once its view exists, once per player.
   const toggleFocused = useRef(false);
@@ -289,7 +286,7 @@ export const DayRunPlayer = () => {
           <View
             testID={DAY_RUN_PLAYER_PART.GLYPH}
             pointerEvents="none"
-            style={toggle.glyph === Play && isRTL ? MIRROR : undefined}>
+            style={toggle.glyph === Play ? playFlip : undefined}>
             <Icon
               as={toggle.glyph}
               size="md"
