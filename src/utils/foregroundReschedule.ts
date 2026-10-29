@@ -6,7 +6,11 @@ import { useLocationStore } from "@/stores/location";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
-import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
+import {
+  ensureAlarmsScheduled,
+  rescheduleAllAlarms,
+  waitForAlarmStores,
+} from "@/utils/alarmScheduler";
 import { AppLogger } from "@/utils/appLogger";
 import { checkLocationPermission } from "@/utils/location";
 import { timesMoved } from "@/utils/placeFromFacts";
@@ -33,11 +37,16 @@ export const registerForegroundReschedule = (): void => {
 // Alarms first: they need only the refreshed window, while the reschedule
 // rewrites every pending notification and can outlive a short foreground.
 const runForegroundWork = async (): Promise<void> => {
-  await step("timings", refreshWindow);
+  let repaired = false;
+  await step("timings", async () => {
+    repaired = await refreshWindow();
+  });
   await step("ensureAlarms", async () => {
     // Unhydrated stores read as disabled, so the top-up would arm nothing.
     await waitForAlarmStores();
-    await ensureAlarmsScheduled();
+    // The top-up keeps an armed alarm, so a repaired place's alarms move.
+    if (repaired) await rescheduleAllAlarms();
+    else await ensureAlarmsScheduled();
   });
   // Widgets draw from the refreshed window too.
   await step("widgets", syncWidgetSnapshot);
@@ -69,21 +78,30 @@ const canRepairLocation = async (): Promise<boolean> => {
   return (await checkLocationPermission()).granted;
 };
 
+/** The stored times are the saved place's, verified and fetched there. */
+const timesAtSavedPlace = async (): Promise<boolean> =>
+  (await readTimesPlace()) === TIMES_PLACE.VERIFIED &&
+  !timesMoved(
+    usePrayerTimesStore.getState().timesCoords,
+    useLocationStore.getState().locationDetails.coords
+  );
+
 /**
  * Stored rows carry no location, so a fix alone leaves the old city's times in
- * place. Only a forced refetch overwrites them.
+ * place. Only a forced refetch overwrites them. Resolves whether one landed.
  */
-const refreshWindow = async (): Promise<void> => {
+const refreshWindow = async (): Promise<boolean> => {
   const prayerTimes = usePrayerTimesStore.getState();
 
   if (await canRepairLocation()) {
     locationRepairAttempted = true;
     await prayerTimes.loadPrayerTimes(true);
-    return;
+    return timesAtSavedPlace();
   }
 
   // The reschedule reads the store's two-week projection, so re-derive it first.
   await prayerTimes.refreshTimingsFromDb();
+  return false;
 };
 
 // Independent steps: one rejection must not cancel the rest, or escape unhandled.
