@@ -45,6 +45,7 @@ export const NotificationsStep = ({
   setBusy,
   setPrimary,
   headingRef,
+  onHeadingLayout,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
@@ -70,6 +71,7 @@ export const NotificationsStep = ({
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.notifications.question")}
       />

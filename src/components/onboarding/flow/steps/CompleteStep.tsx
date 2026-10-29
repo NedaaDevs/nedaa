@@ -19,7 +19,7 @@ import { useTodayStored } from "@/hooks/useTodayStored";
 const GROW = { flexGrow: 1 };
 
 /** The last page: what was set up, and the way into the app. */
-export const CompleteStep = ({ onNext, headingRef, progress }: StepProps) => {
+export const CompleteStep = ({ onNext, headingRef, onHeadingLayout, progress }: StepProps) => {
   const { t } = useTranslation();
   const city = usePlace().city;
   const todayStored = useTodayStored();
@@ -53,6 +53,7 @@ export const CompleteStep = ({ onNext, headingRef, progress }: StepProps) => {
           </SkyOccluder>
           <StepHeading
             headingRef={headingRef}
+            onHeadingLayout={onHeadingLayout}
             progress={progress}
             centered
             title={t("onboarding.complete.title")}
