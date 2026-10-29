@@ -212,7 +212,7 @@ describe("Countdown in a day run", () => {
   /** Starts the run around it, as the Appearance step's button does. */
   const StartRun = () => {
     const run = useDayRun();
-    return <Pressable testID={START_RUN} onPress={run?.start} />;
+    return <Pressable testID={START_RUN} onPress={() => run?.start()} />;
   };
   const inRun = (value: string) => (
     <DaySimulator kind={DAY_RUN_KIND.PREVIEW}>

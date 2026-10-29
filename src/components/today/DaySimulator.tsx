@@ -1,5 +1,5 @@
-import { use, useEffect, useState, type ReactNode } from "react";
-import { AppState } from "react-native";
+import { use, useEffect, useRef, useState, type ReactNode } from "react";
+import { AppState, type HostInstance } from "react-native";
 import { parseISO } from "date-fns";
 
 import { BrightnessTheme } from "@/components/ui/brightness-theme";
@@ -27,6 +27,7 @@ import { useTodayStored } from "@/hooks/useTodayStored";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { focusOn } from "@/utils/accessibilityFocus";
 import { isDarkMode } from "@/utils/appearance";
 import {
   dayRunClockAt,
@@ -108,6 +109,9 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   const parentDays = use(SampleDaysContext);
   const holdMs = holdMsFor(kind, useReducedMotion());
   const [run, setRun] = useState<Run | null>(null);
+  // What started the run, and what a close gives reader focus to once it ends.
+  const starter = useRef<HostInstance | null>(null);
+  const focusOnEnd = useRef<HostInstance | null>(null);
 
   const storeDays = { yesterday, today, tomorrow };
   // A preview plays a sample day until the user's own times are stored.
@@ -123,6 +127,13 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
     );
     return () => clearTimeout(timer);
   }, [run, kind, holdMs]);
+
+  const idle = run === null;
+  useEffect(() => {
+    if (!idle) return;
+    focusOn(focusOnEnd.current);
+    focusOnEnd.current = null;
+  }, [idle]);
 
   const playing = run?.status === DAY_RUN_STATUS.PLAYING;
   // Leaving the app pauses a run, so it waits where it was for the user.
@@ -142,20 +153,26 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   const phase = runPhase ?? parentPhase;
   const drawnMode = drawing && kind === DAY_RUN_KIND.PREVIEW ? AppMode.ADAPTIVE : null;
 
+  const begin = () => {
+    // The day is read at the press, so no clock re-renders the run at rest.
+    const days = sample ? sampleDays(pinned ?? new Date()) : storeDays;
+    const schedule = runSchedule(days);
+    if (!schedule) return;
+    const first = holdMs === null ? 0 : dayRunPhaseStartMs(schedule, kind, schedule.phases[0]);
+    setRun({ days, schedule, status: DAY_RUN_STATUS.PLAYING, elapsedMs: first });
+  };
+
   const dayRun: DayRun = {
     kind,
     status: run?.status ?? DAY_RUN_STATUS.IDLE,
     phase: runPhase,
     progress: progressOf(run, kind),
     available,
-    start: () => {
-      // The day is read at the press, so no clock re-renders the run at rest.
-      const days = sample ? sampleDays(pinned ?? new Date()) : storeDays;
-      const schedule = runSchedule(days);
-      if (!schedule) return;
-      const first = holdMs === null ? 0 : dayRunPhaseStartMs(schedule, kind, schedule.phases[0]);
-      setRun({ days, schedule, status: DAY_RUN_STATUS.PLAYING, elapsedMs: first });
+    start: (from) => {
+      starter.current = from ?? null;
+      begin();
     },
+    replay: begin,
     pause: () => setRun(moved(DAY_RUN_STATUS.PLAYING, DAY_RUN_STATUS.PAUSED)),
     resume: () => setRun(moved(DAY_RUN_STATUS.PAUSED, DAY_RUN_STATUS.PLAYING)),
     jumpTo: (to) =>
@@ -168,6 +185,10 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
           }
       ),
     done: () => setRun(null),
+    close: () => {
+      focusOnEnd.current = starter.current;
+      setRun(null);
+    },
   };
 
   // Every provider renders at rest too, so nothing inside remounts with a run.
@@ -196,7 +217,7 @@ export const DaySimulatorButton = () => {
 
   return (
     <Button
-      onPress={run.start}
+      onPress={() => run.start()}
       disabled={!run.available || run.status === DAY_RUN_STATUS.PLAYING}
       accessibilityRole="button"
       accessibilityLabel={DAY_RUN_DEBUG_LABEL}>
