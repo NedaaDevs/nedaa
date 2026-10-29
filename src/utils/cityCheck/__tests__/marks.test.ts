@@ -1,0 +1,134 @@
+import { KEPT_MAX, KEPT_MAX_AGE_MS } from "@/constants/CityCheck";
+import { FIX_SOURCE } from "@/constants/Location";
+import { ASR_SCHOOL } from "@/constants/providers";
+import type { CityCheckFix, PlaceMark, ShiftCalc } from "@/types/cityCheck";
+import type { Coords } from "@/types/location";
+import type { MethodId } from "@/types/providers/aladhan";
+
+import {
+  conservativeKm,
+  keptAfterFix,
+  markPoint,
+  matchesMark,
+  toPlaceMark,
+  withMark,
+} from "@/utils/cityCheck/marks";
+
+const KM_PER_DEGREE = 111.195;
+const RAD = Math.PI / 180;
+
+const RIYADH: Coords = { latitude: 24.7136, longitude: 46.6753 };
+const eastOf = (from: Coords, km: number): Coords => ({
+  latitude: from.latitude,
+  longitude: from.longitude + km / (KM_PER_DEGREE * Math.cos(from.latitude * RAD)),
+});
+const EAST_12KM = eastOf(RIYADH, 12);
+const EAST_15KM = eastOf(RIYADH, 15);
+const MAKKAH: Coords = { latitude: 21.4225, longitude: 39.8262 };
+const JEDDAH: Coords = { latitude: 21.5433, longitude: 39.1728 };
+const JEDDAH_2 = eastOf(JEDDAH, 3);
+const DUBAI: Coords = { latitude: 25.2048, longitude: 55.2708 };
+
+const RIYADH_ZONE = "Asia/Riyadh";
+const UMM_AL_QURA_ID: MethodId = 4;
+const UMM_AL_QURA: ShiftCalc = { method: UMM_AL_QURA_ID, school: ASR_SCHOOL.SHAFI };
+const NOW = Date.UTC(2026, 9, 29, 9);
+const FIX_ACCURACY_KM = 1;
+
+const mark = (point: Coords, at: number = NOW): PlaceMark => toPlaceMark(point, at);
+const fresh = (point: Coords): CityCheckFix => ({
+  point,
+  accuracyKm: FIX_ACCURACY_KM,
+  fixedAt: NOW,
+  source: FIX_SOURCE.FRESH,
+});
+const cached = (point: Coords): CityCheckFix => ({
+  ...fresh(point),
+  source: FIX_SOURCE.LAST_KNOWN,
+});
+
+describe("place marks", () => {
+  it("rounds a point to 0.01°", () => {
+    expect(toPlaceMark({ latitude: 21.54329, longitude: 39.17283 }, 1000)).toEqual({
+      lat: 21.54,
+      lng: 39.17,
+      at: 1000,
+    });
+    expect(toPlaceMark({ latitude: -6.20876, longitude: 106.84559 }, 1)).toEqual({
+      lat: -6.21,
+      lng: 106.85,
+      at: 1,
+    });
+  });
+
+  it("subtracts both accuracies from the distance", () =>
+    expect(conservativeKm(RIYADH, 1, EAST_12KM, 0.5)).toBeCloseTo(10.5, 1));
+
+  it("takes 2 km for a place with no accuracy", () =>
+    expect(conservativeKm(RIYADH, 1, EAST_12KM, null)).toBeCloseTo(9, 1));
+
+  it("takes 0 km for a fix with no accuracy", () =>
+    expect(conservativeKm(RIYADH, null, EAST_12KM, 0.5)).toBeCloseTo(11.5, 1));
+
+  it("reads a mark as a point", () =>
+    expect(markPoint({ lat: 21.54, lng: 39.17, at: 1 })).toEqual({
+      latitude: 21.54,
+      longitude: 39.17,
+    }));
+
+  it("does not match a fix 15 km from a mark with a 1 km accuracy", () =>
+    expect(matchesMark(EAST_15KM, 1, mark(RIYADH))).toBe(false));
+
+  it("matches a coarse fix whose accuracy covers the gap", () =>
+    expect(matchesMark(EAST_15KM, 4, mark(RIYADH))).toBe(true));
+
+  it("ends a kept trip once a fresh fix back home is past the gate", () =>
+    expect(keptAfterFix([mark(JEDDAH)], fresh(MAKKAH), RIYADH_ZONE, UMM_AL_QURA, NOW)).toEqual([]));
+
+  it("keeps a kept trip on a cached fix", () =>
+    expect(
+      keptAfterFix([mark(JEDDAH)], cached(MAKKAH), RIYADH_ZONE, UMM_AL_QURA, NOW)
+    ).toHaveLength(1));
+
+  it("keeps a kept trip on a fresh fix with no accuracy", () =>
+    expect(
+      keptAfterFix(
+        [mark(JEDDAH)],
+        { ...fresh(MAKKAH), accuracyKm: null },
+        RIYADH_ZONE,
+        UMM_AL_QURA,
+        NOW
+      )
+    ).toHaveLength(1));
+
+  it("keeps a kept trip while the fix stays near it", () =>
+    expect(
+      keptAfterFix([mark(JEDDAH)], fresh(JEDDAH_2), RIYADH_ZONE, UMM_AL_QURA, NOW)
+    ).toHaveLength(1));
+
+  it("ends a kept trip after 30 days", () =>
+    expect(
+      keptAfterFix(
+        [{ ...mark(JEDDAH), at: NOW - KEPT_MAX_AGE_MS - 1 }],
+        fresh(JEDDAH_2),
+        RIYADH_ZONE,
+        UMM_AL_QURA,
+        NOW
+      )
+    ).toEqual([]));
+
+  it("replaces a mark the new one matches, newest first", () =>
+    expect(withMark([mark(DUBAI, 1), mark(JEDDAH, 1)], mark(JEDDAH_2, 2), KEPT_MAX)).toEqual([
+      mark(JEDDAH_2, 2),
+      mark(DUBAI, 1),
+    ]));
+
+  it("drops the oldest mark past the cap", () => {
+    const marks = Array.from({ length: KEPT_MAX + 1 }, (_, i) =>
+      toPlaceMark({ latitude: 10 + i, longitude: 40 }, i)
+    );
+    const list = marks.reduce<PlaceMark[]>((acc, m) => withMark(acc, m, KEPT_MAX), []);
+    expect(list).toHaveLength(KEPT_MAX);
+    expect(list).not.toContainEqual(marks[0]);
+  });
+});
