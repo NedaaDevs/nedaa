@@ -1,11 +1,18 @@
 import { create } from "zustand";
 import type { ParseKeys } from "i18next";
 
-import { UPDATE_START, UPDATE_STEP, type UpdateStep } from "@/constants/Location";
+import {
+  RUN_END,
+  STEP_OUTCOME,
+  UPDATE_START,
+  UPDATE_STEP,
+  type StepOutcome,
+  type UpdateStep,
+} from "@/constants/Location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import type { ManualLocation } from "@/types/location";
 import { AppLogger } from "@/utils/appLogger";
-import { errorText } from "@/utils/errorText";
+import { stopOf, type StepOutcomes } from "@/utils/updateOutcome";
 
 const log = AppLogger.create("location");
 
@@ -15,22 +22,34 @@ export type UpdateStart =
   | { kind: typeof UPDATE_START.ADOPT_DEVICE }
   | { kind: typeof UPDATE_START.CITY; city: ManualLocation };
 
-/** An update in flight, or the last one when a step threw. */
+/** An update in flight, or the last one when a step stopped it. */
 export type UpdateRun = {
   start: UpdateStart;
-  /** The step running now, or the one that threw. */
+  /** The step running now, or the one the run stopped at. */
   step: UpdateStep;
   failed: boolean;
 };
 
-/** The steps of one run; each step is entered before it starts. */
-export type UpdateSteps = (enter: (step: UpdateStep) => void) => Promise<void>;
+/** Enters `step`, runs its work and records its outcome; a throw is FAILED. */
+export type RunStep = (step: UpdateStep, work: () => Promise<StepOutcome>) => Promise<StepOutcome>;
+
+/** The steps of one run, each run through `runStep`. */
+export type UpdateSteps = (runStep: RunStep) => Promise<void>;
+
+/** How a run ended; a refused run never started, so it has no outcomes. */
+export type UpdateResult =
+  | { end: typeof RUN_END.LANDED; outcomes: StepOutcomes }
+  | { end: typeof RUN_END.STOPPED; step: UpdateStep; outcomes: StepOutcomes }
+  | { end: typeof RUN_END.REFUSED };
+
+/** Whether every step ran and none stopped the run. */
+export const updateLanded = (result: UpdateResult): boolean => result.end === RUN_END.LANDED;
 
 type LocationUpdateStore = {
   /** Null when no run is in flight and the last one landed or was closed. */
   run: UpdateRun | null;
-  /** The one update in flight: true once every step ran, else false. */
-  withRun: (start: UpdateStart, steps: UpdateSteps) => Promise<boolean>;
+  /** The one update in flight, and how it ended. */
+  withRun: (start: UpdateStart, steps: UpdateSteps) => Promise<UpdateResult>;
   /** Closes a failed run; a running one stays. */
   dismissFailure: () => void;
 };
@@ -49,19 +68,44 @@ export const useLocationUpdateStore = create<LocationUpdateStore>()((set, get) =
   run: null,
 
   withRun: async (start, steps) => {
-    if (isRunning(get().run)) return false;
+    if (isRunning(get().run)) return { end: RUN_END.REFUSED };
     set({ run: { start, step: UPDATE_STEP.LOCATION, failed: false } });
-    let landed = false;
+    const outcomes: StepOutcomes = {};
+    // The step in flight; the run starts at the place step.
+    let current: UpdateStep | null = UPDATE_STEP.LOCATION;
+    const runStep: RunStep = async (step, work) => {
+      current = step;
+      set(({ run }) => ({ run: run && { ...run, step } }));
+      let outcome: StepOutcome = STEP_OUTCOME.FAILED;
+      try {
+        outcome = await work();
+      } catch {
+        // The step's name only: an error's text can hold the place.
+        log.w("Update", `${step} threw`);
+      } finally {
+        outcomes[step] = outcome;
+        current = null;
+      }
+      return outcome;
+    };
+    let stop: UpdateStep | null = null;
     try {
-      await steps((step) => set(({ run }) => ({ run: run && { ...run, step } })));
-      landed = true;
-    } catch (error) {
-      log.w("Update", `update stopped at ${get().run?.step}: ${errorText(error)}`);
+      await steps(runStep);
+    } catch {
+      // A throw between steps leaves the finished steps' outcomes as they are.
+      if (current) outcomes[current] = STEP_OUTCOME.FAILED;
+      log.w("Update", `update threw at ${current ?? "no step"}`);
     } finally {
-      // Every way out releases the lock; a throw keeps the step it stopped at.
-      set(({ run }) => ({ run: landed || !run ? null : { ...run, failed: true } }));
+      // Every way out releases the lock; a stop keeps the step it stopped at.
+      stop = stopOf(outcomes);
+      set(({ run }) => ({ run: stop && run ? { ...run, step: stop, failed: true } : null }));
     }
-    return landed;
+    // Step names and outcome codes only: the log never holds the place.
+    const codes = Object.entries(outcomes).map(([step, outcome]) => `${step}=${outcome}`);
+    log.i("Update", `update ${stop ? `stopped at ${stop}` : "landed"}: ${codes.join(" ")}`);
+    return stop
+      ? { end: RUN_END.STOPPED, step: stop, outcomes }
+      : { end: RUN_END.LANDED, outcomes };
   },
 
   dismissFailure: () => set(({ run }) => ({ run: run?.failed ? null : run })),

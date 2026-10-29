@@ -8,7 +8,14 @@ import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
-import { FIX_SOURCE, LOCATION_FAILURE, UPDATE_START, UPDATE_STEP } from "@/constants/Location";
+import {
+  FIX_SOURCE,
+  LOCATION_FAILURE,
+  STEP_OUTCOME,
+  UPDATE_START,
+  UPDATE_STEP,
+} from "@/constants/Location";
+import { SchedulingSkipReason } from "@/enums/notifications";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { LocationFixError } from "@/utils/location";
 import { PlatformType } from "@/enums/app";
@@ -87,15 +94,20 @@ const RIYADH: ManualLocation = {
 
 const mountHook = () => renderHook(() => useLocationUpdate());
 
+/** Every step lands: the full window, alerts scheduled, alarms armed. */
+const resolveSteps = () => {
+  mockLoadPrayerTimes.mockResolvedValue(true);
+  mockScheduleNotifications.mockResolvedValue({ success: true, scheduledCount: 5 });
+  mockRescheduleAlarms.mockResolvedValue(STEP_OUTCOME.DONE);
+};
+
 beforeEach(() => useLocationUpdateStore.setState({ run: null }));
 
 describe("applyManualLocation", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    mockLoadPrayerTimes.mockResolvedValue(undefined);
-    mockScheduleNotifications.mockResolvedValue(undefined);
-    mockRescheduleAlarms.mockResolvedValue(undefined);
+    resolveSteps();
     useLocationStore.setState({
       locationDetails: initialLocationDetails,
       localizedLocation: { country: "", city: "" },
@@ -256,9 +268,7 @@ describe("switchToDevice", () => {
     jest.mocked(reverseGeocodeAsync).mockResolvedValue([]);
     // The translated name is fetched in the background; it never lands here.
     jest.mocked(geocodeApi.reverseGeocode).mockReturnValue(new Promise(() => {}));
-    mockLoadPrayerTimes.mockResolvedValue(undefined);
-    mockScheduleNotifications.mockResolvedValue(undefined);
-    mockRescheduleAlarms.mockResolvedValue(undefined);
+    resolveSteps();
     useLocationStore.setState({
       locationDetails: initialLocationDetails,
       localizedLocation: { country: "", city: "" },
@@ -314,8 +324,7 @@ describe("dismissFailure", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    mockScheduleNotifications.mockResolvedValue(undefined);
-    mockRescheduleAlarms.mockResolvedValue(undefined);
+    resolveSteps();
   });
 
   afterEach(() => {
@@ -357,8 +366,7 @@ describe("dismissFailure", () => {
 describe("one run at a time", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockScheduleNotifications.mockResolvedValue(undefined);
-    mockRescheduleAlarms.mockResolvedValue(undefined);
+    resolveSteps();
   });
 
   // A fresh mount has no state of its own, so what it shows is the store's.
@@ -399,7 +407,7 @@ describe("one run at a time", () => {
     await act(async () => {
       await first.result.current.applyManualLocation(RIYADH);
     });
-    mockLoadPrayerTimes.mockResolvedValue(undefined);
+    mockLoadPrayerTimes.mockResolvedValue(true);
 
     const reopened = await mountHook();
     await act(async () => {
@@ -409,5 +417,118 @@ describe("one run at a time", () => {
     expect(mockReadLocation).not.toHaveBeenCalled();
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(2);
     expect(reopened.result.current.run).toBeNull();
+  });
+});
+
+describe("what the run reports", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    resolveSteps();
+    useLocationStore.setState({ locationMode: LocationMode.DEVICE, manualLocation: null });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  const applyRiyadh = async () => {
+    const hook = await mountHook();
+    let applied: boolean | undefined;
+    await act(async () => {
+      applied = await hook.result.current.applyManualLocation(RIYADH);
+    });
+    return { result: hook.result, applied };
+  };
+
+  it("stops at notifications when none were scheduled, after moving the alarms", async () => {
+    mockScheduleNotifications.mockResolvedValueOnce({
+      success: false,
+      scheduledCount: 0,
+      failedCount: 3,
+      error: new Error("os"),
+    });
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+
+    const { result, applied } = await applyRiyadh();
+
+    expect(applied).toBe(false);
+    expect(mockRescheduleAlarms).toHaveBeenCalled();
+    expect(result.current.run).toEqual({
+      start: { kind: UPDATE_START.CITY, city: RIYADH },
+      step: UPDATE_STEP.NOTIFICATIONS,
+      failed: true,
+    });
+    expect(announce).not.toHaveBeenCalledWith(i18n.t("location.update.step.done"));
+    announce.mockRestore();
+  });
+
+  it("moves the alarms when scheduling notifications throws", async () => {
+    mockScheduleNotifications.mockRejectedValueOnce(new Error("os"));
+
+    const { result, applied } = await applyRiyadh();
+
+    expect(applied).toBe(false);
+    expect(mockRescheduleAlarms).toHaveBeenCalled();
+    expect(result.current.run).toEqual(
+      expect.objectContaining({ step: UPDATE_STEP.NOTIFICATIONS, failed: true })
+    );
+  });
+
+  it("stops at notifications when only some were scheduled", async () => {
+    mockScheduleNotifications.mockResolvedValueOnce({
+      success: true,
+      scheduledCount: 4,
+      failedCount: 2,
+    });
+
+    const { result } = await applyRiyadh();
+
+    expect(result.current.run).toEqual(
+      expect.objectContaining({ step: UPDATE_STEP.NOTIFICATIONS, failed: true })
+    );
+  });
+
+  it("lands when notifications are not allowed", async () => {
+    mockScheduleNotifications.mockResolvedValueOnce({
+      success: false,
+      scheduledCount: 0,
+      skipReason: SchedulingSkipReason.PERMISSION_NOT_GRANTED,
+    });
+
+    const { result, applied } = await applyRiyadh();
+
+    expect(applied).toBe(true);
+    expect(result.current.run).toBeNull();
+  });
+
+  it("stops at alarms when an enabled alarm was not armed", async () => {
+    mockRescheduleAlarms.mockResolvedValueOnce(STEP_OUTCOME.PARTIAL);
+
+    const { result } = await applyRiyadh();
+
+    expect(result.current.run).toEqual(
+      expect.objectContaining({ step: UPDATE_STEP.ALARMS, failed: true })
+    );
+  });
+
+  it("lands when the widgets fail to reload after the last step", async () => {
+    mockReloadPrayerWidgets.mockImplementationOnce(() => {
+      throw new Error("widgets");
+    });
+
+    const { result, applied } = await applyRiyadh();
+
+    expect(applied).toBe(true);
+    expect(result.current.run).toBeNull();
+  });
+
+  it("lands while next year's times are still owed", async () => {
+    mockLoadPrayerTimes.mockResolvedValueOnce(false);
+
+    const { applied } = await applyRiyadh();
+
+    expect(applied).toBe(true);
   });
 });
