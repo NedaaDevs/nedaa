@@ -15,6 +15,7 @@ import {
   type WhatsNewEntry,
 } from "@/constants/WhatsNew";
 import i18n from "@/localization/i18n";
+import { UPGRADE_PATH_STATE } from "@/constants/UpgradePath";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
@@ -88,7 +89,13 @@ const openFromAbout = () => act(() => useWhatsNewSheetStore.getState().requestOp
 
 beforeEach(() => {
   mockPush.mockClear();
-  useAppStore.setState({ hasHydrated: true, isFirstRun: true, dismissedFeatureCards: [] });
+  useAppStore.setState({
+    hasHydrated: true,
+    isFirstRun: true,
+    dismissedFeatureCards: [],
+    upgradePath: UPGRADE_PATH_STATE.DONE,
+    upgradeShownThisLaunch: false,
+  });
   usePreferencesStore.setState({ textSizeOfferHandled: false });
   useUmrahGuideStore.setState({ activeProgress: null });
 });
@@ -285,5 +292,42 @@ describe("Release notes, one renderer", () => {
     expect(pills).toHaveLength(2);
     const [card, sheet] = pills.map((pill) => within(pill).getByText(/./, hidden).props.children);
     expect(sheet).toBe(card);
+  });
+});
+
+// The upgrade path covers the new look, so the sheet never repeats it.
+describe("What's New and the upgrade path", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  /** The cards the sheet shows by itself once the launch delay passes. */
+  const launchCards = async () => {
+    jest.useFakeTimers();
+    await renderWithTheme(<WhatsNewSheet />);
+    await act(() => jest.advanceTimersByTimeAsync(PRESENT_DELAY_MS));
+    return screen.queryAllByTestId(RELEASE_NOTE_PART.TEXT, hidden);
+  };
+
+  it("What's New waits until the path is done", async () => {
+    useAppStore.setState({ isFirstRun: false, upgradePath: UPGRADE_PATH_STATE.LATER });
+
+    expect(await launchCards()).toHaveLength(0);
+  });
+
+  it("What's New stays away on the launch the path showed", async () => {
+    useAppStore.setState({
+      isFirstRun: false,
+      upgradePath: UPGRADE_PATH_STATE.DONE,
+      upgradeShownThisLaunch: true,
+    });
+
+    expect(await launchCards()).toHaveLength(0);
+  });
+
+  it("What's New shows once the path is done on a later launch", async () => {
+    useAppStore.setState({ isFirstRun: false, upgradePath: UPGRADE_PATH_STATE.DONE });
+
+    expect((await launchCards()).length).toBeGreaterThan(0);
   });
 });
