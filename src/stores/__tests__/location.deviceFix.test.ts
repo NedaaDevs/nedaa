@@ -331,6 +331,18 @@ describe("device fix in the location store", () => {
       consoleLog.mockRestore();
     });
 
+    // A shared log names no place.
+    it("logs the offer without the cities' names", async () => {
+      const log = jest.requireMock("@/utils/appLogger").AppLogger.create();
+      inJeddah();
+
+      await useLocationStore.getState().checkAndPromptCityChange();
+
+      expect(useLocationStore.getState().pendingCityChange).not.toBeNull();
+      const lines = JSON.stringify([log.d.mock.calls, log.i.mock.calls, log.w.mock.calls]);
+      expect(lines).not.toMatch(/Riyadh|Jeddah/);
+    });
+
     it("offers nothing while onboarding runs", async () => {
       useAppStore.setState({ isFirstRun: true });
       inJeddah();

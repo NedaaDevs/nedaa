@@ -276,4 +276,13 @@ describe("the place record and the place revision", () => {
     });
     expect(useLocationStore.getState().locationDetails.address?.city).toBe("Jeddah");
   });
+
+  // A shared log names no place.
+  it("logs a chosen city without its name or zone", () => {
+    const log = jest.requireMock("@/utils/appLogger").AppLogger.create();
+
+    useLocationStore.getState().setManualLocation(MAKKAH_CITY);
+
+    expect(JSON.stringify(log.i.mock.calls)).not.toMatch(/Makkah|Asia\/Riyadh/);
+  });
 });
