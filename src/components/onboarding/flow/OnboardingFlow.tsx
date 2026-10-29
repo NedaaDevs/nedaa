@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { countedPlace, resolveIndex, stepRank } from "@/components/onboarding/column";
 import { dropCityTriedSince } from "@/components/onboarding/flow/CityChoice";
-import { DayRunPlayer } from "@/components/onboarding/flow/DayRunPlayer";
+import { DayRunPlayer, toggleAction } from "@/components/onboarding/flow/DayRunPlayer";
 import { OnboardingFrame } from "@/components/onboarding/flow/OnboardingFrame";
 import { OnboardingLoading } from "@/components/onboarding/flow/OnboardingLoading";
 import { StepTransition } from "@/components/onboarding/flow/StepTransition";
@@ -53,7 +53,16 @@ const RunFrame = (props: ComponentProps<typeof OnboardingFrame>) => {
     run.done();
     props.onSkip();
   };
-  return <OnboardingFrame {...props} onBack={run.close} onSkip={skip} bar={<DayRunPlayer />} />;
+  return (
+    <OnboardingFrame
+      {...props}
+      onBack={run.close}
+      onSkip={skip}
+      // Wherever reader focus is on the step, a magic tap works the toggle.
+      onMagicTap={toggleAction(run)}
+      bar={<DayRunPlayer />}
+    />
+  );
 };
 
 type Props = {
