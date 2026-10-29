@@ -1,3 +1,4 @@
+import { Profiler } from "react";
 import { AccessibilityInfo, BackHandler, Pressable } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { useSharedValue, withTiming } from "react-native-reanimated";
@@ -986,6 +987,21 @@ describe("OnboardingFlow", () => {
 
       expect(currentStep()).toBe(S.UPGRADE_WELCOME);
       expectBareFrame();
+    });
+
+    // Later and Keep close the path from the welcome; the flow then fades out.
+    it("draws nothing again when an exit writes the path's state", async () => {
+      const commits = jest.fn();
+      await renderWithTheme(
+        <Profiler id="flow" onRender={commits}>
+          <OnboardingFlow path={UPGRADE} />
+        </Profiler>
+      );
+      commits.mockClear();
+
+      await act(async () => useAppStore.getState().setUpgradePath(UPGRADE_PATH_STATE.LATER));
+
+      expect(commits).not.toHaveBeenCalled();
     });
 
     it("Appearance is step 1 of 3", async () => {
