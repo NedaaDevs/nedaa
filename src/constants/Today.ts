@@ -2,8 +2,7 @@
 export const TODAY_SCREEN_PART = {
   CONTENT: "today-content",
   FOCUS: "today-focus",
-  DAY: "today-day",
-} as const;
+  DAY: "today-day",} as const;
 
 /** How Today draws the day. Stored values: never rename one. */
 export const TODAY_STYLE = { BOWL: "bowl", SIMPLE: "simple" } as const;

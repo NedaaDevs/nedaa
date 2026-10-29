@@ -20,14 +20,12 @@ import { TILE_SIZE } from "@/components/ui/icon-tile";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { Text } from "@/components/ui/text";
 import { FONT_SIZES, SIZE_MAP } from "@/components/ui/text/sizing";
+import { A11Y_ACTION } from "@/constants/Accessibility";
 import { TOAST_KIND, TOAST_MOTION, type ToastKind } from "@/constants/Toast";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { ToastAction } from "@/utils/toast";
 
 export const TOAST_PART = { FRAME: "toast", ICON: "toast-icon", TINT: "toast-tint" } as const;
-
-/** The screen reader's own way to send a toast away. */
-export const TOAST_A11Y_ACTION = { DISMISS: "dismiss" } as const;
 
 const SIGNAL = {
   [TOAST_KIND.SUCCESS]: "$success",
@@ -97,7 +95,7 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
   const signal = SIGNAL[kind];
 
   const onAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
-    if (nativeEvent.actionName === TOAST_A11Y_ACTION.DISMISS) onDismiss();
+    if (nativeEvent.actionName === A11Y_ACTION.DISMISS) onDismiss();
   };
 
   return (
@@ -118,7 +116,7 @@ export const Toast = ({ kind, message, action, onDismiss }: Props) => {
         gap="$2.5"
         accessible
         accessibilityLabel={label}
-        accessibilityActions={[{ name: TOAST_A11Y_ACTION.DISMISS, label: t("a11y.toast.dismiss") }]}
+        accessibilityActions={[{ name: A11Y_ACTION.DISMISS, label: t("a11y.toast.dismiss") }]}
         onAccessibilityAction={onAccessibilityAction}>
         <Box
           testID={TOAST_PART.ICON}
