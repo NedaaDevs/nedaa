@@ -14,6 +14,8 @@ export type DayRun = {
   progress: number;
   /** False when the run has no whole day to play through. */
   available: boolean;
+  /** True from a close until reader focus is back on the run's starter. */
+  returning: boolean;
   /** Plays the day from its start; `close` gives `from` reader focus back. */
   start: (from?: HostInstance | null) => void;
   /** Plays the day again from its start, for the same starter. */
