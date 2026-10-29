@@ -103,7 +103,7 @@ export const CITY_CHECK_OFFER = {
 } as const;
 export type CityCheckOfferReason = (typeof CITY_CHECK_OFFER)[keyof typeof CITY_CHECK_OFFER];
 
-/** Every reason a check logs; log lines carry this code only. */
+/** Every reason a check skips, waits, ends or offers. */
 export const CITY_CHECK_REASON = {
   ...CITY_CHECK_SKIP,
   ...CITY_CHECK_NEED,
@@ -112,6 +112,6 @@ export const CITY_CHECK_REASON = {
 } as const;
 export type CityCheckReason = (typeof CITY_CHECK_REASON)[keyof typeof CITY_CHECK_REASON];
 
-/** The timings the yearly shift compares, in the server rows' order. */
+/** The timings the yearly shift compares: the five prayers and sunrise. */
 export const SHIFT_TIMING = { ...PRAYER_ID, SUNRISE: OTHER_TIMING.SUNRISE } as const;
 export type ShiftTiming = (typeof SHIFT_TIMING)[keyof typeof SHIFT_TIMING];
