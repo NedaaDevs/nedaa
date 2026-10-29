@@ -30,4 +30,6 @@ export const STEP_COMPONENT: Record<OnboardingStepId, ComponentType<StepProps>> 
   [S.FAJR_ALARM]: FajrAlarmStep,
   [S.FRIDAY_ALARM]: FridayAlarmStep,
   [S.COMPLETE]: CompleteStep,
+  [S.UPGRADE_WELCOME]: WelcomeStep,
+  [S.UPGRADE_COMPLETE]: CompleteStep,
 };

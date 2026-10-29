@@ -20,20 +20,28 @@ const OPAQUE = 1;
 
 type Props = { path: OnboardingPath | null; children: ReactNode };
 
-/** The flow during the first run, then the app, with one crossfade between. */
+/** The flow during a walk, then the app, with one crossfade between. */
 export const OnboardingGate = ({ path, children }: Props) => {
-  const showOnboarding = path === ONBOARDING_PATH.FIRST_RUN;
+  const showOnboarding = path !== null;
+  // The upgrade path covers a live app: an alarm can still navigate it.
+  const appMounted = path !== ONBOARDING_PATH.FIRST_RUN;
   const markUpgradeShown = useAppStore((state) => state.markUpgradeShown);
   const reduced = useReducedMotion();
   const [shownBefore, setShownBefore] = useState(showOnboarding);
+  // The walk the flow draws; it stays while the flow fades out.
+  const [flowPath, setFlowPath] = useState(path);
   const [leaving, setLeaving] = useState(false);
-  // A new first run mounts a new flow, so none of the last run's state remains.
+  // A new walk mounts a new flow, so none of the last walk's state remains.
   const [run, setRun] = useState(0);
-  // The first run ending starts the landing; adjusted while rendering.
+  // A walk ending starts the landing; adjusted while rendering.
   if (shownBefore !== showOnboarding) {
     setShownBefore(showOnboarding);
     setLeaving(!showOnboarding && !reduced);
     if (showOnboarding) setRun(run + 1);
+  }
+  if (path !== null && path !== flowPath) {
+    setFlowPath(path);
+    setRun(run + 1);
   }
   const app = useSharedValue(TRANSPARENT);
   const flow = useSharedValue(OPAQUE);
@@ -65,18 +73,20 @@ export const OnboardingGate = ({ path, children }: Props) => {
   // Neither layer takes a touch while leaving: a second tap lands on nothing.
   return (
     <View style={styles.fill}>
-      {showOnboarding ? null : (
-        <Animated.View style={[StyleSheet.absoluteFill, appStyle, leaving && NO_TOUCHES]}>
+      {appMounted ? (
+        <Animated.View
+          style={[StyleSheet.absoluteFill, appStyle, (leaving || showOnboarding) && NO_TOUCHES]}
+          {...(showOnboarding ? HIDDEN_FROM_READER : {})}>
           {children}
         </Animated.View>
-      )}
-      {showOnboarding || leaving ? (
+      ) : null}
+      {flowPath !== null && (showOnboarding || leaving) ? (
         // The same slot either way, so the flow keeps its state while it fades.
         <Animated.View
           testID={ONBOARDING_PART.LANDING_FLOW}
           style={[StyleSheet.absoluteFill, flowStyle, leaving && NO_TOUCHES]}
           {...(leaving ? HIDDEN_FROM_READER : {})}>
-          <OnboardingFlow key={run} leaving={leaving} />
+          <OnboardingFlow key={run} path={flowPath} leaving={leaving} />
         </Animated.View>
       ) : null}
     </View>

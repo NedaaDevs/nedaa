@@ -117,13 +117,15 @@ const TITLE_KEY: Record<OnboardingStepId, string> = {
   [S.FAJR_ALARM]: "onboarding.alarm.fajr.title",
   [S.FRIDAY_ALARM]: "onboarding.alarm.friday.title",
   [S.COMPLETE]: "onboarding.complete.title",
+  [S.UPGRADE_WELCOME]: "onboarding.welcome.title",
+  [S.UPGRADE_COMPLETE]: "onboarding.complete.title",
 };
 
 const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 const flush = () => act(() => jest.advanceTimersByTimeAsync(0));
 const renderStep = async (id: OnboardingStepId) => {
   // The flow hands a count only to a step the column counts.
-  const counted = countedPlace([id], new Set(), id) !== null;
+  const counted = countedPlace([id], [id], new Set(), id) !== null;
   const props = stepProps({ progress: counted ? PROGRESS : "" });
   const Step = STEP_COMPONENT[id];
   // The flow draws every step on its sky.

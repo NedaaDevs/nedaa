@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { PermissionStatus } from "expo-notifications";
 
-import { onboardingColumn, type ColumnInput } from "@/components/onboarding/column";
+import { PATH_COLUMN, type ColumnInput } from "@/components/onboarding/column";
 import type { OnboardingSession } from "@/components/onboarding/flow/types";
 import { ALARM_TYPE } from "@/constants/Alarm";
 import {
   LOCATION_CHOICE,
   NATIVE_READ_TIMEOUT_MS,
   ONBOARDING_HYDRATION_TIMEOUT_MS,
+  type OnboardingPath,
   type OnboardingStepId,
 } from "@/constants/Onboarding";
 import { LocationMode } from "@/enums/location";
@@ -29,8 +30,8 @@ import { withTimeout } from "@/utils/withTimeout";
 const log = AppLogger.create("app");
 
 /** A native read can block while iOS starts; null if it fails or stalls. */
-const answerOf = (name: string, read: Promise<boolean>) =>
-  withTimeout<boolean | null>(read, NATIVE_READ_TIMEOUT_MS, null, () =>
+const answerOf = <T>(name: string, read: Promise<T>) =>
+  withTimeout<T | null>(read, NATIVE_READ_TIMEOUT_MS, null, () =>
     log.w("Onboarding", `${name} read gave no answer in ${NATIVE_READ_TIMEOUT_MS}ms`)
   );
 
@@ -76,28 +77,46 @@ const readAtStart = async (): Promise<AtStart> => {
 };
 
 /** What the device has answered; read again on every return to the app. */
-export type DeviceRead = { location: boolean; notifications: boolean; alarmsSupported: boolean };
+export type DeviceRead = {
+  location: boolean;
+  notifications: boolean;
+  /** The OS had never asked for notifications when the run started. */
+  notificationsUndetermined: boolean;
+  alarmsSupported: boolean;
+};
 type DeviceAnswers = { [K in keyof DeviceRead]: boolean | null };
 
 const readDevice = async (): Promise<DeviceAnswers> => {
-  const [location, notifications, alarmsSupported] = await Promise.all([
+  const [location, notificationStatus, alarmsSupported] = await Promise.all([
     answerOf(
       "Location permission",
       checkLocationPermission().then((read) => read.granted)
     ),
     answerOf(
       "Notification permission",
-      checkPermissions().then((read) => read.status === PermissionStatus.GRANTED)
+      checkPermissions().then((read) => read.status)
     ),
     answerOf("AlarmKit", alarmSupport()),
   ]);
-  return { location, notifications, alarmsSupported };
+  const answered = notificationStatus !== null;
+  return {
+    location,
+    notifications: answered ? notificationStatus === PermissionStatus.GRANTED : null,
+    notificationsUndetermined: answered
+      ? notificationStatus === PermissionStatus.UNDETERMINED
+      : null,
+    alarmsSupported,
+  };
 };
 
 /** A read with no answer keeps what is known; on the first read it is a no. */
 const merge = (known: DeviceRead | null, answers: DeviceAnswers): DeviceRead => ({
   location: answers.location ?? known?.location ?? false,
   notifications: answers.notifications ?? known?.notifications ?? false,
+  // The first read holds, so an answer given in this run keeps its step.
+  notificationsUndetermined: known
+    ? known.notificationsUndetermined
+    : (answers.notificationsUndetermined ?? false),
   // Alarm support only grows, so an alarm step once offered never vanishes.
   alarmsSupported: answers.alarmsSupported === true || known?.alarmsSupported === true,
 });
@@ -118,6 +137,7 @@ export const toColumnInput = ({
 }: ColumnReads): ColumnInput => ({
   languageRequested: session.languageRequested,
   hasCity: atStart.hasCity || session.locationChoice === LOCATION_CHOICE.CITY,
+  hadCity: atStart.hasCity,
   // A granted device permission is the automatic choice, also after a kill.
   choseAutomaticLocation:
     session.locationChoice === LOCATION_CHOICE.AUTOMATIC || (atStart.deviceMode && device.location),
@@ -125,14 +145,18 @@ export const toColumnInput = ({
   todayStored,
   fetchStarted: session.fetchStarted,
   notificationsGranted: device.notifications,
+  notificationsUndetermined: device.notificationsUndetermined,
   // An alarm turns on only where it can ring, at a verified place's times.
   alarmsOffered: device.alarmsSupported && todayStored,
   fajrAlarmOn: atStart.fajrAlarmOn,
   fridayAlarmOn: atStart.fridayAlarmOn,
 });
 
-/** The column for this device; null until stores and permissions are read. */
-export const useOnboardingColumn = (session: OnboardingSession): OnboardingStepId[] | null => {
+/** The walk's column here; null until stores and permissions are read. */
+export const useOnboardingColumn = (
+  session: OnboardingSession,
+  path: OnboardingPath
+): OnboardingStepId[] | null => {
   const { becameActiveAt } = useAppVisibility();
   const todayStored = useTodayStored();
   const [atStart, setAtStart] = useState<AtStart | null>(null);
@@ -160,5 +184,5 @@ export const useOnboardingColumn = (session: OnboardingSession): OnboardingStepI
   }, [becameActiveAt]);
 
   if (atStart === null || device === null) return null;
-  return onboardingColumn(toColumnInput({ session, atStart, device, todayStored }));
+  return PATH_COLUMN[path](toColumnInput({ session, atStart, device, todayStored }));
 };
