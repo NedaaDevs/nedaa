@@ -24,6 +24,10 @@ export const ONBOARDING_STEP_IDS: readonly OnboardingStepId[] = Object.values(ON
 export const isOnboardingStepId = (value: unknown): value is OnboardingStepId =>
   ONBOARDING_STEP_IDS.some((step) => step === value);
 
+/** The gate's walk: the whole first run, or a 2.x user's V3 choices. */
+export const ONBOARDING_PATH = { FIRST_RUN: "firstRun", UPGRADE: "upgrade" } as const;
+export type OnboardingPath = (typeof ONBOARDING_PATH)[keyof typeof ONBOARDING_PATH];
+
 /** testIDs of the flow's parts, for the Maestro flows and the tests. */
 export const ONBOARDING_PART = {
   FRAME: "onboarding-frame",

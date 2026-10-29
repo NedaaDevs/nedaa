@@ -103,7 +103,7 @@ const renderScreen = ({ isRTL = false, withSheet = false } = {}) =>
         <>
           <LocationScreen />
           {/* The root layout draws the city-change sheet over every screen. */}
-          {withSheet ? <CityChangeSheet /> : null}
+          {withSheet ? <CityChangeSheet onboarding={false} /> : null}
         </>
       ),
       [BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route]: () => <Picker />,
