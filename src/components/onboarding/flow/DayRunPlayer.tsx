@@ -96,9 +96,6 @@ const TIME_TEXT = {
 /** A piece of the reserve, measured exactly; its row adds the end room once. */
 const RESERVE_TEXT = { ...TIME_TEXT, glyph: true } as const satisfies DigitTextProps;
 
-/** A clock time as the card draws it. */
-const TimeText = ({ children }: { children: ReactNode }) => <Text {...TIME_TEXT}>{children}</Text>;
-
 /** A clock's digits one by one, and the text between them in runs. */
 const clockRuns = (clock: string): string[] => {
   const runs: string[] = [];
@@ -121,7 +118,7 @@ const ClockReserve = () => {
   return (
     <View style={styles.reserve} {...HIDDEN_FROM_READER}>
       {samples.map((sample, index) => (
-        // The live time is one Text with the end room once; so is each row.
+        // A row has the live time's end room once, at the row's end.
         <HStack key={index} testID={DAY_RUN_PLAYER_PART.CLOCK_RESERVE} paddingEnd={TEXT_END_ROOM}>
           {clockRuns(sample).map((run, at) => (
             <DigitSlot
@@ -168,7 +165,7 @@ const TimeSlot = ({ time, onWidth }: SlotProps) => (
     testID={DAY_RUN_PLAYER_PART.TIME_SLOT}
     style={styles.timeSlot}
     onLayout={({ nativeEvent }: LayoutChangeEvent) => onWidth(nativeEvent.layout.width)}>
-    <TimeText>{time}</TimeText>
+    <Text {...TIME_TEXT}>{time}</Text>
     <ClockReserve />
   </View>
 );
@@ -202,7 +199,10 @@ const CopySizers = ({ slotWidth }: { slotWidth: number }) => {
   );
 };
 
-/** A day run's controls, drawn by the frame in place of its bottom bar. */
+/**
+ * A day run's controls, drawn by the frame in place of its bottom bar.
+ * Mounted while a run is on, so it moves reader focus to the toggle once.
+ */
 export const DayRunPlayer = () => {
   const { t } = useTranslation();
   const run = useDayRun();
@@ -252,7 +252,6 @@ export const DayRunPlayer = () => {
 
   if (!run || status === DAY_RUN_STATUS.IDLE) return null;
 
-  // The run's methods are stable from tick to tick; the run itself is not.
   const { jumpTo, close, progress } = run;
   const toggle = TOGGLE[status];
   const chooseAdaptive = async () => {
