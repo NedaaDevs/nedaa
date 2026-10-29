@@ -268,8 +268,14 @@ describe("DayRunPlayer", () => {
     expect(toggle().props.accessibilityState).not.toHaveProperty("selected");
     expect(toggle().props.accessibilityState).not.toHaveProperty("checked");
 
+    // Off the run's start, so a resume and a fresh start differ.
+    await act(() => result.current.run?.jumpTo(PHASE.ASR));
+    const kept = result.current.run?.progress ?? 0;
+    expect(kept).toBeGreaterThan(0);
     await press(DAY_RUN_PLAYER_PART.TOGGLE);
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+    expect(result.current.run?.phase).toBe(PHASE.ASR);
+    expect(result.current.run?.progress).toBeGreaterThanOrEqual(kept);
     expect(toggle()).toHaveAccessibleName(t("common.pause"));
   });
 
