@@ -522,7 +522,7 @@ export const useLocationStore = create<LocationStore>()(
               log.i("CityChange", "no new named city to offer");
               return;
             }
-            log.i("CityChange", `offering ${newCity} over ${currentCity}`);
+            log.i("CityChange", "offering the new city over the saved one");
             get().offerCityChange({ currentCity, newCity });
           } catch (error) {
             // Runs on every launch, so a declined permission is an expected quiet skip.
@@ -572,7 +572,7 @@ export const useLocationStore = create<LocationStore>()(
             localizedLocation: { country: location.country.name, city: location.name },
             lastKnownCoords: { latitude: location.latitude, longitude: location.longitude },
           }));
-          log.i("Manual", `manual location set to ${location.name} (${location.timezone})`);
+          log.i("Manual", "manual location set");
         },
 
         clearManualLocation: () => {
