@@ -5,6 +5,7 @@ import { act, fireEvent, screen, userEvent } from "@testing-library/react-native
 import { OnboardingFlow } from "@/components/onboarding/flow/OnboardingFlow";
 import {
   ONBOARDING_PART,
+  ONBOARDING_PATH,
   ONBOARDING_STEP as S,
   type OnboardingStepId,
 } from "@/constants/Onboarding";
@@ -78,7 +79,7 @@ const escape = () =>
   });
 const renderAt = async (step: OnboardingStepId) => {
   useAppStore.setState({ onboardingStep: step });
-  await renderWithTheme(<OnboardingFlow />);
+  await renderWithTheme(<OnboardingFlow path={ONBOARDING_PATH.FIRST_RUN} />);
 };
 
 /** Opens each host's city picker from the step's first view. */
