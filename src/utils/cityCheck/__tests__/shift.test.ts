@@ -2,7 +2,9 @@ import { SHIFT_GATE_MINUTES, SHIFT_TIMING, type ShiftTiming } from "@/constants/
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import type { ShiftCalc } from "@/types/cityCheck";
 import type { Coords } from "@/types/location";
-import { maxYearlyShiftMinutes, yearlyShiftByTiming } from "@/utils/cityCheck/shift";
+import { getTimezoneOffset } from "date-fns-tz";
+
+import { dayTimings, maxYearlyShiftMinutes, yearlyShiftByTiming } from "@/utils/cityCheck/shift";
 import rows from "@/utils/cityCheck/__tests__/fixtures/aladhanRows2026.json";
 
 type PlaceKey = keyof typeof rows.places;
@@ -43,6 +45,34 @@ const serverShift = (from: PlaceKey, to: PlaceKey, timing: ShiftTiming): number 
   }, 0);
 };
 
+// AlAdhan's default Dhuhr tune for Portugal's method, from the rows' meta.
+const SERVER_DHUHR_TUNE_MINUTES: Partial<Record<number, number>> = { 22: 5 };
+
+const median = (values: number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+};
+
+// Timings whose typical clock miss against the rows is over the bound. A
+// median skips the server's Ramadan Isha and zone-change days.
+const clockMisses = (key: PlaceKey): ShiftTiming[] => {
+  const year = Number(rows.fetchedAt.slice(0, 4));
+  const tune = SERVER_DHUHR_TUNE_MINUTES[place(key).method] ?? 0;
+  const misses = place(key).days.map((row, index) => {
+    const estimate = dayTimings(pt(key), { year, month: 1, day: 1 + index }, calcOf(key));
+    const midnight = Date.UTC(year, 0, 1 + index);
+    return TIMINGS.map((timing, column) => {
+      const at = estimate[timing];
+      const clock = (at + getTimezoneOffset(zone(key), at) - midnight) / MINUTE_MS;
+      const served = row[column] - (timing === SHIFT_TIMING.DHUHR ? tune : 0);
+      return Math.abs(clock - served);
+    });
+  });
+  return TIMINGS.filter(
+    (_, column) => median(misses.map((day) => day[column])) > SERVER_AGREE_MINUTES
+  );
+};
+
 const RIYADH_ZONE = zone("riyadh");
 const UMM_AL_QURA = calcOf("riyadh");
 const START = startOf("riyadh");
@@ -63,6 +93,10 @@ const PAIRS = [
   ["riyadh", "dubai"],
   ["london", "croydon"],
   ["londonMsc", "croydonMsc"],
+  ["tehran", "karaj"],
+  ["lisbon", "almada"],
+  ["amman", "zarqa"],
+  ["sydneyMsc", "parramattaMsc"],
 ] as const;
 
 describe("yearly prayer-time shift", () => {
@@ -75,6 +109,11 @@ describe("yearly prayer-time shift", () => {
       );
       expect(misses).toEqual([]);
     }
+  );
+
+  it.each(Object.keys(rows.places) as PlaceKey[])(
+    "keeps the typical clock time of %s within 1 minute of the server rows",
+    (key) => expect(clockMisses(key)).toEqual([])
   );
 
   it("puts Makkah → Jeddah at or over the gate", () => {
