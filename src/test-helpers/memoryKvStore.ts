@@ -34,19 +34,23 @@ const setItemAsync = async (key: string, value: string): Promise<void> => {
 
 const removeItemAsync = async (key: string): Promise<boolean> => memoryKv.delete(key);
 
+const memoryStorage = {
+  getItemSync,
+  setItemSync,
+  removeItemSync,
+  getItemAsync,
+  setItemAsync,
+  removeItemAsync,
+  getItem: getItemAsync,
+  setItem: setItemAsync,
+  removeItem: async (key: string): Promise<void> => {
+    memoryKv.delete(key);
+  },
+};
+
+// A store with its own database file shares the one in-memory map.
 export const memoryKvStoreModule = {
   __esModule: true,
-  default: {
-    getItemSync,
-    setItemSync,
-    removeItemSync,
-    getItemAsync,
-    setItemAsync,
-    removeItemAsync,
-    getItem: getItemAsync,
-    setItem: setItemAsync,
-    removeItem: async (key: string): Promise<void> => {
-      memoryKv.delete(key);
-    },
-  },
+  default: memoryStorage,
+  SQLiteStorage: jest.fn(() => memoryStorage),
 };
