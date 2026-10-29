@@ -31,8 +31,10 @@ export const PlayDayButton = () => {
   const playFlip = usePlayFlip();
   const buttonRef = useRef<ViewInstance>(null);
 
-  // With no whole day to play, there is nothing to offer.
-  if (!run?.available) return null;
+  if (!run) return null;
+  const idle = run.status === DAY_RUN_STATUS.IDLE;
+  // Nothing to offer with no whole day; a run on closes back to this button.
+  if (idle && !run.available) return null;
 
   // The run's methods are stable from tick to tick; the run itself is not.
   const { start } = run;
@@ -45,7 +47,7 @@ export const PlayDayButton = () => {
         testID={PLAY_DAY_PART.BUTTON}
         action="primary"
         variant="outline"
-        disabled={run.status !== DAY_RUN_STATUS.IDLE}
+        disabled={!idle}
         onPress={() => start(buttonRef.current)}
         justifyContent="flex-start"
         gap="$3"
