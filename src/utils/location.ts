@@ -102,9 +102,9 @@ const servicesEnabled = (): Promise<boolean> =>
     return true;
   });
 
-const ACTIVE_READ: LocationOptions = { accuracy: LocationAccuracy.LOW };
+const activeRead = (): LocationOptions => ({ accuracy: LocationAccuracy.LOW });
 // A check the user did not start never opens the location settings dialog.
-const PASSIVE_READ: LocationOptions = { ...ACTIVE_READ, mayShowUserSettingsDialog: false };
+const passiveRead = (): LocationOptions => ({ ...activeRead(), mayShowUserSettingsDialog: false });
 
 // One gate for every read: an unpermitted native read logs as a failure.
 const readPosition = async (
@@ -171,7 +171,7 @@ export const readLocation = async (
   try {
     // One deadline covers the permission check and the fix; either can stall.
     const location = await withDeadline(
-      (inTime) => readPosition(inTime, ACTIVE_READ),
+      (inTime) => readPosition(inTime, activeRead()),
       timeoutMs,
       TIMED_OUT
     );
@@ -198,7 +198,11 @@ export const readLocation = async (
 /** A fresh fix with no settings dialog and no cached fallback. */
 export const readPassiveFix = async (timeoutMs: number): Promise<LocationObject> => {
   try {
-    return await withDeadline((inTime) => readPosition(inTime, PASSIVE_READ), timeoutMs, TIMED_OUT);
+    return await withDeadline(
+      (inTime) => readPosition(inTime, passiveRead()),
+      timeoutMs,
+      TIMED_OUT
+    );
   } catch (error) {
     throw asFixError(error);
   }
