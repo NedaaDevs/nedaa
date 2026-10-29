@@ -10,6 +10,7 @@ import { TodayStylePreview } from "@/components/today/TodayStylePreview";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import { ONBOARDING_PART } from "@/constants/Onboarding";
 
 /** Today's preview, a day of Adaptive, Today's style, then the modes. */
 export const AppearanceStep = ({ headingRef, onHeadingLayout, progress }: StepProps) => {
@@ -24,7 +25,7 @@ export const AppearanceStep = ({ headingRef, onHeadingLayout, progress }: StepPr
         title={t("onboarding.appearance.title")}
         body={t("onboarding.appearance.body")}
       />
-      <VStack gap="$3.5">
+      <VStack testID={ONBOARDING_PART.APPEARANCE_PREVIEW} gap="$3.5">
         <TodayStylePreview sampleUnlessOwn />
         <PlayDayButton />
       </VStack>
