@@ -262,8 +262,8 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /\bappearancePreview\(/,
     home: "utils/appearancePreview.ts",
   },
-  // Today's debug run and onboarding's preview pass the day by one simulator:
-  // the run's schedule, or a phase or clock moved on by a timer.
+  // A file using the run's math or DAY_RUN, or holding a phase or clock
+  // provider and a timer in one file, plays the day through DaySimulator.
   {
     concept: "the day passing",
     shows:
