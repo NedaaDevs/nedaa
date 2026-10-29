@@ -1,17 +1,15 @@
-import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import type { StepProps } from "@/components/onboarding/flow/types";
-import { BrandIcon } from "@/components/ui/brand-icon";
+import { WelcomeLayout } from "@/components/onboarding/flow/WelcomeLayout";
 import { Button } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
-import { SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { E2E_ID } from "@/constants/E2E";
 import { useAppStore } from "@/stores/app";
 
-const CENTRED = { flexGrow: 1, justifyContent: "center" } as const;
 const LINK_SEPARATOR = " · ";
 
 /** The first page: the app, a way in, and a quiet language change. */
@@ -32,50 +30,37 @@ export const WelcomeStep = ({ setSession, onNext, headingRef, onHeadingLayout }:
   };
 
   return (
-    <SkyScrollView contentContainerStyle={CENTRED} showsVerticalScrollIndicator={false}>
-      <VStack alignItems="center" paddingHorizontal="$8" paddingVertical="$6" gap="$5">
-        <BrandIcon size="$24" />
-
+    <WelcomeLayout
+      headingRef={headingRef}
+      onHeadingLayout={onHeadingLayout}
+      title={t("onboarding.welcome.title")}
+      body={t("onboarding.welcome.tagline")}>
+      <VStack alignItems="center" gap="$2">
+        <Button
+          testID={E2E_ID.ONBOARDING_GET_STARTED}
+          action="primary"
+          variant="solid"
+          size="lg"
+          paddingHorizontal="$12"
+          onPress={start}
+          accessibilityRole="button"
+          accessibilityLabel={t("onboarding.welcome.getStarted")}>
+          <Button.Text fontWeight="500">{t("onboarding.welcome.getStarted")}</Button.Text>
+        </Button>
         <SkyOccluder>
-          <VStack alignItems="center" gap="$2">
-            <View ref={headingRef} onLayout={onHeadingLayout} accessible accessibilityRole="header">
-              <Text size="3xl" bold typography="display" color="$fg" textAlign="center">
-                {t("onboarding.welcome.title")}
-              </Text>
-            </View>
-            <Text size="lg" typography="body" color="$mutedSky" textAlign="center">
-              {t("onboarding.welcome.tagline")}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t("a11y.join", { first: language, second: change })}
+            accessibilityHint={t("a11y.onboarding.changeLanguageHint")}
+            onPress={changeLanguage}
+            justifyContent="center"
+            alignItems="center">
+            <Text size="sm" fontWeight="600" color="$accentText">
+              {`${language}${LINK_SEPARATOR}${change}`}
             </Text>
-          </VStack>
+          </Pressable>
         </SkyOccluder>
-
-        <VStack alignItems="center" gap="$2">
-          <Button
-            testID={E2E_ID.ONBOARDING_GET_STARTED}
-            action="primary"
-            variant="solid"
-            size="lg"
-            paddingHorizontal="$12"
-            onPress={start}
-            accessibilityRole="button"
-            accessibilityLabel={t("onboarding.welcome.getStarted")}>
-            <Button.Text fontWeight="500">{t("onboarding.welcome.getStarted")}</Button.Text>
-          </Button>
-          <SkyOccluder>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel={t("a11y.join", { first: language, second: change })}
-              accessibilityHint={t("a11y.onboarding.changeLanguageHint")}
-              onPress={changeLanguage}
-              justifyContent="center"
-              alignItems="center">
-              <Text size="sm" fontWeight="600" color="$accentText">
-                {`${language}${LINK_SEPARATOR}${change}`}
-              </Text>
-            </Pressable>
-          </SkyOccluder>
-        </VStack>
       </VStack>
-    </SkyScrollView>
+    </WelcomeLayout>
   );
 };

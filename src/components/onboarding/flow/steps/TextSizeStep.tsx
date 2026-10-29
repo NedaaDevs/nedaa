@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { PixelRatio } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -9,8 +9,11 @@ import type { StepProps } from "@/components/onboarding/flow/types";
 import { useStepPrimary } from "@/components/onboarding/flow/useStepPrimary";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SkyOccluder } from "@/components/ui/sky-background";
+import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { nearestTextSize } from "@/constants/TextSize";
+import { WhatsNewId } from "@/constants/WhatsNew";
 import { TextSize } from "@/enums/app";
+import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { isLargeOsTextActive } from "@/utils/textSizeOffer";
 
@@ -23,14 +26,20 @@ export const TextSizeStep = ({
   headingRef,
   onHeadingLayout,
   progress,
+  path,
 }: StepProps) => {
   const { t } = useTranslation();
   const textSize = usePreferencesStore((state) => state.textSize);
   const setTextSize = usePreferencesStore((state) => state.setTextSize);
   const markHandled = usePreferencesStore((state) => state.markTextSizeOfferHandled);
+  const dismissFeatureCards = useAppStore((state) => state.dismissFeatureCards);
+  // An upgrader starts from their own size; only a change of it is written.
+  const upgrading = path === ONBOARDING_PATH.UPGRADE;
+  const [initialSize] = useState(textSize);
 
   // The phone's large text preselects the nearest size, once.
   const seed = useEffectEvent(() => {
+    if (upgrading) return;
     if (isLargeOsTextActive() && !usePreferencesStore.getState().textSizeOfferHandled) {
       setTextSize(nearestTextSize(PixelRatio.getFontScale()));
     }
@@ -39,10 +48,16 @@ export const TextSizeStep = ({
     seed();
   }, []);
 
+  // An upgrader who leaves the step has met the choice What's New offers.
+  useEffect(() => {
+    if (!upgrading) return;
+    return () => dismissFeatureCards([WhatsNewId.TEXT_SIZE]);
+  }, [upgrading, dismissFeatureCards]);
+
   useStepPrimary(setPrimary, {
     label: t("onboarding.continue"),
     onPress: () => {
-      markHandled();
+      if (!upgrading || textSize !== initialSize) markHandled();
       onNext();
     },
   });

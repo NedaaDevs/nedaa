@@ -18,12 +18,18 @@ import { ThemeTransitionContext } from "@/components/ui/theme-transition/context
 import { APPEARANCE_ORDER, PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
 import { DAY_RUN, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import { CLOCK_SAMPLE, ONBOARDING_PART } from "@/constants/Onboarding";
+import {
+  CLOCK_SAMPLE,
+  ONBOARDING_PART,
+  ONBOARDING_PATH,
+  type OnboardingPath,
+} from "@/constants/Onboarding";
 import { PHASE } from "@/constants/Phase";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { CLOCK_FORMAT } from "@/constants/Preferences";
 import { nearestTextSize } from "@/constants/TextSize";
 import { TODAY_STYLE } from "@/constants/Today";
+import { WhatsNewId } from "@/constants/WhatsNew";
 import { DayRunContext, useDayRun, type DayRun } from "@/contexts/DayRunContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
 import { AppLocale, AppMode, TextSize } from "@/enums/app";
@@ -146,6 +152,14 @@ describe("NumeralsStep", () => {
     expect(screen.getAllByText(String(sample.props.children))).toHaveLength(2);
   });
 
+  it("the Numerals step greets an upgrader", async () => {
+    await renderWithTheme(<NumeralsStep {...stepProps({ path: ONBOARDING_PATH.UPGRADE })} />);
+
+    expect(screen.getByText(t("onboarding.numerals.upgradeTitle"))).toBeTruthy();
+    expect(screen.getByText(t("onboarding.numerals.upgradeBody"))).toBeTruthy();
+    expect(screen.queryByText(t("onboarding.numerals.title"))).toBeNull();
+  });
+
   // The segmented control reports no change for the format already chosen.
   it("does not tick when the chosen clock format is pressed", async () => {
     await renderWithTheme(<NumeralsStep {...stepProps()} />);
@@ -161,12 +175,12 @@ describe("NumeralsStep", () => {
 });
 
 describe("AppearanceStep", () => {
-  const renderAppearance = () =>
+  const renderAppearance = (path: OnboardingPath = ONBOARDING_PATH.FIRST_RUN) =>
     renderWithTheme(
       <ThemeTransitionContext value={mockTransition}>
         <PhaseContext value={PHASE.ASR}>
           <SkyBackground>
-            <AppearanceStep {...stepProps()} />
+            <AppearanceStep {...stepProps({ path })} />
           </SkyBackground>
         </PhaseContext>
       </ThemeTransitionContext>
@@ -244,6 +258,31 @@ describe("AppearanceStep", () => {
 
     expect(screen.queryByTestId(TODAY_STYLE_PREVIEW_PART.SAMPLE_NOTE)).toBeNull();
     expect(screen.getByTestId(TODAY_STYLE_PREVIEW_PART.ROOT)).toBeTruthy();
+  });
+
+  it("Appearance marks the setting the upgrader had", async () => {
+    useAppStore.setState({ mode: AppMode.LIGHT });
+    await renderAppearance(ONBOARDING_PATH.UPGRADE);
+    const marked = t("a11y.join", {
+      first: rowName(AppMode.LIGHT),
+      second: t("onboarding.upgrade.currentSetting"),
+    });
+
+    expect(screen.getByRole("radio", { name: marked })).toBeSelected();
+    expect(screen.getAllByText(t("onboarding.upgrade.currentSetting"))).toHaveLength(1);
+
+    // The mark names the stored row only while it stays the choice.
+    await userEvent.press(screen.getByRole("radio", { name: rowName(AppMode.DARK) }));
+    await waitFor(() => expect(useAppStore.getState().mode).toBe(AppMode.DARK));
+    expect(screen.queryByText(t("onboarding.upgrade.currentSetting"))).toBeNull();
+    expect(screen.getByRole("radio", { name: rowName(AppMode.LIGHT) })).toBeOnTheScreen();
+  });
+
+  it("marks no setting on the first run", async () => {
+    useAppStore.setState({ mode: AppMode.LIGHT });
+    await renderAppearance();
+
+    expect(screen.queryByText(t("onboarding.upgrade.currentSetting"))).toBeNull();
   });
 
   it("applies a mode through the theme dissolve", async () => {
@@ -588,6 +627,64 @@ describe("TextSizeStep", () => {
 
     expect(usePreferencesStore.getState().textSize).toBe(TextSize.DEFAULT);
     expect(usePreferencesStore.getState().textSizeOfferHandled).toBe(false);
+  });
+
+  describe("on the upgrade path", () => {
+    const upgradeProps = () => stepProps({ path: ONBOARDING_PATH.UPGRADE });
+    const seen = () => useAppStore.getState().dismissedFeatureCards;
+
+    beforeEach(() => useAppStore.setState({ dismissedFeatureCards: [] }));
+
+    it("the upgrade text-size step writes nothing without a change", async () => {
+      scaleSpy.mockReturnValue(1.3);
+      usePreferencesStore.setState({ textSize: TextSize.XLARGE });
+      const props = upgradeProps();
+      await renderWithTheme(<TextSizeStep {...props} />);
+
+      expect(usePreferencesStore.getState().textSize).toBe(TextSize.XLARGE);
+      await act(async () => lastPrimary(props.setPrimary)?.onPress());
+
+      expect(usePreferencesStore.getState()).toMatchObject({
+        textSize: TextSize.XLARGE,
+        textSizeOfferHandled: false,
+      });
+      expect(props.onNext).toHaveBeenCalledTimes(1);
+    });
+
+    it("stores a size the upgrader chooses", async () => {
+      const props = upgradeProps();
+      await renderWithTheme(<TextSizeStep {...props} />);
+
+      await userEvent.press(
+        screen.getByRole("radio", { name: t("settings.textSize.options.large") })
+      );
+      await act(async () => lastPrimary(props.setPrimary)?.onPress());
+
+      expect(usePreferencesStore.getState()).toMatchObject({
+        textSize: TextSize.LARGE,
+        textSizeOfferHandled: true,
+      });
+    });
+
+    // Continue and Skip both take the step away; the flow unmounts it.
+    it("passing the text-size step marks its What's New entry seen", async () => {
+      const props = upgradeProps();
+      const { unmount } = await renderWithTheme(<TextSizeStep {...props} />);
+      expect(seen()).not.toContain(WhatsNewId.TEXT_SIZE);
+
+      await act(async () => lastPrimary(props.setPrimary)?.onPress());
+      await unmount();
+
+      expect(seen()).toContain(WhatsNewId.TEXT_SIZE);
+    });
+
+    it("leaves What's New alone on the first run", async () => {
+      const { unmount } = await renderWithTheme(<TextSizeStep {...stepProps()} />);
+
+      await unmount();
+
+      expect(seen()).not.toContain(WhatsNewId.TEXT_SIZE);
+    });
   });
 
   it("continues with the offer marked handled", async () => {

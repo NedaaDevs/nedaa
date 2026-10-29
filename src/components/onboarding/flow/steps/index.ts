@@ -11,6 +11,7 @@ import { LocationStep } from "@/components/onboarding/flow/steps/LocationStep";
 import { NotificationsStep } from "@/components/onboarding/flow/steps/NotificationsStep";
 import { NumeralsStep } from "@/components/onboarding/flow/steps/NumeralsStep";
 import { TextSizeStep } from "@/components/onboarding/flow/steps/TextSizeStep";
+import { UpgradeWelcomeStep } from "@/components/onboarding/flow/steps/UpgradeWelcomeStep";
 import { WelcomeStep } from "@/components/onboarding/flow/steps/WelcomeStep";
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { ONBOARDING_STEP as S, type OnboardingStepId } from "@/constants/Onboarding";
@@ -30,6 +31,6 @@ export const STEP_COMPONENT: Record<OnboardingStepId, ComponentType<StepProps>> 
   [S.FAJR_ALARM]: FajrAlarmStep,
   [S.FRIDAY_ALARM]: FridayAlarmStep,
   [S.COMPLETE]: CompleteStep,
-  [S.UPGRADE_WELCOME]: WelcomeStep,
+  [S.UPGRADE_WELCOME]: UpgradeWelcomeStep,
   [S.UPGRADE_COMPLETE]: CompleteStep,
 };
