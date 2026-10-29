@@ -7,6 +7,7 @@ import { PlatformType } from "@/enums/app";
 
 // Constants
 import { BACKGROUND_EVENT, TASK_RESULT } from "@/constants/BackgroundTask";
+import { STEP_OUTCOME } from "@/constants/Location";
 import { TIMES_FETCH } from "@/constants/PrayerTimes";
 
 // Services
@@ -26,6 +27,7 @@ import { useQuranRemindersStore } from "@/stores/quranReminders";
 import { timeZonedNow, dateToInt } from "@/utils/date";
 import { summarizeSchedulingResult } from "@/utils/notificationReschedule";
 import { timesMoved } from "@/utils/placeFromFacts";
+import { rescheduleAllAlarms, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
 import { waitForHydration } from "@/utils/storeHydration";
@@ -191,6 +193,8 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     // 13 days after that launch even when the database holds fresh rows.
     await usePrayerTimesStore.getState().refreshTimingsFromDb();
     if (settles) locationStore.getState().settlePlace(placeRevision);
+    // The top-up keeps an armed alarm, so a moved place's alarms move here.
+    if (settles && placeMoved) await moveAlarms();
 
     // A day with no app launch still gets today's timings onto the Android home screen.
     // Android-only by construction; iOS widgets read the database and get no reload here.
@@ -240,6 +244,30 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     // A headless process can die right after the task returns. The file logger
     // buffers lines, so an explicit flush keeps the run's trace on disk.
     AppLogger.flushAll();
+  }
+};
+
+/** Re-arms the alarms at the stored times; a failure leaves the run going. */
+const moveAlarms = async (): Promise<void> => {
+  try {
+    // Unhydrated alarm stores read as disabled and would arm nothing.
+    await waitForAlarmStores();
+    const outcome = await rescheduleAllAlarms();
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.ALARMS_MOVED,
+      outcome === STEP_OUTCOME.DONE || outcome === STEP_OUTCOME.SKIPPED
+        ? TASK_RESULT.SUCCESS
+        : TASK_RESULT.FAILED,
+      outcome
+    );
+  } catch (error) {
+    await BackgroundTaskLog.log(
+      BACKGROUND_REFRESH_TASK,
+      BACKGROUND_EVENT.ALARMS_MOVED,
+      TASK_RESULT.FAILED,
+      errorText(error)
+    );
   }
 };
 
