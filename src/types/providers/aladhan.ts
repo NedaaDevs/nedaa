@@ -40,6 +40,9 @@ type Methods = AlAdhan["methods"];
  */
 export type AladhanMethodId = Methods[number]["id"] | null;
 
+/** A calculation method the provider applies; never "left to the provider". */
+export type MethodId = NonNullable<AladhanMethodId>;
+
 /**
  * Full method object containing ID and name information
  * @example { id: 3, nameKey: "mwl" }
