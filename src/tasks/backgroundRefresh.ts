@@ -194,7 +194,7 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
     await usePrayerTimesStore.getState().refreshTimingsFromDb();
     if (settles) locationStore.getState().settlePlace(placeRevision);
     // The top-up keeps an armed alarm, so a moved place's alarms move here.
-    if (settles && placeMoved) await moveAlarms();
+    if (settles && placeMoved) await moveAlarms(placeRevision);
 
     // A day with no app launch still gets today's timings onto the Android home screen.
     // Android-only by construction; iOS widgets read the database and get no reload here.
@@ -247,11 +247,25 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
   }
 };
 
-/** Re-arms the alarms at the stored times; a failure leaves the run going. */
-const moveAlarms = async (): Promise<void> => {
+/** Whether the place was written since `revision`; logs the skipped move. */
+const alarmPlaceMoved = async (revision: number): Promise<boolean> => {
+  if (locationStore.getState().placeRevision === revision) return false;
+  await BackgroundTaskLog.log(
+    BACKGROUND_REFRESH_TASK,
+    BACKGROUND_EVENT.ALARMS_MOVED,
+    TASK_RESULT.SKIPPED,
+    "the place moved again; its own load moves the alarms"
+  );
+  return true;
+};
+
+/** Re-arms the alarms for the place at `revision`; a failure is logged. */
+const moveAlarms = async (revision: number): Promise<void> => {
   try {
+    if (await alarmPlaceMoved(revision)) return;
     // Unhydrated alarm stores read as disabled and would arm nothing.
     await waitForAlarmStores();
+    if (await alarmPlaceMoved(revision)) return;
     const outcome = await rescheduleAllAlarms();
     await BackgroundTaskLog.log(
       BACKGROUND_REFRESH_TASK,
