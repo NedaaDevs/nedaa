@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import {
+  AccessibilityInfo,
   BackHandler,
   Platform,
   StyleSheet,
@@ -263,9 +264,14 @@ export const DayRunPlayer = () => {
   // The run's methods are stable from tick to tick; the run itself is not.
   const { jumpTo, close, progress } = run;
   const toggle = TOGGLE[status];
-  const chooseAdaptive = () => {
+  const chooseAdaptive = async () => {
     close();
-    void chooseMode(AppMode.ADAPTIVE);
+    await chooseMode(AppMode.ADAPTIVE);
+    // Said once stored, and queued behind focus returning to the starter.
+    AccessibilityInfo.announceForAccessibilityWithOptions(
+      t("a11y.onboarding.dayPreview.adaptiveChosen"),
+      { queue: true }
+    );
   };
 
   return (

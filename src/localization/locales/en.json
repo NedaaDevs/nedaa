@@ -94,6 +94,7 @@
   "a11y.notification.customizeHint": "Opens notification settings for this prayer",
   "a11y.onboarding.changeLanguageHint": "Opens the list of languages",
   "a11y.onboarding.chooseCityManually": "Choose my city instead of sharing location",
+  "a11y.onboarding.dayPreview.adaptiveChosen": "Your look is now Adaptive.",
   "a11y.onboarding.dayPreview.doneHint": "Ends the preview and brings back the look you chose.",
   "a11y.onboarding.dayPreview.ended": "The preview ended. Your look is back.",
   "a11y.onboarding.dayPreview.pauseHint": "Holds the look at this time of day.",

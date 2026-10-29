@@ -182,6 +182,26 @@ describe("DayRunPlayer", () => {
     expect(useAppStore.getState().mode).toBe(AppMode.ADAPTIVE);
   });
 
+  // The card leaves with the button, so the reader hears the look that stays.
+  it("Use Adaptive says the new look once it is stored", async () => {
+    const setMode = jest.fn(realSetMode);
+    useAppStore.setState({ setMode });
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+    announce.mockClear();
+    const { result } = await renderPlayer();
+    await start(result);
+
+    await press(DAY_RUN_PLAYER_PART.USE_ADAPTIVE);
+    expect(announce).not.toHaveBeenCalled();
+    await act(() => jest.advanceTimersByTime(PIN_REPORT_LIMIT_MS));
+
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(t("a11y.onboarding.dayPreview.adaptiveChosen"), {
+      queue: true,
+    });
+    expect(setMode.mock.invocationCallOrder[0]).toBeLessThan(announce.mock.invocationCallOrder[0]);
+  });
+
   it("Done restores the chosen look", async () => {
     useAppStore.setState({ mode: AppMode.LIGHT });
     const { result } = await renderPlayer();

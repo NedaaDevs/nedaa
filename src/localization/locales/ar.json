@@ -113,6 +113,7 @@
   "a11y.notification.customizeHint": "يفتح إعدادات التنبيهات لهذه الصلاة",
   "a11y.onboarding.changeLanguageHint": "يفتح قائمة اللغات",
   "a11y.onboarding.chooseCityManually": "اختيار المدينة يدويًا بدلًا من مشاركة الموقع",
+  "a11y.onboarding.dayPreview.adaptiveChosen": "أصبح المظهر تلقائيًا.",
   "a11y.onboarding.dayPreview.doneHint": "ينهي العرض ويعيد المظهر الذي اخترته.",
   "a11y.onboarding.dayPreview.ended": "انتهى العرض، وعاد المظهر الذي اخترته.",
   "a11y.onboarding.dayPreview.pauseHint": "يثبّت المظهر عند هذا الوقت من اليوم.",

@@ -436,6 +436,38 @@ describe("AppearanceStep", () => {
       expect(focus).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON), "focus");
     });
 
+    // Focus lands first; the look is said after it, queued, never over it.
+    it("says the new look after Use Adaptive gives focus back to the button", async () => {
+      const focus = focusSpy();
+      const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+      await renderRun();
+      await press(PLAY_DAY_PART.BUTTON);
+      focus.mockClear();
+      announce.mockClear();
+
+      await press(DAY_RUN_PLAYER_PART.USE_ADAPTIVE);
+      await settleLook();
+
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(announce).toHaveBeenCalledTimes(1);
+      expect(announce).toHaveBeenCalledWith(t("a11y.onboarding.dayPreview.adaptiveChosen"), {
+        queue: true,
+      });
+      expect(focus.mock.invocationCallOrder[0]).toBeLessThan(announce.mock.invocationCallOrder[0]);
+    });
+
+    it("says no look when Done closes the player", async () => {
+      const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+      await renderRun();
+      await press(PLAY_DAY_PART.BUTTON);
+      announce.mockClear();
+
+      await press(DAY_RUN_PLAYER_PART.DONE);
+      await settleLook();
+
+      expect(announce).not.toHaveBeenCalled();
+    });
+
     // With Adaptive chosen, the end still waits for Done.
     it("keeps the player open at the end; a replay still closes to the button", async () => {
       mockReduced = true;
