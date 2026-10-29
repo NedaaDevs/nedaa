@@ -238,8 +238,7 @@ describe("the place record and the place revision", () => {
   it("reads a record saved before both fields existed", () => {
     const merged = useLocationStore.persist
       .getOptions()
-      .merge?.({ lastKnownCoords: RIYADH_COORDS }, useLocationStore.getInitialState()) as
-      LocationStore | undefined;
+      .merge?.({ lastKnownCoords: RIYADH_COORDS }, useLocationStore.getInitialState());
 
     expect(merged).toEqual(
       expect.objectContaining({

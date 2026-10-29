@@ -6,7 +6,8 @@ import locationStore from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { executeBackgroundRefresh } from "@/tasks/backgroundRefresh";
 import { RIYADH_COORDS, RIYADH_DAY, RIYADH_ZONE } from "@/test-helpers/prayerDay";
-import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
+import type { DayPrayerTimes, PrayerTimesResponse } from "@/types/prayerTimes";
 import { dateToInt } from "@/utils/date";
 import { checkLocationPermission } from "@/utils/location";
 import type { Coords } from "@/types/location";
@@ -100,24 +101,33 @@ const row = (day: Date, timezone: string): DayPrayerTimes => ({
   timezone,
 });
 
+/** An API answer: the table mock reads the days it carries. */
+type Served = PrayerTimesResponse & { days: DayPrayerTimes[] };
+
 /** The new place's times as the API serves them: the year, from `month` on. */
-const serveNewPlace = async (yearOverride?: number, month = 1) => {
+const serveNewPlace = async (yearOverride?: number, month = 1): Promise<Served> => {
   const year = yearOverride ?? mockNow.getFullYear();
   const days = Array.from({ length: 13 - month }, (_, index) => {
     const first = new Date(year, month - 1 + index, 1);
     return eachDayOfInterval({ start: first, end: endOfMonth(first) });
   }).flat();
-  return { timezone: NEW_ZONE, days: days.map((day) => row(day, NEW_ZONE)) };
+  return {
+    timezone: NEW_ZONE,
+    coordinates: { lat: 0, lng: 0 },
+    provider: PRAYER_TIME_PROVIDERS.ALADHAN.id,
+    months: {},
+    days: days.map((day) => row(day, NEW_ZONE)),
+  };
 };
 
 const SECOND_COORDS = { latitude: 25.2048, longitude: 55.2708 };
 const SECOND_ZONE = "Asia/Dubai";
 
 /** The API's days in the zone the store holds as the request is sent. */
-const servePlaceHeld = async (yearOverride?: number, month?: number) => {
+const servePlaceHeld = async (yearOverride?: number, month?: number): Promise<Served> => {
   const { timezone } = locationStore.getState().locationDetails;
   const served = await serveNewPlace(yearOverride, month);
-  return { timezone, days: served.days.map((day) => ({ ...day, timezone })) };
+  return { ...served, timezone, days: served.days.map((day) => ({ ...day, timezone })) };
 };
 
 /** Every day a load reads, as the store holds them. */
@@ -187,7 +197,7 @@ describe("a forced refetch after a place change", () => {
   ])("on %s, leaves no stored day at the old place", async (_name, today) => {
     mockNow = today;
     storeOldPlace(today);
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
 
@@ -229,7 +239,7 @@ describe("a forced refetch after a place change", () => {
           new Promise((resolve) => {
             answer = () => resolve(serveNewPlace(year, month));
           })
-      ) as never,
+      ),
     });
 
     const load = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
@@ -248,7 +258,7 @@ describe("a forced refetch after a place change", () => {
     mockNow = new Date(2026, 6, 15, 12);
     storeOldPlace(mockNow);
     place.placeRevision = 7;
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
 
@@ -267,7 +277,7 @@ describe("a refetch at a year boundary", () => {
   ])("on %s, fails when the adjacent year fails", async (_name, today, failingYear) => {
     mockNow = today;
     storeOldPlace(today);
-    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(failingYear) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(failingYear) });
 
     await expect(
       usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
@@ -283,7 +293,7 @@ describe("a refetch at a year boundary", () => {
     mockNow = today;
     storeOldPlace(today);
     const api = serveNewPlaceExcept(failingYear);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
 
@@ -301,7 +311,7 @@ describe("a refetch at a year boundary", () => {
   ])("on %s, resolves false while next year's days are owed", async (_name, today) => {
     mockNow = today;
     storeOldPlace(today);
-    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)).resolves.toBe(
       false
@@ -313,7 +323,7 @@ describe("a refetch at a year boundary", () => {
     mockNow = new Date(2026, 11, 5, 12);
     storeOldPlace(mockNow);
     usePrayerTimesStore.setState({
-      getPrayerTimes: serveNewPlaceExcept(2027) as never,
+      getPrayerTimes: serveNewPlaceExcept(2027),
       timesCoords: OLD_COORDS,
     });
 
@@ -328,7 +338,7 @@ describe("a refetch at a year boundary", () => {
   it("resolves true once every year it fetched landed", async () => {
     mockNow = new Date(2026, 11, 5, 12);
     storeOldPlace(mockNow);
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)).resolves.toBe(
       true
@@ -344,7 +354,7 @@ describe("a refetch at a year boundary", () => {
     jest.mocked(reloadPrayerWidgets).mockClear();
     usePrayerTimesStore.setState({
       usingDefaultLocation: true,
-      getPrayerTimes: serveNewPlaceExcept(2026) as never,
+      getPrayerTimes: serveNewPlaceExcept(2026),
     });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
@@ -369,7 +379,7 @@ describe("a load after the place moved", () => {
   });
 
   it("refetches the days when they were fetched for other coordinates", async () => {
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
@@ -379,7 +389,7 @@ describe("a load after the place moved", () => {
 
   // Rows carry the zone they were fetched in; the place takes it on.
   it("takes the fetched days' zone as the place's", async () => {
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
@@ -410,7 +420,7 @@ describe("a load after the place moved", () => {
       usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
     ).rejects.toThrow();
     const api = jest.fn(serveNewPlace);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
@@ -425,7 +435,7 @@ describe("a load after the place moved", () => {
       placeAt(JEDDAH_COORDS, OLD_ZONE);
       return serveNewPlace(yearOverride, month);
     });
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
@@ -442,7 +452,7 @@ describe("a load after the place moved", () => {
       if (yearOverride !== undefined) placeAt(JEDDAH_COORDS, OLD_ZONE);
       return serveNewPlace(yearOverride, month);
     });
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     // The moved place's own load owns the times.
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
@@ -463,7 +473,7 @@ describe("a load after the place moved", () => {
       if (yearOverride !== undefined) placeAt(JEDDAH_COORDS, OLD_ZONE);
       return serveNewPlace(yearOverride, month);
     });
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
       false
@@ -483,7 +493,7 @@ describe("a load after the place moved", () => {
     jest
       .mocked(reloadPrayerWidgets)
       .mockImplementationOnce(() => placeAt(SECOND_COORDS, SECOND_ZONE));
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(servePlaceHeld) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(servePlaceHeld) });
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
     expect(usePrayerTimesStore.getState().timesCoords).toEqual(OLD_COORDS);
 
@@ -507,14 +517,14 @@ describe("a load after the place moved", () => {
       const kept = row(new Date(2027, 0, day, 12), OLD_ZONE);
       mockTable.set(kept.date, kept);
     }
-    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) });
     await usePrayerTimesStore
       .getState()
       .loadPrayerTimesAtCurrentPlace(true)
       .catch(() => {});
     mockNow = new Date(2026, 11, 31, 12);
     const api = jest.fn(serveNewPlace);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
@@ -581,7 +591,7 @@ describe("a load after the place moved", () => {
       usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
     ).rejects.toThrow();
     const api = jest.fn(serveNewPlace);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
@@ -654,7 +664,7 @@ describe("a load after the place moved", () => {
     it("refetches them for the place the fix moved to", async () => {
       fixLandsAt(JEDDAH_COORDS);
       const api = jest.fn(serveNewPlace);
-      usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+      usePrayerTimesStore.setState({ getPrayerTimes: api });
 
       await usePrayerTimesStore.getState().loadPrayerTimes();
 
@@ -684,7 +694,7 @@ describe("a load after the place moved", () => {
       usePrayerTimesStore.setState({ getPrayerTimes: offline() });
       await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
       const api = jest.fn(serveNewPlace);
-      usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+      usePrayerTimesStore.setState({ getPrayerTimes: api });
 
       await usePrayerTimesStore.getState().loadPrayerTimes();
 
@@ -722,7 +732,7 @@ describe.each([
     async (_day, today, adjacentYear, marksWithoutAdjacentYear) => {
       mockNow = today;
       storeOldPlace(today);
-      usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(adjacentYear) as never });
+      usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(adjacentYear) });
 
       await run();
 
@@ -730,7 +740,7 @@ describe.each([
         marksWithoutAdjacentYear ? RIYADH_COORDS : OLD_COORDS
       );
 
-      usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+      usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
       await run();
 
@@ -744,7 +754,7 @@ describe.each([
   it("on 3 October, leaves the oldest stored row at the new place", async () => {
     mockNow = new Date(2026, 9, 3, 12);
     storeOldPlace(new Date(2026, 9, 1, 12));
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
 
     await run();
 
@@ -776,7 +786,7 @@ describe("two forced loads across a city pick", () => {
   /** Load A for the first place, a city pick, then load B for the second. */
   const pickDuringLoad = async (api: jest.Mock) => {
     placeAt(RIYADH_COORDS, FIRST_ZONE);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
     const first = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
     await nextTask();
     placeAt(SECOND_COORDS, SECOND_ZONE);
@@ -844,7 +854,7 @@ describe("an unforced load in December at the same place", () => {
     mockNow = new Date(2026, 11, 20, 12);
     storeThisYear(mockNow);
     const api = jest.fn(serveNewPlace);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
       true
@@ -857,7 +867,7 @@ describe("an unforced load in December at the same place", () => {
   it("keeps the stored days, resolving false, when that fetch fails", async () => {
     mockNow = new Date(2026, 11, 20, 12);
     storeThisYear(mockNow);
-    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
       false
@@ -881,10 +891,10 @@ describe("an unforced load in December at the same place", () => {
       return { ...served, days: served.days.map((day) => ({ ...day, timezone: OLD_ZONE })) };
     });
     const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
-    usePrayerTimesStore.setState({ getPrayerTimes: stale as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: stale });
     const launch = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
     await nextTask();
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
     const forced = usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
     await nextTask();
 
@@ -899,7 +909,7 @@ describe("an unforced load in December at the same place", () => {
     mockNow = new Date(2026, 11, 5, 12);
     storeThisYear(mockNow);
     const api = jest.fn(serveNewPlace);
-    usePrayerTimesStore.setState({ getPrayerTimes: api as never });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
       true
