@@ -6,7 +6,7 @@ import { geocodeApi } from "@/api/geocodeApi";
 
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
-import { initialLocationDetails, type ManualLocation } from "@/types/location";
+import { initialLocationDetails } from "@/types/location";
 import { LocationMode } from "@/enums/location";
 import {
   FIX_SOURCE,
@@ -20,6 +20,7 @@ import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { LocationFixError } from "@/utils/location";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { RIYADH_CITY } from "@/test-helpers/place";
 
 const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
@@ -94,18 +95,6 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
-const RIYADH: ManualLocation = {
-  cityId: 108410,
-  name: "Riyadh",
-  names: { ar: "الرياض", ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
-  latitude: 24.68773,
-  longitude: 46.72185,
-  timezone: "Asia/Riyadh",
-};
-
 const mountHook = () => renderHook(() => useLocationUpdate());
 
 /** Every step lands: the full window, alerts scheduled, alarms armed. */
@@ -139,10 +128,10 @@ describe("applyManualLocation", () => {
   it("stores the chosen city without reading the device position", async () => {
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
-    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH_CITY);
     expect(useLocationStore.getState().locationMode).toBe(LocationMode.MANUAL);
     expect(mockReadLocation).not.toHaveBeenCalled();
   });
@@ -150,7 +139,7 @@ describe("applyManualLocation", () => {
   it("refreshes prayer times, notifications, alarms and widgets", async () => {
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
@@ -164,7 +153,7 @@ describe("applyManualLocation", () => {
 
     const { result } = await mountHook();
     await act(async () => {
-      applied = await result.current.applyManualLocation(RIYADH);
+      applied = await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     expect(applied).toBe(true);
@@ -181,7 +170,7 @@ describe("applyManualLocation", () => {
 
       const { result } = await mountHook();
       await act(async () => {
-        await result.current.applyManualLocation(RIYADH);
+        await result.current.applyManualLocation(RIYADH_CITY);
       });
 
       expect(announce).toHaveBeenCalledWith(i18n.t("location.update.step.done"));
@@ -196,7 +185,7 @@ describe("applyManualLocation", () => {
 
     const { result } = await mountHook();
     await act(async () => {
-      applied = await result.current.applyManualLocation(RIYADH);
+      applied = await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     expect(applied).toBe(false);
@@ -207,11 +196,11 @@ describe("applyManualLocation", () => {
 
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     expect(result.current.run).toEqual({
-      start: { kind: UPDATE_START.CITY, city: RIYADH },
+      start: { kind: UPDATE_START.CITY, city: RIYADH_CITY },
       step: UPDATE_STEP.PRAYER_TIMES,
       failed: true,
     });
@@ -222,7 +211,7 @@ describe("applyManualLocation", () => {
 
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     expect(mockScheduleNotifications).not.toHaveBeenCalled();
@@ -235,17 +224,17 @@ describe("applyManualLocation", () => {
 
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
-    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH_CITY);
   });
 
   it("retries a failed manual apply with the same city, not the device", async () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     await act(async () => {
@@ -253,7 +242,7 @@ describe("applyManualLocation", () => {
     });
 
     expect(mockReadLocation).not.toHaveBeenCalled();
-    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH_CITY);
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(2);
     expect(result.current.run).toBeNull();
   });
@@ -290,7 +279,7 @@ describe("switchToDevice", () => {
       locationMode: LocationMode.DEVICE,
       manualLocation: null,
     });
-    useLocationStore.getState().setManualLocation(RIYADH);
+    useLocationStore.getState().setManualLocation(RIYADH_CITY);
   });
 
   afterEach(() => {
@@ -339,7 +328,7 @@ describe("switchToDevice", () => {
     await act(async () => {
       await result.current.switchToDevice();
     });
-    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH);
+    expect(useLocationStore.getState().manualLocation).toEqual(RIYADH_CITY);
     expect(result.current.run?.step).toBe(UPDATE_STEP.LOCATION);
 
     await act(async () => {
@@ -367,7 +356,7 @@ describe("dismissFailure", () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
     const { result } = await mountHook();
     await act(async () => {
-      await result.current.applyManualLocation(RIYADH);
+      await result.current.applyManualLocation(RIYADH_CITY);
     });
 
     await act(async () => result.current.dismissFailure());
@@ -380,13 +369,13 @@ describe("dismissFailure", () => {
     mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
     const { result } = await mountHook();
     await act(async () => {
-      void result.current.applyManualLocation(RIYADH);
+      void result.current.applyManualLocation(RIYADH_CITY);
     });
 
     await act(async () => result.current.dismissFailure());
 
     expect(result.current.run).toEqual({
-      start: { kind: UPDATE_START.CITY, city: RIYADH },
+      start: { kind: UPDATE_START.CITY, city: RIYADH_CITY },
       step: UPDATE_STEP.PRAYER_TIMES,
       failed: false,
     });
@@ -405,7 +394,7 @@ describe("one run at a time", () => {
     mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
     const first = await mountHook();
     await act(async () => {
-      void first.result.current.applyManualLocation(RIYADH);
+      void first.result.current.applyManualLocation(RIYADH_CITY);
     });
 
     const reopened = await mountHook();
@@ -418,7 +407,7 @@ describe("one run at a time", () => {
     mockLoadPrayerTimes.mockReturnValueOnce(new Promise(() => {}));
     const { result } = await mountHook();
     await act(async () => {
-      void result.current.applyManualLocation(RIYADH);
+      void result.current.applyManualLocation(RIYADH_CITY);
     });
 
     let started: boolean | undefined;
@@ -436,7 +425,7 @@ describe("one run at a time", () => {
     mockLoadPrayerTimes.mockRejectedValueOnce(new Error("network down"));
     const first = await mountHook();
     await act(async () => {
-      await first.result.current.applyManualLocation(RIYADH);
+      await first.result.current.applyManualLocation(RIYADH_CITY);
     });
     mockLoadPrayerTimes.mockResolvedValue(true);
 
@@ -468,7 +457,7 @@ describe("what the run reports", () => {
     const hook = await mountHook();
     let applied: boolean | undefined;
     await act(async () => {
-      applied = await hook.result.current.applyManualLocation(RIYADH);
+      applied = await hook.result.current.applyManualLocation(RIYADH_CITY);
     });
     return { result: hook.result, applied };
   };
@@ -487,7 +476,7 @@ describe("what the run reports", () => {
     expect(applied).toBe(false);
     expect(mockRescheduleAlarms).toHaveBeenCalled();
     expect(result.current.run).toEqual({
-      start: { kind: UPDATE_START.CITY, city: RIYADH },
+      start: { kind: UPDATE_START.CITY, city: RIYADH_CITY },
       step: UPDATE_STEP.NOTIFICATIONS,
       failed: true,
     });

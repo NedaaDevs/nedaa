@@ -5,6 +5,8 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
 import { readLocation } from "@/utils/location";
+import { JEDDAH_CITY, MAKKAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 
 jest.mock("@/adapters/location", () => ({
   reverseGeocodeAsync: jest.fn(),
@@ -40,30 +42,12 @@ const RIYADH = fixAt(24.7136, 46.6753);
 const JEDDAH = fixAt(21.4858, 39.1925);
 const RIYADH_COORDS = { latitude: RIYADH.coords.latitude, longitude: RIYADH.coords.longitude };
 
-const SAUDI_ARABIA = { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } };
-
-const cityOf = (cityId: number, name: string, latitude: number, longitude: number) => ({
-  cityId,
-  name,
-  names: { ar: null, ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: SAUDI_ARABIA,
-  latitude,
-  longitude,
-  timezone: "Asia/Riyadh",
-});
-
-const RIYADH_CITY: ManualLocation = cityOf(108410, "Riyadh", 24.68773, 46.72185);
-const MAKKAH_CITY: ManualLocation = cityOf(104515, "Makkah", 21.4225, 39.8262);
-const JEDDAH_CITY: ManualLocation = cityOf(105343, "Jeddah", 21.54238, 39.19797);
-
 const deviceAddress = (city: string) => ({ city, country: "Saudi Arabia", timezone: null });
 
 const reverseGeocode: LocationStore["reverseGeocode"] = jest.fn(async () => ({
   city: "Jeddah",
   countryName: "Saudi Arabia",
-  timezone: "Asia/Riyadh",
+  timezone: RIYADH_ZONE,
 }));
 
 /** Chooses `city`, then settles it as its times would. */
@@ -282,6 +266,8 @@ describe("the place record and the place revision", () => {
 
     useLocationStore.getState().setManualLocation(MAKKAH_CITY);
 
-    expect(JSON.stringify(log.i.mock.calls)).not.toMatch(/Makkah|Asia\/Riyadh/);
+    const lines = JSON.stringify(log.i.mock.calls);
+    expect(lines).not.toContain(MAKKAH_CITY.name);
+    expect(lines).not.toContain(MAKKAH_CITY.timezone);
   });
 });
