@@ -10,6 +10,7 @@ import { CityChangeSheet } from "@/components/location/CityChangeSheet";
 import { PLACE_HERO_PART } from "@/components/ui/place-hero";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { E2E_ID } from "@/constants/E2E";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
@@ -30,6 +31,7 @@ import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
+import { offerUp } from "@/test-helpers/cityOffer";
 import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
 import { MAKKAH_CITY, RIYADH_CITY, placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -173,7 +175,7 @@ beforeEach(async () => {
   useLocationStore.setState({
     updateCurrentLocation: mockUpdate,
     adoptDeviceLocation: mockAdopt,
-    autoUpdateLocation: true,
+    travelMode: TRAVEL_MODE.ASK,
     isGettingLocation: false,
     previousPlace: null,
   });
@@ -251,7 +253,7 @@ describe("Settings › Location", () => {
 
       await userEvent.press(toggle);
 
-      expect(useLocationStore.getState().autoUpdateLocation).toBe(false);
+      expect(useLocationStore.getState().travelMode).toBe(TRAVEL_MODE.OFF);
     });
 
     it("says when the place came from the device's last recorded fix", async () => {
@@ -1026,7 +1028,7 @@ describe("Settings › Location", () => {
       mockUpdate.mockReturnValue(new Promise<void>((resolve) => (read = resolve)));
       mockLoad.mockReturnValue(new Promise(() => {}));
       useAppStore.setState({ isFirstRun: false });
-      useLocationStore.getState().offerCityChange({ currentCity: "Riyadh", newCity: "Jeddah" });
+      offerUp();
       await renderScreen({ withSheet: true });
 
       await userEvent.press(

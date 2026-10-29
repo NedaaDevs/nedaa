@@ -12,6 +12,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { Section } from "@/components/ui/section";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SwitchGroup } from "@/components/ui/switch-group";
+import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { E2E_ID } from "@/constants/E2E";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { SECTION_KIND } from "@/constants/Section";
@@ -255,8 +256,8 @@ export const DeniedBody = ({ onChooseCity, verified }: DeniedProps) => {
 export const AutoUpdateSection = () => {
   const { t } = useTranslation();
   const lightHaptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
-  const on = useLocationStore((state) => state.autoUpdateLocation);
-  const setOn = useLocationStore((state) => state.setAutoUpdateLocation);
+  const on = useLocationStore((state) => state.travelMode === TRAVEL_MODE.ASK);
+  const setTravelMode = useLocationStore((state) => state.setTravelMode);
 
   return (
     <Section title={t("location.settings.travelSection")} kind={SECTION_KIND.LABEL}>
@@ -269,7 +270,7 @@ export const AutoUpdateSection = () => {
           value={on}
           onValueChange={(value) => {
             void lightHaptic();
-            setOn(value);
+            setTravelMode(value ? TRAVEL_MODE.ASK : TRAVEL_MODE.OFF);
           }}
         />
       </ListGroup>

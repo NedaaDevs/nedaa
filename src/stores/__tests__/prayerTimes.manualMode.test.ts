@@ -4,7 +4,7 @@ import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
 import { fetchLandingAs } from "@/test-helpers/timesFetch";
 
-const mockGetLocationWithTimeout = jest.fn();
+const mockReadLocation = jest.fn();
 const mockCheckLocationPermission = jest.fn();
 const mockGetPrayerTimesByDateRange = jest.fn();
 const mockGetPrayerTimesByDate = jest.fn();
@@ -29,7 +29,7 @@ jest.mock("@/utils/location", () => ({
   CITY_CHANGE_THRESHOLD: 10,
   calculateDistance: jest.fn(),
   checkLocationPermission: (...args: unknown[]) => mockCheckLocationPermission(...args),
-  getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
+  readLocation: (...args: unknown[]) => mockReadLocation(...args),
 }));
 
 jest.mock("@/stores/app", () => ({
@@ -124,7 +124,7 @@ describe("prayer times with a manual location", () => {
     await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(mockCheckLocationPermission).not.toHaveBeenCalled();
-    expect(mockGetLocationWithTimeout).not.toHaveBeenCalled();
+    expect(mockReadLocation).not.toHaveBeenCalled();
   });
 
   it("treats manual coordinates as a real position, so no default-location warning shows", async () => {
@@ -146,7 +146,7 @@ describe("prayer times with a manual location", () => {
 
   it("still acquires the device position in device mode", async () => {
     mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
-    mockGetLocationWithTimeout.mockRejectedValue(new Error("no fix"));
+    mockReadLocation.mockRejectedValue(new Error("no fix"));
 
     await usePrayerTimesStore.getState().loadPrayerTimes(true);
 
@@ -162,26 +162,5 @@ describe("prayer times with a manual location", () => {
     await usePrayerTimesStore.getState().loadPrayerTimes(true);
 
     expect(mockCheckLocationPermission).toHaveBeenCalled();
-  });
-});
-
-describe("city-change prompting with a manual location", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    useLocationStore.setState({
-      locationDetails: initialLocationDetails,
-      lastKnownCoords: { latitude: 31.558, longitude: 74.35071 },
-      locationMode: LocationMode.MANUAL,
-      manualLocation: LAHORE,
-      showCityChangeModal: false,
-      pendingCityChange: null,
-    });
-  });
-
-  it("does not read the device position to second-guess a chosen city", async () => {
-    await useLocationStore.getState().checkAndPromptCityChange();
-
-    expect(mockGetLocationWithTimeout).not.toHaveBeenCalled();
-    expect(useLocationStore.getState().showCityChangeModal).toBe(false);
   });
 });

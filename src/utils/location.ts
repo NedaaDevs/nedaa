@@ -216,11 +216,6 @@ export const readCachedFix = (maxAgeMs: number): Promise<LocationObject | null> 
     null
   );
 
-/** The device position alone, for a caller that does not record its source. */
-export const getLocationWithTimeout = async (
-  timeoutMs: number = LOCATION_REQUEST_TIMEOUT
-): Promise<LocationObject> => (await readLocation(timeoutMs)).location;
-
 // Calculate distance between coordinates
 export const calculateDistance = (
   lat1: number,

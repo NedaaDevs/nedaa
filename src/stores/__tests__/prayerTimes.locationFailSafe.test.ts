@@ -36,7 +36,6 @@ jest.mock("@/utils/location", () => ({
   ...jest.requireActual("@/utils/location"),
   calculateDistance: jest.fn(),
   checkLocationPermission: (...args: unknown[]) => mockCheckLocationPermission(...args),
-  getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
   readLocation: async (...args: unknown[]) => ({
     location: await mockGetLocationWithTimeout(...args),
     source: jest.requireActual("@/constants/Location").FIX_SOURCE.FRESH,

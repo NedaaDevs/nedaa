@@ -1,5 +1,6 @@
 import { registerDevMenuItems } from "expo-dev-menu";
 
+import { CITY_CHECK_OFFER, REUSE_FIX_MAX_AGE_MS } from "@/constants/CityCheck";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { LocationMode } from "@/enums/location";
 import { useAppStore } from "@/stores/app";
@@ -12,6 +13,7 @@ jest.mock("expo-dev-menu", () => ({ registerDevMenuItems: jest.fn(() => Promise.
 
 jest.mock("@/utils/phoneZone", () => ({ phoneZoneReadings: jest.fn() }));
 
+const UNNAMED_SAMPLE_KM = 40;
 const devBuild = __DEV__;
 /** `__DEV__` is a read-only global in the types; the test build may set it. */
 const setDevBuild = (on: boolean) => Reflect.set(globalThis, "__DEV__", on);
@@ -38,15 +40,12 @@ it("adds Restart onboarding to the dev menu, running the store's restart", () =>
   expect(restart).toHaveBeenCalledTimes(1);
 });
 
-// The launch check needs a real move; QA opens the sheet from here instead.
-it("adds Show city change, offering a sample city against the saved one", () => {
+// A check needs a real move; QA puts an offer up from here instead.
+const itemNamed = (name: string) =>
+  (jest.mocked(registerDevMenuItems).mock.lastCall?.[0] ?? []).find((item) => item.name === name);
+
+it("lists the items in menu order", () => {
   setDevBuild(true);
-  useLocationStore.setState((state) => ({
-    locationMode: LocationMode.DEVICE,
-    pendingCityChange: null,
-    showCityChangeModal: false,
-    locationDetails: { ...state.locationDetails, address: { city: "Riyadh", country: "SA" } },
-  }));
 
   registerDevMenu();
 
@@ -54,32 +53,54 @@ it("adds Show city change, offering a sample city against the saved one", () => 
   expect(items.map(({ name }) => name)).toEqual([
     DEBUG_COPY.RESTART_ONBOARDING,
     DEBUG_COPY.SHOW_CITY_CHANGE,
+    DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED,
     DEBUG_COPY.LOG_PHONE_ZONE,
   ]);
-  items[1]?.callback();
-  const state = useLocationStore.getState();
-  expect(state.showCityChangeModal).toBe(true);
-  expect(state.pendingCityChange).toEqual({
-    currentCity: "Riyadh",
-    newCity: DEBUG_COPY.SAMPLE_NEW_CITY,
-  });
 });
 
-// The sheet's update reads the device; over a chosen city it would mix the two.
-it("offers no city change over a chosen city, as the launch check does", () => {
-  setDevBuild(true);
-  useLocationStore.setState({
-    locationMode: LocationMode.MANUAL,
-    pendingCityChange: null,
-    showCityChangeModal: false,
+describe("the sample city offers", () => {
+  beforeEach(() => {
+    setDevBuild(true);
+    useLocationStore.setState({ locationMode: LocationMode.DEVICE, cityOffer: null });
   });
 
-  registerDevMenu();
+  it("adds Show city change, offering a named sample city", () => {
+    registerDevMenu();
+    itemNamed(DEBUG_COPY.SHOW_CITY_CHANGE)?.callback();
 
-  const items = jest.mocked(registerDevMenuItems).mock.lastCall?.[0] ?? [];
-  items.find(({ name }) => name === DEBUG_COPY.SHOW_CITY_CHANGE)?.callback();
-  expect(useLocationStore.getState().showCityChangeModal).toBe(false);
-  expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    const offer = useLocationStore.getState().cityOffer;
+    expect(offer?.candidate.name?.name).toBe(DEBUG_COPY.SAMPLE_NEW_CITY);
+    expect(offer?.reasons).toEqual([CITY_CHECK_OFFER.SHIFT]);
+  });
+
+  it("adds Show unnamed city change, offering a place 40 km away", () => {
+    registerDevMenu();
+    itemNamed(DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED)?.callback();
+
+    const offer = useLocationStore.getState().cityOffer;
+    expect(offer?.candidate.name).toBeNull();
+    expect(offer?.candidate.distanceKm).toBe(UNNAMED_SAMPLE_KM);
+  });
+
+  // A Use from a sample reads the device, never the sample's point.
+  it("dates each sample too old to reuse", () => {
+    registerDevMenu();
+    itemNamed(DEBUG_COPY.SHOW_CITY_CHANGE)?.callback();
+
+    const fixedAt = useLocationStore.getState().cityOffer?.candidate.fixedAt ?? Date.now();
+    expect(Date.now() - fixedAt).toBeGreaterThan(REUSE_FIX_MAX_AGE_MS);
+  });
+
+  it.each([DEBUG_COPY.SHOW_CITY_CHANGE, DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED])(
+    "offers nothing over a chosen city from %s",
+    (name) => {
+      useLocationStore.setState({ locationMode: LocationMode.MANUAL });
+      registerDevMenu();
+      itemNamed(name)?.callback();
+
+      expect(useLocationStore.getState().cityOffer).toBeNull();
+    }
+  );
 });
 
 it("adds Log the phone zone, logging both readings", () => {

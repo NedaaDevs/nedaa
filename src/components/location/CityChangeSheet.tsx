@@ -30,8 +30,11 @@ import {
 } from "@/constants/Location";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
-import { useLocationStore, type LocationStore } from "@/stores/location";
+import { usePlace } from "@/hooks/usePlace";
+import { useLocationStore } from "@/stores/location";
 import { isRunning, useLocationUpdateStore, type UpdateRun } from "@/stores/locationUpdate";
+import type { CityCandidate, CityOffer } from "@/types/cityCheck";
+import { resolveLocalizedName } from "@/utils/cities";
 
 type CityBoxProps = { label: string; city: string; isNew: boolean };
 
@@ -124,10 +127,21 @@ const OfferButtons = ({ busy, onUpdate, onKeep }: OfferProps) => {
 
 type BodyProps = Omit<RunViewProps, "run"> &
   OfferProps & {
-    offer: NonNullable<LocationStore["pendingCityChange"]>;
+    /** The saved city's name; an unnamed saved place shows no box. */
+    savedCity: string | undefined;
+    newCity: string;
     /** The sheet's run, or null while it offers the update. */
     run: UpdateRun | null;
   };
+
+/** The candidate's name in the app's language, or its distance when unnamed. */
+const useCandidateName = (candidate: CityCandidate): string => {
+  const { t, i18n } = useTranslation();
+  const { name, distanceKm } = candidate;
+  return name
+    ? resolveLocalizedName(name.name, name.names ?? undefined, i18n.language)
+    : t("location.cityChange.unnamedPlace", { distance: Math.round(distanceKm) });
+};
 
 const viewOf = (run: UpdateRun | null): CityChangeView => {
   if (!run) return CITY_CHANGE_VIEW.OFFER;
@@ -135,7 +149,15 @@ const viewOf = (run: UpdateRun | null): CityChangeView => {
 };
 
 /** The two cities, what an update changes, then the offer or the run. */
-const CityChangeBody = ({ offer, run, busy, onUpdate, onKeep, ...runView }: BodyProps) => {
+const CityChangeBody = ({
+  savedCity,
+  newCity,
+  run,
+  busy,
+  onUpdate,
+  onKeep,
+  ...runView
+}: BodyProps) => {
   const { t } = useTranslation();
   const title = useActionsheetTitle();
   // Content swaps under the reader, never the title; focus goes back to it.
@@ -152,8 +174,10 @@ const CityChangeBody = ({ offer, run, busy, onUpdate, onKeep, ...runView }: Body
       </VStack>
       {/* In reading order: the saved city at the start. */}
       <HStack gap="$2">
-        <CityBox label={t("location.cityChange.saved")} city={offer.currentCity} isNew={false} />
-        <CityBox label={t("location.cityChange.now")} city={offer.newCity} isNew />
+        {savedCity ? (
+          <CityBox label={t("location.cityChange.saved")} city={savedCity} isNew={false} />
+        ) : null}
+        <CityBox label={t("location.cityChange.now")} city={newCity} isNew />
       </HStack>
       <Text size="sm" color="$muted" textAlign="center">
         {t("location.cityChanged.description")}
@@ -167,6 +191,15 @@ const CityChangeBody = ({ offer, run, busy, onUpdate, onKeep, ...runView }: Body
   );
 };
 
+type OfferBodyProps = Omit<BodyProps, "savedCity" | "newCity"> & { candidate: CityCandidate };
+
+/** Names both places, then draws the body. */
+const OfferBody = ({ candidate, ...body }: OfferBodyProps) => {
+  const savedCity = usePlace().city;
+  const newCity = useCandidateName(candidate);
+  return <CityChangeBody savedCity={savedCity} newCity={newCity} {...body} />;
+};
+
 type Props = {
   /** The onboarding gate covers the app; the offer waits until it leaves. */
   onboarding: boolean;
@@ -176,10 +209,13 @@ type Props = {
 export const CityChangeSheet = ({ onboarding }: Props) => {
   const router = useRouter();
   const mediumHaptic = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
-  const offer = useLocationStore((state) => state.pendingCityChange);
-  const up = useLocationStore((state) => state.showCityChangeModal);
-  const closeCityChange = useLocationStore((state) => state.closeCityChange);
-  const clearCityChange = useLocationStore((state) => state.clearCityChange);
+  const cityOffer = useLocationStore((state) => state.cityOffer);
+  const keepCityOffer = useLocationStore((state) => state.keepCityOffer);
+  const dismissCityOffer = useLocationStore((state) => state.dismissCityOffer);
+  // The last offer stays drawn while the sheet leaves.
+  const [drawn, setDrawn] = useState<CityOffer | null>(cityOffer);
+  if (cityOffer && cityOffer !== drawn) setDrawn(cityOffer);
+  const offer = cityOffer ?? drawn;
   const { run, executeUpdate, retry, dismissFailure } = useLocationUpdate();
   // Set only when this sheet's update takes the lock, so only its run is drawn.
   const [started, setStarted] = useState(false);
@@ -191,37 +227,37 @@ export const CityChangeSheet = ({ onboarding }: Props) => {
     if (isRunning(useLocationUpdateStore.getState().run)) return;
     void mediumHaptic();
     setStarted(true);
-    if (await executeUpdate()) closeCityChange();
+    if (await executeUpdate()) dismissCityOffer();
   };
   const retryUpdate = async () => {
-    if (await retry()) closeCityChange();
+    if (await retry()) dismissCityOffer();
   };
   // Another way out of a failed read leaves the sheet for the city picker.
   const openPicker = (view: CityPickerView) => {
     dismissFailure();
-    closeCityChange();
+    dismissCityOffer();
     router.push(locationPickerRoute(view));
   };
   const onClose = () => {
     setStarted(false);
     setShown(null);
-    clearCityChange();
+    dismissCityOffer();
   };
 
   return (
-    <Actionsheet isOpen={up && offer !== null && !onboarding} onClose={onClose} fitContent>
+    <Actionsheet isOpen={cityOffer !== null && !onboarding} onClose={onClose} fitContent>
       <ActionsheetContent>
         {offer ? (
-          <CityChangeBody
-            offer={offer}
+          <OfferBody
+            candidate={offer.candidate}
             run={shown}
             busy={isRunning(run)}
             onUpdate={() => void update()}
-            onKeep={closeCityChange}
+            onKeep={keepCityOffer}
             onRetry={() => void retryUpdate()}
             onChooseCity={() => openPicker(CITY_PICKER_VIEW.LIST)}
             onEnterCoordinates={() => openPicker(CITY_PICKER_VIEW.COORDINATES)}
-            onClose={closeCityChange}
+            onClose={dismissCityOffer}
           />
         ) : null}
       </ActionsheetContent>

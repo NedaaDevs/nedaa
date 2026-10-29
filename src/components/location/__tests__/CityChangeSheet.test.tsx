@@ -1,6 +1,7 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // sheet must bind to the mock below, not to its empty one.
 import { CityChangeSheet } from "@/components/location/CityChangeSheet";
+import { ACTIONSHEET_PART } from "@/components/ui/actionsheet";
 import { Component } from "react";
 import { AccessibilityInfo, Text } from "react-native";
 import { useLocalSearchParams, usePathname } from "expo-router";
@@ -19,6 +20,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppLocale } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
+import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
@@ -28,6 +30,8 @@ import { DEFAULT_FACES } from "@/constants/Fonts";
 import { NEDAA_DARK } from "@/constants/Palette";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
+import { JEDDAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 import { initialLocationDetails } from "@/types/location";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import { LocationFixError } from "@/utils/location";
@@ -41,9 +45,12 @@ jest.mock("@/stores/athkar", () => ({ useAthkarStore: { getState: jest.fn() } })
 jest.mock("@/utils/alarmScheduler", () => ({ rescheduleAllAlarms: jest.fn(async () => {}) }));
 
 const t = i18n.t.bind(i18n);
-const OFFER = { currentCity: "Riyadh", newCity: "Jeddah" };
+const SAVED_CITY = RIYADH_CITY.name;
+const NEW_CITY = JEDDAH_CITY.name;
+const UNNAMED_KM = 40;
 
-const { closeCityChange } = useLocationStore.getState();
+const { dismissCityOffer } = useLocationStore.getState();
+const kept = () => useCityCheckStore.getState().cityCheck.kept;
 const mockUpdate = jest.fn(async () => {});
 const mockLoad = jest.fn(async () => true);
 
@@ -111,14 +118,21 @@ beforeEach(async () => {
   mockUpdate.mockResolvedValue(undefined);
   mockLoad.mockResolvedValue(true);
   useLocationUpdateStore.setState({ run: null });
+  useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY });
   useLocationStore.setState({
     locationMode: LocationMode.DEVICE,
-    locationDetails: { ...initialLocationDetails, address: { city: "Riyadh", country: "SA" } },
+    manualLocation: null,
+    previousPlace: null,
+    localizedLocation: { city: "", country: "" },
+    locationDetails: {
+      ...initialLocationDetails,
+      address: { city: SAVED_CITY, country: RIYADH_CITY.country.name },
+    },
     updateCurrentLocation: mockUpdate,
-    closeCityChange,
-    cityOffered: null,
+    dismissCityOffer,
+    cityOffer: null,
   });
-  useLocationStore.getState().offerCityChange(OFFER);
+  offerUp();
   usePrayerTimesStore.setState({ loadPrayerTimesAtCurrentPlace: mockLoad });
   useNotificationStore.setState({
     scheduleAllNotifications: jest.fn(async () => ({ success: true, scheduledCount: 0 })),
@@ -130,8 +144,8 @@ describe("CityChangeSheet", () => {
     await renderSheet();
 
     expect(title()).toBeTruthy();
-    expect(box("location.cityChange.saved", OFFER.currentCity)).toBeTruthy();
-    expect(box("location.cityChange.now", OFFER.newCity)).toBeTruthy();
+    expect(box("location.cityChange.saved", SAVED_CITY)).toBeTruthy();
+    expect(box("location.cityChange.now", NEW_CITY)).toBeTruthy();
     expect(screen.getByText(t("location.cityChanged.description"))).toBeTruthy();
     expect(updateButton()).toBeTruthy();
     expect(screen.getByRole("button", { name: t("location.cityChange.keep") })).toBeTruthy();
@@ -142,9 +156,10 @@ describe("CityChangeSheet", () => {
     await act(() => i18n.changeLanguage(AppLocale.AR));
     await renderSheet({ isRTL: true });
 
-    const saved = box("location.cityChange.saved", OFFER.currentCity);
-    const now = box("location.cityChange.now", OFFER.newCity);
-    const boxes = screen.getAllByLabelText(/Riyadh|Jeddah/);
+    const newCityAr = JEDDAH_CITY.names.ar ?? NEW_CITY;
+    const saved = box("location.cityChange.saved", SAVED_CITY);
+    const now = box("location.cityChange.now", newCityAr);
+    const boxes = screen.getAllByLabelText(new RegExp(`${SAVED_CITY}|${newCityAr}`));
     expect(boxes).toEqual([saved, now]);
     expect(screen.queryByText("↓")).toBeNull();
   });
@@ -180,18 +195,18 @@ describe("CityChangeSheet", () => {
 
     expect(mockLoad).toHaveBeenCalledWith(true);
     expect(title()).toBeNull();
-    expect(useLocationStore.getState().pendingCityChange).toBeNull();
+    expect(useLocationStore.getState().cityOffer).toBeNull();
   });
 
   // The sheet leaves on what it was doing, not on the question it answered.
   it("keeps the run's steps, not the offer, while it leaves", async () => {
-    const closeCityChange = jest.fn();
-    useLocationStore.setState({ closeCityChange });
+    const dismiss = jest.fn();
+    useLocationStore.setState({ dismissCityOffer: dismiss });
     await renderSheet();
 
     await userEvent.press(updateButton());
 
-    expect(closeCityChange).toHaveBeenCalledTimes(1);
+    expect(dismiss).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId(LOCATION_UPDATE_PART.STEPS)).toBeTruthy();
     expect(screen.queryByRole("button", { name: t("location.cityChange.update") })).toBeNull();
   });
@@ -240,10 +255,10 @@ describe("CityChangeSheet", () => {
     holdUpdate();
     await renderSheet({ dark: true });
 
-    expect(box("location.cityChange.saved", OFFER.currentCity)).toHaveStyle({
+    expect(box("location.cityChange.saved", SAVED_CITY)).toHaveStyle({
       backgroundColor: NEDAA_DARK.surface2Soft.hex,
     });
-    expect(screen.getByText(OFFER.currentCity)).toHaveStyle({
+    expect(screen.getByText(SAVED_CITY)).toHaveStyle({
       fontFamily: DEFAULT_FACES.semibold,
     });
     await userEvent.press(updateButton());
@@ -252,15 +267,54 @@ describe("CityChangeSheet", () => {
     });
   });
 
-  it("keeps the saved city and offers this one no more this session", async () => {
+  it("keeps the saved city for the trip when Keep is pressed", async () => {
     await renderSheet();
 
     await userEvent.press(screen.getByRole("button", { name: t("location.cityChange.keep") }));
 
     expect(title()).toBeNull();
     expect(mockUpdate).not.toHaveBeenCalled();
-    expect(useLocationStore.getState().pendingCityChange).toBeNull();
-    expect(useLocationStore.getState().cityOffered).toBe(OFFER.newCity);
+    expect(useLocationStore.getState().cityOffer).toBeNull();
+    expect(kept()).toHaveLength(1);
+  });
+
+  it("remembers nothing when the sheet is swiped away", async () => {
+    await renderSheet();
+
+    await userEvent.press(screen.getByTestId(ACTIONSHEET_PART.SCRIM));
+
+    expect(title()).toBeNull();
+    expect(useLocationStore.getState().cityOffer).toBeNull();
+    expect(kept()).toEqual([]);
+  });
+
+  it("names the new city from its city row in the app's language", async () => {
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+    await renderSheet({ isRTL: true });
+
+    expect(box("location.cityChange.now", JEDDAH_CITY.names.ar ?? NEW_CITY)).toBeTruthy();
+  });
+
+  it("shows the distance from the saved place for an unnamed candidate", async () => {
+    offerUp(candidateAt({ name: null, distanceKm: UNNAMED_KM }));
+    await renderSheet();
+
+    expect(
+      box(
+        "location.cityChange.now",
+        t("location.cityChange.unnamedPlace", { distance: UNNAMED_KM })
+      )
+    ).toBeTruthy();
+  });
+
+  it("hides the saved city box when the saved city has no name", async () => {
+    useLocationStore.setState({
+      locationDetails: { ...initialLocationDetails, address: null },
+    });
+    await renderSheet();
+
+    expect(screen.queryByText(t("location.cityChange.saved"))).toBeNull();
+    expect(box("location.cityChange.now", NEW_CITY)).toBeTruthy();
   });
 
   // The failure card is the one way out of a failed read, here as on Location.
