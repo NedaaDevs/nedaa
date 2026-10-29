@@ -11,7 +11,7 @@ import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 
-/** Today's style over a preview of it, a day of Adaptive, then the modes. */
+/** Today's preview, a day of Adaptive, Today's style, then the modes. */
 export const AppearanceStep = ({ headingRef, progress }: StepProps) => {
   const { t } = useTranslation();
 
@@ -23,10 +23,12 @@ export const AppearanceStep = ({ headingRef, progress }: StepProps) => {
         title={t("onboarding.appearance.title")}
         body={t("onboarding.appearance.body")}
       />
-      <TodayStylePreview sampleUnlessOwn />
-      <SkyOccluder>
-        <PlayDayButton />
-      </SkyOccluder>
+      <VStack gap="$3.5">
+        <TodayStylePreview sampleUnlessOwn />
+        <SkyOccluder>
+          <PlayDayButton />
+        </SkyOccluder>
+      </VStack>
       <SkyOccluder>
         <VStack gap="$2">
           <Text size="sm" fontWeight="600" color="$fg">
