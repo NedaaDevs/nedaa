@@ -4,7 +4,10 @@ import type { HostInstance } from "react-native";
 import type { DayRunKind, DayRunStatus } from "@/constants/DayRun";
 import type { Phase } from "@/constants/Phase";
 
-/** A day run, as the parts inside a `DaySimulator` drive and show it. */
+/**
+ * A day run, as the parts inside a `DaySimulator` drive and show it.
+ * Its methods are stable from tick to tick; the run itself is not.
+ */
 export type DayRun = {
   kind: DayRunKind;
   status: DayRunStatus;
@@ -17,7 +20,7 @@ export type DayRun = {
   /** True from a close until reader focus is back on the run's starter. */
   returning: boolean;
   /** Plays the day from its start; `close` gives `from` reader focus back. */
-  start: (from?: HostInstance | null) => void;
+  start(from?: HostInstance | null): void;
   /** Plays the day again from its start, for the same starter. */
   replay(): void;
   pause(): void;
@@ -25,7 +28,7 @@ export type DayRun = {
   /** Moves the clock to the start of `phase` and holds it there. */
   jumpTo(phase: Phase): void;
   /** Ends the run; reader focus stays where it is. */
-  done(): void;
+  end(): void;
   /** Ends the run from its own controls; reader focus goes to its starter. */
   close(): void;
 };
