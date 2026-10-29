@@ -31,6 +31,7 @@ export const CalculationStep = ({
   setBusy,
   setPrimary,
   headingRef,
+  onHeadingLayout,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
@@ -94,6 +95,7 @@ export const CalculationStep = ({
       <StepBody>
         <StepHeading
           headingRef={headingRef}
+          onHeadingLayout={onHeadingLayout}
           progress={progress}
           title={t("onboarding.calculation.title")}
           body={

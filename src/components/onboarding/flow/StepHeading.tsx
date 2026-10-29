@@ -6,7 +6,7 @@ import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 
-type Props = Pick<StepProps, "headingRef" | "progress"> & {
+type Props = Pick<StepProps, "headingRef" | "onHeadingLayout" | "progress"> & {
   title: string;
   body?: string;
   /** Centres the lines, for a page drawn around a central mark. */
@@ -14,7 +14,14 @@ type Props = Pick<StepProps, "headingRef" | "progress"> & {
 };
 
 /** A step's heading, read with the progress; the flow focuses it on arrival. */
-export const StepHeading = ({ headingRef, progress, title, body, centered = false }: Props) => {
+export const StepHeading = ({
+  headingRef,
+  onHeadingLayout,
+  progress,
+  title,
+  body,
+  centered = false,
+}: Props) => {
   const { t } = useTranslation();
   const align = centered ? "center" : undefined;
   return (
@@ -22,6 +29,7 @@ export const StepHeading = ({ headingRef, progress, title, body, centered = fals
       <VStack gap="$2">
         <View
           ref={headingRef}
+          onLayout={onHeadingLayout}
           accessible
           accessibilityRole="header"
           accessibilityLabel={

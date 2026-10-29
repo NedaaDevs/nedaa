@@ -30,6 +30,7 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics, HAPTIC } from "@/test-helpers/hapticMock";
 import {
   currentStep,
+  layOutHeading,
   propsOf,
   realSteps,
   resetStepStubs,
@@ -718,15 +719,39 @@ describe("OnboardingFlow", () => {
     });
   });
 
-  it("moves reader focus to the new step's heading", async () => {
+  // A heading mounted in this commit may have no native view for the event yet.
+  it("moves reader focus to the new step's heading once it is laid out", async () => {
     const focus = jest
       .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
       .mockImplementation(() => {});
     await renderWithTheme(<OnboardingFlow />);
+    await layOutHeading(S.WELCOME);
     focus.mockClear();
 
     await leaveWelcome();
+    expect(focus).not.toHaveBeenCalled();
+    await layOutHeading(S.NUMERALS);
+    await layOutHeading(S.NUMERALS);
 
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith(propsOf(S.NUMERALS).headingRef.current, "focus");
+  });
+
+  it("focuses a step's heading again when the user comes back to it", async () => {
+    const focus = jest
+      .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
+      .mockImplementation(() => {});
+    useAppStore.setState({ onboardingStep: S.NUMERALS });
+    await renderWithTheme(<OnboardingFlow />);
+    await layOutHeading(S.NUMERALS);
+    await press(ONBOARDING_PART.CONTINUE);
+    await layOutHeading(S.APPEARANCE);
+    focus.mockClear();
+
+    await press(ONBOARDING_PART.BACK);
+    await layOutHeading(S.NUMERALS);
+
+    expect(focus).toHaveBeenCalledTimes(1);
     expect(focus).toHaveBeenCalledWith(propsOf(S.NUMERALS).headingRef.current, "focus");
   });
 
@@ -918,6 +943,8 @@ describe("OnboardingFlow", () => {
         focus.mockClear();
 
         await act(async () => fireEvent.press(screen.getByTestId(ONBOARDING_PART.SKIP)));
+        expect(focus).not.toHaveBeenCalled();
+        await layOutHeading(S.COMPLETE);
 
         expect(currentStep()).toBe(S.COMPLETE);
         expect(focus).toHaveBeenCalledTimes(1);

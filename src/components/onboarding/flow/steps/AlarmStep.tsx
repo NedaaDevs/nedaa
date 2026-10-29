@@ -217,6 +217,7 @@ export const AlarmStep = ({
   setBusy,
   setPrimaryHidden,
   headingRef,
+  onHeadingLayout,
   progress,
 }: Props) => {
   const { t } = useTranslation();
@@ -364,7 +365,13 @@ export const AlarmStep = ({
 
   return (
     <StepBody>
-      <StepHeading headingRef={headingRef} progress={progress} title={title} body={body} />
+      <StepHeading
+        headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
+        progress={progress}
+        title={title}
+        body={body}
+      />
       <SkyOccluder>
         {phase === ALARM_STEP_PHASE.ASK ? (
           <VStack gap="$2">

@@ -15,7 +15,7 @@ const CENTRED = { flexGrow: 1, justifyContent: "center" } as const;
 const LINK_SEPARATOR = " · ";
 
 /** The first page: the app, a way in, and a quiet language change. */
-export const WelcomeStep = ({ setSession, onNext, headingRef }: StepProps) => {
+export const WelcomeStep = ({ setSession, onNext, headingRef, onHeadingLayout }: StepProps) => {
   const { t } = useTranslation();
   const locale = useAppStore((state) => state.locale);
   const language = t(`settings.languages.${locale}.nativeTitle`);
@@ -38,7 +38,7 @@ export const WelcomeStep = ({ setSession, onNext, headingRef }: StepProps) => {
 
         <SkyOccluder>
           <VStack alignItems="center" gap="$2">
-            <View ref={headingRef} accessible accessibilityRole="header">
+            <View ref={headingRef} onLayout={onHeadingLayout} accessible accessibilityRole="header">
               <Text size="3xl" bold typography="display" color="$fg" textAlign="center">
                 {t("onboarding.welcome.title")}
               </Text>
