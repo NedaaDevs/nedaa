@@ -92,9 +92,12 @@ export const useLocationUpdateStore = create<LocationUpdateStore>()((set, get) =
     try {
       await steps(runStep);
     } catch {
-      // A throw between steps leaves the finished steps' outcomes as they are.
-      if (current) outcomes[current] = STEP_OUTCOME.FAILED;
-      log.w("Update", `update threw at ${current ?? "no step"}`);
+      // A throw between steps fails the first step it left unrun; one after
+      // the last step leaves the run landed.
+      const failedAt =
+        current ?? Object.values(UPDATE_STEP).find((step) => outcomes[step] === undefined);
+      if (failedAt) outcomes[failedAt] = STEP_OUTCOME.FAILED;
+      log.w("Update", `update threw at ${failedAt ?? "no step"}`);
     } finally {
       // Every way out releases the lock; a stop keeps the step it stopped at.
       stop = stopOf(outcomes);
