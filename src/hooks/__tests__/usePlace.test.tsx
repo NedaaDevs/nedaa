@@ -8,6 +8,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { LocationMode } from "@/enums/location";
 import type { ManualLocation } from "@/types/location";
+import { MAKKAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 
 const LOCALIZED = { city: "الرياض", country: "السعودية" };
 const ADDRESS = { city: "Riyadh", country: "Saudi Arabia" };
@@ -21,30 +22,6 @@ const setPlace = (
     localizedLocation,
     locationDetails: { ...useLocationStore.getState().locationDetails, address },
   });
-
-const RIYADH_CITY: ManualLocation = {
-  cityId: 108410,
-  name: "Riyadh",
-  names: { ar: "الرياض", ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
-  latitude: 24.68773,
-  longitude: 46.72185,
-  timezone: "Asia/Riyadh",
-};
-
-const MAKKAH_CITY: ManualLocation = {
-  cityId: 104515,
-  name: "Makkah",
-  names: { ar: "مكة المكرمة", ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: RIYADH_CITY.country,
-  latitude: 21.4225,
-  longitude: 39.8262,
-  timezone: "Asia/Riyadh",
-};
 
 /** Marks the stored times as fetched at `city`. */
 const moveTimesTo = ({ latitude, longitude }: ManualLocation) =>

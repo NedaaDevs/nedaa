@@ -2,7 +2,8 @@ import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
-import type { ManualLocation } from "@/types/location";
+import { DUBAI_CITY } from "@/test-helpers/place";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -12,18 +13,6 @@ jest.mock("expo-sqlite/kv-store", () => ({
     removeItem: jest.fn(() => Promise.resolve()),
   },
 }));
-
-const DUBAI_CITY: ManualLocation = {
-  cityId: 292223,
-  name: "Dubai",
-  names: { ar: "دبي", ur: null, ms: null },
-  region: null,
-  countryCode: "AE",
-  country: { name: "United Arab Emirates", names: { ar: "الإمارات", ur: null, ms: null } },
-  latitude: 25.07725,
-  longitude: 55.30927,
-  timezone: "Asia/Dubai",
-};
 
 const NAMES: Record<string, { city: string; countryName: string }> = {
   [AppLocale.AR]: { city: "الرياض", countryName: "السعودية" },
@@ -35,9 +24,7 @@ const pending = new Map<string, () => void>();
 const reverseGeocode = jest.fn(
   (params: ReverseGeocodeParams) =>
     new Promise<ReverseGeocodeResponse>((resolve) => {
-      pending.set(params.locale, () =>
-        resolve({ ...NAMES[params.locale], timezone: "Asia/Riyadh" })
-      );
+      pending.set(params.locale, () => resolve({ ...NAMES[params.locale], timezone: RIYADH_ZONE }));
     })
 );
 

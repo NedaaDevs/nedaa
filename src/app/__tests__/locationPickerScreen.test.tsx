@@ -17,11 +17,11 @@ import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { placeFacts } from "@/test-helpers/place";
+import { MAKKAH_CITY, placeFacts } from "@/test-helpers/place";
 import { later } from "@/test-helpers/promises";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
-import { initialLocationDetails, type ManualLocation } from "@/types/location";
+import { initialLocationDetails } from "@/types/location";
 import { checkLocationPermission } from "@/utils/location";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -36,18 +36,6 @@ jest.mock("@/utils/location", () => ({
   checkLocationPermission: jest.fn(),
   requestLocationPermission: jest.fn(),
 }));
-
-const MAKKAH: ManualLocation = {
-  cityId: 104515,
-  name: "Makkah",
-  names: { ar: "مكة المكرمة", ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
-  latitude: 21.4225,
-  longitude: 39.8262,
-  timezone: "Asia/Riyadh",
-};
 
 /** The stubs' controls; read lazily inside the hoisted mocks. */
 const MOCK_ID = {
@@ -83,7 +71,7 @@ jest.mock("@/components/location/CoordinateEntry", () => {
     createElement(Pressable, { testID: MOCK_ID.SAVE, onPress: () => props.onSave(mockPlace) });
   return { __esModule: true, default: CoordinateEntryStub };
 });
-const mockPlace = MAKKAH;
+const mockPlace = MAKKAH_CITY;
 
 const t = i18n.t.bind(i18n);
 const PICKER_ROUTE = BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route;
@@ -207,7 +195,7 @@ describe("Settings › Location › city picker", () => {
         normalizeRoutePath(BACK_DESTINATION.SETTINGS_LOCATION.href)
       );
       expect(await screen.findByTestId(LOCATION_UPDATE_PART.FRAME)).toBeTruthy();
-      expect(useLocationStore.getState().manualLocation).toEqual(MAKKAH);
+      expect(useLocationStore.getState().manualLocation).toEqual(MAKKAH_CITY);
       expect(load).toHaveBeenCalledWith(true);
 
       await act(async () => times.release(true));
