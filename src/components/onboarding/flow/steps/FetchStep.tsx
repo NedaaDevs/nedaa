@@ -90,6 +90,7 @@ export const FetchStep = ({
   setBusy,
   dropTriedCity,
   headingRef,
+  onHeadingLayout,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
@@ -176,6 +177,7 @@ export const FetchStep = ({
     return (
       <StepCityPicker
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         setBack={setBack}
         setBusy={setBusy}
@@ -195,6 +197,7 @@ export const FetchStep = ({
       <StepBody>
         <StepHeading
           headingRef={headingRef}
+          onHeadingLayout={onHeadingLayout}
           progress={progress}
           title={t("onboarding.fetch.errorTitle")}
           body={t("onboarding.fetch.errorCard")}
@@ -215,6 +218,7 @@ export const FetchStep = ({
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.fetch.title")}
         body={t("onboarding.fetch.body")}

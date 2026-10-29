@@ -24,6 +24,7 @@ export const LocationPermissionStep = ({
   setPrimaryHidden,
   setBack,
   headingRef,
+  onHeadingLayout,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
@@ -55,6 +56,7 @@ export const LocationPermissionStep = ({
     return (
       <StepCityPicker
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         setBack={setBack}
         setBusy={setBusy}
@@ -73,6 +75,7 @@ export const LocationPermissionStep = ({
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.locationPermission.title")}
         body={t("onboarding.locationPermission.body")}

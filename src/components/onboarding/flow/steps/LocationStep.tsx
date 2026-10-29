@@ -29,6 +29,7 @@ export const LocationStep = ({
   setBusy,
   dropTriedCity,
   headingRef,
+  onHeadingLayout,
   progress,
 }: StepProps) => {
   const { t } = useTranslation();
@@ -67,6 +68,7 @@ export const LocationStep = ({
     return (
       <StepCityPicker
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         setBack={setBack}
         setBusy={setBusy}
@@ -81,6 +83,7 @@ export const LocationStep = ({
     <StepBody>
       <StepHeading
         headingRef={headingRef}
+        onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.location.question")}
         body={t("onboarding.location.body")}

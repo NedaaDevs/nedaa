@@ -1,12 +1,14 @@
 import { createElement as h, useEffect, type ComponentType } from "react";
 import { Text, View } from "react-native";
-import { screen } from "@testing-library/react-native";
+import { act, fireEvent, screen } from "@testing-library/react-native";
 
 import type { StepProps } from "@/components/onboarding/flow/types";
 import { ONBOARDING_STEP, type OnboardingStepId } from "@/constants/Onboarding";
 
 /** The testID each stub draws: this prefix, then its step's id. */
 export const STEP_STUB_PREFIX = "step-";
+/** The testID of each stub's heading: this prefix, then its step's id. */
+export const STEP_HEADING_STUB_PREFIX = "heading-";
 
 /** The props each step last rendered with. */
 export const stubProps: Partial<Record<OnboardingStepId, StepProps>> = {};
@@ -25,7 +27,12 @@ const stub = (id: OnboardingStepId) => {
     if (Real) return h(View, { testID: `${STEP_STUB_PREFIX}${id}` }, h(Real, props));
     return h(
       View,
-      { ref: props.headingRef, accessible: true },
+      {
+        ref: props.headingRef,
+        testID: `${STEP_HEADING_STUB_PREFIX}${id}`,
+        accessible: true,
+        onLayout: props.onHeadingLayout,
+      },
       h(Text, { testID: `${STEP_STUB_PREFIX}${id}` }, id)
     );
   };
@@ -42,6 +49,14 @@ export const currentStep = () =>
   String(screen.getByTestId(new RegExp(`^${STEP_STUB_PREFIX}`)).props.testID).slice(
     STEP_STUB_PREFIX.length
   );
+
+/** Lays out `id`'s stub heading, as the native view reports it once drawn. */
+export const layOutHeading = (id: OnboardingStepId) =>
+  act(async () => {
+    fireEvent(screen.getByTestId(`${STEP_HEADING_STUB_PREFIX}${id}`), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 44 } },
+    });
+  });
 
 /** The props `id` last rendered with; throws when it never rendered. */
 export const propsOf = (id: OnboardingStepId) => {
