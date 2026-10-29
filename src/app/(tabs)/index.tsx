@@ -12,6 +12,7 @@ import { PrayerGrid } from "@/components/today/PrayerGrid";
 import { PrayerTimesState } from "@/components/today/PrayerTimesState";
 import { TodayHeader } from "@/components/today/TodayHeader";
 import { TodayHero } from "@/components/today/TodayHero";
+import { UpgradeCard } from "@/components/today/UpgradeCard";
 import { UpcomingOccasions } from "@/components/today/UpcomingOccasions";
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import { PrayerDetailSheet } from "@/components/prayer-detail/PrayerDetailSheet";
@@ -57,6 +58,7 @@ export default function MainScreen() {
                 <SkyOccluder>
                   <LocationNotice />
                 </SkyOccluder>
+                <UpgradeCard />
                 <PrayerGrid selected={detail.prayerId} onSelect={detail.open} progress={!bowl} />
                 <OtherTimes />
                 <PrayerTimesState />
