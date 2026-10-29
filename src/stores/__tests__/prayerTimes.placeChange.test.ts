@@ -504,6 +504,26 @@ describe("a load after the place moved", () => {
     expect(datesNotAt(NEW_ZONE)).toEqual([]);
   });
 
+  it("on 5 December, stores no next year of a place moved during this year's", async () => {
+    mockNow = new Date(2026, 11, 5, 12);
+    storeOldPlace(mockNow);
+    jest
+      .mocked(reloadPrayerWidgets)
+      .mockImplementationOnce(() => placeAt(SECOND_COORDS, SECOND_ZONE));
+    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
+
+    const nextYear = mockNow.getFullYear() + 1;
+    const nextYearRows = [...mockTable.values()].filter(
+      ({ date }) => date >= dateToInt(new Date(nextYear, 0, 1))
+    );
+    expect(nextYearRows).toEqual([]);
+    expect(place.setTimezone).toHaveBeenCalledTimes(1);
+  });
+
   // Next year's days are read from 19 December; a move whose next-year fetch
   // failed leaves the old place's there, under no mark of the new place.
   it.each([

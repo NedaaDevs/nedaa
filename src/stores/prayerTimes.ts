@@ -271,6 +271,8 @@ const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch>
   if (placeMovedSince(placeRevision, "the refetch")) return TIMES_FETCH.SUPERSEDED;
   const fetched = (await storeYear(thisYear, undefined, firstMonth)) === TIMES_FETCH.STORED;
   if (!fetched) return { ...NOT_STORED, fetched };
+  // This year's store awaits the insert and widgets; the place can move.
+  if (placeMovedSince(placeRevision, "this year's store")) return TIMES_FETCH.SUPERSEDED;
   const adjacentStored =
     adjacent !== null &&
     adjacentDays !== null &&
