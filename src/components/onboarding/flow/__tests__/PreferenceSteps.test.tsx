@@ -294,7 +294,6 @@ describe("AppearanceStep", () => {
     /** The step under a stand-in run, its methods mocks. */
     const renderUnder = async (overrides: Partial<DayRun>) => {
       const run: DayRun = {
-        kind: DAY_RUN_KIND.PREVIEW,
         status: DAY_RUN_STATUS.IDLE,
         phase: undefined,
         progress: 0,

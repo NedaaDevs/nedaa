@@ -169,7 +169,6 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   };
 
   const dayRun: DayRun = {
-    kind,
     status: run?.status ?? DAY_RUN_STATUS.IDLE,
     phase: runPhase,
     progress: progressOf(run, kind),
