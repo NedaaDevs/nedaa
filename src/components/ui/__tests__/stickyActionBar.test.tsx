@@ -4,6 +4,7 @@ import { screen, userEvent, within } from "@testing-library/react-native";
 import { STICKY_ACTION_PART, StickyActionBar } from "@/components/ui/sticky-action-bar";
 import { STICKY_ACTION_STATE, type StickyActionState } from "@/constants/StickyActionBar";
 import { PlatformType } from "@/enums/app";
+import { layOut } from "@/test-helpers/layout";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("react-native-safe-area-context", () => ({
@@ -77,6 +78,7 @@ describe("StickyActionBar", () => {
     const status = () => screen.getByTestId(STICKY_ACTION_PART.STATUS);
     await renderWithTheme(renderBar(STICKY_ACTION_STATE.READY));
     const region = status();
+    await layOut(region);
     expect(region).toHaveProp("accessibilityLiveRegion", "polite");
     expect(region).toHaveProp("importantForAccessibility", "yes");
     expect(region).toHaveProp("accessibilityLabel", "");
@@ -97,6 +99,26 @@ describe("StickyActionBar", () => {
     expect(status()).toBe(region);
     expect(region).toHaveProp("accessibilityLabel", "");
     expect(region.children).toHaveLength(0);
+  });
+
+  // A screen opened mid-apply mounts the bar busy; its first layout says so.
+  it("says the status it mounts busy with once the region is laid out", async () => {
+    await renderWithTheme(
+      <StickyActionBar
+        state={STICKY_ACTION_STATE.BUSY}
+        label={LABEL}
+        busyStatus={BUSY}
+        onPress={jest.fn()}
+      />
+    );
+    const region = screen.getByTestId(STICKY_ACTION_PART.STATUS);
+    expect(region).toHaveProp("accessibilityLabel", "");
+    expect(within(region).getByText(BUSY)).toBeTruthy();
+
+    await layOut(region);
+
+    expect(region).toHaveProp("accessibilityLabel", BUSY);
+    expect(region).toHaveProp("accessible", true);
   });
 
   // An empty region is still a child, so a gap would open above the button.
