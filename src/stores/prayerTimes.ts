@@ -164,7 +164,7 @@ const yearLanded = (stored: boolean, needed: boolean): Landed => ({
   complete: stored,
 });
 
-/** The adjacent year a refetch fetches, if any, and whether the window needs it. */
+/** The adjacent year a refetch fetches, and whether the window needs it. */
 const adjacentYearOf = (now: Date): { year: number; needed: boolean } | null => {
   const year = getYear(now);
   const month = getMonth(now) + 1;
@@ -184,6 +184,17 @@ const adjacentYearOf = (now: Date): { year: number; needed: boolean } | null => 
 const askedOf = (yearOverride?: number, month?: number) =>
   `${yearOverride ?? "current"}/${month ?? "all"}`;
 
+/** The part of a year's fetch that failed, as its log line names it. */
+const TIMES_STAGE = { FETCH: "fetch", STORE: "store" } as const;
+type TimesStage = (typeof TIMES_STAGE)[keyof typeof TIMES_STAGE];
+
+const logTimesFailure = (stage: TimesStage, asked: string, error: unknown) =>
+  log.e(
+    "Fetch",
+    `prayer times ${stage} failed (${asked})`,
+    error instanceof Error ? error : new Error(errorText(error))
+  );
+
 /** One year's days from the API; null when the request failed. */
 const fetchYear = async (
   get: GetTimes,
@@ -193,11 +204,7 @@ const fetchYear = async (
   try {
     return await get().getPrayerTimes(yearOverride, month);
   } catch (error: unknown) {
-    log.e(
-      "Fetch",
-      `getAndStorePrayerTimes failed (${askedOf(yearOverride, month)})`,
-      error instanceof Error ? error : new Error(errorText(error))
-    );
+    logTimesFailure(TIMES_STAGE.FETCH, askedOf(yearOverride, month), error);
     return null;
   }
 };
@@ -225,11 +232,7 @@ const storeYear = async (
     log.i("Fetch", `stored prayer times (${asked})`);
     return TIMES_FETCH.STORED;
   } catch (error: unknown) {
-    log.e(
-      "Fetch",
-      `getAndStorePrayerTimes failed (${asked})`,
-      error instanceof Error ? error : new Error(errorText(error))
-    );
+    logTimesFailure(TIMES_STAGE.STORE, asked, error);
     return TIMES_FETCH.FAILED;
   }
 };
