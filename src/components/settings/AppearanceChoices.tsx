@@ -11,8 +11,13 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { skySwatchFor } from "@/utils/sky";
 
+type Props = {
+  /** The mode to mark as the user's own while it stays the choice. */
+  currentMark?: AppMode;
+};
+
 /** The appearance modes, each with its sky; a choice applies at once. */
-export const AppearanceChoices = () => {
+export const AppearanceChoices = ({ currentMark }: Props) => {
   const { t } = useTranslation();
   const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const chooseMode = useChooseMode();
@@ -35,6 +40,11 @@ export const AppearanceChoices = () => {
           title={t(`settings.themes.${mode}.title`)}
           subtitle={t(`settings.themes.${mode}.description`)}
           selected={chosen === mode}
+          badge={
+            chosen === mode && mode === currentMark
+              ? t("onboarding.upgrade.currentSetting")
+              : undefined
+          }
           onPress={() => choose(mode)}
           leading={<SkySwatch bands={skySwatchFor(mode)} hijriDay={hijriDay} isRTL={isRTL} />}
         />

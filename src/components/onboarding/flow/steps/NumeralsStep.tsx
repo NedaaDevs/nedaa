@@ -9,7 +9,7 @@ import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { CLOCK_SAMPLE } from "@/constants/Onboarding";
+import { CLOCK_SAMPLE, ONBOARDING_PATH } from "@/constants/Onboarding";
 import { CLOCK_FORMAT, NUMERAL_STYLE } from "@/constants/Preferences";
 import { AppLocale } from "@/enums/app";
 import { useClockTime } from "@/hooks/useClockTime";
@@ -20,7 +20,7 @@ const CLOCK_FORMATS = Object.values(CLOCK_FORMAT);
 const NUMERAL_STYLES = Object.values(NUMERAL_STYLE);
 
 /** The digits and the clock, the Settings controls, with a sample time. */
-export const NumeralsStep = ({ headingRef, onHeadingLayout, progress }: StepProps) => {
+export const NumeralsStep = ({ headingRef, onHeadingLayout, progress, path }: StepProps) => {
   const { t } = useTranslation();
   const locale = useAppStore((state) => state.locale);
   const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
@@ -29,6 +29,8 @@ export const NumeralsStep = ({ headingRef, onHeadingLayout, progress }: StepProp
   const setUseWesternNumerals = usePreferencesStore((state) => state.setUseWesternNumerals);
   const clock = useClockTime();
   const sample = clock(parseISO(CLOCK_SAMPLE.ISO), CLOCK_SAMPLE.TIMEZONE);
+  // An upgrader's format is the one chosen in 2.x, not the device's.
+  const upgrading = path === ONBOARDING_PATH.UPGRADE;
 
   return (
     <StepBody>
@@ -36,8 +38,8 @@ export const NumeralsStep = ({ headingRef, onHeadingLayout, progress }: StepProp
         headingRef={headingRef}
         onHeadingLayout={onHeadingLayout}
         progress={progress}
-        title={t("onboarding.numerals.title")}
-        body={t("onboarding.numerals.body")}
+        title={t(upgrading ? "onboarding.numerals.upgradeTitle" : "onboarding.numerals.title")}
+        body={t(upgrading ? "onboarding.numerals.upgradeBody" : "onboarding.numerals.body")}
       />
       <SkyOccluder>
         <VStack gap="$4">

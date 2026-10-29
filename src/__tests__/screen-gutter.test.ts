@@ -18,7 +18,7 @@ const sources = (dir: string): string[] =>
 const HOME = "components/ui/sky-background/";
 
 /** Centred welcome copy holds its own wider measure, not a column. */
-const OWN_MEASURE = new Set(["components/onboarding/flow/steps/WelcomeStep.tsx"]);
+const OWN_MEASURE = new Set(["components/onboarding/flow/WelcomeLayout.tsx"]);
 
 /** Files that scroll a screen on the sky. */
 const SKY_SCREENS = sources(SRC)
