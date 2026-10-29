@@ -7,8 +7,15 @@ import type { OnboardingPath } from "@/constants/Onboarding";
 import { useAppStore } from "@/stores/app";
 import { onboardingPathFor } from "@/utils/onboardingPath";
 
+type LaunchPath = {
+  /** The walk the gate opens, or null for the app itself. */
+  path: OnboardingPath | null;
+  /** An alert started or entered this launch; the upgrade path waits. */
+  alertLaunch: boolean;
+};
+
 /** The walk the gate opens; an alarm screen or a tap closes it for the launch. */
-export const useOnboardingPath = (launchedByAlert: boolean): OnboardingPath | null => {
+export const useOnboardingPath = (launchedByAlert: boolean): LaunchPath => {
   const isFirstRun = useAppStore((state) => state.isFirstRun);
   const upgradePath = useAppStore((state) => state.upgradePath);
   const pathname = usePathname();
@@ -23,10 +30,9 @@ export const useOnboardingPath = (launchedByAlert: boolean): OnboardingPath | nu
     );
     return () => subscription.remove();
   }, []);
-  return onboardingPathFor({
-    isFirstRun,
-    upgradePath,
-    launchedByAlert: launchedByAlert || tapped,
-    alarmScreenSeen,
-  });
+  const byAlert = launchedByAlert || tapped;
+  return {
+    path: onboardingPathFor({ isFirstRun, upgradePath, launchedByAlert: byAlert, alarmScreenSeen }),
+    alertLaunch: byAlert || alarmScreenSeen,
+  };
 };

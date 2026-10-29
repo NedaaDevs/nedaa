@@ -4,13 +4,16 @@ import { UPGRADE_CARD_PART, UpgradeCard } from "@/components/today/UpgradeCard";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { SKY_SWATCH_ID } from "@/components/ui/sky-preview";
 import { A11Y_ACTION } from "@/constants/Accessibility";
+import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { PHASE } from "@/constants/Phase";
 import { UPGRADE_PATH_STATE, type UpgradePathState } from "@/constants/UpgradePath";
+import { AlertLaunchContext } from "@/contexts/AlertLaunchContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { controlProblems } from "@/test-helpers/controls";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { onboardingPathFor } from "@/utils/onboardingPath";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("expo-blur", () => jest.requireActual("@/test-helpers/blurMock"));
@@ -18,16 +21,26 @@ jest.mock("@/utils/measureInWindow", () => ({ measureInWindow: () => Promise.res
 
 const t = i18n.t.bind(i18n);
 
-const renderCard = (state: UpgradePathState) => {
+const renderCard = (state: UpgradePathState, alertLaunch = false) => {
   useAppStore.setState({ upgradePath: state });
   return renderWithTheme(
-    <PhaseContext value={PHASE.DAY}>
-      <SkyBackground>
-        <UpgradeCard />
-      </SkyBackground>
-    </PhaseContext>
+    <AlertLaunchContext value={alertLaunch}>
+      <PhaseContext value={PHASE.DAY}>
+        <SkyBackground>
+          <UpgradeCard />
+        </SkyBackground>
+      </PhaseContext>
+    </AlertLaunchContext>
   );
 };
+/** The walk this launch's gate opens, with no alert behind the launch. */
+const openedPath = () =>
+  onboardingPathFor({
+    isFirstRun: false,
+    upgradePath: useAppStore.getState().upgradePath,
+    launchedByAlert: false,
+    alarmScreenSeen: false,
+  });
 
 const title = () => t("onboarding.upgrade.title");
 const body = () => t("onboarding.upgrade.cardBody");
@@ -58,6 +71,15 @@ describe("UpgradeCard", () => {
     await userEvent.press(card());
 
     expect(useAppStore.getState().upgradePath).toBe(UPGRADE_PATH_STATE.RESUMED);
+    expect(openedPath()).toBe(ONBOARDING_PATH.UPGRADE);
+  });
+
+  // The gate opens nothing on such a launch, so a press would lead nowhere.
+  it("hides while an alert holds the path for this launch", async () => {
+    await renderCard(UPGRADE_PATH_STATE.LATER, true);
+
+    expect(screen.queryByTestId(UPGRADE_CARD_PART.FRAME)).toBeNull();
+    expect(screen.queryByText(title())).toBeNull();
   });
 
   it("the dismiss action ends the path", async () => {
