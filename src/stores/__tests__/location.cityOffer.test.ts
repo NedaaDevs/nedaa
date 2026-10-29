@@ -7,7 +7,8 @@ import { useAppStore } from "@/stores/app";
 import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { offerUp } from "@/test-helpers/cityOffer";
-import { RIYADH_CITY } from "@/test-helpers/place";
+import { JEDDAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import {
   initialLocationDetails,
   type LocationGeocodedAddress,
@@ -45,6 +46,8 @@ jest.mock("@/utils/appLogger", () => {
 });
 
 const BAHRAIN = "BH";
+const SAUDI_ARABIA = RIYADH_CITY.country.name;
+const RIYADH_ADDRESS = { city: RIYADH_CITY.name, country: SAUDI_ARABIA };
 const SA = COUNTRY_CODE.SAUDI_ARABIA;
 const log = AppLogger.create("location");
 
@@ -86,9 +89,9 @@ const NO_ADDRESS: LocationGeocodedAddress = {
 };
 
 const reverseGeocode: LocationStore["reverseGeocode"] = jest.fn(async () => ({
-  city: "Jeddah",
-  countryName: "Saudi Arabia",
-  timezone: "Asia/Riyadh",
+  city: JEDDAH_CITY.name,
+  countryName: SAUDI_ARABIA,
+  timezone: RIYADH_ZONE,
 }));
 
 beforeEach(() => {
@@ -133,7 +136,7 @@ describe("travel mode", () => {
     const coords = { ...initialLocationDetails.coords, latitude: 24.7, longitude: 46.7 };
     const details2x = {
       coords,
-      address: { city: "Riyadh", country: "Saudi Arabia" },
+      address: RIYADH_ADDRESS,
       timezone: initialLocationDetails.timezone,
       error: null,
       fix: null,
@@ -141,7 +144,7 @@ describe("travel mode", () => {
     };
     await rehydrate({ locationDetails: details2x, autoUpdateLocation: true });
     expect(state().locationDetails.coords).toEqual(coords);
-    expect(state().locationDetails.address).toEqual({ city: "Riyadh", country: "Saudi Arabia" });
+    expect(state().locationDetails.address).toEqual(RIYADH_ADDRESS);
     expect(state().locationDetails.countryCode).toBeNull();
   });
 });
@@ -183,16 +186,14 @@ describe("the city offer", () => {
 describe("the place's country code", () => {
   it("stores the device geocoder's country code with an updated fix", async () => {
     jest.mocked(readLocation).mockResolvedValue({ location: JEDDAH_FIX, source: FIX_SOURCE.FRESH });
-    jest
-      .mocked(reverseGeocodeAsync)
-      .mockResolvedValue([
-        {
-          ...NO_ADDRESS,
-          city: "Jeddah",
-          country: "Saudi Arabia",
-          isoCountryCode: SA.toLowerCase(),
-        },
-      ]);
+    jest.mocked(reverseGeocodeAsync).mockResolvedValue([
+      {
+        ...NO_ADDRESS,
+        city: JEDDAH_CITY.name,
+        country: SAUDI_ARABIA,
+        isoCountryCode: SA.toLowerCase(),
+      },
+    ]);
 
     await state().updateCurrentLocation();
 
@@ -234,6 +235,7 @@ it("logs no city name when a city is chosen", () => {
   const lines = [log.d, log.i, log.w, log.e].flatMap((fn) =>
     jest.mocked(fn).mock.calls.map((call) => JSON.stringify(call))
   );
+  expect(lines.length).toBeGreaterThan(0);
   lines.forEach((line) => {
     expect(line).not.toContain(RIYADH_CITY.name);
     expect(line).not.toContain(RIYADH_CITY.timezone);

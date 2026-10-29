@@ -71,6 +71,8 @@ describe("city-check memory persistence", () => {
     expect(memory().kept).toHaveLength(KEPT_MAX);
     expect(memory().notAsked).toHaveLength(NOT_ASKED_MAX);
     expect(memory().kept).not.toContainEqual(markAt(0));
+    expect(memory().kept[0]).toEqual(markAt(KEPT_MAX + 1));
+    expect(memory().notAsked[0]).toEqual(markAt(NOT_ASKED_MAX + 1));
     expect(memory().notAsked).not.toContainEqual(markAt(0));
   });
 
