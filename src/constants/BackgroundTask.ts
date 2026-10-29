@@ -18,6 +18,7 @@ export const BACKGROUND_EVENT = {
   PRAYER_TIMES_FETCH_FAILED: "prayer_times_fetch_failed",
   PRAYER_TIMES_FETCH_ERROR: "prayer_times_fetch_error",
   DATA_SUFFICIENT: "data_sufficient",
+  ALARMS_MOVED: "alarms_moved",
   TASK_COMPLETED: "task_completed",
   SCHEDULE_FAILED: "schedule_failed",
   TASK_ERROR: "task_error",
