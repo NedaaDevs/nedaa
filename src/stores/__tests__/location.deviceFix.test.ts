@@ -6,7 +6,7 @@ import { LocationMode } from "@/enums/location";
 import { useNewestPlace } from "@/hooks/usePlace";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
-import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
+import { initialLocationDetails, type LocationObject } from "@/types/location";
 import { later } from "@/test-helpers/promises";
 import {
   LocationFixError,
@@ -14,6 +14,7 @@ import {
   readLocation,
   type LocationFix,
 } from "@/utils/location";
+import { MAKKAH_CITY } from "@/test-helpers/place";
 
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -64,18 +65,6 @@ const JEDDAH_NORTH = fixAt(21.76, 39.15);
 const RIYADH_NORTH = fixAt(24.8, 46.75);
 
 const deviceAddress = (city: string) => ({ city, country: "Saudi Arabia", timezone: null });
-
-const MAKKAH_CITY: ManualLocation = {
-  cityId: 104515,
-  name: "Makkah",
-  names: { ar: "مكة المكرمة", ur: null, ms: null },
-  region: null,
-  countryCode: "SA",
-  country: { name: "Saudi Arabia", names: { ar: "السعودية", ur: null, ms: null } },
-  latitude: 21.4225,
-  longitude: 39.8262,
-  timezone: "Asia/Riyadh",
-};
 
 const reverseGeocode: LocationStore["reverseGeocode"] = jest.fn(async () => ({
   city: "Riyadh",
