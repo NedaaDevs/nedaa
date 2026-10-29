@@ -150,10 +150,8 @@ const dayTimings = (
   };
 };
 
-// The local calendar day `offset` days after `startAt`, in the zone.
-const localDay = (startAt: number, zone: string, offset: number): CalendarDay => {
-  const wall = toZonedTime(startAt, zone);
-  const shifted = new Date(Date.UTC(wall.getFullYear(), wall.getMonth(), wall.getDate() + offset));
+const addDays = ({ year, month, day }: CalendarDay, days: number): CalendarDay => {
+  const shifted = new Date(Date.UTC(year, month - 1, day + days));
   return {
     year: shifted.getUTCFullYear(),
     month: shifted.getUTCMonth() + 1,
@@ -172,23 +170,27 @@ const byTiming = (value: (timing: ShiftTiming) => number): Record<ShiftTiming, n
   [SHIFT_TIMING.SUNRISE]: value(SHIFT_TIMING.SUNRISE),
 });
 
-/** Each timing's largest change, in minutes, over a year of local days. */
+/**
+ * Each timing's largest change, in minutes, over a year of calendar days. Both
+ * places read the same date, the saved place's, as the server rows pair them.
+ */
 export const yearlyShiftByTiming = (
   from: Coords,
   to: Coords,
   fromZone: string,
-  toZone: string | null,
   { method, school }: ShiftCalc,
   startAt: number
 ): Record<ShiftTiming, number> => {
   const angles = METHOD_ANGLES[method];
   // A shadow of school + 1 object lengths starts Asr.
   const shadowLength = school + 1;
+  const wall = toZonedTime(startAt, fromZone);
+  const firstDay = { year: wall.getFullYear(), month: wall.getMonth() + 1, day: wall.getDate() };
   const largest = byTiming(() => 0);
   for (let offset = 0; offset < SHIFT_HORIZON_DAYS; offset++) {
-    const a = dayTimings(from, localDay(startAt, fromZone, offset), angles, shadowLength);
-    // An unknown candidate zone reads the days in the saved place's zone.
-    const b = dayTimings(to, localDay(startAt, toZone ?? fromZone, offset), angles, shadowLength);
+    const date = addDays(firstDay, offset);
+    const a = dayTimings(from, date, angles, shadowLength);
+    const b = dayTimings(to, date, angles, shadowLength);
     for (const timing of TIMINGS) {
       largest[timing] = Math.max(largest[timing], Math.abs(b[timing] - a[timing]) / MS_PER_MINUTE);
     }
@@ -201,8 +203,6 @@ export const maxYearlyShiftMinutes = (
   from: Coords,
   to: Coords,
   fromZone: string,
-  toZone: string | null,
   calc: ShiftCalc,
   startAt: number
-): number =>
-  Math.max(...Object.values(yearlyShiftByTiming(from, to, fromZone, toZone, calc, startAt)));
+): number => Math.max(...Object.values(yearlyShiftByTiming(from, to, fromZone, calc, startAt)));
