@@ -19,6 +19,7 @@ import { RTLProvider } from "@/contexts/RTLContext";
 import { AppMode, PlatformType } from "@/enums/app";
 
 import { isArabicScript } from "@/constants/Fonts";
+import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
@@ -85,6 +86,7 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
     ? QURAN_THEME_COLORS[quranTheme].background
     : theme.background.val;
   const showOnboarding = path !== null && !IS_SCREENSHOT_MODE;
+  const gatePath = showOnboarding ? path : null;
   const safeAreaEdges = rootSafeAreaEdges({
     sky: isSkySegments(segments),
     onboarding: showOnboarding,
@@ -95,7 +97,8 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
   const sheetLayerUp = useSheetLayerUp();
 
   useNotificationListeners();
-  useNotificationResponses(!showOnboarding);
+  // The first run has no tabs to open; the upgrade path keeps the app mounted.
+  useNotificationResponses(gatePath !== ONBOARDING_PATH.FIRST_RUN);
   useAlarmDeepLink();
 
   return (
@@ -112,7 +115,7 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
 
             <CityChangeSheet onboarding={showOnboarding} />
 
-            <OnboardingGate path={showOnboarding ? path : null}>
+            <OnboardingGate path={gatePath}>
               <Stack
                 screenOptions={{
                   headerShown: false,
