@@ -11,9 +11,35 @@ const TEST_DIR = "__tests__";
 const SOURCE_FILE = /\.tsx?$/;
 const TEST_FILE = /\.test\.tsx?$/;
 
+const REQUIRE = "require";
+
+/** The module a node names: an import, export, require or import() of it. */
+const moduleOf = (node: ts.Node): ts.Node | undefined => {
+  if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return node.moduleSpecifier;
+  if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+    return node.moduleReference.expression;
+  }
+  if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+    return node.argument.literal;
+  }
+  const loads =
+    ts.isCallExpression(node) &&
+    (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+      (ts.isIdentifier(node.expression) && node.expression.text === REQUIRE));
+  return loads ? node.arguments[0] : undefined;
+};
+
 /** Every module a file imports, re-exports, requires or loads, as written. */
-const specifiersOf = (source: string) =>
-  ts.preProcessFile(source, true, true).importedFiles.map((file) => file.fileName);
+const specifiersOf = (path: string, source: string) => {
+  const found: string[] = [];
+  const visit = (node: ts.Node) => {
+    const named = moduleOf(node);
+    if (named && ts.isStringLiteralLike(named)) found.push(named.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(ts.createSourceFile(path, source, ts.ScriptTarget.Latest));
+  return found;
+};
 
 /** Where a specifier points on disk; null for a package. */
 const targetOf = (file: string, specifier: string) => {
@@ -50,6 +76,12 @@ describe("the ui boundary", () => {
     ['const c = require("@/components/onboarding/C");', true],
     ['import type { D } from "@/components/location/D";', true],
     ['import { E } from "../../today/E";', true],
+    ['export * as K from "@/components/today/K";', true],
+    ['export type * as L from "@/components/today/L";', true],
+    ['const m = import("@/components/today/M");', true],
+    ['type N = import("@/components/today/N").N;', true],
+    ['import O = require("@/components/today/O");', true],
+    ['const quote = /"/; const p = require("@/components/today/P");', true],
     ['import { F } from "@/components/ui/box";', false],
     ['import { G } from "../text";', false],
     ['import { H } from "@/constants/Accessibility";', false],
@@ -57,12 +89,14 @@ describe("the ui boundary", () => {
     ['// import { J } from "@/components/today/J";', false],
   ])("%s leaves ui: %s", (source, expected) => {
     const file = join(UI_DIR, "probe", "index.tsx");
-    expect(specifiersOf(source).some((specifier) => leavesUi(file, specifier))).toBe(expected);
+    expect(specifiersOf(file, source).some((specifier) => leavesUi(file, specifier))).toBe(
+      expected
+    );
   });
 
   it("imports no component outside ui", () => {
     const leaks = files.flatMap((path) =>
-      specifiersOf(readFileSync(path, "utf8"))
+      specifiersOf(path, readFileSync(path, "utf8"))
         .filter((specifier) => leavesUi(path, specifier))
         .map((specifier) => `${relative(REPO_ROOT, path)} → ${specifier}`)
     );
