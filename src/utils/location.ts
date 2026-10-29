@@ -144,7 +144,7 @@ const mayFallBack = (kind: LocationFailure): boolean => {
   }
 };
 
-// The deadline's own rejection is the only error that is not a LocationFixError.
+// Only the deadline's own rejection is not a LocationFixError.
 const asFixError = (error: unknown): LocationFixError =>
   error instanceof LocationFixError
     ? error

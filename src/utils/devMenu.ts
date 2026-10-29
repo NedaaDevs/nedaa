@@ -29,7 +29,7 @@ const sampleCandidate = (name: LocalizedPlaceName | null, distanceKm: number): C
   distanceKm,
 });
 
-/** Puts a sample offer up; a chosen city is never offered the device's place. */
+/** Puts a sample offer up; never over a chosen city. */
 const showSample = (name: LocalizedPlaceName | null, distanceKm?: number) => {
   const location = useLocationStore.getState();
   if (location.locationMode !== LocationMode.DEVICE) {
