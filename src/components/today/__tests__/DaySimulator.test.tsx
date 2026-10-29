@@ -369,7 +369,7 @@ describe("DaySimulator", () => {
   });
 
   // The run waits where it was; it neither runs on nor jumps ahead on return.
-  it("going to the background pauses a run", async () => {
+  it("going to the background pauses a preview run", async () => {
     captureAppState();
     const { result } = await renderRun(DAY_RUN_KIND.PREVIEW);
     await act(() => result.current.run?.start());
@@ -382,6 +382,20 @@ describe("DaySimulator", () => {
 
     expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
     expect(result.current.clock?.getTime()).toBe(held);
+  });
+
+  // Today has no resume control, so a debug run gives back the real day.
+  it("going to the background ends a debug run", async () => {
+    captureAppState();
+    const { result } = await renderRun(DAY_RUN_KIND.DEBUG);
+    await act(() => result.current.run?.start());
+    await advance(DAY_RUN[DAY_RUN_KIND.DEBUG].tickMs, 2);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+
+    await act(() => emitAppState(APP_STATE.BACKGROUND));
+
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
+    expect(result.current.clock).toBeNull();
   });
 
   it.each([
