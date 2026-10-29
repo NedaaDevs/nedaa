@@ -41,8 +41,8 @@ export const DEBUG_COPY = {
   RESTART_ONBOARDING: "Restart onboarding",
   RESTART_ONBOARDING_HINT: "Shows the first-run screens again; your settings stay",
   SHOW_CITY_CHANGE: "Show city change",
+  SHOW_CITY_CHANGE_UNNAMED: "Show unnamed city change",
   LOG_PHONE_ZONE: "Log the phone zone",
-  /** The sheet's sample cities: the one it offers, and a stand-in saved one. */
+  /** The city the sample offer names. */
   SAMPLE_NEW_CITY: "Jeddah",
-  SAMPLE_SAVED_CITY: "Riyadh",
 } as const;

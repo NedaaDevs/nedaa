@@ -9,9 +9,6 @@ jest.mock("@/stores/providerSettings", () => ({
     getState: () => ({ clearPendingReapply: mockClearPendingReapply }),
   },
 }));
-jest.mock("@/stores/location", () => ({
-  useLocationStore: { getState: () => ({ autoUpdateLocation: false }) },
-}));
 jest.mock("@/stores/qada", () => ({
   useQadaStore: { getState: () => ({ loadData: async () => {} }) },
 }));
@@ -33,7 +30,6 @@ jest.mock("@/services/background-task-log", () => ({
 }));
 jest.mock("@/services/umrah-db", () => ({ UmrahDB: { flush: async () => {} } }));
 jest.mock("@/services/cleanup", () => ({ cleanupManager: { register: () => {} } }));
-jest.mock("@/screenshot-mode/flag", () => ({ IS_SCREENSHOT_MODE: false }));
 jest.mock("@/utils/appLogger", () => {
   const log = { d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() };
   return { AppLogger: { create: () => log } };
