@@ -1,7 +1,8 @@
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { fireEvent, screen, userEvent } from "@testing-library/react-native";
 
-import { Toast, TOAST_A11Y_ACTION, TOAST_PART } from "@/components/ui/toast";
+import { Toast, TOAST_PART } from "@/components/ui/toast";
+import { A11Y_ACTION } from "@/constants/Accessibility";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { getTokenValue } from "tamagui";
@@ -156,10 +157,10 @@ describe("Toast", () => {
     const body = screen.getByLabelText(`${i18n.t("a11y.toast.success")}: ${MESSAGE}`);
 
     expect(body.props.accessibilityActions).toEqual([
-      { name: TOAST_A11Y_ACTION.DISMISS, label: i18n.t("a11y.toast.dismiss") },
+      { name: A11Y_ACTION.DISMISS, label: i18n.t("a11y.toast.dismiss") },
     ]);
     fireEvent(body, "accessibilityAction", {
-      nativeEvent: { actionName: TOAST_A11Y_ACTION.DISMISS },
+      nativeEvent: { actionName: A11Y_ACTION.DISMISS },
     });
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });

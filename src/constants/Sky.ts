@@ -173,9 +173,10 @@ export const ADAPTIVE_SWATCH_WEIGHT: Record<Phase, number> = {
   [PHASE.NIGHT]: 16,
 };
 
-/** Where a sky swatch is drawn: a mode's row, or a button. */
+/** Where a sky swatch is drawn: a mode's row, a card's lead, or a button. */
 export const SKY_SWATCH_SIZE = {
   CHOICE: "choice",
+  CARD: "card",
   BUTTON: "button",
 } as const;
 
