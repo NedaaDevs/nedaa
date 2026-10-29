@@ -10,6 +10,7 @@ import { OnboardingLoading } from "@/components/onboarding/flow/OnboardingLoadin
 import { StepTransition } from "@/components/onboarding/flow/StepTransition";
 import { STEP_COMPONENT } from "@/components/onboarding/flow/steps";
 import {
+  NEW_SESSION,
   resumedSession,
   type OnboardingSession,
   type StepProps,
@@ -20,13 +21,18 @@ import { SkyBackground } from "@/components/ui/sky-background";
 import { DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
 import {
   FRAME_MODE,
+  LAST_STEP,
   ONBOARDING_LOADING_DELAY_MS,
+  ONBOARDING_PATH,
   ONBOARDING_STEP,
   STEP_DIRECTION,
   STEP_LOCK_MS,
+  STEP_ORDER,
+  type OnboardingPath,
   type OnboardingStepId,
   type StepDirection,
 } from "@/constants/Onboarding";
+import { UPGRADE_PATH_STATE, type UpgradePathState } from "@/constants/UpgradePath";
 import { useDayRun } from "@/contexts/DayRunContext";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -65,22 +71,35 @@ const RunFrame = (props: ComponentProps<typeof OnboardingFrame>) => {
   );
 };
 
+/** Where a reopened upgrade path starts; it records no step as passed. */
+const upgradeStart = (state: UpgradePathState): OnboardingStepId | null =>
+  state === UPGRADE_PATH_STATE.RESUMED ? ONBOARDING_STEP.APPEARANCE : null;
+
 type Props = {
+  /** The walk to draw: the first run, or the upgrade path. */
+  path: OnboardingPath;
   /** The gate is fading it out: Android back passes through to the app. */
   leaving?: boolean;
 };
 
-/** The first run: one sky, one column of steps, one step id into it. */
-export const OnboardingFlow = ({ leaving = false }: Props) => {
+/** One sky, one column of steps for the walk, one step id into it. */
+export const OnboardingFlow = ({ path, leaving = false }: Props) => {
   const { t } = useTranslation();
+  const upgrading = path === ONBOARDING_PATH.UPGRADE;
+  const order = STEP_ORDER[path];
   const saved = useAppStore((state) => state.onboardingStep);
   const setOnboardingStep = useAppStore((state) => state.setOnboardingStep);
   const setIsFirstRun = useAppStore((state) => state.setIsFirstRun);
+  const setUpgradePath = useAppStore((state) => state.setUpgradePath);
+  const upgradePath = useAppStore((state) => state.upgradePath);
   const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
-  const [session, setSession] = useState<OnboardingSession>(() => resumedSession(saved));
-  const column = useOnboardingColumn(session);
+  const [start] = useState(() => (upgrading ? upgradeStart(upgradePath) : saved));
+  const [session, setSession] = useState<OnboardingSession>(() =>
+    upgrading ? NEW_SESSION : resumedSession(start)
+  );
+  const column = useOnboardingColumn(session, path);
   const showLoading = useDelayedFlag(column === null, ONBOARDING_LOADING_DELAY_MS);
-  const [stepId, setStepId] = useState<OnboardingStepId | null>(saved);
+  const [stepId, setStepId] = useState<OnboardingStepId | null>(start);
   const [advanceFrom, setAdvanceFrom] = useState<OnboardingStepId | null>(null);
   // The step last drawn, and every step drawn in this session.
   const [drawn, setDrawn] = useState<OnboardingStepId | null>(null);
@@ -110,13 +129,13 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
     if (advanceFrom === stepId) {
       const at = column.indexOf(advanceFrom);
       // A step still shown moves one on; a removed one has resolved forward.
-      const next = at >= 0 ? at + 1 : resolveIndex(column, advanceFrom);
+      const next = at >= 0 ? at + 1 : resolveIndex(order, column, advanceFrom);
       const to = isSettledFetch(column, next) ? next + 1 : next;
       if (to < column.length) target = column[to];
     }
   }
 
-  const index = column ? resolveIndex(column, target) : -1;
+  const index = column ? resolveIndex(order, column, target) : -1;
   const current = column?.[index];
   const busy = current !== undefined && busyFor === current;
   // Cleared on a step change: a returning step uses the frame's until it asks.
@@ -133,7 +152,9 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
     setDrawn(current);
     if (drawn !== null) {
       setDirection(
-        stepRank(current) > stepRank(drawn) ? STEP_DIRECTION.FORWARD : STEP_DIRECTION.BACK
+        stepRank(order, current) > stepRank(order, drawn)
+          ? STEP_DIRECTION.FORWARD
+          : STEP_DIRECTION.BACK
       );
     }
     if (!shownSteps.has(current)) setShownSteps(new Set(shownSteps).add(current));
@@ -145,11 +166,14 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
 
   const arrive = useEffectEvent(() => {
     if (current === undefined) return;
-    if (saved === null || stepRank(current) > stepRank(saved)) setOnboardingStep(current);
+    // The upgrade path reopens at its start, so it saves no step.
+    if (!upgrading && (saved === null || stepRank(order, current) > stepRank(order, saved))) {
+      setOnboardingStep(current);
+    }
     focusHeading();
     if (shown.current !== null) {
       // Completion plays its own success haptic in place of the step tap.
-      if (current !== ONBOARDING_STEP.COMPLETE) void haptic();
+      if (current !== LAST_STEP[path]) void haptic();
       lockUntil.current = Date.now() + STEP_LOCK_MS;
     }
     shown.current = current;
@@ -160,14 +184,15 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
 
   const locked = () => Date.now() < lockUntil.current;
   const advance = (from: OnboardingStepId) => {
-    if (from !== ONBOARDING_STEP.COMPLETE) {
+    if (from !== LAST_STEP[path]) {
       setAdvanceFrom(from);
       return;
     }
-    // The first run ends once, and not from a tap that lands during the lock.
+    // The walk ends once, and not from a tap that lands during the lock.
     if (locked() || ending.current) return;
     ending.current = true;
-    setIsFirstRun(false);
+    if (upgrading) setUpgradePath(UPGRADE_PATH_STATE.DONE);
+    else setIsFirstRun(false);
   };
   const back = () => {
     if (column === null || locked() || busy) return;
@@ -211,7 +236,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
   }
 
   // Welcome and Completion have no place: the bars stay off them.
-  const place = countedPlace(column, shownSteps, current);
+  const place = countedPlace(order, column, shownSteps, current);
   const progress = place ? t("onboarding.progress", place) : "";
   const stepProps: StepProps = {
     onNext: () => advance(current),
@@ -238,6 +263,7 @@ export const OnboardingFlow = ({ leaving = false }: Props) => {
     onHeadingLayout,
     focusHeading,
     progress,
+    path,
   };
   const Step = STEP_COMPONENT[current];
 

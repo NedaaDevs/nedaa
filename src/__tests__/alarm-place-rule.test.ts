@@ -86,7 +86,12 @@ const AT_START: AtStart = {
   fajrAlarmOn: false,
   fridayAlarmOn: false,
 };
-const DEVICE: DeviceRead = { location: false, notifications: true, alarmsSupported: true };
+const DEVICE: DeviceRead = {
+  location: false,
+  notifications: true,
+  notificationsUndetermined: false,
+  alarmsSupported: true,
+};
 
 /** Both stores' facts, and whether they have loaded from disk. */
 type Place = { times: TimesState; coords: typeof RIYADH_COORDS | null; loaded: boolean };
