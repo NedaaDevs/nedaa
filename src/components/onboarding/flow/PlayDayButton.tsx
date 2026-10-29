@@ -36,7 +36,6 @@ export const PlayDayButton = () => {
   // No whole day hides it, though not before a closing run's focus is back.
   if (idle && !run.available && !run.returning) return null;
 
-  // The run's methods are stable from tick to tick; the run itself is not.
   const { start } = run;
   const label = t("onboarding.appearance.playDay");
 
