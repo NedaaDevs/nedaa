@@ -258,7 +258,9 @@ export const DayRunPlayer = () => {
   const chooseAdaptive = async () => {
     close();
     await chooseMode(AppMode.ADAPTIVE);
-    // Said once stored, and queued behind focus returning to the starter.
+    // A look picked during the dissolve wins. iOS queues the line behind the
+    // focus move; Android sends it as a plain announcement.
+    if (useAppStore.getState().mode !== AppMode.ADAPTIVE) return;
     AccessibilityInfo.announceForAccessibilityWithOptions(
       t("a11y.onboarding.dayPreview.adaptiveChosen"),
       { queue: true }
