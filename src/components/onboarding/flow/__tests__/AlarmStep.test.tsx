@@ -21,6 +21,7 @@ import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { controlProblems } from "@/test-helpers/controls";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
+import { layOut, stepHeading } from "@/test-helpers/layout";
 import { stepProps } from "@/test-helpers/onboardingStepProps";
 import { later, never } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -189,8 +190,10 @@ describe("the question", () => {
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focus.mockImplementation(() => {}).mockClear();
     const { props } = await renderStep();
+    await layOut(stepHeading());
     expect(focus).not.toHaveBeenCalled();
 
+    // The sequence keeps the step's heading, so focus moves at once.
     await turnOn();
     expect(focus).toHaveBeenCalledWith(props.headingRef.current, "focus");
     expect(screen.getByText(t("onboarding.alarm.sequence"))).toBeOnTheScreen();
@@ -341,7 +344,7 @@ describe("a return to a finished step", () => {
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focus.mockImplementation(() => {}).mockClear();
     const step = await renderStep();
-    expect(card()).toBeOnTheScreen();
+    await layOut(card());
     expect(focus).not.toHaveBeenCalled();
 
     mockDevice.granted.add(B);
@@ -763,12 +766,16 @@ describe("reading the result", () => {
       Platform.OS = os;
       device([...ids], [...granted]);
       const { props } = await renderStep();
+      await layOut(stepHeading());
 
       await turnOn();
       expect(focus).toHaveBeenLastCalledWith(props.headingRef.current, "focus");
       while (screen.queryByTestId(ONBOARDING_PART.ALARM_RESULT) === null) {
         await returnFromSettings([...grantedThere]);
       }
+      // The card is new, so focus waits for its layout.
+      expect(focusedID()).not.toBe(ONBOARDING_PART.ALARM_RESULT);
+      await layOut(card());
 
       expect(focusedID()).toBe(ONBOARDING_PART.ALARM_RESULT);
       expect(card().props.accessibilityLiveRegion).toBeUndefined();
@@ -782,6 +789,8 @@ describe("reading the result", () => {
 
     await turnOn();
     await returnFromSettings();
+    expect(focusedID()).not.toBe(ONBOARDING_PART.ALARM_RESULT);
+    await layOut(card());
 
     expect(card()).toHaveAccessibleName(join(allowed(0, 2), notOn(K)));
     expect(focusedID()).toBe(ONBOARDING_PART.ALARM_RESULT);
@@ -795,6 +804,7 @@ describe("reading the result", () => {
     while (screen.queryByTestId(ONBOARDING_PART.ALARM_RESULT) === null) {
       await returnFromSettings();
     }
+    await layOut(card());
 
     focus.mockClear();
     await returnToApp(step);
