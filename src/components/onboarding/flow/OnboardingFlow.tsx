@@ -91,9 +91,11 @@ export const OnboardingFlow = ({ path, leaving = false }: Props) => {
   const setOnboardingStep = useAppStore((state) => state.setOnboardingStep);
   const setIsFirstRun = useAppStore((state) => state.setIsFirstRun);
   const setUpgradePath = useAppStore((state) => state.setUpgradePath);
-  const upgradePath = useAppStore((state) => state.upgradePath);
   const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
-  const [start] = useState(() => (upgrading ? upgradeStart(upgradePath) : saved));
+  // Read once: an exit's write must not draw the flow again while it fades.
+  const [start] = useState(() =>
+    upgrading ? upgradeStart(useAppStore.getState().upgradePath) : saved
+  );
   const [session, setSession] = useState<OnboardingSession>(() =>
     upgrading ? NEW_SESSION : resumedSession(start)
   );
