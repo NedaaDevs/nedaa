@@ -9,7 +9,7 @@ import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
-import { ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_SCREEN_PATH, ALARM_TYPE } from "@/constants/Alarm";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 
 export function useAlarmScreen(alarmId: string, alarmType: string) {
@@ -123,7 +123,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     markAlarmHandled(activeAlarmId);
     await completeAndRescheduleAlarm(activeAlarmId);
     router.replace({
-      pathname: "/alarm-complete",
+      pathname: ALARM_SCREEN_PATH.COMPLETE,
       params: { alarmType },
     });
   }, [activeAlarmId, alarmType]);
