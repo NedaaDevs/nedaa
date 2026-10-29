@@ -138,14 +138,17 @@ export const DaySimulator = ({ children, kind }: { children: ReactNode; kind: Da
   }, [idle, returnTo]);
 
   const playing = run?.status === DAY_RUN_STATUS.PLAYING;
-  // Leaving the app pauses a run, so it waits where it was for the user.
+  // Leaving the app pauses a preview where it was; Today's debug run, with
+  // no resume control, ends and gives back the real day.
   useEffect(() => {
     if (!playing) return;
     const subscription = AppState.addEventListener("change", (next) => {
-      if (next !== APP_STATE.ACTIVE) setRun(moved(DAY_RUN_STATUS.PLAYING, DAY_RUN_STATUS.PAUSED));
+      if (next === APP_STATE.ACTIVE) return;
+      if (kind === DAY_RUN_KIND.DEBUG) setRun(null);
+      else setRun(moved(DAY_RUN_STATUS.PLAYING, DAY_RUN_STATUS.PAUSED));
     });
     return () => subscription.remove();
-  }, [playing]);
+  }, [playing, kind]);
 
   const drawing =
     run?.status === DAY_RUN_STATUS.PLAYING || run?.status === DAY_RUN_STATUS.PAUSED ? run : null;
