@@ -149,7 +149,8 @@
       "expo-sharing",
       "expo-status-bar",
       "./plugins/withIosAcknowledgements",
-      "./plugins/withTextViewBoundsForWidth"
+      "./plugins/withTextViewBoundsForWidth",
+      "./plugins/withBackupRules"
     ],
     "experiments": {
       "typedRoutes": true,
