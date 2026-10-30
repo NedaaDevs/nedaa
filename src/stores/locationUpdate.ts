@@ -61,7 +61,9 @@ export const isRunning = (run: UpdateRun | null): boolean => run !== null && !ru
 
 /** Whether `run` reads the device at its place step: the city is not known. */
 export const findingCity = (run: UpdateRun | null): boolean =>
-  isRunning(run) && run?.step === UPDATE_STEP.LOCATION && run.start.kind !== UPDATE_START.CITY;
+  isRunning(run) &&
+  run?.step === UPDATE_STEP.LOCATION &&
+  (run.start.kind === UPDATE_START.DEVICE || run.start.kind === UPDATE_START.ADOPT_DEVICE);
 
 /** The line a device read shows while it finds the city. */
 export const FINDING_CITY: ParseKeys = "onboarding.fetch.locatingDevice";

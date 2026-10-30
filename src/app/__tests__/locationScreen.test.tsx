@@ -31,7 +31,7 @@ import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
-import { offerUp } from "@/test-helpers/cityOffer";
+import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
 import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
 import { MAKKAH_CITY, RIYADH_CITY, placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -95,6 +95,7 @@ const makkahOverRiyadhTimes = () => {
 };
 
 const mockUpdate = jest.fn(async () => {});
+const { applyCityCandidate } = useLocationStore.getState();
 const mockAdopt = jest.fn(async () => {});
 const mockLoad = jest.fn(async () => true);
 
@@ -175,6 +176,7 @@ beforeEach(async () => {
   useLocationStore.setState({
     updateCurrentLocation: mockUpdate,
     adoptDeviceLocation: mockAdopt,
+    applyCityCandidate,
     travelMode: TRAVEL_MODE.ASK,
     isGettingLocation: false,
     previousPlace: null,
@@ -398,6 +400,24 @@ describe("Settings › Location", () => {
           t("place.name", { city: MAKKAH_CITY.name, country: MAKKAH_CITY.country.name }),
           t("location.hero.updatingNote")
         )
+      );
+    });
+
+    // The offer carries its city: its place step reads no device.
+    it("names the place, not a device read, at an offered update's place step", async () => {
+      useLocationUpdateStore.setState({
+        run: {
+          start: { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
+          step: UPDATE_STEP.LOCATION,
+          failed: false,
+        },
+      });
+      await renderScreen();
+
+      expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
+      expect(screen.queryByLabelText(t("onboarding.fetch.locatingDevice"))).toBeNull();
+      expect(hero()).toHaveAccessibleName(
+        heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.updatingNote"))
       );
     });
 
@@ -1028,6 +1048,7 @@ describe("Settings › Location", () => {
       mockUpdate.mockReturnValue(new Promise<void>((resolve) => (read = resolve)));
       mockLoad.mockReturnValue(new Promise(() => {}));
       useAppStore.setState({ isFirstRun: false });
+      useLocationStore.setState({ applyCityCandidate: mockUpdate });
       offerUp();
       await renderScreen({ withSheet: true });
 
@@ -1042,7 +1063,7 @@ describe("Settings › Location", () => {
           includeHiddenElements: true,
         })
       ).toHaveLength(2);
-      expect(announced(t("onboarding.fetch.locatingDevice"))).toBe(1);
+      expect(announced(t("location.update.step.city"))).toBe(1);
       expect(announced(t("location.update.step.prayerTimes"))).toBe(1);
     });
 

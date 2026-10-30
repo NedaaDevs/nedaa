@@ -444,6 +444,11 @@ export const useLocationStore = create<LocationStore>()(
             log.i("Candidate", "the place moved during the lookup; the candidate is not applied");
             return;
           }
+          // A city chosen meanwhile is the user's; the offer is for the device's place.
+          if (get().locationMode !== LocationMode.DEVICE) {
+            log.i("Candidate", "a city is chosen; the candidate is not applied");
+            return;
+          }
           const locale = appStore.getState().locale;
           const address = row
             ? { country: row.country.name, city: row.name }

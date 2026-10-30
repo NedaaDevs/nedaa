@@ -98,7 +98,10 @@ describe("the place record and the place revision", () => {
       [
         "the offer's candidate",
         () => useLocationStore.getState().applyCityCandidate(candidateAt()),
-        asIs,
+        // The offer is only for a device place.
+        () => {
+          useLocationStore.setState({ locationMode: LocationMode.DEVICE, manualLocation: null });
+        },
       ],
       // A chosen city stops initializeLocation; this row starts on the device.
       [
