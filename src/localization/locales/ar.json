@@ -860,6 +860,7 @@
   "importantDays.twoDays": "يومان",
   "importantDays.upcoming": "المناسبات القادمة",
   "location.cityChanged.description": "ستُحدَّث مواقيت الصلاة والإشعارات حسب الموقع الجديد.",
+  "location.cityChange.greeting": "الحمد لله على السلامة",
   "location.cityChange.title": "أنت الآن في مدينة أخرى",
   "location.cityChange.saved": "المدينة المحفوظة",
   "location.cityChange.now": "المدينة التي أنت فيها",

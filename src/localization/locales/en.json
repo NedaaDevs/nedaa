@@ -741,6 +741,7 @@
   "importantDays.twoDays": "2 days",
   "importantDays.upcoming": "Upcoming occasions",
   "location.cityChanged.description": "This will update your prayer times and notifications for the new location.",
+  "location.cityChange.greeting": "Glad you arrived safely",
   "location.cityChange.title": "You're in another city",
   "location.cityChange.saved": "Saved city",
   "location.cityChange.now": "City you're in",
