@@ -19,10 +19,17 @@ import { useDebugModeStore } from "@/stores/debugMode";
 import { useLocationStore } from "@/stores/location";
 import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 import { APP_NAME_LATIN } from "@/constants/App";
+import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
 import { appVersionLabel } from "@/utils/appVersion";
 import { LTR_ISOLATE } from "@/utils/digits";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
+
+jest.mock("@/utils/cityCheckDebug", () => ({
+  runCityCheckNow: jest.fn(),
+  showCityCheckMemory: jest.fn(),
+  clearCityCheckMemory: jest.fn(),
+}));
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 
@@ -238,11 +245,16 @@ describe("About", () => {
       await renderAbout();
 
       const labels = screen.getAllByRole("button").map((node) => node.props.accessibilityLabel);
-      expect(labels.slice(-(DEBUG_SCREENS.length + 2), -1)).toEqual([
+      expect(labels.slice(-(DEBUG_SCREENS.length + 5), -4)).toEqual([
         ...DEBUG_SCREENS.map(({ label }) => label),
         DEBUG_COPY.RESTART_ONBOARDING,
       ]);
-      expect(labels.at(-1)).toContain(DEBUG_COPY.PHONE_ZONE);
+      expect(labels.at(-4)).toContain(DEBUG_COPY.PHONE_ZONE);
+      expect(labels.slice(-3)).toEqual([
+        DEBUG_COPY.RUN_CITY_CHECK,
+        DEBUG_COPY.SHOW_CITY_CHECK_MEMORY,
+        DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY,
+      ]);
     });
 
     it("says what the row does", async () => {
@@ -283,6 +295,29 @@ describe("About", () => {
 
       expect(selection).toHaveBeenCalledTimes(1);
       selection.mockRestore();
+    });
+  });
+
+  describe("city check rows", () => {
+    const CITY_CHECK_ROWS = [
+      [DEBUG_COPY.RUN_CITY_CHECK, runCityCheckNow],
+      [DEBUG_COPY.SHOW_CITY_CHECK_MEMORY, showCityCheckMemory],
+      [DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY, clearCityCheckMemory],
+    ] as const;
+
+    it.each(CITY_CHECK_ROWS)("hides %s while debug mode is off", async (name) => {
+      await renderAbout();
+
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    });
+
+    it.each(CITY_CHECK_ROWS)("runs the action of %s when pressed", async (name, action) => {
+      useDebugModeStore.setState({ isEnabled: true });
+      await renderAbout();
+
+      await userEvent.press(screen.getByRole("button", { name }));
+
+      expect(action).toHaveBeenCalledTimes(1);
     });
   });
 
