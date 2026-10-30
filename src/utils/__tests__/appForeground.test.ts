@@ -3,7 +3,7 @@ import { AppState, type AppStateStatus } from "react-native";
 import { APP_STATE } from "@/constants/AppState";
 import { SETTINGS_OPEN_GRACE_MS } from "@/constants/Onboarding";
 import { outcomeOf } from "@/test-helpers/promises";
-import { nextForeground } from "@/utils/appForeground";
+import { nextForeground, waitWhileActive } from "@/utils/appForeground";
 
 const listeners: ((status: AppStateStatus) => void)[] = [];
 const remove = jest.fn();
@@ -131,4 +131,41 @@ it("removes its listener once, whichever way it settles", async () => {
 
   expectResolved(wait);
   expect(remove).toHaveBeenCalledTimes(1);
+});
+
+describe("waitWhileActive", () => {
+  const WAIT_MS = 30_000;
+
+  it("waits while the app stays active, and stops when it leaves", async () => {
+    const stayed = outcomeOf(waitWhileActive(WAIT_MS));
+    await jest.advanceTimersByTimeAsync(WAIT_MS - 1);
+    expect(stayed).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(stayed.mock.calls).toStrictEqual([[{ value: true }]]);
+    expect(released()).toBe(true);
+
+    const left = outcomeOf(waitWhileActive(WAIT_MS));
+    emit(APP_STATE.BACKGROUND);
+    await jest.advanceTimersByTimeAsync(0);
+    expect(left.mock.calls).toStrictEqual([[{ value: false }]]);
+    expect(released()).toBe(true);
+  });
+
+  it("stops on an inactive report", async () => {
+    const left = outcomeOf(waitWhileActive(WAIT_MS));
+    emit(APP_STATE.INACTIVE);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(left.mock.calls).toStrictEqual([[{ value: false }]]);
+  });
+
+  it("answers false at once when the app is already away", async () => {
+    startIn(APP_STATE.BACKGROUND);
+    const left = outcomeOf(waitWhileActive(WAIT_MS));
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(left.mock.calls).toStrictEqual([[{ value: false }]]);
+    expect(AppState.addEventListener).not.toHaveBeenCalled();
+    expect(released()).toBe(true);
+  });
 });
