@@ -14,6 +14,7 @@ import {
 import {
   FIX_SOURCE,
   LOCATION_FAILURE,
+  METERS_PER_KM,
   PLACE_UNKNOWN,
   type LocationFailure,
 } from "@/constants/Location";
@@ -39,14 +40,14 @@ import { geocodeApi } from "@/api/geocodeApi";
 
 // Utils
 import {
-  calculateDistance,
   CITY_CHANGE_THRESHOLD,
+  distanceBetween,
   LOCATION_REQUEST_TIMEOUT_EXTENDED,
   locationFailureOf,
   readLocation,
 } from "@/utils/location";
 import { trustedCityNear } from "@/utils/cityCheck/cityNear";
-import { toPlaceMark } from "@/utils/cityCheck/marks";
+import { countryCodeOf, toPlaceMark } from "@/utils/cityCheck/marks";
 import { resolveLocalizedName } from "@/utils/cities";
 import { errorText } from "@/utils/errorText";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
@@ -75,12 +76,15 @@ const restoredDetails = (saved: LocationDetails): LocationDetails => {
   };
 };
 
-/** An ISO country code as stored: upper case, or null when there is none. */
-const countryCodeOf = (code: string | null | undefined): string | null =>
-  code ? code.toUpperCase() : null;
-
 const TRAVEL_MODES: readonly unknown[] = Object.values(TRAVEL_MODE);
 const isTravelMode = (value: unknown): value is TravelMode => TRAVEL_MODES.includes(value);
+
+/** A saved travel mode, else the one the legacy auto-update flag implies. */
+const restoredTravelMode = (travelMode: unknown, autoUpdateLocation: unknown): TravelMode => {
+  if (isTravelMode(travelMode)) return travelMode;
+  if (autoUpdateLocation === false) return TRAVEL_MODE.OFF;
+  return TRAVEL_MODE.ASK;
+};
 
 /** How the place is set: the mode, and the city chosen and when. */
 type PlaceChoice = {
@@ -103,7 +107,7 @@ const choiceMoved = (now: PlaceChoice, before: PlaceChoice): boolean =>
 
 /** Whether two points lie within the city-change distance of each other. */
 const withinCityChange = (a: Coords, b: Coords): boolean =>
-  calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude) <= CITY_CHANGE_THRESHOLD;
+  distanceBetween(a, b) <= CITY_CHANGE_THRESHOLD;
 
 /** The device geocoder's answer; a failed one names no place. */
 type DeviceGeocode =
@@ -463,7 +467,8 @@ export const useLocationStore = create<LocationStore>()(
               coords: {
                 ...candidate.point,
                 altitude: null,
-                accuracy: candidate.accuracyKm === null ? null : candidate.accuracyKm * 1000,
+                accuracy:
+                  candidate.accuracyKm === null ? null : candidate.accuracyKm * METERS_PER_KM,
                 altitudeAccuracy: null,
                 heading: null,
                 speed: null,
@@ -670,11 +675,7 @@ export const useLocationStore = create<LocationStore>()(
           return {
             ...current,
             ...saved,
-            travelMode: isTravelMode(travelMode)
-              ? travelMode
-              : autoUpdateLocation === false
-                ? TRAVEL_MODE.OFF
-                : TRAVEL_MODE.ASK,
+            travelMode: restoredTravelMode(travelMode, autoUpdateLocation),
             locationDetails: restoredDetails(saved.locationDetails ?? current.locationDetails),
             ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
           };

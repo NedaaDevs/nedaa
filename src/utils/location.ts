@@ -17,7 +17,7 @@ import {
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/location";
-import type { LocationPermission } from "@/types/location";
+import type { Coords, LocationPermission } from "@/types/location";
 
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
@@ -235,3 +235,7 @@ export const calculateDistance = (
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
+
+/** The great-circle distance between two points, in km. */
+export const distanceBetween = (a: Coords, b: Coords): number =>
+  calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude);

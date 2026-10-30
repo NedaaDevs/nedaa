@@ -18,7 +18,13 @@ import {
   type CityCheckReason,
   type CityCheckTrigger,
 } from "@/constants/CityCheck";
-import { FIX_SOURCE, LOCATION_FAILURE, knownPlaceName, type FixSource } from "@/constants/Location";
+import {
+  FIX_SOURCE,
+  LOCATION_FAILURE,
+  METERS_PER_KM,
+  knownPlaceName,
+  type FixSource,
+} from "@/constants/Location";
 import { ASR_SCHOOL } from "@/constants/providers";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { CitiesDB } from "@/services/cities-db";
@@ -42,7 +48,7 @@ import { waitWhileActive } from "@/utils/appForeground";
 import { AppLogger } from "@/utils/appLogger";
 import { trustedCityNear } from "@/utils/cityCheck/cityNear";
 import { confirmedFix, isNearSaved, judgeCityChange } from "@/utils/cityCheck/judge";
-import { keptAfterFix } from "@/utils/cityCheck/marks";
+import { countryCodeOf, keptAfterFix } from "@/utils/cityCheck/marks";
 import { providerMethodAt } from "@/utils/cityCheck/method";
 import {
   guardReason,
@@ -51,7 +57,7 @@ import {
   type GuardFacts,
 } from "@/utils/cityCheck/trigger";
 import {
-  calculateDistance,
+  distanceBetween,
   LocationPermissionError,
   locationFailureOf,
   readCachedFix,
@@ -63,8 +69,6 @@ import { waitForHydration } from "@/utils/storeHydration";
 // Every log line holds codes only: never a name, a point or an error's text.
 const log = AppLogger.create("location");
 const TAG = "CityCheck";
-
-const METERS_PER_KM = 1000;
 
 /** A first fix waiting for its confirmation, for the place at `revision`. */
 type PendingFix = { fix: CityCheckFix; revision: number };
@@ -87,18 +91,12 @@ const ended = (reason: CityCheckReason): CheckEnd => ({ reason });
 const isEnd = (verdict: CityCheckVerdict): boolean =>
   verdict.offer || !Object.values<string>(CITY_CHECK_NEED).includes(verdict.reason);
 
-const distanceKm = (a: Coords, b: Coords) =>
-  calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude);
-
 const toFix = ({ coords, timestamp }: LocationObject, source: FixSource): CityCheckFix => ({
   point: { latitude: coords.latitude, longitude: coords.longitude },
   accuracyKm: coords.accuracy === null ? null : coords.accuracy / METERS_PER_KM,
   fixedAt: timestamp,
   source,
 });
-
-const upperOrNull = (code: string | null | undefined): string | null =>
-  code ? code.toUpperCase() : null;
 
 const memoryLoaded = async (): Promise<boolean> => {
   let loaded = true;
@@ -206,8 +204,8 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
   };
   const countryAt = async (point: Coords): Promise<string | null> => {
     const row = CitiesDB.isFullPackInstalled() ? await trustedCityNear(point) : null;
-    if (row) return upperOrNull(row.countryCode);
-    return upperOrNull((await addressAt(point))?.isoCountryCode);
+    if (row) return countryCodeOf(row.countryCode);
+    return countryCodeOf((await addressAt(point))?.isoCountryCode);
   };
 
   const facts = (): CityCheckFacts => ({
@@ -265,9 +263,10 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
           accuracyKm: fix.accuracyKm,
           fixedAt: fix.fixedAt,
           zone: row?.timezone ?? null,
-          countryCode: row && CitiesDB.isFullPackInstalled() ? upperOrNull(row.countryCode) : null,
+          countryCode:
+            row && CitiesDB.isFullPackInstalled() ? countryCodeOf(row.countryCode) : null,
           name: row ? { name: row.name, names: row.names } : null,
-          distanceKm: distanceKm(saved.point, fix.point),
+          distanceKm: distanceBetween(saved.point, fix.point),
         };
         return null;
       }
@@ -359,7 +358,7 @@ const checkOnce = async (trigger: CityCheckTrigger): Promise<void> => {
       launchOwed = true;
     if (guard) return finish(ended(guard));
 
-    // A deferred fix a throttle window old no longer confirms anything.
+    // A deferred fix a throttle window old confirms nothing.
     if (pendingFix && now - pendingFix.fix.fixedAt > CHECK_THROTTLE_MS) pendingFix = null;
     const phoneZone = readPhoneZone();
     const { lastCheckAt, lastPhoneZone } = useCityCheckStore.getState().cityCheck;

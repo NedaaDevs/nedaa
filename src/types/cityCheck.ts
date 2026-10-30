@@ -53,8 +53,7 @@ export type CityCheckFacts = {
 export type CityOffer = { candidate: CityCandidate; reasons: CityCheckOfferReason[] };
 
 export type CityCheckVerdict =
-  | { offer: true; candidate: CityCandidate; reasons: CityCheckOfferReason[] }
-  | { offer: false; reason: CityCheckNeed | CityCheckEnd };
+  ({ offer: true } & CityOffer) | { offer: false; reason: CityCheckNeed | CityCheckEnd };
 
 export type CityCheckMemory = {
   lastCheckAt: number | null;

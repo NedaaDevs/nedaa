@@ -9,22 +9,25 @@ import { FIX_SOURCE } from "@/constants/Location";
 import type { CityCheckFix, PlaceMark, ShiftCalc } from "@/types/cityCheck";
 import type { Coords } from "@/types/location";
 import { maxYearlyShiftMinutes } from "@/utils/cityCheck/shift";
-import { calculateDistance } from "@/utils/location";
+import { distanceBetween } from "@/utils/location";
 
 const STEPS_PER_DEGREE = 1 / MARK_ROUND_DEGREES;
 
 const roundDegrees = (degrees: number) => Math.round(degrees * STEPS_PER_DEGREE) / STEPS_PER_DEGREE;
 
-export const toPlaceMark = (
-  coords: Coords,
-  at: number,
-  countryCode?: string | null
-): PlaceMark => ({
-  lat: roundDegrees(coords.latitude),
-  lng: roundDegrees(coords.longitude),
-  at,
-  ...(countryCode ? { countryCode: countryCode.toUpperCase() } : {}),
-});
+/** An ISO country code as stored: upper case, or null when there is none. */
+export const countryCodeOf = (code: string | null | undefined): string | null =>
+  code ? code.toUpperCase() : null;
+
+export const toPlaceMark = (coords: Coords, at: number, countryCode?: string | null): PlaceMark => {
+  const code = countryCodeOf(countryCode);
+  return {
+    lat: roundDegrees(coords.latitude),
+    lng: roundDegrees(coords.longitude),
+    at,
+    ...(code ? { countryCode: code } : {}),
+  };
+};
 
 export const sameCountry = (a: string, b: string): boolean => a.toUpperCase() === b.toUpperCase();
 
@@ -38,7 +41,7 @@ export const conservativeKm = (
   place: Coords,
   placeAccuracyKm: number | null
 ): number =>
-  calculateDistance(fix.latitude, fix.longitude, place.latitude, place.longitude) -
+  distanceBetween(fix, place) -
   (fixAccuracyKm ?? 0) -
   (placeAccuracyKm ?? SAVED_ACCURACY_FALLBACK_KM);
 

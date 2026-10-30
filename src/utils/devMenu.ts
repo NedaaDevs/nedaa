@@ -9,7 +9,7 @@ import { useLocationStore } from "@/stores/location";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
 import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
-import { calculateDistance } from "@/utils/location";
+import { distanceBetween } from "@/utils/location";
 import { phoneZoneReadings } from "@/utils/phoneZone";
 import type { CityCandidate, LocalizedPlaceName } from "@/types/cityCheck";
 
@@ -38,16 +38,7 @@ const showSample = (name: LocalizedPlaceName | null, distanceKm?: number) => {
     return;
   }
   const saved = location.lastKnownCoords;
-  const km =
-    distanceKm ??
-    (saved
-      ? calculateDistance(
-          saved.latitude,
-          saved.longitude,
-          SAMPLE_POINT.latitude,
-          SAMPLE_POINT.longitude
-        )
-      : 0);
+  const km = distanceKm ?? (saved ? distanceBetween(saved, SAMPLE_POINT) : 0);
   location.offerCity(sampleCandidate(name, km), [CITY_CHECK_OFFER.SHIFT]);
 };
 

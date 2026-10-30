@@ -22,10 +22,7 @@ import type {
 import type { Coords } from "@/types/location";
 import { conservativeKm, isLiveKept, matchesMark, sameCountry } from "@/utils/cityCheck/marks";
 import { maxYearlyShiftMinutes } from "@/utils/cityCheck/shift";
-import { calculateDistance } from "@/utils/location";
-
-const distanceKm = (a: Coords, b: Coords) =>
-  calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude);
+import { distanceBetween } from "@/utils/location";
 
 const freshFixes = (fixes: readonly CityCheckFix[]) =>
   fixes.filter((fix) => fix.source === FIX_SOURCE.FRESH);
@@ -38,7 +35,7 @@ const confirms = (first: CityCheckFix, last: CityCheckFix) =>
   last.fixedAt - first.fixedAt >= CONFIRM_FIX_DELAY_MS &&
   first.accuracyKm !== null &&
   last.accuracyKm !== null &&
-  distanceKm(first.point, last.point) <= CONFIRM_FIX_AGREE_KM;
+  distanceBetween(first.point, last.point) <= CONFIRM_FIX_AGREE_KM;
 
 /** The last fresh fix when it confirms the first; else null. */
 export const confirmedFix = (fixes: readonly CityCheckFix[]): CityCheckFix | null => {
@@ -122,7 +119,7 @@ export const judgeCityChange = (facts: CityCheckFacts): CityCheckVerdict => {
   if (last.fixedAt - first.fixedAt < CONFIRM_FIX_DELAY_MS)
     return { offer: false, reason: CITY_CHECK_NEED.NEEDS_SECOND_FIX };
   if (last.accuracyKm === null) return { offer: false, reason: CITY_CHECK_END.FIX_NO_ACCURACY };
-  if (distanceKm(first.point, last.point) > CONFIRM_FIX_AGREE_KM)
+  if (distanceBetween(first.point, last.point) > CONFIRM_FIX_AGREE_KM)
     return { offer: false, reason: CITY_CHECK_END.FIXES_DISAGREE };
   if (isNearSaved(last, saved)) return { offer: false, reason: CITY_CHECK_END.NOT_MOVED };
 

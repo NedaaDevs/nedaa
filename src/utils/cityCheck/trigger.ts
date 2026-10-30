@@ -52,7 +52,7 @@ const zoneChanged = (facts: TriggerFacts) =>
   facts.lastPhoneZone !== facts.phoneZone;
 
 const awayTooShort = (facts: TriggerFacts) =>
-  facts.launchOwed ? false : facts.leftAt === null || facts.now - facts.leftAt < CHECK_MIN_AWAY_MS;
+  !facts.launchOwed && (facts.leftAt === null || facts.now - facts.leftAt < CHECK_MIN_AWAY_MS);
 
 const throttled = (facts: TriggerFacts) =>
   facts.lastCheckAt !== null &&
@@ -68,6 +68,6 @@ export const shouldStartCheck = (facts: TriggerFacts): CityCheckSkip | null => {
   return throttled(facts) ? CITY_CHECK_SKIP.THROTTLED : null;
 };
 
-// An offer whose candidate fix is a throttle window old no longer counts as showing.
+// An offer whose candidate fix is a throttle window old counts as not showing.
 export const staleOffer = (offerFixedAt: number | null, now: number): boolean =>
   offerFixedAt !== null && now - offerFixedAt >= CHECK_THROTTLE_MS;
