@@ -31,6 +31,7 @@ const channels = Notifications.getNotificationChannelsAsync as unknown as jest.M
   Promise<Channel[]>
 >;
 const deleted = Notifications.deleteNotificationChannelAsync as jest.Mock;
+const created = Notifications.setNotificationChannelAsync as jest.Mock;
 
 const SOUND: QadaSoundKey = "tasbih";
 
@@ -38,6 +39,14 @@ describe("qada notification channel", () => {
   beforeEach(() => {
     jest.replaceProperty(Platform, "OS", "android");
     channels.mockResolvedValue([]);
+  });
+
+  it("leaves the sound key out of the device-sound channel", async () => {
+    created.mockClear();
+    const id = await setupQadaNotificationChannel(SYSTEM_SOUND, [], true);
+
+    const [[, options]] = created.mock.calls.filter(([channelId]) => channelId === id);
+    expect(options).not.toHaveProperty("sound");
   });
 
   // A channel's sound and vibration are fixed, so each change makes a new id.
