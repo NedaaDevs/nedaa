@@ -11,8 +11,18 @@ import {
   type ManualLocation,
   type PlaceRecord,
 } from "@/types/location";
-import { LOCATION_FAILURE, PLACE_UNKNOWN, type LocationFailure } from "@/constants/Location";
-import { TRAVEL_MODE, type CityCheckOfferReason, type TravelMode } from "@/constants/CityCheck";
+import {
+  FIX_SOURCE,
+  LOCATION_FAILURE,
+  PLACE_UNKNOWN,
+  type LocationFailure,
+} from "@/constants/Location";
+import {
+  REUSE_FIX_MAX_AGE_MS,
+  TRAVEL_MODE,
+  type CityCheckOfferReason,
+  type TravelMode,
+} from "@/constants/CityCheck";
 import type { CityCandidate, CityOffer } from "@/types/cityCheck";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
@@ -35,7 +45,9 @@ import {
   locationFailureOf,
   readLocation,
 } from "@/utils/location";
+import { trustedCityNear } from "@/utils/cityCheck/cityNear";
 import { toPlaceMark } from "@/utils/cityCheck/marks";
+import { resolveLocalizedName } from "@/utils/cities";
 import { errorText } from "@/utils/errorText";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
@@ -139,6 +151,8 @@ export type LocationStore = {
   updateCurrentLocation: () => Promise<void>;
   /** Reads the device position; on success it replaces a chosen city. */
   adoptDeviceLocation: () => Promise<void>;
+  /** Writes the offered city from its own fix; a stale fix reads the device again. */
+  applyCityCandidate: (candidate: CityCandidate) => Promise<void>;
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
   updateAddressTranslation: () => Promise<boolean>;
   /** The place's zone, as the times fetched for it state. */
@@ -415,6 +429,72 @@ export const useLocationStore = create<LocationStore>()(
             localizedLocation: { city: address?.city ?? "", country: address?.country ?? "" },
           });
           log.i("Device", "device location adopted over the chosen city");
+        },
+
+        applyCityCandidate: async (candidate) => {
+          if (Date.now() - candidate.fixedAt > REUSE_FIX_MAX_AGE_MS) {
+            return get().updateCurrentLocation();
+          }
+          const revision = get().placeRevision;
+          // Row ids change when the full pack installs; the point finds the row.
+          const row = await trustedCityNear(candidate.point);
+          const geocoded = row ? null : (await deviceAddressAt(candidate.point)).address;
+          // A newer point was written during the lookup.
+          if (get().placeRevision !== revision) {
+            log.i("Candidate", "the place moved during the lookup; the candidate is not applied");
+            return;
+          }
+          const locale = appStore.getState().locale;
+          const address = row
+            ? { country: row.country.name, city: row.name }
+            : geocoded && {
+                country: geocoded.country ?? PLACE_UNKNOWN,
+                city: geocoded.city ?? PLACE_UNKNOWN,
+              };
+          set((state) => ({
+            ...placeWrite(state),
+            locationDetails: {
+              ...state.locationDetails,
+              coords: {
+                ...candidate.point,
+                altitude: null,
+                accuracy: candidate.accuracyKm === null ? null : candidate.accuracyKm * 1000,
+                altitudeAccuracy: null,
+                heading: null,
+                speed: null,
+              },
+              address,
+              timezone:
+                row?.timezone ??
+                candidate.zone ??
+                geocoded?.timezone ??
+                state.locationDetails.timezone,
+              error: null,
+              fix: { source: FIX_SOURCE.FRESH, at: candidate.fixedAt },
+              countryCode: countryCodeOf(
+                candidate.countryCode ?? row?.countryCode ?? geocoded?.isoCountryCode
+              ),
+              isLoading: false,
+            },
+            lastKnownCoords: {
+              latitude: candidate.point.latitude,
+              longitude: candidate.point.longitude,
+            },
+            // Without a row, the device's names show until the translation lands.
+            localizedLocation: row
+              ? {
+                  country: resolveLocalizedName(row.country.name, row.country.names, locale),
+                  city: resolveLocalizedName(row.name, row.names, locale),
+                }
+              : { country: address?.country ?? "", city: address?.city ?? "" },
+          }));
+          log.i("Candidate", `offered city applied (${row ? "city row" : "device names"})`);
+          if (row) return;
+          get()
+            .updateAddressTranslation()
+            .catch((error) => {
+              log.w("Geocode", `address translation failed: ${errorText(error)}`);
+            });
         },
 
         settlePlace: (revision) => {

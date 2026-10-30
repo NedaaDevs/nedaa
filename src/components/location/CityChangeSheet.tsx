@@ -216,18 +216,18 @@ export const CityChangeSheet = ({ onboarding }: Props) => {
   const [drawn, setDrawn] = useState<CityOffer | null>(cityOffer);
   if (cityOffer && cityOffer !== drawn) setDrawn(cityOffer);
   const offer = cityOffer ?? drawn;
-  const { run, executeUpdate, retry, dismissFailure } = useLocationUpdate();
+  const { run, applyCandidate, retry, dismissFailure } = useLocationUpdate();
   // Set only when this sheet's update takes the lock, so only its run is drawn.
   const [started, setStarted] = useState(false);
   // The sheet's run; it outlives the store's while the sheet leaves.
   const [shown, setShown] = useState<UpdateRun | null>(null);
   if (started && run && run !== shown) setShown(run);
 
-  const update = async () => {
+  const update = async (candidate: CityCandidate) => {
     if (isRunning(useLocationUpdateStore.getState().run)) return;
     void mediumHaptic();
     setStarted(true);
-    if (await executeUpdate()) dismissCityOffer();
+    if (await applyCandidate(candidate)) dismissCityOffer();
   };
   const retryUpdate = async () => {
     if (await retry()) dismissCityOffer();
@@ -252,7 +252,7 @@ export const CityChangeSheet = ({ onboarding }: Props) => {
             candidate={offer.candidate}
             run={shown}
             busy={isRunning(run)}
-            onUpdate={() => void update()}
+            onUpdate={() => void update(offer.candidate)}
             onKeep={keepCityOffer}
             onRetry={() => void retryUpdate()}
             onChooseCity={() => openPicker(CITY_PICKER_VIEW.LIST)}

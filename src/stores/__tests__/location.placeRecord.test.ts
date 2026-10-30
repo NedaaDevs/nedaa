@@ -5,6 +5,7 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { initialLocationDetails, type LocationObject, type ManualLocation } from "@/types/location";
 import { readLocation } from "@/utils/location";
+import { candidateAt } from "@/test-helpers/cityOffer";
 import { JEDDAH_CITY, MAKKAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 
@@ -94,6 +95,11 @@ describe("the place record and the place revision", () => {
       ["a cleared city", async () => useLocationStore.getState().clearManualLocation(), asIs],
       ["a device update", () => useLocationStore.getState().updateCurrentLocation(), asIs],
       ["the switch to the device", () => useLocationStore.getState().adoptDeviceLocation(), asIs],
+      [
+        "the offer's candidate",
+        () => useLocationStore.getState().applyCityCandidate(candidateAt()),
+        asIs,
+      ],
       // A chosen city stops initializeLocation; this row starts on the device.
       [
         "the first fix",
