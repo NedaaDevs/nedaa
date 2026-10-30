@@ -82,6 +82,9 @@ const JEDDAH_2: Coords = { latitude: 21.5441, longitude: 39.1739 };
 const DAMMAM: Coords = { latitude: 26.4207, longitude: 50.0888 };
 const KHOBAR: Coords = { latitude: 26.2172, longitude: 50.1971 };
 const MANAMA: Coords = { latitude: 26.2285, longitude: 50.586 };
+// An error text that names a place, its point and its zone.
+const PLACE_ERROR = `no row for Jeddah at 21.5433,39.1728 in ${RIYADH_ZONE}`;
+const PLACE_IN_LOG = /Jeddah|Makkah|21\.[45]|39\.[18]|Asia\//;
 // Saudi, 24 km from Manama, with a shift under the gate.
 const SAUDI_NEAR_MANAMA: Coords = { latitude: 26.2, longitude: 50.35 };
 
@@ -332,7 +335,43 @@ describe("offer", () => {
 
     expect(location().cityOffer).not.toBeNull();
     expect(allLogText()).toContain(`${LAUNCH} → offer (${CITY_CHECK_OFFER.SHIFT})`);
-    expect(allLogText()).not.toMatch(/Jeddah|Makkah|21\.[45]|39\.[18]/);
+    expect(allLogText()).not.toMatch(PLACE_IN_LOG);
+  });
+
+  // Each failure's error names the place; no log line may carry it.
+  it.each<[string, () => Promise<unknown>]>([
+    [
+      "the device geocoder fails",
+      () => {
+        freshFixes(JEDDAH, JEDDAH_2);
+        mockReverseGeocode.mockRejectedValue(new Error(PLACE_ERROR));
+        return check();
+      },
+    ],
+    [
+      "the city list throws",
+      () => {
+        freshFixes(JEDDAH, JEDDAH_2);
+        mockFindNearestCity.mockRejectedValue(new Error(PLACE_ERROR));
+        return check();
+      },
+    ],
+    [
+      "the offered city's names fail to translate",
+      async () => {
+        mockReverseGeocode.mockRejectedValue(new Error(PLACE_ERROR));
+        loaded.location.setState({
+          reverseGeocode: () => Promise.reject(new Error(PLACE_ERROR)),
+        });
+        await location().applyCityCandidate(candidateAt({ name: null, point: JEDDAH }));
+        await jest.advanceTimersByTimeAsync(0);
+      },
+    ],
+  ])("logs no name, point or zone when %s", async (_case, fail) => {
+    await fail();
+
+    expect(mockLog.w).toHaveBeenCalled();
+    expect(allLogText()).not.toMatch(PLACE_IN_LOG);
   });
 });
 
