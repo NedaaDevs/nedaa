@@ -1,5 +1,8 @@
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
+/** Meters in a kilometre. */
+export const METERS_PER_KM = 1000;
+
 /** What the location store writes for a city or country it could not name. */
 export const PLACE_UNKNOWN = "N/A";
 
