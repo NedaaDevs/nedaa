@@ -49,6 +49,15 @@ export const DEBUG_COPY = {
   PHONE_ZONE: "Phone zone",
   PHONE_ZONE_HINT: "Reads the zone again; a return to the app reads it too",
   NEVER_CHECKED: "never",
+  LAST_CHECK: "Last check",
+  KEPT: "Kept",
+  NOT_ASKED: "Not asked",
+  MINUTES: "min",
+  HOURS: "h",
+  DAYS: "d",
+  /** A run's result when it put an offer up. */
+  OFFERED: "offer",
+  CLEARED: "Done",
   /** Shown for a source that gives no zone. */
   NO_ZONE: "none",
   /** The city the sample offer names. */
