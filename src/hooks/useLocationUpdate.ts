@@ -3,7 +3,7 @@ import { AccessibilityInfo } from "react-native";
 import { reloadPrayerWidgets } from "expo-widget";
 
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import { STEP_OUTCOME, UPDATE_START, UPDATE_STEP } from "@/constants/Location";
+import { STEP_OUTCOME, UPDATE_START, UPDATE_STEP, type StepOutcome } from "@/constants/Location";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationStore } from "@/stores/location";
 import {
@@ -22,18 +22,24 @@ import { notificationsOutcome } from "@/utils/updateOutcome";
 const DEVICE_START: UpdateStart = { kind: UPDATE_START.DEVICE };
 
 /** Sets the place: the only step that differs between the starts. */
-const takePlace = async (start: UpdateStart): Promise<void> => {
+const takePlace = async (start: UpdateStart): Promise<StepOutcome> => {
   const location = useLocationStore.getState();
   switch (start.kind) {
     case UPDATE_START.DEVICE:
-      return location.updateCurrentLocation();
+      await location.updateCurrentLocation();
+      return STEP_OUTCOME.DONE;
     case UPDATE_START.ADOPT_DEVICE:
       // The device read comes first; a failed read leaves the chosen city.
-      return location.adoptDeviceLocation();
+      await location.adoptDeviceLocation();
+      return STEP_OUTCOME.DONE;
     case UPDATE_START.CITY:
-      return location.setManualLocation(start.city);
+      location.setManualLocation(start.city);
+      return STEP_OUTCOME.DONE;
     case UPDATE_START.CANDIDATE:
-      return location.applyCityCandidate(start.candidate);
+      // An offer the place moved away from sets nothing; the run stops there.
+      return (await location.applyCityCandidate(start.candidate))
+        ? STEP_OUTCOME.DONE
+        : STEP_OUTCOME.FAILED;
     default: {
       const unhandled: never = start;
       return unhandled;
@@ -44,10 +50,7 @@ const takePlace = async (start: UpdateStart): Promise<void> => {
 /** Place, times, notifications, alarms; the alerts need the place and times. */
 const runUpdate = (start: UpdateStart): Promise<UpdateResult> =>
   useLocationUpdateStore.getState().withRun(start, async (runStep) => {
-    const placed = await runStep(UPDATE_STEP.LOCATION, async () => {
-      await takePlace(start);
-      return STEP_OUTCOME.DONE;
-    });
+    const placed = await runStep(UPDATE_STEP.LOCATION, () => takePlace(start));
     if (placed === STEP_OUTCOME.FAILED) return;
     const times = await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
       const { placeRevision } = useLocationStore.getState();

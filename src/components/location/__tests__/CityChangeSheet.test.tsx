@@ -51,7 +51,7 @@ const UNNAMED_KM = 40;
 
 const { dismissCityOffer } = useLocationStore.getState();
 const kept = () => useCityCheckStore.getState().cityCheck.kept;
-const mockUpdate = jest.fn(async () => {});
+const mockUpdate = jest.fn(async () => true);
 const mockReadDevice = jest.fn(async () => {});
 const mockLoad = jest.fn(async () => true);
 
@@ -92,7 +92,7 @@ const box = (label: string, city: string) =>
 /** A run that stays at its first step until the test lets it land. */
 const holdUpdate = () => {
   let land: () => void = () => {};
-  mockUpdate.mockReturnValue(new Promise<void>((resolve) => (land = resolve)));
+  mockUpdate.mockReturnValue(new Promise<boolean>((resolve) => (land = () => resolve(true))));
   return () => land();
 };
 
@@ -116,7 +116,7 @@ afterEach(() => jest.restoreAllMocks());
 beforeEach(async () => {
   jest.clearAllMocks();
   await act(() => i18n.changeLanguage(AppLocale.EN));
-  mockUpdate.mockResolvedValue(undefined);
+  mockUpdate.mockResolvedValue(true);
   mockLoad.mockResolvedValue(true);
   useLocationUpdateStore.setState({ run: null });
   useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY });
@@ -184,7 +184,7 @@ describe("CityChangeSheet", () => {
 
   it("stays open through the update with its steps, and closes once it lands", async () => {
     let land: () => void = () => {};
-    mockUpdate.mockReturnValue(new Promise<void>((resolve) => (land = resolve)));
+    mockUpdate.mockReturnValue(new Promise<boolean>((resolve) => (land = () => resolve(true))));
     await renderSheet();
 
     await userEvent.press(updateButton());
@@ -215,6 +215,22 @@ describe("CityChangeSheet", () => {
     );
     expect(mockUpdate).toHaveBeenCalledWith(candidate);
     expect(useLocationStore.getState().cityOffer).toBeNull();
+  });
+
+  it("stays open, saying nothing is done, when the offered city is not written", async () => {
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    mockUpdate.mockResolvedValue(false);
+    await renderSheet();
+
+    await userEvent.press(updateButton());
+
+    expect(title()).toBeTruthy();
+    expect(useLocationStore.getState().cityOffer).not.toBeNull();
+    expect(mockLoad).not.toHaveBeenCalled();
+    expect(announce).not.toHaveBeenCalledWith(t("location.update.step.done"));
+    expect(useLocationUpdateStore.getState().run).toEqual(
+      expect.objectContaining({ step: UPDATE_STEP.LOCATION, failed: true })
+    );
   });
 
   // The sheet leaves on what it was doing, not on the question it answered.
@@ -345,7 +361,7 @@ describe("CityChangeSheet", () => {
     await userEvent.press(updateButton());
 
     expect(await screen.findByText(t("location.failure.notFound.title"))).toBeTruthy();
-    mockUpdate.mockResolvedValue(undefined);
+    mockUpdate.mockResolvedValue(true);
     await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
 
     expect(mockUpdate.mock.calls).toEqual([[candidate], [candidate]]);

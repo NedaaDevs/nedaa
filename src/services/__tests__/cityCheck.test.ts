@@ -20,7 +20,7 @@ import { LocationMode, LocalPermissionStatus } from "@/enums/location";
 import { candidateAt } from "@/test-helpers/cityOffer";
 import { JEDDAH_ROW, MANAMA_ROW } from "@/test-helpers/cityRows";
 import { holdHydration } from "@/test-helpers/hydration";
-import { never } from "@/test-helpers/promises";
+import { later, never } from "@/test-helpers/promises";
 import { DUBAI_ZONE } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { Coords, LocationGeocodedAddress, LocationObject } from "@/types/location";
@@ -91,6 +91,7 @@ type Loaded = Runner & {
   memory: typeof import("@/stores/cityCheck").useCityCheckStore;
   app: typeof import("@/stores/app").useAppStore;
   update: typeof import("@/stores/locationUpdate").useLocationUpdateStore;
+  settings: typeof import("@/stores/providerSettings").useProviderSettingsStore;
 };
 
 let loaded: Loaded;
@@ -118,6 +119,7 @@ const load = async (saved: Coords = MAKKAH, countryCode: string | null = SA) => 
       memory: require("@/stores/cityCheck").useCityCheckStore,
       app: require("@/stores/app").useAppStore,
       update: require("@/stores/locationUpdate").useLocationUpdateStore,
+      settings: require("@/stores/providerSettings").useProviderSettingsStore,
     };
     /* eslint-enable @typescript-eslint/no-require-imports */
   });
@@ -183,7 +185,7 @@ const rowNear = (row: typeof JEDDAH_ROW) =>
   mockFindNearestCity.mockResolvedValue({ city: row, distanceKm: ROW_DISTANCE_KM });
 
 /** Runs a check through its second-fix wait. */
-const settle = async (run: Promise<void>) => {
+const settle = async (run: Promise<unknown>) => {
   await jest.advanceTimersByTimeAsync(CONFIRM_FIX_DELAY_MS);
   await run;
 };
@@ -489,6 +491,34 @@ describe("memory", () => {
     ended(LAUNCH, CITY_CHECK_END.NOT_ASKED);
   });
 
+  it.each([
+    ["the app settings", () => holdHydration(loaded.app)],
+    ["the prayer-time settings", () => holdHydration(loaded.settings)],
+  ])("waits for %s to load before it reads", async (_name, holdStore) => {
+    const hold = holdStore();
+    freshFixes(MAKKAH);
+
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(SECOND_MS);
+    expect(mockLastKnown).not.toHaveBeenCalled();
+    hold.land();
+    await settle(run);
+
+    expect(mockLastKnown).toHaveBeenCalledTimes(1);
+    ended(LAUNCH, CITY_CHECK_END.NOT_MOVED);
+  });
+
+  it("ends with no write when the settings do not load in time", async () => {
+    holdHydration(loaded.settings);
+
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(MEMORY_LOAD_TIMEOUT_MS);
+    await run;
+
+    ended(LAUNCH, CITY_CHECK_SKIP.MEMORY_NOT_LOADED);
+    expect(mockLastKnown).not.toHaveBeenCalled();
+  });
+
   it("ends with no write when the memory does not load in time", async () => {
     holdHydration(loaded.memory);
 
@@ -659,7 +689,7 @@ describe("before the offer", () => {
 
     const first = loaded.runCityCheck(LAUNCH);
     await jest.advanceTimersByTimeAsync(CONFIRM_FIX_DELAY_MS);
-    await expect(first).resolves.toBeUndefined();
+    await expect(first).resolves.toEqual({ reason: CITY_CHECK_END.CHECK_FAILED });
 
     ended(LAUNCH, CITY_CHECK_END.CHECK_FAILED);
     expect(memory().lastCheckAt).toBe(NOW + CONFIRM_FIX_DELAY_MS);
@@ -717,5 +747,68 @@ describe("triggers", () => {
     await check(RETURN);
 
     expect(location().cityOffer).not.toBeNull();
+  });
+
+  it("reads each leave once: a later return with no leave is too short", async () => {
+    await returnAfter(6 * 60 * MINUTE_MS);
+    await check(RETURN);
+    ended(RETURN, CITY_CHECK_END.NOT_MOVED);
+
+    await jest.advanceTimersByTimeAsync(CHECK_THROTTLE_MS + MINUTE_MS);
+    emitAppState(APP_STATE.INACTIVE);
+    emitAppState(APP_STATE.ACTIVE);
+    await check(RETURN);
+
+    ended(RETURN, CITY_CHECK_SKIP.AWAY_TOO_SHORT);
+    expect(mockCurrentPosition).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("leaves during a check", () => {
+  it("ends with no throttle when the app leaves during the cached read", async () => {
+    mockLastKnown.mockReturnValue(never());
+
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(0);
+    emitAppState(APP_STATE.BACKGROUND);
+    await run;
+
+    ended(LAUNCH, CITY_CHECK_END.APP_LEFT);
+    expect(mockCurrentPosition).not.toHaveBeenCalled();
+    expect(memory().lastCheckAt).toBeNull();
+  });
+
+  it("ends with no throttle when the app leaves during the first fresh read", async () => {
+    mockCurrentPosition.mockReturnValue(never());
+
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(SECOND_MS);
+    expect(mockCurrentPosition).toHaveBeenCalledTimes(1);
+    emitAppState(APP_STATE.BACKGROUND);
+    await run;
+
+    ended(LAUNCH, CITY_CHECK_END.APP_LEFT);
+    expect(memory().lastCheckAt).toBeNull();
+  });
+
+  it("runs one more check after a check that a leave and a return overtook", async () => {
+    freshFixes(JEDDAH, JEDDAH_2);
+    const naming = later<LocationGeocodedAddress[]>();
+    mockReverseGeocode.mockReturnValue(naming.promise);
+    const first = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(CONFIRM_FIX_DELAY_MS);
+    expect(mockReverseGeocode).toHaveBeenCalledTimes(1);
+
+    await returnAfter(CHECK_MIN_AWAY_MS + MINUTE_MS);
+    const next = loaded.runCityCheck(RETURN);
+    expect(next).not.toBe(first);
+    expect(loaded.runCityCheck(RETURN)).toBe(next);
+    naming.release([]);
+    await first;
+    await next;
+
+    expect(allLogText()).toContain(`${LAUNCH} → offer (${CITY_CHECK_OFFER.SHIFT})`);
+    expect(endCount(CITY_CHECK_SKIP.OFFER_SHOWING)).toBe(1);
+    ended(RETURN, CITY_CHECK_SKIP.OFFER_SHOWING);
   });
 });

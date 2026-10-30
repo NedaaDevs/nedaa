@@ -8,6 +8,7 @@ import type { MethodId } from "@/types/providers/aladhan";
 
 import {
   conservativeKm,
+  isLiveKept,
   keptAfterFix,
   markPoint,
   matchesMark,
@@ -186,6 +187,15 @@ describe("place marks", () => {
       )
     ).toEqual([entry]);
   });
+
+  it.each([
+    ["made now", 0, true],
+    ["made 30 days ago", KEPT_MAX_AGE_MS, true],
+    ["made just over 30 days ago", KEPT_MAX_AGE_MS + 1, false],
+    ["dated a moment after now", -1, false],
+  ])("reads a kept entry %s as live: %s", (_case, ageMs, live) =>
+    expect(isLiveKept(mark(JEDDAH, NOW - ageMs), NOW)).toBe(live)
+  );
 
   it("ends a kept trip after 30 days", () =>
     expect(
