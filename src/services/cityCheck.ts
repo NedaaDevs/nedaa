@@ -41,7 +41,7 @@ import type { AladhanSettings } from "@/types/providers/aladhan";
 import { waitWhileActive } from "@/utils/appForeground";
 import { AppLogger } from "@/utils/appLogger";
 import { trustedCityNear } from "@/utils/cityCheck/cityNear";
-import { confirmedFix, judgeCityChange } from "@/utils/cityCheck/judge";
+import { confirmedFix, isNearSaved, judgeCityChange } from "@/utils/cityCheck/judge";
 import { keptAfterFix } from "@/utils/cityCheck/marks";
 import { providerMethodAt } from "@/utils/cityCheck/method";
 import {
@@ -165,10 +165,9 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
   const { inEffect } = useProviderSettingsStore.getState();
   const userMethod = settings?.method ?? null;
   const savedMethod = () => inEffect?.method ?? providerMethodAt(saved.point, saved.countryCode);
-  const calc: ShiftCalc = {
-    method: userMethod ?? savedMethod(),
-    school: settings?.madhab ?? inEffect?.madhab ?? ASR_SCHOOL.SHAFI,
-  };
+  const school = settings?.madhab ?? inEffect?.madhab ?? ASR_SCHOOL.SHAFI;
+  // Derived each turn, so a country the check fills in reaches the estimate.
+  const calc = (): ShiftCalc => ({ method: userMethod ?? savedMethod(), school });
   // A method change counts only between known countries; a guess never offers.
   const methodsFor = (candidate: CityCandidate | null): MethodFacts => {
     const savedKnown = inEffect?.method != null || saved.countryCode !== null;
@@ -218,7 +217,7 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
     candidate,
     countryLooked,
     methods: methodsFor(candidate),
-    calc,
+    calc: calc(),
     kept,
     notAsked,
   });
@@ -292,14 +291,16 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
     }
   };
 
-  // A confirmed fix ends kept trips once, with the candidate's country if known.
+  // A confirmed fix ends kept trips once. Its country is the candidate's, or
+  // the saved place's for a fix at home.
   const settleKept = () => {
     const confirmed = confirmedFix(fixes);
     if (keptSettled || !confirmed) return false;
     keptSettled = true;
     const before = useCityCheckStore.getState().cityCheck.kept;
-    const zone = saved.zone;
-    kept = keptAfterFix(before, confirmed, zone, calc, Date.now(), candidate?.countryCode ?? null);
+    const home = isNearSaved(confirmed, saved) ? saved.countryCode : null;
+    const country = candidate?.countryCode ?? home;
+    kept = keptAfterFix(before, confirmed, saved.zone, calc(), Date.now(), country);
     if (kept.length !== before.length) useCityCheckStore.getState().setKept(kept);
     return true;
   };

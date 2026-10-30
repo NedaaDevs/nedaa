@@ -82,6 +82,8 @@ const JEDDAH_2: Coords = { latitude: 21.5441, longitude: 39.1739 };
 const DAMMAM: Coords = { latitude: 26.4207, longitude: 50.0888 };
 const KHOBAR: Coords = { latitude: 26.2172, longitude: 50.1971 };
 const MANAMA: Coords = { latitude: 26.2285, longitude: 50.586 };
+// Saudi, 24 km from Manama, with a shift under the gate.
+const SAUDI_NEAR_MANAMA: Coords = { latitude: 26.2, longitude: 50.35 };
 
 type Runner = typeof import("@/services/cityCheck");
 type Loaded = Runner & {
@@ -561,6 +563,19 @@ describe("memory", () => {
     expect(location().cityOffer).not.toBeNull();
   });
 
+  it("ends a kept trip in another country on a confirmed pair at home", async () => {
+    await load(MANAMA, BAHRAIN);
+    loaded.memory.setState({
+      cityCheck: { ...memory(), kept: [toPlaceMark(SAUDI_NEAR_MANAMA, NOW - DAY_MS, SA)] },
+    });
+    freshFixes(MANAMA, MANAMA);
+
+    await check();
+
+    expect(memory().kept).toEqual([]);
+    ended(LAUNCH, CITY_CHECK_END.NOT_MOVED);
+  });
+
   it("ends at a kept place on its first fresh fix", async () => {
     loaded.memory.setState({
       cityCheck: { ...memory(), kept: [toPlaceMark(JEDDAH, NOW - DAY_MS, SA)] },
@@ -604,6 +619,55 @@ describe("during the check", () => {
   it("makes no offer when travel is turned off during the check", async () => {
     await changeDuringWait(() => location().setTravelMode(TRAVEL_MODE.OFF));
     ended(LAUNCH, CITY_CHECK_SKIP.TRAVEL_OFF);
+  });
+});
+
+describe("before the offer", () => {
+  it.each<[string, () => void, CityCheckReason]>([
+    [
+      "the saved place changes",
+      () => loaded.location.setState({ placeRevision: location().placeRevision + 1 }),
+      CITY_CHECK_END.PLACE_CHANGED,
+    ],
+    [
+      "travel is turned off",
+      () => location().setTravelMode(TRAVEL_MODE.OFF),
+      CITY_CHECK_SKIP.TRAVEL_OFF,
+    ],
+  ])("makes no offer when %s while the candidate is named", async (_case, change, reason) => {
+    freshFixes(JEDDAH, JEDDAH_2);
+    mockReverseGeocode.mockImplementation(async () => {
+      change();
+      return [address({ city: "Jeddah" })];
+    });
+
+    await check();
+
+    expect(mockReverseGeocode).toHaveBeenCalledTimes(1);
+    expect(location().cityOffer).toBeNull();
+    ended(LAUNCH, reason);
+  });
+
+  it("ends a check that throws as failed, and runs the next one fresh", async () => {
+    freshFixes(JEDDAH, JEDDAH_2);
+    rowNear(JEDDAH_ROW);
+    loaded.location.setState({
+      offerCity: () => {
+        throw new Error("store");
+      },
+    });
+
+    const first = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(CONFIRM_FIX_DELAY_MS);
+    await expect(first).resolves.toBeUndefined();
+
+    ended(LAUNCH, CITY_CHECK_END.CHECK_FAILED);
+    expect(memory().lastCheckAt).toBe(NOW + CONFIRM_FIX_DELAY_MS);
+
+    const second = loaded.runCityCheck(LAUNCH);
+    expect(second).not.toBe(first);
+    await settle(second);
+    ended(LAUNCH, CITY_CHECK_SKIP.THROTTLED);
   });
 });
 
