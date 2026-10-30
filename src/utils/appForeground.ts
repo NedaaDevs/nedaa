@@ -29,3 +29,21 @@ export const nextForeground = (graceMs: number, signal?: AbortSignal): Promise<v
     }, graceMs);
     signal?.addEventListener("abort", finish, { once: true });
   });
+
+/** True after `ms` with the app active throughout; false as soon as it leaves. */
+export const waitWhileActive = (ms: number): Promise<boolean> =>
+  new Promise<boolean>((resolve) => {
+    if (AppState.currentState !== APP_STATE.ACTIVE) {
+      resolve(false);
+      return;
+    }
+    const finish = (stayed: boolean) => {
+      clearTimeout(timer);
+      subscription.remove();
+      resolve(stayed);
+    };
+    const subscription = AppState.addEventListener("change", (next: AppStateStatus) => {
+      if (next !== APP_STATE.ACTIVE) finish(false);
+    });
+    const timer = setTimeout(() => finish(true), ms);
+  });
