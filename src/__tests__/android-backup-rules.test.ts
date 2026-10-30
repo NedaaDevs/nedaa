@@ -43,7 +43,8 @@ describe("Android backup rules", () => {
     expect(manifest).toContain('android:dataExtractionRules="@xml/data_extraction_rules"');
   });
 
-  it.todo("registers ./plugins/withBackupRules in app.json so prebuild keeps the rules");
+  it("registers the plugin in app.json so prebuild keeps the rules", () =>
+    expect(JSON.parse(read(join(REPO_ROOT, "app.json"))).expo.plugins).toContain(PLUGIN));
 
   it("writes the committed rule files when the plugin runs", () => {
     expect(backupRulesXml()).toBe(backupRules());
