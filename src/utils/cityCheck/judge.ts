@@ -19,7 +19,7 @@ import type {
   SavedPlaceFacts,
 } from "@/types/cityCheck";
 import type { Coords } from "@/types/location";
-import { conservativeKm, isLiveKept, matchesMark } from "@/utils/cityCheck/marks";
+import { conservativeKm, isLiveKept, matchesMark, sameCountry } from "@/utils/cityCheck/marks";
 import { maxYearlyShiftMinutes } from "@/utils/cityCheck/shift";
 import { calculateDistance } from "@/utils/location";
 
@@ -46,8 +46,6 @@ export const confirmedFix = (fixes: readonly CityCheckFix[]): CityCheckFix | nul
   const last = fresh[fresh.length - 1];
   return confirms(first, last) ? last : null;
 };
-
-const sameCountry = (a: string, b: string) => a.toUpperCase() === b.toUpperCase();
 
 const offerReasons = (facts: CityCheckFacts, candidate: CityCandidate): CityCheckOfferReason[] => {
   const { saved, methods, calc, now } = facts;
