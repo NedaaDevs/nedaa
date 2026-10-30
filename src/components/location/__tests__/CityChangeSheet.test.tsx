@@ -31,6 +31,7 @@ import { NEDAA_DARK } from "@/constants/Palette";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
+import { never } from "@/test-helpers/promises";
 import { JEDDAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 import { initialLocationDetails } from "@/types/location";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
@@ -233,6 +234,45 @@ describe("CityChangeSheet", () => {
     );
   });
 
+  // The times land and settle the place while later steps still run.
+  it("names the saved city as it was when the offer came, through the update", async () => {
+    mockUpdate.mockImplementation(async () => {
+      const before = useLocationStore.getState();
+      useLocationStore.setState({
+        previousPlace: {
+          coords: before.locationDetails.coords,
+          address: before.locationDetails.address,
+          timezone: before.locationDetails.timezone,
+          fixSource: null,
+          fixedAt: null,
+          countryCode: before.locationDetails.countryCode,
+          localizedLocation: before.localizedLocation,
+          locationMode: before.locationMode,
+          manualLocation: null,
+        },
+        placeRevision: before.placeRevision + 1,
+        locationDetails: {
+          ...before.locationDetails,
+          address: { city: NEW_CITY, country: JEDDAH_CITY.country.name },
+        },
+      });
+      return true;
+    });
+    mockLoad.mockImplementation(async () => {
+      const { settlePlace, placeRevision } = useLocationStore.getState();
+      settlePlace(placeRevision);
+      return true;
+    });
+    useNotificationStore.setState({ scheduleAllNotifications: () => never() });
+    await renderSheet();
+
+    await userEvent.press(updateButton());
+
+    expect(useLocationStore.getState().previousPlace).toBeNull();
+    expect(useLocationUpdateStore.getState().run?.step).toBe(UPDATE_STEP.NOTIFICATIONS);
+    expect(box("location.cityChange.saved", SAVED_CITY)).toBeTruthy();
+  });
+
   // The sheet leaves on what it was doing, not on the question it answered.
   it("keeps the run's steps, not the offer, while it leaves", async () => {
     const dismiss = jest.fn();
@@ -263,7 +303,10 @@ describe("CityChangeSheet", () => {
     await renderSheet();
 
     expect(updateButton()).toHaveProp("accessibilityLabel", t("location.cityChange.update"));
-    expect(updateButton()).toHaveProp("accessibilityHint", t("a11y.location.refreshHint"));
+    expect(updateButton()).toHaveProp(
+      "accessibilityHint",
+      t("a11y.location.cityChange.updateHint")
+    );
     expect(screen.getByRole("button", { name: t("location.cityChange.keep") })).toHaveProp(
       "accessibilityLabel",
       t("location.cityChange.keep")
