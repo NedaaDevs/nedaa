@@ -12,7 +12,9 @@ import { phoneZoneReadings } from "@/utils/phoneZone";
 
 jest.mock("expo-dev-menu", () => ({ registerDevMenuItems: jest.fn(() => Promise.resolve()) }));
 
+// The sample offers run for real; the check's own actions are stubbed.
 jest.mock("@/utils/cityCheckDebug", () => ({
+  ...jest.requireActual("@/utils/cityCheckDebug"),
   runCityCheckNow: jest.fn(),
   showCityCheckMemory: jest.fn(),
   clearCityCheckMemory: jest.fn(),
