@@ -77,7 +77,7 @@ beforeEach(async () => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-// Each test renders the whole sky; under a loaded machine one passes 5 s.
+// Whole-sky renders can exceed 5 s on a loaded machine.
 jest.setTimeout(20_000);
 
 describe("NumeralsStep", () => {

@@ -46,6 +46,7 @@ import {
   locationFailureOf,
   readLocation,
 } from "@/utils/location";
+import { CitiesDB } from "@/services/cities-db";
 import { trustedCityNear } from "@/utils/cityCheck/cityNear";
 import { countryCodeOf, toPlaceMark } from "@/utils/cityCheck/marks";
 import { resolveLocalizedName } from "@/utils/cities";
@@ -490,7 +491,9 @@ export const useLocationStore = create<LocationStore>()(
               error: null,
               fix: { source: FIX_SOURCE.FRESH, at: candidate.fixedAt },
               countryCode: countryCodeOf(
-                candidate.countryCode ?? row?.countryCode ?? geocoded?.isoCountryCode
+                candidate.countryCode ??
+                  (row && CitiesDB.isFullPackInstalled() ? row.countryCode : null) ??
+                  geocoded?.isoCountryCode
               ),
               isLoading: false,
             },
