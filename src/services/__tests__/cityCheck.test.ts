@@ -890,6 +890,38 @@ describe("leaves during a check", () => {
     expect(memory().lastCheckAt).toBeNull();
   });
 
+  it("reads on through an inactive report during the first fresh read", async () => {
+    const read = later<LocationObject>();
+    mockCurrentPosition.mockReturnValueOnce(read.promise);
+    mockCurrentPosition.mockImplementation(async () => fixAt(MAKKAH));
+
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(SECOND_MS);
+    emitAppState(APP_STATE.INACTIVE);
+    emitAppState(APP_STATE.ACTIVE);
+    read.release(fixAt(MAKKAH));
+    await settle(run);
+
+    ended(LAUNCH, CITY_CHECK_END.NOT_MOVED);
+    expect(endCount(CITY_CHECK_END.APP_LEFT)).toBe(0);
+  });
+
+  it("owes a launch check that the app left, and runs it on the next return", async () => {
+    mockLastKnown.mockReturnValueOnce(never());
+
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(0);
+    emitAppState(APP_STATE.BACKGROUND);
+    await run;
+    ended(LAUNCH, CITY_CHECK_END.APP_LEFT);
+
+    // A short return with no recorded leave runs the owed check.
+    emitAppState(APP_STATE.ACTIVE);
+    await check(RETURN);
+
+    ended(RETURN, CITY_CHECK_END.NOT_MOVED);
+  });
+
   it("runs one more check after a check that a leave and a return overtook", async () => {
     freshFixes(JEDDAH, JEDDAH_2);
     const naming = later<LocationGeocodedAddress[]>();
