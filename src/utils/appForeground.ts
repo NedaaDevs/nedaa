@@ -47,3 +47,29 @@ export const waitWhileActive = (ms: number): Promise<boolean> =>
     });
     const timer = setTimeout(() => finish(true), ms);
   });
+
+/** Stands for a read the app left before it settled. */
+export const APP_LEFT = Symbol("appLeft");
+
+/** The read's value, or APP_LEFT when the app leaves first or is away. */
+export const unlessLeft = <T>(read: () => Promise<T>): Promise<T | typeof APP_LEFT> =>
+  new Promise<T | typeof APP_LEFT>((resolve, reject) => {
+    if (AppState.currentState !== APP_STATE.ACTIVE) {
+      resolve(APP_LEFT);
+      return;
+    }
+    let done = false;
+    const settle = (finish: () => void) => {
+      if (done) return;
+      done = true;
+      subscription.remove();
+      finish();
+    };
+    const subscription = AppState.addEventListener("change", (next: AppStateStatus) => {
+      if (next !== APP_STATE.ACTIVE) settle(() => resolve(APP_LEFT));
+    });
+    read().then(
+      (value) => settle(() => resolve(value)),
+      (error: unknown) => settle(() => reject(error))
+    );
+  });
