@@ -20,3 +20,9 @@ export const phoneZoneReadings = (): PhoneZoneReadings => ({
   intl: readOrNull(() => Intl.DateTimeFormat().resolvedOptions().timeZone),
   calendar: readOrNull(() => getCalendars()[0]?.timeZone ?? undefined),
 });
+
+/** The phone's zone: the calendar's, else Intl's; null when both are empty. */
+export const readPhoneZone = (): string | null => {
+  const { calendar, intl } = phoneZoneReadings();
+  return calendar || intl || null;
+};
