@@ -86,10 +86,13 @@ const renderSheet = ({ isRTL = false, dark = false, onboarding = false } = {}) =
   );
 
 // The heading reads the greeting, then the title.
-const HEADING = new RegExp(
-  `${t("location.cityChange.greeting")}.*${t("location.cityChange.title")}`
-);
-const title = () => screen.queryByRole("header", { name: HEADING });
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const title = () =>
+  screen.queryByRole("header", {
+    name: new RegExp(
+      `${escapeRegExp(t("location.cityChange.greeting"))}.*${escapeRegExp(t("location.cityChange.title"))}`
+    ),
+  });
 const updateButton = () => screen.getByRole("button", { name: t("location.cityChange.update") });
 const box = (label: string, city: string) =>
   screen.getByLabelText(t("a11y.join", { first: t(label), second: city }));
