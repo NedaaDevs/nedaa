@@ -1045,10 +1045,12 @@ describe("Settings › Location", () => {
     it("says each step once under the city-change sheet", async () => {
       jest.spyOn(AccessibilityInfo, "announceForAccessibility");
       let read: () => void = () => {};
-      mockUpdate.mockReturnValue(new Promise<void>((resolve) => (read = resolve)));
+      const applyCandidate = jest.fn(
+        () => new Promise<boolean>((resolve) => (read = () => resolve(true)))
+      );
       mockLoad.mockReturnValue(new Promise(() => {}));
       useAppStore.setState({ isFirstRun: false });
-      useLocationStore.setState({ applyCityCandidate: mockUpdate });
+      useLocationStore.setState({ applyCityCandidate: applyCandidate });
       offerUp();
       await renderScreen({ withSheet: true });
 

@@ -2,8 +2,8 @@ import { AppState, type AppStateStatus } from "react-native";
 
 import { APP_STATE } from "@/constants/AppState";
 import { SETTINGS_OPEN_GRACE_MS } from "@/constants/Onboarding";
-import { outcomeOf } from "@/test-helpers/promises";
-import { nextForeground, waitWhileActive } from "@/utils/appForeground";
+import { later, outcomeOf } from "@/test-helpers/promises";
+import { APP_LEFT, nextForeground, unlessLeft, waitWhileActive } from "@/utils/appForeground";
 
 const listeners: ((status: AppStateStatus) => void)[] = [];
 const remove = jest.fn();
@@ -167,5 +167,50 @@ describe("waitWhileActive", () => {
     expect(left.mock.calls).toStrictEqual([[{ value: false }]]);
     expect(AppState.addEventListener).not.toHaveBeenCalled();
     expect(released()).toBe(true);
+  });
+});
+
+describe("unlessLeft", () => {
+  const VALUE = 7;
+
+  it("answers the read's value while the app stays active", async () => {
+    const read = later<number>();
+    const answer = outcomeOf(unlessLeft(() => read.promise));
+    read.release(VALUE);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(answer.mock.calls).toStrictEqual([[{ value: VALUE }]]);
+    expect(released()).toBe(true);
+  });
+
+  it("answers APP_LEFT once the app leaves first, and drops the late value", async () => {
+    const read = later<number>();
+    const answer = outcomeOf(unlessLeft(() => read.promise));
+    emit(APP_STATE.INACTIVE);
+    read.release(VALUE);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(answer.mock.calls).toStrictEqual([[{ value: APP_LEFT }]]);
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the read's failure on", async () => {
+    const read = later<number>();
+    const answer = outcomeOf(unlessLeft(() => read.promise));
+    const failure = new Error("read");
+    read.fail(failure);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(answer.mock.calls).toStrictEqual([[{ error: failure }]]);
+  });
+
+  it("never starts the read when the app is already away", async () => {
+    startIn(APP_STATE.BACKGROUND);
+    const read = jest.fn(() => Promise.resolve(VALUE));
+    const answer = outcomeOf(unlessLeft(read));
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(answer.mock.calls).toStrictEqual([[{ value: APP_LEFT }]]);
+    expect(read).not.toHaveBeenCalled();
   });
 });
