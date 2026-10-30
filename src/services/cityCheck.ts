@@ -5,6 +5,7 @@ import { APP_STATE } from "@/constants/AppState";
 import {
   CACHED_FIX_MAX_AGE_MS,
   CHECK_MAX_TURNS,
+  CHECK_THROTTLE_MS,
   CITY_CHECK_END,
   CITY_CHECK_NEED,
   CITY_CHECK_SKIP,
@@ -168,13 +169,15 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
     method: userMethod ?? savedMethod(),
     school: settings?.madhab ?? inEffect?.madhab ?? ASR_SCHOOL.SHAFI,
   };
-  const methodsFor = (candidate: CityCandidate | null): MethodFacts =>
-    userMethod !== null || candidate === null
-      ? null
-      : {
-          saved: savedMethod(),
-          candidate: providerMethodAt(candidate.point, candidate.countryCode),
-        };
+  // A method change counts only between known countries; a guess never offers.
+  const methodsFor = (candidate: CityCandidate | null): MethodFacts => {
+    const savedKnown = inEffect?.method != null || saved.countryCode !== null;
+    if (userMethod !== null || !savedKnown || !candidate?.countryCode) return null;
+    return {
+      saved: savedMethod(),
+      candidate: providerMethodAt(candidate.point, candidate.countryCode),
+    };
+  };
 
   let fixes: CityCheckFix[] = pendingFix?.revision === revision ? [pendingFix.fix] : [];
   pendingFix = null;
@@ -355,6 +358,8 @@ const checkOnce = async (trigger: CityCheckTrigger): Promise<void> => {
       launchOwed = true;
     if (guard) return finish(ended(guard));
 
+    // A deferred fix a throttle window old no longer confirms anything.
+    if (pendingFix && now - pendingFix.fix.fixedAt > CHECK_THROTTLE_MS) pendingFix = null;
     const phoneZone = readPhoneZone();
     const { lastCheckAt, lastPhoneZone } = useCityCheckStore.getState().cityCheck;
     const skip = shouldStartCheck({
