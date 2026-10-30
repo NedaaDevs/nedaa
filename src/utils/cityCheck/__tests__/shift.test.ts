@@ -138,6 +138,17 @@ describe("yearly prayer-time shift", () => {
     expect(shift).toBeLessThan(SHIFT_GATE_MINUTES);
   });
 
+  it("puts Dammam → Khobar under the gate", () => {
+    const shift = maxYearlyShiftMinutes(
+      pt("dammam"),
+      pt("khobar"),
+      RIYADH_ZONE,
+      UMM_AL_QURA,
+      START
+    );
+    expect(shift).toBeLessThan(SHIFT_GATE_MINUTES);
+  });
+
   it("compares the same calendar day when the two zones are on different dates", () => {
     const shift = maxYearlyShiftMinutes(BADAJOZ, ELVAS, MADRID_ZONE, UMM_AL_QURA, SPLIT_DATE_AT);
     expect(shift).toBeLessThan(SHIFT_GATE_MINUTES);

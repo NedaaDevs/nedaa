@@ -22,7 +22,7 @@ export const CONFIRM_FIX_AGREE_KM = 5;
 /** Largest distance from a fix to the city-list row that names it. */
 export const CITY_ROW_TRUST_KM = 25;
 /** Least yearly prayer-time shift that makes an offer. */
-export const SHIFT_GATE_MINUTES = 1;
+export const SHIFT_GATE_MINUTES = 1.5;
 /** Days ahead that the yearly shift covers. */
 export const SHIFT_HORIZON_DAYS = 365;
 /** Most places kept for the trip. */
