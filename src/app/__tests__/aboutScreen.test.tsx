@@ -238,10 +238,11 @@ describe("About", () => {
       await renderAbout();
 
       const labels = screen.getAllByRole("button").map((node) => node.props.accessibilityLabel);
-      expect(labels.slice(-(DEBUG_SCREENS.length + 1))).toEqual([
+      expect(labels.slice(-(DEBUG_SCREENS.length + 2), -1)).toEqual([
         ...DEBUG_SCREENS.map(({ label }) => label),
         DEBUG_COPY.RESTART_ONBOARDING,
       ]);
+      expect(labels.at(-1)).toContain(DEBUG_COPY.PHONE_ZONE);
     });
 
     it("says what the row does", async () => {

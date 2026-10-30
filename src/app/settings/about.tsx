@@ -15,6 +15,7 @@ import {
 } from "lucide-react-native";
 
 import { AboutBrand } from "@/components/about/AboutBrand";
+import { PhoneZoneRow } from "@/components/about/PhoneZoneRow";
 import { ReleaseNotesCard } from "@/components/about/ReleaseNotesCard";
 import { VersionLine } from "@/components/about/VersionLine";
 import type { IconProps } from "@/components/ui/icon";
@@ -162,6 +163,7 @@ export default function AboutScreen() {
                     hint={DEBUG_COPY.RESTART_ONBOARDING_HINT}
                     onPress={restart}
                   />
+                  <PhoneZoneRow />
                 </ListGroup>
               </Section>
             ) : null}
