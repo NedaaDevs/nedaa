@@ -83,6 +83,8 @@ export const UPDATE_START = {
   ADOPT_DEVICE: "adoptDevice",
   /** A city the user chose. */
   CITY: "city",
+  /** The city-change offer's own fix and city row. */
+  CANDIDATE: "candidate",
 } as const;
 
 /** The rows an update's progress shows; the later two steps share the last. */

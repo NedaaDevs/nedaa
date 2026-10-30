@@ -129,6 +129,7 @@ beforeEach(async () => {
       address: { city: SAVED_CITY, country: RIYADH_CITY.country.name },
     },
     updateCurrentLocation: mockUpdate,
+    applyCityCandidate: mockUpdate,
     dismissCityOffer,
     cityOffer: null,
   });
@@ -195,6 +196,22 @@ describe("CityChangeSheet", () => {
 
     expect(mockLoad).toHaveBeenCalledWith(true);
     expect(title()).toBeNull();
+    expect(useLocationStore.getState().cityOffer).toBeNull();
+  });
+
+  it("updates from the offered candidate and closes once it lands", async () => {
+    const withRun = jest.spyOn(useLocationUpdateStore.getState(), "withRun");
+    const candidate = candidateAt();
+    offerUp(candidate);
+    await renderSheet();
+
+    await userEvent.press(updateButton());
+
+    expect(withRun).toHaveBeenCalledWith(
+      { kind: UPDATE_START.CANDIDATE, candidate },
+      expect.any(Function)
+    );
+    expect(mockUpdate).toHaveBeenCalledWith(candidate);
     expect(useLocationStore.getState().cityOffer).toBeNull();
   });
 
