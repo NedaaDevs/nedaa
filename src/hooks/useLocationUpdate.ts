@@ -14,6 +14,7 @@ import {
 } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import type { CityCandidate } from "@/types/cityCheck";
 import type { ManualLocation } from "@/types/location";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import { notificationsOutcome } from "@/utils/updateOutcome";
@@ -31,6 +32,8 @@ const takePlace = async (start: UpdateStart): Promise<void> => {
       return location.adoptDeviceLocation();
     case UPDATE_START.CITY:
       return location.setManualLocation(start.city);
+    case UPDATE_START.CANDIDATE:
+      return location.applyCityCandidate(start.candidate);
     default: {
       const unhandled: never = start;
       return unhandled;
@@ -90,6 +93,8 @@ export const useLocationUpdate = () => {
     executeUpdate: () => update(DEVICE_START),
     applyManualLocation: (city: ManualLocation) => update({ kind: UPDATE_START.CITY, city }),
     switchToDevice: () => update({ kind: UPDATE_START.ADOPT_DEVICE }),
+    applyCandidate: (candidate: CityCandidate) =>
+      update({ kind: UPDATE_START.CANDIDATE, candidate }),
     // Repeats the last run's own start, whichever screen it was begun on.
     retry: () => update(useLocationUpdateStore.getState().run?.start ?? DEVICE_START),
     dismissFailure,
