@@ -1,10 +1,13 @@
 import { AppState, AppStateStatus } from "react-native";
 
 import { TIMES_PLACE } from "@/constants/Location";
+import { APP_STATE } from "@/constants/AppState";
+import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { markAppLeft, runCityCheck } from "@/services/cityCheck";
 import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 import {
   ensureAlarmsScheduled,
@@ -29,7 +32,8 @@ export const registerForegroundReschedule = (): void => {
   registered = true;
 
   AppState.addEventListener("change", (state: AppStateStatus) => {
-    if (state !== "active") return;
+    if (state === APP_STATE.BACKGROUND) markAppLeft(Date.now());
+    if (state !== APP_STATE.ACTIVE) return;
     void runForegroundWork();
   });
 };
@@ -37,6 +41,7 @@ export const registerForegroundReschedule = (): void => {
 // Alarms first: they need only the refreshed window, while the reschedule
 // rewrites every pending notification and can outlive a short foreground.
 const runForegroundWork = async (): Promise<void> => {
+  void runCityCheck(CITY_CHECK_TRIGGER.RETURN);
   let repaired = false;
   await step("timings", async () => {
     repaired = await refreshWindow();
