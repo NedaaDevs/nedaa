@@ -524,8 +524,8 @@ describe("confirmation", () => {
     await jest.advanceTimersByTimeAsync(CONFIRM_FIX_DELAY_MS);
     emitAppState(APP_STATE.BACKGROUND);
     loaded.markAppLeft(Date.now());
-    await run;
     release(fixAt(JEDDAH_2));
+    await run;
 
     expect(location().cityOffer).toBeNull();
     expect(memory().lastCheckAt).toBeNull();
