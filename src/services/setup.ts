@@ -1,3 +1,6 @@
+import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
+import { runCityCheck } from "@/services/cityCheck";
 import { AppLogger } from "@/utils/appLogger";
 
 // Types
@@ -32,6 +35,9 @@ export const appSetup = async (
   // Outside the try: a launch that fails still needs a resume path, and this is
   // the only one. Synchronous, and it awaits alarm hydration itself.
   registerForegroundReschedule();
+
+  // Not awaited: the check can wait on a fix and must not hold launch scheduling.
+  if (!IS_SCREENSHOT_MODE) void runCityCheck(CITY_CHECK_TRIGGER.LAUNCH);
 
   try {
     const { loadPrayerTimes } = prayerStore;

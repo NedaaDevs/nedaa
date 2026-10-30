@@ -1,5 +1,6 @@
 import { AppState, AppStateStatus } from "react-native";
 
+import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { ALARM_HYDRATION_TIMEOUT_MS } from "@/constants/Alarm";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { Coords } from "@/types/location";
@@ -11,6 +12,12 @@ const mockSyncWidgetSnapshot = jest.fn();
 
 jest.mock("@/services/widgetSnapshot", () => ({
   syncWidgetSnapshot: () => mockSyncWidgetSnapshot(),
+}));
+const mockRunCityCheck = jest.fn();
+const mockMarkAppLeft = jest.fn();
+jest.mock("@/services/cityCheck", () => ({
+  runCityCheck: (trigger: string) => mockRunCityCheck(trigger),
+  markAppLeft: (at: number) => mockMarkAppLeft(at),
 }));
 const mockEnsureAlarms = jest.fn();
 const mockRescheduleAlarms = jest.fn();
@@ -107,6 +114,8 @@ beforeEach(() => {
   mockRescheduleAlarms.mockClear().mockResolvedValue(undefined);
   mockWaitForAlarmStores.mockClear().mockResolvedValue(undefined);
   mockLogError.mockClear();
+  mockRunCityCheck.mockClear().mockReturnValue(Promise.resolve());
+  mockMarkAppLeft.mockClear();
   mockLoadPrayerTimes.mockClear().mockResolvedValue(undefined);
   mockCheckPermission.mockClear().mockResolvedValue({ granted: true });
   // A verified fix in hand, so the repair gate is shut.
@@ -142,6 +151,32 @@ describe("registerForegroundReschedule", () => {
     register();
 
     expect(addListener).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts the city check at each return without waiting for it", async () => {
+    mockRunCityCheck.mockReturnValue(new Promise(() => {}));
+    const handler = registerFresh();
+
+    handler("active");
+    await settle();
+
+    expect(mockRunCityCheck).toHaveBeenCalledWith(CITY_CHECK_TRIGGER.RETURN);
+    expect(mockRunCityCheck.mock.invocationCallOrder[0]).toBeLessThan(
+      mockRefreshTimings.mock.invocationCallOrder[0]
+    );
+    expect(mockRescheduleIfNeeded).toHaveBeenCalled();
+  });
+
+  it("records the time the app leaves for the background", () => {
+    jest.spyOn(Date, "now").mockReturnValue(1234);
+    const handler = registerFresh();
+
+    handler("inactive");
+    expect(mockMarkAppLeft).not.toHaveBeenCalled();
+    handler("background");
+
+    expect(mockMarkAppLeft).toHaveBeenCalledWith(1234);
+    expect(mockRunCityCheck).not.toHaveBeenCalled();
   });
 
   it("refreshes the window before it tops up the horizon", async () => {

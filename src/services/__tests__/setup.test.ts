@@ -1,7 +1,19 @@
 import { appSetup } from "@/services/setup";
+import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
 
 const mockClearPendingReapply = jest.fn();
+const mockRunCityCheck = jest.fn();
+const mockScreenshotMode = { on: false };
+
+jest.mock("@/services/cityCheck", () => ({
+  runCityCheck: (trigger: string) => mockRunCityCheck(trigger),
+}));
+jest.mock("@/screenshot-mode/flag", () => ({
+  get IS_SCREENSHOT_MODE() {
+    return mockScreenshotMode.on;
+  },
+}));
 
 jest.mock("@/stores/providerSettings", () => ({
   awaitPendingReapply: async () => true,
@@ -38,12 +50,36 @@ jest.mock("@/utils/appLogger", () => {
 /** Runs the launch setup with a load that resolves `landed`. */
 const launch = async (landed: boolean) => {
   const loadPrayerTimes = jest.fn(async () => landed);
-  const scheduleAllNotifications = jest.fn(async () => {});
   await appSetup({ loadPrayerTimes } as never, { scheduleAllNotifications } as never);
   return loadPrayerTimes;
 };
 
-beforeEach(() => jest.clearAllMocks());
+const scheduleAllNotifications = jest.fn(async () => {});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockScreenshotMode.on = false;
+  mockRunCityCheck.mockReturnValue(Promise.resolve());
+});
+
+describe("appSetup city check", () => {
+  it("starts the city check at launch without waiting for it", async () => {
+    mockRunCityCheck.mockReturnValue(new Promise(() => {}));
+
+    await launch(true);
+
+    expect(mockRunCityCheck).toHaveBeenCalledWith(CITY_CHECK_TRIGGER.LAUNCH);
+    expect(scheduleAllNotifications).toHaveBeenCalled();
+  });
+
+  it("skips the city check in screenshot mode", async () => {
+    mockScreenshotMode.on = true;
+
+    await launch(true);
+
+    expect(mockRunCityCheck).not.toHaveBeenCalled();
+  });
+});
 
 describe("appSetup with a pending reapply", () => {
   it("forces the load", async () => {
