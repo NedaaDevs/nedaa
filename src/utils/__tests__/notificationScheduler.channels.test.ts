@@ -7,7 +7,6 @@ import {
   NOTIFICATION_CHANNEL_ID,
   NOTIFICATION_TYPE,
   OPEN_APP_REMINDER_ID,
-  SYSTEM_SOUND,
 } from "@/constants/Notification";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
@@ -155,10 +154,10 @@ describe("the scheduler and the channels it creates", () => {
     expect(onReminderChannel).toHaveLength(1);
     const [[, input]] = onReminderChannel;
     expect(input.data.categoryId).toBe(OPEN_APP_REMINDER_ID);
-    expect(created).toHaveBeenCalledWith(
-      NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER,
-      expect.objectContaining({ sound: SYSTEM_SOUND })
+    const reminderChannel = created.mock.calls.find(
+      ([id]) => id === NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER
     );
+    expect(reminderChannel?.[1]).not.toHaveProperty("sound");
   });
 });
 
