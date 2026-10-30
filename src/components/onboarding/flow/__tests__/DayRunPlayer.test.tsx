@@ -79,7 +79,7 @@ const nameStyles = () =>
     .map((name) => StyleSheet.flatten(name.props.style));
 /** Plays a Reduce Motion run on through to its end. */
 const playToTheEnd = () => phasesPass(PHASES.length);
-// Each test renders the whole sky; under a loaded machine one passes 5 s.
+// Whole-sky renders can exceed 5 s on a loaded machine.
 jest.setTimeout(20_000);
 
 describe("DayRunPlayer", () => {

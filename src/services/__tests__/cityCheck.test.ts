@@ -514,6 +514,31 @@ describe("confirmation", () => {
     expect(location().cityOffer).not.toBeNull();
   });
 
+  it("keeps the first fix when the app leaves during the second read", async () => {
+    rowNear(JEDDAH_ROW);
+    let release: (fix: LocationObject) => void = () => {};
+    mockCurrentPosition
+      .mockImplementationOnce(async () => fixAt(JEDDAH))
+      .mockImplementationOnce(() => new Promise<LocationObject>((resolve) => (release = resolve)));
+    const run = loaded.runCityCheck(LAUNCH);
+    await jest.advanceTimersByTimeAsync(CONFIRM_FIX_DELAY_MS);
+    emitAppState(APP_STATE.BACKGROUND);
+    loaded.markAppLeft(Date.now());
+    await run;
+    release(fixAt(JEDDAH_2));
+
+    expect(location().cityOffer).toBeNull();
+    expect(memory().lastCheckAt).toBeNull();
+    ended(LAUNCH, CITY_CHECK_END.CONFIRM_DEFERRED);
+
+    await jest.advanceTimersByTimeAsync(MINUTE_MS);
+    emitAppState(APP_STATE.ACTIVE);
+    mockCurrentPosition.mockImplementation(async () => fixAt(JEDDAH_2));
+    await check(RETURN);
+
+    expect(location().cityOffer).not.toBeNull();
+  });
+
   it("defers when the second read returns the first fix again", async () => {
     const same = fixAt(JEDDAH, NOW);
     mockCurrentPosition.mockResolvedValue(same);
