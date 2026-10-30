@@ -30,7 +30,8 @@ const MAKKAH: Coords = { latitude: 21.4225, longitude: 39.8262 };
 const JEDDAH: Coords = { latitude: 21.5433, longitude: 39.1728 };
 const JEDDAH_2 = eastOf(JEDDAH, 3);
 const MANAMA: Coords = { latitude: 26.2285, longitude: 50.586 };
-const KHOBAR: Coords = { latitude: 26.2794, longitude: 50.3 };
+// A Saudi point close enough to Manama that the shift stays under the gate.
+const SAUDI_NEAR_MANAMA: Coords = { latitude: 26.2794, longitude: 50.3 };
 const DUBAI: Coords = { latitude: 25.2048, longitude: 55.2708 };
 
 const RIYADH_ZONE = "Asia/Riyadh";
@@ -128,16 +129,22 @@ describe("place marks", () => {
     ]);
   });
 
-  it("has a Manama to Khobar shift under the gate", () =>
+  it("has a shift under the gate from Manama to the Saudi point", () =>
     expect(
-      maxYearlyShiftMinutes(markPoint(mark(MANAMA)), KHOBAR, RIYADH_ZONE, UMM_AL_QURA, NOW)
+      maxYearlyShiftMinutes(
+        markPoint(mark(MANAMA)),
+        SAUDI_NEAR_MANAMA,
+        RIYADH_ZONE,
+        UMM_AL_QURA,
+        NOW
+      )
     ).toBeLessThan(SHIFT_GATE_MINUTES));
 
   it("ends a trip kept for a country change when a confirmed fix is home", () =>
     expect(
       keptAfterFix(
         [mark(MANAMA, NOW, BAHRAIN)],
-        fresh(KHOBAR),
+        fresh(SAUDI_NEAR_MANAMA),
         RIYADH_ZONE,
         UMM_AL_QURA,
         NOW,
@@ -148,15 +155,22 @@ describe("place marks", () => {
   it("keeps the trip when the mark has no country", () => {
     const entry = mark(MANAMA);
     expect(
-      keptAfterFix([entry], fresh(KHOBAR), RIYADH_ZONE, UMM_AL_QURA, NOW, COUNTRY_CODE.SAUDI_ARABIA)
+      keptAfterFix(
+        [entry],
+        fresh(SAUDI_NEAR_MANAMA),
+        RIYADH_ZONE,
+        UMM_AL_QURA,
+        NOW,
+        COUNTRY_CODE.SAUDI_ARABIA
+      )
     ).toEqual([entry]);
   });
 
   it("keeps the trip when the fix has no country", () => {
     const entry = mark(MANAMA, NOW, BAHRAIN);
-    expect(keptAfterFix([entry], fresh(KHOBAR), RIYADH_ZONE, UMM_AL_QURA, NOW, null)).toEqual([
-      entry,
-    ]);
+    expect(
+      keptAfterFix([entry], fresh(SAUDI_NEAR_MANAMA), RIYADH_ZONE, UMM_AL_QURA, NOW, null)
+    ).toEqual([entry]);
   });
 
   it("keeps the trip while the country matches and the shift is under the gate", () => {
