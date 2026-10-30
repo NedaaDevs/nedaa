@@ -295,6 +295,18 @@ describe("offer", () => {
     expect(mockReverseGeocode).not.toHaveBeenCalled();
   });
 
+  it("compares methods only once the candidate's country is known", async () => {
+    await load(DAMMAM);
+    freshFixes(KHOBAR, KHOBAR);
+    mockReverseGeocode.mockResolvedValue([address({ isoCountryCode: SA })]);
+
+    await check();
+
+    expect(location().cityOffer).toBeNull();
+    ended(LAUNCH, CITY_CHECK_END.SHIFT_BELOW_GATE);
+    expect(mockReverseGeocode).toHaveBeenCalledTimes(1);
+  });
+
   it("remembers the saved place's country once it is looked up", async () => {
     await load(DAMMAM, null);
     freshFixes(KHOBAR, KHOBAR);
@@ -439,6 +451,20 @@ describe("confirmation", () => {
 
     expect(location().cityOffer).not.toBeNull();
     expect(mockCurrentPosition).toHaveBeenCalledTimes(3);
+  });
+  it("drops a deferred fix older than the throttle window", async () => {
+    mockCurrentPosition.mockResolvedValue(fixAt(JEDDAH, NOW));
+    rowNear(JEDDAH_ROW);
+    await check();
+    ended(LAUNCH, CITY_CHECK_END.CONFIRM_DEFERRED);
+
+    freshFixes(JEDDAH, JEDDAH_2);
+    await returnAfter(CHECK_THROTTLE_MS + MINUTE_MS);
+    await check(RETURN);
+
+    // A seeded fix would confirm on one more read; a dropped one takes two.
+    expect(mockCurrentPosition).toHaveBeenCalledTimes(4);
+    expect(location().cityOffer).not.toBeNull();
   });
 });
 
