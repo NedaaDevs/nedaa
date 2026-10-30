@@ -25,7 +25,6 @@ export const registerDevMenu = (): Promise<void> => {
       shouldCollapse: true,
     },
     {
-      // A check needs a real move; these put an offer up at once.
       name: DEBUG_COPY.SHOW_CITY_CHANGE,
       callback: showNamedCityChange,
       shouldCollapse: true,
