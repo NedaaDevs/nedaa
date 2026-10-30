@@ -5,6 +5,7 @@ import { toZonedTime } from "date-fns-tz";
 
 // Utils
 import { scheduleNotification, scheduleRecurringNotification } from "@/utils/notifications";
+import { channelSoundOption } from "@/utils/channelSound";
 import { createChannelWithCustomSound } from "@/utils/customSoundManager";
 import { timeZonedNow } from "@/utils/date";
 import { nextHijriOccurrence } from "@/utils/importantDays";
@@ -43,7 +44,7 @@ const createDefaultSoundChannel = async (vibrationEnabled: boolean): Promise<str
   await Notifications.setNotificationChannelAsync(QADA_DEFAULT_CHANNEL_ID, {
     name: QADA_CHANNEL_NAME,
     importance: Notifications.AndroidImportance.HIGH,
-    sound: SYSTEM_SOUND,
+    ...channelSoundOption(SYSTEM_SOUND),
     vibrationPattern: vibrationEnabled ? [0, 500, 200, 500] : undefined,
     enableVibrate: vibrationEnabled,
   });
