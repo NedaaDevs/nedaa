@@ -35,3 +35,6 @@
 
 # Room instantiates the generated `_Impl` database through its no-arg constructor by name.
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
+
+# Expo maps JS strings to these enums through their `value`; R8 strips it.
+-keep enum expo.modules.haptics.arguments.** { *; }
