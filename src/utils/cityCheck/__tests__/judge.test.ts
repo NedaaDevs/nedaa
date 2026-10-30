@@ -304,6 +304,41 @@ describe("judgeCityChange", () => {
       ));
   });
 
+  describe("first fresh fix at a remembered place", () => {
+    it("ends at a muted place with no second fix", () =>
+      expect(reasonOf({ fixes: [fresh(JEDDAH)], notAsked: [jeddahMark(DAY_MS)] })).toBe(
+        CITY_CHECK_END.NOT_ASKED
+      ));
+
+    it("ends at a kept place with no second fix", () =>
+      expect(reasonOf({ fixes: [fresh(JEDDAH)], kept: [jeddahMark(DAY_MS)] })).toBe(
+        CITY_CHECK_END.KEPT
+      ));
+
+    it("ends on the first fix when the second is far", () =>
+      expect(
+        reasonOf({
+          fixes: [fresh(JEDDAH), fresh(eastOf(JEDDAH, 6.7), NOW)],
+          kept: [jeddahMark(DAY_MS)],
+        })
+      ).toBe(CITY_CHECK_END.KEPT));
+
+    it("takes a fresh fix over a cached one at a kept place", () =>
+      expect(reasonOf({ fixes: [cached(JEDDAH, 5 * MINUTE_MS)], kept: [jeddahMark(DAY_MS)] })).toBe(
+        CITY_CHECK_NEED.NEEDS_FRESH_FIX
+      ));
+
+    it("asks for a second fix at a kept place past 30 days", () =>
+      expect(
+        reasonOf({ fixes: [fresh(JEDDAH)], kept: [jeddahMark(KEPT_MAX_AGE_MS + DAY_MS)] })
+      ).toBe(CITY_CHECK_NEED.NEEDS_SECOND_FIX));
+
+    it("asks for a second fix away from every mark", () =>
+      expect(reasonOf({ fixes: [fresh(JEDDAH)], notAsked: [toPlaceMark(RIYADH, NOW)] })).toBe(
+        CITY_CHECK_NEED.NEEDS_SECOND_FIX
+      ));
+  });
+
   describe("names", () => {
     it("offers an unnamed candidate", () =>
       expect(
