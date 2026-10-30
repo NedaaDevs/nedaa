@@ -10,11 +10,13 @@ import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { LocationMode } from "@/enums/location";
 import { useLocationStore } from "@/stores/location";
 import {
+  findingCity,
   isRunning,
   useLocationUpdateStore,
   type UpdateStart,
   type UpdateSteps,
 } from "@/stores/locationUpdate";
+import { candidateAt } from "@/test-helpers/cityOffer";
 import type { ManualLocation } from "@/types/location";
 
 jest.mock("@/utils/appLogger", () => {
@@ -60,6 +62,32 @@ const STOPPED = expect.objectContaining({ end: RUN_END.STOPPED });
 const run = () => useLocationUpdateStore.getState().run;
 
 beforeEach(() => useLocationUpdateStore.setState({ run: null }));
+
+type StartKind = UpdateStart["kind"];
+
+/** One start of each kind, and whether its place step reads the device. */
+const STARTS: Record<StartKind, { start: UpdateStart; readsDevice: boolean }> = {
+  [UPDATE_START.DEVICE]: { start: { kind: UPDATE_START.DEVICE }, readsDevice: true },
+  [UPDATE_START.ADOPT_DEVICE]: { start: { kind: UPDATE_START.ADOPT_DEVICE }, readsDevice: true },
+  [UPDATE_START.CITY]: { start: { kind: UPDATE_START.CITY, city: MAKKAH }, readsDevice: false },
+  [UPDATE_START.CANDIDATE]: {
+    start: { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
+    readsDevice: false,
+  },
+};
+
+describe("findingCity", () => {
+  it.each(Object.values(UPDATE_START))(
+    "says whether a %s run is finding the city at its place step",
+    (kind) => {
+      const { start, readsDevice } = STARTS[kind];
+
+      expect(findingCity({ start, step: UPDATE_STEP.LOCATION, failed: false })).toBe(readsDevice);
+      expect(findingCity({ start, step: UPDATE_STEP.PRAYER_TIMES, failed: false })).toBe(false);
+      expect(findingCity({ start, step: UPDATE_STEP.LOCATION, failed: true })).toBe(false);
+    }
+  );
+});
 
 describe("the location update lock", () => {
   it("holds one run at a time, app-wide", async () => {
