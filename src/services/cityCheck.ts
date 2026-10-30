@@ -275,7 +275,8 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
         if (!(await waitWhileActive(rest))) return defer();
         const stop = interruption(revision);
         if (stop) return ended(stop);
-        const read = await readFresh();
+        const read = await unlessLeft(readFresh);
+        if (read === APP_LEFT) return defer();
         if ("end" in read) return ended(read.end);
         fixes = [...fixes, read.fix];
         return null;

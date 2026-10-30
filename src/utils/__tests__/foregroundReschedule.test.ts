@@ -1,5 +1,6 @@
 import { AppState, AppStateStatus } from "react-native";
 
+import { APP_STATE } from "@/constants/AppState";
 import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { ALARM_HYDRATION_TIMEOUT_MS } from "@/constants/Alarm";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
@@ -157,7 +158,7 @@ describe("registerForegroundReschedule", () => {
     mockRunCityCheck.mockReturnValue(new Promise(() => {}));
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockRunCityCheck).toHaveBeenCalledWith(CITY_CHECK_TRIGGER.RETURN);
@@ -171,9 +172,9 @@ describe("registerForegroundReschedule", () => {
     jest.spyOn(Date, "now").mockReturnValue(1234);
     const handler = registerFresh();
 
-    handler("inactive");
+    handler(APP_STATE.INACTIVE);
     expect(mockMarkAppLeft).not.toHaveBeenCalled();
-    handler("background");
+    handler(APP_STATE.BACKGROUND);
 
     expect(mockMarkAppLeft).toHaveBeenCalledWith(1234);
     expect(mockRunCityCheck).not.toHaveBeenCalled();
@@ -182,7 +183,7 @@ describe("registerForegroundReschedule", () => {
   it("refreshes the window before it tops up the horizon", async () => {
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockRescheduleIfNeeded).toHaveBeenCalledWith(false);
@@ -203,7 +204,7 @@ describe("registerForegroundReschedule", () => {
   it("tops up the alarms from the refreshed window", async () => {
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockEnsureAlarms).toHaveBeenCalledTimes(1);
@@ -216,7 +217,7 @@ describe("registerForegroundReschedule", () => {
   it("arms the alarms before the notification reschedule", async () => {
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockEnsureAlarms.mock.invocationCallOrder[0]).toBeLessThan(
@@ -228,7 +229,7 @@ describe("registerForegroundReschedule", () => {
   it("waits for alarm hydration before it tops up", async () => {
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockWaitForAlarmStores.mock.invocationCallOrder[0]).toBeLessThan(
@@ -240,7 +241,7 @@ describe("registerForegroundReschedule", () => {
     mockRefreshTimings.mockRejectedValue(new Error("db closed"));
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockEnsureAlarms).toHaveBeenCalledTimes(1);
@@ -251,7 +252,7 @@ describe("registerForegroundReschedule", () => {
     mockEnsureAlarms.mockRejectedValue(new Error("native refused"));
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockRescheduleIfNeeded).toHaveBeenCalledWith(false);
@@ -262,7 +263,7 @@ describe("registerForegroundReschedule", () => {
     withDefaultLocationTimes();
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
@@ -273,9 +274,9 @@ describe("registerForegroundReschedule", () => {
     withDefaultLocationTimes();
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
@@ -284,7 +285,7 @@ describe("registerForegroundReschedule", () => {
   it("only re-reads when a verified fix is already in hand", async () => {
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
@@ -296,7 +297,7 @@ describe("registerForegroundReschedule", () => {
     mockLocationState.locationDetails = { coords: { latitude: 21.4858, longitude: 39.1925 } };
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
@@ -312,7 +313,7 @@ describe("registerForegroundReschedule", () => {
     });
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockWaitForAlarmStores).toHaveBeenCalled();
@@ -325,7 +326,7 @@ describe("registerForegroundReschedule", () => {
     mockLoadPrayerTimes.mockRejectedValue(new Error("offline"));
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockRescheduleAlarms).not.toHaveBeenCalled();
@@ -337,7 +338,7 @@ describe("registerForegroundReschedule", () => {
     mockLocationState.locationMode = LocationMode.MANUAL;
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
@@ -349,7 +350,7 @@ describe("registerForegroundReschedule", () => {
     mockCheckPermission.mockResolvedValue({ granted: false });
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
@@ -361,7 +362,7 @@ describe("registerForegroundReschedule", () => {
     mockCheckPermission.mockResolvedValue({ granted: false });
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
@@ -376,7 +377,7 @@ describe("registerForegroundReschedule", () => {
     mockLocationState.locationMode = LocationMode.MANUAL;
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
     withVerifiedPlaceAwaitingRows();
     mockLocationState.lastKnownCoords = { latitude: 24.7136, longitude: 46.6753 };
@@ -395,14 +396,14 @@ describe("registerForegroundReschedule", () => {
       withDefaultLocationTimes();
       const handler = registerFresh();
 
-      handler("active");
+      handler(APP_STATE.ACTIVE);
       await jest.advanceTimersByTimeAsync(ALARM_HYDRATION_TIMEOUT_MS);
       expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
       expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
 
       mockHydration.landed = true;
       mockHydration.listeners.forEach((listener) => listener());
-      handler("active");
+      handler(APP_STATE.ACTIVE);
       await jest.advanceTimersByTimeAsync(0);
       expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
     } finally {
@@ -416,9 +417,9 @@ describe("registerForegroundReschedule", () => {
     mockLoadPrayerTimes.mockRejectedValue(new Error("offline"));
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
 
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
@@ -434,13 +435,13 @@ describe("registerForegroundReschedule", () => {
     mockPrayerTimesState.loadingTimes = true;
     const handler = registerFresh();
 
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
     expect(mockRefreshTimings).toHaveBeenCalledTimes(1);
 
     mockPrayerTimesState.loadingTimes = false;
-    handler("active");
+    handler(APP_STATE.ACTIVE);
     await settle();
     expect(mockLoadPrayerTimes).toHaveBeenCalledTimes(1);
     expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
@@ -449,7 +450,7 @@ describe("registerForegroundReschedule", () => {
   it("does nothing when the app backgrounds", async () => {
     const handler = registerFresh();
 
-    handler("background");
+    handler(APP_STATE.BACKGROUND);
     await settle();
 
     expect(mockRefreshTimings).not.toHaveBeenCalled();
