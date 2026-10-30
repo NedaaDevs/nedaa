@@ -5,9 +5,14 @@ import { PhoneZoneRow } from "@/components/about/PhoneZoneRow";
 import { APP_STATE } from "@/constants/AppState";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { AppLogger } from "@/utils/appLogger";
 import { phoneZoneReadings } from "@/utils/phoneZone";
 
 jest.mock("@/utils/phoneZone", () => ({ phoneZoneReadings: jest.fn() }));
+jest.mock("@/utils/appLogger", () => {
+  const log = { d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() };
+  return { AppLogger: { create: () => log, registerReportSection: jest.fn() } };
+});
 
 const RIYADH = "Asia/Riyadh";
 const DUBAI = "Asia/Dubai";
@@ -61,5 +66,14 @@ describe("PhoneZoneRow", () => {
 
     expect(label()).toContain(`Intl ${DUBAI}`);
     expect(label()).toContain(`Calendar ${RIYADH}`);
+  });
+
+  // A zone id names a city; the row shows it and the log keeps none.
+  it("writes no reading to the log", async () => {
+    await renderWithTheme(<PhoneZoneRow />);
+    await userEvent.press(row());
+
+    const log = AppLogger.create("app");
+    [log.d, log.i, log.w, log.e].forEach((write) => expect(write).not.toHaveBeenCalled());
   });
 });

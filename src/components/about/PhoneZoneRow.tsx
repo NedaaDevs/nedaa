@@ -7,20 +7,11 @@ import { APP_STATE } from "@/constants/AppState";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useHaptic } from "@/hooks/useHaptic";
-import { AppLogger } from "@/utils/appLogger";
 import { phoneZoneReadings } from "@/utils/phoneZone";
-
-const log = AppLogger.create("app");
 
 type Reading = ReturnType<typeof phoneZoneReadings> & { at: string };
 
-// Logged too, so a shared diagnostic log carries each reading.
-const read = (): Reading => {
-  const zones = phoneZoneReadings();
-  const at = new Date().toLocaleTimeString();
-  log.i("PhoneZone", `intl=${zones.intl} calendar=${zones.calendar} at=${at}`);
-  return { ...zones, at };
-};
+const read = (): Reading => ({ ...phoneZoneReadings(), at: new Date().toLocaleTimeString() });
 
 export const phoneZoneStatus = ({ intl, calendar, at }: Reading) =>
   `Intl ${intl ?? DEBUG_COPY.NO_ZONE} · Calendar ${calendar ?? DEBUG_COPY.NO_ZONE} · ${at}`;
