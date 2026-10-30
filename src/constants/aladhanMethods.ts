@@ -87,10 +87,10 @@ export const METHOD_AUTHORITY: Record<MethodId, Coords | null> = {
 };
 
 /** ISO 3166 codes, upper case, as the device geocoder gives them. */
-export const COUNTRY_CODE = { SAUDI_ARABIA: "SA" } as const;
+export const COUNTRY_CODE = { SAUDI_ARABIA: "SA", BAHRAIN: "BH" } as const;
 export type CountryCode = (typeof COUNTRY_CODE)[keyof typeof COUNTRY_CODE];
 
 /** Countries where AlAdhan's default is one method, whatever is nearest. */
-export const METHOD_BY_COUNTRY: Record<CountryCode, MethodId> = {
+export const METHOD_BY_COUNTRY = {
   [COUNTRY_CODE.SAUDI_ARABIA]: 4,
-};
+} as const satisfies Partial<Record<CountryCode, MethodId>>;

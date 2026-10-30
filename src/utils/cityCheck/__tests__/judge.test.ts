@@ -6,6 +6,7 @@ import {
   CONFIRM_FIX_DELAY_MS,
   KEPT_MAX_AGE_MS,
   SHIFT_GATE_MINUTES,
+  type CityCheckEnd,
 } from "@/constants/CityCheck";
 import { FIX_SOURCE } from "@/constants/Location";
 import { COUNTRY_CODE } from "@/constants/aladhanMethods";
@@ -17,6 +18,8 @@ import type {
   LocalizedPlaceName,
   ShiftCalc,
 } from "@/types/cityCheck";
+import { eastOf } from "@/test-helpers/geo";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { Coords } from "@/types/location";
 import type { MethodId } from "@/types/providers/aladhan";
 
@@ -24,8 +27,6 @@ import { confirmedFix, judgeCityChange } from "@/utils/cityCheck/judge";
 import { toPlaceMark } from "@/utils/cityCheck/marks";
 import { maxYearlyShiftMinutes } from "@/utils/cityCheck/shift";
 
-const KM_PER_DEGREE = 111.195;
-const RAD = Math.PI / 180;
 const SECOND_MS = 1_000;
 const MINUTE_MS = 60 * SECOND_MS;
 const DAY_MS = 24 * 60 * MINUTE_MS;
@@ -41,15 +42,9 @@ const DIRIYAH: Coords = { latitude: 24.734, longitude: 46.575 };
 const DAMMAM: Coords = { latitude: 26.4207, longitude: 50.0888 };
 const KHOBAR: Coords = { latitude: 26.2172, longitude: 50.1971 };
 
-const eastOf = (from: Coords, km: number): Coords => ({
-  latitude: from.latitude,
-  longitude: from.longitude + km / (KM_PER_DEGREE * Math.cos(from.latitude * RAD)),
-});
-
-const RIYADH_ZONE = "Asia/Riyadh";
 const KUWAIT_ZONE = "Asia/Kuwait";
 const SA = COUNTRY_CODE.SAUDI_ARABIA;
-const BAHRAIN = "BH";
+const BAHRAIN = COUNTRY_CODE.BAHRAIN;
 const UMM_AL_QURA_ID: MethodId = 4;
 const GULF_ID: MethodId = 8;
 const CALC: ShiftCalc = { method: UMM_AL_QURA_ID, school: ASR_SCHOOL.SHAFI };
@@ -332,6 +327,21 @@ describe("judgeCityChange", () => {
       expect(
         reasonOf({ fixes: [fresh(JEDDAH)], kept: [jeddahMark(KEPT_MAX_AGE_MS + DAY_MS)] })
       ).toBe(CITY_CHECK_NEED.NEEDS_SECOND_FIX));
+
+    // The first fix is 14 km from the mark, the confirming one 10 km.
+    it.each<[string, Partial<CityCheckFacts>, CityCheckEnd]>([
+      ["kept", { kept: [jeddahMark(DAY_MS)] }, CITY_CHECK_END.KEPT],
+      ["muted", { notAsked: [jeddahMark(DAY_MS)] }, CITY_CHECK_END.NOT_ASKED],
+    ])("ends at a %s place the confirming fix reaches", (_case, marks, end) => {
+      const last = eastOf(JEDDAH, 10);
+      expect(
+        reasonOf({
+          fixes: [fresh(eastOf(JEDDAH, 14)), fresh(last, NOW)],
+          candidate: candidateAt(last),
+          ...marks,
+        })
+      ).toBe(end);
+    });
 
     it("asks for a second fix away from every mark", () =>
       expect(reasonOf({ fixes: [fresh(JEDDAH)], notAsked: [toPlaceMark(RIYADH, NOW)] })).toBe(

@@ -6,6 +6,8 @@ import {
   TRAVEL_MODE,
 } from "@/constants/CityCheck";
 import { LocationMode } from "@/enums/location";
+import { DUBAI_ZONE } from "@/test-helpers/place";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import {
   guardReason,
   shouldStartCheck,
@@ -16,8 +18,6 @@ import {
 
 const MINUTE_MS = 60_000;
 const NOW = 1_000_000_000_000;
-const ZONE_RIYADH = "Asia/Riyadh";
-const ZONE_DUBAI = "Asia/Dubai";
 
 const openGuards: GuardFacts = {
   travelMode: TRAVEL_MODE.ASK,
@@ -108,8 +108,8 @@ describe("shouldStartCheck", () => {
       shouldStartCheck(
         launchFacts({
           lastCheckAt: NOW - MINUTE_MS,
-          lastPhoneZone: ZONE_RIYADH,
-          phoneZone: ZONE_DUBAI,
+          lastPhoneZone: RIYADH_ZONE,
+          phoneZone: DUBAI_ZONE,
         })
       )
     ).toBeNull();
@@ -118,7 +118,7 @@ describe("shouldStartCheck", () => {
   it("treats an unknown phone zone as unchanged", () => {
     expect(
       shouldStartCheck(
-        launchFacts({ lastCheckAt: NOW - MINUTE_MS, lastPhoneZone: ZONE_RIYADH, phoneZone: null })
+        launchFacts({ lastCheckAt: NOW - MINUTE_MS, lastPhoneZone: RIYADH_ZONE, phoneZone: null })
       )
     ).toBe(CITY_CHECK_SKIP.THROTTLED);
   });
@@ -126,7 +126,7 @@ describe("shouldStartCheck", () => {
   it("treats an unknown last zone as unchanged", () => {
     expect(
       shouldStartCheck(
-        launchFacts({ lastCheckAt: NOW - MINUTE_MS, lastPhoneZone: null, phoneZone: ZONE_DUBAI })
+        launchFacts({ lastCheckAt: NOW - MINUTE_MS, lastPhoneZone: null, phoneZone: DUBAI_ZONE })
       )
     ).toBe(CITY_CHECK_SKIP.THROTTLED);
   });
@@ -143,8 +143,8 @@ describe("shouldStartCheck", () => {
         returnFacts({
           leftAt: NOW - 2 * MINUTE_MS,
           lastCheckAt: NOW - MINUTE_MS,
-          lastPhoneZone: ZONE_RIYADH,
-          phoneZone: ZONE_DUBAI,
+          lastPhoneZone: RIYADH_ZONE,
+          phoneZone: DUBAI_ZONE,
         })
       )
     ).toBe(CITY_CHECK_SKIP.AWAY_TOO_SHORT);
@@ -164,8 +164,8 @@ describe("shouldStartCheck", () => {
         returnFacts({
           leftAt: NOW - 5 * MINUTE_MS,
           lastCheckAt: NOW - 10 * MINUTE_MS,
-          lastPhoneZone: ZONE_RIYADH,
-          phoneZone: ZONE_DUBAI,
+          lastPhoneZone: RIYADH_ZONE,
+          phoneZone: DUBAI_ZONE,
         })
       )
     ).toBeNull();

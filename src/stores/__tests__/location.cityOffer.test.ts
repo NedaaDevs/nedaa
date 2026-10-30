@@ -45,7 +45,7 @@ jest.mock("@/utils/appLogger", () => {
   return { AppLogger: { create: () => log, registerReportSection: jest.fn() } };
 });
 
-const BAHRAIN = "BH";
+const BAHRAIN = COUNTRY_CODE.BAHRAIN;
 const SAUDI_ARABIA = RIYADH_CITY.country.name;
 const RIYADH_ADDRESS = { city: RIYADH_CITY.name, country: SAUDI_ARABIA };
 const SA = COUNTRY_CODE.SAUDI_ARABIA;
