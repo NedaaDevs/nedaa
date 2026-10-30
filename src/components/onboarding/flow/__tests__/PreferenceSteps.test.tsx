@@ -77,6 +77,9 @@ beforeEach(async () => {
 });
 afterEach(() => jest.restoreAllMocks());
 
+// Each test renders the whole sky; under a loaded machine one passes 5 s.
+jest.setTimeout(20_000);
+
 describe("NumeralsStep", () => {
   it("hides the numerals control outside Arabic", async () => {
     await renderWithTheme(<NumeralsStep {...stepProps()} />);
@@ -504,7 +507,6 @@ describe("AppearanceStep", () => {
     });
 
     // With Adaptive chosen, the end still waits for Done.
-    // Plays a whole day and a replay; a full parallel run passes 5 s.
     it("keeps the player open at the end; a replay still closes to the button", async () => {
       mockReduced = true;
       useAppStore.setState({ mode: AppMode.ADAPTIVE });
@@ -533,7 +535,7 @@ describe("AppearanceStep", () => {
       expect(player()).toBeNull();
       expect(focus).toHaveBeenCalledTimes(1);
       expect(focus).toHaveBeenCalledWith(viewWith(PLAY_DAY_PART.BUTTON), "focus");
-    }, 20_000);
+    });
 
     // The close returns focus to the button, so it outlives the run.
     it("keeps the button for the close's focus when the day is gone mid-run", async () => {
