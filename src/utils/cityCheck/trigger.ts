@@ -52,14 +52,14 @@ const zoneChanged = (facts: TriggerFacts) =>
   facts.lastPhoneZone !== facts.phoneZone;
 
 const awayTooShort = (facts: TriggerFacts) =>
-  facts.leftAt === null ? !facts.launchOwed : facts.now - facts.leftAt < CHECK_MIN_AWAY_MS;
+  facts.launchOwed ? false : facts.leftAt === null || facts.now - facts.leftAt < CHECK_MIN_AWAY_MS;
 
 const throttled = (facts: TriggerFacts) =>
   facts.lastCheckAt !== null &&
   facts.now - facts.lastCheckAt < CHECK_THROTTLE_MS &&
   !zoneChanged(facts);
 
-// A fix waiting for confirmation skips the away and throttle rules.
+// On a return, a fix waiting for confirmation skips the away and throttle rules.
 export const shouldStartCheck = (facts: TriggerFacts): CityCheckSkip | null => {
   if (facts.trigger === CITY_CHECK_TRIGGER.RETURN) {
     if (facts.pendingFix) return null;
