@@ -215,6 +215,27 @@ describe("applyCityCandidate", () => {
     expect(state().locationDetails.address?.city).toBe(MAKKAH_CITY.name);
   });
 
+  it("leaves a city chosen while a candidate with no row is named", async () => {
+    mockTrustedCityNear.mockResolvedValue(null);
+    let answer: () => void = () => {};
+    const asked = new Promise<void>((named) =>
+      mockReverseGeocodeAsync.mockImplementation(() => {
+        named();
+        return new Promise((resolve) => (answer = () => resolve([DEVICE_JEDDAH])));
+      })
+    );
+
+    const applying = applyCityCandidate(candidateAt({ name: null }));
+    await asked;
+    state().setManualLocation(MAKKAH_CITY);
+    answer();
+    await applying;
+
+    expect(state().manualLocation).toEqual(MAKKAH_CITY);
+    expect(state().locationMode).toBe(LocationMode.MANUAL);
+    expect(state().locationDetails.address?.city).toBe(MAKKAH_CITY.name);
+  });
+
   it("names the candidate from the row near its point after the full pack installs", async () => {
     mockTrustedCityNear.mockResolvedValue(FULL_PACK_JEDDAH_ROW);
 
