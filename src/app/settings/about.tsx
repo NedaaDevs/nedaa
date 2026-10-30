@@ -7,9 +7,12 @@ import {
   BookText,
   Bug,
   CircleHelp,
+  Eraser,
   HeartHandshake,
   Layers,
+  ListChecks,
   MessageSquareText,
+  Play,
   RotateCcw,
   ShieldCheck,
 } from "lucide-react-native";
@@ -32,6 +35,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
+import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
 
 type AboutRow = {
   destination: BackDestination;
@@ -164,6 +168,24 @@ export default function AboutScreen() {
                     onPress={restart}
                   />
                   <PhoneZoneRow />
+                  <ListRow
+                    variant={LIST_ROW_VARIANT.GROUPED}
+                    icon={Play}
+                    title={DEBUG_COPY.RUN_CITY_CHECK}
+                    onPress={() => void runCityCheckNow()}
+                  />
+                  <ListRow
+                    variant={LIST_ROW_VARIANT.GROUPED}
+                    icon={ListChecks}
+                    title={DEBUG_COPY.SHOW_CITY_CHECK_MEMORY}
+                    onPress={showCityCheckMemory}
+                  />
+                  <ListRow
+                    variant={LIST_ROW_VARIANT.GROUPED}
+                    icon={Eraser}
+                    title={DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY}
+                    onPress={clearCityCheckMemory}
+                  />
                 </ListGroup>
               </Section>
             ) : null}

@@ -7,9 +7,16 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { AppLogger } from "@/utils/appLogger";
 import { registerDevMenu } from "@/utils/devMenu";
+import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
 import { phoneZoneReadings } from "@/utils/phoneZone";
 
 jest.mock("expo-dev-menu", () => ({ registerDevMenuItems: jest.fn(() => Promise.resolve()) }));
+
+jest.mock("@/utils/cityCheckDebug", () => ({
+  runCityCheckNow: jest.fn(),
+  showCityCheckMemory: jest.fn(),
+  clearCityCheckMemory: jest.fn(),
+}));
 
 jest.mock("@/utils/phoneZone", () => ({ phoneZoneReadings: jest.fn() }));
 
@@ -55,6 +62,9 @@ it("lists the items in menu order", () => {
     DEBUG_COPY.SHOW_CITY_CHANGE,
     DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED,
     DEBUG_COPY.LOG_PHONE_ZONE,
+    DEBUG_COPY.RUN_CITY_CHECK,
+    DEBUG_COPY.SHOW_CITY_CHECK_MEMORY,
+    DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY,
   ]);
 });
 
@@ -114,6 +124,19 @@ it("adds Log the phone zone, logging both readings", () => {
   items.find(({ name }) => name === DEBUG_COPY.LOG_PHONE_ZONE)?.callback();
   expect(info).toHaveBeenCalledWith("DevMenu", expect.stringContaining("Asia/Dubai"));
   expect(info).toHaveBeenCalledWith("DevMenu", expect.stringContaining("Asia/Riyadh"));
+});
+
+it.each([
+  [DEBUG_COPY.RUN_CITY_CHECK, runCityCheckNow],
+  [DEBUG_COPY.SHOW_CITY_CHECK_MEMORY, showCityCheckMemory],
+  [DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY, clearCityCheckMemory],
+])("adds %s, running its shared action", (name, action) => {
+  setDevBuild(true);
+  registerDevMenu();
+
+  itemNamed(name)?.callback();
+
+  expect(action).toHaveBeenCalledTimes(1);
 });
 
 it("adds nothing outside a dev build", () => {

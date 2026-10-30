@@ -43,8 +43,12 @@ export const DEBUG_COPY = {
   SHOW_CITY_CHANGE: "Show city change",
   SHOW_CITY_CHANGE_UNNAMED: "Show unnamed city change",
   LOG_PHONE_ZONE: "Log the phone zone",
+  RUN_CITY_CHECK: "Run the city check",
+  SHOW_CITY_CHECK_MEMORY: "Show city-check memory",
+  CLEAR_CITY_CHECK_MEMORY: "Clear city-check memory",
   PHONE_ZONE: "Phone zone",
   PHONE_ZONE_HINT: "Reads the zone again; a return to the app reads it too",
+  NEVER_CHECKED: "never",
   /** Shown for a source that gives no zone. */
   NO_ZONE: "none",
   /** The city the sample offer names. */
