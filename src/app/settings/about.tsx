@@ -10,6 +10,8 @@ import {
   Eraser,
   HeartHandshake,
   Layers,
+  MapPin,
+  MapPinned,
   ListChecks,
   MessageSquareText,
   Play,
@@ -35,7 +37,13 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppStore } from "@/stores/app";
 import { useDebugModeStore } from "@/stores/debugMode";
-import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
+import {
+  clearCityCheckMemory,
+  runCityCheckNow,
+  showCityCheckMemory,
+  showNamedCityChange,
+  showUnnamedCityChange,
+} from "@/utils/cityCheckDebug";
 
 type AboutRow = {
   destination: BackDestination;
@@ -168,6 +176,18 @@ export default function AboutScreen() {
                     onPress={restart}
                   />
                   <PhoneZoneRow />
+                  <ListRow
+                    variant={LIST_ROW_VARIANT.GROUPED}
+                    icon={MapPin}
+                    title={DEBUG_COPY.SHOW_CITY_CHANGE}
+                    onPress={showNamedCityChange}
+                  />
+                  <ListRow
+                    variant={LIST_ROW_VARIANT.GROUPED}
+                    icon={MapPinned}
+                    title={DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED}
+                    onPress={showUnnamedCityChange}
+                  />
                   <ListRow
                     variant={LIST_ROW_VARIANT.GROUPED}
                     icon={Play}

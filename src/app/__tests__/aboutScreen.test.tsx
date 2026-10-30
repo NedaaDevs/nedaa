@@ -19,7 +19,13 @@ import { useDebugModeStore } from "@/stores/debugMode";
 import { useLocationStore } from "@/stores/location";
 import { useWhatsNewSheetStore } from "@/stores/whatsNewSheet";
 import { APP_NAME_LATIN } from "@/constants/App";
-import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
+import {
+  clearCityCheckMemory,
+  runCityCheckNow,
+  showCityCheckMemory,
+  showNamedCityChange,
+  showUnnamedCityChange,
+} from "@/utils/cityCheckDebug";
 import { appVersionLabel } from "@/utils/appVersion";
 import { LTR_ISOLATE } from "@/utils/digits";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -29,6 +35,8 @@ jest.mock("@/utils/cityCheckDebug", () => ({
   runCityCheckNow: jest.fn(),
   showCityCheckMemory: jest.fn(),
   clearCityCheckMemory: jest.fn(),
+  showNamedCityChange: jest.fn(),
+  showUnnamedCityChange: jest.fn(),
 }));
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -245,12 +253,14 @@ describe("About", () => {
       await renderAbout();
 
       const labels = screen.getAllByRole("button").map((node) => node.props.accessibilityLabel);
-      expect(labels.slice(-(DEBUG_SCREENS.length + 5), -4)).toEqual([
+      expect(labels.slice(-(DEBUG_SCREENS.length + 7), -6)).toEqual([
         ...DEBUG_SCREENS.map(({ label }) => label),
         DEBUG_COPY.RESTART_ONBOARDING,
       ]);
-      expect(labels.at(-4)).toContain(DEBUG_COPY.PHONE_ZONE);
-      expect(labels.slice(-3)).toEqual([
+      expect(labels.at(-6)).toContain(DEBUG_COPY.PHONE_ZONE);
+      expect(labels.slice(-5)).toEqual([
+        DEBUG_COPY.SHOW_CITY_CHANGE,
+        DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED,
         DEBUG_COPY.RUN_CITY_CHECK,
         DEBUG_COPY.SHOW_CITY_CHECK_MEMORY,
         DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY,
@@ -300,6 +310,8 @@ describe("About", () => {
 
   describe("city check rows", () => {
     const CITY_CHECK_ROWS = [
+      [DEBUG_COPY.SHOW_CITY_CHANGE, showNamedCityChange],
+      [DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED, showUnnamedCityChange],
       [DEBUG_COPY.RUN_CITY_CHECK, runCityCheckNow],
       [DEBUG_COPY.SHOW_CITY_CHECK_MEMORY, showCityCheckMemory],
       [DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY, clearCityCheckMemory],
