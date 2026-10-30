@@ -38,6 +38,8 @@ const MAKKAH: Coords = { latitude: 21.4225, longitude: 39.8262 };
 const JEDDAH: Coords = { latitude: 21.5433, longitude: 39.1728 };
 const RIYADH: Coords = { latitude: 24.7136, longitude: 46.6753 };
 const DIRIYAH: Coords = { latitude: 24.734, longitude: 46.575 };
+const DAMMAM: Coords = { latitude: 26.4207, longitude: 50.0888 };
+const KHOBAR: Coords = { latitude: 26.2172, longitude: 50.1971 };
 
 const eastOf = (from: Coords, km: number): Coords => ({
   latitude: from.latitude,
@@ -204,7 +206,15 @@ describe("judgeCityChange", () => {
         }).offer
       ).toBe(true));
 
-    it.todo("makes no offer for Dammam → Khobar (Asr shifts 1.0 min; gate value pending)");
+    it("makes no offer for Dammam → Khobar", () => {
+      const saved = { point: DAMMAM, accuracyKm: 0.05, zone: RIYADH_ZONE, countryCode: SA };
+      expect(maxYearlyShiftMinutes(DAMMAM, KHOBAR, RIYADH_ZONE, CALC, NOW)).toBeLessThan(
+        SHIFT_GATE_MINUTES
+      );
+      expect(reasonOf({ saved, fixes: pair(KHOBAR), candidate: candidateAt(KHOBAR) })).toBe(
+        CITY_CHECK_END.SHIFT_BELOW_GATE
+      );
+    });
 
     it("makes no offer for a move under the shift gate", () => {
       expectDiriyahUnderGate();
