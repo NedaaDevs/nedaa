@@ -30,7 +30,8 @@ const distanceKm = (a: Coords, b: Coords) =>
 const freshFixes = (fixes: readonly CityCheckFix[]) =>
   fixes.filter((fix) => fix.source === FIX_SOURCE.FRESH);
 
-const isNearSaved = (fix: CityCheckFix, saved: SavedPlaceFacts) =>
+/** Whether a fix lies within the move floor of the saved place. */
+export const isNearSaved = (fix: CityCheckFix, saved: SavedPlaceFacts): boolean =>
   conservativeKm(fix.point, fix.accuracyKm, saved.point, saved.accuracyKm) <= MOVE_MIN_KM;
 
 const confirms = (first: CityCheckFix, last: CityCheckFix) =>
