@@ -63,18 +63,32 @@ describe("guardReason", () => {
     expect(guardReason({ ...openGuards, ...over })).toBe(expected);
   });
 
-  it("reports the first failing guard in order", () => {
-    expect(
-      guardReason({
-        ...openGuards,
-        travelMode: TRAVEL_MODE.OFF,
-        hasSavedPlace: false,
-        appActive: false,
-      })
-    ).toBe(CITY_CHECK_SKIP.TRAVEL_OFF);
-    expect(guardReason({ ...openGuards, appActive: false, hasSavedPlace: false })).toBe(
-      CITY_CHECK_SKIP.APP_NOT_ACTIVE
-    );
+  it("reports each failing guard in the listed order", () => {
+    const allFailing: GuardFacts = {
+      travelMode: TRAVEL_MODE.OFF,
+      locationMode: LocationMode.MANUAL,
+      isFirstRun: true,
+      screenshotMode: true,
+      appActive: false,
+      offerShowing: true,
+      updateRunning: true,
+      hasSavedPlace: false,
+    };
+    const steps: [Partial<GuardFacts>, string][] = [
+      [{}, CITY_CHECK_SKIP.TRAVEL_OFF],
+      [{ travelMode: TRAVEL_MODE.ASK }, CITY_CHECK_SKIP.MANUAL_MODE],
+      [{ locationMode: LocationMode.DEVICE }, CITY_CHECK_SKIP.FIRST_RUN],
+      [{ isFirstRun: false }, CITY_CHECK_SKIP.SCREENSHOT_MODE],
+      [{ screenshotMode: false }, CITY_CHECK_SKIP.APP_NOT_ACTIVE],
+      [{ appActive: true }, CITY_CHECK_SKIP.OFFER_SHOWING],
+      [{ offerShowing: false }, CITY_CHECK_SKIP.UPDATE_RUNNING],
+      [{ updateRunning: false }, CITY_CHECK_SKIP.NO_SAVED_PLACE],
+    ];
+    let facts = allFailing;
+    steps.forEach(([open, expected]) => {
+      facts = { ...facts, ...open };
+      expect(guardReason(facts)).toBe(expected);
+    });
   });
 });
 
@@ -105,6 +119,14 @@ describe("shouldStartCheck", () => {
     expect(
       shouldStartCheck(
         launchFacts({ lastCheckAt: NOW - MINUTE_MS, lastPhoneZone: ZONE_RIYADH, phoneZone: null })
+      )
+    ).toBe(CITY_CHECK_SKIP.THROTTLED);
+  });
+
+  it("treats an unknown last zone as unchanged", () => {
+    expect(
+      shouldStartCheck(
+        launchFacts({ lastCheckAt: NOW - MINUTE_MS, lastPhoneZone: null, phoneZone: ZONE_DUBAI })
       )
     ).toBe(CITY_CHECK_SKIP.THROTTLED);
   });
@@ -163,6 +185,22 @@ describe("shouldStartCheck", () => {
 
   it("starts the first return of a launch that ran in the background", () => {
     expect(shouldStartCheck(returnFacts({ launchOwed: true, leftAt: null }))).toBeNull();
+  });
+
+  it("throttles the first return of a launch that ran in the background", () => {
+    expect(
+      shouldStartCheck(
+        returnFacts({ launchOwed: true, leftAt: null, lastCheckAt: NOW - MINUTE_MS })
+      )
+    ).toBe(CITY_CHECK_SKIP.THROTTLED);
+  });
+
+  it("starts an owed launch check after a short leave", () => {
+    expect(
+      shouldStartCheck(
+        returnFacts({ launchOwed: true, leftAt: NOW - MINUTE_MS, lastCheckAt: null })
+      )
+    ).toBeNull();
   });
 
   it("skips a return with no recorded leave", () => {
