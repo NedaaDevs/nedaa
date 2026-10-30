@@ -85,7 +85,11 @@ const renderSheet = ({ isRTL = false, dark = false, onboarding = false } = {}) =
     }
   );
 
-const title = () => screen.queryByRole("header", { name: t("location.cityChange.title") });
+// The heading reads the greeting, then the title.
+const HEADING = new RegExp(
+  `${t("location.cityChange.greeting")}.*${t("location.cityChange.title")}`
+);
+const title = () => screen.queryByRole("header", { name: HEADING });
 const updateButton = () => screen.getByRole("button", { name: t("location.cityChange.update") });
 const box = (label: string, city: string) =>
   screen.getByLabelText(t("a11y.join", { first: t(label), second: city }));

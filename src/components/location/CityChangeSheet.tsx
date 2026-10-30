@@ -167,9 +167,14 @@ const CityChangeBody = ({
       <VStack alignItems="center" gap="$2">
         <IconTile icon={MapPin} />
         <ActionsheetTitle>
-          <Text size="lg" bold typography="title" color="$fg" textAlign="center">
-            {t("location.cityChange.title")}
-          </Text>
+          <VStack alignItems="center" gap="$1">
+            <Text size="sm" color="$muted" textAlign="center">
+              {t("location.cityChange.greeting")}
+            </Text>
+            <Text size="lg" bold typography="title" color="$fg" textAlign="center">
+              {t("location.cityChange.title")}
+            </Text>
+          </VStack>
         </ActionsheetTitle>
       </VStack>
       {/* In reading order: the saved city at the start. */}
