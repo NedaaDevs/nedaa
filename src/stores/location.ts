@@ -119,8 +119,9 @@ const deviceAddressAt = async ({ latitude, longitude }: Coords): Promise<DeviceG
   try {
     const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
     return { failed: false, address: addresses[0] ?? null };
-  } catch (error) {
-    log.w("Geocode", `device address failed: ${errorText(error)}`);
+  } catch {
+    // A fixed line: the error's text may name the place.
+    log.w("Geocode", "device address failed");
     return { failed: true, address: null };
   }
 };
@@ -508,8 +509,8 @@ export const useLocationStore = create<LocationStore>()(
           if (row) return true;
           get()
             .updateAddressTranslation()
-            .catch((error) => {
-              log.w("Geocode", `address translation failed: ${errorText(error)}`);
+            .catch(() => {
+              log.w("Geocode", "address translation failed");
             });
           return true;
         },
@@ -541,8 +542,8 @@ export const useLocationStore = create<LocationStore>()(
               lng: location.coords.longitude,
               locale: asked,
             })
-            .catch((e) => {
-              log.w("Geocode", `address translation failed: ${errorText(e)}`);
+            .catch(() => {
+              log.w("Geocode", "address translation failed");
             });
 
           // A later language switch owns the name; this answer is for the old one.
