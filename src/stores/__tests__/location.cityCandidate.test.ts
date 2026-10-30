@@ -24,7 +24,9 @@ jest.mock("@/utils/location", () => ({
 
 jest.mock("@/utils/cityCheck/cityNear", () => ({ trustedCityNear: jest.fn() }));
 
-jest.mock("@/services/cities-db", () => ({ CitiesDB: { getCity: jest.fn() } }));
+jest.mock("@/services/cities-db", () => ({
+  CitiesDB: { getCity: jest.fn(), isFullPackInstalled: jest.fn() },
+}));
 
 jest.mock("@/utils/appLogger", () => {
   const log = { d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() };
@@ -35,6 +37,7 @@ const mockReadLocation = readLocation as jest.Mock;
 const mockReverseGeocodeAsync = reverseGeocodeAsync as jest.Mock;
 const mockTrustedCityNear = trustedCityNear as jest.Mock;
 const mockGetCity = CitiesDB.getCity as jest.Mock;
+const mockFullPack = CitiesDB.isFullPackInstalled as jest.Mock;
 
 const state = () => useLocationStore.getState();
 const applyCityCandidate: LocationStore["applyCityCandidate"] = (candidate) =>
@@ -112,6 +115,7 @@ describe("applyCityCandidate", () => {
       cityOffer: null,
       reverseGeocode,
     });
+    mockFullPack.mockReturnValue(true);
     mockTrustedCityNear.mockResolvedValue(JEDDAH_ROW);
     mockReadLocation.mockResolvedValue({ location: STALE_FIX, source: FIX_SOURCE.FRESH });
     mockReverseGeocodeAsync.mockResolvedValue([DEVICE_JEDDAH]);
@@ -164,6 +168,19 @@ describe("applyCityCandidate", () => {
     });
     expect(state().locationDetails.timezone).toBe(ROW_ZONE);
     expect(state().locationDetails.countryCode).toBe(COUNTRY_CODE.SAUDI_ARABIA);
+  });
+
+  it.each([
+    ["a lite pack", false, null],
+    ["the full pack", true, COUNTRY_CODE.BAHRAIN],
+  ])("takes the row's country from %s only when it is trusted", async (_name, full, saved) => {
+    mockFullPack.mockReturnValue(full);
+    mockTrustedCityNear.mockResolvedValue({ ...JEDDAH_ROW, countryCode: COUNTRY_CODE.BAHRAIN });
+    mockReverseGeocodeAsync.mockResolvedValue([{ ...DEVICE_JEDDAH, isoCountryCode: null }]);
+
+    await applyCityCandidate(candidateAt({ zone: null, countryCode: null }));
+
+    expect(state().locationDetails.countryCode).toBe(saved);
   });
 
   it("sends no point to the server geocoder for a candidate with a city row", async () => {
