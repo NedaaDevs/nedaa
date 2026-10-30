@@ -15,11 +15,18 @@ const STEPS_PER_DEGREE = 1 / MARK_ROUND_DEGREES;
 
 const roundDegrees = (degrees: number) => Math.round(degrees * STEPS_PER_DEGREE) / STEPS_PER_DEGREE;
 
-export const toPlaceMark = (coords: Coords, at: number): PlaceMark => ({
+export const toPlaceMark = (
+  coords: Coords,
+  at: number,
+  countryCode?: string | null
+): PlaceMark => ({
   lat: roundDegrees(coords.latitude),
   lng: roundDegrees(coords.longitude),
   at,
+  ...(countryCode ? { countryCode: countryCode.toUpperCase() } : {}),
 });
+
+export const sameCountry = (a: string, b: string): boolean => a.toUpperCase() === b.toUpperCase();
 
 export const markPoint = (mark: PlaceMark): Coords => ({ latitude: mark.lat, longitude: mark.lng });
 
@@ -39,8 +46,10 @@ export const matchesMark = (coords: Coords, accuracyKm: number | null, mark: Pla
   conservativeKm(coords, accuracyKm, markPoint(mark), null) <= MOVE_MIN_KM;
 
 // A long distance ends a trip, so only a fresh fix with a known accuracy may.
+// The trip ends on the evidence that makes an offer: a shift at the gate or a country change.
 const endsTrip = (
   fix: CityCheckFix,
+  fixCountry: string | null,
   entry: PlaceMark,
   zone: string,
   calc: ShiftCalc,
@@ -49,7 +58,8 @@ const endsTrip = (
   fix.source === FIX_SOURCE.FRESH &&
   fix.accuracyKm !== null &&
   conservativeKm(fix.point, fix.accuracyKm, markPoint(entry), null) > MOVE_MIN_KM &&
-  maxYearlyShiftMinutes(markPoint(entry), fix.point, zone, calc, now) >= SHIFT_GATE_MINUTES;
+  (maxYearlyShiftMinutes(markPoint(entry), fix.point, zone, calc, now) >= SHIFT_GATE_MINUTES ||
+    (!!entry.countryCode && fixCountry !== null && !sameCountry(entry.countryCode, fixCountry)));
 
 /** A kept entry lasts `KEPT_MAX_AGE_MS` from when it was made. */
 export const isLiveKept = (entry: PlaceMark, now: number): boolean =>
@@ -61,9 +71,12 @@ export const keptAfterFix = (
   fix: CityCheckFix,
   zone: string,
   calc: ShiftCalc,
-  now: number
+  now: number,
+  fixCountry: string | null
 ): PlaceMark[] =>
-  kept.filter((entry) => isLiveKept(entry, now) && !endsTrip(fix, entry, zone, calc, now));
+  kept.filter(
+    (entry) => isLiveKept(entry, now) && !endsTrip(fix, fixCountry, entry, zone, calc, now)
+  );
 
 /** The mark first, in place of any entry it matches, capped at `max`. */
 export const withMark = (list: PlaceMark[], mark: PlaceMark, max: number): PlaceMark[] => [
