@@ -81,7 +81,7 @@ const showSample = (name: LocalizedPlaceName | null, distanceKm?: number) => {
   location.offerCity(sampleCandidate(name, km), [CITY_CHECK_OFFER.SHIFT]);
 };
 
-/** A real check needs a real move; these put an offer up at once. */
+// A real check needs a real move; these put an offer up at once.
 export const showNamedCityChange = (): void =>
   showSample({ name: DEBUG_COPY.SAMPLE_NEW_CITY, names: null });
 

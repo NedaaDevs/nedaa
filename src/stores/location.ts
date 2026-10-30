@@ -451,7 +451,9 @@ export const useLocationStore = create<LocationStore>()(
           const revision = get().placeRevision;
           // Row ids change when the full pack installs; the point finds the row.
           const row = await trustedCityNear(candidate.point);
-          const geocoded = row ? null : (await deviceAddressAt(candidate.point)).address;
+          // A lite pack's row country is not trusted, so the device names it.
+          const needsDevice = !row || (!CitiesDB.isFullPackInstalled() && !candidate.countryCode);
+          const geocoded = needsDevice ? (await deviceAddressAt(candidate.point)).address : null;
           // A newer point was written during the lookup.
           if (get().placeRevision !== revision) {
             log.i("Candidate", "the place moved during the lookup; the candidate is not applied");

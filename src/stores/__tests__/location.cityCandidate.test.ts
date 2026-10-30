@@ -171,16 +171,27 @@ describe("applyCityCandidate", () => {
   });
 
   it.each([
-    ["a lite pack", false, null],
-    ["the full pack", true, COUNTRY_CODE.BAHRAIN],
-  ])("takes the row's country from %s only when it is trusted", async (_name, full, saved) => {
-    mockFullPack.mockReturnValue(full);
-    mockTrustedCityNear.mockResolvedValue({ ...JEDDAH_ROW, countryCode: COUNTRY_CODE.BAHRAIN });
-    mockReverseGeocodeAsync.mockResolvedValue([{ ...DEVICE_JEDDAH, isoCountryCode: null }]);
+    ["a lite pack", false, COUNTRY_CODE.SAUDI_ARABIA, 1],
+    ["the full pack", true, COUNTRY_CODE.BAHRAIN, 0],
+  ])(
+    "takes the country from the %s's trusted source",
+    async (_name, full, saved, geocoderCalls) => {
+      mockFullPack.mockReturnValue(full);
+      mockTrustedCityNear.mockResolvedValue({ ...JEDDAH_ROW, countryCode: COUNTRY_CODE.BAHRAIN });
 
-    await applyCityCandidate(candidateAt({ zone: null, countryCode: null }));
+      await applyCityCandidate(candidateAt({ zone: null, countryCode: null }));
 
-    expect(state().locationDetails.countryCode).toBe(saved);
+      expect(state().locationDetails.countryCode).toBe(saved);
+      expect(mockReverseGeocodeAsync).toHaveBeenCalledTimes(geocoderCalls);
+    }
+  );
+
+  it("skips the device geocoder on a lite pack when the candidate has a country", async () => {
+    mockFullPack.mockReturnValue(false);
+
+    await applyCityCandidate(candidateAt({ countryCode: COUNTRY_CODE.SAUDI_ARABIA }));
+
+    expect(mockReverseGeocodeAsync).not.toHaveBeenCalled();
   });
 
   it("sends no point to the server geocoder for a candidate with a city row", async () => {
