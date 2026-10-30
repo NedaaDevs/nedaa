@@ -25,6 +25,7 @@ import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Utils
 import { getNotificationSound } from "@/utils/sound";
+import { channelSoundOption } from "@/utils/channelSound";
 import { isCustomSoundKey, createChannelWithCustomSound } from "@/utils/customSoundManager";
 
 // Enums
@@ -364,7 +365,7 @@ export const createNotificationChannels = async (
         await Notifications.setNotificationChannelAsync(channel.id, {
           name: channel.name,
           importance: channel.importance,
-          sound: soundToSet,
+          ...channelSoundOption(soundToSet),
           vibrationPattern: channel.vibrationPattern,
           showBadge: channel.showBadge,
         });
