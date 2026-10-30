@@ -8,6 +8,7 @@ import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
+import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
 import { calculateDistance } from "@/utils/location";
 import { phoneZoneReadings } from "@/utils/phoneZone";
 import type { CityCandidate, LocalizedPlaceName } from "@/types/cityCheck";
@@ -76,6 +77,21 @@ export const registerDevMenu = (): Promise<void> => {
         const { intl, calendar } = phoneZoneReadings();
         log.i("DevMenu", `phone zone: intl=${intl} calendar=${calendar}`);
       },
+      shouldCollapse: true,
+    },
+    {
+      name: DEBUG_COPY.RUN_CITY_CHECK,
+      callback: () => void runCityCheckNow(),
+      shouldCollapse: true,
+    },
+    {
+      name: DEBUG_COPY.SHOW_CITY_CHECK_MEMORY,
+      callback: showCityCheckMemory,
+      shouldCollapse: true,
+    },
+    {
+      name: DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY,
+      callback: clearCityCheckMemory,
       shouldCollapse: true,
     },
   ]).catch((error: unknown) => {
