@@ -7,6 +7,7 @@ import {
   CONFIRM_FIX_DELAY_MS,
   MOVE_MIN_KM,
   SHIFT_GATE_MINUTES,
+  type CityCheckEnd,
   type CityCheckOfferReason,
 } from "@/constants/CityCheck";
 import { FIX_SOURCE } from "@/constants/Location";
@@ -61,13 +62,23 @@ const offerReasons = (facts: CityCheckFacts, candidate: CityCandidate): CityChec
   ];
 };
 
+// The end a remembered place gives a point: muted first, then a live kept trip.
+const markEnd = (
+  { kept, notAsked, now }: CityCheckFacts,
+  point: Coords,
+  accuracyKm: number | null
+): CityCheckEnd | null => {
+  const matches = (mark: PlaceMark) => matchesMark(point, accuracyKm, mark);
+  if (notAsked.some(matches)) return CITY_CHECK_END.NOT_ASKED;
+  if (kept.some((entry) => isLiveKept(entry, now) && matches(entry))) return CITY_CHECK_END.KEPT;
+  return null;
+};
+
 // The gate, once a confirmed move and a candidate are known.
 const judgeCandidate = (facts: CityCheckFacts, candidate: CityCandidate): CityCheckVerdict => {
-  const { kept, notAsked, now, saved, countryLooked } = facts;
-  const matches = (mark: PlaceMark) => matchesMark(candidate.point, candidate.accuracyKm, mark);
-  if (notAsked.some(matches)) return { offer: false, reason: CITY_CHECK_END.NOT_ASKED };
-  if (kept.some((entry) => isLiveKept(entry, now) && matches(entry)))
-    return { offer: false, reason: CITY_CHECK_END.KEPT };
+  const { saved, countryLooked } = facts;
+  const remembered = markEnd(facts, candidate.point, candidate.accuracyKm);
+  if (remembered) return { offer: false, reason: remembered };
 
   const reasons = offerReasons(facts, candidate);
   if (reasons.length > 0) return { offer: true, candidate, reasons };
@@ -99,6 +110,9 @@ export const judgeCityChange = (facts: CityCheckFacts): CityCheckVerdict => {
 
   const first = fresh[0];
   if (first.accuracyKm === null) return { offer: false, reason: CITY_CHECK_END.FIX_NO_ACCURACY };
+  // A remembered place ends the check on one fresh fix; it never needs a second.
+  const remembered = markEnd(facts, first.point, first.accuracyKm);
+  if (remembered) return { offer: false, reason: remembered };
   if (isNearSaved(first, saved) && !tripKept)
     return { offer: false, reason: CITY_CHECK_END.NOT_MOVED };
   if (fresh.length === 1) return { offer: false, reason: CITY_CHECK_NEED.NEEDS_SECOND_FIX };
