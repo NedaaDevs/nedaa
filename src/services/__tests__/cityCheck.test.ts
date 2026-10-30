@@ -24,6 +24,7 @@ import { later, never } from "@/test-helpers/promises";
 import { DUBAI_ZONE } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { Coords, LocationGeocodedAddress, LocationObject } from "@/types/location";
+import type { MethodId } from "@/types/providers/aladhan";
 import { toPlaceMark } from "@/utils/cityCheck/marks";
 
 const mockGetPermissions = jest.fn();
@@ -72,8 +73,9 @@ const NOW = Date.UTC(2026, 0, 1, 9);
 const FIX_ACCURACY_M = 100;
 const ROW_DISTANCE_KM = 3;
 const SA = COUNTRY_CODE.SAUDI_ARABIA;
-const BAHRAIN = MANAMA_ROW.countryCode;
+const BAHRAIN = COUNTRY_CODE.BAHRAIN;
 const { LAUNCH, RETURN } = CITY_CHECK_TRIGGER;
+const UMM_AL_QURA_ID: MethodId = 4;
 
 const MAKKAH: Coords = { latitude: 21.4225, longitude: 39.8262 };
 const MAKKAH_2: Coords = { latitude: 21.4231, longitude: 39.8271 };
@@ -243,7 +245,7 @@ describe("offer", () => {
     expect(location().cityOffer).toEqual({
       candidate: expect.objectContaining({
         name: { name: "Jeddah", names: JEDDAH_ROW.names },
-        zone: "Asia/Riyadh",
+        zone: RIYADH_ZONE,
       }),
       reasons: [CITY_CHECK_OFFER.SHIFT],
     });
@@ -325,6 +327,44 @@ describe("offer", () => {
     expect(location().cityOffer).toBeNull();
     ended(LAUNCH, CITY_CHECK_END.SHIFT_BELOW_GATE);
     expect(mockReverseGeocode).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["the provider picks the method", null, true],
+    ["the user set the method", UMM_AL_QURA_ID, false],
+  ] as const)("offers a method change only when %s", async (_case, method, offered) => {
+    await load(KHOBAR);
+    const settings = loaded.settings.getState();
+    loaded.settings.setState({
+      allSettings: {
+        ...settings.allSettings,
+        [settings.currentProviderId]: { ...settings.getCurrentSettings(), method },
+      },
+    });
+    mockFullPack.mockReturnValue(true);
+    freshFixes(MANAMA, MANAMA);
+    rowNear(MANAMA_ROW);
+
+    await check();
+
+    const reasons = location().cityOffer?.reasons;
+    expect(reasons).toContain(CITY_CHECK_OFFER.COUNTRY_CHANGES);
+    expect(reasons?.includes(CITY_CHECK_OFFER.METHOD_CHANGES)).toBe(offered);
+  });
+
+  it("offers no method change from a saved place of unknown country", async () => {
+    await load(MAKKAH, null);
+    mockFullPack.mockReturnValue(true);
+    freshFixes(MANAMA, MANAMA);
+    mockFindNearestCity.mockImplementation(async (latitude: number) =>
+      latitude === MANAMA.latitude ? { city: MANAMA_ROW, distanceKm: ROW_DISTANCE_KM } : null
+    );
+
+    await check();
+
+    expect(location().cityOffer?.candidate.countryCode).toBe(BAHRAIN);
+    expect(location().locationDetails.countryCode).toBeNull();
+    expect(location().cityOffer?.reasons).toEqual([CITY_CHECK_OFFER.SHIFT]);
   });
 
   it("logs reason codes without names or coordinates", async () => {
@@ -438,14 +478,18 @@ describe("reads", () => {
     ended(LAUNCH, CITY_CHECK_END.NOT_MOVED);
   });
 
-  it("makes no offer for a phone zone that differs from the place's zone", async () => {
-    mockPhoneZone.mockReturnValue(DUBAI_ZONE);
-    freshFixes(MAKKAH);
+  // The phone zone only starts a check; it never decides one.
+  it.each([
+    ["matches", RIYADH_ZONE],
+    ["differs from", DUBAI_ZONE],
+  ])("makes the same offer when the phone zone %s the place's zone", async (_case, zone) => {
+    mockPhoneZone.mockReturnValue(zone);
+    freshFixes(JEDDAH, JEDDAH_2);
+    rowNear(JEDDAH_ROW);
 
     await check();
 
-    expect(location().cityOffer).toBeNull();
-    ended(LAUNCH, CITY_CHECK_END.NOT_MOVED);
+    expect(location().cityOffer?.reasons).toEqual([CITY_CHECK_OFFER.SHIFT]);
   });
 });
 
@@ -495,6 +539,22 @@ describe("confirmation", () => {
     expect(location().cityOffer).not.toBeNull();
     expect(mockCurrentPosition).toHaveBeenCalledTimes(3);
   });
+  it("reads twice again on a return once the saved place moved", async () => {
+    mockCurrentPosition.mockResolvedValue(fixAt(JEDDAH, NOW));
+    rowNear(JEDDAH_ROW);
+    await check();
+    ended(LAUNCH, CITY_CHECK_END.CONFIRM_DEFERRED);
+    loaded.location.setState({ placeRevision: location().placeRevision + 1 });
+
+    freshFixes(JEDDAH, JEDDAH_2);
+    await returnAfter(CHECK_MIN_AWAY_MS + MINUTE_MS);
+    await check(RETURN);
+
+    // The deferred fix is for the old place; the return confirms on its own pair.
+    expect(mockCurrentPosition).toHaveBeenCalledTimes(4);
+    expect(location().cityOffer).not.toBeNull();
+  });
+
   it("drops a deferred fix older than the throttle window", async () => {
     mockCurrentPosition.mockResolvedValue(fixAt(JEDDAH, NOW));
     rowNear(JEDDAH_ROW);

@@ -1,6 +1,6 @@
 import { reverseGeocodeAsync } from "@/adapters/location";
 import { REUSE_FIX_MAX_AGE_MS } from "@/constants/CityCheck";
-import { FIX_SOURCE } from "@/constants/Location";
+import { FIX_SOURCE, METERS_PER_KM } from "@/constants/Location";
 import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { AppLocale } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
@@ -127,7 +127,7 @@ describe("applyCityCandidate", () => {
     expect(state().locationDetails.coords).toEqual(
       expect.objectContaining({
         ...JEDDAH_POINT,
-        accuracy: (candidate.accuracyKm ?? 0) * 1000,
+        accuracy: (candidate.accuracyKm ?? 0) * METERS_PER_KM,
       })
     );
     expect(state().locationDetails.fix).toEqual({
@@ -215,6 +215,29 @@ describe("applyCityCandidate", () => {
       longitude: MAKKAH_CITY.longitude,
     });
     expect(state().locationDetails.address?.city).toBe(MAKKAH_CITY.name);
+  });
+
+  // Each guard on its own: the place moved, or the mode left the device.
+  it.each<[string, () => void]>([
+    [
+      "a device write moves the place",
+      () => useLocationStore.setState({ placeRevision: state().placeRevision + 1 }),
+    ],
+    [
+      "the mode turns to a chosen city",
+      () => useLocationStore.setState({ locationMode: LocationMode.MANUAL }),
+    ],
+  ])("writes nothing when %s during the row lookup", async (_case, change) => {
+    let answer: (row: CitySearchResult) => void = () => {};
+    mockTrustedCityNear.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+
+    const applying = applyCityCandidate(candidateAt());
+    change();
+    answer(JEDDAH_ROW);
+
+    expect(await applying).toBe(false);
+    expect(state().lastKnownCoords).toEqual(RIYADH_POINT);
+    expect(state().locationDetails).toEqual(RIYADH_DETAILS);
   });
 
   it("leaves a city chosen while a candidate with no row is named", async () => {
