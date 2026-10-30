@@ -1,4 +1,5 @@
 import { KEPT_MAX, KEPT_MAX_AGE_MS, MOVE_MIN_KM, SHIFT_GATE_MINUTES } from "@/constants/CityCheck";
+import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { FIX_SOURCE } from "@/constants/Location";
 import { ASR_SCHOOL } from "@/constants/providers";
 import type { CityCheckFix, PlaceMark, ShiftCalc } from "@/types/cityCheck";
@@ -28,6 +29,8 @@ const EAST_15KM = eastOf(RIYADH, 15);
 const MAKKAH: Coords = { latitude: 21.4225, longitude: 39.8262 };
 const JEDDAH: Coords = { latitude: 21.5433, longitude: 39.1728 };
 const JEDDAH_2 = eastOf(JEDDAH, 3);
+const MANAMA: Coords = { latitude: 26.2285, longitude: 50.586 };
+const KHOBAR: Coords = { latitude: 26.2794, longitude: 50.3 };
 const DUBAI: Coords = { latitude: 25.2048, longitude: 55.2708 };
 
 const RIYADH_ZONE = "Asia/Riyadh";
@@ -36,7 +39,9 @@ const UMM_AL_QURA: ShiftCalc = { method: UMM_AL_QURA_ID, school: ASR_SCHOOL.SHAF
 const NOW = Date.UTC(2026, 9, 29, 9);
 const FIX_ACCURACY_KM = 1;
 
-const mark = (point: Coords, at: number = NOW): PlaceMark => toPlaceMark(point, at);
+const BAHRAIN = "BH";
+const mark = (point: Coords, at: number = NOW, countryCode?: string): PlaceMark =>
+  toPlaceMark(point, at, countryCode);
 const fresh = (point: Coords): CityCheckFix => ({
   point,
   accuracyKm: FIX_ACCURACY_KM,
@@ -84,11 +89,13 @@ describe("place marks", () => {
     expect(matchesMark(EAST_15KM, 4, mark(RIYADH))).toBe(true));
 
   it("ends a kept trip once a fresh fix back home is past the gate", () =>
-    expect(keptAfterFix([mark(JEDDAH)], fresh(MAKKAH), RIYADH_ZONE, UMM_AL_QURA, NOW)).toEqual([]));
+    expect(
+      keptAfterFix([mark(JEDDAH)], fresh(MAKKAH), RIYADH_ZONE, UMM_AL_QURA, NOW, null)
+    ).toEqual([]));
 
   it("keeps a kept trip on a cached fix", () =>
     expect(
-      keptAfterFix([mark(JEDDAH)], cached(MAKKAH), RIYADH_ZONE, UMM_AL_QURA, NOW)
+      keptAfterFix([mark(JEDDAH)], cached(MAKKAH), RIYADH_ZONE, UMM_AL_QURA, NOW, null)
     ).toHaveLength(1));
 
   it("keeps a kept trip on a fresh fix with no accuracy", () =>
@@ -98,13 +105,14 @@ describe("place marks", () => {
         { ...fresh(MAKKAH), accuracyKm: null },
         RIYADH_ZONE,
         UMM_AL_QURA,
-        NOW
+        NOW,
+        null
       )
     ).toHaveLength(1));
 
   it("keeps a kept trip while the fix stays near it", () =>
     expect(
-      keptAfterFix([mark(JEDDAH)], fresh(JEDDAH_2), RIYADH_ZONE, UMM_AL_QURA, NOW)
+      keptAfterFix([mark(JEDDAH)], fresh(JEDDAH_2), RIYADH_ZONE, UMM_AL_QURA, NOW, null)
     ).toHaveLength(1));
 
   it("keeps a kept trip on a far fix with no time change", () => {
@@ -115,7 +123,54 @@ describe("place marks", () => {
     expect(
       maxYearlyShiftMinutes(markPoint(entry), EAST_15KM, RIYADH_ZONE, UMM_AL_QURA, NOW)
     ).toBeLessThan(SHIFT_GATE_MINUTES);
-    expect(keptAfterFix([entry], fresh(EAST_15KM), RIYADH_ZONE, UMM_AL_QURA, NOW)).toEqual([entry]);
+    expect(keptAfterFix([entry], fresh(EAST_15KM), RIYADH_ZONE, UMM_AL_QURA, NOW, null)).toEqual([
+      entry,
+    ]);
+  });
+
+  it("has a Manama to Khobar shift under the gate", () =>
+    expect(
+      maxYearlyShiftMinutes(markPoint(mark(MANAMA)), KHOBAR, RIYADH_ZONE, UMM_AL_QURA, NOW)
+    ).toBeLessThan(SHIFT_GATE_MINUTES));
+
+  it("ends a trip kept for a country change when a confirmed fix is home", () =>
+    expect(
+      keptAfterFix(
+        [mark(MANAMA, NOW, BAHRAIN)],
+        fresh(KHOBAR),
+        RIYADH_ZONE,
+        UMM_AL_QURA,
+        NOW,
+        COUNTRY_CODE.SAUDI_ARABIA
+      )
+    ).toEqual([]));
+
+  it("keeps the trip when the mark has no country", () => {
+    const entry = mark(MANAMA);
+    expect(
+      keptAfterFix([entry], fresh(KHOBAR), RIYADH_ZONE, UMM_AL_QURA, NOW, COUNTRY_CODE.SAUDI_ARABIA)
+    ).toEqual([entry]);
+  });
+
+  it("keeps the trip when the fix has no country", () => {
+    const entry = mark(MANAMA, NOW, BAHRAIN);
+    expect(keptAfterFix([entry], fresh(KHOBAR), RIYADH_ZONE, UMM_AL_QURA, NOW, null)).toEqual([
+      entry,
+    ]);
+  });
+
+  it("keeps the trip while the country matches and the shift is under the gate", () => {
+    const entry = mark(RIYADH, NOW, COUNTRY_CODE.SAUDI_ARABIA.toLowerCase());
+    expect(
+      keptAfterFix(
+        [entry],
+        fresh(EAST_15KM),
+        RIYADH_ZONE,
+        UMM_AL_QURA,
+        NOW,
+        COUNTRY_CODE.SAUDI_ARABIA
+      )
+    ).toEqual([entry]);
   });
 
   it("ends a kept trip after 30 days", () =>
@@ -125,7 +180,8 @@ describe("place marks", () => {
         fresh(JEDDAH_2),
         RIYADH_ZONE,
         UMM_AL_QURA,
-        NOW
+        NOW,
+        null
       )
     ).toEqual([]));
 
