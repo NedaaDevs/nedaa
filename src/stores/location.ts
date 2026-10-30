@@ -155,8 +155,11 @@ export type LocationStore = {
   updateCurrentLocation: () => Promise<void>;
   /** Reads the device position; on success it replaces a chosen city. */
   adoptDeviceLocation: () => Promise<void>;
-  /** Writes the offered city from its own fix; a stale fix reads the device again. */
-  applyCityCandidate: (candidate: CityCandidate) => Promise<void>;
+  /**
+   * Writes the offered city from its own fix; a stale fix reads the device
+   * again. Resolves false when it writes nothing.
+   */
+  applyCityCandidate: (candidate: CityCandidate) => Promise<boolean>;
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
   updateAddressTranslation: () => Promise<boolean>;
   /** The place's zone, as the times fetched for it state. */
@@ -437,7 +440,10 @@ export const useLocationStore = create<LocationStore>()(
 
         applyCityCandidate: async (candidate) => {
           if (Date.now() - candidate.fixedAt > REUSE_FIX_MAX_AGE_MS) {
-            return get().updateCurrentLocation();
+            const choice = placeChoiceOf(get());
+            await get().updateCurrentLocation();
+            // The read writes nothing over a city chosen while it ran.
+            return !choiceMoved(get(), choice);
           }
           const revision = get().placeRevision;
           // Row ids change when the full pack installs; the point finds the row.
@@ -446,12 +452,12 @@ export const useLocationStore = create<LocationStore>()(
           // A newer point was written during the lookup.
           if (get().placeRevision !== revision) {
             log.i("Candidate", "the place moved during the lookup; the candidate is not applied");
-            return;
+            return false;
           }
           // A city chosen meanwhile is the user's; the offer is for the device's place.
           if (get().locationMode !== LocationMode.DEVICE) {
             log.i("Candidate", "a city is chosen; the candidate is not applied");
-            return;
+            return false;
           }
           const locale = appStore.getState().locale;
           const address = row
@@ -499,12 +505,13 @@ export const useLocationStore = create<LocationStore>()(
               : { country: address?.country ?? "", city: address?.city ?? "" },
           }));
           log.i("Candidate", `offered city applied (${row ? "city row" : "device names"})`);
-          if (row) return;
+          if (row) return true;
           get()
             .updateAddressTranslation()
             .catch((error) => {
               log.w("Geocode", `address translation failed: ${errorText(error)}`);
             });
+          return true;
         },
 
         settlePlace: (revision) => {

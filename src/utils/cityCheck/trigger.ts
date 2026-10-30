@@ -51,12 +51,17 @@ const zoneChanged = (facts: TriggerFacts) =>
   facts.phoneZone !== null &&
   facts.lastPhoneZone !== facts.phoneZone;
 
+// A stamp in the future means the clock moved back; it counts as expired.
+const within = (stamp: number, now: number, windowMs: number) =>
+  now >= stamp && now - stamp < windowMs;
+
 const awayTooShort = (facts: TriggerFacts) =>
-  !facts.launchOwed && (facts.leftAt === null || facts.now - facts.leftAt < CHECK_MIN_AWAY_MS);
+  !facts.launchOwed &&
+  (facts.leftAt === null || within(facts.leftAt, facts.now, CHECK_MIN_AWAY_MS));
 
 const throttled = (facts: TriggerFacts) =>
   facts.lastCheckAt !== null &&
-  facts.now - facts.lastCheckAt < CHECK_THROTTLE_MS &&
+  within(facts.lastCheckAt, facts.now, CHECK_THROTTLE_MS) &&
   !zoneChanged(facts);
 
 // On a return, a fix waiting for confirmation skips the away and throttle rules.
@@ -70,4 +75,4 @@ export const shouldStartCheck = (facts: TriggerFacts): CityCheckSkip | null => {
 
 // An offer whose candidate fix is a throttle window old counts as not showing.
 export const staleOffer = (offerFixedAt: number | null, now: number): boolean =>
-  offerFixedAt !== null && now - offerFixedAt >= CHECK_THROTTLE_MS;
+  offerFixedAt !== null && !within(offerFixedAt, now, CHECK_THROTTLE_MS);

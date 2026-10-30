@@ -88,6 +88,8 @@ export const CITY_CHECK_END = {
   NOT_MOVED: "notMoved",
   FIXES_DISAGREE: "fixesDisagree",
   CONFIRM_DEFERRED: "confirmDeferred",
+  /** The app left during a read; the place stays unjudged. */
+  APP_LEFT: "appLeft",
   PLACE_CHANGED: "placeChanged",
   KEPT: "kept",
   NOT_ASKED: "notAsked",

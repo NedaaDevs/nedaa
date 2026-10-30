@@ -1,12 +1,15 @@
 import { Alert } from "react-native";
 
-import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
+import { CITY_CHECK_END, CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { runCityCheck } from "@/services/cityCheck";
 import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
 import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
 
-jest.mock("@/services/cityCheck", () => ({ runCityCheck: jest.fn(() => Promise.resolve()) }));
+jest.mock("@/services/cityCheck", () => {
+  const { CITY_CHECK_END: END } = jest.requireActual("@/constants/CityCheck");
+  return { runCityCheck: jest.fn(() => Promise.resolve({ reason: END.NOT_MOVED })) };
+});
 
 const MINUTE_MS = 60_000;
 const NOW = 1_800_000_000_000;
@@ -28,7 +31,7 @@ describe("runCityCheckNow", () => {
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, lastCheckAt: NOW } });
     jest.mocked(runCityCheck).mockImplementationOnce(() => {
       expect(useCityCheckStore.getState().cityCheck.lastCheckAt).toBeNull();
-      return Promise.resolve();
+      return Promise.resolve({ reason: CITY_CHECK_END.NOT_MOVED });
     });
 
     await runCityCheckNow();

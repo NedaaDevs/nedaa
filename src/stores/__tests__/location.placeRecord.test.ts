@@ -86,7 +86,7 @@ describe("the place record and the place revision", () => {
     const asIs = () => {};
 
     // Every writer, one invariant. `arrange` runs before the watch starts.
-    it.each<[string, () => Promise<void>, () => void]>([
+    it.each<[string, () => Promise<unknown>, () => void]>([
       [
         "a chosen city",
         async () => useLocationStore.getState().setManualLocation(MAKKAH_CITY),

@@ -203,6 +203,24 @@ describe("shouldStartCheck", () => {
     ).toBeNull();
   });
 
+  it("starts a return whose leave is dated after now", () => {
+    expect(shouldStartCheck(returnFacts({ leftAt: NOW + 1 }))).toBeNull();
+  });
+
+  it("skips a return away a moment under 5 min", () => {
+    expect(shouldStartCheck(returnFacts({ leftAt: NOW - CHECK_MIN_AWAY_MS + 1 }))).toBe(
+      CITY_CHECK_SKIP.AWAY_TOO_SHORT
+    );
+  });
+
+  it("starts a launch check whose last check is dated after now", () => {
+    expect(shouldStartCheck(launchFacts({ lastCheckAt: NOW + 1 }))).toBeNull();
+  });
+
+  it("skips a launch check made at this moment", () => {
+    expect(shouldStartCheck(launchFacts({ lastCheckAt: NOW }))).toBe(CITY_CHECK_SKIP.THROTTLED);
+  });
+
   it("skips a return with no recorded leave", () => {
     expect(shouldStartCheck(returnFacts({ launchOwed: false, leftAt: null }))).toBe(
       CITY_CHECK_SKIP.AWAY_TOO_SHORT
@@ -217,6 +235,14 @@ describe("staleOffer", () => {
 
   it("keeps an offer whose fix is 29 min old", () => {
     expect(staleOffer(NOW - 29 * MINUTE_MS, NOW)).toBe(false);
+  });
+
+  it("keeps an offer whose fix is from this moment", () => {
+    expect(staleOffer(NOW, NOW)).toBe(false);
+  });
+
+  it("drops an offer whose fix is dated after now", () => {
+    expect(staleOffer(NOW + 1, NOW)).toBe(true);
   });
 
   it("has nothing to drop without an offer", () => {
