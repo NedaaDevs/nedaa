@@ -37,6 +37,8 @@ export const REUSE_FIX_MAX_AGE_MS = 5 * MINUTE_MS;
 export const MARK_ROUND_DEGREES = 0.01;
 /** Longest wait for the city-check memory before a check ends. */
 export const MEMORY_LOAD_TIMEOUT_MS = 5_000;
+/** Most judge turns in one check: one per fact it can need, and the verdict. */
+export const CHECK_MAX_TURNS = 6;
 
 /** What starts a check. */
 export const CITY_CHECK_TRIGGER = {
