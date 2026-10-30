@@ -9,6 +9,7 @@ import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import type { UpdateRun, UpdateStart } from "@/stores/locationUpdate";
+import { candidateAt } from "@/test-helpers/cityOffer";
 import { PLACE } from "@/test-helpers/cityPickerStubs";
 import { HAND_WRITTEN_LOCALES, type HandWrittenLocale } from "@/test-helpers/locales";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -87,6 +88,11 @@ describe("LocationUpdateProgress", () => {
       "onboarding.fetch.locatingDevice",
     ],
     [UPDATE_START.CITY, { kind: UPDATE_START.CITY, city: PLACE }, "location.update.step.city"],
+    [
+      UPDATE_START.CANDIDATE,
+      { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
+      "location.update.step.city",
+    ],
   ] as const)("says a %s run's place step in its own words", async (_kind, start, status) => {
     Platform.OS = PlatformType.IOS;
     const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");

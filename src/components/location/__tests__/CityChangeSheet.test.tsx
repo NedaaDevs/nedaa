@@ -52,6 +52,7 @@ const UNNAMED_KM = 40;
 const { dismissCityOffer } = useLocationStore.getState();
 const kept = () => useCityCheckStore.getState().cityCheck.kept;
 const mockUpdate = jest.fn(async () => {});
+const mockReadDevice = jest.fn(async () => {});
 const mockLoad = jest.fn(async () => true);
 
 /** The picker route, printing what it was opened on. */
@@ -128,7 +129,7 @@ beforeEach(async () => {
       ...initialLocationDetails,
       address: { city: SAVED_CITY, country: RIYADH_CITY.country.name },
     },
-    updateCurrentLocation: mockUpdate,
+    updateCurrentLocation: mockReadDevice,
     applyCityCandidate: mockUpdate,
     dismissCityOffer,
     cityOffer: null,
@@ -188,7 +189,8 @@ describe("CityChangeSheet", () => {
 
     await userEvent.press(updateButton());
 
-    expect(await screen.findByLabelText(t("onboarding.fetch.locatingDevice"))).toBeTruthy();
+    expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
+    expect(screen.queryByLabelText(t("onboarding.fetch.locatingDevice"))).toBeNull();
     expect(title()).toBeTruthy();
     expect(screen.queryByRole("button", { name: t("location.cityChange.update") })).toBeNull();
 
@@ -335,7 +337,9 @@ describe("CityChangeSheet", () => {
   });
 
   // The failure card is the one way out of a failed read, here as on Location.
-  it("shows the failure card in the sheet, and its retry reads the device again", async () => {
+  it("shows the failure card in the sheet, and its retry repeats the offered update", async () => {
+    const candidate = candidateAt();
+    offerUp(candidate);
     failReads();
     await renderSheet();
     await userEvent.press(updateButton());
@@ -344,7 +348,8 @@ describe("CityChangeSheet", () => {
     mockUpdate.mockResolvedValue(undefined);
     await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
 
-    expect(mockUpdate).toHaveBeenCalledTimes(2);
+    expect(mockUpdate.mock.calls).toEqual([[candidate], [candidate]]);
+    expect(mockReadDevice).not.toHaveBeenCalled();
     expect(title()).toBeNull();
   });
 
