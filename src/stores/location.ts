@@ -79,7 +79,8 @@ const restoredDetails = (saved: LocationDetails): LocationDetails => {
 const TRAVEL_MODES: readonly unknown[] = Object.values(TRAVEL_MODE);
 const isTravelMode = (value: unknown): value is TravelMode => TRAVEL_MODES.includes(value);
 
-/** A saved travel mode, else the one the legacy auto-update flag implies. */
+// The saved travel mode, else the one 2.x's `autoUpdateLocation` maps to:
+// false is off, anything else is ask.
 const restoredTravelMode = (travelMode: unknown, autoUpdateLocation: unknown): TravelMode => {
   if (isTravelMode(travelMode)) return travelMode;
   if (autoUpdateLocation === false) return TRAVEL_MODE.OFF;

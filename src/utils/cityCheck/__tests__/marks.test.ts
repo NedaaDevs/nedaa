@@ -3,6 +3,8 @@ import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { FIX_SOURCE } from "@/constants/Location";
 import { ASR_SCHOOL } from "@/constants/providers";
 import type { CityCheckFix, PlaceMark, ShiftCalc } from "@/types/cityCheck";
+import { eastOf } from "@/test-helpers/geo";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { Coords } from "@/types/location";
 import type { MethodId } from "@/types/providers/aladhan";
 
@@ -17,14 +19,7 @@ import {
 } from "@/utils/cityCheck/marks";
 import { maxYearlyShiftMinutes } from "@/utils/cityCheck/shift";
 
-const KM_PER_DEGREE = 111.195;
-const RAD = Math.PI / 180;
-
 const RIYADH: Coords = { latitude: 24.7136, longitude: 46.6753 };
-const eastOf = (from: Coords, km: number): Coords => ({
-  latitude: from.latitude,
-  longitude: from.longitude + km / (KM_PER_DEGREE * Math.cos(from.latitude * RAD)),
-});
 const EAST_12KM = eastOf(RIYADH, 12);
 const EAST_15KM = eastOf(RIYADH, 15);
 const MAKKAH: Coords = { latitude: 21.4225, longitude: 39.8262 };
@@ -35,13 +30,12 @@ const MANAMA: Coords = { latitude: 26.2285, longitude: 50.586 };
 const SAUDI_NEAR_MANAMA: Coords = { latitude: 26.2794, longitude: 50.3 };
 const DUBAI: Coords = { latitude: 25.2048, longitude: 55.2708 };
 
-const RIYADH_ZONE = "Asia/Riyadh";
 const UMM_AL_QURA_ID: MethodId = 4;
 const UMM_AL_QURA: ShiftCalc = { method: UMM_AL_QURA_ID, school: ASR_SCHOOL.SHAFI };
 const NOW = Date.UTC(2026, 9, 29, 9);
 const FIX_ACCURACY_KM = 1;
 
-const BAHRAIN = "BH";
+const BAHRAIN = COUNTRY_CODE.BAHRAIN;
 const mark = (point: Coords, at: number = NOW, countryCode?: string): PlaceMark =>
   toPlaceMark(point, at, countryCode);
 const fresh = (point: Coords): CityCheckFix => ({

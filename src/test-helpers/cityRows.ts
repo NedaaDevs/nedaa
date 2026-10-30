@@ -1,3 +1,4 @@
+import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { JEDDAH_CITY } from "@/test-helpers/place";
 import type { CitySearchResult } from "@/types/cities";
 
@@ -22,7 +23,7 @@ export const MANAMA_ROW: CitySearchResult = {
   names: { ar: "المنامة", ur: null, ms: null },
   latitude: 26.2285,
   longitude: 50.586,
-  countryCode: "BH",
+  countryCode: COUNTRY_CODE.BAHRAIN,
   country: { name: "Bahrain", names: { ar: "البحرين", ur: null, ms: null } },
   region: null,
   population: 147_074,
