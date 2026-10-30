@@ -30,7 +30,7 @@ export const runCityCheckNow = async (): Promise<CheckEnd> => {
   return end;
 };
 
-/** Shows counts and ages only; a mark's place stays out of the text. */
+/** Shows ages, counts and the phone zone; no place leaves the store. */
 export const showCityCheckMemory = (): void => {
   const { lastCheckAt, lastPhoneZone, kept, notAsked } = useCityCheckStore.getState().cityCheck;
   const lines = [
