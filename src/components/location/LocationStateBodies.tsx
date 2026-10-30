@@ -265,7 +265,7 @@ export const AutoUpdateSection = () => {
         <SwitchGroup
           variant={LIST_ROW_VARIANT.GROUPED}
           icon={MapPin}
-          label={t("location.settings.keepLocationUpdated.title")}
+          label={t("location.settings.offerUpdate.title")}
           summary={t("location.settings.keepLocationUpdated.summary")}
           value={on}
           onValueChange={(value) => {
