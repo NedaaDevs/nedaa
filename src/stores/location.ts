@@ -497,7 +497,9 @@ export const useLocationStore = create<LocationStore>()(
         keepCityOffer: () => {
           const offer = get().cityOffer;
           if (offer)
-            useCityCheckStore.getState().keep(toPlaceMark(offer.candidate.point, Date.now()));
+            useCityCheckStore
+              .getState()
+              .keep(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
           set({ cityOffer: null });
         },
 

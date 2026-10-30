@@ -4,8 +4,8 @@ import type { LocalizedNames } from "@/types/cities";
 import type { Coords } from "@/types/location";
 import type { AladhanMadhabId, MethodId } from "@/types/providers/aladhan";
 
-/** A remembered point, rounded, and when it was made. No name, no row id. */
-export type PlaceMark = { lat: number; lng: number; at: number };
+/** A remembered point, rounded, when it was made and its upper-case ISO country when known. */
+export type PlaceMark = { lat: number; lng: number; at: number; countryCode?: string | null };
 
 export type LocalizedPlaceName = { name: string; names: LocalizedNames | null };
 
