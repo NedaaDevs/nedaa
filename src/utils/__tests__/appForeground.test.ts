@@ -151,12 +151,15 @@ describe("waitWhileActive", () => {
     expect(released()).toBe(true);
   });
 
-  it("stops on an inactive report", async () => {
-    const left = outcomeOf(waitWhileActive(WAIT_MS));
+  // Face ID, a system alert or Control Center report inactive; the app stays.
+  it("keeps waiting through an inactive report", async () => {
+    const stayed = outcomeOf(waitWhileActive(WAIT_MS));
     emit(APP_STATE.INACTIVE);
-    await jest.advanceTimersByTimeAsync(0);
+    emit(APP_STATE.ACTIVE);
+    await jest.advanceTimersByTimeAsync(WAIT_MS);
 
-    expect(left.mock.calls).toStrictEqual([[{ value: false }]]);
+    expect(stayed.mock.calls).toStrictEqual([[{ value: true }]]);
+    expect(released()).toBe(true);
   });
 
   it("answers false at once when the app is already away", async () => {
@@ -183,10 +186,29 @@ describe("unlessLeft", () => {
     expect(released()).toBe(true);
   });
 
-  it("answers APP_LEFT once the app leaves first, and drops the late value", async () => {
+  it("answers the value through an inactive report", async () => {
     const read = later<number>();
     const answer = outcomeOf(unlessLeft(() => read.promise));
     emit(APP_STATE.INACTIVE);
+    read.release(VALUE);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(answer.mock.calls).toStrictEqual([[{ value: VALUE }]]);
+    expect(released()).toBe(true);
+  });
+
+  it("starts the read while the app is inactive", async () => {
+    startIn(APP_STATE.INACTIVE);
+    const answer = outcomeOf(unlessLeft(() => Promise.resolve(VALUE)));
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(answer.mock.calls).toStrictEqual([[{ value: VALUE }]]);
+  });
+
+  it("answers APP_LEFT once the app leaves first, and drops the late value", async () => {
+    const read = later<number>();
+    const answer = outcomeOf(unlessLeft(() => read.promise));
+    emit(APP_STATE.BACKGROUND);
     read.release(VALUE);
     await jest.advanceTimersByTimeAsync(0);
 
