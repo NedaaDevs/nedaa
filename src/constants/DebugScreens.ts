@@ -43,6 +43,10 @@ export const DEBUG_COPY = {
   SHOW_CITY_CHANGE: "Show city change",
   SHOW_CITY_CHANGE_UNNAMED: "Show unnamed city change",
   LOG_PHONE_ZONE: "Log the phone zone",
+  PHONE_ZONE: "Phone zone",
+  PHONE_ZONE_HINT: "Reads the zone again; a return to the app reads it too",
+  /** Shown for a source that gives no zone. */
+  NO_ZONE: "none",
   /** The city the sample offer names. */
   SAMPLE_NEW_CITY: "Jeddah",
 } as const;
