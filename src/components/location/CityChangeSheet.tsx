@@ -115,7 +115,7 @@ const OfferButtons = ({ busy, onUpdate, onKeep }: OfferProps) => {
         onPress={onUpdate}
         disabled={busy}
         accessibilityLabel={update}
-        accessibilityHint={t("a11y.location.refreshHint")}>
+        accessibilityHint={t("a11y.location.cityChange.updateHint")}>
         <Button.Text>{update}</Button.Text>
       </Button>
       <Button action="secondary" variant="outline" onPress={onKeep} accessibilityLabel={keep}>
@@ -191,14 +191,16 @@ const CityChangeBody = ({
   );
 };
 
-type OfferBodyProps = Omit<BodyProps, "savedCity" | "newCity"> & { candidate: CityCandidate };
+type OfferBodyProps = Omit<BodyProps, "newCity"> & { candidate: CityCandidate };
 
-/** Names both places, then draws the body. */
+/** Names the new place, then draws the body. */
 const OfferBody = ({ candidate, ...body }: OfferBodyProps) => {
-  const savedCity = usePlace().city;
   const newCity = useCandidateName(candidate);
-  return <CityChangeBody savedCity={savedCity} newCity={newCity} {...body} />;
+  return <CityChangeBody newCity={newCity} {...body} />;
 };
+
+/** The offer as drawn, with the saved city's name when it came. */
+type DrawnOffer = { offer: CityOffer; savedCity: string | undefined };
 
 type Props = {
   /** The onboarding gate covers the app; the offer waits until it leaves. */
@@ -212,10 +214,14 @@ export const CityChangeSheet = ({ onboarding }: Props) => {
   const cityOffer = useLocationStore((state) => state.cityOffer);
   const keepCityOffer = useLocationStore((state) => state.keepCityOffer);
   const dismissCityOffer = useLocationStore((state) => state.dismissCityOffer);
-  // The last offer stays drawn while the sheet leaves.
-  const [drawn, setDrawn] = useState<CityOffer | null>(cityOffer);
-  if (cityOffer && cityOffer !== drawn) setDrawn(cityOffer);
-  const offer = cityOffer ?? drawn;
+  const savedCity = usePlace().city;
+  // The last offer stays drawn while the sheet leaves. The saved city keeps its
+  // name from the offer's arrival: an update moves the place under the sheet.
+  const [drawn, setDrawn] = useState<DrawnOffer | null>(
+    cityOffer && { offer: cityOffer, savedCity }
+  );
+  if (cityOffer && cityOffer !== drawn?.offer) setDrawn({ offer: cityOffer, savedCity });
+  const offer = cityOffer ?? drawn?.offer;
   const { run, applyCandidate, retry, dismissFailure } = useLocationUpdate();
   // Set only when this sheet's update takes the lock, so only its run is drawn.
   const [started, setStarted] = useState(false);
@@ -250,6 +256,7 @@ export const CityChangeSheet = ({ onboarding }: Props) => {
         {offer ? (
           <OfferBody
             candidate={offer.candidate}
+            savedCity={drawn?.savedCity}
             run={shown}
             busy={isRunning(run)}
             onUpdate={() => void update(offer.candidate)}
