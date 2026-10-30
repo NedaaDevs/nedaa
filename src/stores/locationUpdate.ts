@@ -10,6 +10,7 @@ import {
   type UpdateStep,
 } from "@/constants/Location";
 import { useLocationStore, type LocationStore } from "@/stores/location";
+import type { CityCandidate } from "@/types/cityCheck";
 import type { ManualLocation } from "@/types/location";
 import { AppLogger } from "@/utils/appLogger";
 import { stopOf, type StepOutcomes } from "@/utils/updateOutcome";
@@ -20,7 +21,8 @@ const log = AppLogger.create("location");
 export type UpdateStart =
   | { kind: typeof UPDATE_START.DEVICE }
   | { kind: typeof UPDATE_START.ADOPT_DEVICE }
-  | { kind: typeof UPDATE_START.CITY; city: ManualLocation };
+  | { kind: typeof UPDATE_START.CITY; city: ManualLocation }
+  | { kind: typeof UPDATE_START.CANDIDATE; candidate: CityCandidate };
 
 /** An update in flight, or the last one when a step stopped it. */
 export type UpdateRun = {
