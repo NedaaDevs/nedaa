@@ -44,7 +44,7 @@ import type {
 } from "@/types/cityCheck";
 import type { Coords, LocationObject } from "@/types/location";
 import type { AladhanSettings } from "@/types/providers/aladhan";
-import { waitWhileActive } from "@/utils/appForeground";
+import { APP_LEFT, unlessLeft, waitWhileActive } from "@/utils/appForeground";
 import { AppLogger } from "@/utils/appLogger";
 import { trustedCityNear } from "@/utils/cityCheck/cityNear";
 import { confirmedFix, isNearSaved, judgeCityChange } from "@/utils/cityCheck/judge";
@@ -73,20 +73,41 @@ const TAG = "CityCheck";
 /** A first fix waiting for its confirmation, for the place at `revision`. */
 type PendingFix = { fix: CityCheckFix; revision: number };
 
-/** How a started check ends: the offer's reasons, or why there is none. */
-type CheckEnd = { offered: CityCheckOfferReason[] } | { reason: CityCheckReason };
+/** How a check ends: the offer's reasons, or why there is none. */
+export type CheckEnd = { offered: CityCheckOfferReason[] } | { reason: CityCheckReason };
 
-let inFlight: Promise<void> | null = null;
+/** A running check, and the count of leaves when it began. */
+type Flight = { run: Promise<CheckEnd>; leaves: number };
+
+let inFlight: Flight | null = null;
+let followUp: Promise<CheckEnd> | null = null;
 let pendingFix: PendingFix | null = null;
 let leftAt: number | null = null;
+let leaves = 0;
 let launchOwed = false;
 
 /** When the app last went to the background. */
 export const markAppLeft = (at: number): void => {
   leftAt = at;
+  leaves += 1;
+};
+
+// Each return reads the leave once; a return with none counts as not away.
+const takeLeftAt = (): number | null => {
+  const at = leftAt;
+  leftAt = null;
+  return at;
 };
 
 const ended = (reason: CityCheckReason): CheckEnd => ({ reason });
+
+// Ends that say nothing about the place, so the throttle does not start.
+const UNTHROTTLED_ENDS: readonly CityCheckReason[] = [
+  CITY_CHECK_END.CONFIRM_DEFERRED,
+  CITY_CHECK_END.APP_LEFT,
+];
+const throttles = (end: CheckEnd): boolean =>
+  !("reason" in end && UNTHROTTLED_ENDS.includes(end.reason));
 
 const isEnd = (verdict: CityCheckVerdict): boolean =>
   verdict.offer || !Object.values<string>(CITY_CHECK_NEED).includes(verdict.reason);
@@ -104,9 +125,12 @@ const memoryLoaded = async (): Promise<boolean> => {
     loaded = false;
   };
   await Promise.all(
-    [useLocationStore.persist, useCityCheckStore.persist].map((persist) =>
-      waitForHydration(persist, { timeoutMs: MEMORY_LOAD_TIMEOUT_MS, onTimeout })
-    )
+    [
+      useLocationStore.persist,
+      useCityCheckStore.persist,
+      useProviderSettingsStore.persist,
+      useAppStore.persist,
+    ].map((persist) => waitForHydration(persist, { timeoutMs: MEMORY_LOAD_TIMEOUT_MS, onTimeout }))
   );
   return loaded;
 };
@@ -226,11 +250,13 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
       case CITY_CHECK_NEED.NEEDS_FRESH_FIX: {
         if (!cachedRead) {
           cachedRead = true;
-          const cached = await readCachedFix(CACHED_FIX_MAX_AGE_MS);
+          const cached = await unlessLeft(() => readCachedFix(CACHED_FIX_MAX_AGE_MS));
+          if (cached === APP_LEFT) return ended(CITY_CHECK_END.APP_LEFT);
           if (cached) fixes = [...fixes, toFix(cached, FIX_SOURCE.LAST_KNOWN)];
           return null;
         }
-        const read = await readFresh();
+        const read = await unlessLeft(readFresh);
+        if (read === APP_LEFT) return ended(CITY_CHECK_END.APP_LEFT);
         if ("end" in read) return ended(read.end);
         fixes = [...fixes, read.fix];
         return null;
@@ -336,12 +362,13 @@ const investigate = async (revision: number): Promise<CheckEnd> => {
 const endLine = (trigger: CityCheckTrigger, end: CheckEnd) =>
   "offered" in end ? `${trigger} → offer (${end.offered.join(",")})` : `${trigger} → ${end.reason}`;
 
-const checkOnce = async (trigger: CityCheckTrigger): Promise<void> => {
+const checkOnce = async (trigger: CityCheckTrigger): Promise<CheckEnd> => {
+  const away = trigger === CITY_CHECK_TRIGGER.RETURN ? takeLeftAt() : null;
   let started = false;
-  const finish = (end: CheckEnd) => {
+  const finish = (end: CheckEnd): CheckEnd => {
     log.i(TAG, endLine(trigger, end));
-    const deferred = "reason" in end && end.reason === CITY_CHECK_END.CONFIRM_DEFERRED;
-    if (started && !deferred) useCityCheckStore.getState().noteCheckFinished(Date.now());
+    if (started && throttles(end)) useCityCheckStore.getState().noteCheckFinished(Date.now());
+    return end;
   };
   try {
     if (!(await memoryLoaded())) return finish(ended(CITY_CHECK_SKIP.MEMORY_NOT_LOADED));
@@ -365,7 +392,7 @@ const checkOnce = async (trigger: CityCheckTrigger): Promise<void> => {
     const skip = shouldStartCheck({
       trigger,
       now,
-      leftAt,
+      leftAt: away,
       launchOwed,
       pendingFix: pendingFix?.revision === placeRevision,
       lastCheckAt,
@@ -377,18 +404,28 @@ const checkOnce = async (trigger: CityCheckTrigger): Promise<void> => {
     started = true;
     useCityCheckStore.getState().noteCheckStarted(phoneZone);
     launchOwed = false;
-    finish(await investigate(placeRevision));
+    return finish(await investigate(placeRevision));
   } catch {
-    finish(ended(CITY_CHECK_END.CHECK_FAILED));
+    return finish(ended(CITY_CHECK_END.CHECK_FAILED));
   }
 };
 
-/** Checks whether the phone moved to another city; never rejects. */
-export const runCityCheck = (trigger: CityCheckTrigger): Promise<void> => {
-  if (inFlight) return inFlight;
+const startCheck = (trigger: CityCheckTrigger): Promise<CheckEnd> => {
   const run = checkOnce(trigger).finally(() => {
     inFlight = null;
   });
-  inFlight = run;
+  inFlight = { run, leaves };
   return run;
+};
+
+/** Checks whether the phone moved to another city; never rejects. */
+export const runCityCheck = (trigger: CityCheckTrigger): Promise<CheckEnd> => {
+  if (!inFlight) return startCheck(trigger);
+  if (trigger !== CITY_CHECK_TRIGGER.RETURN || leaves === inFlight.leaves) return inFlight.run;
+  // A return after a leave the running check began before runs once after it.
+  followUp ??= inFlight.run.then(() => {
+    followUp = null;
+    return runCityCheck(CITY_CHECK_TRIGGER.RETURN);
+  });
+  return followUp;
 };

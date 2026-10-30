@@ -2,7 +2,7 @@ import { Alert } from "react-native";
 
 import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
-import { runCityCheck } from "@/services/cityCheck";
+import { runCityCheck, type CheckEnd } from "@/services/cityCheck";
 import { useCityCheckStore } from "@/stores/cityCheck";
 import type { PlaceMark } from "@/types/cityCheck";
 
@@ -21,7 +21,7 @@ const listText = (label: string, marks: PlaceMark[]): string =>
   `${label}: ${marks.length}${marks.length ? ` (${marks.map(({ at }) => ageText(at)).join(", ")})` : ""}`;
 
 /** Runs a check now, past the throttle. */
-export const runCityCheckNow = (): Promise<void> => {
+export const runCityCheckNow = (): Promise<CheckEnd> => {
   useCityCheckStore.getState().forgetLastCheck();
   return runCityCheck(CITY_CHECK_TRIGGER.LAUNCH);
 };

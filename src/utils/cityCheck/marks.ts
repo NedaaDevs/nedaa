@@ -64,9 +64,10 @@ const endsTrip = (
   (maxYearlyShiftMinutes(markPoint(entry), fix.point, zone, calc, now) >= SHIFT_GATE_MINUTES ||
     (!!entry.countryCode && fixCountry !== null && !sameCountry(entry.countryCode, fixCountry)));
 
-/** A kept entry lasts `KEPT_MAX_AGE_MS` from when it was made. */
+// A kept entry lasts `KEPT_MAX_AGE_MS` from when it was made; one dated
+// after now means the clock moved back, and counts as ended.
 export const isLiveKept = (entry: PlaceMark, now: number): boolean =>
-  now - entry.at <= KEPT_MAX_AGE_MS;
+  now >= entry.at && now - entry.at <= KEPT_MAX_AGE_MS;
 
 /** The kept entries still live after a confirmed fix. */
 export const keptAfterFix = (

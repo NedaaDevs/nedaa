@@ -120,7 +120,7 @@ describe("applyCityCandidate", () => {
   it("writes the candidate's point with no new read when its fix is under 5 minutes old", async () => {
     const candidate = candidateAt({ fixedAt: Date.now() - FIX_AGE_MS });
 
-    await applyCityCandidate(candidate);
+    expect(await applyCityCandidate(candidate)).toBe(true);
 
     expect(mockReadLocation).not.toHaveBeenCalled();
     expect(state().lastKnownCoords).toEqual(JEDDAH_POINT);
@@ -137,7 +137,9 @@ describe("applyCityCandidate", () => {
   });
 
   it("reads the device again when the candidate's fix is over 5 minutes old", async () => {
-    await applyCityCandidate(candidateAt({ fixedAt: Date.now() - REUSE_FIX_MAX_AGE_MS - 1 }));
+    expect(
+      await applyCityCandidate(candidateAt({ fixedAt: Date.now() - REUSE_FIX_MAX_AGE_MS - 1 }))
+    ).toBe(true);
 
     expect(mockReadLocation).toHaveBeenCalledTimes(1);
     expect(mockTrustedCityNear).not.toHaveBeenCalled();
@@ -205,7 +207,7 @@ describe("applyCityCandidate", () => {
     const applying = applyCityCandidate(candidateAt());
     state().setManualLocation(MAKKAH_CITY);
     answer(JEDDAH_ROW);
-    await applying;
+    expect(await applying).toBe(false);
 
     expect(state().manualLocation).toEqual(MAKKAH_CITY);
     expect(state().lastKnownCoords).toEqual({
@@ -244,6 +246,24 @@ describe("applyCityCandidate", () => {
     expect(mockTrustedCityNear).toHaveBeenCalledWith(JEDDAH_POINT);
     expect(state().locationDetails.address?.city).toBe(FULL_PACK_JEDDAH_ROW.name);
     expect(mockGetCity).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing when a city is chosen during the device read of a stale fix", async () => {
+    let answer: () => void = () => {};
+    mockReadLocation.mockReturnValue(
+      new Promise((resolve) => {
+        answer = () => resolve({ location: STALE_FIX, source: FIX_SOURCE.FRESH });
+      })
+    );
+
+    const applying = applyCityCandidate(
+      candidateAt({ fixedAt: Date.now() - REUSE_FIX_MAX_AGE_MS - 1 })
+    );
+    state().setManualLocation(MAKKAH_CITY);
+    answer();
+
+    expect(await applying).toBe(false);
+    expect(state().manualLocation).toEqual(MAKKAH_CITY);
   });
 
   it("keeps the offer up while its own update writes the place", async () => {
