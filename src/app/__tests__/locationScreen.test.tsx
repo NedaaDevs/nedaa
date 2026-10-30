@@ -246,7 +246,7 @@ describe("Settings › Location", () => {
         await screen.findByRole("header", { name: t("location.settings.travelSection") })
       ).toBeTruthy();
       const toggle = screen.getByRole("switch", {
-        name: `${t("location.settings.keepLocationUpdated.title")}, ${t(
+        name: `${t("location.settings.offerUpdate.title")}, ${t(
           "location.settings.keepLocationUpdated.summary"
         )}`,
       });

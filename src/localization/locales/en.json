@@ -828,7 +828,7 @@
   "location.picker.seedCoverage_other": "Search covers {{amount}} major cities for now.",
   "location.picker.title": "Choose your city",
   "location.settings.keepLocationUpdated.summary": "When you open $t(brand.name) in another city",
-  "location.settings.keepLocationUpdated.title": "Keep Location Updated",
+  "location.settings.offerUpdate.title": "Offer an Update When the City Changes",
   "location.settings.travelSection": "When you travel",
   "location.update.error": "Something went wrong. Tap to retry.",
   "location.update.step.alarms": "Updating alarms...",
