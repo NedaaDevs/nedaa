@@ -404,7 +404,11 @@ const checkOnce = async (trigger: CityCheckTrigger): Promise<CheckEnd> => {
     started = true;
     useCityCheckStore.getState().noteCheckStarted(phoneZone);
     launchOwed = false;
-    return finish(await investigate(placeRevision));
+    const end = await investigate(placeRevision);
+    // A launch check the app left is owed to the next return.
+    const left = "reason" in end && end.reason === CITY_CHECK_END.APP_LEFT;
+    if (left && trigger === CITY_CHECK_TRIGGER.LAUNCH) launchOwed = true;
+    return finish(end);
   } catch {
     return finish(ended(CITY_CHECK_END.CHECK_FAILED));
   }

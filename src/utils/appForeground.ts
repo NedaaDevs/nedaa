@@ -30,10 +30,14 @@ export const nextForeground = (graceMs: number, signal?: AbortSignal): Promise<v
     signal?.addEventListener("abort", finish, { once: true });
   });
 
-/** True after `ms` with the app active throughout; false as soon as it leaves. */
+// Only a background leaves the app; inactive comes from Face ID, a system
+// alert, Control Center or the notification shade, over the app.
+const isLeave = (state: string | null | undefined): boolean => state === APP_STATE.BACKGROUND;
+
+/** True after `ms` with the app never in the background; false once it is. */
 export const waitWhileActive = (ms: number): Promise<boolean> =>
   new Promise<boolean>((resolve) => {
-    if (AppState.currentState !== APP_STATE.ACTIVE) {
+    if (isLeave(AppState.currentState)) {
       resolve(false);
       return;
     }
@@ -43,7 +47,7 @@ export const waitWhileActive = (ms: number): Promise<boolean> =>
       resolve(stayed);
     };
     const subscription = AppState.addEventListener("change", (next: AppStateStatus) => {
-      if (next !== APP_STATE.ACTIVE) finish(false);
+      if (isLeave(next)) finish(false);
     });
     const timer = setTimeout(() => finish(true), ms);
   });
@@ -51,10 +55,10 @@ export const waitWhileActive = (ms: number): Promise<boolean> =>
 /** Stands for a read the app left before it settled. */
 export const APP_LEFT = Symbol("appLeft");
 
-/** The read's value, or APP_LEFT when the app leaves first or is away. */
+/** The read's value, or APP_LEFT when the app goes or is in the background. */
 export const unlessLeft = <T>(read: () => Promise<T>): Promise<T | typeof APP_LEFT> =>
   new Promise<T | typeof APP_LEFT>((resolve, reject) => {
-    if (AppState.currentState !== APP_STATE.ACTIVE) {
+    if (isLeave(AppState.currentState)) {
       resolve(APP_LEFT);
       return;
     }
@@ -66,7 +70,7 @@ export const unlessLeft = <T>(read: () => Promise<T>): Promise<T | typeof APP_LE
       finish();
     };
     const subscription = AppState.addEventListener("change", (next: AppStateStatus) => {
-      if (next !== APP_STATE.ACTIVE) settle(() => resolve(APP_LEFT));
+      if (isLeave(next)) settle(() => resolve(APP_LEFT));
     });
     read().then(
       (value) => settle(() => resolve(value)),
