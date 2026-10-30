@@ -3,7 +3,7 @@
 import LocationPickerScreen from "@/app/settings/location-picker";
 import LocationScreen from "@/app/settings/location";
 import { act, userEvent } from "@testing-library/react-native";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
@@ -75,8 +75,8 @@ const mockPlace = MAKKAH_CITY;
 
 const t = i18n.t.bind(i18n);
 const PICKER_ROUTE = BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route;
-const PICKER_HREF = BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href;
-const coordinatesUrl = `${PICKER_HREF}?${LOCATION_PICKER.viewParam}=${CITY_PICKER_VIEW.COORDINATES}`;
+const PICKER_HREF: Href = BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href;
+const coordinatesUrl: Href = `${PICKER_HREF}?${LOCATION_PICKER.viewParam}=${CITY_PICKER_VIEW.COORDINATES}`;
 
 const header = (key: string) => screen.queryByRole("header", { name: t(key) });
 
@@ -95,14 +95,14 @@ const renderPicker = (url: string, { withRoot = false } = {}) =>
   );
 
 /** Opens `under`, then the picker over it, as a person reaches it. */
-const openOver = async (under: string, url: string) => {
+const openOver = async (under: string, url: Href) => {
   const opened = await renderPicker(under, { withRoot: true });
   await act(async () => router.push(url));
   return opened;
 };
 
 /** Opens the root, then the picker over it. */
-const openFromRoot = (url: string) => openOver(BACK_DESTINATION.SETTINGS_LOCATION.href, url);
+const openFromRoot = (url: Href) => openOver(BACK_DESTINATION.SETTINGS_LOCATION.href, url);
 
 beforeEach(async () => {
   jest.clearAllMocks();
