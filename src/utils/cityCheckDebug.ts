@@ -54,7 +54,8 @@ export const clearCityCheckMemory = (): void => {
   Alert.alert(DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY, DEBUG_COPY.CLEARED);
 };
 
-const SAMPLE_POINT = { latitude: 21.5433, longitude: 39.1728 };
+// In the Red Sea, far from any city: a kept sample silences no real place.
+const SAMPLE_POINT = { latitude: 21.0, longitude: 38.4 };
 const SAMPLE_ACCURACY_KM = 0.1;
 const UNNAMED_SAMPLE_KM = 40;
 

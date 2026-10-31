@@ -1,11 +1,24 @@
 import { Alert } from "react-native";
 
-import { CITY_CHECK_END, CITY_CHECK_OFFER, CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
+import {
+  CITY_CHECK_END,
+  CITY_CHECK_OFFER,
+  CITY_CHECK_TRIGGER,
+  CITY_ROW_TRUST_KM,
+} from "@/constants/CityCheck";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { runCityCheck } from "@/services/cityCheck";
 import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
+import { useLocationStore } from "@/stores/location";
+import { JEDDAH_CITY } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
-import { clearCityCheckMemory, runCityCheckNow, showCityCheckMemory } from "@/utils/cityCheckDebug";
+import {
+  clearCityCheckMemory,
+  runCityCheckNow,
+  showCityCheckMemory,
+  showNamedCityChange,
+} from "@/utils/cityCheckDebug";
+import { distanceBetween } from "@/utils/location";
 
 jest.mock("@/services/cityCheck", () => {
   const { CITY_CHECK_END: END } = jest.requireActual("@/constants/CityCheck");
@@ -97,5 +110,15 @@ describe("clearCityCheckMemory", () => {
       DEBUG_COPY.CLEAR_CITY_CHECK_MEMORY,
       DEBUG_COPY.CLEARED
     );
+  });
+});
+
+describe("showNamedCityChange", () => {
+  it("offers a point farther from Jeddah than a city row is trusted", () => {
+    showNamedCityChange();
+
+    const point = useLocationStore.getState().cityOffer?.candidate.point;
+    expect(point).toBeDefined();
+    expect(distanceBetween(point!, JEDDAH_CITY)).toBeGreaterThan(CITY_ROW_TRUST_KM);
   });
 });
