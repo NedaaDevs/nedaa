@@ -8,6 +8,7 @@ import { CitiesDB } from "@/services/cities-db";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore, type LocationStore } from "@/stores/location";
 import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
+import { MANAMA_ROW } from "@/test-helpers/cityRows";
 import { JEDDAH_CITY, MAKKAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { CitySearchResult } from "@/types/cities";
@@ -192,6 +193,36 @@ describe("applyCityCandidate", () => {
     await applyCityCandidate(candidateAt({ countryCode: COUNTRY_CODE.SAUDI_ARABIA }));
 
     expect(mockReverseGeocodeAsync).not.toHaveBeenCalled();
+  });
+
+  it("drops a lite-pack row from another country for the device's place", async () => {
+    mockFullPack.mockReturnValue(false);
+    mockTrustedCityNear.mockResolvedValue(MANAMA_ROW);
+    const translate = jest.fn(async () => true);
+    useLocationStore.setState({ updateAddressTranslation: translate });
+
+    await applyCityCandidate(candidateAt({ countryCode: null }));
+
+    const { address, countryCode, timezone } = state().locationDetails;
+    expect(address).toEqual({ city: DEVICE_JEDDAH.city, country: DEVICE_JEDDAH.country });
+    expect(countryCode).toBe(COUNTRY_CODE.SAUDI_ARABIA);
+    expect(timezone).not.toBe(MANAMA_ROW.timezone);
+    expect(translate).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a lite-pack row in the device's country", async () => {
+    mockFullPack.mockReturnValue(false);
+    mockTrustedCityNear.mockResolvedValue(MANAMA_ROW);
+    mockReverseGeocodeAsync.mockResolvedValue([
+      { ...DEVICE_JEDDAH, isoCountryCode: COUNTRY_CODE.BAHRAIN },
+    ]);
+
+    await applyCityCandidate(candidateAt({ countryCode: null }));
+
+    const { address, countryCode, timezone } = state().locationDetails;
+    expect(address).toEqual({ city: MANAMA_ROW.name, country: MANAMA_ROW.country.name });
+    expect(countryCode).toBe(COUNTRY_CODE.BAHRAIN);
+    expect(timezone).toBe(MANAMA_ROW.timezone);
   });
 
   it("sends no point to the server geocoder for a candidate with a city row", async () => {
