@@ -8,7 +8,7 @@ jest.mock("expo-file-system", () => {
     create() {
       content = content ?? "";
     }
-    write(data: string) {
+    writeSync(data: string) {
       content = data;
     }
     textSync() {
@@ -52,7 +52,7 @@ describe("writeNativePendingReport", () => {
 
 describe("installCrashHandler", () => {
   it("installs once, and writes the sentinel only for fatal errors", () => {
-    const handlers: Array<(e: Error, isFatal?: boolean) => void> = [];
+    const handlers: ((e: Error, isFatal?: boolean) => void)[] = [];
     const setSpy = jest
       .spyOn(ErrorUtils, "setGlobalHandler")
       .mockImplementation((h) => handlers.push(h as (e: Error, isFatal?: boolean) => void));

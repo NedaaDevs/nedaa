@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LayoutChangeEvent, Pressable, View } from "react-native";
+import { LayoutChangeEvent, Pressable, View, type ViewInstance } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -95,17 +95,17 @@ const AnimatedWordHighlight = ({ rect, color }: { rect: HighlightRect; color: st
 
   useEffect(() => {
     const to = (v: number) => (reduceMotion ? v : withSpring(v, WORD_GLIDE_SPRING));
-    left.value = to(rect.left - WORD_PAD_X);
-    top.value = to(rect.top - WORD_PAD_Y);
-    width.value = to(rect.width + 2 * WORD_PAD_X);
-    height.value = to(rect.height + 2 * WORD_PAD_Y);
+    left.set(to(rect.left - WORD_PAD_X));
+    top.set(to(rect.top - WORD_PAD_Y));
+    width.set(to(rect.width + 2 * WORD_PAD_X));
+    height.set(to(rect.height + 2 * WORD_PAD_Y));
   }, [rect, reduceMotion, left, top, width, height]);
 
   const style = useAnimatedStyle(() => ({
-    left: left.value,
-    top: top.value,
-    width: width.value,
-    height: height.value,
+    left: left.get(),
+    top: top.get(),
+    width: width.get(),
+    height: height.get(),
   }));
 
   return (
@@ -131,7 +131,7 @@ const QuranPage = ({
   // the real onLayout height — they're all guarded by `lineHeight > 0`. Seeding an
   // estimate here made them render once at the wrong position then snap on measure.
   const [linesAreaHeight, setLinesAreaHeight] = useState(0);
-  const pressableRef = useRef<View>(null);
+  const pressableRef = useRef<ViewInstance>(null);
 
   const {
     pageAvailable,

@@ -1,0 +1,48 @@
+appId: dev.nedaa.app
+---
+# Set the simulator's place first:
+#   xcrun simctl location <udid> set 24.7136,46.6753
+- launchApp:
+    clearState: true
+    permissions:
+      location: inuse
+      notifications: allow
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-get-started"
+    timeout: 60000
+- tapOn:
+    id: "onboarding-get-started"
+# Continue each step and «later» each alarm; «Turn on» opens system screens.
+- repeat:
+    while:
+      notVisible:
+        id: "onboarding-complete-open"
+    times: 60
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-alarm-later"
+          commands:
+            - tapOn:
+                id: "onboarding-alarm-later"
+      - runFlow:
+          when:
+            visible:
+              id: "onboarding-continue"
+            notVisible:
+              id: "onboarding-alarm-later"
+          commands:
+            - tapOn:
+                id: "onboarding-continue"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- tapOn:
+    id: "onboarding-complete-open"
+- extendedWaitUntil:
+    visible:
+      id: "focus-countdown-row"
+    timeout: 30000
+- assertVisible:
+    id: "tab-bar-frame"

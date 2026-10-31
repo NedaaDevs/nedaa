@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AccessibilityInfo, Pressable, ScrollView } from "react-native";
-import { useIsFocused } from "expo-router/react-navigation";
+import { Pressable, ScrollView } from "react-native";
+import { useIsFocused } from "expo-router";
 import { Info, LocateFixed } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { CompassDetailsSheet } from "@/components/compass/CompassDetailsSheet";
 import { CompassDial } from "@/components/compass/CompassDial";
 import { CompassIssueCard } from "@/components/compass/CompassIssueCard";
@@ -29,6 +30,8 @@ import { useCompass } from "@/hooks/useCompass";
 import { useCompassLocation } from "@/hooks/useCompassLocation";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useScreenshotSeed } from "@/screenshot-mode/useScreenshotSeed";
 import { useLocationStore } from "@/stores/location";
 import type { CompassLocationFix } from "@/types/compass";
@@ -41,7 +44,6 @@ import {
   manualLocationToFix,
   canProvideAlignmentFeedback,
   getCalibrationOverlayVisible,
-  getCompassLocationAge,
   getCompassSensorReliability,
   getDetentIndex,
   getHeadingReliabilityIssue,
@@ -54,7 +56,11 @@ import {
   type QiblaHapticStep,
   type QiblaProximityState,
 } from "@/utils/compass";
+import { fixAgeOf } from "@/utils/fixAge";
 import { formatNumberToLocale } from "@/utils/number";
+import { useFontFamily } from "@/contexts/FontContext";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
 
 const log = AppLogger.create("compass");
 
@@ -84,17 +90,20 @@ const getSensorIssue = (
 
 const CompassScreen = () => {
   const { t } = useTranslation();
+  const tabBarInset = useTabBarInset();
+  const dialFontFamily = useFontFamily("regular");
   const isFocused = useIsFocused();
   const { isActive: isAppActive } = useAppVisibility();
+  const now = useMinuteClock();
   const qiblaSeed = useScreenshotSeed("qibla");
   const isScreenshotMode = qiblaSeed !== null;
   const location = useCompassLocation({
     active: isFocused && isAppActive && !isScreenshotMode,
   });
-  const hapticSelection = useHaptic("selection");
-  const hapticLight = useHaptic("light");
-  const hapticMedium = useHaptic("medium");
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const reduceMotion = useReducedMotion();
   const [sensorRestartKey, setSensorRestartKey] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [compassOnly, setCompassOnly] = useState(false);
@@ -157,18 +166,6 @@ const CompassScreen = () => {
         tiltDegrees: null,
       }
     : liveCompass;
-
-  useEffect(() => {
-    let mounted = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
 
   // Compass-only mode is the user's escape hatch when true north cannot be resolved
   // (native heading magnetic and the declination model unavailable): drop the Qibla
@@ -351,14 +348,14 @@ const CompassScreen = () => {
       : `${formatNumberToLocale(`${Math.round(qiblaDirection) % 360}`)}° ${getTranslatedCompassDirection(qiblaDirection, t)}`;
   const savedAge =
     effectiveFix && locationSource === CompassLocationSource.SAVED
-      ? getCompassLocationAge(effectiveFix.timestamp)
+      ? fixAgeOf(effectiveFix.timestamp, now.getTime())
       : null;
   const locationText = effectiveFix
     ? [
         t("compass.locationAccuracyMeters", {
           meters: formatNumberToLocale(`${Math.round(effectiveFix.accuracyMeters)}`),
         }),
-        savedAge ? t(`compass.locationSavedAge.${savedAge.unit}`, { count: savedAge.value }) : null,
+        savedAge ? t(`compass.locationSavedAge.${savedAge.unit}`, { count: savedAge.count }) : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -368,10 +365,10 @@ const CompassScreen = () => {
 
   return (
     <Background>
-      <TopBar title="compass.title" href="/(tabs)/tools" backOnClick preferHref />
+      <ScreenHeader title={t("compass.title")} back={{ to: BACK_DESTINATION.TOOLS }} />
 
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: tabBarInset }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
         <VStack
@@ -416,13 +413,14 @@ const CompassScreen = () => {
 
               <Box>
                 <CompassDial
+                  fontFamily={dialFontFamily}
                   heading={compass.heading}
                   qiblaDirection={qiblaDirection}
                   proximityState={proximityState}
                   reduceMotion={reduceMotion}
                   dimmed={showOverlay}
                   accessibilityLabel={t("a11y.compass.dial", {
-                    heading: `${headingRounded}`,
+                    count: headingRounded,
                     reference: northReferenceLabel,
                   })}
                   translateDirection={t}

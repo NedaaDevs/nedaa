@@ -1,57 +1,43 @@
+import { TOAST_KIND } from "@/constants/Toast";
 import { useToastStore } from "@/stores/toast";
 
+const show = (message: string) =>
+  useToastStore.getState().show({ kind: TOAST_KIND.SUCCESS, message });
+const current = () => useToastStore.getState().toast;
+
 describe("toast store", () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-    useToastStore.setState({ message: "", title: "", type: "muted", isVisible: false });
+  beforeEach(() => useToastStore.setState({ toast: null }));
+
+  it("holds one toast; a new one replaces it under a new id", () => {
+    show("Link copied");
+    const first = current()!.id;
+    show("Report sent");
+
+    expect(current()!.message).toBe("Report sent");
+    expect(current()!.id).not.toBe(first);
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  it("hides the toast it was asked to hide", () => {
+    show("Link copied");
+    useToastStore.getState().hide(current()!.id);
+
+    expect(current()).toBeNull();
   });
 
-  test("stays visible when the caller omits a duration", () => {
-    useToastStore.getState().showToast("Widgets updated", "success");
+  // A dwell timer that outlives its toast must not cut the next one short.
+  it("ignores a hide meant for a toast already replaced", () => {
+    show("Refreshing widgets…");
+    const stale = current()!.id;
+    show("Widgets updated");
+    useToastStore.getState().hide(stale);
 
-    expect(useToastStore.getState().isVisible).toBe(true);
-
-    // Without a default the timeout would fire here and the toast would never render.
-    jest.advanceTimersByTime(0);
-    expect(useToastStore.getState().isVisible).toBe(true);
-
-    jest.advanceTimersByTime(3000);
-    expect(useToastStore.getState().isVisible).toBe(false);
+    expect(current()!.message).toBe("Widgets updated");
   });
 
-  test("honours an explicit duration", () => {
-    useToastStore.getState().showToast("Saved", "success", undefined, 500);
+  it("hides whatever shows when no id is given", () => {
+    show("Link copied");
+    useToastStore.getState().hide();
 
-    jest.advanceTimersByTime(499);
-    expect(useToastStore.getState().isVisible).toBe(true);
-
-    jest.advanceTimersByTime(1);
-    expect(useToastStore.getState().isVisible).toBe(false);
-  });
-
-  test("hideToast dismisses immediately", () => {
-    useToastStore.getState().showToast("Saved", "success");
-    useToastStore.getState().hideToast();
-
-    expect(useToastStore.getState().isVisible).toBe(false);
-  });
-
-  test("a replacing toast is not cut short by the previous one's dismissal", () => {
-    useToastStore.getState().showToast("Refreshing widgets", "muted", undefined, 10_000);
-
-    jest.advanceTimersByTime(1000);
-    useToastStore.getState().showToast("Widgets updated", "success");
-
-    // The first toast's 10s timer must not survive to dismiss this one.
-    jest.advanceTimersByTime(2999);
-    expect(useToastStore.getState().isVisible).toBe(true);
-    expect(useToastStore.getState().message).toBe("Widgets updated");
-
-    jest.advanceTimersByTime(1);
-    expect(useToastStore.getState().isVisible).toBe(false);
+    expect(current()).toBeNull();
   });
 });

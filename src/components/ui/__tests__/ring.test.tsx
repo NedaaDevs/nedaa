@@ -1,0 +1,44 @@
+import { screen } from "@testing-library/react-native";
+
+import config from "../../../../tamagui.config";
+import { Ring } from "@/components/ui/ring";
+import { renderWithTheme } from "@/test-helpers/theme";
+
+const LIGHT = config.themes.light;
+const CIRCLE = "RNSVGCircle";
+
+/** The host circles in paint order: the track, then the arc. */
+const circles = () => screen.container.queryAll((node) => node.type === CIRCLE);
+
+/** The share of the circumference the arc paints. */
+const drawnFraction = () => {
+  const { strokeDasharray, strokeDashoffset } = circles()[1].props;
+  return 1 - strokeDashoffset / strokeDasharray[0];
+};
+
+describe("Ring", () => {
+  it.each([
+    [0.4, 0.4],
+    [1.7, 1],
+    [-0.2, 0],
+  ])("draws %s as %s of the circle", async (progress, fraction) => {
+    await renderWithTheme(<Ring progress={progress} />);
+
+    expect(drawnFraction()).toBeCloseTo(fraction);
+  });
+
+  // A token the ring failed to resolve would reach the SVG unparsed and draw nothing.
+  it("strokes with the theme's accent by default", async () => {
+    await renderWithTheme(
+      <>
+        <Ring progress={0.4} color={LIGHT.accentPrimary.val} />
+        <Ring progress={0.4} />
+      </>
+    );
+    const strokes = circles().map((circle) => circle.props.stroke);
+
+    // Two circles per ring: the explicit ring's pair, then the default's.
+    expect(strokes).toHaveLength(4);
+    expect(strokes.slice(2)).toEqual(strokes.slice(0, 2));
+  });
+});

@@ -12,16 +12,26 @@ type ModalSize = "xs" | "sm" | "md" | "lg" | "full";
 
 const ModalSizeContext = React.createContext<ModalSize>("md");
 
+// Names the dialog surface for screen readers; the surface sits inside the portal.
+const ModalLabelContext = React.createContext<string | undefined>(undefined);
+
 // --- Modal ---
 
 type ModalProps = {
   isOpen?: boolean;
   onClose?: () => void;
   size?: ModalSize;
+  accessibilityLabel?: string;
   children?: React.ReactNode;
 };
 
-const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", children }) => {
+const Modal: React.FC<ModalProps> = ({
+  isOpen = false,
+  onClose,
+  size = "md",
+  accessibilityLabel,
+  children,
+}) => {
   // Read here, above the portal, where the app's providers are still in scope.
   const rtl = useRTL();
 
@@ -37,7 +47,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", chi
           {/* A portal renders outside this subtree, so contexts are re-provided inside
               it — otherwise ModalContent silently falls back to the defaults. */}
           <ModalSizeContext value={size}>
-            <RTLContext value={rtl}>{children}</RTLContext>
+            <ModalLabelContext value={accessibilityLabel}>
+              <RTLContext value={rtl}>{children}</RTLContext>
+            </ModalLabelContext>
           </ModalSizeContext>
         </Dialog.Portal>
       )}
@@ -55,7 +67,7 @@ ModalBackdrop.displayName = "ModalBackdrop";
 
 // --- ModalContent ---
 
-const SIZE_MAX_WIDTH: Record<ModalSize, number | string> = {
+const SIZE_MAX_WIDTH: Record<ModalSize, number | `${number}%`> = {
   xs: 320,
   sm: 384,
   md: 448,
@@ -69,11 +81,13 @@ type ModalContentProps = {
 
 const ModalContent: React.FC<ModalContentProps> = ({ children }) => {
   const size = use(ModalSizeContext);
+  const accessibilityLabel = use(ModalLabelContext);
   const { direction } = useRTL();
 
   return (
     <Dialog.Content
       key="modal-content"
+      accessibilityLabel={accessibilityLabel}
       backgroundColor="$backgroundSecondary"
       borderRadius="$6"
       padding="$0"

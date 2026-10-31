@@ -35,11 +35,17 @@ import { PrayerName, DayPrayerTimes } from "@/types/prayerTimes";
 import { calculateIshraq, calculateDuha } from "@/utils/otherTimingCalculations";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  OPEN_APP_REMINDER_ID,
+  SYSTEM_SOUND,
+} from "@/constants/Notification";
 import { isAthanSound, isIqamaFullSound } from "@/constants/sounds";
 
 // Enums
 import { PermissionStatus } from "expo-notifications";
+import { OTHER_TIMING_IDS, PRAYER_ID, PRAYER_IDS } from "@/constants/Prayer";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import { PlatformType } from "@/enums/app";
 
@@ -87,17 +93,10 @@ type NotificationScheduleItem = {
   vibration: boolean;
   categoryId: string;
   channelId?: string;
+  // iOS: asks to come through a Focus; set only on the per-prayer athan.
+  timeSensitive?: boolean;
 };
 
-const PRAYER_IDS: PrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-const OTHER_TIMING_IDS: OtherTimingId[] = [
-  "ishraq",
-  "duha",
-  "midnight",
-  "firstthird",
-  "lastthird",
-  "imsak",
-];
 const MAX_IOS_NOTIFICATIONS = 63;
 const MIN_INTERVAL_SECONDS = 60; // Minimum 1 minute
 
@@ -120,7 +119,7 @@ const scheduleAthkarNotifications = async (
         {
           title: t("notification.athkar.morning.title"),
           body: t("notification.athkar.morning.body"),
-          sound: "default",
+          sound: SYSTEM_SOUND,
           data: {
             type: "ATHKAR",
             athkarType: ATHKAR_TYPE.MORNING,
@@ -130,7 +129,7 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_morning",
-          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_morning" : undefined,
+          channelId: NOTIFICATION_CHANNEL_ID.ATHKAR_MORNING,
           timezone,
         }
       );
@@ -155,7 +154,7 @@ const scheduleAthkarNotifications = async (
         {
           title: t("notification.athkar.evening.title"),
           body: t("notification.athkar.evening.body"),
-          sound: "default",
+          sound: SYSTEM_SOUND,
           data: {
             type: "ATHKAR",
             athkarType: ATHKAR_TYPE.EVENING,
@@ -165,7 +164,7 @@ const scheduleAthkarNotifications = async (
         {
           vibrate: true,
           categoryId: "athkar_evening",
-          channelId: Platform.OS === PlatformType.ANDROID ? "athkar_evening" : undefined,
+          channelId: NOTIFICATION_CHANNEL_ID.ATHKAR_EVENING,
           timezone,
         }
       );
@@ -271,7 +270,7 @@ const scheduleQuranReminderNotifications = async (
         {
           title: t("notification.alKahf.title"),
           body: t("notification.alKahf.body"),
-          sound: "default",
+          sound: SYSTEM_SOUND,
           data: {
             type: NOTIFICATION_TYPE.QURAN_REMINDER,
             reminderId: reminder.id,
@@ -282,7 +281,7 @@ const scheduleQuranReminderNotifications = async (
         {
           vibrate: true,
           categoryId: "quran_reminder",
-          channelId: Platform.OS === PlatformType.ANDROID ? "quran_reminder" : undefined,
+          channelId: NOTIFICATION_CHANNEL_ID.QURAN_REMINDER,
           weekday,
         }
       );
@@ -507,15 +506,16 @@ export const scheduleAllNotifications = async (
       const reminderTime = addMinutes(lastNotification.time, 10); // 10 minutes after last notification
 
       notificationsToProcess.push({
-        id: "reminder",
+        id: OPEN_APP_REMINDER_ID,
         time: reminderTime,
         title: t("notification.reminder.title"),
         body: t("notification.reminder.body"),
         type: NOTIFICATION_TYPE.PRAYER,
-        prayerId: "fajr",
-        categoryId: "reminder",
+        prayerId: PRAYER_ID.FAJR,
+        categoryId: OPEN_APP_REMINDER_ID,
+        channelId: NOTIFICATION_CHANNEL_ID.OPEN_APP_REMINDER,
         vibration: true,
-        sound: "default",
+        sound: SYSTEM_SOUND,
       });
     }
 
@@ -537,9 +537,10 @@ export const scheduleAllNotifications = async (
       };
 
       const result = await scheduleNotification(notification.time, notificationInput, {
-        vibrate: Platform.OS === PlatformType.ANDROID ? notification.vibration : false,
+        vibrate: notification.vibration,
         categoryId: notification.categoryId,
         channelId: notification.channelId,
+        timeSensitive: notification.timeSensitive,
       });
 
       if (result.success) {
@@ -716,7 +717,7 @@ const generatePrayerNotifications = (
           channelId: preAthanChannelId,
           vibration: preAthanConfig.vibration,
           sound:
-            getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound) || "default",
+            getNotificationSound(NOTIFICATION_TYPE.PRE_ATHAN, preAthanConfig.sound) || SYSTEM_SOUND,
         });
       }
     }
@@ -742,7 +743,7 @@ const generatePrayerNotifications = (
       const prayerSound =
         isAthanSound(prayerConfig.sound) && fullAthanEnabled
           ? false
-          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || "default";
+          : getNotificationSound(NOTIFICATION_TYPE.PRAYER, prayerConfig.sound) || SYSTEM_SOUND;
 
       notifications.push({
         id: `prayer_${prayerId}_${prayerTime.getTime()}`,
@@ -756,6 +757,7 @@ const generatePrayerNotifications = (
         vibration: prayerConfig.vibration,
         sound: prayerSound,
         soundKey: prayerConfig.sound,
+        timeSensitive: true,
       });
     }
   }
@@ -779,7 +781,7 @@ const generatePrayerNotifications = (
       const iqamaSound =
         isIqamaFullSound(iqamaConfig.sound) && fullIqamaEnabled
           ? false
-          : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || "default";
+          : getNotificationSound(NOTIFICATION_TYPE.IQAMA, iqamaConfig.sound) || SYSTEM_SOUND;
 
       notifications.push({
         id: `iqama_${prayerId}_${prayerTime.getTime()}`,
@@ -813,7 +815,7 @@ const generatePrayerNotifications = (
 const formatPrayerName = (prayerId: PrayerName, date?: Date): string => {
   // Special case for Jumu'ah (Friday Dhuhr)
   const checkDate = date || new Date();
-  if (checkDate.getDay() === 5 && prayerId === "dhuhr") {
+  if (checkDate.getDay() === 5 && prayerId === PRAYER_ID.DHUHR) {
     return "jumuah";
   }
 

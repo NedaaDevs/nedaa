@@ -1,0 +1,29 @@
+diff --git a/Libraries/Components/View/View.js b/Libraries/Components/View/View.js
+index 461f7707c7faae9f5a4d318f44ea14be0ce737a4..1b7b6d70c9c097d2e6deec740e16bfd7b34c7b8d 100644
+--- a/Libraries/Components/View/View.js
++++ b/Libraries/Components/View/View.js
+@@ -83,6 +83,11 @@ component View(ref?: React.RefSetter<ViewInstance>, ...props: ViewProps) {
+     resolvedProps.focusable = !tabIndex;
+   }
+ 
++  // Fabric's iOS view performs a magic tap only with this flag set.
++  if (resolvedProps.onMagicTap != null) {
++    resolvedProps.onAccessibilityMagicTap = true;
++  }
++
+   if (
+     accessibilityState != null ||
+     ariaBusy != null ||
+diff --git a/Libraries/NativeComponent/BaseViewConfig.ios.js b/Libraries/NativeComponent/BaseViewConfig.ios.js
+index d22a6864219431b1744427a0d32d5a787166d653..7145b5bf2ec603f75105c7f455267f26b27fade9 100644
+--- a/Libraries/NativeComponent/BaseViewConfig.ios.js
++++ b/Libraries/NativeComponent/BaseViewConfig.ios.js
+@@ -381,6 +381,8 @@ const validAttributesForNonEventProps = {
+ const validAttributesForEventProps = ConditionallyIgnoredEventHandlers({
+   onLayout: true,
+   onMagicTap: true,
++  // Fabric's iOS view reads the magic tap flag under this name.
++  onAccessibilityMagicTap: true,
+ 
+   // Accessibility
+   onAccessibilityAction: true,

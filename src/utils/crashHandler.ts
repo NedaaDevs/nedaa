@@ -2,6 +2,7 @@ import { File, Directory, Paths } from "expo-file-system";
 
 import { AppLogger } from "@/utils/appLogger";
 import { appVersionLabel } from "@/utils/appVersion";
+import { writeFileSync } from "@/utils/writeFileSync";
 import { usePendingReportStore } from "@/stores/pendingReport";
 
 // Sentinel dropped when a fatal JS error is caught, so the next launch can detect the
@@ -101,7 +102,10 @@ const writeSentinel = (
   try {
     const f = sentinelFile();
     if (!f.exists) f.create();
-    f.write(JSON.stringify({ ts: Date.now(), kind, summary, version } satisfies PendingReport));
+    writeFileSync(
+      f,
+      JSON.stringify({ ts: Date.now(), kind, summary, version } satisfies PendingReport)
+    );
     // Wake any mounted CrashReportPrompt: the native drain writes this after the prompt's
     // first read, so a nonce bump makes it re-check within the same session.
     usePendingReportStore.getState().notify();

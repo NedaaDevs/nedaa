@@ -7,11 +7,12 @@ import { DownloadCloud } from "lucide-react-native";
 import { Background } from "@/components/ui/background";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
 import { QuranContentDB } from "@/services/quran-content-db";
 import type { SurahMeta } from "@/types/quran";
-import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
+import { SearchField } from "@/components/ui/search-field";
 import { SurahListRow } from "@/components/quran/listen/SurahListRow";
 import { DownloadsDrawer } from "@/components/quran/listen/DownloadsDrawer";
 import { quranAudioPlayer } from "@/services/quran-audio/quranAudioPlayer";
@@ -148,16 +149,17 @@ const QuranListenSurahsScreen = () => {
 
   return (
     <Background>
-      <TopBar
-        title={reciterName ?? "tools.quranListen.title"}
-        href="/quran-listen"
-        backOnClick
-        icon={DownloadCloud}
-        rightIconLabel={t("quran.listen.manageDownloads")}
-        onRightPress={() => setDrawerOpen(true)}
+      <ScreenHeader
+        title={reciterName ?? t("tools.quranListen.title")}
+        back={{ fallback: BACK_DESTINATION.QURAN_LISTEN }}
+        action={{
+          icon: DownloadCloud,
+          label: t("quran.listen.manageDownloads"),
+          onPress: () => setDrawerOpen(true),
+        }}
       />
       <VStack paddingHorizontal="$3" paddingTop="$2">
-        <ListenSearchBar
+        <SearchField
           value={query}
           onChangeText={setQuery}
           placeholder={t("quran.listen.searchSurah")}

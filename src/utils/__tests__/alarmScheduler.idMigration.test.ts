@@ -22,6 +22,11 @@ jest.mock("@/stores/alarmStreak", () => ({
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: { getState: () => mockSettings },
 }));
+// The planner arms only for a verified place.
+jest.mock("@/utils/timesPlace", () => {
+  const { TIMES_PLACE } = jest.requireActual("@/constants/Location");
+  return { readTimesPlace: async () => TIMES_PLACE.VERIFIED };
+});
 jest.mock("@/stores/prayerTimes", () => ({
   usePrayerTimesStore: { getState: () => mockTimes },
 }));

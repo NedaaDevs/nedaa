@@ -9,7 +9,9 @@ import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { DEBUG_SCREEN } from "@/constants/DebugScreens";
 import { Background } from "@/components/ui/background";
 
 import { useQuranAudioStore } from "@/stores/quranAudio";
@@ -81,7 +83,10 @@ const QuranAudioDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="Quran Audio Debug" href="/settings" backOnClick />
+      <ScreenHeader
+        title={DEBUG_SCREEN.QURAN_AUDIO.label}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
       <ScrollView contentContainerStyle={{ padding: 12 }}>
         <VStack gap="$3">
           {/* Live player state */}

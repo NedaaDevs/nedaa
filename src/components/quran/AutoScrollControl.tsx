@@ -162,12 +162,12 @@ const AutoScrollControl = ({
           </Pressable>
         </YStack>
       ) : (
-        // Default: slim one-row pill.
+        // Default: slim pill; its tight end keeps the play circle concentric.
         <XStack
           alignItems="center"
           gap="$2"
-          paddingLeft="$2"
-          paddingRight="$1"
+          paddingStart="$2"
+          paddingEnd="$1"
           paddingVertical="$1"
           borderRadius={999}
           backgroundColor={`${colors.background}F5`}
@@ -189,7 +189,7 @@ const AutoScrollControl = ({
               width: 40,
               height: 40,
               borderRadius: 20,
-              marginLeft: 2,
+              marginStart: 2,
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: colors.headerColor,

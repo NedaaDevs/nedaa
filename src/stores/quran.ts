@@ -9,6 +9,7 @@ import {
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MIN,
   FONT_SIZE_MAX,
+  QURAN_LIBRARY_TAB,
   clampAutoScrollSpeed,
 } from "@/constants/Quran";
 import {
@@ -64,7 +65,7 @@ export const useQuranStore = create<QuranState>()(
       autoScrollPlaying: false,
       autoScrollSpeed: DEFAULT_AUTO_SCROLL_SPEED,
       autoScrollPrevDirection: null,
-      libraryTab: "index",
+      libraryTab: QURAN_LIBRARY_TAB.INDEX,
       shareStyle: ShareCardStyle.IMAGE,
       shareIncludeLogo: true,
 

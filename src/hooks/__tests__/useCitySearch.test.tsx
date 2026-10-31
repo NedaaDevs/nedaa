@@ -1,6 +1,6 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
+import { CITY_SEARCH_STATUS } from "@/constants/Cities";
 import { useCitySearch } from "@/hooks/useCitySearch";
 import { CitiesDB } from "@/services/cities-db";
 import { useCitiesPackStore } from "@/stores/citiesPack";
@@ -31,71 +31,54 @@ const city = (gid: number, name: string): CitySearchResult => ({
   timezone: "Europe/London",
 });
 
-type HookValue = ReturnType<typeof useCitySearch>;
-const results: HookValue[] = [];
-const Probe = () => {
-  results.push(useCitySearch());
-  return null;
-};
-const latest = () => results[results.length - 1];
+const mountSearch = () => renderHook(() => useCitySearch());
 
-let root: renderer.ReactTestRenderer | null = null;
-
-const mountProbe = async () => {
-  await act(async () => {
-    root = renderer.create(<Probe />);
-    await Promise.resolve();
-  });
-};
+let result: Awaited<ReturnType<typeof mountSearch>>["result"];
 
 describe("useCitySearch", () => {
   beforeEach(async () => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    results.length = 0;
     mockSearch.mockResolvedValue([]);
     useCitiesPackStore.setState({ isInstalled: false });
-    await mountProbe();
+    ({ result } = await mountSearch());
   });
 
-  afterEach(async () => {
-    if (root) {
-      const current = root;
-      root = null;
-      await act(async () => {
-        current.unmount();
-      });
-    }
+  afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  const typeAndSettle = async (value: string) => {
-    await act(async () => {
-      latest().setQuery(value);
+  const type = (value: string) =>
+    act(async () => {
+      result.current.setQuery(value);
     });
-    await act(async () => {
+
+  /** Runs the debounce out and lets the search answer. */
+  const settle = () =>
+    act(async () => {
       jest.advanceTimersByTime(250);
       await Promise.resolve();
     });
+
+  const typeAndSettle = async (value: string) => {
+    await type(value);
+    await settle();
   };
 
   test("does not query for a blank input", async () => {
     await typeAndSettle("   ");
     expect(mockSearch).not.toHaveBeenCalled();
-    expect(latest().isSearching).toBe(false);
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.IDLE);
   });
 
   test("queries once for the settled value rather than per keystroke", async () => {
     await act(async () => {
-      latest().setQuery("Ri");
-      latest().setQuery("Riy");
-      latest().setQuery("Riyadh");
+      result.current.setQuery("Ri");
+      result.current.setQuery("Riy");
+      result.current.setQuery("Riyadh");
     });
-    await act(async () => {
-      jest.advanceTimersByTime(250);
-      await Promise.resolve();
-    });
+    await settle();
 
     expect(mockSearch).toHaveBeenCalledTimes(1);
     expect(mockSearch).toHaveBeenCalledWith("Riyadh", expect.any(Number));
@@ -109,8 +92,8 @@ describe("useCitySearch", () => {
   test("exposes the results it finds", async () => {
     mockSearch.mockResolvedValue([city(1, "Riyadh")]);
     await typeAndSettle("Riyadh");
-    expect(latest().results).toHaveLength(1);
-    expect(latest().results[0].name).toBe("Riyadh");
+    expect(result.current.results).toHaveLength(1);
+    expect(result.current.results[0].name).toBe("Riyadh");
   });
 
   test("clears results when the query is emptied", async () => {
@@ -118,28 +101,129 @@ describe("useCitySearch", () => {
     await typeAndSettle("Riyadh");
     await typeAndSettle("");
 
-    expect(latest().results).toEqual([]);
+    expect(result.current.results).toEqual([]);
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.IDLE);
   });
 
-  test("recovers from a failed search without surfacing stale results", async () => {
+  test("reports a search that found nothing as done, with no rows", async () => {
+    await typeAndSettle("Atlantis");
+
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.DONE);
+    expect(result.current.results).toEqual([]);
+  });
+
+  // The rows on screen stay put between keystrokes rather than flashing empty.
+  test("keeps the last rows while the next search runs", async () => {
+    mockSearch.mockResolvedValue([city(1, "Riyadh")]);
+    await typeAndSettle("Ri");
+
+    await type("Riy");
+
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.SEARCHING);
+    expect(result.current.results.map((found) => found.name)).toEqual(["Riyadh"]);
+  });
+
+  // A cleared field starts the next search from nothing, not the old rows.
+  test("keeps no rows from before the field was cleared", async () => {
+    mockSearch.mockResolvedValue([city(1, "Riyadh")]);
+    await typeAndSettle("Riyadh");
+    await typeAndSettle("");
+
+    await type("J");
+
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.SEARCHING);
+    expect(result.current.results).toEqual([]);
+  });
+
+  test("reports a failed search without surfacing stale results", async () => {
     mockSearch.mockResolvedValueOnce([city(1, "Riyadh")]);
     await typeAndSettle("Riyadh");
 
     mockSearch.mockRejectedValueOnce(new Error("database closed"));
     await typeAndSettle("Lahore");
 
-    expect(latest().results).toEqual([]);
-    expect(latest().isSearching).toBe(false);
+    expect(result.current.results).toEqual([]);
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.FAILED);
+  });
+
+  test("searches the same text again on retry", async () => {
+    mockSearch.mockRejectedValueOnce(new Error("database closed"));
+    await typeAndSettle("Lahore");
+    mockSearch.mockResolvedValueOnce([city(2, "Lahore")]);
+
+    await act(async () => {
+      result.current.retry();
+    });
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.SEARCHING);
+    await settle();
+
+    expect(mockSearch).toHaveBeenLastCalledWith("Lahore", expect.any(Number));
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.DONE);
+    expect(result.current.results.map((found) => found.name)).toEqual(["Lahore"]);
+  });
+
+  // The no-results note stays put while a longer name is searched.
+  test("holds a search that found nothing while the next one runs", async () => {
+    await typeAndSettle("Atlantis");
+    expect(result.current.foundNothing).toBe(true);
+
+    await type("Atlantisx");
+    await type("Atlantisxy");
+
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.SEARCHING);
+    expect(result.current.foundNothing).toBe(true);
+  });
+
+  test("says nothing was found only after a search finds no city", async () => {
+    await type("J");
+    expect(result.current.foundNothing).toBe(false);
+
+    mockSearch.mockResolvedValue([city(1, "Jeddah")]);
+    await typeAndSettle("Jeddah");
+    expect(result.current.foundNothing).toBe(false);
+
+    mockSearch.mockRejectedValueOnce(new Error("database closed"));
+    await typeAndSettle("Jeddahx");
+    expect(result.current.foundNothing).toBe(false);
+  });
+
+  test("says when the rows stop at the search's limit", async () => {
+    mockSearch.mockImplementation(async (_query: string, limit: number) =>
+      Array.from({ length: limit }, (_, gid) => city(gid, `City ${gid}`))
+    );
+    await typeAndSettle("C");
+    expect(result.current.reachedLimit).toBe(true);
+
+    mockSearch.mockResolvedValue([city(1, "Cairo")]);
+    await typeAndSettle("Cairo");
+    expect(result.current.reachedLimit).toBe(false);
+  });
+
+  // The seed's answer is stale once the full list lands under it.
+  test("searches the same text in the full list once it is installed", async () => {
+    await typeAndSettle("Smalltown");
+    mockSearch.mockResolvedValue([city(3, "Smalltown")]);
+
+    await act(async () => {
+      useCitiesPackStore.setState({ isInstalled: true });
+    });
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.SEARCHING);
+    await settle();
+
+    expect(mockSearch).toHaveBeenCalledTimes(2);
+    expect(mockSearch).toHaveBeenLastCalledWith("Smalltown", expect.any(Number));
+    expect(result.current.status).toBe(CITY_SEARCH_STATUS.DONE);
+    expect(result.current.results.map((found) => found.name)).toEqual(["Smalltown"]);
   });
 
   test("offers the full pack while only the seed is installed", () => {
-    expect(latest().offersFullPack).toBe(true);
+    expect(result.current.offersFullPack).toBe(true);
   });
 
   test("stops offering the full pack once it is installed", async () => {
     await act(async () => {
       useCitiesPackStore.setState({ isInstalled: true });
     });
-    expect(latest().offersFullPack).toBe(false);
+    expect(result.current.offersFullPack).toBe(false);
   });
 });

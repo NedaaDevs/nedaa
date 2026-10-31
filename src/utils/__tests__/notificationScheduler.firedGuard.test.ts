@@ -4,6 +4,7 @@ import { cancelAllAthans } from "expo-alarm";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { readLedger } from "@/services/firedPrayerLedger";
 import { memoryKvFailure, resetMemoryKv } from "@/test-helpers/memoryKvStore";
@@ -124,7 +125,7 @@ const bookings = () =>
     at: date.toISOString(),
   }));
 const maghribOn26 = () =>
-  bookings().filter((b) => b.prayerId === "maghrib" && b.at.startsWith("2026-10-26"));
+  bookings().filter((b) => b.prayerId === PRAYER_ID.MAGHRIB && b.at.startsWith("2026-10-26"));
 const moveAt = async (iso: string, rows: DayPrayerTimes[], androidOptions = {}, zone = ZONE) => {
   jest.setSystemTime(new Date(iso));
   jest.mocked(scheduleNotification).mockClear();
@@ -133,7 +134,7 @@ const moveAt = async (iso: string, rows: DayPrayerTimes[], androidOptions = {}, 
 // The recorded instants of one alert kind for Maghrib on the 26th.
 const ledgerOn26 = (type: NotificationType) =>
   readLedger(FIRED_LEDGER.NOTIFICATIONS, Date.now())
-    .filter((e) => e.key === notificationKey(type, "maghrib"))
+    .filter((e) => e.key === notificationKey(type, PRAYER_ID.MAGHRIB))
     .map((e) => new Date(e.at).toISOString())
     .filter((at) => at.startsWith("2026-10-26"));
 const landed = { success: true, id: "booked" } as const;
@@ -164,7 +165,7 @@ const imsakAt = async (iso: string, rows: DayPrayerTimes[]) => {
   jest.mocked(scheduleNotification).mockClear();
   await scheduleAllNotifications(SETTINGS, ATHKAR, rows, ZONE, null, {}, {}, IMSAK_ONLY);
   return bookings()
-    .filter((b) => b.type === NOTIFICATION_TYPE.OTHER_TIMING && b.prayerId === "imsak")
+    .filter((b) => b.type === NOTIFICATION_TYPE.OTHER_TIMING && b.prayerId === OTHER_TIMING.IMSAK)
     .map((b) => b.at);
 };
 
@@ -186,7 +187,11 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await moveAt("2026-10-26T14:35:00Z", JEDDAH);
     // Riyadh's iqama had not fired, so Jeddah's is the only one.
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T15:06:00.000Z",
+      },
     ]);
   });
 
@@ -195,7 +200,7 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await moveAt("2026-10-26T14:35:00Z", JEDDAH);
     expect(bookings()).toContainEqual({
       type: NOTIFICATION_TYPE.PRAYER,
-      prayerId: "maghrib",
+      prayerId: PRAYER_ID.MAGHRIB,
       at: "2026-10-27T14:55:00.000Z",
     });
   });
@@ -211,7 +216,11 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await run(RIYADH);
     await moveAt("2026-10-26T14:35:00Z", RIYADH);
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T14:40:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T14:40:00.000Z",
+      },
     ]);
   });
 
@@ -240,7 +249,7 @@ describe("a reschedule after a prayer's alerts fired", () => {
     jest
       .mocked(scheduleNotification)
       .mockImplementation(async (_date, input) =>
-        input.data?.type === NOTIFICATION_TYPE.PRAYER && input.data?.prayerId === "maghrib"
+        input.data?.type === NOTIFICATION_TYPE.PRAYER && input.data?.prayerId === PRAYER_ID.MAGHRIB
           ? { success: false, message: "refused" }
           : landed
       );
@@ -249,7 +258,7 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await moveAt("2026-10-26T14:35:00Z", JEDDAH);
     expect(maghribOn26()).toContainEqual({
       type: NOTIFICATION_TYPE.PRAYER,
-      prayerId: "maghrib",
+      prayerId: PRAYER_ID.MAGHRIB,
       at: "2026-10-26T14:56:00.000Z",
     });
   });
@@ -259,7 +268,7 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await moveAt("2026-10-26T16:30:00Z", RIYADH);
     expect(bookings()).toContainEqual({
       type: NOTIFICATION_TYPE.PRAYER,
-      prayerId: "fajr",
+      prayerId: PRAYER_ID.FAJR,
       at: "2026-10-27T01:40:00.000Z",
     });
   });
@@ -271,7 +280,7 @@ describe("a reschedule after a prayer's alerts fired", () => {
     expect(result.success).toBe(true);
     expect(maghribOn26()).toContainEqual({
       type: NOTIFICATION_TYPE.PRAYER,
-      prayerId: "maghrib",
+      prayerId: PRAYER_ID.MAGHRIB,
       at: "2026-10-26T14:56:00.000Z",
     });
   });
@@ -284,8 +293,16 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await moveAt("2026-10-26T14:10:00Z", JEDDAH);
     await moveAt("2026-10-26T14:45:00Z", JEDDAH);
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.PRAYER,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T14:56:00.000Z",
+      },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T15:06:00.000Z",
+      },
     ]);
   });
 
@@ -296,8 +313,16 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await expect(cancelAllAlerts()).rejects.toThrow("cancel");
     await moveAt("2026-10-26T14:45:00Z", JEDDAH);
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.PRAYER,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T14:56:00.000Z",
+      },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T15:06:00.000Z",
+      },
     ]);
   });
 
@@ -310,8 +335,16 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await cancelAllAlerts();
     await moveAt("2026-10-26T14:45:00Z", JEDDAH);
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.PRAYER,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T14:56:00.000Z",
+      },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T15:06:00.000Z",
+      },
     ]);
   });
 
@@ -326,8 +359,16 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await cancelAllAlerts();
     await moveAt("2026-10-26T14:45:00Z", JEDDAH);
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.PRAYER, prayerId: "maghrib", at: "2026-10-26T14:56:00.000Z" },
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T15:06:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.PRAYER,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T14:56:00.000Z",
+      },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T15:06:00.000Z",
+      },
     ]);
   });
 
@@ -432,7 +473,7 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await run(RIYADH, {}, SETTINGS, AHEAD_ZONE);
     expect(maghribOn26()).toContainEqual({
       type: NOTIFICATION_TYPE.PRAYER,
-      prayerId: "maghrib",
+      prayerId: PRAYER_ID.MAGHRIB,
       at: "2026-10-26T14:30:00.000Z",
     });
   });
@@ -442,7 +483,11 @@ describe("a reschedule after a prayer's alerts fired", () => {
     await moveAt("2026-10-26T14:35:00Z", RIYADH, {}, BEHIND_ZONE);
     // Only the 14:40 iqama is still due.
     expect(maghribOn26()).toEqual([
-      { type: NOTIFICATION_TYPE.IQAMA, prayerId: "maghrib", at: "2026-10-26T14:40:00.000Z" },
+      {
+        type: NOTIFICATION_TYPE.IQAMA,
+        prayerId: PRAYER_ID.MAGHRIB,
+        at: "2026-10-26T14:40:00.000Z",
+      },
     ]);
   });
 });

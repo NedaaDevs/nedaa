@@ -1,49 +1,52 @@
 import {
   getCurrentPositionAsync,
   getForegroundPermissionsAsync,
+  getLastKnownPositionAsync,
+  hasServicesEnabledAsync,
   requestForegroundPermissionsAsync,
   LocationAccuracy,
   type LocationObject,
+  type LocationOptions,
 } from "@/adapters/location";
+import {
+  FIX_SOURCE,
+  LOCATION_FAILURE,
+  type FixSource,
+  type LocationFailure,
+} from "@/constants/Location";
 
 // Enums
 import { LocalPermissionStatus } from "@/enums/location";
+import type { Coords, LocationPermission } from "@/types/location";
 
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
+import { withDeadline, withTimeout } from "@/utils/withTimeout";
 
 const log = AppLogger.create("location");
 
 // Constants
-export const CITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 export const CITY_CHANGE_THRESHOLD = 10; // km - minimum distance to consider city change
-// Bounds a position read that blocks the launch: loadPrayerTimes holds a full-screen overlay
-// while it runs, so it stays short even though a cold fix can take longer than this.
+// Bounds a position read that blocks the launch fetch: Today shows its loading state
+// until it settles, so it stays short even though a cold fix can take longer.
 export const LOCATION_REQUEST_TIMEOUT = 10000; // 10 seconds
-// For a read the user asked for and is watching a spinner on. It sits above the native 30s
-// one-shot deadline, so the module settles first and its specific error survives the race.
+// For a read behind a spinner; the permission check and the fix share it.
 export const LOCATION_REQUEST_TIMEOUT_EXTENDED = 35000; // 35 seconds
+// Prayer times need only the city, which a fix this old still names.
+export const LAST_KNOWN_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+// The cached-fix read is local; one that stalls counts as no cached fix.
+export const LAST_KNOWN_REQUEST_TIMEOUT = 3000;
 
-export const mapToLocalStatus = (status: LocalPermissionStatus): LocalPermissionStatus => {
-  switch (status) {
-    case LocalPermissionStatus.GRANTED:
-      return LocalPermissionStatus.GRANTED;
-    case LocalPermissionStatus.DENIED:
-      return LocalPermissionStatus.DENIED;
-    default:
-      return LocalPermissionStatus.UNDETERMINED;
-  }
-};
-
-export const checkLocationPermission = async () => {
+export const checkLocationPermission = async (): Promise<LocationPermission> => {
   try {
     const { status, canAskAgain } = await getForegroundPermissionsAsync();
 
-    return { granted: status === LocalPermissionStatus.GRANTED, canRequestAgain: canAskAgain };
+    return { granted: status === LocalPermissionStatus.GRANTED, canAskAgain };
   } catch (error) {
-    log.w("Permission", `check failed: ${(error as Error)?.message ?? error}`);
+    log.w("Permission", `check failed: ${errorText(error)}`);
     return {
       granted: false,
-      canRequestAgain: true,
+      canAskAgain: true,
     };
   }
 };
@@ -53,47 +56,165 @@ export const requestLocationPermission = async () => {
     const { status } = await requestForegroundPermissionsAsync();
     return { granted: status === LocalPermissionStatus.GRANTED };
   } catch (error) {
-    log.w("Permission", `request failed: ${(error as Error)?.message ?? error}`);
+    log.w("Permission", `request failed: ${errorText(error)}`);
     return { granted: false, error };
   }
 };
 
+const TIMED_OUT = "Location request timed out";
+
+const FAILURE_MESSAGE: Record<LocationFailure, string> = {
+  [LOCATION_FAILURE.DENIED]: "Location permission not granted",
+  [LOCATION_FAILURE.SERVICES_OFF]: "Location services are off",
+  [LOCATION_FAILURE.TIMEOUT]: TIMED_OUT,
+  [LOCATION_FAILURE.UNAVAILABLE]: "No location available",
+};
+
+/** A device position read that ended with no position, and why. */
+export class LocationFixError extends Error {
+  readonly kind: LocationFailure;
+
+  constructor(kind: LocationFailure, options?: { cause?: unknown }) {
+    super(FAILURE_MESSAGE[kind], options);
+    this.name = "LocationFixError";
+    this.kind = kind;
+  }
+}
+
 /** Thrown instead of calling the native provider when location permission is missing. */
-export class LocationPermissionError extends Error {
+export class LocationPermissionError extends LocationFixError {
   constructor() {
-    super("Location permission not granted");
+    super(LOCATION_FAILURE.DENIED);
     this.name = "LocationPermissionError";
   }
 }
 
-// Get location with timeout protection(sometimes getting location get stuck)
-export const getLocationWithTimeout = async (
-  timeoutMs: number = LOCATION_REQUEST_TIMEOUT
+/** The failure kind of any error a location read or apply produced. */
+export const locationFailureOf = (error: unknown): LocationFailure =>
+  error instanceof LocationFixError ? error.kind : LOCATION_FAILURE.UNAVAILABLE;
+
+export type LocationFix = { location: LocationObject; source: FixSource };
+
+// A failed services check gives no verdict, so it counts as services on.
+const servicesEnabled = (): Promise<boolean> =>
+  hasServicesEnabledAsync().catch((error: unknown) => {
+    log.w("Position", `services check failed: ${errorText(error)}`);
+    return true;
+  });
+
+const activeRead = (): LocationOptions => ({ accuracy: LocationAccuracy.LOW });
+// A check the user did not start never opens the location settings dialog.
+const passiveRead = (): LocationOptions => ({ ...activeRead(), mayShowUserSettingsDialog: false });
+
+// One gate for every read: an unpermitted native read logs as a failure.
+const readPosition = async (
+  inTime: () => boolean,
+  options: LocationOptions
 ): Promise<LocationObject> => {
-  // Every position read funnels through here, so the permission gate lives here. Calling the
-  // native provider unpermitted rejects with "Not authorized to use location services", which
-  // reads as a hard failure in the logs even when the user simply declined.
   const { granted } = await checkLocationPermission();
   if (!granted) {
     log.w("Position", "location request skipped; permission not granted");
     throw new LocationPermissionError();
   }
-
+  // A check that answers after the deadline starts no fix; nobody waits for it.
+  if (!inTime()) throw new LocationFixError(LOCATION_FAILURE.TIMEOUT);
   try {
-    const locationPromise = getCurrentPositionAsync({
-      accuracy: LocationAccuracy.LOW,
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Location request timed out")), timeoutMs);
-    });
-
-    return await Promise.race([locationPromise, timeoutPromise]);
+    return await getCurrentPositionAsync(options);
   } catch (error) {
-    log.e("Position", "location request failed", error instanceof Error ? error : undefined);
-    throw error;
+    const kind = (await servicesEnabled())
+      ? LOCATION_FAILURE.UNAVAILABLE
+      : LOCATION_FAILURE.SERVICES_OFF;
+    throw new LocationFixError(kind, { cause: error });
   }
 };
+
+// Only a read that may still succeed later falls back to the cached fix.
+const mayFallBack = (kind: LocationFailure): boolean => {
+  switch (kind) {
+    case LOCATION_FAILURE.TIMEOUT:
+    case LOCATION_FAILURE.UNAVAILABLE:
+      return true;
+    case LOCATION_FAILURE.DENIED:
+    case LOCATION_FAILURE.SERVICES_OFF:
+      return false;
+    default: {
+      const unhandled: never = kind;
+      return unhandled;
+    }
+  }
+};
+
+// Only the deadline's own rejection is not a LocationFixError.
+const asFixError = (error: unknown): LocationFixError =>
+  error instanceof LocationFixError
+    ? error
+    : new LocationFixError(LOCATION_FAILURE.TIMEOUT, { cause: error });
+
+const readLastKnown = (maxAgeMs: number): Promise<LocationObject | null> =>
+  withTimeout(
+    getLastKnownPositionAsync(maxAgeMs).catch((error: unknown) => {
+      log.w("Position", `cached fix read failed: ${errorText(error)}`);
+      return null;
+    }),
+    LAST_KNOWN_REQUEST_TIMEOUT,
+    null
+  );
+
+/**
+ * A device position and its source. A timed-out or unavailable read falls back
+ * to a recent cached fix; with none, it rejects with a `LocationFixError`.
+ */
+export const readLocation = async (
+  timeoutMs: number = LOCATION_REQUEST_TIMEOUT
+): Promise<LocationFix> => {
+  let failure: LocationFixError;
+  try {
+    // One deadline covers the permission check and the fix; either can stall.
+    const location = await withDeadline(
+      (inTime) => readPosition(inTime, activeRead()),
+      timeoutMs,
+      TIMED_OUT
+    );
+    return { location, source: FIX_SOURCE.FRESH };
+  } catch (error) {
+    failure = asFixError(error);
+  }
+
+  if (mayFallBack(failure.kind)) {
+    const lastKnown = await readLastKnown(LAST_KNOWN_MAX_AGE_MS);
+    if (lastKnown) {
+      log.i("Position", `fresh fix failed (${failure.kind}); using the cached fix`);
+      return { location: lastKnown, source: FIX_SOURCE.LAST_KNOWN };
+    }
+  }
+  if (failure.kind !== LOCATION_FAILURE.DENIED) {
+    // The cause carries the native message and the HMS diagnostics.
+    const cause = failure.cause instanceof Error ? failure.cause : failure;
+    log.e("Position", `location request failed (${failure.kind})`, cause);
+  }
+  throw failure;
+};
+
+/** A fresh fix with no settings dialog and no cached fallback. */
+export const readPassiveFix = async (timeoutMs: number): Promise<LocationObject> => {
+  try {
+    return await withDeadline(
+      (inTime) => readPosition(inTime, passiveRead()),
+      timeoutMs,
+      TIMED_OUT
+    );
+  } catch (error) {
+    throw asFixError(error);
+  }
+};
+
+/** The device's cached fix no older than `maxAgeMs`, or null; never throws. */
+export const readCachedFix = (maxAgeMs: number): Promise<LocationObject | null> =>
+  withTimeout(
+    checkLocationPermission().then(({ granted }) => (granted ? readLastKnown(maxAgeMs) : null)),
+    LAST_KNOWN_REQUEST_TIMEOUT,
+    null
+  );
 
 // Calculate distance between coordinates
 export const calculateDistance = (
@@ -115,27 +236,6 @@ export const calculateDistance = (
   return R * c;
 };
 
-export const getCurrentLocation = async () => {
-  // First check permission
-  const { granted, canRequestAgain } = await checkLocationPermission();
-
-  if (!granted) {
-    // A blocked permission cannot be re-requested; only a trip to app settings clears it.
-    if (!canRequestAgain) {
-      return { error: "Location permission denied" };
-    }
-
-    const { granted: newPermission } = await requestLocationPermission();
-    if (!newPermission) {
-      return { error: "Location permission denied" };
-    }
-  }
-
-  // Now get location with timeout protection
-  try {
-    const location = await getLocationWithTimeout();
-    return { location };
-  } catch (error: any) {
-    return { error: error.message };
-  }
-};
+/** The great-circle distance between two points, in km. */
+export const distanceBetween = (a: Coords, b: Coords): number =>
+  calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude);

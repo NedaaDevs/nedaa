@@ -3,10 +3,8 @@ import { Platform } from "react-native";
 import { PlatformType } from "@/enums/app";
 import { AppLogger } from "@/utils/appLogger";
 
-import {
-  getPlacedWidgetCount,
-  isPersistentNotificationEnabled,
-} from "../../modules/expo-widgets/src";
+import { getWidgetModuleLoadError } from "expo-widget";
+import { getPlacedWidgetCount, isPersistentNotificationEnabled } from "expo-widgets";
 
 const log = AppLogger.create("widgets");
 
@@ -41,8 +39,17 @@ export const logWidgetAttachContext = (deps: WidgetAttachContextDeps): void => {
   );
 };
 
-// Both values describe Android-only components.
+// A missing module turns every reload into a no-op, so its load error is logged.
+export const logWidgetReloadModule = (loadError: Error | null): void => {
+  if (!loadError) return;
+  log.e("Module", "expo-widget native module missing — widget reloads are no-ops", loadError);
+};
+
 export const logLaunchWidgetAttachContext = (): void => {
-  if (Platform.OS !== PlatformType.ANDROID) return;
+  if (Platform.OS === PlatformType.IOS) {
+    logWidgetReloadModule(getWidgetModuleLoadError());
+    return;
+  }
+  // Both values describe Android-only components.
   logWidgetAttachContext({ getPlacedWidgetCount, isPersistentNotificationEnabled });
 };

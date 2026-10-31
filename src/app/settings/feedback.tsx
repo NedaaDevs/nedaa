@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, Image } from "react-native";
 import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 
 import {
   AlertTriangle,
@@ -19,7 +19,8 @@ import {
 } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -70,10 +71,6 @@ const AREA_KEY: Record<(typeof AREAS)[number], string> = {
   other: "feedback.area.other",
 };
 
-const REPORT_VALUES = Object.values(Report) as string[];
-const validType = (value?: string): ReportType | null =>
-  value && REPORT_VALUES.includes(value) ? (value as ReportType) : null;
-
 const logsDefaultFor = (type: ReportType): boolean => type === Report.CRASH || type === Report.BUG;
 
 const formatBytes = (b: number): string => {
@@ -86,10 +83,8 @@ const FeedbackScreen = () => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const offline = useIsOffline();
-  const params = useLocalSearchParams<{ type?: string }>();
-  const initialType = validType(params.type);
 
-  const [type, setType] = useState<ReportType | null>(initialType);
+  const [type, setType] = useState<ReportType | null>(null);
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
   const [area, setArea] = useState<string | undefined>(undefined);
@@ -158,26 +153,29 @@ const FeedbackScreen = () => {
   const onSend = useCallback(async () => {
     if (!type) return;
     if (!clientKey.current) clientKey.current = generateClientKey();
+    const key = clientKey.current;
     submittingRef.current = true;
     setStatus("submitting");
     setProgress(0);
-    try {
-      const attachments: OutgoingAttachment[] = [];
-      if (logsAttached) {
-        attachments.push(logAttachment ?? (await buildLogAttachment({ category: type })));
-      }
-      if (image) attachments.push(image);
-      const receipt = await submitFeedback(
-        { type, message, contact, area, attachments, clientKey: clientKey.current },
+    const send = async () => {
+      const logs = logsAttached
+        ? [logAttachment ?? (await buildLogAttachment({ category: type }))]
+        : [];
+      const attachments = image ? [...logs, image] : logs;
+      return submitFeedback(
+        { type, message, contact, area, attachments, clientKey: key },
         setProgress
       );
-      setReceiptId(receipt.id);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    } finally {
-      submittingRef.current = false;
-    }
+    };
+    // A chain, not a try: the React Compiler cannot lower a try that holds a
+    // `finally` or a `??`, and skips the whole screen.
+    await send()
+      .then((receipt) => {
+        setReceiptId(receipt.id);
+        setStatus("success");
+      })
+      .catch(() => setStatus("error"));
+    submittingRef.current = false;
   }, [type, logsAttached, logAttachment, image, message, contact, area]);
 
   const enter = (i: number) => (reduceMotion ? undefined : FadeInDown.duration(320).delay(i * 55));
@@ -185,7 +183,10 @@ const FeedbackScreen = () => {
   if (status === "success") {
     return (
       <Background>
-        <TopBar title={t("feedback.title")} href="/settings" backOnClick />
+        <ScreenHeader
+          title={t("feedback.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+        />
         <VStack flex={1} padding="$4" gap="$4" justifyContent="center" alignItems="center">
           <VStack
             width={56}
@@ -229,7 +230,10 @@ const FeedbackScreen = () => {
 
   return (
     <Background>
-      <TopBar title={t("feedback.title")} href="/settings" backOnClick />
+      <ScreenHeader
+        title={t("feedback.title")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -302,7 +306,7 @@ const FeedbackScreen = () => {
                   type ? `feedback.messagePlaceholder.${type}` : "feedback.messagePlaceholder"
                 )}
                 multiline
-                size="$4"
+                size="md"
                 minHeight={120}
                 paddingTop="$3"
                 fontSize={16}
@@ -407,7 +411,7 @@ const FeedbackScreen = () => {
                 placeholder={t("feedback.contactPlaceholder")}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                size="$4"
+                size="md"
                 height={48}
                 fontSize={16}
                 maxLength={256}
@@ -575,7 +579,7 @@ const FeedbackScreen = () => {
                   <>
                     <Box
                       position="absolute"
-                      left={0}
+                      start={0}
                       top={0}
                       bottom={0}
                       width={`${Math.round(progress * 100)}%`}

@@ -15,6 +15,39 @@ import { PlatformType } from "@/enums/app";
 // Types
 import type { NotificationOptions } from "@/types/notification";
 
+// Both schedulers send the same content; only their triggers differ.
+const buildContent = (
+  notificationInput: NotificationContentInput,
+  options?: NotificationOptions
+): NotificationContentInput => {
+  // The sound stays in the content: iOS and Android before 8.0 play it there.
+  const content: NotificationContentInput = {
+    ...notificationInput,
+    data: {
+      ...notificationInput.data,
+      categoryId: options?.categoryId,
+    },
+  };
+
+  if (Platform.OS === PlatformType.ANDROID) {
+    content.priority = AndroidNotificationPriority.HIGH;
+
+    if (options?.vibrate !== undefined) {
+      content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
+    }
+  } else if (Platform.OS === PlatformType.IOS) {
+    if (options?.timeSensitive) {
+      content.interruptionLevel = "timeSensitive";
+    }
+  }
+
+  return content;
+};
+
+// Android 8.0+ posts on the caller's channel; iOS has no channels.
+const androidChannel = (options?: NotificationOptions): string | undefined =>
+  Platform.OS === PlatformType.ANDROID ? options?.channelId : undefined;
+
 export const scheduleNotification = async (
   date: Date,
   notificationInput: NotificationContentInput,
@@ -27,68 +60,21 @@ export const scheduleNotification = async (
   }
 
   try {
-    // Prepare notification content
-    const content: NotificationContentInput = {
-      ...notificationInput,
-      data: {
-        ...notificationInput.data,
-        categoryId: options?.categoryId,
-      },
+    const content = buildContent(notificationInput, options);
+
+    // A past date, or an invalid one (NaN), schedules nothing.
+    const secondsFromNow = Math.floor((date.getTime() - Date.now()) / 1000);
+    if (!(secondsFromNow > 0)) {
+      console.warn(`Notification date is in the past: ${date}`);
+      return { success: false, message: "Cannot schedule notification in the past" };
+    }
+
+    const trigger: Notifications.NotificationTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: secondsFromNow,
+      repeats: false,
+      channelId: androidChannel(options),
     };
-
-    // Platform-specific settings
-    if (Platform.OS === PlatformType.ANDROID) {
-      content.priority = AndroidNotificationPriority.HIGH;
-
-      // For Android < 8.0, sound must be in the content
-      if (notificationInput.sound && notificationInput.sound !== "default") {
-        content.sound = notificationInput.sound;
-      }
-
-      // Android vibration
-      if (options?.vibrate !== undefined) {
-        content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
-      }
-    } else if (Platform.OS === PlatformType.IOS) {
-      // iOS specific settings
-      content.interruptionLevel = "timeSensitive";
-
-      // iOS always needs sound in content
-      if (notificationInput.sound) {
-        content.sound = notificationInput.sound;
-      }
-    }
-
-    // trigger type
-    let trigger: Notifications.NotificationTriggerInput;
-
-    if (date) {
-      // Calculate time interval from now
-      const targetDate = typeof date === "string" ? new Date(date) : date;
-      const now = new Date();
-      const secondsFromNow = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
-
-      // Use time interval trigger if the date is in the future
-      if (secondsFromNow > 0) {
-        trigger = {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: secondsFromNow,
-          repeats: false,
-        };
-
-        // IMPORTANT: For Android 8.0+, use the channelId passed in options
-        if (Platform.OS === PlatformType.ANDROID && options?.channelId) {
-          trigger.channelId = options.channelId;
-        }
-      } else {
-        // If date is in the past, don't schedule
-        console.warn(`Notification date is in the past: ${date}`);
-        return { success: false, message: "Cannot schedule notification in the past" };
-      }
-    } else {
-      // Immediate notification
-      trigger = null;
-    }
 
     const id = await Notifications.scheduleNotificationAsync({
       content,
@@ -118,57 +104,25 @@ export const scheduleRecurringNotification = async (
   }
 
   try {
-    // Prepare notification content
-    const content: NotificationContentInput = {
-      ...notificationInput,
-      data: {
-        ...notificationInput.data,
-        categoryId: options?.categoryId,
-      },
-    };
-
-    // Platform-specific settings
-    if (Platform.OS === PlatformType.ANDROID) {
-      content.priority = AndroidNotificationPriority.HIGH;
-
-      // For Android < 8.0, sound must be in the content
-      if (notificationInput.sound && notificationInput.sound !== "default") {
-        content.sound = notificationInput.sound;
-      }
-
-      // Android vibration
-      if (options?.vibrate !== undefined) {
-        content.vibrate = options.vibrate ? [0, 500, 200, 500] : [];
-      }
-    } else if (Platform.OS === PlatformType.IOS) {
-      // iOS specific settings
-      content.interruptionLevel = "timeSensitive";
-
-      // iOS always needs sound in content
-      if (notificationInput.sound) {
-        content.sound = notificationInput.sound;
-      }
-    }
+    const content = buildContent(notificationInput, options);
 
     // A weekday yields a weekly repeat (e.g. Friday Al-Kahf); otherwise a daily
     // repeat in the device timezone. Both are native OS-repeating triggers.
+    const channelId = androidChannel(options);
     const trigger: Notifications.NotificationTriggerInput = options?.weekday
       ? {
           type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
           weekday: options.weekday,
           hour,
           minute,
+          channelId,
         }
       : {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour,
           minute,
+          channelId,
         };
-
-    // IMPORTANT: For Android 8.0+, use the channelId passed in options
-    if (Platform.OS === PlatformType.ANDROID && options?.channelId) {
-      (trigger as any).channelId = options.channelId;
-    }
 
     const id = await Notifications.scheduleNotificationAsync({
       content,

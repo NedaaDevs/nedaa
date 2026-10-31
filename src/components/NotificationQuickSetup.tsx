@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useMemo } from "react";
+import { FC, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 // Constants
@@ -7,13 +7,13 @@ import { NOTIFICATION_TYPE } from "@/constants/Notification";
 // Hooks
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Utils
-import { getAvailableSoundsWithCustom } from "@/utils/sound";
+import { getAvailableSoundsWithCustom, isNotificationSound } from "@/utils/sound";
 
 // Types
-import type { NotificationType } from "@/types/notification";
-import type { PrayerSoundKey } from "@/constants/sounds";
+import type { NotificationType, PrayerNotificationConfig } from "@/types/notification";
 
 // Stores
 import { useCustomSoundsStore } from "@/stores/customSounds";
@@ -34,9 +34,9 @@ import SoundPreviewButton from "@/components/SoundPreviewButton";
 import { Zap } from "lucide-react-native";
 
 type Props = {
-  currentSound: PrayerSoundKey;
+  currentSound: PrayerNotificationConfig["sound"];
   vibrationEnabled: boolean;
-  onApply: (sound: PrayerSoundKey, vibration: boolean) => void;
+  onApply: (sound: PrayerNotificationConfig["sound"], vibration: boolean) => void;
   supportsVibration?: boolean;
 };
 
@@ -47,25 +47,31 @@ const NotificationQuickSetup: FC<Props> = ({
   supportsVibration = true,
 }) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticSuccess = useHaptic("success");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
   const { customSounds } = useCustomSoundsStore();
 
   // Local state for quick setup
-  const [localSound, setLocalSound] = useState<PrayerSoundKey>(currentSound);
+  const [localSound, setLocalSound] = useState<PrayerNotificationConfig["sound"]>(currentSound);
   const [localVibration, setLocalVibration] = useState(vibrationEnabled);
 
-  // Sync local state with props when they change
-  useEffect(() => {
+  // The props carry the applied settings; the two local values are a draft the
+  // user edits until Apply. Re-seeding during render rather than in an effect
+  // keeps a parent update from showing one frame of the superseded draft.
+  const [seenSound, setSeenSound] = useState(currentSound);
+  if (seenSound !== currentSound) {
+    setSeenSound(currentSound);
     setLocalSound(currentSound);
-  }, [currentSound]);
+  }
 
-  useEffect(() => {
+  const [seenVibration, setSeenVibration] = useState(vibrationEnabled);
+  if (seenVibration !== vibrationEnabled) {
+    setSeenVibration(vibrationEnabled);
     setLocalVibration(vibrationEnabled);
-  }, [vibrationEnabled]);
+  }
 
   const soundOptions = getAvailableSoundsWithCustom(NOTIFICATION_TYPE.PRAYER, customSounds);
 
@@ -95,7 +101,7 @@ const NotificationQuickSetup: FC<Props> = ({
 
   const handleValueChange = (value: string) => {
     hapticSelection();
-    setLocalSound(value as PrayerSoundKey);
+    if (isNotificationSound(NOTIFICATION_TYPE.PRAYER, value)) setLocalSound(value);
   };
 
   return (

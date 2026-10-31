@@ -24,24 +24,28 @@ const FlipHint = () => {
   useEffect(() => {
     if (hasSeenFlipHint) return;
 
-    opacity.value = withDelay(
-      HINT_DISPLAY_MS,
-      withTiming(0, { duration: HINT_FADE_MS }, (finished) => {
-        if (finished) scheduleOnRN(markFlipHintSeen);
-      })
+    opacity.set(
+      withDelay(
+        HINT_DISPLAY_MS,
+        withTiming(0, { duration: HINT_FADE_MS }, (finished) => {
+          if (finished) scheduleOnRN(markFlipHintSeen);
+        })
+      )
     );
   }, [hasSeenFlipHint, markFlipHintSeen, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+    opacity: opacity.get(),
   }));
 
   if (hasSeenFlipHint) return null;
 
   const handleDismiss = () => {
-    opacity.value = withTiming(0, { duration: HINT_FADE_MS }, (finished) => {
-      if (finished) scheduleOnRN(markFlipHintSeen);
-    });
+    opacity.set(
+      withTiming(0, { duration: HINT_FADE_MS }, (finished) => {
+        if (finished) scheduleOnRN(markFlipHintSeen);
+      })
+    );
   };
 
   return (

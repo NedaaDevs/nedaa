@@ -1,5 +1,6 @@
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import {
   forgetBooking,
@@ -31,7 +32,7 @@ const NOW = new Date("2026-10-26T14:00:00Z").getTime();
 const HOUR = 3_600_000;
 const N = FIRED_LEDGER.NOTIFICATIONS;
 const A = FIRED_LEDGER.ALARMS;
-const ISHA = notificationKey(NOTIFICATION_TYPE.PRAYER, "isha");
+const ISHA = notificationKey(NOTIFICATION_TYPE.PRAYER, PRAYER_ID.ISHA);
 const FAJR = ScheduledAlarmType.FAJR;
 const JUMMAH = ScheduledAlarmType.JUMMAH;
 

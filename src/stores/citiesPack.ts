@@ -7,6 +7,7 @@ import { isFullPackInstalled, invalidateCitiesDb } from "@/services/cities-db";
 
 // Utils
 import { AppLogger } from "@/utils/appLogger";
+import { errorText } from "@/utils/errorText";
 
 const log = AppLogger.create("location");
 
@@ -37,27 +38,36 @@ export const useCitiesPackStore = create<CitiesPackStore>()(
       download: async () => {
         if (get().isDownloading) return;
 
-        controller = new AbortController();
+        const own = new AbortController();
+        controller = own;
         set({ isDownloading: true, error: null, receivedBytes: 0, totalBytes: 0 });
 
         try {
           await downloadCitiesPack({
-            signal: controller.signal,
-            onProgress: ({ receivedBytes, totalBytes }) => set({ receivedBytes, totalBytes }),
+            signal: own.signal,
+            // A cancelled task's late event leaves a newer download's meter.
+            onProgress: ({ receivedBytes, totalBytes }) => {
+              if (!own.signal.aborted) set({ receivedBytes, totalBytes });
+            },
           });
 
           // The open connection still points at the seed until it is dropped. The
           // download already released it before installing; this covers the case where
           // it was reopened while the download ran.
           await invalidateCitiesDb();
-          set({ isInstalled: isFullPackInstalled(), isDownloading: false });
+          const isInstalled = isFullPackInstalled();
+          // A cancel after the install leaves a newer download's flag.
+          set(own.signal.aborted ? { isInstalled } : { isInstalled, isDownloading: false });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Cities pack download failed";
+          // A cancel rejects the task; it returns to the offer, not a failure.
+          if (own.signal.aborted) return;
+          const message = errorText(error);
           log.w("CitiesDB", `full pack download failed: ${message}`);
           // The bundled seed stays usable, so a failure never blocks picking a city.
           set({ isDownloading: false, error: message });
         } finally {
-          controller = null;
+          // A cancelled task settling late keeps a newer download's controller.
+          if (controller === own) controller = null;
         }
       },
 

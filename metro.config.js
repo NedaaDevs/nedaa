@@ -1,3 +1,6 @@
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 const { wrapWithReanimatedMetroConfig } = require("react-native-reanimated/metro-config");
 
@@ -15,6 +18,15 @@ const config = getDefaultConfig(__dirname);
 // };
 
 config.resolver.assetExts.push("db");
+
+// The icon plugin reads lucide's barrel. Expo hashes each transformer key into
+// Metro's cache key, so a change to the plugin or to lucide re-transforms.
+const lucideRoot = path.resolve(path.dirname(require.resolve("lucide-react-native")), "../..");
+config.transformer.lucideDirectImportsKey = crypto
+  .createHash("sha1")
+  .update(fs.readFileSync(require.resolve("./scripts/babel/lucideDirectImports")))
+  .update(fs.readFileSync(path.join(lucideRoot, "package.json")))
+  .digest("hex");
 
 const configWithMinifier = {
   ...config,

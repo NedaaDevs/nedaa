@@ -1,0 +1,269 @@
+/**
+ * The colour palette, converted from the design prototype. Each token carries its
+ * source oklch beside the hex, and `Palette.test.ts` re-derives one from the
+ * other. Stylesheets read the hex; React Native cannot parse oklch.
+ */
+
+import { PHASE } from "@/constants/Phase";
+import { PLACE_HERO_TONE, type PlaceHeroTone } from "@/constants/PlaceHero";
+
+export type PaletteEntry = { readonly oklch: string; readonly hex: string };
+
+const LIGHT_SURFACE2 = { oklch: "oklch(95% 0.032 225 / .6)", hex: "#D9F4FF99" } as const;
+
+/** The bar, toast, floating control and glass sheet header share one material. */
+const LIGHT_SURFACE_FLOAT = { oklch: "oklch(97% 0.02 222 / .84)", hex: "#E7F9FFD6" } as const;
+
+const DARK_SURFACE_FLOAT = { oklch: "oklch(23% 0.065 258 / .84)", hex: "#071C3BD6" } as const;
+
+/** From the prototype's phone-frame override, not its `:root`. */
+export const NEDAA_LIGHT = {
+  bg: { oklch: "oklch(93% 0.025 230)", hex: "#D8EBF6" },
+  surface: { oklch: "oklch(97% 0.02 222 / .9)", hex: "#E7F9FFE6" },
+  surface2: LIGHT_SURFACE2,
+  /** A row or field lifted inside a sheet; the same value as `surface2`. */
+  surface2Soft: LIGHT_SURFACE2,
+  /** `surface2` thinned for a panel nested inside a sheet. */
+  panel: { oklch: "oklch(95% 0.032 225 / .42)", hex: "#D9F4FF6B" },
+  /** A surface lifted over any sky, e.g. a toast; nearly opaque. */
+  raised: { oklch: "oklch(97% 0.02 222 / .98)", hex: "#E7F9FFFA" },
+  shadow: { oklch: "oklch(20% 0.04 250 / .24)", hex: "#0717273D" },
+  fg: { oklch: "oklch(23% 0.055 254)", hex: "#081D36" },
+  muted: { oklch: "oklch(45% 0.05 240)", hex: "#3B596E" },
+  /** Muted text on the deeper day sky, where `muted` falls to 3:1. */
+  mutedSky: { oklch: "oklch(35% 0.05 240)", hex: "#203E52" },
+  /** Row separators and inset rings; resting surfaces draw this, not `border`. */
+  hairline: { oklch: "oklch(23% 0.055 254 / .08)", hex: "#081D3614" },
+  /** A resting card or list group. */
+  surfaceGlass: { oklch: "oklch(97% 0.02 222 / .66)", hex: "#E7F9FFA8" },
+  /** Tab bar, toast, floating control and sheet header. */
+  surfaceFloat: LIGHT_SURFACE_FLOAT,
+  /** The 1px inner top edge that catches light. */
+  highlight: { oklch: "oklch(100% 0 0 / .55)", hex: "#FFFFFF8C" },
+  /** Shadow colour of the next-prayer card and the primary button. */
+  accentGlow: { oklch: "oklch(41.5% 0.09 232 / .18)", hex: "#0053722E" },
+  /** Inputs, the compact segmented choice and focus rings. */
+  border: { oklch: "oklch(80% 0.045 230)", hex: "#A1C4D5" },
+  accent: { oklch: "oklch(41.5% 0.09 232)", hex: "#005372" },
+  accentSoft: { oklch: "oklch(93% 0.03 220)", hex: "#D3EDF6" },
+  /** Outline of a chosen pill: the accent at half strength. */
+  accentEdge: { oklch: "oklch(41.5% 0.09 232 / .52)", hex: "#00537285" },
+  /** A faint accent ring, e.g. round a hero icon. */
+  accentLine: { oklch: "oklch(41.5% 0.09 232 / .32)", hex: "#00537252" },
+  /** The app dimmed behind a sheet: a navy on the ink's hue. */
+  scrim: { oklch: "oklch(20% 0.03 254 / .42)", hex: "#0C17236B" },
+  success: { oklch: "oklch(47% 0.105 155)", hex: "#196C40" },
+  warn: { oklch: "oklch(57% 0.11 72)", hex: "#9F6B1E" },
+  danger: { oklch: "oklch(50% 0.14 26)", hex: "#A43B36" },
+  bar: LIGHT_SURFACE_FLOAT,
+  // Switch track while off, sheet handle, switch thumb: tints of the ink.
+  track: { oklch: "oklch(23% 0.055 254 / .18)", hex: "#081D362E" },
+  handle: { oklch: "oklch(23% 0.055 254 / .28)", hex: "#081D3647" },
+  thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
+  /** A pressed row's wash: a faint tint of the ink. */
+  pressed: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
+  /** The tinted square behind a row's accent glyph. */
+  tile: { oklch: "oklch(91% 0.042 223)", hex: "#C4E8F6" },
+  /** An accent pill's fill. */
+  accentTint: { oklch: "oklch(41.5% 0.09 232 / .12)", hex: "#0053721F" },
+  /** A quiet pill's fill and the segmented choice's sunken track. */
+  quietTint: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
+  /** A warn pill's fill. */
+  warnTint: { oklch: "oklch(57% 0.11 72 / .14)", hex: "#9F6B1E24" },
+  /** A Today prayer card: the surface thinned below `surfaceGlass`. */
+  surfaceQuiet: { oklch: "oklch(97% 0.02 222 / .46)", hex: "#E7F9FF75" },
+  /** The 1pt ring inside the next prayer's card. */
+  accentRing: { oklch: "oklch(41.5% 0.09 232 / .35)", hex: "#00537259" },
+  /** The accent for words: deep enough for 14pt text on every light sky. */
+  accentText: { oklch: "oklch(31% 0.09 232)", hex: "#00354B" },
+  /** The bowl's rim behind its body: the sun's white. */
+  trail: { oklch: "oklch(100% 0 0 / .8)", hex: "#FFFFFFCC" },
+} as const satisfies Record<string, PaletteEntry>;
+
+/** `success` is ours: the prototype never declares it, and the light green reads 2.63:1 here. */
+export const NEDAA_DARK = {
+  bg: { oklch: "oklch(7% 0.015 252)", hex: "#000103" },
+  surface: { oklch: "oklch(23% 0.065 258)", hex: "#071C3B" },
+  surface2: { oklch: "oklch(26% 0.072 260)", hex: "#0D2346" },
+  surface2Soft: { oklch: "oklch(26% 0.072 260 / .6)", hex: "#0D234699" },
+  panel: { oklch: "oklch(26% 0.072 260 / .42)", hex: "#0D23466B" },
+  raised: { oklch: "oklch(23% 0.065 258 / .98)", hex: "#071C3BFA" },
+  shadow: { oklch: "oklch(5% 0.03 260 / .5)", hex: "#00000280" },
+  fg: { oklch: "oklch(93% 0.018 230)", hex: "#DCEAF2" },
+  muted: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
+  mutedSky: { oklch: "oklch(72% 0.035 245)", hex: "#93A7BA" },
+  hairline: { oklch: "oklch(93% 0.018 230 / .10)", hex: "#DCEAF21A" },
+  surfaceGlass: { oklch: "oklch(26% 0.072 260 / .62)", hex: "#0D23469E" },
+  surfaceFloat: DARK_SURFACE_FLOAT,
+  highlight: { oklch: "oklch(100% 0 0 / .08)", hex: "#FFFFFF14" },
+  accentGlow: { oklch: "oklch(80% 0.125 92 / .16)", hex: "#DBBB5629" },
+  border: { oklch: "oklch(37% 0.055 257)", hex: "#2D415D" },
+  accent: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
+  accentSoft: { oklch: "oklch(33% 0.055 85)", hex: "#423310" },
+  accentEdge: { oklch: "oklch(80% 0.125 92 / .52)", hex: "#DBBB5685" },
+  accentLine: { oklch: "oklch(80% 0.125 92 / .32)", hex: "#DBBB5652" },
+  scrim: { oklch: "oklch(20% 0.03 230 / .42)", hex: "#0618216B" },
+  success: { oklch: "oklch(72% 0.11 175)", hex: "#4ABBA1" },
+  warn: { oklch: "oklch(77% 0.11 80)", hex: "#D9AC5E" },
+  danger: { oklch: "oklch(74% 0.12 28)", hex: "#ED8C80" },
+  bar: DARK_SURFACE_FLOAT,
+  track: { oklch: "oklch(93% 0.018 230 / .18)", hex: "#DCEAF22E" },
+  handle: { oklch: "oklch(93% 0.018 230 / .28)", hex: "#DCEAF247" },
+  thumb: { oklch: "oklch(99% 0 0)", hex: "#FCFCFC" },
+  pressed: { oklch: "oklch(93% 0.018 230 / .08)", hex: "#DCEAF214" },
+  tile: { oklch: "oklch(33% 0.058 258)", hex: "#223653" },
+  accentTint: { oklch: "oklch(80% 0.125 92 / .12)", hex: "#DBBB561F" },
+  quietTint: { oklch: "oklch(93% 0.018 230 / .07)", hex: "#DCEAF212" },
+  warnTint: { oklch: "oklch(77% 0.11 80 / .14)", hex: "#D9AC5E24" },
+  surfaceQuiet: { oklch: "oklch(100% 0 0 / .06)", hex: "#FFFFFF0F" },
+  accentRing: { oklch: "oklch(80% 0.125 92 / .35)", hex: "#DBBB5659" },
+  /** The accent for words; the gold already reads on the night sky. */
+  accentText: { oklch: "oklch(80% 0.125 92)", hex: "#DBBB56" },
+  /** The bowl's rim behind its body: the moon's halo. */
+  trail: { oklch: "oklch(92.5% 0.018 250 / .6)", hex: "#DEE7F299" },
+} as const satisfies Record<string, PaletteEntry>;
+
+/** Derived, so a token added to one palette must be added to the other. */
+export type ColorToken = keyof typeof NEDAA_LIGHT & keyof typeof NEDAA_DARK;
+
+export const COLOR_TOKENS = Object.keys(NEDAA_LIGHT) as readonly ColorToken[];
+
+/** The phases whose sky carries a tint; day and night keep the plain surface. */
+type TintedPhase = typeof PHASE.DAWN | typeof PHASE.ASR | typeof PHASE.MAGHRIB;
+
+export const BRIGHTNESS = { LIGHT: "light", DARK: "dark" } as const;
+export type Brightness = (typeof BRIGHTNESS)[keyof typeof BRIGHTNESS];
+
+/** The light tinted skies' ground, which level-3 text is checked against. */
+const SKY_TINT_GROUND = { oklch: "oklch(95% 0.032 225 / .72)", hex: "#D9F4FFB8" } as const;
+
+type PhaseGradient = {
+  angle: number;
+  /** The colour the gradient starts from. */
+  from: PaletteEntry;
+  /** The tint mixed into `base`; `to` is the result, re-derived by the test. */
+  base: PaletteEntry;
+  tint: string;
+  percent: number;
+  to: string;
+};
+
+/** `null` where the design tints nothing and the surface shows plain. */
+export const PHASE_GRADIENTS: Record<TintedPhase, Record<Brightness, PhaseGradient | null>> = {
+  [PHASE.ASR]: {
+    light: {
+      angle: 140,
+      from: SKY_TINT_GROUND,
+      base: SKY_TINT_GROUND,
+      tint: "#EAD095",
+      percent: 22,
+      to: "#C5F1F0C8",
+    },
+    dark: null,
+  },
+  [PHASE.MAGHRIB]: {
+    light: {
+      angle: 150,
+      from: NEDAA_LIGHT.surface,
+      base: NEDAA_LIGHT.surface,
+      tint: "#BB7588",
+      percent: 18,
+      to: "#CEE3F6EB",
+    },
+    dark: {
+      angle: 150,
+      from: NEDAA_DARK.surface,
+      base: NEDAA_DARK.surface,
+      tint: "#BB7588",
+      percent: 18,
+      to: "#262A52",
+    },
+  },
+  [PHASE.DAWN]: {
+    light: {
+      angle: 160,
+      from: SKY_TINT_GROUND,
+      base: NEDAA_LIGHT.surface,
+      tint: "#BFAFCF",
+      percent: 18,
+      to: "#D9ECF8EB",
+    },
+    dark: null,
+  },
+};
+
+/** One gradient stop: a colour and where it sits along the line, in percent. */
+type HeroStop = { color: PaletteEntry; at: number };
+
+/** A place hero's paint: its gradient, and the skyline drawn at its foot. */
+type HeroPaint = { angle: number; stops: readonly HeroStop[]; skyline: PaletteEntry };
+
+const HERO_ANGLE = 150;
+
+/** The dark skyline is one shade for every tone. */
+const DARK_SKYLINE = { oklch: "oklch(9% 0.035 257 / .55)", hex: "#00020B8C" } as const;
+const LIGHT_SKYLINE = { oklch: "oklch(33% 0.08 209 / .25)", hex: "#003D4540" } as const;
+
+/** The device's and no place's tints are cool; a chosen city's is warm. */
+export const PLACE_HERO_PAINT: Record<PlaceHeroTone, Record<Brightness, HeroPaint>> = {
+  [PLACE_HERO_TONE.DEVICE]: {
+    light: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(91% 0.072 205)", hex: "#A8F0F8" }, at: 0 },
+        { color: { oklch: "oklch(80% 0.09 210)", hex: "#72CEDE" }, at: 60 },
+        { color: { oklch: "oklch(74% 0.085 214)", hex: "#66B9CC" }, at: 100 },
+      ],
+      skyline: LIGHT_SKYLINE,
+    },
+    dark: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(30% 0.09 238)", hex: "#00324B" }, at: 0 },
+        { color: { oklch: "oklch(24% 0.09 250)", hex: "#00203E" }, at: 60 },
+        { color: { oklch: "oklch(20% 0.065 257)", hex: "#021533" }, at: 100 },
+      ],
+      skyline: DARK_SKYLINE,
+    },
+  },
+  [PLACE_HERO_TONE.CITY]: {
+    light: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(90% 0.07 77)", hex: "#F9D9AA" }, at: 0 },
+        { color: { oklch: "oklch(83% 0.085 50)", hex: "#F5B896" }, at: 53 },
+        { color: { oklch: "oklch(72% 0.09 30)", hex: "#D78F83" }, at: 100 },
+      ],
+      skyline: { oklch: "oklch(42% 0.09 35 / .32)", hex: "#76392A52" },
+    },
+    dark: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(34% 0.075 50)", hex: "#562B0F" }, at: 0 },
+        { color: { oklch: "oklch(28% 0.078 36)", hex: "#48170A" }, at: 53 },
+        { color: { oklch: "oklch(21% 0.055 28)", hex: "#2D0C09" }, at: 100 },
+      ],
+      skyline: DARK_SKYLINE,
+    },
+  },
+  [PLACE_HERO_TONE.NONE]: {
+    light: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(90% 0.052 242)", hex: "#C1E3FE" }, at: 0 },
+        { color: { oklch: "oklch(83% 0.065 235)", hex: "#9FCFEC" }, at: 54 },
+        { color: { oklch: "oklch(73% 0.078 230)", hex: "#72B1D0" }, at: 100 },
+      ],
+      skyline: LIGHT_SKYLINE,
+    },
+    dark: {
+      angle: HERO_ANGLE,
+      stops: [
+        { color: { oklch: "oklch(30% 0.065 246)", hex: "#0C304C" }, at: 0 },
+        { color: { oklch: "oklch(25% 0.065 250)", hex: "#03233F" }, at: 54 },
+        { color: { oklch: "oklch(20% 0.045 257)", hex: "#08162A" }, at: 100 },
+      ],
+      skyline: DARK_SKYLINE,
+    },
+  },
+};

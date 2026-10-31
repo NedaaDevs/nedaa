@@ -1,36 +1,51 @@
 import { createFont, createTamagui, createTokens } from "tamagui";
+
+import { DURATION_MS, SPRING } from "./src/constants/Motion";
+import { NEDAA_DARK, NEDAA_LIGHT } from "./src/constants/Palette";
 import { createAnimations } from "@tamagui/animations-moti";
 import { defaultConfig } from "@tamagui/config/v5";
 
 // Fonts — weight-to-face mappings for locale-aware font switching
 // FontLanguage component handles runtime switching: wrap content with
 // <FontLanguage body="ar" heading="ar"> to switch to Arabic fonts.
-const asapFont = createFont({
-  family: "Asap-Regular",
+const latinFont = createFont({
+  family: "IBMPlexSans-Regular",
   size: {
-    1: 10, // 2xs
-    2: 12, // xs
-    3: 14, // sm
-    4: 16, // base
-    5: 18, // lg
-    6: 20, // xl
-    7: 24, // 2xl
-    8: 30, // 3xl
-    9: 36, // 4xl
-    10: 48, // 5xl
+    1: 10, // 2xs, xs
+    2: 12, // sm
+    2.75: 13,
+    3: 14, // md
+    3.75: 15,
+    4: 16, // lg
+    5: 18, // xl
+    6: 20, // 2xl
+    6.5: 22, // headline
+    7: 24, // 3xl
+    7.5: 26,
+    8: 30, // 4xl
+    8.5: 32, // figure
+    9: 36, // 5xl
+    10: 48,
+    10.5: 40,
     true: 16, // default
   },
   lineHeight: {
     1: 14,
     2: 16,
+    2.75: 20,
     3: 20,
+    3.75: 21,
     4: 24,
     5: 28,
     6: 28,
+    6.5: 30,
     7: 32,
+    7.5: 34,
     8: 36,
+    8.5: 40,
     9: 40,
     10: 48,
+    10.5: 52,
     true: 24,
   },
   weight: {
@@ -48,39 +63,51 @@ const asapFont = createFont({
     true: 0,
   },
   face: {
-    400: { normal: "Asap-Regular" },
-    500: { normal: "Asap-Medium" },
-    600: { normal: "Asap-SemiBold" },
-    700: { normal: "Asap-Bold" },
+    400: { normal: "IBMPlexSans-Regular" },
+    500: { normal: "IBMPlexSans-Medium" },
+    600: { normal: "IBMPlexSans-SemiBold" },
+    700: { normal: "IBMPlexSans-Bold" },
   },
 });
 
-const ibmPlexSansFont = createFont({
-  family: "IBMPlexSans-Regular",
+const arabicFont = createFont({
+  family: "IBMPlexSansArabic-Regular",
   size: {
     1: 10,
     2: 12,
+    2.75: 13,
     3: 14,
+    3.75: 15,
     4: 16,
     5: 18,
     6: 20,
+    6.5: 22,
     7: 24,
+    7.5: 26,
     8: 30,
+    8.5: 32,
     9: 36,
     10: 48,
+    10.5: 40,
     true: 16,
   },
   lineHeight: {
     1: 14,
     2: 16,
+    2.75: 20,
     3: 20,
+    3.75: 21,
     4: 24,
     5: 28,
     6: 28,
+    6.5: 30,
     7: 32,
+    7.5: 34,
     8: 36,
+    8.5: 40,
     9: 40,
     10: 48,
+    10.5: 52,
     true: 24,
   },
   weight: {
@@ -98,19 +125,19 @@ const ibmPlexSansFont = createFont({
     true: 0,
   },
   face: {
-    400: { normal: "IBMPlexSans-Regular" },
-    500: { normal: "IBMPlexSans-Medium" },
-    600: { normal: "IBMPlexSans-SemiBold" },
-    700: { normal: "IBMPlexSans-Bold" },
+    400: { normal: "IBMPlexSansArabic-Regular" },
+    500: { normal: "IBMPlexSansArabic-Medium" },
+    600: { normal: "IBMPlexSansArabic-SemiBold" },
+    700: { normal: "IBMPlexSansArabic-Bold" },
   },
 });
 
 const monoFont = createFont({
   family: "monospace",
-  size: { ...asapFont.size },
-  lineHeight: { ...asapFont.lineHeight },
-  weight: { ...asapFont.weight },
-  letterSpacing: { ...asapFont.letterSpacing },
+  size: { ...latinFont.size },
+  lineHeight: { ...latinFont.lineHeight },
+  weight: { ...latinFont.weight },
+  letterSpacing: { ...latinFont.letterSpacing },
   face: {
     400: { normal: "monospace" },
     700: { normal: "monospace" },
@@ -142,6 +169,10 @@ const tokens = createTokens({
     20: 80,
     24: 96,
     true: 16,
+    // Touch targets, named by what they wrap. 44 is the platform floor; the tab
+    // bar sits above it.
+    target: 44,
+    targetTab: 56,
   },
   space: {
     0: 0,
@@ -165,6 +196,16 @@ const tokens = createTokens({
     16: 64,
     20: 80,
     true: 16,
+    // Named by what the gap separates. Derived from usage: $2 and $3 are 63% of
+    // the 351 stack gaps in the tree.
+    tight: 4,
+    inline: 8,
+    stack: 12,
+    group: 16,
+    section: 24,
+    screen: 20,
+    cardPad: 16,
+    heroGap: 22,
     "-0.5": -2,
     "-1": -4,
     "-1.5": -6,
@@ -177,6 +218,15 @@ const tokens = createTokens({
     "-6": -24,
   },
   radius: {
+    // Named by what the shape wraps, so a screen picks an intent rather than a number.
+    // The numeric steps below stay for the call sites that still use them.
+    chip: 8,
+    control: 12,
+    card: 16,
+    sheet: 18,
+    hero: 24,
+    pill: 999,
+
     0: 0,
     1: 2,
     2: 4,
@@ -322,6 +372,45 @@ const lightTheme = {
   borderColor: tokens.color.lightOutline,
   shadowColor: "rgba(38, 38, 38, 0.1)",
   placeholderColor: tokens.color.lightTypographySecondary,
+
+  // The design palette. Additive only: `success` already exists above and keeps its
+  // current value, so no consumer shifts.
+  bg: NEDAA_LIGHT.bg.hex,
+  surface: NEDAA_LIGHT.surface.hex,
+  surface2: NEDAA_LIGHT.surface2.hex,
+  surface2Soft: NEDAA_LIGHT.surface2Soft.hex,
+  panel: NEDAA_LIGHT.panel.hex,
+  raised: NEDAA_LIGHT.raised.hex,
+  shadow: NEDAA_LIGHT.shadow.hex,
+  fg: NEDAA_LIGHT.fg.hex,
+  muted: NEDAA_LIGHT.muted.hex,
+  mutedSky: NEDAA_LIGHT.mutedSky.hex,
+  hairline: NEDAA_LIGHT.hairline.hex,
+  surfaceGlass: NEDAA_LIGHT.surfaceGlass.hex,
+  surfaceFloat: NEDAA_LIGHT.surfaceFloat.hex,
+  highlight: NEDAA_LIGHT.highlight.hex,
+  accentGlow: NEDAA_LIGHT.accentGlow.hex,
+  border: NEDAA_LIGHT.border.hex,
+  accent: NEDAA_LIGHT.accent.hex,
+  accentSoft: NEDAA_LIGHT.accentSoft.hex,
+  accentEdge: NEDAA_LIGHT.accentEdge.hex,
+  accentLine: NEDAA_LIGHT.accentLine.hex,
+  scrim: NEDAA_LIGHT.scrim.hex,
+  warn: NEDAA_LIGHT.warn.hex,
+  danger: NEDAA_LIGHT.danger.hex,
+  bar: NEDAA_LIGHT.bar.hex,
+  track: NEDAA_LIGHT.track.hex,
+  handle: NEDAA_LIGHT.handle.hex,
+  thumb: NEDAA_LIGHT.thumb.hex,
+  pressed: NEDAA_LIGHT.pressed.hex,
+  tile: NEDAA_LIGHT.tile.hex,
+  accentTint: NEDAA_LIGHT.accentTint.hex,
+  quietTint: NEDAA_LIGHT.quietTint.hex,
+  surfaceQuiet: NEDAA_LIGHT.surfaceQuiet.hex,
+  accentRing: NEDAA_LIGHT.accentRing.hex,
+  accentText: NEDAA_LIGHT.accentText.hex,
+  trail: NEDAA_LIGHT.trail.hex,
+  warnTint: NEDAA_LIGHT.warnTint.hex,
 };
 
 const darkTheme = {
@@ -380,6 +469,45 @@ const darkTheme = {
   borderColor: tokens.color.darkOutline,
   shadowColor: "rgba(0, 0, 0, 0.3)",
   placeholderColor: tokens.color.darkTypographySecondary,
+
+  // The design palette. Additive only: `success` already exists above and keeps its
+  // current value, so no consumer shifts.
+  bg: NEDAA_DARK.bg.hex,
+  surface: NEDAA_DARK.surface.hex,
+  surface2: NEDAA_DARK.surface2.hex,
+  surface2Soft: NEDAA_DARK.surface2Soft.hex,
+  panel: NEDAA_DARK.panel.hex,
+  raised: NEDAA_DARK.raised.hex,
+  shadow: NEDAA_DARK.shadow.hex,
+  fg: NEDAA_DARK.fg.hex,
+  muted: NEDAA_DARK.muted.hex,
+  mutedSky: NEDAA_DARK.mutedSky.hex,
+  hairline: NEDAA_DARK.hairline.hex,
+  surfaceGlass: NEDAA_DARK.surfaceGlass.hex,
+  surfaceFloat: NEDAA_DARK.surfaceFloat.hex,
+  highlight: NEDAA_DARK.highlight.hex,
+  accentGlow: NEDAA_DARK.accentGlow.hex,
+  border: NEDAA_DARK.border.hex,
+  accent: NEDAA_DARK.accent.hex,
+  accentSoft: NEDAA_DARK.accentSoft.hex,
+  accentEdge: NEDAA_DARK.accentEdge.hex,
+  accentLine: NEDAA_DARK.accentLine.hex,
+  scrim: NEDAA_DARK.scrim.hex,
+  warn: NEDAA_DARK.warn.hex,
+  danger: NEDAA_DARK.danger.hex,
+  bar: NEDAA_DARK.bar.hex,
+  track: NEDAA_DARK.track.hex,
+  handle: NEDAA_DARK.handle.hex,
+  thumb: NEDAA_DARK.thumb.hex,
+  pressed: NEDAA_DARK.pressed.hex,
+  tile: NEDAA_DARK.tile.hex,
+  accentTint: NEDAA_DARK.accentTint.hex,
+  quietTint: NEDAA_DARK.quietTint.hex,
+  surfaceQuiet: NEDAA_DARK.surfaceQuiet.hex,
+  accentRing: NEDAA_DARK.accentRing.hex,
+  accentText: NEDAA_DARK.accentText.hex,
+  trail: NEDAA_DARK.trail.hex,
+  warnTint: NEDAA_DARK.warnTint.hex,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)
@@ -423,6 +551,16 @@ const animations = createAnimations({
     type: "timing",
     duration: 280,
   },
+  // Durations only. The config is loaded in Node at build time, so it must not
+  // import react-native; an easing curve has to come from the call site.
+  press: { type: "timing", duration: DURATION_MS.PRESS },
+  quick: { type: "timing", duration: DURATION_MS.QUICK },
+  settle: { type: "timing", duration: DURATION_MS.SETTLE },
+  gentle: { type: "timing", duration: DURATION_MS.GENTLE },
+  // The press spring, from the same `SPRING` numbers Reanimated reads.
+  springSnap: { type: "spring", ...SPRING.SNAP },
+  // The sky crossfades across a prayer phase change.
+  sky: { type: "timing", duration: DURATION_MS.SKY },
 });
 
 const config = createTamagui({
@@ -432,20 +570,21 @@ const config = createTamagui({
     dark: darkTheme,
   },
   fonts: {
-    heading: asapFont,
-    heading_default: asapFont,
-    heading_ar: ibmPlexSansFont,
-    body: asapFont,
-    body_default: asapFont,
-    body_ar: ibmPlexSansFont,
+    heading: latinFont,
+    heading_default: latinFont,
+    heading_ar: arabicFont,
+    body: latinFont,
+    body_default: latinFont,
+    body_ar: arabicFont,
     mono: monoFont,
   },
   fontLanguages: ["default", "ar"],
   animations,
   media: {
-    sm: { maxWidth: 640 },
-    md: { maxWidth: 768 },
-    lg: { maxWidth: 1024 },
+    // Both bounds, so this matches the window's SHORTER edge exactly as
+    // resolveDeviceClass does. Width alone splits from the hook whenever the window is
+    // wide and short — a landscape phone, or any window with the keyboard open.
+    expanded: { minWidth: 560, minHeight: 560 },
     short: { maxHeight: 820 },
     hoverNone: { hover: "none" },
     pointerCoarse: { pointer: "coarse" },

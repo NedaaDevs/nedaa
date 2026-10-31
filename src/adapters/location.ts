@@ -7,6 +7,7 @@ import type {
   LocationPermissionResponse,
   LocationSubscription,
 } from "@/types/location";
+import { withDeadline } from "@/utils/withTimeout";
 
 export { LocationAccuracy } from "@/enums/location";
 export type {
@@ -21,12 +22,14 @@ export type {
 type LocationCallback = (location: LocationObject) => void;
 type LocationErrorCallback = (reason: string) => void;
 type ReverseGeocodeInput = Pick<LocationObject["coords"], "latitude" | "longitude">;
+type LastKnownOptions = { maxAge?: number };
 
 type LocationProvider = {
   getForegroundPermissionsAsync(): Promise<LocationPermissionResponse>;
   requestForegroundPermissionsAsync(): Promise<LocationPermissionResponse>;
   hasServicesEnabledAsync(): Promise<boolean>;
   getCurrentPositionAsync(options?: LocationOptions): Promise<LocationObject>;
+  getLastKnownPositionAsync(options?: LastKnownOptions): Promise<LocationObject | null>;
   watchPositionAsync(
     options: LocationOptions,
     callback: LocationCallback,
@@ -49,6 +52,9 @@ const getLocationProvider = (): LocationProvider =>
     ? (ExpoHmsLocationModule as unknown as LocationProvider)
     : getExpoLocation();
 
+/** Whether Huawei Location Kit reads the position. */
+export const usesHmsLocation = (): boolean => ExpoHmsLocationModule.isAvailable;
+
 export const getForegroundPermissionsAsync = (): Promise<LocationPermissionResponse> =>
   getLocationProvider().getForegroundPermissionsAsync();
 
@@ -60,6 +66,18 @@ export const hasServicesEnabledAsync = (): Promise<boolean> =>
 
 export const getCurrentPositionAsync = (options: LocationOptions = {}): Promise<LocationObject> =>
   getLocationProvider().getCurrentPositionAsync(options);
+
+/** The cached fix no older than `maxAgeMs`, or null. */
+export const getLastKnownPositionAsync = async (
+  maxAgeMs: number
+): Promise<LocationObject | null> => {
+  if (!ExpoHmsLocationModule.isAvailable) {
+    return getExpoLocation().getLastKnownPositionAsync({ maxAge: maxAgeMs });
+  }
+  // Location Kit takes no age limit, so the age is checked here.
+  const fix = await getLocationProvider().getLastKnownPositionAsync();
+  return fix && Date.now() - fix.timestamp <= maxAgeMs ? fix : null;
+};
 
 export const watchPositionAsync = (
   options: LocationOptions,
@@ -74,15 +92,9 @@ export const REVERSE_GEOCODE_TIMEOUT_MS = 10_000;
 // Android 13+ can drop a geocoder error, so an unanswered call times out.
 export const reverseGeocodeAsync = (
   location: ReverseGeocodeInput
-): Promise<LocationGeocodedAddress[]> => {
-  // Asked first, so a synchronous throw leaves no timer behind.
-  const answer = getLocationProvider().reverseGeocodeAsync(location);
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const limit = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(
-      () => reject(new Error("reverse geocode timed out")),
-      REVERSE_GEOCODE_TIMEOUT_MS
-    );
-  });
-  return Promise.race([answer, limit]).finally(() => clearTimeout(timer));
-};
+): Promise<LocationGeocodedAddress[]> =>
+  withDeadline(
+    () => getLocationProvider().reverseGeocodeAsync(location),
+    REVERSE_GEOCODE_TIMEOUT_MS,
+    "reverse geocode timed out"
+  );

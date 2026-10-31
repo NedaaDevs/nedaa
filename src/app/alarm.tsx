@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo, ScrollView } from "react-native";
 import { useLocalSearchParams, Stack, Redirect } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
@@ -17,7 +17,6 @@ import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Clock } from "lucide-react-native";
 
-import { ALARM_TYPE_META } from "@/constants/Alarm";
 import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { ChallengeWrapper } from "@/components/alarm/challenges";
@@ -27,16 +26,22 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAppStore } from "@/stores/app";
-import { clockFormat, formatPrayerTime, getDateLocale } from "@/utils/date";
+import { clockFormat, deviceTimeZone, formatPrayerTime, getDateLocale } from "@/utils/date";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatNumberToLocale } from "@/utils/number";
 import { isAlarmDue } from "@/utils/alarmDue";
+import { isScheduledAlarmType } from "@/utils/alarmTypes";
+import { spokenClockTime } from "@/utils/spokenClockTime";
+import { PRAYER_ID } from "@/constants/Prayer";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
 // Friday Dhuhr occurrence; custom alarms have no associated prayer.
-const PRAYER_BY_ALARM: Partial<Record<string, { nameKey: string; timing: PrayerName }>> = {
-  [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: "fajr" },
-  [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: "dhuhr" },
+const PRAYER_BY_ALARM: Record<
+  ScheduledAlarmType.FAJR | ScheduledAlarmType.JUMMAH,
+  { nameKey: string; timing: PrayerName }
+> = {
+  [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: PRAYER_ID.FAJR },
+  [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: PRAYER_ID.DHUHR },
 };
 
 const localeTime = (
@@ -98,9 +103,8 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
     handleGraceExpire,
   } = useAlarmScreen(alarmId, alarmType);
 
-  const meta =
-    ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? ScheduledAlarmType.CUSTOM] ??
-    ALARM_TYPE_META[ScheduledAlarmType.CUSTOM];
+  // A link can carry a type no alarm has; it rings as a custom alarm.
+  const type = isScheduledAlarmType(alarmType) ? alarmType : ScheduledAlarmType.CUSTOM;
 
   return (
     <>
@@ -130,8 +134,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
             ) : (
               <ActiveAlarmView
                 alarmId={alarmId}
-                alarmType={alarmType}
-                metaTitle={meta.title}
+                alarmType={type}
                 challengeConfig={challengeConfig}
                 canSnooze={canSnooze}
                 remainingSnoozes={remainingSnoozes}
@@ -203,7 +206,6 @@ function SnoozedView({
 function ActiveAlarmView({
   alarmId,
   alarmType,
-  metaTitle,
   challengeConfig,
   canSnooze,
   remainingSnoozes,
@@ -213,8 +215,7 @@ function ActiveAlarmView({
   onGraceExpire,
 }: {
   alarmId: string;
-  alarmType: string;
-  metaTitle: string;
+  alarmType: ScheduledAlarmType;
   challengeConfig: ChallengeConfig;
   canSnooze: boolean;
   remainingSnoozes: number;
@@ -227,16 +228,15 @@ function ActiveAlarmView({
   const insets = useSafeAreaInsets();
   const locale = useAppStore((state) => state.locale);
   const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
+  const western = usePreferencesStore((state) => state.useWesternNumerals);
   const now = useMinuteClock();
 
   const triggerTime = useAlarmStore((state) => state.getAlarm(alarmId)?.triggerTime);
   const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
 
-  const prayer = PRAYER_BY_ALARM[alarmType];
-  const prayerName = prayer
-    ? t(prayer.nameKey)
-    : t(`alarm.types.${alarmType}`, { defaultValue: metaTitle });
+  const prayer = alarmType === ScheduledAlarmType.CUSTOM ? null : PRAYER_BY_ALARM[alarmType];
+  const prayerName = prayer ? t(prayer.nameKey) : t("alarm.types.custom");
 
   // Prayer time nearest the alarm's trigger — picks the today/tomorrow
   // occurrence closest to when the alarm fired; null when data is unavailable
@@ -256,12 +256,21 @@ function ActiveAlarmView({
         ? entry
         : closest
     );
-    return formatNumberToLocale(formatPrayerTime(best.iso, best.tz, { locale, use24HourTime }));
-  }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, locale, use24HourTime]);
+    return {
+      drawn: formatNumberToLocale(formatPrayerTime(best.iso, best.tz, { locale, use24HourTime })),
+      spoken: spokenClockTime(best.iso, best.tz, { locale, use24HourTime, western }, t),
+    };
+  }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, locale, use24HourTime, western, t]);
 
   const clock = localeTime(now, locale, use24HourTime);
+  // The wall clock is drawn in the device's zone, so it is spoken in it too.
+  const spokenClock = spokenClockTime(now, deviceTimeZone(), { locale, use24HourTime, western }, t);
 
+  // Announced once per screen; a later re-render must not repeat it.
+  const announced = useRef(false);
   useEffect(() => {
+    if (announced.current) return;
+    announced.current = true;
     AccessibilityInfo.announceForAccessibility(
       t("a11y.alarm.ringingAnnouncement", { prayer: prayerName })
     );
@@ -279,7 +288,7 @@ function ActiveAlarmView({
           bold
           color="$typography"
           accessibilityRole="header"
-          accessibilityLabel={t("a11y.alarm.currentTime", { time: clock })}>
+          accessibilityLabel={t("a11y.alarm.currentTime", { time: spokenClock })}>
           {clock}
         </Text>
 
@@ -291,10 +300,10 @@ function ActiveAlarmView({
           accessibilityRole="header"
           accessibilityLabel={
             prayerTime
-              ? t("a11y.alarm.prayerAt", { prayer: prayerName, time: prayerTime })
+              ? t("a11y.alarm.prayerAt", { prayer: prayerName, time: prayerTime.spoken })
               : prayerName
           }>
-          {prayerTime ? `${prayerName} · ${prayerTime}` : prayerName}
+          {prayerTime ? `${prayerName} · ${prayerTime.drawn}` : prayerName}
         </Text>
 
         {alarmType === ScheduledAlarmType.FAJR && (

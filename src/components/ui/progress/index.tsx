@@ -2,6 +2,8 @@ import React from "react";
 import { styled, View, createStyledContext } from "tamagui";
 import type { GetProps } from "tamagui";
 
+import { progressPercent } from "@/components/ui/progress/sizing";
+
 type ProgressSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
 const SIZE_HEIGHT: Record<ProgressSize, number> = {
@@ -24,7 +26,7 @@ const ProgressFrame = styled(View, {
   name: "Progress",
   context: ProgressContext,
   backgroundColor: "$backgroundMuted",
-  borderRadius: "$10",
+  borderRadius: "$pill",
   width: "100%",
   overflow: "hidden",
 });
@@ -32,22 +34,28 @@ const ProgressFrame = styled(View, {
 type ProgressFrameProps = GetProps<typeof ProgressFrame> & {
   value?: number;
   size?: ProgressSize;
+  min?: number;
+  max?: number;
 };
 
 const Progress = ProgressFrame.styleable<{
   value?: number;
   size?: ProgressSize;
+  min?: number;
+  max?: number;
 }>((props, ref) => {
-  const { value = 0, size = "md", children, ...rest } = props;
-  const clampedValue = Math.max(0, Math.min(100, value));
+  const { value = 0, size = "md", min = 0, max = 100, children, ...rest } = props;
+  const clampedValue = Math.max(min, Math.min(max, value));
+  // The track fills by position in the range; the announcement keeps the raw value.
+  const percent = progressPercent(value, min, max);
 
   return (
-    <ProgressContext.Provider progress={clampedValue} size={size}>
+    <ProgressContext.Provider progress={percent} size={size}>
       <ProgressFrame
         ref={ref}
         height={SIZE_HEIGHT[size]}
         role="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: clampedValue }}
+        accessibilityValue={{ min, max, now: clampedValue }}
         {...rest}>
         {children}
       </ProgressFrame>
@@ -62,7 +70,7 @@ const ProgressFilledTrackFrame = styled(View, {
   name: "ProgressFilledTrack",
   context: ProgressContext,
   backgroundColor: "$primary",
-  borderRadius: "$10",
+  borderRadius: "$pill",
 });
 
 const ProgressFilledTrack = ProgressFilledTrackFrame.styleable((props, ref) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useEffectEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
 import { useRouter } from "expo-router";
@@ -20,6 +20,7 @@ import { useAthkarStore } from "@/stores/athkar";
 
 // Hooks
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
+import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 
 // Constants
@@ -42,8 +43,10 @@ const MY_ATHKAR_SUPPORTED_LANGUAGES = ["ar", "en"];
 const AthkarTabs = () => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const tabBarInset = useTabBarInset();
 
-  const { setCurrentType, validateDailyStreak } = useAthkarStore();
+  const setCurrentType = useAthkarStore((s) => s.setCurrentType);
+  const validateDailyStreak = useAthkarStore((s) => s.validateDailyStreak);
   const playerState = useAthkarStore((s) => s.playerState);
 
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -63,20 +66,25 @@ const AthkarTabs = () => {
   const screenshotPeriod = useAthkarLandingScreenshotSeed();
 
   // Check for daily reset and validate streak on mount
-  useEffect(() => {
+  const openTab = useEffectEvent(() => {
     if (activeTab !== "my-athkar") {
       setCurrentType(activeTab);
     }
     validateDailyStreak();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    openTab();
   }, []);
 
-  // Force the seeded period (e.g. Morning) for the screenshot capture.
+  // Force the seeded period (e.g. Morning) for the screenshot capture. Only a
+  // screenshot-capture build seeds one; elsewhere it stays null.
+  const [seeded, setSeeded] = useState<typeof screenshotPeriod>(null);
+  if (screenshotPeriod !== seeded) {
+    setSeeded(screenshotPeriod);
+    if (screenshotPeriod) setActiveTab(screenshotPeriod);
+  }
   useEffect(() => {
-    if (!screenshotPeriod) return;
-    const period = screenshotPeriod === "evening" ? ATHKAR_TYPE.EVENING : ATHKAR_TYPE.MORNING;
-    setActiveTab(period);
-    setCurrentType(period);
+    if (screenshotPeriod) setCurrentType(screenshotPeriod);
   }, [screenshotPeriod, setCurrentType]);
 
   const handleRequestOnboarding = useCallback(() => {
@@ -213,7 +221,9 @@ const AthkarTabs = () => {
       </Box>
 
       {/* Content Area */}
-      <ScrollView style={{ flex: 1, backgroundColor: "transparent" }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: "transparent" }}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}>
         <Box padding="$4">
           {activeTab === "my-athkar" ? (
             <MyAthkarList />
@@ -227,10 +237,9 @@ const AthkarTabs = () => {
         <Fab
           onPress={() => router.push("/athkar-focus")}
           size="lg"
-          placement="bottom right"
-          bottom={16}
+          marginBottom={tabBarInset}
           accessibilityLabel={t("athkar.focus.title")}>
-          <FabIcon as={Focus} color="$typographyContrast" />
+          <FabIcon as={Focus} />
         </Fab>
       )}
 

@@ -10,8 +10,8 @@
 
 ## Name & meaning
 
-- **Nedaa** (Arabic: **نداء**) — literally "the call" or "summons." A reference to the Adhan, the call to prayer.
-- Branding sometimes pairs the Latin and Arabic forms: **Nedaa | نداء**.
+- **Nedaa** (Arabic: **نِداء**) — literally "the call" or "summons." A reference to the Adhan, the call to prayer.
+- Branding sometimes pairs the Latin and Arabic forms: **Nedaa | نِداء**.
 - Domain: `nedaa.dev`. Support: `support@nedaa.dev`.
 
 ## What the app does (end-user phrasing)
@@ -128,7 +128,7 @@ When writing marketing or GEO content for the Quran or Athkar features, **name t
 ## Visual identity (high level)
 
 - Light and dark variants of the app icon ship together; iOS uses adaptive light/dark.
-- Typography: **Asap** for Latin scripts, **IBM Plex Sans Arabic** for Arabic. Locale-aware font swap is built in.
+- Typography: **IBM Plex Sans** for Latin, **IBM Plex Sans Arabic** for Arabic script. Locale-aware font swap is built in.
 - Theming via Tamagui design tokens; the app supports multiple user-selectable themes plus system light/dark.
 
 ## Keyword bag (for App Store, GEO, SEO)

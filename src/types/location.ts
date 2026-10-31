@@ -1,7 +1,11 @@
 // Enum
-import type { LocalPermissionStatus } from "@/enums/location";
+import type { LocalPermissionStatus, LocationModeValue } from "@/enums/location";
 import { KAABA_COORDINATES } from "@/utils/compass";
 import type { CityCountry, CityRegion, LocalizedNames } from "@/types/cities";
+import type { FixSource, LocationFailure } from "@/constants/Location";
+
+/** A point on the map, without a fix's other readings. */
+export type Coords = { latitude: number; longitude: number };
 
 export type LocationObjectCoords = {
   latitude: number;
@@ -58,10 +62,8 @@ export type LocationGeocodedAddress = {
   formattedAddress: string | null;
 };
 
-export type LocationPermissionsState = {
-  status: LocalPermissionStatus;
-  canRequestAgain: boolean;
-};
+/** Whether the app may read location, and if the system can still ask. */
+export type LocationPermission = { granted: boolean; canAskAgain: boolean };
 
 export type Address = {
   country: string;
@@ -72,7 +74,12 @@ export type LocationDetails = {
   coords: LocationObjectCoords;
   address: Address | null;
   timezone: string;
-  error: string | null;
+  /** Why the last device read failed; null after a success. */
+  error: LocationFailure | null;
+  /** How and when the device found its position; null for a chosen city. */
+  fix: { source: FixSource; at: number } | null;
+  /** The place's ISO country code, upper case; null until it is known. */
+  countryCode: string | null;
   isLoading: boolean;
 };
 
@@ -91,6 +98,8 @@ export const initialLocationDetails: LocationDetails = {
   address: null,
   timezone: "Asia/Riyadh",
   error: null,
+  fix: null,
+  countryCode: null,
   isLoading: false,
 };
 
@@ -110,4 +119,17 @@ export type ManualLocation = {
   latitude: number;
   longitude: number;
   timezone: string;
+};
+
+/** A whole saved place: its point, names, zone, fix and how it was set. */
+export type PlaceRecord = {
+  coords: LocationObjectCoords;
+  address: Address | null;
+  timezone: string;
+  fixSource: FixSource | null;
+  fixedAt: number | null;
+  countryCode: string | null;
+  localizedLocation: Address;
+  locationMode: LocationModeValue;
+  manualLocation: ManualLocation | null;
 };

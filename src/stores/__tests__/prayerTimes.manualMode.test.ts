@@ -2,8 +2,9 @@ import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { initialLocationDetails, type ManualLocation } from "@/types/location";
 import { LocationMode } from "@/enums/location";
+import { fetchLandingAs } from "@/test-helpers/timesFetch";
 
-const mockGetLocationWithTimeout = jest.fn();
+const mockReadLocation = jest.fn();
 const mockCheckLocationPermission = jest.fn();
 const mockGetPrayerTimesByDateRange = jest.fn();
 const mockGetPrayerTimesByDate = jest.fn();
@@ -28,18 +29,17 @@ jest.mock("@/utils/location", () => ({
   CITY_CHANGE_THRESHOLD: 10,
   calculateDistance: jest.fn(),
   checkLocationPermission: (...args: unknown[]) => mockCheckLocationPermission(...args),
-  getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
+  readLocation: (...args: unknown[]) => mockReadLocation(...args),
 }));
 
 jest.mock("@/stores/app", () => ({
   __esModule: true,
   default: { getState: () => ({ locale: "en" }) },
-  useAppStore: { getState: () => ({ setLoadingState: jest.fn() }) },
 }));
 
 jest.mock("@/stores/providerSettings", () => ({
   __esModule: true,
-  default: { getState: () => ({ currentProviderId: "aladhan" }) },
+  default: { getState: () => ({ currentProviderId: "aladhan", setInEffect: () => {} }) },
 }));
 
 jest.mock("@/api/geocodeApi", () => ({
@@ -54,12 +54,14 @@ jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
     getPrayerTimesByDateRange: (...args: unknown[]) => mockGetPrayerTimesByDateRange(...args),
     getPrayerTimesByDate: (...args: unknown[]) => mockGetPrayerTimesByDate(...args),
-    insertPrayerTimes: jest.fn(),
+    insertPrayerTimes: jest.fn(async () => ({ success: true })),
     cleanData: jest.fn(() => Promise.resolve(true)),
   },
 }));
 
-jest.mock("@/adapters/providers", () => ({ getAdapterByProviderId: jest.fn() }));
+jest.mock("@/adapters/providers", () => ({
+  getAdapterByProviderId: () => ({ fromApplied: () => null }),
+}));
 
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: {
@@ -74,8 +76,8 @@ jest.mock("@/utils/date", () => ({
   timeZonedNow: () => new Date("2026-07-19T12:00:00.000Z"),
 }));
 
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
-jest.mock("../../../modules/expo-widgets/src", () => ({ refreshAllWidgets: jest.fn() }));
+jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
+jest.mock("expo-widgets", () => ({ refreshAllWidgets: jest.fn() }));
 
 const LAHORE: ManualLocation = {
   cityId: 1172451,
@@ -107,7 +109,9 @@ describe("prayer times with a manual location", () => {
     });
     mockGetPrayerTimesByDateRange.mockResolvedValue([]);
     mockGetPrayerTimesByDate.mockResolvedValue(null);
-    usePrayerTimesStore.setState({ getAndStorePrayerTimes: jest.fn(() => Promise.resolve(true)) });
+    usePrayerTimesStore.setState({
+      getPrayerTimes: fetchLandingAs(async () => true),
+    });
   });
 
   afterEach(() => {
@@ -117,10 +121,10 @@ describe("prayer times with a manual location", () => {
   it("never touches the location permission or the device position in manual mode", async () => {
     useLocationStore.getState().setManualLocation(LAHORE);
 
-    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBeUndefined();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimes(true)).resolves.toBe(true);
 
     expect(mockCheckLocationPermission).not.toHaveBeenCalled();
-    expect(mockGetLocationWithTimeout).not.toHaveBeenCalled();
+    expect(mockReadLocation).not.toHaveBeenCalled();
   });
 
   it("treats manual coordinates as a real position, so no default-location warning shows", async () => {
@@ -141,8 +145,8 @@ describe("prayer times with a manual location", () => {
   });
 
   it("still acquires the device position in device mode", async () => {
-    mockCheckLocationPermission.mockResolvedValue({ granted: true, canRequestAgain: true });
-    mockGetLocationWithTimeout.mockRejectedValue(new Error("no fix"));
+    mockCheckLocationPermission.mockResolvedValue({ granted: true, canAskAgain: true });
+    mockReadLocation.mockRejectedValue(new Error("no fix"));
 
     await usePrayerTimesStore.getState().loadPrayerTimes(true);
 
@@ -153,31 +157,10 @@ describe("prayer times with a manual location", () => {
     useLocationStore.getState().setManualLocation(LAHORE);
     useLocationStore.getState().clearManualLocation();
     usePrayerTimesStore.setState({ didGetCurrentLocation: false });
-    mockCheckLocationPermission.mockResolvedValue({ granted: false, canRequestAgain: true });
+    mockCheckLocationPermission.mockResolvedValue({ granted: false, canAskAgain: true });
 
     await usePrayerTimesStore.getState().loadPrayerTimes(true);
 
     expect(mockCheckLocationPermission).toHaveBeenCalled();
-  });
-});
-
-describe("city-change prompting with a manual location", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    useLocationStore.setState({
-      locationDetails: initialLocationDetails,
-      lastKnownCoords: { latitude: 31.558, longitude: 74.35071 },
-      locationMode: LocationMode.MANUAL,
-      manualLocation: LAHORE,
-      showCityChangeModal: false,
-      pendingCityChange: null,
-    });
-  });
-
-  it("does not read the device position to second-guess a chosen city", async () => {
-    await useLocationStore.getState().checkAndPromptCityChange();
-
-    expect(mockGetLocationWithTimeout).not.toHaveBeenCalled();
-    expect(useLocationStore.getState().showCityChangeModal).toBe(false);
   });
 });

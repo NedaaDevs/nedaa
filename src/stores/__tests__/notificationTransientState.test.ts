@@ -20,6 +20,8 @@ describe("clearTransientSchedulingState", () => {
   it("keeps the rest of the persisted state untouched", () => {
     const state = {
       isScheduling: true,
+      batchDepth: 3,
+      pendingReschedule: true,
       lastScheduledDate: "2026-09-09T00:00:00.000Z",
       migrationVersion: 6,
     };
@@ -28,6 +30,9 @@ describe("clearTransientSchedulingState", () => {
 
     expect(state).toEqual({
       isScheduling: false,
+      batchDepth: 0,
+      // Work the app owes is settings-like, not transient: the next launch pays it.
+      pendingReschedule: true,
       lastScheduledDate: "2026-09-09T00:00:00.000Z",
       migrationVersion: 6,
     });

@@ -8,7 +8,7 @@ import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { Background } from "@/components/ui/background";
 
 import { useAthkarStore } from "@/stores/athkar";
@@ -98,7 +98,7 @@ const AthkarAudioDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="settings.athkarAudio.debug.title" backOnClick />
+      <ScreenHeader title={t("settings.athkarAudio.debug.title")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

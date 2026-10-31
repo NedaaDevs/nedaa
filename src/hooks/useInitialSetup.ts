@@ -10,8 +10,7 @@ import { useCustomSoundsStore } from "@/stores/customSounds";
 
 // Services
 import { appSetup } from "@/services/setup";
-import { PrayerTimesDB } from "@/services/db";
-import { QadaDB } from "@/services/qada-db";
+import { initDatabases } from "@/services/databases";
 import { AppLogger } from "@/utils/appLogger";
 import { installCrashHandler } from "@/utils/crashHandler";
 import { installLifecycleLogging } from "@/utils/appLifecycle";
@@ -20,16 +19,8 @@ import { processNativeDiagnostics } from "@/utils/nativeDiagnostics";
 // Screenshot mode
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
 
-const initDB = async () => {
-  await PrayerTimesDB.initialize();
-  await QadaDB.initialize();
-};
-
 export const useInitialSetup = () => {
-  const appStore = useAppStore();
-  const notificationStore = useNotificationStore();
-  const prayerTimesStore = usePrayerTimesStore();
-  const customSoundsStore = useCustomSoundsStore();
+  const isFirstRun = useAppStore((state) => state.isFirstRun);
 
   useEffect(() => {
     // Diagnostics cover first-run/onboarding sessions too — a crash during onboarding
@@ -41,17 +32,17 @@ export const useInitialSetup = () => {
     // Drain OS-level diagnostics from the previous session into the crash log (best-effort).
     void processNativeDiagnostics();
 
-    if (!IS_SCREENSHOT_MODE && appStore.isFirstRun) return;
+    if (!IS_SCREENSHOT_MODE && isFirstRun) return;
 
     const initializeApp = async () => {
       if (IS_SCREENSHOT_MODE) {
         seedScreenshotState();
       }
-      await initDB();
+      await initDatabases();
 
-      await customSoundsStore.initialize();
+      await useCustomSoundsStore.getState().initialize();
 
-      await appSetup(prayerTimesStore, notificationStore);
+      await appSetup(usePrayerTimesStore.getState(), useNotificationStore.getState());
     };
 
     initializeApp().catch((error) => {
@@ -61,6 +52,5 @@ export const useInitialSetup = () => {
         error instanceof Error ? error : undefined
       );
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appStore.isFirstRun]);
+  }, [isFirstRun]);
 };

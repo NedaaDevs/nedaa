@@ -1,4 +1,3 @@
-import { Appearance } from "react-native";
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 
@@ -12,7 +11,13 @@ import { AppLocale, AppDirection, AppMode } from "@/enums/app";
 
 // Constants
 import { RTL_LOCALES } from "@/constants/Locales";
+import { isOnboardingStepId } from "@/constants/Onboarding";
 import { ALL_WHATS_NEW_IDS } from "@/constants/WhatsNew";
+import {
+  UPGRADE_PATH_STATE,
+  UPGRADE_PATH_WHATS_NEW_IDS,
+  isUpgradePathState,
+} from "@/constants/UpgradePath";
 
 // Types
 import { AppState } from "@/types/app";
@@ -51,14 +56,15 @@ export const useAppStore = create<AppState>()(
       persist(
         (set) => ({
           isFirstRun: true,
+          onboardingStep: null,
           hasHydrated: false,
           locale: initialLanguage,
-          mode: Appearance.getColorScheme() as AppMode,
+          mode: AppMode.SYSTEM,
           direction: initialDirection,
-          loadingMessage: "",
-          showLoadingOverlay: false,
           hijriDaysOffset: 0,
           dismissedFeatureCards: [],
+          upgradePath: UPGRADE_PATH_STATE.PENDING,
+          upgradeShownThisLaunch: false,
 
           setIsFirstRun(isFirstRun: boolean) {
             // Completing first-run seeds every current feature card as dismissed:
@@ -66,11 +72,30 @@ export const useAppStore = create<AppState>()(
             // install never starts with an announcement backlog.
             set((state) => ({
               isFirstRun,
+              onboardingStep: isFirstRun ? state.onboardingStep : null,
+              // Onboarding already walks every V3 choice, so the path closes.
+              upgradePath: isFirstRun ? state.upgradePath : UPGRADE_PATH_STATE.DONE,
               dismissedFeatureCards: isFirstRun
                 ? state.dismissedFeatureCards
                 : [...new Set([...state.dismissedFeatureCards, ...ALL_WHATS_NEW_IDS])],
             }));
           },
+
+          setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
+
+          setUpgradePath: (upgradePath) => set({ upgradePath }),
+
+          // The path takes the place of the entries it covers, whichever exit.
+          markUpgradeShown: () =>
+            set((state) => ({
+              upgradeShownThisLaunch: true,
+              dismissedFeatureCards: [
+                ...new Set([...state.dismissedFeatureCards, ...UPGRADE_PATH_WHATS_NEW_IDS]),
+              ],
+            })),
+
+          // One write, so no state holds a first run with a stale saved step.
+          restartOnboarding: () => set({ isFirstRun: true, onboardingStep: null }),
 
           setLocale: (locale: AppLocale) => {
             i18n.changeLanguage(locale);
@@ -80,13 +105,6 @@ export const useAppStore = create<AppState>()(
 
           setMode: (mode: AppMode) => {
             set({ mode });
-          },
-
-          setLoadingState: (loading: boolean, message?: string) => {
-            set({
-              showLoadingOverlay: loading,
-              loadingMessage: message || "",
-            });
           },
 
           setHijirOffset: (daysOffset) => {
@@ -105,19 +123,26 @@ export const useAppStore = create<AppState>()(
           storage: createJSONStorage(() => Storage),
           partialize: (state) => ({
             isFirstRun: state.isFirstRun,
+            onboardingStep: state.onboardingStep,
             locale: state.locale,
             mode: state.mode,
             direction: state.direction,
             dismissedFeatureCards: state.dismissedFeatureCards,
             hijriDaysOffset: state.hijriDaysOffset,
-            // Exclude loading state from persistence
+            upgradePath: state.upgradePath,
           }),
           merge: (persisted, current) => {
             const saved = (persisted ?? {}) as Partial<AppState>;
-            return {
-              ...current,
-              ...saved,
-            };
+            // A missing saved step keeps the current one; an unknown one is dropped.
+            const onboardingStep =
+              saved.onboardingStep === undefined || isOnboardingStepId(saved.onboardingStep)
+                ? (saved.onboardingStep ?? current.onboardingStep)
+                : null;
+            // A missing or unknown saved state opens the path.
+            const upgradePath = isUpgradePathState(saved.upgradePath)
+              ? saved.upgradePath
+              : UPGRADE_PATH_STATE.PENDING;
+            return { ...current, ...saved, onboardingStep, upgradePath };
           },
           onRehydrateStorage: () => (state, error) => {
             if (error) {

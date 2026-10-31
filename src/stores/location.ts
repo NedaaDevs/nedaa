@@ -6,15 +6,32 @@ import * as Location from "@/adapters/location";
 // Types
 import {
   initialLocationDetails,
+  type Coords,
   type LocationDetails,
   type ManualLocation,
+  type PlaceRecord,
 } from "@/types/location";
+import {
+  FIX_SOURCE,
+  LOCATION_FAILURE,
+  METERS_PER_KM,
+  PLACE_UNKNOWN,
+  type LocationFailure,
+} from "@/constants/Location";
+import {
+  REUSE_FIX_MAX_AGE_MS,
+  TRAVEL_MODE,
+  type CityCheckOfferReason,
+  type TravelMode,
+} from "@/constants/CityCheck";
+import type { CityCandidate, CityOffer } from "@/types/cityCheck";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
 
 // Stores
 import appStore from "@/stores/app";
+import { useCityCheckStore } from "@/stores/cityCheck";
 import i18n from "@/localization/i18n";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -23,55 +40,186 @@ import { geocodeApi } from "@/api/geocodeApi";
 
 // Utils
 import {
-  getLocationWithTimeout,
-  calculateDistance,
   CITY_CHANGE_THRESHOLD,
+  distanceBetween,
   LOCATION_REQUEST_TIMEOUT_EXTENDED,
-  LocationPermissionError,
+  locationFailureOf,
+  readLocation,
 } from "@/utils/location";
+import { CitiesDB } from "@/services/cities-db";
+import { trustedCityNear } from "@/utils/cityCheck/cityNear";
+import { countryCodeOf, toPlaceMark } from "@/utils/cityCheck/marks";
+import { resolveLocalizedName } from "@/utils/cities";
+import { errorText } from "@/utils/errorText";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 
 const log = AppLogger.create("location");
 
-// The HMS module appends a counter group to its rejection messages so the log records why a
-// request ended. The Location screen renders this text, so it is dropped before display.
-const stripLocationDiagnostics = (message: string): string =>
-  message.replace(/\s*\(availability=[^)]*\)\s*$/, "");
+const FAILURE_KINDS: readonly unknown[] = Object.values(LOCATION_FAILURE);
+const isLocationFailure = (value: unknown): value is LocationFailure =>
+  FAILURE_KINDS.includes(value);
+
+// A saved record may hold a free-text error, or miss or add fields; it
+// restores to the fields of LocationDetails, defaults filling the gaps.
+const restoredDetails = (saved: LocationDetails): LocationDetails => {
+  const { coords, address, timezone, error, fix, countryCode, isLoading } = {
+    ...initialLocationDetails,
+    ...saved,
+  };
+  return {
+    coords,
+    address,
+    timezone,
+    error: isLocationFailure(error) ? error : null,
+    fix,
+    countryCode: typeof countryCode === "string" ? countryCodeOf(countryCode) : null,
+    isLoading,
+  };
+};
+
+const TRAVEL_MODES: readonly unknown[] = Object.values(TRAVEL_MODE);
+const isTravelMode = (value: unknown): value is TravelMode => TRAVEL_MODES.includes(value);
+
+// The saved travel mode, else the one 2.x's `autoUpdateLocation` maps to:
+// false is off, anything else is ask.
+const restoredTravelMode = (travelMode: unknown, autoUpdateLocation: unknown): TravelMode => {
+  if (isTravelMode(travelMode)) return travelMode;
+  if (autoUpdateLocation === false) return TRAVEL_MODE.OFF;
+  return TRAVEL_MODE.ASK;
+};
+
+/** How the place is set: the mode, and the city chosen and when. */
+type PlaceChoice = {
+  locationMode: LocationModeValue;
+  manualLocation: ManualLocation | null;
+  manualLocationChosenAt: number | null;
+};
+
+const placeChoiceOf = ({
+  locationMode,
+  manualLocation,
+  manualLocationChosenAt,
+}: PlaceChoice): PlaceChoice => ({ locationMode, manualLocation, manualLocationChosenAt });
+
+/** True once the mode or the chosen city moved since `before`. */
+const choiceMoved = (now: PlaceChoice, before: PlaceChoice): boolean =>
+  now.locationMode !== before.locationMode ||
+  now.manualLocation !== before.manualLocation ||
+  now.manualLocationChosenAt !== before.manualLocationChosenAt;
+
+/** Whether two points lie within the city-change distance of each other. */
+const withinCityChange = (a: Coords, b: Coords): boolean =>
+  distanceBetween(a, b) <= CITY_CHANGE_THRESHOLD;
+
+/** The device geocoder's answer; a failed one names no place. */
+type DeviceGeocode =
+  | { failed: true; address: null }
+  | { failed: false; address: Location.LocationGeocodedAddress | null };
+
+// The device geocoder's first address for a point.
+const deviceAddressAt = async ({ latitude, longitude }: Coords): Promise<DeviceGeocode> => {
+  try {
+    const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
+    return { failed: false, address: addresses[0] ?? null };
+  } catch {
+    // A fixed line: the error's text may name the place.
+    log.w("Geocode", "device address failed");
+    return { failed: true, address: null };
+  }
+};
 
 export type LocationStore = {
   locationDetails: LocationDetails;
+  /** The place the stored times belong to, until the new place's land. */
+  previousPlace: PlaceRecord | null;
+  /** Moves on every write of the place's point. */
+  placeRevision: number;
+  /** Clears `previousPlace` once times land for `revision`'s place. */
+  settlePlace: (revision: number) => void;
   localizedLocation: {
     country: string;
     city: string;
   };
-  timezone: string;
   isLocationPermissionGranted: boolean;
   isGettingLocation: boolean;
-  lastKnownCoords: {
-    latitude: number;
-    longitude: number;
-  } | null;
-  cityChangeDetected: boolean;
-  autoUpdateLocation: boolean;
+  lastKnownCoords: Coords | null;
+  /** Whether a move to another city is offered. */
+  travelMode: TravelMode;
   locationMode: LocationModeValue;
   manualLocation: ManualLocation | null;
   /** When the city was chosen; the observation time of the stand-in Qibla fix. */
   manualLocationChosenAt: number | null;
-  showCityChangeModal: boolean;
-  pendingCityChange: {
-    currentCity: string;
-    newCity: string;
-  } | null;
-  initializeLocation: () => Promise<void>;
-  setAutoUpdateLocation: (value: boolean) => void;
+  /** The city the device moved to, offered over the saved one; never saved. */
+  cityOffer: CityOffer | null;
+  /** Takes the device fix; it applies nothing once `wanted` turns false. */
+  initializeLocation: (wanted?: () => boolean) => Promise<void>;
+  /** Off drops a showing offer. */
+  setTravelMode: (mode: TravelMode) => void;
   updateCurrentLocation: () => Promise<void>;
-  checkCityChange: () => Promise<boolean>;
+  /** Reads the device position; on success it replaces a chosen city. */
+  adoptDeviceLocation: () => Promise<void>;
+  /**
+   * Writes the offered city from its own fix; a stale fix reads the device
+   * again. Resolves false when it writes nothing.
+   */
+  applyCityCandidate: (candidate: CityCandidate) => Promise<boolean>;
   reverseGeocode: (params: ReverseGeocodeParams) => Promise<ReverseGeocodeResponse>;
   updateAddressTranslation: () => Promise<boolean>;
-  setTimezone: (tz: string) => Promise<void>;
-  checkAndPromptCityChange: () => Promise<void>;
-  dismissCityChangeModal: () => void;
+  /** The place's zone, as the times fetched for it state. */
+  setTimezone: (tz: string) => void;
+  offerCity: (candidate: CityCandidate, reasons: CityCheckOfferReason[]) => void;
+  /** Drops the offer and keeps the saved place for this trip. */
+  keepCityOffer: () => void;
+  /** Drops the offer and remembers nothing. */
+  dismissCityOffer: () => void;
+  /** Fills a missing country code for the place still at `revision`. */
+  rememberCountryCode: (code: string, revision: number) => void;
   setManualLocation: (location: ManualLocation) => void;
   clearManualLocation: () => void;
+};
+
+type SetLocation = (partial: Partial<LocationStore>) => void;
+
+/** The saved place as a whole; null before any place is verified. */
+const placeRecordOf = (state: LocationStore): PlaceRecord | null => {
+  if (state.lastKnownCoords === null) return null;
+  const { coords, address, timezone, fix } = state.locationDetails;
+  return {
+    coords,
+    address,
+    timezone,
+    fixSource: fix?.source ?? null,
+    fixedAt: fix?.at ?? null,
+    countryCode: state.locationDetails.countryCode,
+    localizedLocation: state.localizedLocation,
+    locationMode: state.locationMode,
+    manualLocation: state.manualLocation,
+  };
+};
+
+// Spread into every write of a new point. The first place written since the
+// times last landed stays the previous one.
+const placeWrite = (
+  state: LocationStore
+): Pick<LocationStore, "placeRevision" | "previousPlace"> => ({
+  placeRevision: state.placeRevision + 1,
+  previousPlace: state.previousPlace ?? placeRecordOf(state),
+});
+
+// Reads overlap, and one its caller gave up on still settles; only the
+// newest read takes the flag down.
+let readsStarted = 0;
+
+/** Runs a device read with `isGettingLocation` up until the newest settles. */
+const whileReading = async (set: SetLocation, read: () => Promise<void>): Promise<void> => {
+  readsStarted += 1;
+  const mine = readsStarted;
+  set({ isGettingLocation: true });
+  try {
+    await read();
+  } finally {
+    if (mine === readsStarted) set({ isGettingLocation: false });
+  }
 };
 
 export const useLocationStore = create<LocationStore>()(
@@ -79,228 +227,341 @@ export const useLocationStore = create<LocationStore>()(
     persist(
       (set, get) => ({
         locationDetails: initialLocationDetails,
+        previousPlace: null,
+        placeRevision: 0,
         localizedLocation: { country: "", city: "" },
-        timezone: "Asia/Riyadh",
         isLocationPermissionGranted: false,
         isGettingLocation: false,
         lastKnownCoords: null,
-        cityChangeDetected: false,
-        autoUpdateLocation: true,
-        showCityChangeModal: false,
-        pendingCityChange: null,
-        locationMode: LocationMode.DEVICE,
+        travelMode: TRAVEL_MODE.ASK,
+        cityOffer: null,
+        // A screenshot build starts on its seeded city; restore below keeps it there.
+        locationMode: IS_SCREENSHOT_MODE ? LocationMode.MANUAL : LocationMode.DEVICE,
         manualLocation: null,
         manualLocationChosenAt: null,
         // Initialize location when permission is granted
-        initializeLocation: async () => {
-          const previousState = get();
-          const previousLastKnownCoords = previousState.lastKnownCoords;
-          const previousVerifiedLocation = previousLastKnownCoords
-            ? {
-                locationDetails: previousState.locationDetails,
-                localizedLocation: previousState.localizedLocation,
-                lastKnownCoords: previousLastKnownCoords,
+        initializeLocation: (wanted = () => true) =>
+          whileReading(set, async () => {
+            // A city chosen during the fix is the user's, and a caller that
+            // gave up has moved on; either way the fix leaves the place.
+            const applies = () => {
+              if (!wanted()) {
+                log.i("Init", "the caller gave up on the fix; the device place is not applied");
+                return false;
               }
-            : null;
-          set({ isGettingLocation: true });
-          try {
-            // Get initial location with timeout protection
-            const location = await getLocationWithTimeout();
-            log.i("Init", "initial location retrieved");
+              if (get().locationMode === LocationMode.DEVICE) return true;
+              log.i("Init", "a city was chosen during the fix; the device place is not applied");
+              return false;
+            };
+            // A failure after a good read is the naming's, not the read's.
+            let read = false;
+            try {
+              // Get initial location with timeout protection
+              const { location, source } = await readLocation();
+              read = true;
+              log.i("Init", `initial location retrieved (${source})`);
+              if (!applies()) return;
 
-            // Keep an accurate fix even when address services are unavailable.
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                coords: location.coords,
-                error: null,
-                isLoading: false,
-              },
-              // A coordinate becomes prayer-ready only after its timezone is resolved.
-              lastKnownCoords: null,
-              isLocationPermissionGranted: true,
-            }));
+              // A saved place stands until the fix's timezone resolves; with
+              // none, the fix is kept even when address services are down.
+              set((state) =>
+                state.lastKnownCoords
+                  ? { isLocationPermissionGranted: true }
+                  : {
+                      ...placeWrite(state),
+                      locationDetails: {
+                        ...state.locationDetails,
+                        coords: location.coords,
+                        error: null,
+                        fix: { source, at: location.timestamp },
+                        isLoading: false,
+                      },
+                      isLocationPermissionGranted: true,
+                    }
+              );
+              const revision = get().placeRevision;
 
-            const [geocodedAddress] = await Location.reverseGeocodeAsync({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }).catch((error) => {
-              log.w("Geocode", `device address failed: ${(error as Error)?.message ?? error}`);
-              return [];
-            });
+              const geocodedAddress = (await deviceAddressAt(location.coords)).address;
 
-            // Get localized version
-            const localizedGeocode = await get()
-              .reverseGeocode({
-                lat: location.coords.latitude,
-                lng: location.coords.longitude,
-                locale: appStore.getState().locale,
-              })
-              .catch((error) => {
-                log.w("Geocode", `localized address failed: ${(error as Error)?.message ?? error}`);
-                return null;
-              });
+              // Get localized version
+              const localizedGeocode = await get()
+                .reverseGeocode({
+                  lat: location.coords.latitude,
+                  lng: location.coords.longitude,
+                  locale: appStore.getState().locale,
+                })
+                .catch((error) => {
+                  log.w("Geocode", `localized address failed: ${errorText(error)}`);
+                  return null;
+                });
 
-            const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
-            if (!timezone) {
-              if (previousVerifiedLocation) {
-                set(previousVerifiedLocation);
+              if (!applies()) return;
+              // A newer point was written while this one was named.
+              if (get().placeRevision !== revision) {
+                log.i("Init", "the place moved during the naming; the fix is not applied");
+                return;
               }
-              throw new Error(i18n.t("location.update.error"));
-            }
+              const timezone = localizedGeocode?.timezone || geocodedAddress?.timezone;
+              if (!timezone) throw new Error(i18n.t("location.update.error"));
 
-            set({
-              locationDetails: {
-                coords: location.coords,
-                address: {
-                  country: geocodedAddress?.country ?? localizedGeocode?.countryName ?? "N/A",
-                  city: geocodedAddress?.city ?? localizedGeocode?.city ?? "N/A",
+              set((state) => ({
+                ...placeWrite(state),
+                locationDetails: {
+                  coords: location.coords,
+                  address: {
+                    country: geocodedAddress?.country ?? PLACE_UNKNOWN,
+                    city: geocodedAddress?.city ?? PLACE_UNKNOWN,
+                  },
+                  timezone,
+                  error: null,
+                  fix: { source, at: location.timestamp },
+                  countryCode: countryCodeOf(geocodedAddress?.isoCountryCode),
+                  isLoading: false,
                 },
-                timezone,
-                error: null,
-                isLoading: false,
-              },
-              localizedLocation: {
-                country: localizedGeocode?.countryName || geocodedAddress?.country || "N/A",
-                city: localizedGeocode?.city || geocodedAddress?.city || "N/A",
-              },
-              lastKnownCoords: {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-              },
-              isLocationPermissionGranted: true,
-            });
-          } catch (error) {
-            const cause =
-              error instanceof Error ? error : new Error("Failed to initialize location");
-            log.e("Init", "initialize location failed", cause);
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                error: stripLocationDiagnostics(cause.message),
-                isLoading: false,
-              },
-            }));
-            throw cause;
-          } finally {
-            set({ isGettingLocation: false });
-          }
-        },
-
-        updateCurrentLocation: async () => {
-          set({ isGettingLocation: true });
-          try {
-            const location = await getLocationWithTimeout(LOCATION_REQUEST_TIMEOUT_EXTENDED);
-            console.log(
-              `Location updated to: ${location.coords.latitude}, ${location.coords.longitude}`
-            );
-
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                coords: location.coords,
-                error: null,
-              },
-              lastKnownCoords: {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-              },
-            }));
-
-            // Update the localized address in the background
-            get()
-              .updateAddressTranslation()
-              .catch((error) => {
-                log.w(
-                  "Geocode",
-                  `address translation failed: ${(error as Error)?.message ?? error}`
-                );
-              });
-          } catch (error) {
-            const cause = error instanceof Error ? error : new Error("Failed to update location");
-            log.e("Update", "update location failed", cause);
-            set((state) => ({
-              locationDetails: {
-                ...state.locationDetails,
-                error: stripLocationDiagnostics(cause.message),
-              },
-            }));
-            throw cause;
-          } finally {
-            set({ isGettingLocation: false });
-          }
-        },
-
-        setTimezone: async (tz) => {
-          set({
-            timezone: tz,
-          });
-        },
-
-        // Check if city has changed
-        checkCityChange: async () => {
-          const lastCoords = get().lastKnownCoords;
-          if (!lastCoords) {
-            console.log("No previous coordinates available, skipping city change check");
-            return false;
-          }
-
-          try {
-            const currentLocation = await getLocationWithTimeout();
-
-            // Calculate distance
-            const distance = calculateDistance(
-              lastCoords.latitude,
-              lastCoords.longitude,
-              currentLocation.coords.latitude,
-              currentLocation.coords.longitude
-            );
-
-            console.log(`Distance from last location: ${distance.toFixed(2)}km`);
-
-            if (distance > CITY_CHANGE_THRESHOLD) {
-              // Get new city name to confirm it's actually different
-              const [geocodedAddress] = await Location.reverseGeocodeAsync({
-                latitude: currentLocation.coords.latitude,
-                longitude: currentLocation.coords.longitude,
-              });
-
-              const currentCity = get().locationDetails.address?.city;
-              const newCity = geocodedAddress.city ?? "N/A";
-
-              if (currentCity !== newCity) {
-                log.i("CityChange", `city changed: ${currentCity} -> ${newCity}`);
-
-                return true;
+                localizedLocation: {
+                  country:
+                    localizedGeocode?.countryName || geocodedAddress?.country || PLACE_UNKNOWN,
+                  city: localizedGeocode?.city || geocodedAddress?.city || PLACE_UNKNOWN,
+                },
+                lastKnownCoords: {
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                },
+                isLocationPermissionGranted: true,
+              }));
+            } catch (error) {
+              const cause =
+                error instanceof Error ? error : new Error("Failed to initialize location");
+              // An abandoned fix: an info log, no device error.
+              if (!wanted() || get().locationMode !== LocationMode.DEVICE) {
+                log.i("Init", `abandoned fix failed: ${cause.message}`);
+              } else {
+                log.e("Init", "initialize location failed", cause);
+                set((state) => ({
+                  locationDetails: {
+                    ...state.locationDetails,
+                    error: read ? null : locationFailureOf(cause),
+                    isLoading: false,
+                  },
+                }));
               }
+              throw cause;
             }
+          }),
 
-            return false;
-          } catch (error) {
-            // Without permission there is nothing to compare against; this runs unprompted.
-            if (error instanceof LocationPermissionError) return false;
-            log.w("CityChange", `check failed: ${(error as Error)?.message ?? error}`);
-            return false;
-          }
+        updateCurrentLocation: () =>
+          whileReading(set, async () => {
+            // A city chosen during the read is the user's; the read leaves it.
+            const choice = placeChoiceOf(get());
+            try {
+              const { location, source } = await readLocation(LOCATION_REQUEST_TIMEOUT_EXTENDED);
+              log.i("Update", `location updated (${source})`);
+              const geocoded = await deviceAddressAt(location.coords);
+              if (choiceMoved(get(), choice)) {
+                log.i("Update", "a city was chosen during the read; the fix is not applied");
+                return;
+              }
+
+              // A failed geocode keeps the device's name within its saved city.
+              const saved = get().lastKnownCoords;
+              const keepsName =
+                geocoded.failed &&
+                choice.locationMode === LocationMode.DEVICE &&
+                saved !== null &&
+                withinCityChange(saved, location.coords);
+              const address = keepsName
+                ? get().locationDetails.address
+                : geocoded.address && {
+                    country: geocoded.address.country ?? PLACE_UNKNOWN,
+                    city: geocoded.address.city ?? PLACE_UNKNOWN,
+                  };
+              set((state) => ({
+                ...placeWrite(state),
+                locationDetails: {
+                  ...state.locationDetails,
+                  coords: location.coords,
+                  address,
+                  error: null,
+                  fix: { source, at: location.timestamp },
+                  countryCode: keepsName
+                    ? state.locationDetails.countryCode
+                    : countryCodeOf(geocoded.address?.isoCountryCode),
+                },
+                lastKnownCoords: {
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                },
+                // A new city's own name shows until its translation lands.
+                ...(address?.city === state.locationDetails.address?.city
+                  ? {}
+                  : {
+                      localizedLocation: {
+                        city: address?.city ?? "",
+                        country: address?.country ?? "",
+                      },
+                    }),
+              }));
+
+              // Update the localized address in the background
+              get()
+                .updateAddressTranslation()
+                .catch((error) => {
+                  log.w("Geocode", `address translation failed: ${errorText(error)}`);
+                });
+            } catch (error) {
+              const cause = error instanceof Error ? error : new Error("Failed to update location");
+              if (choiceMoved(get(), choice)) {
+                log.i("Update", `abandoned read failed: ${cause.message}`);
+                return;
+              }
+              log.e("Update", "update location failed", cause);
+              set((state) => ({
+                locationDetails: {
+                  ...state.locationDetails,
+                  error: locationFailureOf(cause),
+                },
+              }));
+              throw cause;
+            }
+          }),
+
+        adoptDeviceLocation: async () => {
+          const choice = placeChoiceOf(get());
+          await get().updateCurrentLocation();
+          // The read did not apply over a city chosen while it ran.
+          if (choiceMoved(get(), choice)) return;
+          const address = get().locationDetails.address;
+          // The chosen city's name would stand until the translated name lands.
+          set({
+            locationMode: LocationMode.DEVICE,
+            manualLocation: null,
+            manualLocationChosenAt: null,
+            localizedLocation: { city: address?.city ?? "", country: address?.country ?? "" },
+          });
+          log.i("Device", "device location adopted over the chosen city");
         },
 
-        setAutoUpdateLocation: (value: boolean) => {
-          set({ autoUpdateLocation: value });
+        applyCityCandidate: async (candidate) => {
+          if (Date.now() - candidate.fixedAt > REUSE_FIX_MAX_AGE_MS) {
+            const choice = placeChoiceOf(get());
+            await get().updateCurrentLocation();
+            // The read writes nothing over a city chosen while it ran.
+            return !choiceMoved(get(), choice);
+          }
+          const revision = get().placeRevision;
+          // Row ids change when the full pack installs; the point finds the row.
+          const foundRow = await trustedCityNear(candidate.point);
+          // The device gives a lite pack's country; a row in another country is dropped.
+          const needsDevice =
+            !foundRow || (!CitiesDB.isFullPackInstalled() && !candidate.countryCode);
+          const geocoded = needsDevice ? (await deviceAddressAt(candidate.point)).address : null;
+          const deviceCountry = countryCodeOf(geocoded?.isoCountryCode);
+          const row =
+            foundRow && deviceCountry && countryCodeOf(foundRow.countryCode) !== deviceCountry
+              ? null
+              : foundRow;
+          // A newer point was written during the lookup.
+          if (get().placeRevision !== revision) {
+            log.i("Candidate", "the place moved during the lookup; the candidate is not applied");
+            return false;
+          }
+          // A city chosen meanwhile is the user's; the offer is for the device's place.
+          if (get().locationMode !== LocationMode.DEVICE) {
+            log.i("Candidate", "a city is chosen; the candidate is not applied");
+            return false;
+          }
+          const locale = appStore.getState().locale;
+          const address = row
+            ? { country: row.country.name, city: row.name }
+            : geocoded && {
+                country: geocoded.country ?? PLACE_UNKNOWN,
+                city: geocoded.city ?? PLACE_UNKNOWN,
+              };
+          set((state) => ({
+            ...placeWrite(state),
+            locationDetails: {
+              ...state.locationDetails,
+              coords: {
+                ...candidate.point,
+                altitude: null,
+                accuracy:
+                  candidate.accuracyKm === null ? null : candidate.accuracyKm * METERS_PER_KM,
+                altitudeAccuracy: null,
+                heading: null,
+                speed: null,
+              },
+              address,
+              timezone:
+                row?.timezone ??
+                candidate.zone ??
+                geocoded?.timezone ??
+                state.locationDetails.timezone,
+              error: null,
+              fix: { source: FIX_SOURCE.FRESH, at: candidate.fixedAt },
+              countryCode: countryCodeOf(
+                candidate.countryCode ??
+                  (row && CitiesDB.isFullPackInstalled() ? row.countryCode : null) ??
+                  geocoded?.isoCountryCode
+              ),
+              isLoading: false,
+            },
+            lastKnownCoords: {
+              latitude: candidate.point.latitude,
+              longitude: candidate.point.longitude,
+            },
+            // Without a row, the device's names show until the translation lands.
+            localizedLocation: row
+              ? {
+                  country: resolveLocalizedName(row.country.name, row.country.names, locale),
+                  city: resolveLocalizedName(row.name, row.names, locale),
+                }
+              : { country: address?.country ?? "", city: address?.city ?? "" },
+          }));
+          log.i("Candidate", `offered city applied (${row ? "city row" : "device names"})`);
+          if (row) return true;
+          get()
+            .updateAddressTranslation()
+            .catch(() => {
+              log.w("Geocode", "address translation failed");
+            });
+          return true;
+        },
+
+        settlePlace: (revision) => {
+          set((state) => (revision === state.placeRevision ? { previousPlace: null } : {}));
+        },
+
+        setTimezone: (tz) => {
+          set((state) => ({ locationDetails: { ...state.locationDetails, timezone: tz } }));
+        },
+
+        setTravelMode: (mode) => {
+          set((state) => ({
+            travelMode: mode,
+            cityOffer: mode === TRAVEL_MODE.OFF ? null : state.cityOffer,
+          }));
         },
 
         //  get localizedLocation (For display only)
         updateAddressTranslation: async () => {
           const location = get().locationDetails;
+          const asked = appStore.getState().locale;
+          const revision = get().placeRevision;
 
           const geocodeAdd = await get()
             .reverseGeocode({
               lat: location.coords.latitude,
               lng: location.coords.longitude,
-              locale: appStore.getState().locale,
+              locale: asked,
             })
-            .catch((e) => {
-              log.w("Geocode", `address translation failed: ${(e as Error)?.message ?? e}`);
+            .catch(() => {
+              log.w("Geocode", "address translation failed");
             });
+
+          // A later language switch owns the name; this answer is for the old one.
+          if (appStore.getState().locale !== asked) return false;
+          // The answer names a point that is not the saved one.
+          if (get().placeRevision !== revision) return false;
 
           if (geocodeAdd) {
             // Update localizedLocation with localized strings
@@ -339,80 +600,37 @@ export const useLocationStore = create<LocationStore>()(
           }
         },
 
-        checkAndPromptCityChange: async () => {
-          const state = get();
-          const lastCoords = state.lastKnownCoords;
-
-          if (!lastCoords || state.showCityChangeModal) {
-            return;
-          }
-
-          // A city the user chose is never second-guessed against the device position;
-          // the prompt belongs to the mode that is actually tracking the device.
-          if (state.locationMode === LocationMode.MANUAL) {
-            return;
-          }
-
-          try {
-            const currentLocation = await getLocationWithTimeout();
-
-            // Calculate distance
-            const distance = calculateDistance(
-              lastCoords.latitude,
-              lastCoords.longitude,
-              currentLocation.coords.latitude,
-              currentLocation.coords.longitude
-            );
-
-            console.log(`[Location] Distance from last location: ${distance.toFixed(2)}km`);
-
-            if (distance > CITY_CHANGE_THRESHOLD) {
-              // Get city names for comparison and display
-              const [newGeocodedAddress] = await Location.reverseGeocodeAsync({
-                latitude: currentLocation.coords.latitude,
-                longitude: currentLocation.coords.longitude,
-              });
-
-              const currentCity = get().locationDetails.address?.city || "Unknown";
-              const newCity = newGeocodedAddress.city ?? "Unknown";
-
-              if (currentCity !== newCity) {
-                console.log(`[Location] City changed from ${currentCity} to ${newCity}`);
-
-                // Set pending change and show modal
-                set({
-                  pendingCityChange: {
-                    currentCity,
-                    newCity,
-                  },
-                  showCityChangeModal: true,
-                  cityChangeDetected: true,
-                });
-              } else {
-                console.log(`[Location] Distance threshold exceeded but same city: ${currentCity}`);
-              }
-            } else {
-              console.log(`[Location] City change check completed - no significant change`);
-            }
-          } catch (error) {
-            // Runs on every launch, so a declined permission is an expected quiet skip.
-            if (error instanceof LocationPermissionError) return;
-            console.error("[Location] Failed to check city change:", error);
-          }
+        offerCity: (candidate, reasons) => {
+          set({ cityOffer: { candidate, reasons } });
         },
 
-        dismissCityChangeModal: () => {
-          set({
-            showCityChangeModal: false,
-            pendingCityChange: null,
-            cityChangeDetected: false,
-          });
+        keepCityOffer: () => {
+          const offer = get().cityOffer;
+          if (offer)
+            useCityCheckStore
+              .getState()
+              .keep(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
+          set({ cityOffer: null });
+        },
+
+        dismissCityOffer: () => {
+          set({ cityOffer: null });
+        },
+
+        // A late geocoder answer never lands on a newer place or over a code.
+        rememberCountryCode: (code, revision) => {
+          set((state) =>
+            state.placeRevision === revision && state.locationDetails.countryCode === null
+              ? { locationDetails: { ...state.locationDetails, countryCode: countryCodeOf(code) } }
+              : {}
+          );
         },
 
         // lastKnownCoords is what marks a position prayer-ready; without it the prayer
         // times store keeps reporting the default Makkah fallback.
         setManualLocation: (location) => {
           set((state) => ({
+            ...placeWrite(state),
             locationMode: LocationMode.MANUAL,
             manualLocation: location,
             manualLocationChosenAt: Date.now(),
@@ -427,21 +645,25 @@ export const useLocationStore = create<LocationStore>()(
               address: { country: location.country.name, city: location.name },
               timezone: location.timezone,
               error: null,
+              fix: null,
+              countryCode: countryCodeOf(location.countryCode),
               isLoading: false,
             },
             localizedLocation: { country: location.country.name, city: location.name },
+            cityOffer: null,
             lastKnownCoords: { latitude: location.latitude, longitude: location.longitude },
           }));
-          log.i("Manual", `manual location set to ${location.name} (${location.timezone})`);
+          log.i("Manual", "manual location set");
         },
 
         clearManualLocation: () => {
-          set({
+          set((state) => ({
+            ...placeWrite(state),
             locationMode: LocationMode.DEVICE,
             manualLocation: null,
             manualLocationChosenAt: null,
             lastKnownCoords: null,
-          });
+          }));
           log.i("Manual", "manual location cleared; the device location will be used");
         },
       }),
@@ -453,11 +675,31 @@ export const useLocationStore = create<LocationStore>()(
           localizedLocation: state.localizedLocation,
           lastKnownCoords: state.lastKnownCoords,
           isLocationPermissionGranted: state.isLocationPermissionGranted,
-          autoUpdateLocation: state.autoUpdateLocation,
+          travelMode: state.travelMode,
+          // 2.x reads this flag; true is "ask", false is "no updates".
+          autoUpdateLocation: state.travelMode === TRAVEL_MODE.ASK,
           locationMode: state.locationMode,
           manualLocation: state.manualLocation,
           manualLocationChosenAt: state.manualLocationChosenAt,
+          previousPlace: state.previousPlace,
+          placeRevision: state.placeRevision,
         }),
+        // A saved DEVICE mode would read the device position in a screenshot build.
+        merge: (persisted, current) => {
+          const {
+            autoUpdateLocation,
+            travelMode,
+            ...saved
+          }: Partial<LocationStore> & { autoUpdateLocation?: unknown } =
+            typeof persisted === "object" && persisted !== null ? persisted : {};
+          return {
+            ...current,
+            ...saved,
+            travelMode: restoredTravelMode(travelMode, autoUpdateLocation),
+            locationDetails: restoredDetails(saved.locationDetails ?? current.locationDetails),
+            ...(IS_SCREENSHOT_MODE ? { locationMode: LocationMode.MANUAL } : {}),
+          };
+        },
       }
     ),
     { name: "LocationStore" }

@@ -52,7 +52,7 @@ const SurahInfoCard = ({ surahNumber, quranTheme, onClose }: SurahInfoCardProps)
   const metaLine = ready
     ? [
         place,
-        t("quran.surah.ayahCount", { n: formatNumberToLocale(String(meta!.ayahCount)) }),
+        t("quran.surah.ayahCount", { count: meta!.ayahCount }),
         t("quran.surah.pages", {
           start: formatNumberToLocale(String(meta!.pageStart)),
           end: formatNumberToLocale(String(meta!.pageEnd)),

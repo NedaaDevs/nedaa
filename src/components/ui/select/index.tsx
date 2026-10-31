@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Modal, ScrollView, TouchableOpacity, View, StyleSheet } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { useRTL } from "@/contexts/RTLContext";
@@ -23,7 +23,6 @@ type SelectProps = {
   items?: SelectItem[];
   groups?: SelectGroup[];
   disabled?: boolean;
-  size?: "$2" | "$3" | "$4" | "$5";
 };
 
 const ITEM_HEIGHT = 44;
@@ -37,7 +36,7 @@ const Select: React.FC<SelectProps> = ({
   disabled,
 }) => {
   const [open, setOpen] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { direction } = useRTL();
@@ -74,10 +73,10 @@ const Select: React.FC<SelectProps> = ({
         onPress={handleOpen}
         borderColor="$outline"
         borderWidth={1}
-        borderRadius="$4"
+        borderRadius="$control"
         backgroundColor="$backgroundSecondary"
-        minHeight={44}
-        paddingHorizontal="$3"
+        minHeight="$target"
+        paddingHorizontal="$stack"
         justifyContent="center"
         opacity={disabled ? 0.5 : 1}
         accessibilityRole="combobox"
@@ -120,8 +119,8 @@ const Select: React.FC<SelectProps> = ({
                           color="$typographySecondary"
                           fontSize="$2"
                           fontWeight="600"
-                          paddingHorizontal="$4"
-                          paddingVertical="$2">
+                          paddingHorizontal="$group"
+                          paddingVertical="$inline">
                           {group.label}
                         </Text>
                       )}
@@ -159,10 +158,10 @@ const SelectOption: React.FC<{
 }> = ({ item, isSelected, onSelect }) => (
   <Pressable
     onPress={() => onSelect(item.value)}
-    paddingHorizontal="$4"
-    paddingVertical="$3"
+    paddingHorizontal="$group"
+    paddingVertical="$stack"
     backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
-    minHeight={44}
+    minHeight="$target"
     accessibilityRole="radio"
     accessibilityState={{ selected: isSelected }}
     accessibilityLabel={item.label}>

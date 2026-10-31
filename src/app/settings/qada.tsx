@@ -1,22 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { ScrollView, TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  cancelAnimation,
-} from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Components
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import SoundPreviewButton from "@/components/SoundPreviewButton";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -27,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Spinner } from "@/components/ui/spinner";
+import { HoldToConfirm } from "@/components/ui/hold-to-confirm";
 import { Switch } from "@/components/ui/switch";
 import { Select } from "@/components/ui/select";
 
@@ -42,6 +34,8 @@ import { formatNumberToLocale, normalizeNumber } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { SYSTEM_SOUND } from "@/constants/Notification";
 import { useSoundPreview } from "@/hooks/useSoundPreview";
 
 // Icons
@@ -62,9 +56,8 @@ import {
 const QadaSettings = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
-  const hapticLight = useHaptic("light");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
   const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
 
   // Stores
@@ -99,25 +92,6 @@ const QadaSettings = () => {
   // Danger Zone state
   const [dangerZoneExpanded, setDangerZoneExpanded] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [resetProgress, setResetProgress] = useState(0);
-  const [isPressing, setIsPressing] = useState(false);
-  const progress = useSharedValue(0);
-  const backgroundProgress = useSharedValue(0);
-  const scaleValue = useSharedValue(1);
-  const animationControl = useRef<{ value: boolean } | null>(null);
-  const hapticTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Sync with store values on mount
-  useEffect(() => {
-    setTempReminderType(reminderType);
-    setTempReminderDays(reminderDays || 30);
-    setTempReminderDaysText((reminderDays || 30).toString());
-    setTempCustomDate(customDate);
-    setTempPrivacyMode(privacyMode);
-    setTempQadaSound(settings.defaults.qada.sound);
-    setTempQadaVibration(settings.defaults.qada.vibration);
-  }, [reminderType, reminderDays, customDate, privacyMode, settings.defaults.qada]);
 
   const baseSoundOptions = getAvailableSoundsWithCustom("qada", customSounds || []);
 
@@ -126,7 +100,7 @@ const QadaSettings = () => {
     () =>
       [
         {
-          value: "default",
+          value: SYSTEM_SOUND,
           label: "notification.sound.default",
           isPreviewable: false,
           isCustom: false,
@@ -176,101 +150,8 @@ const QadaSettings = () => {
     }
   };
 
-  // Press and hold reset functionality
-  const clearTimers = () => {
-    if (hapticTimer.current) {
-      clearInterval(hapticTimer.current);
-      hapticTimer.current = null;
-    }
-    if (resetTimer.current) {
-      clearTimeout(resetTimer.current);
-      resetTimer.current = null;
-    }
-  };
-
-  const handleResetPressStart = () => {
-    setIsPressing(true);
-    setResetProgress(0);
-
-    // Initial haptic feedback
-    hapticWarning();
-
-    // Start animations
-    progress.value = withTiming(100, { duration: 3000 });
-    backgroundProgress.value = withTiming(1, { duration: 3000 });
-    scaleValue.value = withTiming(0.95, { duration: 100 });
-
-    // Use a ref to track if we should continue the animation
-    const shouldContinue = { value: true };
-
-    // Set up progress tracking for display
-    const startTime = Date.now();
-    const updateProgress = () => {
-      const elapsed = Date.now() - startTime;
-      const progressPercent = Math.min((elapsed / 3000) * 100, 100);
-
-      setResetProgress(progressPercent);
-
-      if (progressPercent < 100 && shouldContinue.value) {
-        requestAnimationFrame(updateProgress);
-      }
-    };
-    updateProgress();
-
-    animationControl.current = shouldContinue;
-
-    // Haptic feedback every 500ms
-    hapticTimer.current = setInterval(() => {
-      hapticLight();
-    }, 500);
-
-    resetTimer.current = setTimeout(() => {
-      if (shouldContinue.value) {
-        handleResetComplete();
-      }
-    }, 3100);
-  };
-
-  const handleResetPressEnd = () => {
-    setIsPressing(false);
-    setResetProgress(0);
-
-    // Clear timers
-    clearTimers();
-
-    // Cancel animations
-    cancelAnimation(progress);
-    cancelAnimation(backgroundProgress);
-    cancelAnimation(scaleValue);
-
-    // Reset animation control
-    if (animationControl.current) {
-      animationControl.current.value = false;
-    }
-
-    // Reset values
-    progress.value = 0;
-    backgroundProgress.value = 0;
-    scaleValue.value = 1;
-  };
-
   const handleResetComplete = async () => {
     setIsResetting(true);
-
-    // Clear timers and reset state
-    clearTimers();
-    setIsPressing(false);
-    setResetProgress(0);
-
-    if (animationControl.current) {
-      animationControl.current.value = false;
-    }
-
-    // Reset animation values
-    progress.value = 0;
-    backgroundProgress.value = 0;
-    scaleValue.value = 1;
-
     try {
       await resetAll();
       await loadData();
@@ -283,32 +164,9 @@ const QadaSettings = () => {
     }
   };
 
-  // Animated styles for reset button
-  const errorColor = theme.error.val;
-  const buttonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: errorColor,
-      transform: [{ scale: scaleValue.value }],
-    };
-  });
-
-  const progressOverlayStyle = useAnimatedStyle(() => {
-    const width = interpolate(progress.value, [0, 100], [0, 1]);
-
-    return {
-      position: "absolute" as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(255, 255, 255, 0.2)",
-      transform: [{ scaleX: width }],
-    };
-  });
-
   return (
     <Background>
-      <TopBar title="qada.notificationSettings" backOnClick={true} />
+      <ScreenHeader variant="bar" title={t("qada.notificationSettings")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -393,8 +251,7 @@ const QadaSettings = () => {
                   {t("qada.daysBeforeRamadan")}
                 </Text>
                 <Text size="xs" color="$typographySecondary">
-                  {formatNumberToLocale("1")}-
-                  {formatNumberToLocale(t("qada.days_other", { count: 365 }))}
+                  {formatNumberToLocale("1")}-{formatNumberToLocale(t("qada.days", { count: 365 }))}
                 </Text>
               </HStack>
               <TextInput
@@ -520,12 +377,11 @@ const QadaSettings = () => {
                   mode="date"
                   display="spinner"
                   locale={appStore.getState().locale}
-                  onChange={(event, selectedDate) => {
+                  onValueChange={(_event, selectedDate) => {
                     setShowDatePicker(false);
-                    if (selectedDate) {
-                      setTempCustomDate(selectedDate.toISOString());
-                    }
+                    setTempCustomDate(selectedDate.toISOString());
                   }}
+                  onDismiss={() => setShowDatePicker(false)}
                 />
               )}
             </VStack>
@@ -535,6 +391,8 @@ const QadaSettings = () => {
           {tempReminderType !== "none" && (
             <VStack gap="$2">
               <Pressable
+                // Holds text or a control the reader must reach; as one element iOS would hide them.
+                accessible={false}
                 onPress={() => setTempPrivacyMode(!tempPrivacyMode)}
                 accessibilityRole="button"
                 accessibilityLabel={t("qada.privacyMode")}
@@ -613,7 +471,7 @@ const QadaSettings = () => {
                     isPlaying={isPlayingSound("qada", tempQadaSound)}
                     onPress={handleSoundPreview}
                     disabled={
-                      !tempQadaSound || tempQadaSound === "silent" || tempQadaSound === "default"
+                      !tempQadaSound || tempQadaSound === "silent" || tempQadaSound === SYSTEM_SOUND
                     }
                     size="md"
                     color="$primary"
@@ -629,6 +487,8 @@ const QadaSettings = () => {
 
               {/* Vibration Toggle */}
               <Pressable
+                // Holds text or a control the reader must reach; as one element iOS would hide them.
+                accessible={false}
                 onPress={() => setTempQadaVibration(!tempQadaVibration)}
                 padding="$4"
                 borderRadius="$6"
@@ -742,54 +602,18 @@ const QadaSettings = () => {
                   {t("qada.resetWarning")}
                 </Text>
 
-                {(() => {
-                  const longPressGesture = Gesture.Pan()
-                    .onBegin(() => {
-                      scheduleOnRN(handleResetPressStart);
-                    })
-                    .onFinalize(() => {
-                      scheduleOnRN(handleResetPressEnd);
-                    });
-
-                  return (
-                    <GestureDetector gesture={longPressGesture}>
-                      <Animated.View
-                        style={[
-                          {
-                            borderRadius: 8,
-                            position: "relative",
-                          },
-                          buttonAnimatedStyle,
-                        ]}>
-                        <Button
-                          size="md"
-                          variant="outline"
-                          width="100%"
-                          borderWidth={0}
-                          style={{ backgroundColor: "transparent" }}
-                          disabled={isResetting}>
-                          {isResetting ? (
-                            <Spinner size="small" />
-                          ) : (
-                            <Icon size="md" color="$typographyContrast" as={RotateCcw} />
-                          )}
-                          <Button.Text color="$typographyContrast" fontWeight="500">
-                            {isResetting
-                              ? t("qada.reset")
-                              : isPressing
-                                ? `${formatNumberToLocale(Math.ceil(resetProgress).toString())}% - ${t("qada.reset")}`
-                                : t("qada.resetAll")}
-                          </Button.Text>
-                        </Button>
-
-                        {/* Progress overlay */}
-                        {isPressing && !isResetting && (
-                          <Animated.View style={progressOverlayStyle} pointerEvents="none" />
-                        )}
-                      </Animated.View>
-                    </GestureDetector>
-                  );
-                })()}
+                <HoldToConfirm
+                  label={t("qada.resetAll")}
+                  icon={RotateCcw}
+                  busy={isResetting}
+                  onConfirm={handleResetComplete}
+                  screenReaderConfirm={{
+                    title: t("qada.dangerZone.resetTitle"),
+                    message: t("qada.dangerZone.resetDescription"),
+                    confirmLabel: t("qada.reset"),
+                    cancelLabel: t("common.cancel"),
+                  }}
+                />
               </VStack>
             )}
           </VStack>

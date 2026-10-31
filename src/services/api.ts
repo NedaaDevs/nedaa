@@ -12,6 +12,9 @@ import { getUserAgent } from "@/utils/userAgent";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+// The rule sees that axios also exports a named `create`. This is the documented factory on the
+// default instance, which is a different thing.
+// eslint-disable-next-line import/no-named-as-default-member
 const apiInstance = axios.create({
   baseURL: API_URL,
   timeout: 10000,

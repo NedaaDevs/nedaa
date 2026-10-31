@@ -1,94 +1,105 @@
-import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { AccessibilityInfo } from "react-native";
+import { reloadPrayerWidgets } from "expo-widget";
 
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { STEP_OUTCOME, UPDATE_START, UPDATE_STEP, type StepOutcome } from "@/constants/Location";
+import { useHaptic } from "@/hooks/useHaptic";
 import { useLocationStore } from "@/stores/location";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import {
+  updateLanded,
+  useLocationUpdateStore,
+  type UpdateResult,
+  type UpdateStart,
+} from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
-import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import type { CityCandidate } from "@/types/cityCheck";
 import type { ManualLocation } from "@/types/location";
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
+import { notificationsOutcome } from "@/utils/updateOutcome";
 
-export type UpdateStep = "location" | "prayerTimes" | "notifications" | "alarms" | "done";
+const DEVICE_START: UpdateStart = { kind: UPDATE_START.DEVICE };
 
-export type UpdateState = {
-  isUpdating: boolean;
-  currentStep: UpdateStep | null;
-  error: { step: UpdateStep; message: string } | null;
-};
-
-const initialState: UpdateState = {
-  isUpdating: false,
-  currentStep: null,
-  error: null,
-};
-
-export const useLocationUpdate = () => {
-  const [updateState, setUpdateState] = useState<UpdateState>(initialState);
-
-  const locationStore = useLocationStore();
-  const prayerTimesStore = usePrayerTimesStore();
-  const notificationStore = useNotificationStore();
-
-  const runStep = async (step: UpdateStep, fn: () => Promise<unknown>) => {
-    setUpdateState((prev) => ({ ...prev, currentStep: step, error: null }));
-    try {
-      await fn();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      setUpdateState((prev) => ({
-        ...prev,
-        isUpdating: false,
-        error: { step, message },
-      }));
-      throw error;
+/** Sets the place: the only step that differs between the starts. */
+const takePlace = async (start: UpdateStart): Promise<StepOutcome> => {
+  const location = useLocationStore.getState();
+  switch (start.kind) {
+    case UPDATE_START.DEVICE:
+      await location.updateCurrentLocation();
+      return STEP_OUTCOME.DONE;
+    case UPDATE_START.ADOPT_DEVICE:
+      // The device read comes first; a failed read leaves the chosen city.
+      await location.adoptDeviceLocation();
+      return STEP_OUTCOME.DONE;
+    case UPDATE_START.CITY:
+      location.setManualLocation(start.city);
+      return STEP_OUTCOME.DONE;
+    case UPDATE_START.CANDIDATE:
+      // An offer the place moved away from sets nothing; the run stops there.
+      return (await location.applyCityCandidate(start.candidate))
+        ? STEP_OUTCOME.DONE
+        : STEP_OUTCOME.FAILED;
+    default: {
+      const unhandled: never = start;
+      return unhandled;
     }
+  }
+};
+
+/** Place, times, notifications, alarms; the alerts need the place and times. */
+const runUpdate = (start: UpdateStart): Promise<UpdateResult> =>
+  useLocationUpdateStore.getState().withRun(start, async (runStep) => {
+    const placed = await runStep(UPDATE_STEP.LOCATION, () => takePlace(start));
+    if (placed === STEP_OUTCOME.FAILED) return;
+    const times = await runStep(UPDATE_STEP.PRAYER_TIMES, async () => {
+      const { placeRevision } = useLocationStore.getState();
+      // The place step set the place; a second device fix would move it.
+      const landed = await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
+      // A newer place owns the times; this run's place never got them.
+      if (useLocationStore.getState().placeRevision !== placeRevision) return STEP_OUTCOME.FAILED;
+      // False while next year's days are owed; the window is the new place's.
+      return landed ? STEP_OUTCOME.DONE : STEP_OUTCOME.PARTIAL;
+    });
+    // Notifications read the stored days, which a failed load leaves stale.
+    if (times === STEP_OUTCOME.FAILED) return;
+    await runStep(UPDATE_STEP.NOTIFICATIONS, async () =>
+      notificationsOutcome(await useNotificationStore.getState().scheduleAllNotifications())
+    );
+    // Runs after a failed notifications step, so no alarm keeps the old time.
+    await runStep(UPDATE_STEP.ALARMS, rescheduleAllAlarms);
+    reloadPrayerWidgets();
+  });
+
+/** The one location update: the run in flight and the ways to start one. */
+export const useLocationUpdate = () => {
+  const { t } = useTranslation();
+  const successHaptic = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const run = useLocationUpdateStore((state) => state.run);
+  const dismissFailure = useLocationUpdateStore((state) => state.dismissFailure);
+
+  // Confirms a landed run by touch and voice; resolves whether it landed.
+  const confirmLanded = (result: UpdateResult): boolean => {
+    if (!updateLanded(result)) return false;
+    void successHaptic();
+    // The status line and its live region leave with the run; say the end.
+    AccessibilityInfo.announceForAccessibility(t("location.update.step.done"));
+    return true;
   };
 
-  /**
-   * Everything after the coordinates is identical whether they came from the device or
-   * from a city the user picked, so only the first step differs. A step that throws
-   * stops the pipeline, leaving the failure on screen rather than half-applying it.
-   */
-  const runPipeline = useCallback(
-    async (setCoordinates: () => Promise<void>): Promise<boolean> => {
-      setUpdateState({ isUpdating: true, currentStep: null, error: null });
+  // Resolves whether this call's run landed; the screen then shows the place.
+  const update = async (start: UpdateStart): Promise<boolean> =>
+    confirmLanded(await runUpdate(start));
 
-      try {
-        await runStep("location", setCoordinates);
-        await runStep("prayerTimes", () => prayerTimesStore.loadPrayerTimes(true));
-        await runStep("notifications", () => notificationStore.scheduleAllNotifications());
-        await runStep("alarms", () => rescheduleAllAlarms());
-
-        reloadPrayerWidgets();
-
-        setUpdateState({ isUpdating: false, currentStep: "done", error: null });
-
-        setTimeout(() => {
-          setUpdateState(initialState);
-        }, 2000);
-        return true;
-      } catch {
-        // Error already captured in runStep. Reported as a return value because the
-        // caller cannot read the fresh updateState from inside the same render.
-        return false;
-      }
-    },
-    [prayerTimesStore, notificationStore]
-  );
-
-  const executeUpdate = useCallback(
-    () => runPipeline(() => locationStore.updateCurrentLocation()),
-    [runPipeline, locationStore]
-  );
-
-  const applyManualLocation = useCallback(
-    (location: ManualLocation) =>
-      runPipeline(async () => locationStore.setManualLocation(location)),
-    [runPipeline, locationStore]
-  );
-
-  const retry = useCallback(() => {
-    executeUpdate();
-  }, [executeUpdate]);
-
-  return { updateState, executeUpdate, applyManualLocation, retry };
+  return {
+    run,
+    executeUpdate: () => update(DEVICE_START),
+    applyManualLocation: (city: ManualLocation) => update({ kind: UPDATE_START.CITY, city }),
+    switchToDevice: () => update({ kind: UPDATE_START.ADOPT_DEVICE }),
+    applyCandidate: (candidate: CityCandidate) =>
+      update({ kind: UPDATE_START.CANDIDATE, candidate }),
+    // Repeats the last run's own start, whichever screen it was begun on.
+    retry: () => update(useLocationUpdateStore.getState().run?.start ?? DEVICE_START),
+    dismissFailure,
+  };
 };

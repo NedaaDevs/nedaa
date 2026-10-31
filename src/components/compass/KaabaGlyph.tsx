@@ -1,4 +1,6 @@
-import { G, Line, Rect, Svg } from "react-native-svg";
+import { G, Line, Svg } from "react-native-svg";
+
+import { Rect } from "@/components/ui/svg-geometry";
 
 // Realistic Kaaba colors in both themes by design; only surrounding UI takes theme tokens.
 const CUBE = "#14171C";

@@ -40,4 +40,10 @@ describe("parseScreenshotDeepLink", () => {
       parseScreenshotDeepLink("nedaa://screenshot/prayer-times?locale=en&seed=x&theme=sepia")
     ).toBeNull();
   });
+
+  test("parses a settings screen with its theme", () => {
+    expect(
+      parseScreenshotDeepLink("nedaa://screenshot/settings-hijri?locale=ar&seed=default&theme=dark")
+    ).toEqual({ screen: "settings-hijri", locale: "ar", seed: "default", theme: "dark" });
+  });
 });

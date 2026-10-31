@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 // Icons
 import { Play, Volume1, VolumeX } from "lucide-react-native";
@@ -20,11 +20,12 @@ import { Play, Volume1, VolumeX } from "lucide-react-native";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 const AthanPlaybackSettings = () => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
 
   const {
     fullAthanPlayback,
@@ -39,7 +40,7 @@ const AthanPlaybackSettings = () => {
 
   return (
     <Background>
-      <TopBar title="notification.athanPlayback.title" backOnClick />
+      <ScreenHeader title={t("notification.athanPlayback.title")} back />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

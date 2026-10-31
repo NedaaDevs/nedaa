@@ -6,7 +6,7 @@ This file covers what you need to write code here. For setup, see [docs/DEV-READ
 
 ## Stack
 
-Expo SDK 57 and React Native 0.86 with the New Architecture (mandatory), React 19, TypeScript in strict mode, React Compiler enabled. Tamagui for UI with Moti animations, Zustand for state, Expo Router for navigation, expo-sqlite for local data, i18next for translations. Package manager is **bun**, not npm or yarn; the version is pinned in `.bun-version`.
+Expo and React Native with the New Architecture (mandatory), React, TypeScript in strict mode, React Compiler enabled. Tamagui for UI with Moti animations, Zustand for state, Expo Router for navigation, expo-sqlite for local data, i18next for translations. Package manager is **bun**, not npm or yarn; the version is pinned in `.bun-version`.
 
 Read `package.json` for versions rather than assuming — this file deliberately doesn't repeat them.
 
@@ -93,3 +93,4 @@ The `BUILD_VARIANT` env var (`gms` by default, `hms` for Huawei devices without 
 - **`ios/` and `android/` are committed.** This project doesn't regenerate them on every build, and both contain hand-written code that `expo prebuild` will silently destroy — the widget extension target, alarm intent handling in `MainActivity.kt`. After changing a native dependency, run `pod install`. Don't reach for `prebuild`.
 - **Native modules are autolinked** through each module's `expo-module.config.json`, not through `app.json` plugins.
 - **`react-native-worklets` is patched** via bun `patchedDependencies` (`patches/`). Don't bump it without re-checking the patch.
+- **`moti` and `@tamagui/web` carry type-only patches** that keep the moti transform types and the Tamagui ref types correct under React Native's strict TypeScript API. Drop each patch once its package ships strict-compatible types.

@@ -8,7 +8,6 @@ const LOCALES = { en, ar, ur, ms } as Record<string, Record<string, unknown>>;
 
 const REQUIRED = [
   "hijriCalendar.title",
-  "hijriCalendar.subtitle",
   "hijriCalendar.today",
   "hijriCalendar.legend.recommendedFast",
   "hijriCalendar.legend.fastingForbidden",

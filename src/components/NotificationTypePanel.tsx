@@ -26,16 +26,20 @@ import {
 // Components
 import PrayerCustomizationModal from "@/components/PrayerCustomizationModal";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
 
+// Constants
+import { PRAYER_ID } from "@/constants/Prayer";
+
 const PRAYERS = [
-  { id: "fajr", name: "prayerTimes.fajr" },
-  { id: "dhuhr", name: "prayerTimes.dhuhr" },
-  { id: "asr", name: "prayerTimes.asr" },
-  { id: "maghrib", name: "prayerTimes.maghrib" },
-  { id: "isha", name: "prayerTimes.isha" },
+  { id: PRAYER_ID.FAJR, name: "prayerTimes.fajr" },
+  { id: PRAYER_ID.DHUHR, name: "prayerTimes.dhuhr" },
+  { id: PRAYER_ID.ASR, name: "prayerTimes.asr" },
+  { id: PRAYER_ID.MAGHRIB, name: "prayerTimes.maghrib" },
+  { id: PRAYER_ID.ISHA, name: "prayerTimes.isha" },
 ];
 
 type Props = {
@@ -93,9 +97,9 @@ const NotificationTypePanel: FC<Props> = ({
     return { isCustom: true, label };
   };
 
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const handleToggle = () => {
     hapticSelection();
@@ -122,6 +126,8 @@ const NotificationTypePanel: FC<Props> = ({
       <Card variant="grouped" marginHorizontal="$4">
         {/* Header */}
         <Pressable
+          // Holds text or a control the reader must reach; as one element iOS would hide them.
+          accessible={false}
           onPress={handleToggle}
           disabled={!defaults.enabled}
           accessibilityRole="button"
@@ -140,7 +146,7 @@ const NotificationTypePanel: FC<Props> = ({
                     {title}
                   </Text>
                   {hasTiming && (
-                    <Badge size="sm" variant="outline">
+                    <Badge size="sm">
                       <Badge.Text>
                         {t("common.minute", {
                           count: (defaults as NotificationWithTiming).timing,

@@ -1,7 +1,7 @@
 import { FC, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { TextInput, Keyboard } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -11,6 +11,7 @@ import { Box } from "@/components/ui/box";
 import { ChallengeDifficulty, DhikrPhrase } from "@/types/alarm";
 import { matchesDhikr, pickDhikrPhrase } from "@/utils/dhikrChallenge";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Wrong submissions before the phrase resets — lets a typo be fixed in place
 // instead of losing the attempt on every miss. Mirrored in the Android
@@ -30,8 +31,8 @@ let lastDhikrPhrase: DhikrPhrase | null = null;
 const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const hapticSuccess = useHaptic("success");
-  const hapticError = useHaptic("error");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticError = useHaptic(HAPTIC_FEEDBACK.ERROR);
 
   const [phrase, setPhrase] = useState<DhikrPhrase>(() => {
     const picked = pickDhikrPhrase(difficulty, lastDhikrPhrase);
@@ -94,6 +95,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
         borderColor={isWrong ? "$borderError" : "transparent"}
         width="100%"
         accessibilityLabel={t("a11y.alarm.dhikrPhrase", {
+          arabic: phrase.arabic,
           transliteration: phrase.transliteration,
         })}
         accessibilityLiveRegion="polite">

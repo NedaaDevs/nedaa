@@ -68,11 +68,23 @@ export type HmsLocationErrorEvent = {
   reason: string;
 };
 
+export const HMS_LOCATION_EVENT = {
+  UPDATE: "onLocationUpdate",
+  ERROR: "onLocationError",
+} as const;
+
+export type HmsLocationEvents = {
+  [HMS_LOCATION_EVENT.UPDATE]: (event: HmsLocationUpdateEvent) => void;
+  [HMS_LOCATION_EVENT.ERROR]: (event: HmsLocationErrorEvent) => void;
+};
+
 export type ExpoHmsLocationNativeModule = {
   getForegroundPermissionsAsync(): Promise<HmsLocationPermissionResponse>;
   requestForegroundPermissionsAsync(): Promise<HmsLocationPermissionResponse>;
   hasServicesEnabledAsync(): Promise<boolean>;
   getCurrentPositionAsync(options: HmsLocationOptions): Promise<HmsLocationObject>;
+  /** The provider's cached fix of any age, or null when it holds none. */
+  getLastKnownPositionAsync(): Promise<HmsLocationObject | null>;
   reverseGeocodeAsync(location: HmsReverseGeocodeInput): Promise<HmsGeocodedAddress[]>;
   startWatchingAsync(watchId: number, options: HmsLocationOptions): Promise<void>;
   stopWatchingAsync(watchId: number): Promise<void>;

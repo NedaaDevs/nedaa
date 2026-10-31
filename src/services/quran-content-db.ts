@@ -14,6 +14,7 @@ import { QuranManifestService } from "@/services/quran-manifest";
 import { mustDownloadBeforeOpen, needsContentUpdate } from "@/services/quranContentDbStrategy";
 import { stripTashkeel } from "@/utils/tashkeel";
 import { AppLogger } from "@/utils/appLogger";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 const log = AppLogger.create("quran-content-db");
 
@@ -178,7 +179,7 @@ const installContentDb = async (
 
   if (destVersion.exists) destVersion.delete();
   destVersion.create();
-  destVersion.write(content.content.version);
+  writeFileSync(destVersion, content.content.version);
 
   zipFile.delete();
   extractDir.delete();
@@ -204,7 +205,7 @@ const applyStagedUpdate = (targetDir: Directory): void => {
   const version = stagedVersion.textSync();
   if (versionFile.exists) versionFile.delete();
   versionFile.create();
-  versionFile.write(version);
+  writeFileSync(versionFile, version);
   stagedVersion.delete();
   log.i("Content", `Applied staged content DB update v${version}`);
 };

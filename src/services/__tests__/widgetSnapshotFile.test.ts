@@ -26,7 +26,7 @@ jest.mock("expo-file-system", () => {
       mockFs.files.set(this.uri, "");
       mockFs.ops.push(`create ${this.uri}`);
     }
-    write(contents: string) {
+    writeSync(contents: string) {
       mockFs.files.set(this.uri, contents);
       mockFs.ops.push(`write ${this.uri}`);
     }

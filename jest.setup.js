@@ -1,0 +1,32 @@
+/* global jest */
+// jest-expo's RNGestureHandlerModule stub lacks Gesture Handler 3's methods.
+import "react-native-gesture-handler/jestSetup";
+
+// The Tamagui animation driver reaches moti -> reanimated -> react-native-worklets,
+// whose native module is absent under jest. Tests assert layout and accessibility,
+// not motion, so the driver is stubbed rather than the whole chain mocked.
+jest.mock("@tamagui/animations-moti", () => ({
+  createAnimations: (animations) => animations,
+}));
+
+// jest-expo's stub would read as Expo Go, which the app never runs in.
+jest.mock("expo/src/environment/ExpoGo", () => ({
+  isRunningInExpoGo: () => false,
+  getExpoGoProjectConfig: () => null,
+}));
+
+// The persisted stores write through expo-sqlite's kv-store, a native module absent
+// under jest. A suite that needs stored values mocks it again in its own file.
+jest.mock("expo-sqlite/kv-store", () => {
+  const storage = () => ({
+    getItem: jest.fn(() => Promise.resolve(null)),
+    setItem: jest.fn(() => Promise.resolve()),
+    removeItem: jest.fn(() => Promise.resolve()),
+    // The debug-mode store reads synchronously, so it hydrates before a log line.
+    getItemSync: jest.fn(() => null),
+    setItemSync: jest.fn(),
+    removeItemSync: jest.fn(),
+  });
+  // A store with its own database file builds a SQLiteStorage.
+  return { __esModule: true, default: storage(), SQLiteStorage: jest.fn(storage) };
+});

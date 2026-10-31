@@ -7,7 +7,7 @@ import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Icon } from "@/components/ui/icon";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import {
   Shirt,
@@ -61,7 +61,7 @@ export default function ProhibitionsScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.prepare.prohibitions" backOnClick />
+      <ScreenHeader variant="bar" title={t("umrah.prepare.prohibitions")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         {groups.map((group) => (

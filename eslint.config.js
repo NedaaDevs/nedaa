@@ -2,27 +2,47 @@
 const { defineConfig } = require("eslint/config");
 const expoConfig = require("eslint-config-expo/flat");
 
+const LOCAL_MODULE_ALIAS_MESSAGE =
+  "Local modules run from a copy in node_modules, where `@/` does not resolve; keep app code out of them.";
+
+// Gesture Handler 3 marks its `Gesture` builder and factories @deprecated.
+const GESTURE_BUILDER_DEPRECATIONS = {
+  from: "package",
+  package: "react-native-gesture-handler",
+  name: [
+    "Gesture",
+    "Tap",
+    "Pan",
+    "Pinch",
+    "Rotation",
+    "Fling",
+    "LongPress",
+    "ForceTouch",
+    "Native",
+    "Manual",
+    "Hover",
+    "Race",
+    "Simultaneous",
+    "Exclusive",
+  ],
+};
+
 module.exports = defineConfig([
   expoConfig,
   {
-    // dist: build output. scripts: standalone bun/node tooling (bun:sqlite,
-    // import.meta) outside the Expo app's tsconfig, so the app lint can't
-    // resolve their imports.
-    ignores: ["dist/*", "scripts/**"],
+    // dist: build output. .expo, .tamagui: generated locally by the dev server
+    // and `tamagui generate-prompt`. docs/design, .agents: local design and agent
+    // files, not app code. scripts: standalone bun/node tooling (bun:sqlite,
+    // import.meta) outside the Expo app's tsconfig, so the app lint can't resolve
+    // their imports.
+    ignores: ["dist/*", ".expo/**", ".tamagui/**", "docs/design/**", ".agents/**", "scripts/**"],
   },
   {
-    // React Compiler checks (eslint-plugin-react-hooks v6, enabled as errors by
-    // eslint-config-expo 56) flag many pre-existing patterns across the app.
-    // They're advisory and don't change runtime, so keep them visible as
-    // warnings during migration instead of blocking CI. The classic
-    // rules-of-hooks / exhaustive-deps rules stay at their default (error).
-    rules: {
-      "react-hooks/purity": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
-    },
+    // Every React Compiler rule runs at the preset severity (error): a hit is a
+    // compiler bail-out for that component, not advisory noise. Reanimated shared
+    // values read with .get() and write with .set(); the compiler treats
+    // `.value =` as an illegal mutation.
+    rules: {},
   },
   {
     // Type-aware pass flagging every use of an @deprecated API (e.g. reanimated's
@@ -35,16 +55,15 @@ module.exports = defineConfig([
       },
     },
     rules: {
-      "@typescript-eslint/no-deprecated": "warn",
+      "@typescript-eslint/no-deprecated": ["warn", { allow: [GESTURE_BUILDER_DEPRECATIONS] }],
     },
   },
   {
-    // Test suites still render through react-test-renderer, deprecated in React 19.
-    // Silence the deprecation for tests until they move to
-    // @testing-library/react-native; production code keeps the check.
-    files: ["src/**/__tests__/**/*.{ts,tsx}"],
+    // tsc checks namespace members. The rule's ESM sniff misses Expo 58's
+    // compiled files, where `export` follows a comment on the same line.
+    files: ["**/*.{ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-deprecated": "off",
+      "import/namespace": "off",
     },
   },
   {
@@ -76,6 +95,26 @@ module.exports = defineConfig([
     ],
     rules: {
       "no-restricted-syntax": "off",
+    },
+  },
+  {
+    // bun copies local modules into node_modules, where Metro has no `@/` alias.
+    files: ["modules/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [{ group: ["@/*"], message: LOCAL_MODULE_ALIAS_MESSAGE }] },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        ...["ImportExpression", "CallExpression[callee.name='require']"].flatMap((call) => [
+          { selector: `${call} > Literal[value=/^@\\//]`, message: LOCAL_MODULE_ALIAS_MESSAGE },
+          {
+            selector: `${call} > TemplateLiteral > TemplateElement:first-child[value.raw=/^@\\//]`,
+            message: LOCAL_MODULE_ALIAS_MESSAGE,
+          },
+        ]),
+      ],
     },
   },
 ]);

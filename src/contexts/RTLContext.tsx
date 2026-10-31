@@ -1,5 +1,5 @@
-import React, { createContext, use, useMemo, useEffect } from "react";
-import { View, I18nManager } from "react-native";
+import React, { createContext, use, useMemo } from "react";
+import { View } from "react-native";
 import { useAppStore, getDirection, isRTL as checkIsRTL } from "@/stores/app";
 
 type Direction = "ltr" | "rtl";
@@ -23,14 +23,6 @@ export const RTLProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       direction,
     };
   }, [locale]);
-
-  // Update I18nManager when direction changes (without reload)
-  useEffect(() => {
-    if (I18nManager.isRTL !== value.isRTL) {
-      I18nManager.allowRTL(value.isRTL);
-      I18nManager.forceRTL(value.isRTL);
-    }
-  }, [value.isRTL]);
 
   return (
     <RTLContext value={value}>
