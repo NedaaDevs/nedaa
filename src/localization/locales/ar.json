@@ -1008,8 +1008,6 @@
   "location.picker.seedCoverage_many": "يقتصر البحث حاليًا على {{amount}} مدينة رئيسية.",
   "location.picker.seedCoverage_other": "يقتصر البحث حاليًا على {{amount}} مدينة رئيسية.",
   "location.picker.title": "اختر مدينتك",
-  "location.settings.keepLocationUpdated.summary": "يتحقق $t(brand.name) من مدينتك عند كل تشغيل",
-  "location.settings.offerUpdate.title": "اقتراح التحديث عند تغيّر المدينة",
   "location.settings.travelSection": "عند السفر",
   "location.travel.ask.note": "يقترح $t(brand.name) التحديث عندما تكون في مدينة أخرى",
   "location.travel.ask.title": "اقتراح التحديث أولًا",
