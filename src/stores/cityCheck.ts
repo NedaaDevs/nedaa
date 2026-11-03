@@ -20,6 +20,10 @@ type CityCheckStore = {
   noteCheckFinished: (at: number) => void;
   setKept: (kept: PlaceMark[]) => void;
   keep: (mark: PlaceMark) => void;
+  /** Stops offers for the mark's place. */
+  mute: (mark: PlaceMark) => void;
+  /** Takes exactly `mark` off the muted list. */
+  askAgainIn: (mark: PlaceMark) => void;
   forgetLastCheck: () => void;
   clearMemory: () => void;
 };
@@ -69,6 +73,22 @@ export const useCityCheckStore = create<CityCheckStore>()(
         keep: (mark) =>
           set((state) => ({
             cityCheck: { ...state.cityCheck, kept: withMark(state.cityCheck.kept, mark, KEPT_MAX) },
+          })),
+        mute: (mark) =>
+          set((state) => ({
+            cityCheck: {
+              ...state.cityCheck,
+              notAsked: withMark(state.cityCheck.notAsked, mark, NOT_ASKED_MAX),
+            },
+          })),
+        askAgainIn: (mark) =>
+          set((state) => ({
+            cityCheck: {
+              ...state.cityCheck,
+              notAsked: state.cityCheck.notAsked.filter(
+                (entry) => entry.lat !== mark.lat || entry.lng !== mark.lng || entry.at !== mark.at
+              ),
+            },
           })),
         forgetLastCheck: () => update({ lastCheckAt: null }),
         clearMemory: () => set({ cityCheck: EMPTY_MEMORY }),

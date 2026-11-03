@@ -3,6 +3,7 @@ import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import { Icon } from "@/components/ui/icon";
+import { ICON_TILE_TONE, IconTile, type IconTileTone } from "@/components/ui/icon-tile";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
@@ -46,6 +47,31 @@ describe("Icon fill", () => {
 
     expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
       "no fill"
+    );
+  });
+});
+
+const TONE_COLOR: Record<IconTileTone, string> = {
+  [ICON_TILE_TONE.ACCENT]: LIGHT.accent.val,
+  [ICON_TILE_TONE.SUCCESS]: LIGHT.success.val,
+  [ICON_TILE_TONE.DANGER]: LIGHT.danger.val,
+  [ICON_TILE_TONE.MUTED]: LIGHT.muted.val,
+};
+
+describe("IconTile tone", () => {
+  it.each(Object.values(ICON_TILE_TONE))("tints the tile's glyph for %s", async (tone) => {
+    await renderWithTheme(<IconTile icon={Glyph} tone={tone} />);
+
+    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+      TONE_COLOR[tone]
+    );
+  });
+
+  it("defaults to the accent", async () => {
+    await renderWithTheme(<IconTile icon={Glyph} />);
+
+    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+      TONE_COLOR[ICON_TILE_TONE.ACCENT]
     );
   });
 });

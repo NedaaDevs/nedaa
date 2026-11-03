@@ -9,6 +9,7 @@ import {
   runCityCheckNow,
   showCityCheckMemory,
   showNamedCityChange,
+  showSameCityChange,
   showUnnamedCityChange,
 } from "@/utils/cityCheckDebug";
 import { phoneZoneReadings } from "@/utils/phoneZone";
@@ -27,6 +28,11 @@ export const registerDevMenu = (): Promise<void> => {
     {
       name: DEBUG_COPY.SHOW_CITY_CHANGE,
       callback: showNamedCityChange,
+      shouldCollapse: true,
+    },
+    {
+      name: DEBUG_COPY.SHOW_CITY_CHANGE_SAME_CITY,
+      callback: showSameCityChange,
       shouldCollapse: true,
     },
     {

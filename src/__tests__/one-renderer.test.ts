@@ -255,7 +255,23 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<PlaceHero\b/,
     home: "components/ui/place-hero/index.tsx",
   },
-  // Location, the city-change sheet and onboarding's picker show a run's steps.
+  // Today's notice slot and the Location screen draw the one city offer.
+  {
+    concept: "the city-change offer",
+    shows: /\bcityOffer\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<CityChangeOffer\b/,
+    home: "components/location/CityChangeOffer.tsx",
+  },
+  // The offer and Today's zone note say a clock difference in the same words.
+  {
+    concept: "the zone difference between two places",
+    shows: /\buseZoneLine\(|\bzoneDifferenceMinutes\(|\blocation\.zone\./,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /\buseZoneLine\(/,
+    home: "hooks/useZoneLine.ts",
+  },
+  // Location, the city offer and onboarding's picker show a run's steps.
   {
     concept: "the steps of a location update",
     shows: /\blocation\.update\.(step|steps|failed)\.|\buseLocationUpdate\(\)/,
