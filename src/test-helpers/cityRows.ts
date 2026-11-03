@@ -1,6 +1,7 @@
 import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { JEDDAH_CITY } from "@/test-helpers/place";
 import type { CitySearchResult } from "@/types/cities";
+import type { PlaceMark } from "@/types/cityCheck";
 
 /** Jeddah's city-list row, in Saudi Arabia's zone. */
 export const JEDDAH_ROW: CitySearchResult = {
@@ -29,3 +30,13 @@ export const MANAMA_ROW: CitySearchResult = {
   population: 147_074,
   timezone: "Asia/Bahrain",
 };
+
+/** A place left unasked in Jeddah, dated for the list's order. */
+export const JEDDAH_MARK: PlaceMark = {
+  lat: JEDDAH_ROW.latitude,
+  lng: JEDDAH_ROW.longitude,
+  at: 2_000,
+};
+
+/** A place with no city row near it, on the Red Sea coast of Egypt. */
+export const FAR_MARK: PlaceMark = { lat: 27.25, lng: 33.8, at: 1_000 };
