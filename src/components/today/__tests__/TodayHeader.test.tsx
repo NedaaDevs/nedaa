@@ -11,8 +11,10 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppLocale, AppMode, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
+import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
 import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
+import { DUBAI_CITY } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { controlProblems } from "@/test-helpers/controls";
@@ -36,6 +38,35 @@ const LIGHT = config.themes.light;
 const CITY = "Makkah";
 const COUNTRY = "Saudi Arabia";
 const PLACE = i18n.t("place.name", { city: CITY, country: COUNTRY });
+
+const mockTrustedCityNear = jest.fn();
+
+jest.mock("@/utils/cityCheck/cityNear", () => ({
+  trustedCityNear: (...args: unknown[]) => mockTrustedCityNear(...args),
+}));
+
+const DUBAI_ROW = {
+  gid: DUBAI_CITY.cityId ?? 0,
+  name: DUBAI_CITY.name,
+  names: DUBAI_CITY.names,
+  latitude: DUBAI_CITY.latitude,
+  longitude: DUBAI_CITY.longitude,
+  countryCode: DUBAI_CITY.countryCode,
+  country: DUBAI_CITY.country,
+  region: null,
+  population: 1_000_000,
+  timezone: DUBAI_CITY.timezone,
+};
+
+type Json = ReturnType<typeof screen.toJSON>;
+
+/** Every string in the rendered tree, in reading order. */
+const textsInOrder = (node: Json | Json[]): string[] => {
+  if (node === null) return [];
+  if (typeof node === "string") return [node];
+  if (Array.isArray(node)) return node.flatMap(textsInOrder);
+  return (node.children ?? []).flatMap((child) => textsInOrder(child as Json));
+};
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
 
@@ -62,6 +93,8 @@ describe("TodayHeader", () => {
     await act(() => i18n.changeLanguage(AppLocale.EN));
     useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN, hijriDaysOffset: 0 });
     usePreferencesStore.setState({ useWesternNumerals: false, textSize: TextSize.DEFAULT });
+    mockTrustedCityNear.mockResolvedValue(null);
+    useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY });
     useLocationStore.setState({
       localizedLocation: { city: CITY, country: COUNTRY },
       locationDetails: {
@@ -233,6 +266,27 @@ describe("TodayHeader", () => {
 
     expect(screen.getByTestId(TODAY_HEADER_PART.DATES).props.accessible).toBe(false);
     expect(screen.getByRole("header")).toBeOnTheScreen();
+  });
+
+  // The note follows the city line in the date block, so a reader meets it next.
+  it("sets the zone note under the city line, after it in reading order", async () => {
+    const at = Date.now();
+    useCityCheckStore.getState().keep({ lat: DUBAI_ROW.latitude, lng: DUBAI_ROW.longitude, at });
+    mockTrustedCityNear.mockResolvedValue(DUBAI_ROW);
+    useLocationStore.setState({
+      locationDetails: { ...useLocationStore.getState().locationDetails, timezone: "Asia/Riyadh" },
+    });
+    await renderHeader();
+    const text = i18n.t("location.zone.note.behind.hours", {
+      count: 1,
+      saved: CITY,
+      place: "Dubai",
+    });
+    await screen.findByText(text);
+    const order = textsInOrder(screen.toJSON());
+
+    expect(within(screen.getByTestId(TODAY_HEADER_PART.DATES)).getByText(text)).toBeTruthy();
+    expect(order.indexOf(text)).toBeGreaterThan(order.indexOf(PLACE));
   });
 
   it("gives every control a role, a name and a 44pt target", async () => {

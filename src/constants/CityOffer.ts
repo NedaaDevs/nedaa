@@ -20,6 +20,24 @@ export const ZONE_COPY_KEY: Record<ZoneDirection, Record<ZoneUnit, ParseKeys>> =
   },
 };
 
+/** Copy for Today's note, said from the saved place's side, by direction and unit. */
+export const ZONE_NOTE_KEY: Record<ZoneDirection, Record<ZoneUnit, ParseKeys>> = {
+  [ZONE_DIRECTION.AHEAD]: {
+    [ZONE_UNIT.HOURS]: "location.zone.note.ahead.hours",
+    [ZONE_UNIT.HALF_HOURS]: "location.zone.note.ahead.halfHours",
+    [ZONE_UNIT.MINUTES]: "location.zone.note.ahead.minutes",
+  },
+  [ZONE_DIRECTION.BEHIND]: {
+    [ZONE_UNIT.HOURS]: "location.zone.note.behind.hours",
+    [ZONE_UNIT.HALF_HOURS]: "location.zone.note.behind.halfHours",
+    [ZONE_UNIT.MINUTES]: "location.zone.note.behind.minutes",
+  },
+};
+
+/** The two sentences for a clock difference: the offer's and Today's note. */
+export const ZONE_LINE = { OFFER: "offer", NOTE: "note" } as const;
+export type ZoneLine = (typeof ZONE_LINE)[keyof typeof ZONE_LINE];
+
 /** Where the offer card stands: asked, answered, or settled. */
 export const CITY_OFFER_STAGE = {
   OFFER: "offer",
