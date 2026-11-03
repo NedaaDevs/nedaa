@@ -21,7 +21,7 @@ export const candidateAt = (overrides: Partial<CityCandidate> = {}): CityCandida
   ...overrides,
 });
 
-/** Puts an offer up for `candidate` on the shift alone, at `stage` when given. */
+/** Puts an offer up for `candidate` on the shift alone, at `stage` if given. */
 export const offerUp = (candidate: CityCandidate = candidateAt(), stage?: CityOfferStage): void => {
   useLocationStore.getState().offerCity(candidate, [CITY_CHECK_OFFER.SHIFT]);
   if (stage) useLocationStore.getState().settleCityOffer(stage);

@@ -2,19 +2,17 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { CitySearchResult } from "@/types/cities";
-import type { PlaceMark } from "@/types/cityCheck";
+import { NO_PLACE } from "@/constants/CityOffer";
+import type { PlaceMark, ZonePlace } from "@/types/cityCheck";
 import { trustedCityNear } from "@/utils/cityCheck/cityNear";
-import { markPoint } from "@/utils/cityCheck/marks";
+import { markPoint, sameMark } from "@/utils/cityCheck/marks";
 import { resolveLocalizedName } from "@/utils/cities";
-
-/** A remembered point as the city list names it; nulls when no row does. */
-export type MarkPlace = { city: string | null; zone: string | null };
 
 /** The row found for the mark with this point and date. */
 type Found = { lat: number; lng: number; at: number; row: CitySearchResult | null };
 
 /** The city and zone of the row near `mark`; undefined while it looks. */
-export const useMarkPlace = (mark: PlaceMark | null): MarkPlace | undefined => {
+export const useMarkPlace = (mark: PlaceMark | null): ZonePlace | undefined => {
   const { i18n } = useTranslation();
   const [found, setFound] = useState<Found | null>(null);
   const lat = mark?.lat;
@@ -32,11 +30,11 @@ export const useMarkPlace = (mark: PlaceMark | null): MarkPlace | undefined => {
     };
   }, [lat, lng, at]);
 
-  if (!mark) return { city: null, zone: null };
+  if (!mark) return NO_PLACE;
   // An answer for another mark is not this one's.
-  if (!found || found.lat !== lat || found.lng !== lng || found.at !== at) return undefined;
+  if (!found || !sameMark(found, mark)) return undefined;
   const { row } = found;
-  if (!row) return { city: null, zone: null };
+  if (!row) return NO_PLACE;
   return {
     city: resolveLocalizedName(row.name, row.names ?? undefined, i18n.language),
     zone: row.timezone,

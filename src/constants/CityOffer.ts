@@ -1,5 +1,7 @@
 import type { ParseKeys } from "i18next";
 
+import type { ZonePlace } from "@/types/cityCheck";
+
 export const ZONE_DIRECTION = { AHEAD: "ahead", BEHIND: "behind" } as const;
 export type ZoneDirection = (typeof ZONE_DIRECTION)[keyof typeof ZONE_DIRECTION];
 
@@ -20,7 +22,7 @@ export const ZONE_COPY_KEY: Record<ZoneDirection, Record<ZoneUnit, ParseKeys>> =
   },
 };
 
-/** Copy for Today's note, said from the saved place's side, by direction and unit. */
+/** Today's note copy, from the saved place's side, by direction and unit. */
 export const ZONE_NOTE_KEY: Record<ZoneDirection, Record<ZoneUnit, ParseKeys>> = {
   [ZONE_DIRECTION.AHEAD]: {
     [ZONE_UNIT.HOURS]: "location.zone.note.ahead.hours",
@@ -34,9 +36,8 @@ export const ZONE_NOTE_KEY: Record<ZoneDirection, Record<ZoneUnit, ParseKeys>> =
   },
 };
 
-/** The two sentences for a clock difference: the offer's and Today's note. */
-export const ZONE_LINE = { OFFER: "offer", NOTE: "note" } as const;
-export type ZoneLine = (typeof ZONE_LINE)[keyof typeof ZONE_LINE];
+/** A place no city row names. */
+export const NO_PLACE: ZonePlace = { city: null, zone: null };
 
 /** Where the offer card stands: asked, answered, or settled. */
 export const CITY_OFFER_STAGE = {
