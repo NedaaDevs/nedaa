@@ -4,6 +4,7 @@ import type { ParseKeys } from "i18next";
 import { CircleAlert, Globe, RefreshCw, Search } from "lucide-react-native";
 
 import { usesHmsLocation } from "@/adapters/location";
+import { OpenSettingsButton } from "@/components/location/OpenSettingsButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
@@ -22,6 +23,7 @@ import {
 import { SECTION_KIND } from "@/constants/Section";
 import { PlatformType } from "@/enums/app";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
+import { useLocationPermission } from "@/hooks/useLocationPermission";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
 
@@ -96,6 +98,11 @@ export const LocationFailureOffer = ({
   const message = t("a11y.sentences", { first: title, second: hint });
   const retry = t("common.retry");
   const openSettings = t("location.failure.servicesOff.open");
+  // Settings only once the system can no longer ask; until the first check
+  // answers, and while it can ask, Retry stands.
+  const { permission } = useLocationPermission();
+  const toSettings =
+    failure === LOCATION_FAILURE.DENIED && permission?.granted === false && !permission.canAskAgain;
   useIosAnnouncement(message);
 
   return (
@@ -118,10 +125,14 @@ export const LocationFailureOffer = ({
             </Text>
           </VStack>
         </HStack>
-        <Button onPress={onRetry} accessibilityLabel={retry}>
-          <Button.Icon as={RefreshCw} />
-          <Button.Text>{retry}</Button.Text>
-        </Button>
+        {toSettings ? (
+          <OpenSettingsButton />
+        ) : (
+          <Button onPress={onRetry} accessibilityLabel={retry}>
+            <Button.Icon as={RefreshCw} />
+            <Button.Text>{retry}</Button.Text>
+          </Button>
+        )}
         {/* iOS has no link to location services; its hint names the way. */}
         {android && failure === LOCATION_FAILURE.SERVICES_OFF ? (
           <Button

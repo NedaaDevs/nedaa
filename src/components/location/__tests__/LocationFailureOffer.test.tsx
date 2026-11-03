@@ -17,11 +17,20 @@ import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { usesHmsLocation } from "@/adapters/location";
+import { checkLocationPermission } from "@/utils/location";
 
 jest.mock("@/adapters/location", () => ({
   ...jest.requireActual("@/adapters/location"),
   usesHmsLocation: jest.fn(() => false),
 }));
+
+jest.mock("@/utils/location", () => ({
+  ...jest.requireActual("@/utils/location"),
+  checkLocationPermission: jest.fn(),
+}));
+
+const permit = (granted: boolean, canAskAgain = true) =>
+  jest.mocked(checkLocationPermission).mockResolvedValue({ granted, canAskAgain });
 
 const t = i18n.t.bind(i18n);
 const PLATFORM = Platform.OS;
@@ -43,6 +52,10 @@ const message = (title: string, hint: string) =>
   screen.getByLabelText(t("a11y.sentences", { first: t(title), second: t(hint) }));
 const styleOf = (element: ReturnType<typeof screen.getByRole>) =>
   StyleSheet.flatten(element.props.style);
+
+beforeEach(() => {
+  permit(true);
+});
 
 afterEach(async () => {
   Platform.OS = PLATFORM;
@@ -121,6 +134,59 @@ describe("LocationFailureOffer", () => {
       expect(open).toHaveAccessibleName(t("location.failure.servicesOff.open"));
       expect(styleOf(open).backgroundColor).not.toBe(NEDAA_LIGHT.accent.hex);
       expect(styleOf(open).minHeight).toBe(styleOf(retry).minHeight);
+    });
+  });
+
+  describe("access refused", () => {
+    it("leads to Settings and offers no Retry, which could only fail", async () => {
+      permit(false, false);
+      jest.spyOn(Linking, "openSettings").mockResolvedValue(undefined);
+      await renderOffer(LOCATION_FAILURE.DENIED);
+      const settings = await screen.findByRole("button", {
+        name: t("location.permission.openSettings"),
+      });
+
+      expect(settings).toHaveProp("accessibilityHint", t("a11y.location.openSettingsHint"));
+      expect(screen.queryByRole("button", { name: t("common.retry") })).toBeNull();
+      await userEvent.press(settings);
+      expect(Linking.openSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it("offers Retry again once access is back from Settings", async () => {
+      permit(true);
+      await renderOffer(LOCATION_FAILURE.DENIED);
+
+      expect(await screen.findByRole("button", { name: t("common.retry") })).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.permission.openSettings") })
+      ).toBeNull();
+    });
+
+    it("keeps Retry while the access check is unanswered", async () => {
+      jest.mocked(checkLocationPermission).mockReturnValue(new Promise(() => {}));
+      await renderOffer(LOCATION_FAILURE.DENIED);
+
+      expect(screen.getByRole("button", { name: t("common.retry") })).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.permission.openSettings") })
+      ).toBeNull();
+    });
+
+    it("keeps Retry while the system can still ask for access", async () => {
+      permit(false, true);
+      await renderOffer(LOCATION_FAILURE.DENIED);
+
+      expect(await screen.findByRole("button", { name: t("common.retry") })).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.permission.openSettings") })
+      ).toBeNull();
+    });
+
+    it("keeps Retry for a failure that is not a refusal", async () => {
+      permit(false, false);
+      await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+      expect(await screen.findByRole("button", { name: t("common.retry") })).toBeTruthy();
     });
   });
 
