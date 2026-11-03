@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { KEPT_MAX, NOT_ASKED_MAX } from "@/constants/CityCheck";
 import { CITY_CHECK_STORAGE_DB_NAME, CITY_CHECK_STORE_KEY } from "@/constants/DB";
 import type { CityCheckMemory, PlaceMark } from "@/types/cityCheck";
-import { withMark } from "@/utils/cityCheck/marks";
+import { sameMark, withMark } from "@/utils/cityCheck/marks";
 
 export const EMPTY_MEMORY: CityCheckMemory = {
   lastCheckAt: null,
@@ -85,9 +85,7 @@ export const useCityCheckStore = create<CityCheckStore>()(
           set((state) => ({
             cityCheck: {
               ...state.cityCheck,
-              notAsked: state.cityCheck.notAsked.filter(
-                (entry) => entry.lat !== mark.lat || entry.lng !== mark.lng || entry.at !== mark.at
-              ),
+              notAsked: state.cityCheck.notAsked.filter((entry) => !sameMark(entry, mark)),
             },
           })),
         forgetLastCheck: () => update({ lastCheckAt: null }),

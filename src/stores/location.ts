@@ -25,7 +25,13 @@ import {
   type TravelMode,
 } from "@/constants/CityCheck";
 import { CITY_OFFER_STAGE } from "@/constants/CityOffer";
-import type { CityCandidate, CityOffer, CityOfferStage, ZonePlace } from "@/types/cityCheck";
+import type {
+  CityCandidate,
+  CityOffer,
+  CityOfferStage,
+  PlaceMark,
+  ZonePlace,
+} from "@/types/cityCheck";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
@@ -177,7 +183,7 @@ export type LocationStore = {
   /** Notes the saved place the times came from, once per offer. */
   startCityOfferUse: (from: ZonePlace) => void;
   settleCityOffer: (stage: CityOfferStage) => void;
-  /** Writes `previousPlace` back as the saved place; false when none is kept. */
+  /** Restores `previousPlace` as the saved place; false when none is kept. */
   restorePreviousPlace: () => boolean;
   /** Drops the offer and remembers nothing. */
   dismissCityOffer: () => void;
@@ -186,6 +192,10 @@ export type LocationStore = {
   setManualLocation: (location: ManualLocation) => void;
   clearManualLocation: () => void;
 };
+
+/** The mark an answer to `offer` leaves, at its point and now. */
+const offerMark = ({ candidate }: CityOffer): PlaceMark =>
+  toPlaceMark(candidate.point, Date.now(), candidate.countryCode);
 
 /** Whether a city offer is showing, at any stage. */
 export const selectOfferUp = (state: LocationStore): boolean => state.cityOffer !== null;
@@ -627,18 +637,14 @@ export const useLocationStore = create<LocationStore>()(
         keepCityOffer: () => {
           const offer = get().cityOffer;
           if (!offer) return;
-          useCityCheckStore
-            .getState()
-            .keep(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
+          useCityCheckStore.getState().keep(offerMark(offer));
           set({ cityOffer: { ...offer, stage: { kind: CITY_OFFER_STAGE.KEPT } } });
         },
 
         muteCityOffer: () => {
           const offer = get().cityOffer;
           if (!offer) return;
-          useCityCheckStore
-            .getState()
-            .mute(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
+          useCityCheckStore.getState().mute(offerMark(offer));
           set({ cityOffer: { ...offer, stage: { kind: CITY_OFFER_STAGE.MUTED } } });
         },
 
@@ -648,7 +654,7 @@ export const useLocationStore = create<LocationStore>()(
           );
         },
 
-        // A Retry after a stop finds the new city already saved; the first stays.
+        // A Retry after a stop finds the new city saved; the first stays.
         startCityOfferUse: (from) => {
           set((state) =>
             state.cityOffer && state.cityOffer.from === null

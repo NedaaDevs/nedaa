@@ -21,7 +21,7 @@ const layoutOf = (width: number) => ({
   nativeEvent: { layout: { x: 0, y: 0, width, height: 50 } },
 });
 
-/** Lays out the row and the two hidden label copies, as the native pass would. */
+/** Lays out the row and both hidden label copies, as the native pass would. */
 const measure = async (row: number, labels: readonly [number, number]) => {
   await fireEvent(screen.getByTestId(BUTTON_PAIR_PART.ROW), "layout", layoutOf(row));
   const copies = screen.getAllByTestId(BUTTON_PAIR_PART.MEASURE, { includeHiddenElements: true });
