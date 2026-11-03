@@ -260,20 +260,16 @@ describe("Settings › Location", () => {
       expect(mockLoad).toHaveBeenCalledWith(true);
     });
 
-    it("suggests an update on opening in another city, under its label", async () => {
+    it("sets what happens on opening in another city, under its label", async () => {
       await renderScreen();
       expect(
         await screen.findByRole("header", { name: t("location.settings.travelSection") })
       ).toBeTruthy();
-      const toggle = screen.getByRole("switch", {
-        name: `${t("location.settings.offerUpdate.title")}, ${t(
-          "location.settings.keepLocationUpdated.summary"
-        )}`,
-      });
-      // The name and summary already say when; no hint repeats it.
-      expect(toggle.props.accessibilityHint).toBeUndefined();
+      const off = screen
+        .getAllByRole("radio")
+        .find((row) => row.props.accessibilityLabel.startsWith(t("location.travel.off.title")))!;
 
-      await userEvent.press(toggle);
+      await userEvent.press(off);
 
       expect(useLocationStore.getState().travelMode).toBe(TRAVEL_MODE.OFF);
     });
@@ -1098,7 +1094,9 @@ describe("Settings › Location", () => {
       expect(
         within(screen.getByTestId(CITY_OFFER_PART.CARD)).getByTestId(LOCATION_UPDATE_PART.FRAME)
       ).toBeTruthy();
-      screen.getAllByRole("radio").forEach((radio) => expect(radio).toBeDisabled());
+      within(screen.getByLabelText(t("a11y.location.mode")))
+        .getAllByRole("radio")
+        .forEach((radio) => expect(radio).toBeDisabled());
     });
 
     it("names the new city on the hero once the offer's run lands", async () => {

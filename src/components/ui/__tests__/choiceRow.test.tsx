@@ -42,6 +42,15 @@ const rows = () => screen.getAllByRole("radio");
 const checks = () => screen.getAllByTestId(CHOICE_ROW_PART.CHECK, { includeHiddenElements: true });
 const ticks = () => screen.queryAllByTestId(CHOICE_ROW_PART.TICK, { includeHiddenElements: true });
 
+// Each flattened style opacity from the element up to the root, multiplied.
+const opacityOf = (node: ReturnType<typeof screen.getByText>): number => {
+  let product = 1;
+  for (let at: typeof node | null = node; at; at = at.parent) {
+    product *= Number(StyleSheet.flatten(at.props.style)?.opacity ?? 1);
+  }
+  return product;
+};
+
 const styleOf = (row: ReturnType<typeof rows>[number]) => StyleSheet.flatten(row.props.style);
 
 describe("ChoiceRow", () => {
@@ -91,6 +100,51 @@ describe("ChoiceRow", () => {
     await renderGroup();
 
     expect(controlProblems()).toEqual([]);
+  });
+
+  it("holds a disabled row still and says it is dimmed", async () => {
+    const onPress = jest.fn();
+    await renderWithTheme(
+      <ChoiceRow title="Update by itself" selected={false} onPress={onPress} disabled />
+    );
+
+    const row = rows()[0];
+    expect(row).toBeDisabled();
+    expect(row.props.accessibilityState).toEqual({ selected: false, disabled: true });
+    await userEvent.setup().press(row);
+
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it("shows a pill at full strength beside a dimmed name, read with the title", async () => {
+    await renderWithTheme(
+      <ChoiceRow
+        title="Update by itself"
+        pill="Coming later"
+        selected={false}
+        onPress={jest.fn()}
+        disabled
+      />
+    );
+
+    expect(rows()[0]).toHaveProp(
+      "accessibilityLabel",
+      i18n.t("a11y.join", { first: "Update by itself", second: "Coming later" })
+    );
+    expect(opacityOf(screen.getByText("Coming later"))).toBe(1);
+    expect(opacityOf(screen.getByText("Update by itself"))).toBeLessThan(1);
+    expect(opacityOf(checks()[0])).toBeLessThan(1);
+  });
+
+  it("reads the pill between the title and the subtitle", async () => {
+    await renderWithTheme(
+      <ChoiceRow title="A" pill="B" subtitle="C" selected={false} onPress={jest.fn()} />
+    );
+
+    expect(rows()[0]).toHaveProp(
+      "accessibilityLabel",
+      i18n.t("a11y.join", { first: i18n.t("a11y.join", { first: "A", second: "B" }), second: "C" })
+    );
   });
 
   it("draws its own edge", async () => {
