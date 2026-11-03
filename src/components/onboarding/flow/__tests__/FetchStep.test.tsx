@@ -30,6 +30,7 @@ import { renderWithTheme } from "@/test-helpers/theme";
 import { E2E_ID } from "@/constants/E2E";
 import { LOCATION_FAILURE } from "@/constants/Location";
 import { AppLogger } from "@/utils/appLogger";
+import { checkLocationPermission } from "@/utils/location";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => false }));
@@ -50,6 +51,11 @@ jest.mock(
   "@/hooks/useLocationUpdate",
   () => jest.requireActual("@/test-helpers/cityPickerStubs").locationUpdateModule
 );
+
+jest.mock("@/utils/location", () => ({
+  ...jest.requireActual("@/utils/location"),
+  checkLocationPermission: jest.fn(),
+}));
 
 const t = i18n.t.bind(i18n);
 const CITY = { locationChoice: LOCATION_CHOICE.CITY };
@@ -85,6 +91,7 @@ beforeEach(async () => {
   mockFix.mockReset().mockResolvedValue(undefined);
   mockLoad.mockReset().mockResolvedValue(true);
   resetPickerStubs();
+  jest.mocked(checkLocationPermission).mockResolvedValue({ granted: true, canAskAgain: true });
   useLocationStore.setState({
     locationMode: LocationMode.DEVICE,
     localizedLocation: { country: "", city: "" },
@@ -762,6 +769,25 @@ describe("the error's offer", () => {
     await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
 
     expect(screen.getByText(t("location.failure.notFound.title"))).toBeTruthy();
+  });
+
+  it("leads a refused device read to Settings, the city ways still open", async () => {
+    silencedWarn();
+    jest.mocked(checkLocationPermission).mockResolvedValue({ granted: false, canAskAgain: false });
+    mockFix.mockImplementation(async () => {
+      useLocationStore.setState((state) => ({
+        locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.DENIED },
+      }));
+      throw new Error("denied");
+    });
+    await renderWithTheme(<FetchStep {...stepProps()} />);
+    await act(() => jest.advanceTimersByTimeAsync(FETCH_RETRY_MS));
+
+    expect(
+      await screen.findByRole("button", { name: t("location.permission.openSettings") })
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: t("common.retry") })).toBeNull();
+    expect(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toBeTruthy();
   });
 
   it("says the times failed when a chosen city's load did", async () => {
