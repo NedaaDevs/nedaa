@@ -268,7 +268,7 @@ describe("TodayHeader", () => {
     expect(screen.getByRole("header")).toBeOnTheScreen();
   });
 
-  // The note follows the city line in the date block, so a reader meets it next.
+  // The note follows the city line in the date block, so it is read next.
   it("sets the zone note under the city line, after it in reading order", async () => {
     const at = Date.now();
     useCityCheckStore.getState().keep({ lat: DUBAI_ROW.latitude, lng: DUBAI_ROW.longitude, at });

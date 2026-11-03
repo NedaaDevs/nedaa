@@ -3,32 +3,25 @@ import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, type ViewInstance } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  CircleAlert,
-  Hourglass,
-  MapPin,
-  WifiOff,
-} from "lucide-react-native";
+import { Check, CircleAlert, Hourglass, MapPin, WifiOff } from "lucide-react-native";
 
-import { ActionButton, LocationFailureOffer } from "@/components/location/LocationFailureOffer";
+import { ChooseCityLink } from "@/components/location/ChooseCityLink";
+import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
 import { offerShapeOf, offerViewOf, ownRunOf } from "@/components/location/cityOfferView";
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { Button } from "@/components/ui/button";
-import { ButtonPair, type PairAction } from "@/components/ui/button-pair";
+import { ActionButton, ButtonPair, type PairAction } from "@/components/ui/button-pair";
 import { ICON_TILE_TONE, type IconTileTone } from "@/components/ui/icon-tile";
 import { NOTICE_LINE, NoticeCard, noticeLabel, type NoticeLine } from "@/components/ui/notice-card";
 import { VStack } from "@/components/ui/vstack";
 import {
   CITY_OFFER_PART,
   CITY_OFFER_STAGE,
+  NO_PLACE,
   OFFER_SHAPE,
   OFFER_VIEW,
   type OfferShape,
 } from "@/constants/CityOffer";
-import { E2E_ID } from "@/constants/E2E";
 import {
   CITY_PICKER_VIEW,
   FAILURE_OFFER_VARIANT,
@@ -38,7 +31,6 @@ import {
   UPDATE_STEP,
   locationPickerRoute,
 } from "@/constants/Location";
-import { useRTL } from "@/contexts/RTLContext";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { usePlace } from "@/hooks/usePlace";
@@ -49,8 +41,6 @@ import { isRunning } from "@/stores/locationUpdate";
 import type { CityCandidate, CityOffer, ZonePlace } from "@/types/cityCheck";
 import { focusOn } from "@/utils/accessibilityFocus";
 import { resolveLocalizedName } from "@/utils/cities";
-
-const NO_PLACE: ZonePlace = { city: null, zone: null };
 
 /** The saved place as the offer found it; an update moves it under the card. */
 type Saved = { candidate: CityCandidate; city: string | null; zone: string | null };
@@ -79,7 +69,6 @@ const line = (text: string, kind: NoticeLine["kind"], icon?: LucideIcon): Notice
 /** The card, drawn from one offer. */
 const OfferCard = ({ offer }: { offer: CityOffer }) => {
   const { t, i18n } = useTranslation();
-  const { isRTL } = useRTL();
   const router = useRouter();
   const focused = useIsFocused();
   const offline = useIsOffline();
@@ -104,14 +93,15 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
 
   const here = nameOf(candidate, i18n.language);
   const shape = offerShapeOf({ here, saved: saved.city });
+  const ownRun = ownRunOf(liveRun, candidate);
   // Off screen the card draws no run, as the Location screen does.
-  const run = focused ? ownRunOf(liveRun, candidate) : null;
+  const run = focused ? ownRun : null;
   const view = offerViewOf({
     stage: offer.stage.kind,
     run,
     readFailed: storedFailure !== null,
   });
-  const busy = (isRunning(liveRun) && ownRunOf(liveRun, candidate) === null) || reading;
+  const busy = (isRunning(liveRun) && ownRun === null) || reading;
   const distance = Math.round(candidate.distanceKm);
 
   // The place after an update, named against the one the times came from.
@@ -123,22 +113,19 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     [OFFER_SHAPE.UNNAMED]: t("location.cityOffer.updated.titleUnnamed"),
   }[landedShape];
 
-  const zoneShown =
-    view === OFFER_VIEW.UPDATED ||
-    view === OFFER_VIEW.KEPT ||
-    (view === OFFER_VIEW.OFFER && shape === OFFER_SHAPE.NAMED);
-  const zoneLine = useZoneLine(
-    zoneShown
-      ? view === OFFER_VIEW.UPDATED
-        ? { city: place.city ?? null, zone: newZone }
-        : { city: here, zone: candidate.zone }
-      : NO_PLACE,
-    zoneShown
-      ? view === OFFER_VIEW.UPDATED
-        ? from
-        : { city: saved.city, zone: saved.zone }
-      : NO_PLACE
-  );
+  // The updated card compares the new place with the old; the offer and the
+  // kept card compare the device city with the saved one.
+  const zonePair = ((): [ZonePlace, ZonePlace] => {
+    if (view === OFFER_VIEW.UPDATED) return [{ city: place.city ?? null, zone: newZone }, from];
+    if (view === OFFER_VIEW.KEPT || (view === OFFER_VIEW.OFFER && shape === OFFER_SHAPE.NAMED)) {
+      return [
+        { city: here, zone: candidate.zone },
+        { city: saved.city, zone: saved.zone },
+      ];
+    }
+    return [NO_PLACE, NO_PLACE];
+  })();
+  const zoneLine = useZoneLine(...zonePair);
   const fact = zoneLine ? [line(zoneLine, NOTICE_LINE.FACT)] : [];
 
   // --- Titles and lines -----------------------------------------------------
@@ -156,21 +143,21 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     shape === OFFER_SHAPE.SAME_NAME
       ? t("location.cityOffer.sameName.body", { distance, saved: saved.city })
       : savedBody;
-  const reason = offline
-    ? line(
-        shape === OFFER_SHAPE.NAMED
-          ? t("location.cityOffer.offline", { city: here })
-          : t("location.cityOffer.offlineHere"),
-        NOTICE_LINE.REASON,
-        WifiOff
-      )
-    : busy
-      ? line(t("location.cityOffer.busy"), NOTICE_LINE.REASON, Hourglass)
-      : null;
+  const offlineText =
+    shape === OFFER_SHAPE.NAMED
+      ? t("location.cityOffer.offline", { city: here })
+      : t("location.cityOffer.offlineHere");
+  const reasons = [
+    ...(offline ? [line(offlineText, NOTICE_LINE.REASON, WifiOff)] : []),
+    ...(busy && !offline
+      ? [line(t("location.cityOffer.busy"), NOTICE_LINE.REASON, Hourglass)]
+      : []),
+  ];
 
-  const keptTitle = saved.city
-    ? t("location.cityOffer.kept.title", { saved: saved.city })
-    : t("location.cityOffer.kept.titleHere");
+  const keptTitle =
+    saved.city && shape !== OFFER_SHAPE.SAME_NAME
+      ? t("location.cityOffer.kept.title", { saved: saved.city })
+      : t("location.cityOffer.kept.titleHere");
   const keptBody = (() => {
     if (!saved.city) {
       return here ? t("location.cityOffer.kept.bodyNoSavedName", { city: here }) : null;
@@ -188,7 +175,6 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
       }
     }
   })();
-  const keptTitleHere = !saved.city ? true : shape === OFFER_SHAPE.SAME_NAME;
 
   const face = ((): Face => {
     switch (view) {
@@ -201,7 +187,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
           lines: [
             line(offerBody, NOTICE_LINE.BODY),
             ...(shape === OFFER_SHAPE.NAMED ? fact : []),
-            ...(reason ? [reason] : []),
+            ...reasons,
           ],
         };
       case OFFER_VIEW.UPDATING:
@@ -238,7 +224,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
         return {
           icon: Check,
           tone: ICON_TILE_TONE.ACCENT,
-          title: keptTitleHere ? t("location.cityOffer.kept.titleHere") : keptTitle,
+          title: keptTitle,
           lines: [...(keptBody ? [line(keptBody, NOTICE_LINE.BODY)] : []), ...fact],
         };
       case OFFER_VIEW.MUTED:
@@ -314,36 +300,34 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
   };
 
   // --- Actions --------------------------------------------------------------
-  const keepAction: PairAction =
-    saved.city && shape !== OFFER_SHAPE.SAME_NAME
+  const keepAction: PairAction = {
+    ...(saved.city && shape !== OFFER_SHAPE.SAME_NAME
       ? {
           label: t("location.cityOffer.keep", { saved: saved.city }),
           hint: t("a11y.location.cityOffer.keepHint", { saved: saved.city }),
-          onPress: keep,
         }
       : {
           label: t("location.cityOffer.keepSaved"),
           hint: t("a11y.location.cityOffer.keepSavedHint"),
-          onPress: keep,
-        };
-  const useAction: PairAction =
-    shape === OFFER_SHAPE.NAMED
+        }),
+    onPress: keep,
+  };
+  const update = () => void startUpdate();
+  const useAction: PairAction = {
+    ...(shape === OFFER_SHAPE.NAMED
       ? {
           label: t("location.cityOffer.use", { city: here }),
           hint: t("a11y.location.cityOffer.useHint", { city: here }),
-          onPress: () => void startUpdate(),
-          disabled: offline || busy,
         }
       : {
           label: t("location.cityOffer.useHere"),
           hint: t("a11y.location.cityOffer.useHereHint"),
-          onPress: () => void startUpdate(),
-          disabled: offline || busy,
-        };
-  const retryAction: PairAction = { label: t("common.retry"), onPress: () => void startUpdate() };
+        }),
+    onPress: update,
+    disabled: offline || busy,
+  };
+  const retryAction: PairAction = { label: t("common.retry"), onPress: update };
   const closeAction: PairAction = { label: t("common.close"), onPress: close };
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
-  const chooseLabel = t("onboarding.location.chooseCity");
   const dontAskLabel =
     here && shape === OFFER_SHAPE.NAMED
       ? t("location.cityOffer.dontAsk", { city: here })
@@ -355,17 +339,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
         return (
           <VStack gap="$2">
             <ButtonPair primary={useAction} secondary={keepAction} />
-            {shape === OFFER_SHAPE.UNNAMED ? (
-              <Button
-                variant="link"
-                testID={E2E_ID.LOCATION_CHOOSE_CITY}
-                onPress={chooseCity}
-                accessibilityLabel={chooseLabel}
-                accessibilityHint={t("a11y.location.manual.chooseCityHint")}>
-                <Button.Text>{chooseLabel}</Button.Text>
-                <Button.Icon as={Chevron} />
-              </Button>
-            ) : null}
+            {shape === OFFER_SHAPE.UNNAMED ? <ChooseCityLink onPress={chooseCity} /> : null}
           </VStack>
         );
       case OFFER_VIEW.UPDATING:
@@ -413,7 +387,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
         failure={liveRun?.step === UPDATE_STEP.LOCATION ? storedFailure : null}
         city={shape === OFFER_SHAPE.NAMED ? (here ?? undefined) : undefined}
         keep={keepAction}
-        onRetry={() => void startUpdate()}
+        onRetry={update}
         onChooseCity={chooseCity}
       />
     );

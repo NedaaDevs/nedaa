@@ -109,7 +109,7 @@ const recordOfSaved = (): PlaceRecord => {
   };
 };
 
-/** Writes a device place as an update does; the saved one becomes the previous. */
+/** Writes a device place as an update does; the saved one becomes previous. */
 export const writePlace = (place: WrittenPlace, { settled = false } = {}) => {
   const previousPlace = useLocationStore.getState().previousPlace ?? recordOfSaved();
   const address = { city: place.city, country: place.country };

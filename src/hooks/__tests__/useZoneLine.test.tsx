@@ -1,7 +1,6 @@
 import { renderHook } from "@testing-library/react-native";
 
-import { ZONE_LINE, type ZoneLine } from "@/constants/CityOffer";
-import { useZoneLine } from "@/hooks/useZoneLine";
+import { useZoneLine, useZoneNote } from "@/hooks/useZoneLine";
 import i18n from "@/localization/i18n";
 import { ThemeProvider } from "@/test-helpers/theme";
 import type { ZonePlace } from "@/types/cityCheck";
@@ -9,14 +8,14 @@ import type { ZonePlace } from "@/types/cityCheck";
 const RIYADH: ZonePlace = { city: "Riyadh", zone: "Asia/Riyadh" };
 const DUBAI: ZonePlace = { city: "Dubai", zone: "Asia/Dubai" };
 
-const line = async (place: ZonePlace, other: ZonePlace, variant?: ZoneLine) => {
-  const { result } = await renderHook(() => useZoneLine(place, other, variant), {
-    wrapper: ThemeProvider,
-  });
+const hookResult = async (hook: () => string | null) => {
+  const { result } = await renderHook(hook, { wrapper: ThemeProvider });
   return result.current;
 };
+const line = (place: ZonePlace, other: ZonePlace) => hookResult(() => useZoneLine(place, other));
+const note = (place: ZonePlace, saved: ZonePlace) => hookResult(() => useZoneNote(place, saved));
 
-describe("useZoneLine", () => {
+describe("useZoneLine and useZoneNote", () => {
   beforeEach(() => jest.useFakeTimers({ now: new Date(Date.UTC(2026, 0, 15, 12)) }));
   afterEach(() => jest.useRealTimers());
 
@@ -43,17 +42,17 @@ describe("useZoneLine", () => {
   });
 
   it("says the note from the saved place's side", async () =>
-    expect(await line(DUBAI, RIYADH, ZONE_LINE.NOTE)).toBe(
+    expect(await note(DUBAI, RIYADH)).toBe(
       i18n.t("location.zone.note.behind.hours", { count: 1, saved: "Riyadh", place: "Dubai" })
     ));
 
   it("says the note ahead when the kept place is behind the saved one", async () =>
-    expect(await line({ city: "Cairo", zone: "Africa/Cairo" }, RIYADH, ZONE_LINE.NOTE)).toBe(
+    expect(await note({ city: "Cairo", zone: "Africa/Cairo" }, RIYADH)).toBe(
       i18n.t("location.zone.note.ahead.hours", { count: 1, saved: "Riyadh", place: "Cairo" })
     ));
 
   it("says no note beside an unnamed place or an equal clock", async () => {
-    expect(await line(DUBAI, { city: null, zone: "Asia/Riyadh" }, ZONE_LINE.NOTE)).toBeNull();
-    expect(await line({ city: "Kuwait", zone: "Asia/Kuwait" }, RIYADH, ZONE_LINE.NOTE)).toBeNull();
+    expect(await note(DUBAI, { city: null, zone: "Asia/Riyadh" })).toBeNull();
+    expect(await note({ city: "Kuwait", zone: "Asia/Kuwait" }, RIYADH)).toBeNull();
   });
 });
