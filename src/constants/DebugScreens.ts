@@ -41,6 +41,7 @@ export const DEBUG_COPY = {
   RESTART_ONBOARDING: "Restart onboarding",
   RESTART_ONBOARDING_HINT: "Shows the first-run screens again; your settings stay",
   SHOW_CITY_CHANGE: "Show city change",
+  SHOW_CITY_CHANGE_SAME_CITY: "Show same-city change",
   SHOW_CITY_CHANGE_UNNAMED: "Show unnamed city change",
   LOG_PHONE_ZONE: "Log the phone zone",
   RUN_CITY_CHECK: "Run the city check",
@@ -61,5 +62,7 @@ export const DEBUG_COPY = {
   /** Shown for a source that gives no zone. */
   NO_ZONE: "none",
   /** The city the sample offer names. */
-  SAMPLE_NEW_CITY: "Jeddah",
+  SAMPLE_NEW_CITY: "Dubai",
+  /** The zone the named sample carries, so the offer shows a clock difference. */
+  SAMPLE_NEW_ZONE: "Asia/Dubai",
 } as const;

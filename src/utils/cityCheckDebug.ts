@@ -4,6 +4,7 @@ import { CITY_CHECK_OFFER, CITY_CHECK_TRIGGER, REUSE_FIX_MAX_AGE_MS } from "@/co
 import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { runCityCheck, type CheckEnd } from "@/services/cityCheck";
+import { knownPlaceName } from "@/constants/Location";
 import { LocationMode } from "@/enums/location";
 import { useCityCheckStore } from "@/stores/cityCheck";
 import { useLocationStore } from "@/stores/location";
@@ -58,20 +59,25 @@ export const clearCityCheckMemory = (): void => {
 const SAMPLE_POINT = { latitude: 21.0, longitude: 38.4 };
 const SAMPLE_ACCURACY_KM = 0.1;
 const UNNAMED_SAMPLE_KM = 40;
+const SAME_CITY_SAMPLE_KM = 40;
 
 // Too old to reuse, so a Use from a sample reads the device.
-const sampleCandidate = (name: LocalizedPlaceName | null, distanceKm: number): CityCandidate => ({
+const sampleCandidate = (
+  name: LocalizedPlaceName | null,
+  distanceKm: number,
+  zone: string | null
+): CityCandidate => ({
   point: SAMPLE_POINT,
   accuracyKm: SAMPLE_ACCURACY_KM,
   fixedAt: Date.now() - REUSE_FIX_MAX_AGE_MS - 1,
-  zone: null,
+  zone,
   countryCode: COUNTRY_CODE.SAUDI_ARABIA,
   name,
   distanceKm,
 });
 
 /** Puts a sample offer up; never over a chosen city. */
-const showSample = (name: LocalizedPlaceName | null, distanceKm?: number) => {
+const showSample = (name: LocalizedPlaceName | null, distanceKm?: number, zone?: string) => {
   const location = useLocationStore.getState();
   if (location.locationMode !== LocationMode.DEVICE) {
     log.i("CityCheckDebug", "a city is chosen; no city change to offer");
@@ -79,11 +85,25 @@ const showSample = (name: LocalizedPlaceName | null, distanceKm?: number) => {
   }
   const saved = location.lastKnownCoords;
   const km = distanceKm ?? (saved ? distanceBetween(saved, SAMPLE_POINT) : 0);
-  location.offerCity(sampleCandidate(name, km), [CITY_CHECK_OFFER.SHIFT]);
+  location.offerCity(sampleCandidate(name, km, zone ?? null), [CITY_CHECK_OFFER.SHIFT]);
 };
 
 // A real check needs a real move; these put an offer up at once.
 export const showNamedCityChange = (): void =>
-  showSample({ name: DEBUG_COPY.SAMPLE_NEW_CITY, names: null });
+  showSample(
+    { name: DEBUG_COPY.SAMPLE_NEW_CITY, names: null },
+    undefined,
+    DEBUG_COPY.SAMPLE_NEW_ZONE
+  );
+
+/** Offers the saved city's own name, as a point 40 km off would read. */
+export const showSameCityChange = (): void => {
+  const city = knownPlaceName(useLocationStore.getState().localizedLocation.city);
+  if (!city) {
+    log.i("CityCheckDebug", "the saved place has no city name; no same-city change to offer");
+    return;
+  }
+  showSample({ name: city, names: null }, SAME_CITY_SAMPLE_KM);
+};
 
 export const showUnnamedCityChange = (): void => showSample(null, UNNAMED_SAMPLE_KM);

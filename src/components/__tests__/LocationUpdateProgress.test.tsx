@@ -4,14 +4,19 @@ import { act, screen, userEvent } from "@testing-library/react-native";
 import { LOCATION_UPDATE_PART, LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { ICON_SIZES } from "@/components/ui/icon/sizing";
 import { DEFAULT_FACES } from "@/constants/Fonts";
-import { UPDATE_START, UPDATE_STEP, type UpdateStep } from "@/constants/Location";
-import { NEDAA_LIGHT } from "@/constants/Palette";
+import {
+  LOCATION_UPDATE_SURFACE,
+  UPDATE_START,
+  UPDATE_STEP,
+  type UpdateStep,
+} from "@/constants/Location";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import type { UpdateRun, UpdateStart } from "@/stores/locationUpdate";
 import { candidateAt } from "@/test-helpers/cityOffer";
 import { PLACE } from "@/test-helpers/cityPickerStubs";
 import { HAND_WRITTEN_LOCALES, type HandWrittenLocale } from "@/test-helpers/locales";
+import { restingSurfaceOf } from "@/test-helpers/surface";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const t = i18n.t.bind(i18n);
@@ -25,11 +30,20 @@ const runAt = (step: UpdateStep, failed = false, start: UpdateStart = DEVICE_STA
   failed,
 });
 
-const renderProgress = (run: UpdateRun | null, { isRTL = false, inSheet = false } = {}) => {
+type SurfaceName = (typeof LOCATION_UPDATE_SURFACE)[keyof typeof LOCATION_UPDATE_SURFACE];
+
+const renderProgress = (
+  run: UpdateRun | null,
+  { isRTL = false, surface }: { isRTL?: boolean; surface?: SurfaceName } = {}
+) => {
   const onRetry = jest.fn();
-  return renderWithTheme(<LocationUpdateProgress run={run} onRetry={onRetry} inSheet={inSheet} />, {
-    isRTL,
-  }).then(() => onRetry);
+  const progress =
+    surface === LOCATION_UPDATE_SURFACE.FLAT ? (
+      <LocationUpdateProgress run={run} surface={surface} />
+    ) : (
+      <LocationUpdateProgress run={run} onRetry={onRetry} />
+    );
+  return renderWithTheme(progress, { isRTL }).then(() => onRetry);
 };
 
 /** A row read with its state: done, in progress, or next. */
@@ -37,9 +51,9 @@ const row = (label: string, state: "stepDone" | "stepNow" | "stepNext") =>
   screen.getByLabelText(t(`a11y.location.update.${state}`, { step: t(label) }));
 
 /** Words naming the city, and words naming the person's own position. */
-const PLACE_WORDS: Record<HandWrittenLocale, { city: RegExp; position: RegExp }> = {
-  [AppLocale.EN]: { city: /\bcity\b/i, position: /\blocation\b/i },
-  [AppLocale.AR]: { city: /مدين/, position: /موقع/ },
+const PLACE_WORDS: Record<HandWrittenLocale, { place: RegExp; city: RegExp; position: RegExp }> = {
+  [AppLocale.EN]: { place: /\bplace\b/i, city: /\bcity\b/i, position: /\blocation\b/i },
+  [AppLocale.AR]: { place: /مكان/, city: /مدين/, position: /موقع/ },
 };
 
 afterEach(() => {
@@ -57,7 +71,7 @@ describe("LocationUpdateProgress", () => {
   it("marks the place found, the times running and notifications next", async () => {
     await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES));
 
-    expect(row("location.update.steps.place", "stepDone")).toBeTruthy();
+    expect(row("location.update.steps.placeRow", "stepDone")).toBeTruthy();
     expect(row("location.update.steps.times", "stepNow")).toBeTruthy();
     expect(row("location.update.steps.alerts", "stepNext")).toBeTruthy();
   });
@@ -75,7 +89,7 @@ describe("LocationUpdateProgress", () => {
   it("starts with every row after the place still next", async () => {
     await renderProgress(runAt(UPDATE_STEP.LOCATION));
 
-    expect(row("location.update.steps.place", "stepNow")).toBeTruthy();
+    expect(row("location.update.steps.placeRow", "stepNow")).toBeTruthy();
     expect(row("location.update.steps.times", "stepNext")).toBeTruthy();
   });
 
@@ -87,11 +101,15 @@ describe("LocationUpdateProgress", () => {
       { kind: UPDATE_START.ADOPT_DEVICE },
       "onboarding.fetch.locatingDevice",
     ],
-    [UPDATE_START.CITY, { kind: UPDATE_START.CITY, city: PLACE }, "location.update.step.city"],
+    [
+      UPDATE_START.CITY,
+      { kind: UPDATE_START.CITY, city: PLACE },
+      "location.update.step.findingPlace",
+    ],
     [
       UPDATE_START.CANDIDATE,
       { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
-      "location.update.step.city",
+      "location.update.step.findingPlace",
     ],
   ] as const)("says a %s run's place step in its own words", async (_kind, start, status) => {
     Platform.OS = PlatformType.IOS;
@@ -135,13 +153,33 @@ describe("LocationUpdateProgress", () => {
     marks.forEach((mark) => expect(mark).toHaveStyle({ width: ICON_SIZES.xs }));
   });
 
-  // A sheet stacks two tones and never lays glass on glass.
-  it("lies flat on the panel tone inside a sheet", async () => {
-    await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES), { inSheet: true });
+  // Inside a card the steps take the card's surface, never a second one.
+  it("lies flat inside a card: no surface and no lift of its own", async () => {
+    await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES), {
+      surface: LOCATION_UPDATE_SURFACE.FLAT,
+    });
 
     const frame = screen.getByTestId(LOCATION_UPDATE_PART.FRAME);
-    expect(frame).toHaveStyle({ backgroundColor: NEDAA_LIGHT.panel.hex });
-    expect(StyleSheet.flatten(frame.props.style).boxShadow).toBeUndefined();
+    expect(restingSurfaceOf(frame)).toBeNull();
+    expect(StyleSheet.flatten(frame.props.style)?.backgroundColor).toBeUndefined();
+  });
+
+  it("says the place step as finding the place, its row as Place", async () => {
+    await renderProgress(
+      runAt(UPDATE_STEP.LOCATION, false, { kind: UPDATE_START.CITY, city: PLACE })
+    );
+
+    expect(screen.getByLabelText(t("location.update.step.findingPlace"))).toBeTruthy();
+    expect(screen.getByText(t("location.update.steps.placeRow"))).toBeTruthy();
+  });
+
+  it("draws a stopped step flat as its words alone, for the host's Retry", async () => {
+    await renderProgress(runAt(UPDATE_STEP.NOTIFICATIONS, true), {
+      surface: LOCATION_UPDATE_SURFACE.FLAT,
+    });
+
+    expect(screen.getByText(t("location.update.failed.notifications"))).toBeTruthy();
+    expect(screen.queryByRole("button", { name: t("common.retry") })).toBeNull();
   });
 
   it("says the current times stay on screen until the update finishes", async () => {
@@ -189,10 +227,12 @@ describe("LocationUpdateProgress", () => {
     beforeEach(() => act(() => i18n.changeLanguage(locale)));
     afterAll(() => i18n.changeLanguage(AppLocale.EN));
 
-    it("names the city in its status line and its row", async () => {
-      await renderProgress(runAt(UPDATE_STEP.LOCATION));
+    it("names the place in its status line and its row", async () => {
+      await renderProgress(
+        runAt(UPDATE_STEP.LOCATION, false, { kind: UPDATE_START.CITY, city: PLACE })
+      );
 
-      expect(screen.getAllByText(words.city)).toHaveLength(2);
+      expect(screen.getAllByText(words.place)).toHaveLength(2);
       expect(screen.queryAllByText(words.position)).toEqual([]);
     });
 

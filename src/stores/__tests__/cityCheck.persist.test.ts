@@ -92,6 +92,13 @@ describe("city-check memory persistence", () => {
     expect(memory().lastCheckAt).toBeNull();
   });
 
+  it("persists the muted list", () => {
+    const mark = markAt(1);
+    useCityCheckStore.getState().mute(mark);
+    const saved = useCityCheckStore.persist.getOptions().partialize?.(useCityCheckStore.getState());
+    expect(saved).toEqual({ cityCheck: expect.objectContaining({ notAsked: [mark] }) });
+  });
+
   it("clears the whole memory", () => {
     useCityCheckStore.getState().keep(markAt(1));
     useCityCheckStore.getState().clearMemory();

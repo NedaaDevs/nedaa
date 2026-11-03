@@ -3,7 +3,7 @@ import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { useLocationStore } from "@/stores/location";
 import { JEDDAH_CITY } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
-import type { CityCandidate } from "@/types/cityCheck";
+import type { CityCandidate, CityOfferStage } from "@/types/cityCheck";
 
 const FIX_ACCURACY_KM = 0.1;
 // Riyadh to Jeddah, as the crow flies.
@@ -21,6 +21,8 @@ export const candidateAt = (overrides: Partial<CityCandidate> = {}): CityCandida
   ...overrides,
 });
 
-/** Puts an offer up for `candidate`, on the shift alone. */
-export const offerUp = (candidate: CityCandidate = candidateAt()): void =>
+/** Puts an offer up for `candidate` on the shift alone, at `stage` when given. */
+export const offerUp = (candidate: CityCandidate = candidateAt(), stage?: CityOfferStage): void => {
   useLocationStore.getState().offerCity(candidate, [CITY_CHECK_OFFER.SHIFT]);
+  if (stage) useLocationStore.getState().settleCityOffer(stage);
+};
