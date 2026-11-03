@@ -861,8 +861,6 @@
   "location.picker.seedCoverage_one": "Search covers 1 major city for now.",
   "location.picker.seedCoverage_other": "Search covers {{amount}} major cities for now.",
   "location.picker.title": "Choose your city",
-  "location.settings.keepLocationUpdated.summary": "When you open $t(brand.name) in another city",
-  "location.settings.offerUpdate.title": "Offer an Update When the City Changes",
   "location.settings.travelSection": "When you travel",
   "location.travel.ask.note": "$t(brand.name) asks when you're in another city",
   "location.travel.ask.title": "Ask before updating",

@@ -8,13 +8,13 @@ import { ownRunOf } from "@/components/location/cityOfferView";
 import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import {
-  AutoUpdateSection,
   DeniedBody,
   DeviceBody,
   ManualBody,
   PermissionBody,
 } from "@/components/location/LocationStateBodies";
 import { StandInNotice } from "@/components/location/StandInNotice";
+import { TravelSection } from "@/components/location/TravelSection";
 import { locationRootState } from "@/components/location/rootState";
 import { PlaceHero } from "@/components/ui/place-hero";
 import { VStack } from "@/components/ui/vstack";
@@ -327,7 +327,7 @@ export const LocationRoot = () => {
         <CityChangeOffer />
         {body()}
       </VStack>
-      {state === LOCATION_ROOT_STATE.DEVICE ? <AutoUpdateSection /> : null}
+      {state === LOCATION_ROOT_STATE.DEVICE ? <TravelSection /> : null}
     </>
   );
 };

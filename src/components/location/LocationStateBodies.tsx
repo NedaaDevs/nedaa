@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
-import { LocateFixed, MapPin, RefreshCw, Search } from "lucide-react-native";
+import { LocateFixed, RefreshCw, Search } from "lucide-react-native";
 
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import { OpenSettingsButton } from "@/components/location/OpenSettingsButton";
@@ -8,17 +8,10 @@ import { StandInNotice } from "@/components/location/StandInNotice";
 import { CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
-import { Section } from "@/components/ui/section";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
-import { SwitchGroup } from "@/components/ui/switch-group";
-import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { E2E_ID } from "@/constants/E2E";
-import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import { SECTION_KIND } from "@/constants/Section";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
-import { useHaptic } from "@/hooks/useHaptic";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
-import { useLocationStore } from "@/stores/location";
 import type { UpdateRun } from "@/stores/locationUpdate";
 
 const MODES = Object.values(LocationMode);
@@ -230,31 +223,5 @@ export const DeniedBody = ({ onChooseCity, verified }: DeniedProps) => {
         <ChooseCityRow onPress={onChooseCity} />
       </ListGroup>
     </>
-  );
-};
-
-/** The launch check that offers an update when the device is in a new city. */
-export const AutoUpdateSection = () => {
-  const { t } = useTranslation();
-  const lightHaptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
-  const on = useLocationStore((state) => state.travelMode === TRAVEL_MODE.ASK);
-  const setTravelMode = useLocationStore((state) => state.setTravelMode);
-
-  return (
-    <Section title={t("location.settings.travelSection")} kind={SECTION_KIND.LABEL}>
-      <ListGroup>
-        <SwitchGroup
-          variant={LIST_ROW_VARIANT.GROUPED}
-          icon={MapPin}
-          label={t("location.settings.offerUpdate.title")}
-          summary={t("location.settings.keepLocationUpdated.summary")}
-          value={on}
-          onValueChange={(value) => {
-            void lightHaptic();
-            setTravelMode(value ? TRAVEL_MODE.ASK : TRAVEL_MODE.OFF);
-          }}
-        />
-      </ListGroup>
-    </Section>
   );
 };
