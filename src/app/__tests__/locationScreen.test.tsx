@@ -157,7 +157,7 @@ const landDevicePlace = (address: typeof JEDDAH) =>
     locationDetails: { ...state.locationDetails, address },
   }));
 
-/** Whether `first` comes before `second` in a depth-first walk of the screen. */
+/** Whether `first` precedes `second` in a depth-first walk of the screen. */
 type Node = ReturnType<typeof screen.getByTestId>;
 const precedes = (first: Node, second: Node) =>
   screen.container.queryAll((node) => node === first || node === second)[0] === first;

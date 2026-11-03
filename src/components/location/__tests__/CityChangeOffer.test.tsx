@@ -259,7 +259,7 @@ describe("saying it", () => {
     await setFocused(true);
     expect(announce).toHaveBeenCalledTimes(1);
     expect(announce).toHaveBeenCalledWith(label());
-    // A second card on the same offer is a remount: the offer remembers it was said.
+    // A second card on one offer is a remount: the offer remembers it was said.
     await renderWithTheme(<CityChangeOffer />);
     expect(announce).toHaveBeenCalledTimes(1);
     expect(useLocationStore.getState().cityOffer?.announced).toBe(true);

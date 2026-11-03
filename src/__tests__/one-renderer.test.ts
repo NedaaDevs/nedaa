@@ -266,9 +266,9 @@ const ONE_RENDERER: readonly Rule[] = [
   // The offer and Today's zone note say a clock difference in the same words.
   {
     concept: "the zone difference between two places",
-    shows: /\buseZoneLine\(|\bzoneDifferenceMinutes\(|\blocation\.zone\./,
+    shows: /\buseZone(?:Line|Note)\(|\bzoneDifferenceMinutes\(|\blocation\.zone\./,
     within: /^(app|components)\/.*\.tsx$/,
-    drawsWith: /\buseZoneLine\(/,
+    drawsWith: /\buseZone(?:Line|Note)\(/,
     home: "hooks/useZoneLine.ts",
   },
   // Location, the city offer and onboarding's picker show a run's steps.

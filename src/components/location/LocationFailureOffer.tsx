@@ -2,22 +2,16 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Platform } from "react-native";
 import type { ParseKeys } from "i18next";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CircleAlert,
-  Globe,
-  RefreshCw,
-  Search,
-} from "lucide-react-native";
+import { CircleAlert, Globe, RefreshCw, Search } from "lucide-react-native";
 
 import { usesHmsLocation } from "@/adapters/location";
+import { ChooseCityLink } from "@/components/location/ChooseCityLink";
 import {
   OpenSettingsButton,
   useOpenSettingsAction,
 } from "@/components/location/OpenSettingsButton";
 import { Button } from "@/components/ui/button";
-import { ButtonPair, type PairAction } from "@/components/ui/button-pair";
+import { ActionButton, ButtonPair, type PairAction } from "@/components/ui/button-pair";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ICON_TILE_TONE } from "@/components/ui/icon-tile";
@@ -33,7 +27,6 @@ import {
 } from "@/constants/Location";
 import { SECTION_KIND } from "@/constants/Section";
 import { PlatformType } from "@/enums/app";
-import { useRTL } from "@/contexts/RTLContext";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useLocationPermission } from "@/hooks/useLocationPermission";
 import { AppLogger } from "@/utils/appLogger";
@@ -220,7 +213,6 @@ const CardOffer = ({
   servicesOffOnAndroid,
 }: ViewProps & { keep: PairAction; testID?: string }) => {
   const { t } = useTranslation();
-  const { isRTL } = useRTL();
   const settings = useOpenSettingsAction();
   const retry: PairAction = { label: t("common.retry"), onPress: onRetry };
   const locationSettings: PairAction = {
@@ -228,8 +220,6 @@ const CardOffer = ({
     hint: t("a11y.location.openLocationSettingsHint"),
     onPress: openLocationSettings,
   };
-  const chooseCity = t("onboarding.location.chooseCity");
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
   return (
     <FailureCard title={title} hint={hint} testID={testID}>
       <VStack gap="$2">
@@ -242,35 +232,11 @@ const CardOffer = ({
         ) : (
           <ButtonPair primary={toSettings ? settings : retry} secondary={keep} />
         )}
-        <Button
-          variant="link"
-          testID={E2E_ID.LOCATION_CHOOSE_CITY}
-          onPress={onChooseCity}
-          accessibilityLabel={chooseCity}
-          accessibilityHint={t("a11y.location.manual.chooseCityHint")}>
-          <Button.Text>{chooseCity}</Button.Text>
-          <Button.Icon as={Chevron} />
-        </Button>
+        <ChooseCityLink onPress={onChooseCity} />
       </VStack>
     </FailureCard>
   );
 };
-
-/** One full-width button of a stack; the lead action is filled. */
-export const ActionButton = ({ action, lead = false }: { action: PairAction; lead?: boolean }) => (
-  <Button
-    action={lead ? "primary" : "secondary"}
-    variant={lead ? "solid" : "outline"}
-    size="md"
-    borderRadius="$control"
-    testID={action.testID}
-    accessibilityLabel={action.label}
-    accessibilityHint={action.hint}
-    disabled={action.disabled}
-    onPress={action.onPress}>
-    <Button.Text>{action.label}</Button.Text>
-  </Button>
-);
 
 /** What went wrong, retry first, then the ways to set a place by hand. */
 export const LocationFailureOffer = (props: Props) => {
