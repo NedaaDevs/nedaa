@@ -1,11 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Linking } from "react-native";
 import type { ParseKeys } from "i18next";
 import { LocateFixed, MapPin, RefreshCw, Search } from "lucide-react-native";
 
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
+import { OpenSettingsButton } from "@/components/location/OpenSettingsButton";
 import { StandInNotice } from "@/components/location/StandInNotice";
-import { Button } from "@/components/ui/button";
 import { CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
@@ -21,10 +20,6 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useLocationStore } from "@/stores/location";
 import type { UpdateRun } from "@/stores/locationUpdate";
-import { AppLogger } from "@/utils/appLogger";
-import { errorText } from "@/utils/errorText";
-
-const log = AppLogger.create("location");
 
 const MODES = Object.values(LocationMode);
 
@@ -62,25 +57,6 @@ const LocationModeChoice = ({ mode, onSwitch, busy }: ModeProps) => {
       }
       disabled={busy}
     />
-  );
-};
-
-const openAppSettings = () =>
-  Linking.openSettings().catch((error: unknown) =>
-    log.w("Root", `app settings failed to open: ${errorText(error)}`)
-  );
-
-/** The way to the app's page in Settings, where location access is given. */
-const OpenSettingsButton = () => {
-  const { t } = useTranslation();
-  const label = t("location.permission.openSettings");
-  return (
-    <Button
-      onPress={openAppSettings}
-      accessibilityLabel={label}
-      accessibilityHint={t("a11y.location.openSettingsHint")}>
-      <Button.Text>{label}</Button.Text>
-    </Button>
   );
 };
 
