@@ -1,15 +1,19 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import LocationScreen from "@/app/settings/location";
+import { createContext, use } from "react";
 import { AccessibilityInfo, Linking, Platform, StyleSheet, Text } from "react-native";
 import { useLocalSearchParams, usePathname } from "expo-router";
 import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
+import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
+import { LocationNotice } from "@/components/today/LocationNotice";
 import { PLACE_HERO_PART } from "@/components/ui/place-hero";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { TRAVEL_MODE } from "@/constants/CityCheck";
+import { KEPT_MAX_AGE_MS, TRAVEL_MODE } from "@/constants/CityCheck";
+import { CITY_OFFER_PART, CITY_OFFER_STAGE } from "@/constants/CityOffer";
 import { E2E_ID } from "@/constants/E2E";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
@@ -20,21 +24,24 @@ import {
   UPDATE_START,
   UPDATE_STEP,
   type FixSource,
+  type UpdateStep,
 } from "@/constants/Location";
 import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
+import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
-import { candidateAt } from "@/test-helpers/cityOffer";
+import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
 import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
 import { MAKKAH_CITY, RIYADH_CITY, placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { initialLocationDetails } from "@/types/location";
+import { toPlaceMark } from "@/utils/cityCheck/marks";
 import { rescheduleAllAlarms } from "@/utils/alarmScheduler";
 import {
   LocationFixError,
@@ -46,10 +53,14 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 // The test router unmounts a screen once another is pushed; a device keeps it.
 let mockFocused = true;
+// A surface wrapped in the scope is focused or not on its own; else the flag.
+const mockFocusScope = createContext<boolean | null>(null);
+const mockUse = use;
 jest.mock("expo-router", () => ({
   ...jest.requireActual("expo-router"),
-  useIsFocused: () => mockFocused,
+  useIsFocused: () => mockUse(mockFocusScope) ?? mockFocused,
 }));
+jest.mock("@/hooks/useIsOffline", () => ({ useIsOffline: () => false }));
 jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
 jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 // Reached through the notification store; its database never opens here.
@@ -137,6 +148,21 @@ const deviceAt = (minutesAgo = 12, source: FixSource = FIX_SOURCE.FRESH) => {
   placeFacts(false, RIYADH_COORDS);
 };
 
+const JEDDAH_POINT = candidateAt().point;
+
+/** The device found Jeddah and its times landed. */
+const landDevicePlace = (address: typeof JEDDAH) =>
+  useLocationStore.setState((state) => ({
+    localizedLocation: address,
+    locationDetails: { ...state.locationDetails, address },
+  }));
+
+/** Whether `first` comes before `second` in a depth-first walk of the screen. */
+type Node = ReturnType<typeof screen.getByTestId>;
+const precedes = (first: Node, second: Node) =>
+  screen.container.queryAll((node) => node === first || node === second)[0] === first;
+const savedTimesHero = (city: string, name = placeName) =>
+  heroName(t("location.hero.savedKicker"), name, t("location.hero.timesForCity", { city }));
 const pathname = () => screen.getByTestId("pathname");
 const hero = () => screen.getByTestId(PLACE_HERO_PART.FRAME);
 const heroName = (kicker: string, title: string, note: string) =>
@@ -172,7 +198,9 @@ beforeEach(async () => {
     travelMode: TRAVEL_MODE.ASK,
     isGettingLocation: false,
     previousPlace: null,
+    cityOffer: null,
   });
+  useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY });
   usePrayerTimesStore.setState({ loadPrayerTimesAtCurrentPlace: mockLoad, timesCoords: null });
   useLocationUpdateStore.setState({ run: null });
   useNotificationStore.setState({
@@ -1021,6 +1049,151 @@ describe("Settings › Location", () => {
 
     const group = await screen.findByLabelText(t("a11y.location.mode"));
     expect(StyleSheet.flatten(group.props.style).direction).toBe("rtl");
+  });
+
+  describe("with the city-change offer", () => {
+    it("shows the offer under the hero, the hero naming the saved city's times", async () => {
+      offerUp();
+      await renderScreen();
+
+      expect(await screen.findByTestId(CITY_OFFER_PART.CARD)).toBeTruthy();
+      expect(hero()).toHaveAccessibleName(savedTimesHero("Riyadh"));
+      expect(precedes(hero(), screen.getByTestId(CITY_OFFER_PART.CARD))).toBe(true);
+      expect(
+        precedes(screen.getByTestId(CITY_OFFER_PART.CARD), screen.getAllByRole("radio")[0])
+      ).toBe(true);
+    });
+
+    it("hides Update location now while the offer waits for an answer", async () => {
+      offerUp();
+      await renderScreen();
+      await screen.findByTestId(CITY_OFFER_PART.CARD);
+      expect(
+        screen.queryByRole("button", { name: new RegExp(`^${t("location.device.refresh")}`) })
+      ).toBeNull();
+
+      await act(async () => useLocationStore.getState().keepCityOffer());
+
+      expect(
+        screen.getByRole("button", { name: new RegExp(`^${t("location.device.refresh")}`) })
+      ).toBeTruthy();
+    });
+
+    it("draws the offer's run once, in the card, with the mode choice held", async () => {
+      offerUp();
+      await renderScreen();
+      await screen.findByTestId(CITY_OFFER_PART.CARD);
+
+      await act(async () =>
+        useLocationUpdateStore.setState({
+          run: {
+            start: { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
+            step: UPDATE_STEP.PRAYER_TIMES,
+            failed: false,
+          },
+        })
+      );
+
+      expect(screen.getAllByTestId(LOCATION_UPDATE_PART.FRAME)).toHaveLength(1);
+      expect(
+        within(screen.getByTestId(CITY_OFFER_PART.CARD)).getByTestId(LOCATION_UPDATE_PART.FRAME)
+      ).toBeTruthy();
+      screen.getAllByRole("radio").forEach((radio) => expect(radio).toBeDisabled());
+    });
+
+    it("names the new city on the hero once the offer's run lands", async () => {
+      offerUp();
+      await renderScreen();
+      await screen.findByTestId(CITY_OFFER_PART.CARD);
+
+      await act(async () => {
+        landDevicePlace(JEDDAH);
+        useLocationStore
+          .getState()
+          .settleCityOffer({ kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: true });
+      });
+
+      expect(hero()).toHaveAccessibleName(savedTimesHero("Jeddah", t("place.name", JEDDAH)));
+    });
+
+    it("names the saved city's times on the hero while a kept trip lasts", async () => {
+      const mark = toPlaceMark(JEDDAH_POINT, Date.now());
+      useCityCheckStore.getState().keep(mark);
+      useCityCheckStore.getState().mute(mark);
+      await renderScreen();
+
+      expect(await screen.findByTestId(PLACE_HERO_PART.FRAME)).toHaveAccessibleName(
+        savedTimesHero("Riyadh")
+      );
+    });
+
+    it("keeps the device hero when no offer is up and no place is marked", async () => {
+      await renderScreen();
+
+      expect(await screen.findByTestId(PLACE_HERO_PART.FRAME)).toHaveAccessibleName(
+        heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.deviceNote"))
+      );
+    });
+
+    it.each([
+      ["a place not asked about, with no trip kept", false],
+      ["a kept trip that has ended", true],
+    ])("keeps the device hero for %s", async (_case, keptOld) => {
+      const at = Date.now() - KEPT_MAX_AGE_MS - 1;
+      const mark = toPlaceMark(JEDDAH_POINT, at);
+      if (keptOld) useCityCheckStore.getState().keep(mark);
+      useCityCheckStore.getState().mute(mark);
+      await renderScreen();
+
+      expect(await screen.findByTestId(PLACE_HERO_PART.FRAME)).toHaveAccessibleName(
+        heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.deviceNote"))
+      );
+    });
+
+    it("says each step once with the card on Today and on Location", async () => {
+      Platform.OS = PlatformType.IOS;
+      jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+      offerUp();
+      await renderRouter(
+        {
+          [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => (
+            <>
+              <mockFocusScope.Provider value={false}>
+                <LocationNotice />
+              </mockFocusScope.Provider>
+              <mockFocusScope.Provider value>
+                <LocationScreen />
+              </mockFocusScope.Provider>
+            </>
+          ),
+        },
+        {
+          initialUrl: BACK_DESTINATION.SETTINGS_LOCATION.href as string,
+          wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>,
+        }
+      );
+      await screen.findAllByTestId(CITY_OFFER_PART.CARD);
+      const runAt = (step: UpdateStep) =>
+        act(async () =>
+          useLocationUpdateStore.setState({
+            run: {
+              start: { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
+              step,
+              failed: false,
+            },
+          })
+        );
+
+      await runAt(UPDATE_STEP.LOCATION);
+      await runAt(UPDATE_STEP.PRAYER_TIMES);
+
+      const said = (message: string) =>
+        jest
+          .mocked(AccessibilityInfo.announceForAccessibility)
+          .mock.calls.filter(([spoken]) => spoken === message).length;
+      expect(said(t("location.update.step.findingPlace"))).toBe(1);
+      expect(said(t("location.update.step.prayerTimes"))).toBe(1);
+    });
   });
 
   // One run, drawn by every surface that is up; VoiceOver hears it once.

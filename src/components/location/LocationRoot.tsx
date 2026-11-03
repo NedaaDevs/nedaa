@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useIsFocused, useRouter } from "expo-router";
 import type { ParseKeys } from "i18next";
 
+import { CityChangeOffer } from "@/components/location/CityChangeOffer";
+import { ownRunOf } from "@/components/location/cityOfferView";
 import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
 import {
@@ -16,6 +18,7 @@ import { StandInNotice } from "@/components/location/StandInNotice";
 import { locationRootState } from "@/components/location/rootState";
 import { PlaceHero } from "@/components/ui/place-hero";
 import { VStack } from "@/components/ui/vstack";
+import { CITY_OFFER_STAGE } from "@/constants/CityOffer";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   CITY_PICKER_VIEW,
@@ -37,8 +40,10 @@ import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { useNewestPlace, usePlace } from "@/hooks/usePlace";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
+import { useCityCheckStore } from "@/stores/cityCheck";
 import { useLocationStore } from "@/stores/location";
 import { FINDING_CITY, findingCity, isRunning } from "@/stores/locationUpdate";
+import { isLiveKept } from "@/utils/cityCheck/marks";
 import { fixAgeOf } from "@/utils/fixAge";
 
 type Hero = { tone: PlaceHeroTone; kicker: ParseKeys; note: ParseKeys };
@@ -83,12 +88,23 @@ type HeroFacts = {
   noPlace: boolean;
   /** A run reads the device; the place it moves to is not known yet. */
   finding: boolean;
+  /** The times are for the saved place while the device may be elsewhere. */
+  away: boolean;
+  /** The saved place has no city name. */
+  unnamedPlace: boolean;
+};
+
+/** The device's place, with the times named for the saved place. */
+const AWAY_HERO: Hero = {
+  tone: PLACE_HERO_TONE.DEVICE,
+  kicker: "location.hero.savedKicker",
+  note: "location.hero.timesForCity",
 };
 
 /** The hero says only what holds: whose place, or that none is found. */
 const heroFor = (
   state: LocationRootState,
-  { chosenCity, namedCity, noPlace, finding }: HeroFacts
+  { chosenCity, namedCity, noPlace, finding, away, unnamedPlace }: HeroFacts
 ): Hero => {
   const placeHero = namedCity ? CITY_HERO : DEVICE_HERO;
   switch (state) {
@@ -100,8 +116,11 @@ const heroFor = (
         note: finding ? FINDING_CITY : "location.hero.updatingNote",
       };
     case LOCATION_ROOT_STATE.CHECKING:
-    case LOCATION_ROOT_STATE.DEVICE:
       return noPlace ? ASK_HERO : placeHero;
+    case LOCATION_ROOT_STATE.DEVICE:
+      if (noPlace) return ASK_HERO;
+      if (!away) return placeHero;
+      return unnamedPlace ? { ...AWAY_HERO, note: "location.hero.timesForSavedPlace" } : AWAY_HERO;
     case LOCATION_ROOT_STATE.MANUAL:
       return placeHero;
     case LOCATION_ROOT_STATE.PERMISSION:
@@ -153,11 +172,18 @@ export const LocationRoot = () => {
     retry,
     dismissFailure,
   } = useLocationUpdate();
+  const cityOffer = useLocationStore((state) => state.cityOffer);
+  const offerAsking = useLocationStore(
+    (state) => state.cityOffer?.stage.kind === CITY_OFFER_STAGE.OFFER
+  );
+  const kept = useCityCheckStore(({ cityCheck }) => cityCheck.kept);
   const focused = useIsFocused();
   // Behind a pushed screen this one stays mounted; the front one draws the run.
   const run = focused ? liveRun : null;
   // The system said no when the device was picked over a chosen city.
   const [refused, setRefused] = useState(false);
+  // The offer card draws the run it started; this screen draws no second one.
+  const offerHostsRun = cityOffer !== null && ownRunOf(run, cityOffer.candidate) !== null;
   const running = isRunning(run);
   const updating = running || reading;
   const failedStep: UpdateStep | null = run?.failed ? run.step : null;
@@ -169,13 +195,22 @@ export const LocationRoot = () => {
     storedFailure,
     reading,
     running,
+    offerHostsRun,
   });
   // Only the location step fails before the place is written.
   const placeChanged = failedStep !== null && failedStep !== UPDATE_STEP.LOCATION;
   const noPlace = !chosenCity && !verified;
   const finding = findingCity(run);
   const namedCity = previousMode === null ? chosenCity : previousMode === LocationMode.MANUAL;
-  const hero = heroFor(state, { chosenCity, namedCity, noPlace, finding });
+  const hero = heroFor(state, {
+    chosenCity,
+    namedCity,
+    noPlace,
+    finding,
+    // A live kept mark is a trip in progress; a not-asked mark never ages out.
+    away: cityOffer !== null || kept.some((entry) => isLiveKept(entry, now.getTime())),
+    unnamedPlace: !place.city,
+  });
   const showsRun = state === LOCATION_ROOT_STATE.UPDATING;
   // A run names its target once the read is done; else only a verified place.
   const named = !noPlace || (showsRun && !finding);
@@ -233,12 +268,13 @@ export const LocationRoot = () => {
           <DeviceBody
             onSwitchMode={(mode) => void switchMode(mode)}
             onRefresh={refresh}
-            run={run}
-            busy={updating}
+            run={offerHostsRun ? null : run}
+            busy={updating || offerHostsRun}
             onRetry={retry}
             lastFound={age ? t(LAST_FOUND[age.unit], { count: age.count }) : undefined}
             verified={verified}
             lastKnown={lastKnown}
+            offerUp={offerAsking}
           />
         );
       case LOCATION_ROOT_STATE.MANUAL:
@@ -282,7 +318,13 @@ export const LocationRoot = () => {
   return (
     <>
       <VStack gap="$3.5">
-        <PlaceHero tone={hero.tone} kicker={t(hero.kicker)} title={title} subtitle={t(hero.note)} />
+        <PlaceHero
+          tone={hero.tone}
+          kicker={t(hero.kicker)}
+          title={title}
+          subtitle={t(hero.note, { city: place.city })}
+        />
+        <CityChangeOffer />
         {body()}
       </VStack>
       {state === LOCATION_ROOT_STATE.DEVICE ? <AutoUpdateSection /> : null}

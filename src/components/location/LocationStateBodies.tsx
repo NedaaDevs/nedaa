@@ -93,6 +93,8 @@ type DeviceProps = {
   verified: boolean;
   /** The place came from the device's cached fix. */
   lastKnown: boolean;
+  /** The city-change offer waits for an answer; its Use is the refresh. */
+  offerUp: boolean;
 };
 
 export const DeviceBody = ({
@@ -104,6 +106,7 @@ export const DeviceBody = ({
   lastFound,
   verified,
   lastKnown,
+  offerUp,
 }: DeviceProps) => {
   const { t } = useTranslation();
   return (
@@ -114,18 +117,20 @@ export const DeviceBody = ({
       ) : lastKnown ? (
         <Callout tone={CALLOUT_TONE.INFO} body={t("location.lastKnownNotice")} />
       ) : null}
-      <ListGroup>
-        <ListRow
-          variant={LIST_ROW_VARIANT.GROUPED}
-          icon={RefreshCw}
-          tile
-          title={t("location.device.refresh")}
-          status={lastFound}
-          hint={t("a11y.location.refreshHint")}
-          disabled={busy}
-          onPress={onRefresh}
-        />
-      </ListGroup>
+      {offerUp ? null : (
+        <ListGroup>
+          <ListRow
+            variant={LIST_ROW_VARIANT.GROUPED}
+            icon={RefreshCw}
+            tile
+            title={t("location.device.refresh")}
+            status={lastFound}
+            hint={t("a11y.location.refreshHint")}
+            disabled={busy}
+            onPress={onRefresh}
+          />
+        </ListGroup>
+      )}
       <LocationUpdateProgress run={run} onRetry={onRetry} />
     </>
   );
