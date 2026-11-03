@@ -35,7 +35,6 @@ import { ThemeTransitionProvider } from "@/components/ui/theme-transition";
 import { ToastHost } from "@/components/ToastHost";
 import { ActionsheetOverlay } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
-import { CityChangeSheet } from "@/components/location/CityChangeSheet";
 import { OnboardingGate } from "@/components/onboarding/flow/OnboardingGate";
 import PlayerBottomSheet from "@/components/athkar/PlayerBottomSheet";
 import CrashReportPrompt from "@/components/CrashReportPrompt";
@@ -113,8 +112,6 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
             style={{ flex: 1, backgroundColor: safeAreaBg }}
             importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
             <StatusBar animated style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
-
-            <CityChangeSheet onboarding={showOnboarding} />
 
             <AlertLaunchContext value={alertLaunch}>
               <OnboardingGate path={gatePath}>

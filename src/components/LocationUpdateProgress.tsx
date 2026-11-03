@@ -9,7 +9,13 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { PROGRESS_ROW, UPDATE_STEP, type ProgressRow, type UpdateStep } from "@/constants/Location";
+import {
+  LOCATION_UPDATE_SURFACE,
+  PROGRESS_ROW,
+  UPDATE_STEP,
+  type ProgressRow,
+  type UpdateStep,
+} from "@/constants/Location";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { FINDING_CITY, findingCity, type UpdateRun } from "@/stores/locationUpdate";
 
@@ -22,7 +28,7 @@ export const LOCATION_UPDATE_PART = {
 
 /** The line naming what runs now, read aloud as it changes. */
 const STATUS: Record<UpdateStep, ParseKeys> = {
-  [UPDATE_STEP.LOCATION]: "location.update.step.city",
+  [UPDATE_STEP.LOCATION]: "location.update.step.findingPlace",
   [UPDATE_STEP.PRAYER_TIMES]: "location.update.step.prayerTimes",
   [UPDATE_STEP.NOTIFICATIONS]: "location.update.step.notifications",
   [UPDATE_STEP.ALARMS]: "location.update.step.alarms",
@@ -47,7 +53,7 @@ const ROW_OF: Record<UpdateStep, ProgressRow> = {
 const ROWS = Object.values(PROGRESS_ROW);
 
 const ROW_LABEL: Record<ProgressRow, ParseKeys> = {
-  [PROGRESS_ROW.PLACE]: "location.update.steps.place",
+  [PROGRESS_ROW.PLACE]: "location.update.steps.placeRow",
   [PROGRESS_ROW.TIMES]: "location.update.steps.times",
   [PROGRESS_ROW.ALERTS]: "location.update.steps.alerts",
 };
@@ -119,13 +125,15 @@ const StepRow = ({ row, state }: { row: ProgressRow; state: RowState }) => {
 };
 
 /** The run's steps: what runs now, what is done and what is next. */
-const RunningSteps = ({ run, inSheet }: { run: UpdateRun; inSheet: boolean }) => {
+const RunningSteps = ({ run, flat }: { run: UpdateRun; flat: boolean }) => {
   const { t } = useTranslation();
   const { step } = run;
   const status = t(findingCity(run) ? FINDING_CITY : STATUS[step]);
   useIosAnnouncement(status);
+  // Flat inside a host card: no surface and no lift of its own.
+  const Frame = flat ? VStack : Card;
   return (
-    <Card testID={LOCATION_UPDATE_PART.FRAME} variant={inSheet ? "panel" : "plain"} gap="$3">
+    <Frame testID={LOCATION_UPDATE_PART.FRAME} gap="$3">
       <HStack
         alignItems="center"
         gap="$2"
@@ -149,31 +157,56 @@ const RunningSteps = ({ run, inSheet }: { run: UpdateRun; inSheet: boolean }) =>
           {t("location.update.keepsTimes")}
         </Text>
       </HStack>
-    </Card>
+    </Frame>
   );
 };
 
-type StoppedProps = { step: UpdateStep; onRetry: () => void };
+type StoppedProps = { step: UpdateStep } & ({ flat: false; onRetry: () => void } | { flat: true });
 
 /** What the step that threw left undone, said as the steps were. */
-const StoppedStep = ({ step, onRetry }: StoppedProps) => {
+const StoppedStep = (props: StoppedProps) => {
   const { t } = useTranslation();
-  const body = t(FAILED[step]);
+  const body = t(FAILED[props.step]);
   useIosAnnouncement(body);
-  return <Callout body={body} action={{ label: t("common.retry"), onPress: onRetry }} />;
+  if (props.flat) {
+    return (
+      <Text
+        size="sm"
+        color="$fg"
+        accessible
+        accessibilityLabel={body}
+        accessibilityLiveRegion="polite">
+        {body}
+      </Text>
+    );
+  }
+  return <Callout body={body} action={{ label: t("common.retry"), onPress: props.onRetry }} />;
 };
 
 type Props = {
   /** The run to draw; null draws nothing. */
   run: UpdateRun | null;
-  onRetry: () => void;
-  /** Drawn inside a sheet: on its panel tone, not a lifted card. */
-  inSheet?: boolean;
-};
+} & (
+  | {
+      /** Its own lifted card, with Retry on a stopped step. */
+      surface?: typeof LOCATION_UPDATE_SURFACE.CARD;
+      onRetry: () => void;
+    }
+  | {
+      /** Inside a host card, which draws Retry for a stopped step. */
+      surface: typeof LOCATION_UPDATE_SURFACE.FLAT;
+    }
+);
 
 /** A location update's steps while it runs, or the step that stopped it. */
-export const LocationUpdateProgress = ({ run, onRetry, inSheet = false }: Props) => {
+export const LocationUpdateProgress = (props: Props) => {
+  const { run } = props;
   if (!run) return null;
-  if (!run.failed) return <RunningSteps run={run} inSheet={inSheet} />;
-  return <StoppedStep step={run.step} onRetry={onRetry} />;
+  const flat = props.surface === LOCATION_UPDATE_SURFACE.FLAT;
+  if (!run.failed) return <RunningSteps run={run} flat={flat} />;
+  return props.surface === LOCATION_UPDATE_SURFACE.FLAT ? (
+    <StoppedStep step={run.step} flat />
+  ) : (
+    <StoppedStep step={run.step} flat={false} onRetry={props.onRetry} />
+  );
 };

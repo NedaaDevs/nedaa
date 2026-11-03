@@ -14,6 +14,9 @@ const NOTICE: Record<TimesPlace, ParseKeys | null> = {
   [TIMES_PLACE.UNKNOWN]: null,
 };
 
+/** Whether Makkah's times stand in, so the notice has something to say. */
+export const useStandInNotice = (): boolean => NOTICE[useTimesPlace()] !== null;
+
 type Props = { action?: StateAction };
 
 /** Says the times are Makkah's: no place is found, or its times are not in. */
