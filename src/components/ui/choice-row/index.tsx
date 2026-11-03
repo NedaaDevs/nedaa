@@ -5,6 +5,7 @@ import { FontLanguage } from "tamagui";
 
 import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
+import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_STYLE, LIST_ROW_VARIANT } from "@/components/ui/list-row";
@@ -36,14 +37,17 @@ const CHECK_SIZE = 22;
 const CHECK_EDGE = 1.5;
 const TICK_SIZE = 13;
 const TICK_STROKE = 2.2;
+/** A disabled row's name and radio, as `Pressable` dims a disabled control. */
+const DISABLED_OPACITY = 0.4;
 
 /** A grouped row's frame and type; every variant sets its name and line so. */
 const GROUPED_STYLE = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 
 /** The chosen row's mark: filled in the accent, or an empty ring. */
-const ChoiceCheck = ({ selected }: { selected: boolean }) => (
+const ChoiceCheck = ({ selected, dimmed }: { selected: boolean; dimmed: boolean }) => (
   <Box
     testID={CHOICE_ROW_PART.CHECK}
+    opacity={dimmed ? DISABLED_OPACITY : 1}
     width={CHECK_SIZE}
     height={CHECK_SIZE}
     borderRadius="$pill"
@@ -81,6 +85,10 @@ type Props = {
   subtitleLocale?: AppLocale;
   selected: boolean;
   onPress: () => void;
+  /** Holds the row still and dims its name and radio; a pill stays clear. */
+  disabled?: boolean;
+  /** A short note after the title, at full strength; read with the title. */
+  pill?: string;
   /** Drawn at the start of the row, such as a preview of the choice. */
   leading?: ReactNode;
   /** A short note on the row, such as the user's own setting; read last. */
@@ -95,6 +103,8 @@ export const ChoiceRow = ({
   subtitleLocale,
   selected,
   onPress,
+  disabled = false,
+  pill,
   leading,
   badge,
   testID,
@@ -103,14 +113,16 @@ export const ChoiceRow = ({
   const grouped = use(VariantContext) === LIST_ROW_VARIANT.GROUPED;
   // A row in a group lies flat on it; a choice alone is a card of its own.
   const Frame = grouped ? Pressable : Card.Pressable;
-  const named = subtitle ? t("a11y.join", { first: title, second: subtitle }) : title;
+  const titled = pill ? t("a11y.join", { first: title, second: pill }) : title;
+  const named = subtitle ? t("a11y.join", { first: titled, second: subtitle }) : titled;
+  const ink = disabled ? DISABLED_OPACITY : 1;
 
   return (
     <Frame
       testID={testID}
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
       accessibilityLabel={badge ? t("a11y.join", { first: named, second: badge }) : named}
       flexDirection="row"
       alignItems="center"
@@ -121,12 +133,21 @@ export const ChoiceRow = ({
       pressStyle={grouped ? GROUPED_STYLE.press : PRESSED}>
       {leading}
       <VStack flex={1}>
-        <Text {...GROUPED_STYLE.title} color="$fg">
-          {title}
-        </Text>
+        {pill ? (
+          <HStack alignItems="center" flexWrap="wrap" gap="$2">
+            <Text {...GROUPED_STYLE.title} color="$fg" opacity={ink}>
+              {title}
+            </Text>
+            <Pill>{pill}</Pill>
+          </HStack>
+        ) : (
+          <Text {...GROUPED_STYLE.title} color="$fg" opacity={ink}>
+            {title}
+          </Text>
+        )}
         {subtitle ? (
           <SubtitleFace locale={subtitleLocale}>
-            <Text {...GROUPED_STYLE.status} color="$muted">
+            <Text {...GROUPED_STYLE.status} color="$muted" opacity={ink}>
               {subtitle}
             </Text>
           </SubtitleFace>
@@ -137,7 +158,7 @@ export const ChoiceRow = ({
           </VStack>
         ) : null}
       </VStack>
-      <ChoiceCheck selected={selected} />
+      <ChoiceCheck selected={selected} dimmed={disabled} />
     </Frame>
   );
 };
