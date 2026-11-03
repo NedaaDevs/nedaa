@@ -1,7 +1,14 @@
 import type { ParseKeys } from "i18next";
 import { getTimezoneOffset } from "date-fns-tz";
 
-import { ZONE_COPY_KEY, ZONE_DIRECTION, ZONE_UNIT } from "@/constants/CityOffer";
+import {
+  ZONE_COPY_KEY,
+  ZONE_DIRECTION,
+  ZONE_NOTE_KEY,
+  ZONE_UNIT,
+  type ZoneDirection,
+  type ZoneUnit,
+} from "@/constants/CityOffer";
 
 const MINUTE_MS = 60_000;
 const MINUTES_PER_HOUR = 60;
@@ -20,15 +27,36 @@ export const zoneDifferenceMinutes = (from: string, to: string, at: number): num
   return fromOffset === null || toOffset === null ? null : toOffset - fromOffset;
 };
 
+type ZoneKeys = Record<ZoneDirection, Record<ZoneUnit, ParseKeys>>;
+
+/** The key for `minutes` read in `direction`, with its count; the unit rule. */
+const copyIn = (
+  keys: ZoneKeys,
+  direction: ZoneDirection,
+  minutes: number
+): { key: ParseKeys; count: number } => {
+  const apart = Math.abs(minutes);
+  const wholeHours = Math.floor(apart / MINUTES_PER_HOUR);
+  const rest = apart % MINUTES_PER_HOUR;
+  if (rest === 0) return { key: keys[direction][ZONE_UNIT.HOURS], count: wholeHours };
+  if (rest === HALF_HOUR_MINUTES)
+    return { key: keys[direction][ZONE_UNIT.HALF_HOURS], count: wholeHours };
+  return { key: keys[direction][ZONE_UNIT.MINUTES], count: apart };
+};
+
 /** The copy key and count for a difference; null when the clocks agree. */
 export const zoneCopyOf = (minutes: number): { key: ParseKeys; count: number } | null => {
   if (minutes === 0) return null;
   const direction = minutes > 0 ? ZONE_DIRECTION.AHEAD : ZONE_DIRECTION.BEHIND;
-  const apart = Math.abs(minutes);
-  const wholeHours = Math.floor(apart / MINUTES_PER_HOUR);
-  const rest = apart % MINUTES_PER_HOUR;
-  if (rest === 0) return { key: ZONE_COPY_KEY[direction][ZONE_UNIT.HOURS], count: wholeHours };
-  if (rest === HALF_HOUR_MINUTES)
-    return { key: ZONE_COPY_KEY[direction][ZONE_UNIT.HALF_HOURS], count: wholeHours };
-  return { key: ZONE_COPY_KEY[direction][ZONE_UNIT.MINUTES], count: apart };
+  return copyIn(ZONE_COPY_KEY, direction, minutes);
+};
+
+/**
+ * The same difference said from the other clock's side: when `minutes` is
+ * positive the saved place is the one behind. Null when the clocks agree.
+ */
+export const zoneNoteOf = (minutes: number): { key: ParseKeys; count: number } | null => {
+  if (minutes === 0) return null;
+  const direction = minutes > 0 ? ZONE_DIRECTION.BEHIND : ZONE_DIRECTION.AHEAD;
+  return copyIn(ZONE_NOTE_KEY, direction, minutes);
 };
