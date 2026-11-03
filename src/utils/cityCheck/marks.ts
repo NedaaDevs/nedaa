@@ -31,6 +31,10 @@ export const toPlaceMark = (coords: Coords, at: number, countryCode?: string | n
 
 export const sameCountry = (a: string, b: string): boolean => a.toUpperCase() === b.toUpperCase();
 
+/** Whether two marks name the same point at the same time. */
+export const sameMark = (a: Omit<PlaceMark, "countryCode">, b: PlaceMark): boolean =>
+  a.lat === b.lat && a.lng === b.lng && a.at === b.at;
+
 export const markPoint = (mark: PlaceMark): Coords => ({ latitude: mark.lat, longitude: mark.lng });
 
 // The shortest distance both accuracies allow. An unknown fix accuracy is 0,

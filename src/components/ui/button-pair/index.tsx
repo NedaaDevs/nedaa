@@ -66,6 +66,25 @@ const useWidths = (labels: readonly [string, string]) => {
   };
 };
 
+type ActionButtonProps = { action: PairAction; lead?: boolean; flex?: number };
+
+/** One action as a full button; the lead action is filled. */
+export const ActionButton = ({ action, lead = false, flex }: ActionButtonProps) => (
+  <Button
+    action={lead ? "primary" : "secondary"}
+    variant={lead ? "solid" : "outline"}
+    size="md"
+    borderRadius="$control"
+    testID={action.testID}
+    accessibilityLabel={action.label}
+    accessibilityHint={action.hint}
+    disabled={action.disabled}
+    onPress={action.onPress}
+    flex={flex}>
+    <Button.Text>{action.label}</Button.Text>
+  </Button>
+);
+
 type Props = { primary: PairAction; secondary: PairAction };
 
 /**
@@ -92,32 +111,8 @@ export const ButtonPair = ({ primary, secondary }: Props) => {
       flexDirection={flexDirection}
       gap="$2"
       onLayout={onRowLayout}>
-      <Button
-        action="primary"
-        variant="solid"
-        size="md"
-        borderRadius="$control"
-        testID={primary.testID}
-        accessibilityLabel={primary.label}
-        accessibilityHint={primary.hint}
-        disabled={primary.disabled}
-        onPress={primary.onPress}
-        {...grow}>
-        <Button.Text>{primary.label}</Button.Text>
-      </Button>
-      <Button
-        action="secondary"
-        variant="outline"
-        size="md"
-        borderRadius="$control"
-        testID={secondary.testID}
-        accessibilityLabel={secondary.label}
-        accessibilityHint={secondary.hint}
-        disabled={secondary.disabled}
-        onPress={secondary.onPress}
-        {...grow}>
-        <Button.Text>{secondary.label}</Button.Text>
-      </Button>
+      <ActionButton action={primary} lead {...grow} />
+      <ActionButton action={secondary} {...grow} />
       {[
         { action: primary, onLayout: onFirstLayout, slot: 0 },
         { action: secondary, onLayout: onSecondLayout, slot: 1 },

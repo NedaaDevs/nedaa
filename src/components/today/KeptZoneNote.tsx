@@ -1,10 +1,10 @@
 import { Text } from "@/components/ui/text";
-import { ZONE_LINE } from "@/constants/CityOffer";
+import { NO_PLACE } from "@/constants/CityOffer";
 import { LocationMode } from "@/enums/location";
 import { useMarkPlace } from "@/hooks/useMarkPlace";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { usePlace } from "@/hooks/usePlace";
-import { useZoneLine } from "@/hooks/useZoneLine";
+import { useZoneNote } from "@/hooks/useZoneLine";
 import { useCityCheckStore } from "@/stores/cityCheck";
 import { selectOfferUp, useLocationStore } from "@/stores/location";
 import type { PlaceMark } from "@/types/cityCheck";
@@ -19,7 +19,7 @@ export const newestKept = (kept: readonly PlaceMark[], now: number): PlaceMark |
       null
     );
 
-/** During a kept trip, how far the kept place's clock is from the saved one's. */
+/** During a kept trip, how far the kept place's clock is from the saved one. */
 export const KeptZoneNote = () => {
   const now = useMinuteClock().getTime();
   const kept = useCityCheckStore(({ cityCheck }) => cityCheck.kept);
@@ -29,11 +29,10 @@ export const KeptZoneNote = () => {
   const saved = usePlace();
   const trip = isDevicePlace && !offerUp ? newestKept(kept, now) : null;
   const place = useMarkPlace(trip);
-  const note = useZoneLine(
-    { city: place?.city ?? null, zone: place?.zone ?? null },
-    { city: saved.city ?? null, zone: savedZone || null },
-    ZONE_LINE.NOTE
-  );
+  const note = useZoneNote(place ?? NO_PLACE, {
+    city: saved.city ?? null,
+    zone: savedZone || null,
+  });
   if (!trip || !note) return null;
 
   return (

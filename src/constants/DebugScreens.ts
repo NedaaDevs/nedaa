@@ -63,6 +63,6 @@ export const DEBUG_COPY = {
   NO_ZONE: "none",
   /** The city the sample offer names. */
   SAMPLE_NEW_CITY: "Dubai",
-  /** The zone the named sample carries, so the offer shows a clock difference. */
+  /** The named sample's zone, so the offer shows a clock difference. */
   SAMPLE_NEW_ZONE: "Asia/Dubai",
 } as const;
