@@ -9,6 +9,7 @@ const BASE = {
   storedFailure: null,
   reading: false,
   running: false,
+  offerHostsRun: false,
 } as const;
 
 describe("locationRootState", () => {
@@ -21,6 +22,17 @@ describe("locationRootState", () => {
   ])("shows an update's steps while one runs, over %s", (_case, facts) => {
     expect(locationRootState({ ...facts, running: true, reading: true })).toBe(
       LOCATION_ROOT_STATE.UPDATING
+    );
+  });
+
+  // The card draws the run; the screen keeps its own body.
+  it.each([
+    ["running", { running: true, reading: true }],
+    ["failed at the place", { failedStep: UPDATE_STEP.LOCATION }],
+    ["failed at the times", { failedStep: UPDATE_STEP.PRAYER_TIMES }],
+  ])("leaves a run to the offer card while it hosts one, %s", (_case, run) => {
+    expect(locationRootState({ ...BASE, ...run, offerHostsRun: true })).toBe(
+      LOCATION_ROOT_STATE.DEVICE
     );
   });
 
