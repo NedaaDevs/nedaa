@@ -1,20 +1,23 @@
 import { reverseGeocodeAsync } from "@/adapters/location";
-import { TRAVEL_MODE } from "@/constants/CityCheck";
+import { NOT_ASKED_MAX, TRAVEL_MODE } from "@/constants/CityCheck";
+import { CITY_OFFER_STAGE } from "@/constants/CityOffer";
 import { FIX_SOURCE } from "@/constants/Location";
 import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { LocationMode } from "@/enums/location";
 import { useAppStore } from "@/stores/app";
 import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
-import { useLocationStore, type LocationStore } from "@/stores/location";
-import { offerUp } from "@/test-helpers/cityOffer";
+import { selectOfferUp, useLocationStore, type LocationStore } from "@/stores/location";
+import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
 import { JEDDAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import {
   initialLocationDetails,
   type LocationGeocodedAddress,
   type LocationObject,
+  type PlaceRecord,
 } from "@/types/location";
 import { AppLogger } from "@/utils/appLogger";
+import { toPlaceMark } from "@/utils/cityCheck/marks";
 import { readLocation } from "@/utils/location";
 
 let mockSaved: string | null = null;
@@ -50,6 +53,23 @@ const SAUDI_ARABIA = RIYADH_CITY.country.name;
 const RIYADH_ADDRESS = { city: RIYADH_CITY.name, country: SAUDI_ARABIA };
 const SA = COUNTRY_CODE.SAUDI_ARABIA;
 const log = AppLogger.create("location");
+const NOW = 1_750_000_000_000;
+const JEDDAH_POINT = candidateAt().point;
+// About 3 km from Jeddah.
+const JEDDAH_2_POINT = { latitude: 21.5633, longitude: 39.1928 };
+const DUBAI_POINT = { latitude: 25.2, longitude: 55.27 };
+const RIYADH_COORDS = { ...initialLocationDetails.coords, latitude: 24.7136, longitude: 46.6753 };
+const RIYADH_PLACE: PlaceRecord = {
+  coords: RIYADH_COORDS,
+  address: RIYADH_ADDRESS,
+  timezone: RIYADH_ZONE,
+  fixSource: FIX_SOURCE.FRESH,
+  fixedAt: NOW - 1_000,
+  countryCode: SA,
+  localizedLocation: { city: RIYADH_CITY.name, country: SAUDI_ARABIA },
+  locationMode: LocationMode.DEVICE,
+  manualLocation: null,
+};
 
 const state = () => useLocationStore.getState();
 const kept = () => useCityCheckStore.getState().cityCheck.kept;
@@ -160,7 +180,7 @@ describe("the city offer", () => {
     offerUp();
     state().keepCityOffer();
     expect(kept()).toEqual([expect.objectContaining({ lat: 21.54, lng: 39.17 })]);
-    expect(state().cityOffer).toBeNull();
+    expect(state().cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.KEPT);
   });
 
   it("remembers nothing when the offer is dismissed", () => {
@@ -180,6 +200,154 @@ describe("the city offer", () => {
     offerUp();
     state().setTravelMode(TRAVEL_MODE.OFF);
     expect(state().cityOffer).toBeNull();
+  });
+});
+
+describe("the offer's answers", () => {
+  const notAsked = () => useCityCheckStore.getState().cityCheck.notAsked;
+
+  beforeEach(() => {
+    jest.spyOn(Date, "now").mockReturnValue(NOW);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it("puts a new offer up unanswered and unannounced", () => {
+    offerUp();
+    expect(state().cityOffer).toMatchObject({
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      announced: false,
+      from: null,
+    });
+  });
+
+  it("keeps the offer up on Keep and records the place for this trip", () => {
+    offerUp();
+    state().keepCityOffer();
+    expect(state().cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.KEPT);
+    expect(kept()[0]).toEqual(toPlaceMark(JEDDAH_POINT, NOW, candidateAt().countryCode));
+  });
+
+  it("mutes the offer's place, newest first, at most NOT_ASKED_MAX", () => {
+    const points = Array.from({ length: NOT_ASKED_MAX + 1 }, (_, i) => ({
+      latitude: 10 + i,
+      longitude: 40,
+    }));
+    points.forEach((point) => {
+      offerUp(candidateAt({ point }));
+      state().muteCityOffer();
+    });
+    expect(notAsked()).toHaveLength(NOT_ASKED_MAX);
+    expect(notAsked()[0]).toEqual(
+      toPlaceMark(points[NOT_ASKED_MAX], NOW, candidateAt().countryCode)
+    );
+  });
+
+  it("sets the offer to muted and carries the country in the mark", () => {
+    offerUp();
+    state().muteCityOffer();
+    expect(state().cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.MUTED);
+    expect(notAsked()[0]?.countryCode).toBe(candidateAt().countryCode);
+  });
+
+  it("replaces a muted mark the new one matches rather than adding a second", () => {
+    offerUp();
+    state().muteCityOffer();
+    offerUp(candidateAt({ point: JEDDAH_2_POINT }));
+    state().muteCityOffer();
+    expect(notAsked()).toEqual([toPlaceMark(JEDDAH_2_POINT, NOW, candidateAt().countryCode)]);
+  });
+
+  it("asks again in exactly the mark taken off the list", () => {
+    const jeddah = toPlaceMark(JEDDAH_POINT, NOW);
+    const dubai = toPlaceMark(DUBAI_POINT, NOW);
+    useCityCheckStore.getState().mute(jeddah);
+    useCityCheckStore.getState().mute(dubai);
+    useCityCheckStore.getState().askAgainIn(jeddah);
+    expect(notAsked()).toEqual([dubai]);
+  });
+
+  it("marks the offer announced", () => {
+    offerUp();
+    state().markCityOfferAnnounced();
+    expect(state().cityOffer?.announced).toBe(true);
+  });
+
+  it("keeps the first saved city after a Retry from a stop at notifications", () => {
+    offerUp();
+    state().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+    state().startCityOfferUse({ city: "Jeddah", zone: RIYADH_ZONE });
+    expect(state().cityOffer?.from).toEqual({ city: "Riyadh", zone: RIYADH_ZONE });
+  });
+
+  it("notes where the times came from when Use starts, then settles as updated", () => {
+    offerUp();
+    state().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+    state().settleCityOffer({ kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: true });
+    expect(state().cityOffer).toMatchObject({
+      from: { city: "Riyadh", zone: RIYADH_ZONE },
+      stage: { kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: true },
+    });
+  });
+
+  it("changes nothing when no offer is up", () => {
+    state().markCityOfferAnnounced();
+    state().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+    state().settleCityOffer({ kind: CITY_OFFER_STAGE.KEPT });
+    state().keepCityOffer();
+    state().muteCityOffer();
+    expect(state().cityOffer).toBeNull();
+    expect(kept()).toEqual([]);
+    expect(notAsked()).toEqual([]);
+  });
+
+  it("reports an offer up only while one exists", () => {
+    expect(selectOfferUp(state())).toBe(false);
+    offerUp();
+    expect(selectOfferUp(state())).toBe(true);
+  });
+
+  describe("restorePreviousPlace", () => {
+    it("puts the previous place back and bumps the place revision", () => {
+      useLocationStore.setState({
+        previousPlace: RIYADH_PLACE,
+        placeRevision: 4,
+        locationMode: LocationMode.MANUAL,
+        manualLocation: RIYADH_CITY,
+        lastKnownCoords: JEDDAH_POINT,
+        localizedLocation: { city: JEDDAH_CITY.name, country: SAUDI_ARABIA },
+        locationDetails: {
+          ...initialLocationDetails,
+          countryCode: BAHRAIN,
+          timezone: "Asia/Bahrain",
+        },
+      });
+
+      expect(state().restorePreviousPlace()).toBe(true);
+
+      expect(state().locationDetails).toMatchObject({
+        coords: RIYADH_COORDS,
+        address: RIYADH_ADDRESS,
+        timezone: RIYADH_ZONE,
+        countryCode: SA,
+        error: null,
+        fix: { source: FIX_SOURCE.FRESH, at: RIYADH_PLACE.fixedAt },
+      });
+      expect(state().localizedLocation).toEqual(RIYADH_PLACE.localizedLocation);
+      expect(state().lastKnownCoords).toEqual({
+        latitude: RIYADH_COORDS.latitude,
+        longitude: RIYADH_COORDS.longitude,
+      });
+      expect(state().locationMode).toBe(LocationMode.DEVICE);
+      expect(state().manualLocation).toBeNull();
+      expect(state().previousPlace).toBeNull();
+      expect(state().placeRevision).toBe(5);
+    });
+
+    it("restores nothing when no previous place is kept", () => {
+      useLocationStore.setState({ previousPlace: null, placeRevision: 4 });
+      expect(state().restorePreviousPlace()).toBe(false);
+      expect(state().placeRevision).toBe(4);
+    });
   });
 });
 

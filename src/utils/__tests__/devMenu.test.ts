@@ -2,7 +2,10 @@ import { registerDevMenuItems } from "expo-dev-menu";
 
 import { CITY_CHECK_OFFER, REUSE_FIX_MAX_AGE_MS } from "@/constants/CityCheck";
 import { DEBUG_COPY } from "@/constants/DebugScreens";
+import { offerShapeOf } from "@/components/location/cityOfferView";
+import { CITY_OFFER_STAGE, OFFER_SHAPE } from "@/constants/CityOffer";
 import { LocationMode } from "@/enums/location";
+import { DUBAI_ZONE, RIYADH_CITY } from "@/test-helpers/place";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { AppLogger } from "@/utils/appLogger";
@@ -62,6 +65,7 @@ it("lists the items in menu order", () => {
   expect(items.map(({ name }) => name)).toEqual([
     DEBUG_COPY.RESTART_ONBOARDING,
     DEBUG_COPY.SHOW_CITY_CHANGE,
+    DEBUG_COPY.SHOW_CITY_CHANGE_SAME_CITY,
     DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED,
     DEBUG_COPY.LOG_PHONE_ZONE,
     DEBUG_COPY.RUN_CITY_CHECK,
@@ -73,7 +77,11 @@ it("lists the items in menu order", () => {
 describe("the sample city offers", () => {
   beforeEach(() => {
     setDevBuild(true);
-    useLocationStore.setState({ locationMode: LocationMode.DEVICE, cityOffer: null });
+    useLocationStore.setState({
+      locationMode: LocationMode.DEVICE,
+      cityOffer: null,
+      localizedLocation: { city: RIYADH_CITY.name, country: RIYADH_CITY.country.name },
+    });
   });
 
   it("adds Show city change, offering a named sample city", () => {
@@ -103,16 +111,41 @@ describe("the sample city offers", () => {
     expect(Date.now() - fixedAt).toBeGreaterThan(REUSE_FIX_MAX_AGE_MS);
   });
 
-  it.each([DEBUG_COPY.SHOW_CITY_CHANGE, DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED])(
-    "offers nothing over a chosen city from %s",
-    (name) => {
-      useLocationStore.setState({ locationMode: LocationMode.MANUAL });
-      registerDevMenu();
-      itemNamed(name)?.callback();
+  it.each([
+    [DEBUG_COPY.SHOW_CITY_CHANGE, OFFER_SHAPE.NAMED],
+    [DEBUG_COPY.SHOW_CITY_CHANGE_SAME_CITY, OFFER_SHAPE.SAME_NAME],
+    [DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED, OFFER_SHAPE.UNNAMED],
+  ])("adds %s, putting an unanswered offer of that shape up", (name, shape) => {
+    registerDevMenu();
+    itemNamed(name)?.callback();
 
-      expect(useLocationStore.getState().cityOffer).toBeNull();
-    }
-  );
+    const offer = useLocationStore.getState().cityOffer;
+    expect(offer?.stage.kind).toBe(CITY_OFFER_STAGE.OFFER);
+    expect(
+      offerShapeOf({ here: offer?.candidate.name?.name ?? null, saved: RIYADH_CITY.name })
+    ).toBe(shape);
+  });
+
+  it("names the Dubai sample on Dubai's zone, so the zone line shows", () => {
+    registerDevMenu();
+    itemNamed(DEBUG_COPY.SHOW_CITY_CHANGE)?.callback();
+
+    const candidate = useLocationStore.getState().cityOffer?.candidate;
+    expect(candidate?.name?.name).toBe(DEBUG_COPY.SAMPLE_NEW_CITY);
+    expect(candidate?.zone).toBe(DUBAI_ZONE);
+  });
+
+  it.each([
+    DEBUG_COPY.SHOW_CITY_CHANGE,
+    DEBUG_COPY.SHOW_CITY_CHANGE_SAME_CITY,
+    DEBUG_COPY.SHOW_CITY_CHANGE_UNNAMED,
+  ])("offers nothing over a chosen city from %s", (name) => {
+    useLocationStore.setState({ locationMode: LocationMode.MANUAL });
+    registerDevMenu();
+    itemNamed(name)?.callback();
+
+    expect(useLocationStore.getState().cityOffer).toBeNull();
+  });
 });
 
 it("adds Log the phone zone, logging both readings", () => {

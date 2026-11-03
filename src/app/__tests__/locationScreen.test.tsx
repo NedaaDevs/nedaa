@@ -6,7 +6,6 @@ import { useLocalSearchParams, usePathname } from "expo-router";
 import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
-import { CityChangeSheet } from "@/components/location/CityChangeSheet";
 import { PLACE_HERO_PART } from "@/components/ui/place-hero";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -25,13 +24,12 @@ import {
 import { AppLocale, PlatformType } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
-import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
-import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
+import { candidateAt } from "@/test-helpers/cityOffer";
 import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
 import { MAKKAH_CITY, RIYADH_CITY, placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -109,16 +107,10 @@ const Picker = () => {
   );
 };
 
-const renderScreen = ({ isRTL = false, withSheet = false } = {}) =>
+const renderScreen = ({ isRTL = false } = {}) =>
   renderRouter(
     {
-      [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => (
-        <>
-          <LocationScreen />
-          {/* The root layout draws the city-change sheet over every screen. */}
-          {withSheet ? <CityChangeSheet onboarding={false} /> : null}
-        </>
-      ),
+      [BACK_DESTINATION.SETTINGS_LOCATION.route]: () => <LocationScreen />,
       [BACK_DESTINATION.SETTINGS_LOCATION_PICKER.route]: () => <Picker />,
     },
     {
@@ -414,7 +406,7 @@ describe("Settings › Location", () => {
       });
       await renderScreen();
 
-      expect(await screen.findByLabelText(t("location.update.step.city"))).toBeTruthy();
+      expect(await screen.findByLabelText(t("location.update.step.findingPlace"))).toBeTruthy();
       expect(screen.queryByLabelText(t("onboarding.fetch.locatingDevice"))).toBeNull();
       expect(hero()).toHaveAccessibleName(
         heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.updatingNote"))
@@ -1041,33 +1033,6 @@ describe("Settings › Location", () => {
       jest
         .mocked(AccessibilityInfo.announceForAccessibility)
         .mock.calls.filter(([said]) => said === message).length;
-
-    it("says each step once under the city-change sheet", async () => {
-      jest.spyOn(AccessibilityInfo, "announceForAccessibility");
-      let read: () => void = () => {};
-      const applyCandidate = jest.fn(
-        () => new Promise<boolean>((resolve) => (read = () => resolve(true)))
-      );
-      mockLoad.mockReturnValue(new Promise(() => {}));
-      useAppStore.setState({ isFirstRun: false });
-      useLocationStore.setState({ applyCityCandidate: applyCandidate });
-      offerUp();
-      await renderScreen({ withSheet: true });
-
-      await userEvent.press(
-        await screen.findByRole("button", { name: t("location.cityChange.update") })
-      );
-      await act(async () => read());
-
-      // The sheet's view hides the screen's from the reader, not from render.
-      expect(
-        screen.getAllByLabelText(t("location.update.step.prayerTimes"), {
-          includeHiddenElements: true,
-        })
-      ).toHaveLength(2);
-      expect(announced(t("location.update.step.city"))).toBe(1);
-      expect(announced(t("location.update.step.prayerTimes"))).toBe(1);
-    });
 
     // A pushed screen leaves this one mounted behind it, off screen; a card it
     // would show there is not said.

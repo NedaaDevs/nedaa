@@ -9,10 +9,19 @@ export const TILE_SIZE = 34;
 /** The glyph's stroke on the tile, and the chevron beside a tiled row. */
 export const TILE_STROKE = 1.75;
 
-type Props = { icon: IconProps["as"] };
+/** The glyph's colour; the tile keeps its tint in every tone. */
+export const ICON_TILE_TONE = {
+  ACCENT: "accent",
+  SUCCESS: "success",
+  DANGER: "danger",
+  MUTED: "muted",
+} as const;
+export type IconTileTone = (typeof ICON_TILE_TONE)[keyof typeof ICON_TILE_TONE];
 
-/** A glyph in the accent on a tinted square; it marks what it heads. */
-export const IconTile = ({ icon }: Props) => (
+type Props = { icon: IconProps["as"]; tone?: IconTileTone };
+
+/** A glyph on a tinted square, in the accent unless a tone says otherwise. */
+export const IconTile = ({ icon, tone = ICON_TILE_TONE.ACCENT }: Props) => (
   <Box
     testID={ICON_TILE_ID}
     width={TILE_SIZE}
@@ -21,6 +30,6 @@ export const IconTile = ({ icon }: Props) => (
     backgroundColor="$tile"
     alignItems="center"
     justifyContent="center">
-    <Icon as={icon} size="lg" color="$accent" strokeWidth={TILE_STROKE} />
+    <Icon as={icon} size="lg" color={`$${tone}`} strokeWidth={TILE_STROKE} />
   </Box>
 );
