@@ -24,7 +24,8 @@ import {
   type CityCheckOfferReason,
   type TravelMode,
 } from "@/constants/CityCheck";
-import type { CityCandidate, CityOffer } from "@/types/cityCheck";
+import { CITY_OFFER_STAGE } from "@/constants/CityOffer";
+import type { CityCandidate, CityOffer, CityOfferStage, ZonePlace } from "@/types/cityCheck";
 import { LocationMode, type LocationModeValue } from "@/enums/location";
 import type { ReverseGeocodeParams, ReverseGeocodeResponse } from "@/types/geocode";
 import type { ErrorResponse } from "@/types/api";
@@ -168,8 +169,16 @@ export type LocationStore = {
   /** The place's zone, as the times fetched for it state. */
   setTimezone: (tz: string) => void;
   offerCity: (candidate: CityCandidate, reasons: CityCheckOfferReason[]) => void;
-  /** Drops the offer and keeps the saved place for this trip. */
+  /** Keeps the saved place for this trip; the offer stays up as kept. */
   keepCityOffer: () => void;
+  /** Stops offers for the candidate's place; the offer stays up as muted. */
+  muteCityOffer: () => void;
+  markCityOfferAnnounced: () => void;
+  /** Notes the saved place the times came from, once per offer. */
+  startCityOfferUse: (from: ZonePlace) => void;
+  settleCityOffer: (stage: CityOfferStage) => void;
+  /** Writes `previousPlace` back as the saved place; false when none is kept. */
+  restorePreviousPlace: () => boolean;
   /** Drops the offer and remembers nothing. */
   dismissCityOffer: () => void;
   /** Fills a missing country code for the place still at `revision`. */
@@ -177,6 +186,9 @@ export type LocationStore = {
   setManualLocation: (location: ManualLocation) => void;
   clearManualLocation: () => void;
 };
+
+/** Whether a city offer is showing, at any stage. */
+export const selectOfferUp = (state: LocationStore): boolean => state.cityOffer !== null;
 
 type SetLocation = (partial: Partial<LocationStore>) => void;
 
@@ -601,16 +613,82 @@ export const useLocationStore = create<LocationStore>()(
         },
 
         offerCity: (candidate, reasons) => {
-          set({ cityOffer: { candidate, reasons } });
+          set({
+            cityOffer: {
+              candidate,
+              reasons,
+              stage: { kind: CITY_OFFER_STAGE.OFFER },
+              announced: false,
+              from: null,
+            },
+          });
         },
 
         keepCityOffer: () => {
           const offer = get().cityOffer;
-          if (offer)
-            useCityCheckStore
-              .getState()
-              .keep(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
-          set({ cityOffer: null });
+          if (!offer) return;
+          useCityCheckStore
+            .getState()
+            .keep(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
+          set({ cityOffer: { ...offer, stage: { kind: CITY_OFFER_STAGE.KEPT } } });
+        },
+
+        muteCityOffer: () => {
+          const offer = get().cityOffer;
+          if (!offer) return;
+          useCityCheckStore
+            .getState()
+            .mute(toPlaceMark(offer.candidate.point, Date.now(), offer.candidate.countryCode));
+          set({ cityOffer: { ...offer, stage: { kind: CITY_OFFER_STAGE.MUTED } } });
+        },
+
+        markCityOfferAnnounced: () => {
+          set((state) =>
+            state.cityOffer ? { cityOffer: { ...state.cityOffer, announced: true } } : {}
+          );
+        },
+
+        // A Retry after a stop finds the new city already saved; the first stays.
+        startCityOfferUse: (from) => {
+          set((state) =>
+            state.cityOffer && state.cityOffer.from === null
+              ? { cityOffer: { ...state.cityOffer, from } }
+              : {}
+          );
+        },
+
+        settleCityOffer: (stage) => {
+          set((state) => (state.cityOffer ? { cityOffer: { ...state.cityOffer, stage } } : {}));
+        },
+
+        restorePreviousPlace: () => {
+          const previous = get().previousPlace;
+          if (!previous) return false;
+          set((state) => ({
+            locationDetails: {
+              ...state.locationDetails,
+              coords: previous.coords,
+              address: previous.address,
+              timezone: previous.timezone,
+              error: null,
+              fix:
+                previous.fixSource !== null && previous.fixedAt !== null
+                  ? { source: previous.fixSource, at: previous.fixedAt }
+                  : null,
+              countryCode: previous.countryCode,
+              isLoading: false,
+            },
+            localizedLocation: previous.localizedLocation,
+            lastKnownCoords: {
+              latitude: previous.coords.latitude,
+              longitude: previous.coords.longitude,
+            },
+            locationMode: previous.locationMode,
+            manualLocation: previous.manualLocation,
+            previousPlace: null,
+            placeRevision: state.placeRevision + 1,
+          }));
+          return true;
         },
 
         dismissCityOffer: () => {

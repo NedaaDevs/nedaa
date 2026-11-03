@@ -48,7 +48,6 @@ jest.mock("@/hooks/useOnboardingPath", () => ({
 
 /** What each wired part was last handed. */
 const mockSeen: {
-  sheetOnboarding?: boolean;
   gatePath?: unknown;
   canNavigate?: boolean;
   alertLaunch?: boolean;
@@ -56,12 +55,6 @@ const mockSeen: {
 jest.mock("@/hooks/useNotificationResponses", () => ({
   useNotificationResponses: (canNavigate: boolean) => {
     mockSeen.canNavigate = canNavigate;
-  },
-}));
-jest.mock("@/components/location/CityChangeSheet", () => ({
-  CityChangeSheet: ({ onboarding }: { onboarding: boolean }) => {
-    mockSeen.sheetOnboarding = onboarding;
-    return null;
   },
 }));
 jest.mock("@/components/onboarding/flow/OnboardingGate", () => ({
@@ -106,12 +99,11 @@ describe("RootLayout wiring", () => {
     expect(SplashScreen.hideAsync).toHaveBeenCalled();
   });
 
-  it("hides the city sheet and opens taps while the upgrade path shows", async () => {
+  it("opens taps while the upgrade path shows", async () => {
     mockPath = ONBOARDING_PATH.UPGRADE;
     await renderRoot();
 
     expect(mockSeen.gatePath).toBe(ONBOARDING_PATH.UPGRADE);
-    expect(mockSeen.sheetOnboarding).toBe(true);
     expect(mockSeen.canNavigate).toBe(true);
   });
 
@@ -120,7 +112,6 @@ describe("RootLayout wiring", () => {
     await renderRoot();
 
     expect(mockSeen.gatePath).toBe(ONBOARDING_PATH.FIRST_RUN);
-    expect(mockSeen.sheetOnboarding).toBe(true);
     expect(mockSeen.canNavigate).toBe(false);
   });
 
@@ -135,7 +126,6 @@ describe("RootLayout wiring", () => {
     await renderRoot();
 
     expect(mockSeen.gatePath).toBeNull();
-    expect(mockSeen.sheetOnboarding).toBe(false);
     expect(mockSeen.canNavigate).toBe(true);
   });
 });

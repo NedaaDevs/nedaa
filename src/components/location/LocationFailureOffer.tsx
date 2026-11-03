@@ -1,36 +1,45 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Platform } from "react-native";
 import type { ParseKeys } from "i18next";
-import { CircleAlert, Globe, RefreshCw, Search } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Globe,
+  RefreshCw,
+  Search,
+} from "lucide-react-native";
 
 import { usesHmsLocation } from "@/adapters/location";
-import { OpenSettingsButton } from "@/components/location/OpenSettingsButton";
+import {
+  OpenSettingsButton,
+  useOpenSettingsAction,
+} from "@/components/location/OpenSettingsButton";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { HStack } from "@/components/ui/hstack";
-import { Icon } from "@/components/ui/icon";
+import { ButtonPair, type PairAction } from "@/components/ui/button-pair";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { ICON_TILE_TONE } from "@/components/ui/icon-tile";
+import { NOTICE_LINE, NoticeCard } from "@/components/ui/notice-card";
 import { Section } from "@/components/ui/section";
-import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { E2E_ID } from "@/constants/E2E";
 import {
   ANDROID_LOCATION_SETTINGS,
+  FAILURE_OFFER_VARIANT,
   LOCATION_FAILURE,
   type LocationFailure,
 } from "@/constants/Location";
 import { SECTION_KIND } from "@/constants/Section";
 import { PlatformType } from "@/enums/app";
+import { useRTL } from "@/contexts/RTLContext";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useLocationPermission } from "@/hooks/useLocationPermission";
 import { AppLogger } from "@/utils/appLogger";
 import { errorText } from "@/utils/errorText";
 
 const log = AppLogger.create("location");
-
-/** Test ids for the offer's parts. */
-export const LOCATION_FAILURE_PART = { CARD: "location-failure-card" } as const;
 
 type Copy = { title: ParseKeys; hint: ParseKeys };
 
@@ -72,79 +81,105 @@ const openLocationSettings = () =>
     log.w("Failure", `location settings failed to open: ${errorText(error)}`)
   );
 
-type Props = {
+type Common = {
   /** Why the device read failed; null when the times failed after it. */
   failure: LocationFailure | null;
   onRetry: () => void;
   onChooseCity: () => void;
-  onEnterCoordinates: () => void;
-  /** Drawn inside a sheet: on its panel tone, not a lifted card. */
-  inSheet?: boolean;
+  /** The city whose times failed, named when a good read came first. */
+  city?: string;
 };
 
-/** What went wrong, retry first, then the ways to set a place by hand. */
-export const LocationFailureOffer = ({
-  failure,
-  onRetry,
-  onChooseCity,
-  onEnterCoordinates,
-  inSheet = false,
-}: Props) => {
+type Props = Common &
+  (
+    | {
+        variant?: typeof FAILURE_OFFER_VARIANT.SCREEN;
+        onEnterCoordinates: () => void;
+      }
+    | {
+        /** In the city-change card, beside the keep-saved action. */
+        variant: typeof FAILURE_OFFER_VARIANT.CARD;
+        keep: PairAction;
+        /** Test id of the card. */
+        testID?: string;
+      }
+  );
+
+/** What failed, what to say about it, and which action leads. */
+const useFailureView = ({ failure, city }: Pick<Common, "failure" | "city">) => {
   const { t } = useTranslation();
   const android = Platform.OS === PlatformType.ANDROID;
   const copy = copyFor(failure, android);
-  const title = t(copy.title);
+  const title =
+    city && failure === null ? t("location.failure.times.title", { city }) : t(copy.title);
   const hint = t(copy.hint);
-  const message = t("a11y.sentences", { first: title, second: hint });
-  const retry = t("common.retry");
-  const openSettings = t("location.failure.servicesOff.open");
   // Settings only once the system can no longer ask; until the first check
   // answers, and while it can ask, Retry stands.
   const { permission } = useLocationPermission();
   const toSettings =
     failure === LOCATION_FAILURE.DENIED && permission?.granted === false && !permission.canAskAgain;
-  useIosAnnouncement(message);
+  // iOS has no link to location services; its hint names the way.
+  const servicesOffOnAndroid = android && failure === LOCATION_FAILURE.SERVICES_OFF;
+  useIosAnnouncement(t("a11y.join", { first: title, second: hint }));
+  return { title, hint, toSettings, servicesOffOnAndroid };
+};
 
+type ViewProps = Common & ReturnType<typeof useFailureView>;
+
+/** The glyph, the reason and the actions: the one failure card. */
+const FailureCard = ({
+  title,
+  hint,
+  testID,
+  children,
+}: Pick<ViewProps, "title" | "hint"> & { testID?: string; children: ReactNode }) => (
+  <NoticeCard
+    testID={testID}
+    icon={CircleAlert}
+    tone={ICON_TILE_TONE.DANGER}
+    title={title}
+    lines={[{ text: hint, kind: NOTICE_LINE.BODY }]}
+    live>
+    {children}
+  </NoticeCard>
+);
+
+const ScreenOffer = ({
+  onRetry,
+  onChooseCity,
+  onEnterCoordinates,
+  title,
+  hint,
+  toSettings,
+  servicesOffOnAndroid,
+}: ViewProps & { onEnterCoordinates: () => void }) => {
+  const { t } = useTranslation();
+  const retry = t("common.retry");
+  const openSettings = t("location.failure.servicesOff.open");
   return (
     <VStack gap="$section">
-      <Card testID={LOCATION_FAILURE_PART.CARD} variant={inSheet ? "panel" : "plain"} gap="$3">
-        {/* One announced message; the actions stay reachable beside it. */}
-        <HStack
-          alignItems="flex-start"
-          gap="$2.5"
-          accessible
-          accessibilityLabel={message}
-          accessibilityLiveRegion="polite">
-          <Icon as={CircleAlert} size="md" color="$danger" />
-          <VStack flex={1} gap="$0.5">
-            <Text size="md" fontWeight="600" color="$fg">
-              {title}
-            </Text>
-            <Text size="sm" color="$muted">
-              {hint}
-            </Text>
-          </VStack>
-        </HStack>
-        {toSettings ? (
-          <OpenSettingsButton />
-        ) : (
-          <Button onPress={onRetry} accessibilityLabel={retry}>
-            <Button.Icon as={RefreshCw} />
-            <Button.Text>{retry}</Button.Text>
-          </Button>
-        )}
-        {/* iOS has no link to location services; its hint names the way. */}
-        {android && failure === LOCATION_FAILURE.SERVICES_OFF ? (
-          <Button
-            action="secondary"
-            variant="outline"
-            onPress={openLocationSettings}
-            accessibilityLabel={openSettings}
-            accessibilityHint={t("a11y.location.openLocationSettingsHint")}>
-            <Button.Text>{openSettings}</Button.Text>
-          </Button>
-        ) : null}
-      </Card>
+      <FailureCard title={title} hint={hint}>
+        <VStack gap="$3">
+          {toSettings ? (
+            <OpenSettingsButton />
+          ) : (
+            <Button onPress={onRetry} accessibilityLabel={retry}>
+              <Button.Icon as={RefreshCw} />
+              <Button.Text>{retry}</Button.Text>
+            </Button>
+          )}
+          {servicesOffOnAndroid ? (
+            <Button
+              action="secondary"
+              variant="outline"
+              onPress={openLocationSettings}
+              accessibilityLabel={openSettings}
+              accessibilityHint={t("a11y.location.openLocationSettingsHint")}>
+              <Button.Text>{openSettings}</Button.Text>
+            </Button>
+          ) : null}
+        </VStack>
+      </FailureCard>
       <Section title={t("location.failure.otherWays")} kind={SECTION_KIND.LABEL}>
         <ListGroup>
           <ListRow
@@ -171,5 +206,79 @@ export const LocationFailureOffer = ({
         </ListGroup>
       </Section>
     </VStack>
+  );
+};
+
+const CardOffer = ({
+  onRetry,
+  onChooseCity,
+  keep,
+  testID,
+  title,
+  hint,
+  toSettings,
+  servicesOffOnAndroid,
+}: ViewProps & { keep: PairAction; testID?: string }) => {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
+  const settings = useOpenSettingsAction();
+  const retry: PairAction = { label: t("common.retry"), onPress: onRetry };
+  const locationSettings: PairAction = {
+    label: t("location.failure.servicesOff.open"),
+    hint: t("a11y.location.openLocationSettingsHint"),
+    onPress: openLocationSettings,
+  };
+  const chooseCity = t("onboarding.location.chooseCity");
+  const Chevron = isRTL ? ChevronLeft : ChevronRight;
+  return (
+    <FailureCard title={title} hint={hint} testID={testID}>
+      <VStack gap="$2">
+        {servicesOffOnAndroid ? (
+          <>
+            <ActionButton action={retry} lead />
+            <ActionButton action={locationSettings} />
+            <ActionButton action={keep} />
+          </>
+        ) : (
+          <ButtonPair primary={toSettings ? settings : retry} secondary={keep} />
+        )}
+        <Button
+          variant="link"
+          testID={E2E_ID.LOCATION_CHOOSE_CITY}
+          onPress={onChooseCity}
+          accessibilityLabel={chooseCity}
+          accessibilityHint={t("a11y.location.manual.chooseCityHint")}>
+          <Button.Text>{chooseCity}</Button.Text>
+          <Button.Icon as={Chevron} />
+        </Button>
+      </VStack>
+    </FailureCard>
+  );
+};
+
+/** One full-width button of a stack; the lead action is filled. */
+export const ActionButton = ({ action, lead = false }: { action: PairAction; lead?: boolean }) => (
+  <Button
+    action={lead ? "primary" : "secondary"}
+    variant={lead ? "solid" : "outline"}
+    size="md"
+    borderRadius="$control"
+    testID={action.testID}
+    accessibilityLabel={action.label}
+    accessibilityHint={action.hint}
+    disabled={action.disabled}
+    onPress={action.onPress}>
+    <Button.Text>{action.label}</Button.Text>
+  </Button>
+);
+
+/** What went wrong, retry first, then the ways to set a place by hand. */
+export const LocationFailureOffer = (props: Props) => {
+  const view = useFailureView(props);
+  const common = { ...props, ...view };
+  return props.variant === FAILURE_OFFER_VARIANT.CARD ? (
+    <CardOffer {...common} keep={props.keep} testID={props.testID} />
+  ) : (
+    <ScreenOffer {...common} onEnterCoordinates={props.onEnterCoordinates} />
   );
 };

@@ -78,26 +78,29 @@ export const useLocationUpdate = () => {
   const run = useLocationUpdateStore((state) => state.run);
   const dismissFailure = useLocationUpdateStore((state) => state.dismissFailure);
 
-  // Confirms a landed run by touch and voice; resolves whether it landed.
-  const confirmLanded = (result: UpdateResult): boolean => {
-    if (!updateLanded(result)) return false;
-    void successHaptic();
-    // The status line and its live region leave with the run; say the end.
-    AccessibilityInfo.announceForAccessibility(t("location.update.step.done"));
-    return true;
+  // Runs the update and confirms a landed run by touch and voice.
+  const runAndConfirm = async (start: UpdateStart): Promise<UpdateResult> => {
+    const result = await runUpdate(start);
+    if (updateLanded(result)) {
+      void successHaptic();
+      // The status line and its live region leave with the run; say the end.
+      AccessibilityInfo.announceForAccessibility(t("location.update.step.done"));
+    }
+    return result;
   };
 
   // Resolves whether this call's run landed; the screen then shows the place.
   const update = async (start: UpdateStart): Promise<boolean> =>
-    confirmLanded(await runUpdate(start));
+    updateLanded(await runAndConfirm(start));
 
   return {
     run,
     executeUpdate: () => update(DEVICE_START),
     applyManualLocation: (city: ManualLocation) => update({ kind: UPDATE_START.CITY, city }),
     switchToDevice: () => update({ kind: UPDATE_START.ADOPT_DEVICE }),
+    // Resolves how the run ended; the offer card reads its outcomes.
     applyCandidate: (candidate: CityCandidate) =>
-      update({ kind: UPDATE_START.CANDIDATE, candidate }),
+      runAndConfirm({ kind: UPDATE_START.CANDIDATE, candidate }),
     // Repeats the last run's own start, whichever screen it was begun on.
     retry: () => update(useLocationUpdateStore.getState().run?.start ?? DEVICE_START),
     dismissFailure,

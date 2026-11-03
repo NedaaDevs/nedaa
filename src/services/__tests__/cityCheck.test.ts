@@ -14,6 +14,7 @@ import {
   type CityCheckReason,
   type CityCheckTrigger,
 } from "@/constants/CityCheck";
+import { CITY_OFFER_STAGE } from "@/constants/CityOffer";
 import { UPDATE_START } from "@/constants/Location";
 import { COUNTRY_CODE } from "@/constants/aladhanMethods";
 import { LocationMode, LocalPermissionStatus } from "@/enums/location";
@@ -248,6 +249,9 @@ describe("offer", () => {
         zone: RIYADH_ZONE,
       }),
       reasons: [CITY_CHECK_OFFER.SHIFT],
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      announced: false,
+      from: null,
     });
     expect(mockCurrentPosition).toHaveBeenCalledTimes(2);
   });

@@ -105,16 +105,15 @@ export const ANDROID_LOCATION_SETTINGS = "android.settings.LOCATION_SOURCE_SETTI
 export const CITY_PICKER_VIEW = { LIST: "list", COORDINATES: "coordinates" } as const;
 export type CityPickerView = (typeof CITY_PICKER_VIEW)[keyof typeof CITY_PICKER_VIEW];
 
-/** What the city-change sheet shows under the two cities. */
-export const CITY_CHANGE_VIEW = {
-  /** Update, or keep the saved city. */
-  OFFER: "offer",
-  /** The sheet's update, step by step. */
-  RUNNING: "running",
-  /** Where that update stopped. */
-  STOPPED: "stopped",
-} as const;
-export type CityChangeView = (typeof CITY_CHANGE_VIEW)[keyof typeof CITY_CHANGE_VIEW];
+/** Where an update draws its steps: its own card, or flat in a host card. */
+export const LOCATION_UPDATE_SURFACE = { CARD: "card", FLAT: "flat" } as const;
+export type LocationUpdateSurface =
+  (typeof LOCATION_UPDATE_SURFACE)[keyof typeof LOCATION_UPDATE_SURFACE];
+
+/** The failure offer's frame: a screen's body, or the city-change card. */
+export const FAILURE_OFFER_VARIANT = { SCREEN: "screen", CARD: "card" } as const;
+export type FailureOfferVariant =
+  (typeof FAILURE_OFFER_VARIANT)[keyof typeof FAILURE_OFFER_VARIANT];
 
 /** The search param naming the city picker's view. */
 export const LOCATION_PICKER = { viewParam: "view" } as const;
