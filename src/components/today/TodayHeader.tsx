@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, type AccessibilityActionEvent } from "react-native";
 import { MapPin } from "lucide-react-native";
 
+import { KeptZoneNote } from "@/components/today/KeptZoneNote";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -77,6 +78,7 @@ export const TodayHeader = () => {
               </Text>
             </HStack>
           ) : null}
+          <KeptZoneNote />
         </Pressable>
       </SkyOccluder>
     </VStack>
