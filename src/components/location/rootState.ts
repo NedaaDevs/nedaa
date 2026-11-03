@@ -21,6 +21,8 @@ type Facts = {
   reading: boolean;
   /** An update run is in flight. */
   running: boolean;
+  /** The city-change offer on this screen draws the run itself. */
+  offerHostsRun: boolean;
 };
 
 /** A run stopped before its place had times: the failure card's case. */
@@ -35,7 +37,10 @@ export const locationRootState = ({
   storedFailure,
   reading,
   running,
+  offerHostsRun,
 }: Facts): LocationRootState => {
+  // The offer card shows the run; the screen keeps its device body.
+  if (offerHostsRun) return LOCATION_ROOT_STATE.DEVICE;
   if (running) return LOCATION_ROOT_STATE.UPDATING;
   // Access lost since then: a retry could only fail again.
   const accessGone = permission !== null && !permission.granted;
