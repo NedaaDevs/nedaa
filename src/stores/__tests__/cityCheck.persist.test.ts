@@ -1,9 +1,21 @@
 import { SQLiteStorage } from "expo-sqlite/kv-store";
 
-import { KEPT_MAX, NOT_ASKED_MAX } from "@/constants/CityCheck";
+import {
+  CITY_CHECK_END,
+  CONFIRM_FIX_DELAY_MS,
+  KEPT_MAX,
+  KEPT_MAX_AGE_MS,
+  NOT_ASKED_MAX,
+} from "@/constants/CityCheck";
 import { CITY_CHECK_STORAGE_DB_NAME } from "@/constants/DB";
+import { FIX_SOURCE } from "@/constants/Location";
+import { COUNTRY_CODE } from "@/constants/aladhanMethods";
+import { ASR_SCHOOL } from "@/constants/providers";
 import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
-import type { PlaceMark } from "@/types/cityCheck";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
+import type { CityCheckFacts, CityCheckFix, PlaceMark } from "@/types/cityCheck";
+import { judgeCityChange } from "@/utils/cityCheck/judge";
+import { toPlaceMark } from "@/utils/cityCheck/marks";
 
 let mockSaved: string | null = null;
 
@@ -29,12 +41,20 @@ const rehydrate = async (cityCheck: unknown) => {
   await useCityCheckStore.persist.rehydrate();
 };
 
-const markAt = (i: number): PlaceMark => ({ lat: 10 + i, lng: 40, at: i });
+const NOW = 10 * KEPT_MAX_AGE_MS;
+const LIVE_MS = KEPT_MAX_AGE_MS / 2;
+
+// Made within the kept window, later marks later.
+const markAt = (i: number): PlaceMark => ({ lat: 10 + i, lng: 40, at: NOW - LIVE_MS + i });
 // Oldest first, as a record written by hand may be.
 const marks = (count: number) => Array.from({ length: count }, (_, i) => markAt(i));
 
 describe("city-check memory persistence", () => {
-  beforeEach(() => useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY }));
+  beforeEach(() => {
+    jest.useFakeTimers({ now: NOW });
+    useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY });
+  });
+  afterEach(() => jest.useRealTimers());
 
   it("persists to its own database file", () =>
     expect(MockSQLiteStorage).toHaveBeenCalledWith(CITY_CHECK_STORAGE_DB_NAME));
@@ -76,6 +96,14 @@ describe("city-check memory persistence", () => {
     expect(memory().notAsked).not.toContainEqual(markAt(0));
   });
 
+  it("drops a kept mark older than the kept window on load", async () => {
+    const live = markAt(1);
+    const stale = { ...markAt(2), at: NOW - KEPT_MAX_AGE_MS - 1 };
+    await rehydrate({ ...EMPTY_MEMORY, kept: [stale, live], notAsked: [stale] });
+    expect(memory().kept).toEqual([live]);
+    expect(memory().notAsked).toEqual([stale]);
+  });
+
   it("keeps a trip for a new point and replaces a matching one", () => {
     const m1 = markAt(1);
     const m1near = { ...m1, lng: m1.lng + MARK_STEP, at: 2 };
@@ -103,5 +131,73 @@ describe("city-check memory persistence", () => {
     useCityCheckStore.getState().keep(markAt(1));
     useCityCheckStore.getState().clearMemory();
     expect(memory()).toEqual(EMPTY_MEMORY);
+  });
+});
+
+describe("asking again in a place", () => {
+  const MAKKAH = { latitude: 21.4225, longitude: 39.8262 };
+  const JEDDAH = { latitude: 21.5433, longitude: 39.1728 };
+  const DUBAI = { latitude: 25.2, longitude: 55.27 };
+  const UMM_AL_QURA_ID = 4;
+  const FIX_ACCURACY_KM = 0.1;
+
+  const fixAt = (fixedAt: number): CityCheckFix => ({
+    point: JEDDAH,
+    accuracyKm: FIX_ACCURACY_KM,
+    fixedAt,
+    source: FIX_SOURCE.FRESH,
+  });
+  // A confirmed fix pair in Jeddah, judged against the memory the store holds.
+  const judged = () => {
+    const { kept, notAsked } = memory();
+    const facts: CityCheckFacts = {
+      now: NOW,
+      saved: {
+        point: MAKKAH,
+        accuracyKm: null,
+        zone: RIYADH_ZONE,
+        countryCode: COUNTRY_CODE.SAUDI_ARABIA,
+      },
+      fixes: [fixAt(NOW - CONFIRM_FIX_DELAY_MS), fixAt(NOW)],
+      candidate: {
+        point: JEDDAH,
+        accuracyKm: FIX_ACCURACY_KM,
+        fixedAt: NOW,
+        zone: RIYADH_ZONE,
+        countryCode: COUNTRY_CODE.SAUDI_ARABIA,
+        name: null,
+        distanceKm: 0,
+      },
+      countryLooked: false,
+      methods: null,
+      calc: { method: UMM_AL_QURA_ID, school: ASR_SCHOOL.SHAFI },
+      kept,
+      notAsked,
+    };
+    return judgeCityChange(facts);
+  };
+
+  it("clears the kept and not-asked marks at that point and no other", () => {
+    const jeddah = toPlaceMark(JEDDAH, NOW);
+    const dubai = toPlaceMark(DUBAI, NOW);
+    useCityCheckStore.getState().keep(jeddah);
+    useCityCheckStore.getState().keep(dubai);
+    useCityCheckStore.getState().mute(jeddah);
+
+    useCityCheckStore.getState().askAgainIn(jeddah);
+
+    expect(memory().kept).toEqual([dubai]);
+    expect(memory().notAsked).toEqual([]);
+  });
+
+  it("lets the next check offer the place again", () => {
+    const jeddah = toPlaceMark(JEDDAH, NOW);
+    useCityCheckStore.getState().keep(jeddah);
+    useCityCheckStore.getState().mute(jeddah);
+    expect(judged()).toMatchObject({ offer: false, reason: CITY_CHECK_END.NOT_ASKED });
+
+    useCityCheckStore.getState().askAgainIn(jeddah);
+
+    expect(judged().offer).toBe(true);
   });
 });

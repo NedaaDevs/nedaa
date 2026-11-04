@@ -8,6 +8,7 @@ import {
   LOCATION_UPDATE_SURFACE,
   UPDATE_START,
   UPDATE_STEP,
+  type LocationUpdateSurface,
   type UpdateStep,
 } from "@/constants/Location";
 import { AppLocale, PlatformType } from "@/enums/app";
@@ -30,11 +31,9 @@ const runAt = (step: UpdateStep, failed = false, start: UpdateStart = DEVICE_STA
   failed,
 });
 
-type SurfaceName = (typeof LOCATION_UPDATE_SURFACE)[keyof typeof LOCATION_UPDATE_SURFACE];
-
 const renderProgress = (
   run: UpdateRun | null,
-  { isRTL = false, surface }: { isRTL?: boolean; surface?: SurfaceName } = {}
+  { isRTL = false, surface }: { isRTL?: boolean; surface?: LocationUpdateSurface } = {}
 ) => {
   const onRetry = jest.fn();
   const progress =

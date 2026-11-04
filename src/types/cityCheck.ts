@@ -68,6 +68,8 @@ export type CityOffer = {
   announced: boolean;
   /** The saved place the times came from when Use started. */
   from: ZonePlace | null;
+  /** Times have landed for the place Use wrote; no Keep can undo it. */
+  placeLanded: boolean;
 };
 
 export type CityCheckVerdict =
