@@ -31,6 +31,7 @@ import {
   UPDATE_STEP,
   locationPickerRoute,
 } from "@/constants/Location";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { usePlace } from "@/hooks/usePlace";
@@ -80,6 +81,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
   const newZone = useLocationStore((state) => state.locationDetails.timezone);
   const storedFailure = useLocationStore((state) => state.locationDetails.error);
   const reading = useLocationStore((state) => state.isGettingLocation);
+  const placeSettled = useLocationStore((state) => state.previousPlace === null);
   const { candidate } = offer;
 
   // Taken when the offer arrives, and again only for another offer.
@@ -256,6 +258,22 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
   useEffect(() => {
     if (focused && view === OFFER_VIEW.OFFER && !offer.announced) announce();
   }, [focused, view, offer.announced]);
+  // The card's own run announces the rest; this end has no run left to say it.
+  const notApplied = view === OFFER_VIEW.NOT_APPLIED;
+  useIosAnnouncement(notApplied ? spoken : null);
+
+  // A later load landed the times this failed run could not.
+  const landedSince =
+    view === OFFER_VIEW.FAILED && liveRun?.step === UPDATE_STEP.PRAYER_TIMES && placeSettled;
+  const settleLanded = useEffectEvent(() => {
+    dismissFailure();
+    useLocationStore
+      .getState()
+      .settleCityOffer({ kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: false });
+  });
+  useEffect(() => {
+    if (landedSince) settleLanded();
+  }, [landedSince]);
 
   // An action that removes the button under the finger moves focus to the copy.
   const textRef = useRef<ViewInstance>(null);
@@ -277,12 +295,16 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
       alertsFollow: result.outcomes[UPDATE_STEP.NOTIFICATIONS] === STEP_OUTCOME.DONE,
     });
   };
+  const leaveFailure = () => {
+    dismissFailure();
+    location().clearLocationFailure();
+  };
   const keep = () => {
     act();
     if (view === OFFER_VIEW.FAILED) {
-      dismissFailure();
-      // A failure after the place was written leaves the new place behind.
-      if (liveRun?.step === UPDATE_STEP.PRAYER_TIMES) location().restorePreviousPlace();
+      leaveFailure();
+      // Puts back a place this offer's runs wrote; with none written, no change.
+      location().restorePreviousPlace();
     }
     location().keepCityOffer();
   };
@@ -291,7 +313,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     location().muteCityOffer();
   };
   const close = () => {
-    dismissFailure();
+    leaveFailure();
     location().dismissCityOffer();
   };
   const chooseCity = () => {
@@ -386,7 +408,8 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
         // A failed read names its kind; a failure after it is the times'.
         failure={liveRun?.step === UPDATE_STEP.LOCATION ? storedFailure : null}
         city={shape === OFFER_SHAPE.NAMED ? (here ?? undefined) : undefined}
-        keep={keepAction}
+        // Once times have landed for the new place, the old one is not to keep.
+        secondary={offer.placeLanded ? closeAction : keepAction}
         onRetry={update}
         onChooseCity={chooseCity}
       />
@@ -401,6 +424,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
       eyebrow={face.eyebrow}
       title={face.title}
       lines={face.lines}
+      live={notApplied}
       textRef={textRef}>
       {actions}
     </NoticeCard>

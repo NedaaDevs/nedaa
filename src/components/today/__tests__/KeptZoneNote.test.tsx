@@ -1,7 +1,7 @@
 import { act, screen, waitFor } from "@testing-library/react-native";
 
 import { KeptZoneNote, newestKept } from "@/components/today/KeptZoneNote";
-import { KEPT_MAX_AGE_MS } from "@/constants/CityCheck";
+import { KEPT_MAX_AGE_MS, TRAVEL_MODE } from "@/constants/CityCheck";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { EMPTY_MEMORY, useCityCheckStore } from "@/stores/cityCheck";
@@ -28,6 +28,7 @@ jest.mock("@/utils/cityCheck/cityNear", () => ({
 jest.mock("@/utils/phoneZone", () => ({ readPhoneZone: jest.fn() }));
 
 const NOW = Date.UTC(2026, 0, 15, 12);
+const MINUTE_MS = 60_000;
 const rowOf = (city: typeof DUBAI_CITY): CitySearchResult => ({
   gid: city.cityId ?? 0,
   name: city.name,
@@ -81,6 +82,7 @@ beforeEach(async () => {
   jest.mocked(readPhoneZone).mockReturnValue("Asia/Riyadh");
   await act(() => i18n.changeLanguage(AppLocale.EN));
   savedRiyadh();
+  useLocationStore.setState({ travelMode: TRAVEL_MODE.ASK });
   savedPlaceAt(RIYADH_PLACE);
   useCityCheckStore.setState({ cityCheck: EMPTY_MEMORY });
 });
@@ -113,6 +115,36 @@ describe("KeptZoneNote", () => {
     await renderNote();
 
     await waitFor(() => expect(mockTrustedCityNear).toHaveBeenCalled());
+    expect(screen.queryByText(NOTE_TEXT)).toBeNull();
+  });
+
+  it("reads the saved zone from the place awaiting its times", async () => {
+    keepAt(DUBAI_MARK, DUBAI_ROW);
+    writePlace(TOKYO);
+    await renderNote();
+
+    expect(await screen.findByText(DUBAI_NOTE())).toBeTruthy();
+  });
+
+  it("says nothing when updates are off", async () => {
+    keepAt(DUBAI_MARK, DUBAI_ROW);
+    useLocationStore.setState({ travelMode: TRAVEL_MODE.OFF });
+    await renderNote();
+    await act(async () => {});
+
+    expect(screen.queryByText(NOTE_TEXT)).toBeNull();
+  });
+
+  it("goes when the trip passes its limit while the note is up", async () => {
+    keepAt(DUBAI_MARK, DUBAI_ROW);
+    await renderNote();
+    expect(await screen.findByText(DUBAI_NOTE())).toBeTruthy();
+
+    await act(async () => {
+      jest.setSystemTime(NOW + KEPT_MAX_AGE_MS + 1);
+      await jest.advanceTimersByTimeAsync(MINUTE_MS);
+    });
+
     expect(screen.queryByText(NOTE_TEXT)).toBeNull();
   });
 

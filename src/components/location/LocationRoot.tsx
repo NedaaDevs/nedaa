@@ -18,6 +18,7 @@ import { TravelSection } from "@/components/location/TravelSection";
 import { locationRootState } from "@/components/location/rootState";
 import { PlaceHero } from "@/components/ui/place-hero";
 import { VStack } from "@/components/ui/vstack";
+import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { CITY_OFFER_STAGE } from "@/constants/CityOffer";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
@@ -177,6 +178,7 @@ export const LocationRoot = () => {
     (state) => state.cityOffer?.stage.kind === CITY_OFFER_STAGE.OFFER
   );
   const kept = useCityCheckStore(({ cityCheck }) => cityCheck.kept);
+  const travelAsks = useLocationStore((state) => state.travelMode === TRAVEL_MODE.ASK);
   const focused = useIsFocused();
   // Behind a pushed screen this one stays mounted; the front one draws the run.
   const run = focused ? liveRun : null;
@@ -207,8 +209,10 @@ export const LocationRoot = () => {
     namedCity,
     noPlace,
     finding,
-    // A live kept mark is a trip in progress; a not-asked mark never ages out.
-    away: cityOffer !== null || kept.some((entry) => isLiveKept(entry, now.getTime())),
+    // A live kept mark is a trip in progress, while a check can still end it;
+    // a not-asked mark never ages out.
+    away:
+      cityOffer !== null || (travelAsks && kept.some((entry) => isLiveKept(entry, now.getTime()))),
     unnamedPlace: !place.city,
   });
   const showsRun = state === LOCATION_ROOT_STATE.UPDATING;
@@ -327,7 +331,8 @@ export const LocationRoot = () => {
         <CityChangeOffer />
         {body()}
       </VStack>
-      {state === LOCATION_ROOT_STATE.DEVICE ? <TravelSection /> : null}
+      {/* Updates off under a failed run would strand the place it wrote. */}
+      {state === LOCATION_ROOT_STATE.DEVICE && !offerHostsRun ? <TravelSection /> : null}
     </>
   );
 };

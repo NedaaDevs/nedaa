@@ -3,9 +3,15 @@ import { act, userEvent } from "@testing-library/react-native";
 import { screen } from "expo-router/testing-library";
 
 import { CityChangeOffer } from "@/components/location/CityChangeOffer";
+import { NOTICE_CARD_PART } from "@/components/ui/notice-card";
 import { renderWithTheme } from "@/test-helpers/theme";
 
-import { CITY_OFFER_PART, CITY_OFFER_STAGE } from "@/constants/CityOffer";
+import {
+  CITY_OFFER_PART,
+  CITY_OFFER_STAGE,
+  OFFER_SHAPE,
+  type OfferShape,
+} from "@/constants/CityOffer";
 import { E2E_ID } from "@/constants/E2E";
 import { AppLocale } from "@/enums/app";
 import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
@@ -15,7 +21,9 @@ import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
 import {
   DUBAI_NAME,
+  JEDDAH_PLACE,
   RIYADH_NAME,
+  type WrittenPlace,
   button,
   label,
   renderOffer,
@@ -25,8 +33,12 @@ import {
   setOffline,
   t,
   unnamedSavedPlace,
+  writePlace,
 } from "@/test-helpers/cityOfferCard";
 import { controlProblems } from "@/test-helpers/controls";
+import { DUBAI_ZONE } from "@/test-helpers/place";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
+import type { CityCandidate, CityOfferStage } from "@/types/cityCheck";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -107,7 +119,7 @@ describe("the offer", () => {
   });
 
   it.each([
-    ["Asia/Dubai", true],
+    [DUBAI_ZONE, true],
     ["Asia/Kuwait", false],
     [null, false],
   ])("adds the zone line beside a place on %s: %s", async (zone, shown) => {
@@ -188,7 +200,7 @@ describe("the offer", () => {
 
 describe("the answers", () => {
   it("keeps the saved times on Keep, offers Don't ask, and keeps the zone line", async () => {
-    offerUp(candidateAt({ zone: "Asia/Dubai", name: DUBAI_NAME }));
+    offerUp(candidateAt({ zone: DUBAI_ZONE, name: DUBAI_NAME }));
     await renderOffer();
     await userEvent.press(button("location.cityOffer.keep", { saved: "Riyadh" }));
     expect(label()).toContain(t("location.cityOffer.kept.title", { saved: "Riyadh" }));
@@ -230,7 +242,7 @@ describe("saying it", () => {
   it("is not a live region", async () => {
     offerUp();
     await renderOffer();
-    expect(screen.getByTestId("notice-card-text")).toHaveProp("accessibilityLiveRegion", "none");
+    expect(screen.getByTestId(NOTICE_CARD_PART.TEXT)).toHaveProp("accessibilityLiveRegion", "none");
   });
 
   it("moves focus to the text block after Keep and Don't ask, never on arrival", async () => {
@@ -263,5 +275,306 @@ describe("saying it", () => {
     await renderWithTheme(<CityChangeOffer />);
     expect(announce).toHaveBeenCalledTimes(1);
     expect(useLocationStore.getState().cityOffer?.announced).toBe(true);
+  });
+});
+
+/** The card's copy as a screen reader joins it, one line after another. */
+const said = (...parts: string[]) =>
+  parts.reduce((first, second) => t("a11y.join", { first, second }));
+
+const DISTANCE_KM = 40;
+const SAVED = { saved: "Riyadh" };
+const JEDDAH = { city: "Jeddah" };
+const RIYADH_PLACE: WrittenPlace = { ...JEDDAH_PLACE, city: "Riyadh" };
+const UNNAMED_LANDED: WrittenPlace = { ...JEDDAH_PLACE, city: "", country: "" };
+
+type ViewRow = {
+  shape: OfferShape;
+  /** What the device place is called; null leaves it unnamed. */
+  candidate: Partial<CityCandidate>;
+  /** The saved place has no name. */
+  savedUnnamed?: boolean;
+  stage: CityOfferStage;
+  /** The place the update wrote, when the stage follows one. */
+  landed?: WrittenPlace;
+  copy: () => string;
+  buttons: () => string[];
+  /** The line added while offline; only the offer view holds one. */
+  offline?: () => string;
+};
+
+const chooseCity = () => t("onboarding.location.chooseCity");
+const here = { name: RIYADH_NAME, distanceKm: DISTANCE_KM };
+const unnamed = { name: null, distanceKm: DISTANCE_KM };
+const distance = { distance: DISTANCE_KM };
+
+const VIEW_ROWS: [string, ViewRow][] = [
+  [
+    "the offer, named",
+    {
+      shape: OFFER_SHAPE.NAMED,
+      candidate: {},
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      copy: () =>
+        said(
+          t("location.cityChange.greeting"),
+          t("location.cityOffer.title", JEDDAH),
+          t("location.cityOffer.body", SAVED)
+        ),
+      buttons: () => [t("location.cityOffer.use", JEDDAH), t("location.cityOffer.keep", SAVED)],
+      offline: () => t("location.cityOffer.offline", JEDDAH),
+    },
+  ],
+  [
+    "the offer, named, with no saved name",
+    {
+      shape: OFFER_SHAPE.NAMED,
+      candidate: {},
+      savedUnnamed: true,
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      copy: () =>
+        said(
+          t("location.cityChange.greeting"),
+          t("location.cityOffer.title", JEDDAH),
+          t("location.cityOffer.bodyNoSavedName")
+        ),
+      buttons: () => [t("location.cityOffer.use", JEDDAH), t("location.cityOffer.keepSaved")],
+      offline: () => t("location.cityOffer.offline", JEDDAH),
+    },
+  ],
+  [
+    "the offer, in the same city",
+    {
+      shape: OFFER_SHAPE.SAME_NAME,
+      candidate: here,
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      copy: () =>
+        said(
+          t("location.cityChange.greeting"),
+          t("location.cityOffer.sameName.title"),
+          t("location.cityOffer.sameName.body", { ...distance, ...SAVED })
+        ),
+      buttons: () => [t("location.cityOffer.useHere"), t("location.cityOffer.keepSaved")],
+      offline: () => t("location.cityOffer.offlineHere"),
+    },
+  ],
+  [
+    "the offer, unnamed",
+    {
+      shape: OFFER_SHAPE.UNNAMED,
+      candidate: unnamed,
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      copy: () =>
+        said(
+          t("location.cityChange.greeting"),
+          t("location.cityOffer.unnamed.title", { ...distance, ...SAVED }),
+          t("location.cityOffer.body", SAVED)
+        ),
+      buttons: () => [
+        t("location.cityOffer.useHere"),
+        t("location.cityOffer.keep", SAVED),
+        chooseCity(),
+      ],
+      offline: () => t("location.cityOffer.offlineHere"),
+    },
+  ],
+  [
+    "the offer, unnamed, with no saved name",
+    {
+      shape: OFFER_SHAPE.UNNAMED,
+      candidate: unnamed,
+      savedUnnamed: true,
+      stage: { kind: CITY_OFFER_STAGE.OFFER },
+      copy: () =>
+        said(
+          t("location.cityChange.greeting"),
+          t("location.cityOffer.unnamed.titleNoSavedName", distance),
+          t("location.cityOffer.bodyNoSavedName")
+        ),
+      buttons: () => [
+        t("location.cityOffer.useHere"),
+        t("location.cityOffer.keepSaved"),
+        chooseCity(),
+      ],
+      offline: () => t("location.cityOffer.offlineHere"),
+    },
+  ],
+  [
+    "kept, named",
+    {
+      shape: OFFER_SHAPE.NAMED,
+      candidate: {},
+      stage: { kind: CITY_OFFER_STAGE.KEPT },
+      copy: () =>
+        said(
+          t("location.cityOffer.kept.title", SAVED),
+          t("location.cityOffer.kept.body", { ...SAVED, ...JEDDAH })
+        ),
+      buttons: () => [t("location.cityOffer.dontAsk", JEDDAH)],
+    },
+  ],
+  [
+    "kept, named, with no saved name",
+    {
+      shape: OFFER_SHAPE.NAMED,
+      candidate: {},
+      savedUnnamed: true,
+      stage: { kind: CITY_OFFER_STAGE.KEPT },
+      copy: () =>
+        said(
+          t("location.cityOffer.kept.titleHere"),
+          t("location.cityOffer.kept.bodyNoSavedName", JEDDAH)
+        ),
+      buttons: () => [t("location.cityOffer.dontAsk", JEDDAH)],
+    },
+  ],
+  [
+    "kept, in the same city",
+    {
+      shape: OFFER_SHAPE.SAME_NAME,
+      candidate: here,
+      stage: { kind: CITY_OFFER_STAGE.KEPT },
+      copy: () =>
+        said(t("location.cityOffer.kept.titleHere"), t("location.cityOffer.kept.bodyHere", SAVED)),
+      buttons: () => [t("location.cityOffer.dontAskHere")],
+    },
+  ],
+  [
+    "kept, unnamed",
+    {
+      shape: OFFER_SHAPE.UNNAMED,
+      candidate: unnamed,
+      stage: { kind: CITY_OFFER_STAGE.KEPT },
+      copy: () =>
+        said(
+          t("location.cityOffer.kept.title", SAVED),
+          t("location.cityOffer.kept.bodyUnnamed", SAVED)
+        ),
+      buttons: () => [t("location.cityOffer.dontAskHere")],
+    },
+  ],
+  [
+    "kept, unnamed, with no saved name",
+    {
+      shape: OFFER_SHAPE.UNNAMED,
+      candidate: unnamed,
+      savedUnnamed: true,
+      stage: { kind: CITY_OFFER_STAGE.KEPT },
+      copy: () => t("location.cityOffer.kept.titleHere"),
+      buttons: () => [t("location.cityOffer.dontAskHere")],
+    },
+  ],
+  [
+    "muted, named",
+    {
+      shape: OFFER_SHAPE.NAMED,
+      candidate: {},
+      stage: { kind: CITY_OFFER_STAGE.MUTED },
+      copy: () =>
+        said(t("location.cityOffer.muted.title", JEDDAH), t("location.cityOffer.muted.body")),
+      buttons: () => [],
+    },
+  ],
+  [
+    "muted, in the same city",
+    {
+      shape: OFFER_SHAPE.SAME_NAME,
+      candidate: here,
+      stage: { kind: CITY_OFFER_STAGE.MUTED },
+      copy: () => said(t("location.cityOffer.muted.titleHere"), t("location.cityOffer.muted.body")),
+      buttons: () => [],
+    },
+  ],
+  [
+    "muted, unnamed",
+    {
+      shape: OFFER_SHAPE.UNNAMED,
+      candidate: unnamed,
+      stage: { kind: CITY_OFFER_STAGE.MUTED },
+      copy: () => said(t("location.cityOffer.muted.titleHere"), t("location.cityOffer.muted.body")),
+      buttons: () => [],
+    },
+  ],
+  [
+    "updated, to a named city",
+    {
+      shape: OFFER_SHAPE.NAMED,
+      candidate: {},
+      stage: { kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: true },
+      landed: JEDDAH_PLACE,
+      copy: () =>
+        said(
+          t("location.cityOffer.updated.title", JEDDAH),
+          t("location.cityOffer.updated.body", JEDDAH)
+        ),
+      buttons: () => [],
+    },
+  ],
+  [
+    "updated, landed in the same city",
+    {
+      shape: OFFER_SHAPE.SAME_NAME,
+      candidate: here,
+      stage: { kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: true },
+      landed: RIYADH_PLACE,
+      copy: () =>
+        said(
+          t("location.cityOffer.updated.titleHere", SAVED),
+          t("location.cityOffer.updated.bodyHere")
+        ),
+      buttons: () => [],
+    },
+  ],
+  [
+    "updated, landed in an unnamed place",
+    {
+      shape: OFFER_SHAPE.UNNAMED,
+      candidate: unnamed,
+      stage: { kind: CITY_OFFER_STAGE.UPDATED, alertsFollow: true },
+      landed: UNNAMED_LANDED,
+      copy: () =>
+        said(
+          t("location.cityOffer.updated.titleUnnamed"),
+          t("location.cityOffer.updated.bodyHere")
+        ),
+      buttons: () => [],
+    },
+  ],
+];
+
+describe("every view of the card, by the shape of the offer", () => {
+  it("covers each shape in each view", () => {
+    const shapes = Object.values(OFFER_SHAPE);
+    const stages = [
+      CITY_OFFER_STAGE.OFFER,
+      CITY_OFFER_STAGE.KEPT,
+      CITY_OFFER_STAGE.MUTED,
+      CITY_OFFER_STAGE.UPDATED,
+    ];
+    stages.forEach((stage) =>
+      shapes.forEach((shape) =>
+        expect(VIEW_ROWS.some(([, row]) => row.stage.kind === stage && row.shape === shape)).toBe(
+          true
+        )
+      )
+    );
+  });
+
+  it.each(VIEW_ROWS)("says %s in full, with its actions", async (_name, row) => {
+    if (row.savedUnnamed) unnamedSavedPlace();
+    offerUp(candidateAt(row.candidate), row.stage);
+    if (row.landed) {
+      useLocationStore.getState().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+      writePlace(row.landed, { settled: true });
+    }
+    await renderOffer();
+
+    expect(label()).toBe(row.copy());
+    expect(
+      screen.queryAllByRole("button").map((control) => control.props.accessibilityLabel)
+    ).toEqual(row.buttons());
+    if (!row.offline) return;
+    await setOffline(true);
+    expect(label()).toBe(said(row.copy(), row.offline()));
   });
 });
