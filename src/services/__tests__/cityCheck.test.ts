@@ -252,6 +252,7 @@ describe("offer", () => {
       stage: { kind: CITY_OFFER_STAGE.OFFER },
       announced: false,
       from: null,
+      placeLanded: false,
     });
     expect(mockCurrentPosition).toHaveBeenCalledTimes(2);
   });
