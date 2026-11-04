@@ -11,6 +11,7 @@ import { offerUp } from "@/test-helpers/cityOffer";
 import { savedRiyadh, t, unnamedSavedPlace } from "@/test-helpers/cityOfferCard";
 import { FAR_MARK, JEDDAH_MARK, JEDDAH_ROW } from "@/test-helpers/cityRows";
 import { controlProblems } from "@/test-helpers/controls";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 import { RIYADH_COORDS } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -117,7 +118,7 @@ describe("the travel setting", () => {
     await userEvent.setup().press(radio(title));
 
     expect(useLocationStore.getState().travelMode).toBe(mode);
-    expect(firedHaptics()).toEqual(["light"]);
+    expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.LIGHT]);
   });
 
   it("takes an offer down when updates are turned off", async () => {
@@ -175,6 +176,31 @@ describe("the places not asked in", () => {
     expect(
       await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
     ).toHaveProp("accessibilityHint", t("a11y.location.travel.askAgainHint", { place: "Jeddah" }));
+  });
+
+  it("measures the distance in the hint of a place with no city row", async () => {
+    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
+    await renderSection();
+
+    expect(
+      await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
+    ).toHaveProp(
+      "accessibilityHint",
+      t("a11y.location.travel.askAgainNearHint", { distance: FAR_MARK_KM, saved: "Riyadh" })
+    );
+  });
+
+  it("measures the distance in the hint when neither place has a name", async () => {
+    unnamedSavedPlace();
+    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
+    await renderSection();
+
+    expect(
+      await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
+    ).toHaveProp(
+      "accessibilityHint",
+      t("a11y.location.travel.askAgainNearNoSavedNameHint", { distance: FAR_MARK_KM })
+    );
   });
 
   it("asks again in a muted place, which leaves the list", async () => {

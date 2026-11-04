@@ -143,6 +143,8 @@ export type LocationStore = {
   placeRevision: number;
   /** Clears `previousPlace` once times land for `revision`'s place. */
   settlePlace: (revision: number) => void;
+  /** Forgets why the last device read failed; the place stays as it is. */
+  clearLocationFailure: () => void;
   localizedLocation: {
     country: string;
     city: string;
@@ -220,12 +222,14 @@ const placeRecordOf = (state: LocationStore): PlaceRecord | null => {
 };
 
 // Spread into every write of a new point. The first place written since the
-// times last landed stays the previous one.
+// times last landed stays the previous one. An answered offer's card names the
+// place it answered for, so it leaves with that place.
 const placeWrite = (
   state: LocationStore
-): Pick<LocationStore, "placeRevision" | "previousPlace"> => ({
+): Pick<LocationStore, "placeRevision" | "previousPlace" | "cityOffer"> => ({
   placeRevision: state.placeRevision + 1,
   previousPlace: state.previousPlace ?? placeRecordOf(state),
+  cityOffer: state.cityOffer?.stage.kind === CITY_OFFER_STAGE.OFFER ? state.cityOffer : null,
 });
 
 // Reads overlap, and one its caller gave up on still settles; only the
@@ -550,7 +554,16 @@ export const useLocationStore = create<LocationStore>()(
         },
 
         settlePlace: (revision) => {
-          set((state) => (revision === state.placeRevision ? { previousPlace: null } : {}));
+          set((state) => {
+            if (revision !== state.placeRevision) return {};
+            const { cityOffer, previousPlace } = state;
+            return {
+              previousPlace: null,
+              // `from` marks a Use; with no place held, nothing landed.
+              cityOffer:
+                cityOffer?.from && previousPlace ? { ...cityOffer, placeLanded: true } : cityOffer,
+            };
+          });
         },
 
         setTimezone: (tz) => {
@@ -630,6 +643,7 @@ export const useLocationStore = create<LocationStore>()(
               stage: { kind: CITY_OFFER_STAGE.OFFER },
               announced: false,
               from: null,
+              placeLanded: false,
             },
           });
         },
@@ -695,6 +709,10 @@ export const useLocationStore = create<LocationStore>()(
             placeRevision: state.placeRevision + 1,
           }));
           return true;
+        },
+
+        clearLocationFailure: () => {
+          set((state) => ({ locationDetails: { ...state.locationDetails, error: null } }));
         },
 
         dismissCityOffer: () => {

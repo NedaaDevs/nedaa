@@ -351,6 +351,97 @@ describe("the offer's answers", () => {
   });
 });
 
+describe("an offer and the place beneath it", () => {
+  const hold = (revision: number) =>
+    useLocationStore.setState({ previousPlace: RIYADH_PLACE, placeRevision: revision });
+  const placeLanded = () => state().cityOffer?.placeLanded;
+
+  it("starts with no times landed for the place it asks about", () => {
+    offerUp();
+    expect(placeLanded()).toBe(false);
+  });
+
+  it("notes the landed times when a Use held the previous place", () => {
+    offerUp();
+    state().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+    hold(4);
+
+    state().settlePlace(4);
+
+    expect(placeLanded()).toBe(true);
+    expect(state().previousPlace).toBeNull();
+  });
+
+  it("notes nothing when no Use started", () => {
+    offerUp();
+    hold(4);
+
+    state().settlePlace(4);
+
+    expect(placeLanded()).toBe(false);
+    expect(state().previousPlace).toBeNull();
+  });
+
+  it("notes nothing when no previous place is held", () => {
+    offerUp();
+    state().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+    useLocationStore.setState({ previousPlace: null, placeRevision: 4 });
+
+    state().settlePlace(4);
+
+    expect(placeLanded()).toBe(false);
+  });
+
+  it("notes nothing for a place since replaced", () => {
+    offerUp();
+    state().startCityOfferUse({ city: "Riyadh", zone: RIYADH_ZONE });
+    hold(5);
+
+    state().settlePlace(4);
+
+    expect(placeLanded()).toBe(false);
+    expect(state().previousPlace).toEqual(RIYADH_PLACE);
+  });
+
+  describe("when the device writes a new place", () => {
+    beforeEach(() => {
+      jest
+        .mocked(readLocation)
+        .mockResolvedValue({ location: JEDDAH_FIX, source: FIX_SOURCE.FRESH });
+      jest.mocked(reverseGeocodeAsync).mockResolvedValue([
+        {
+          ...NO_ADDRESS,
+          city: JEDDAH_CITY.name,
+          country: SAUDI_ARABIA,
+          isoCountryCode: SA.toLowerCase(),
+        },
+      ]);
+    });
+
+    it.each([CITY_OFFER_STAGE.KEPT, CITY_OFFER_STAGE.MUTED, CITY_OFFER_STAGE.UPDATED] as const)(
+      "drops an offer already answered, at %s",
+      async (kind) => {
+        offerUp(
+          candidateAt(),
+          kind === CITY_OFFER_STAGE.UPDATED ? { kind, alertsFollow: true } : { kind }
+        );
+
+        await state().updateCurrentLocation();
+
+        expect(state().cityOffer).toBeNull();
+      }
+    );
+
+    it("keeps an offer still waiting for its answer", async () => {
+      offerUp();
+
+      await state().updateCurrentLocation();
+
+      expect(state().cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.OFFER);
+    });
+  });
+});
+
 describe("the place's country code", () => {
   it("stores the device geocoder's country code with an updated fix", async () => {
     jest.mocked(readLocation).mockResolvedValue({ location: JEDDAH_FIX, source: FIX_SOURCE.FRESH });

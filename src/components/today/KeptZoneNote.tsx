@@ -1,4 +1,5 @@
 import { Text } from "@/components/ui/text";
+import { TRAVEL_MODE } from "@/constants/CityCheck";
 import { NO_PLACE } from "@/constants/CityOffer";
 import { LocationMode } from "@/enums/location";
 import { useMarkPlace } from "@/hooks/useMarkPlace";
@@ -25,9 +26,14 @@ export const KeptZoneNote = () => {
   const kept = useCityCheckStore(({ cityCheck }) => cityCheck.kept);
   const offerUp = useLocationStore(selectOfferUp);
   const isDevicePlace = useLocationStore((state) => state.locationMode === LocationMode.DEVICE);
-  const savedZone = useLocationStore((state) => state.locationDetails.timezone);
+  // The zone of the place `usePlace` names while a newer one awaits its times.
+  const savedZone = useLocationStore(
+    (state) => state.previousPlace?.timezone ?? state.locationDetails.timezone
+  );
+  // With updates off no check runs, so nothing could end the trip.
+  const travelAsks = useLocationStore((state) => state.travelMode === TRAVEL_MODE.ASK);
   const saved = usePlace();
-  const trip = isDevicePlace && !offerUp ? newestKept(kept, now) : null;
+  const trip = isDevicePlace && !offerUp && travelAsks ? newestKept(kept, now) : null;
   const place = useMarkPlace(trip);
   const note = useZoneNote(place ?? NO_PLACE, {
     city: saved.city ?? null,

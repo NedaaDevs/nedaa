@@ -30,6 +30,20 @@ describe("zoneDifferenceMinutes", () => {
 
 describe("zoneOffsetMinutes", () => {
   it("reads the offset from UTC", () => expect(zoneOffsetMinutes("Asia/Riyadh", JAN)).toBe(180));
+  // Rows sit on both sides of a daylight-saving change and at zone midnight.
+  it.each([
+    ["America/New_York", "2026-11-01T03:00:00Z", -240],
+    ["America/New_York", "2026-11-01T05:00:00Z", -240],
+    ["America/New_York", "2026-11-01T06:00:00Z", -300],
+    ["America/New_York", "2026-07-01T05:00:00Z", -240],
+    ["America/New_York", "2027-01-15T12:00:00Z", -300],
+    ["Australia/Sydney", "2027-04-03T18:00:00Z", 600],
+    ["Asia/Kolkata", "2026-07-01T12:00:00Z", 330],
+    ["Asia/Riyadh", "2026-11-01T21:00:00Z", 180],
+  ])("reads %s at %s as %d minutes", (zone, at, minutes) =>
+    expect(zoneOffsetMinutes(zone, Date.parse(at))).toBe(minutes)
+  );
+
   it("knows no offset for a zone it cannot read", () =>
     expect(zoneOffsetMinutes(UNREADABLE_ZONE, JAN)).toBeNull());
 });

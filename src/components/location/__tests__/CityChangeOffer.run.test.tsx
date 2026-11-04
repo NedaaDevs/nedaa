@@ -1,9 +1,10 @@
-import { AccessibilityInfo, StyleSheet, Text } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet, Text } from "react-native";
 import { useLocalSearchParams, usePathname } from "expo-router";
 import { act, userEvent } from "@testing-library/react-native";
 import { screen } from "expo-router/testing-library";
 
 import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
+import { NOTICE_CARD_PART } from "@/components/ui/notice-card";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { CITY_OFFER_PART, CITY_OFFER_STAGE } from "@/constants/CityOffer";
 import { E2E_ID } from "@/constants/E2E";
@@ -16,7 +17,7 @@ import {
   UPDATE_START,
   UPDATE_STEP,
 } from "@/constants/Location";
-import { AppLocale } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore, type UpdateResult } from "@/stores/locationUpdate";
@@ -33,9 +34,11 @@ import {
   renderOffer,
   resetStatus,
   savedRiyadh,
+  setFocused,
   stopWith,
   t,
 } from "@/test-helpers/cityOfferCard";
+import { DUBAI_ZONE } from "@/test-helpers/place";
 import { RIYADH_COORDS } from "@/test-helpers/prayerDay";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 
@@ -133,7 +136,7 @@ describe("the run inside the card", () => {
         second: t("location.cityOffer.updated.body", { city: "Jeddah" }),
       })
     );
-    expect(screen.getByTestId("notice-card-text")).toHaveProp("accessibilityLiveRegion", "none");
+    expect(screen.getByTestId(NOTICE_CARD_PART.TEXT)).toHaveProp("accessibilityLiveRegion", "none");
   });
 
   it("says the times are for the place you are in when the updated place has no name", async () => {
@@ -158,7 +161,7 @@ describe("the run inside the card", () => {
 
   it("keeps the zone line after the update, against the place the times came from", async () => {
     landWith(mockApplyCandidate, DUBAI_PLACE, ALL_DONE);
-    offerUp(candidateAt({ zone: "Asia/Dubai", name: DUBAI_NAME }));
+    offerUp(candidateAt({ zone: DUBAI_ZONE, name: DUBAI_NAME }));
     await renderOffer();
     await pressUse("Dubai");
     expect(label()).toContain(
@@ -206,16 +209,20 @@ describe("a run that stops", () => {
     expect(button("location.cityOffer.keep", { saved: "Riyadh" })).toBeTruthy();
   });
 
-  it("names the saved city from when the offer came, after the new place settled", async () => {
+  it("says the times are for the new city when the place settled under the failed run", async () => {
     stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.PRAYER_TIMES, { settled: true });
     offerUp();
     await renderOffer();
     await pressUse("Jeddah");
-    expect(screen.getByText(t("location.failure.times.title", { city: "Jeddah" }))).toBeTruthy();
-    expect(button("location.cityOffer.keep", { saved: "Riyadh" })).toBeTruthy();
+    expect(label()).toContain(t("location.cityOffer.updated.title", { city: "Jeddah" }));
     expect(
-      screen.queryByRole("button", { name: t("location.cityOffer.keep", { saved: "Jeddah" }) })
+      screen.queryByRole("button", { name: t("location.cityOffer.keep", { saved: "Riyadh" }) })
     ).toBeNull();
+    expect(mockDismissFailure).toHaveBeenCalled();
+    expect(useLocationStore.getState().cityOffer?.stage).toEqual({
+      kind: CITY_OFFER_STAGE.UPDATED,
+      alertsFollow: false,
+    });
   });
 
   it("puts the saved place back on Keep after a times failure", async () => {
@@ -231,7 +238,7 @@ describe("a run that stops", () => {
     expect(label()).toContain(t("location.cityOffer.kept.title", { saved: "Riyadh" }));
   });
 
-  it("keeps the written place on Keep after a failed read, which wrote none", async () => {
+  it("keeps the saved place on Keep after a failed read, which wrote none", async () => {
     useLocationStore.setState((state) => ({
       locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.TIMEOUT },
     }));
@@ -242,7 +249,60 @@ describe("a run that stops", () => {
     const before = useLocationStore.getState().placeRevision;
     await userEvent.press(button("location.cityOffer.keep", { saved: "Riyadh" }));
     expect(useLocationStore.getState().placeRevision).toBe(before);
+    expect(useLocationStore.getState().locationDetails.error).toBeNull();
     expect(useLocationStore.getState().cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.KEPT);
+  });
+
+  it("puts the saved place back on Keep when a retry's read failed after the place was written", async () => {
+    stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.PRAYER_TIMES);
+    offerUp();
+    await renderOffer();
+    await pressUse("Jeddah");
+    useLocationStore.setState((state) => ({
+      locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.TIMEOUT },
+    }));
+    stopWith(mockApplyCandidate, null, UPDATE_STEP.LOCATION);
+    await userEvent.press(button("common.retry"));
+    await userEvent.press(button("location.cityOffer.keep", { saved: "Riyadh" }));
+    const state = useLocationStore.getState();
+    expect(state.locationDetails.coords).toMatchObject(RIYADH_COORDS);
+    expect(state.previousPlace).toBeNull();
+    expect(state.locationDetails.error).toBeNull();
+    expect(state.cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.KEPT);
+  });
+
+  it("offers Close, not Keep, once the times landed and a retry stops again", async () => {
+    stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.NOTIFICATIONS, { settled: true });
+    offerUp();
+    await renderOffer();
+    await pressUse("Jeddah");
+    stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.PRAYER_TIMES);
+    await userEvent.press(button("common.retry"));
+    expect(button("common.retry")).toBeTruthy();
+    expect(button("common.close")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: t("location.cityOffer.keep", { saved: "Riyadh" }) })
+    ).toBeNull();
+    await userEvent.press(button("common.close"));
+    expect(useLocationStore.getState().cityOffer).toBeNull();
+    expect(useLocationStore.getState().locationDetails.coords).toMatchObject({
+      latitude: JEDDAH_PLACE.coords.latitude,
+      longitude: JEDDAH_PLACE.coords.longitude,
+    });
+  });
+
+  it("stays quiet about a failed run while the screen is not focused", async () => {
+    useLocationStore.setState((state) => ({
+      locationDetails: { ...state.locationDetails, error: LOCATION_FAILURE.DENIED },
+    }));
+    stopWith(mockApplyCandidate, null, UPDATE_STEP.LOCATION);
+    offerUp();
+    await renderOffer();
+    await pressUse("Jeddah");
+    expect(screen.getByText(t("location.failure.denied.title"))).toBeTruthy();
+    await setFocused(false);
+    expect(screen.queryByText(t("location.failure.denied.title"))).toBeNull();
+    expect(screen.queryByTestId(LOCATION_UPDATE_PART.FRAME)).toBeNull();
   });
 
   it("says the place changed when the update set none and no read failed", async () => {
@@ -260,6 +320,33 @@ describe("a run that stops", () => {
     await userEvent.press(button("common.close"));
     expect(mockDismissFailure).toHaveBeenCalled();
     expect(useLocationStore.getState().cityOffer).toBeNull();
+  });
+
+  describe("on iOS", () => {
+    const platform = Platform.OS;
+    beforeEach(() => {
+      Platform.OS = PlatformType.IOS;
+    });
+    afterEach(() => {
+      Platform.OS = platform;
+    });
+
+    it("says the place changed once and reads the card as a live region", async () => {
+      const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+      stopWith(mockApplyCandidate, null, UPDATE_STEP.LOCATION);
+      offerUp();
+      await renderOffer();
+      await pressUse("Jeddah");
+      const joined = t("a11y.join", {
+        first: t("location.cityOffer.notApplied.title"),
+        second: t("location.cityOffer.notApplied.body"),
+      });
+      expect(announce.mock.calls.filter(([message]) => message === joined)).toHaveLength(1);
+      expect(screen.getByTestId(NOTICE_CARD_PART.TEXT)).toHaveProp(
+        "accessibilityLiveRegion",
+        "polite"
+      );
+    });
   });
 
   it("names a stored refusal as the failure when the read stopped", async () => {

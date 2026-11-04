@@ -1,6 +1,6 @@
 import { useSyncExternalStore, type ReactElement } from "react";
 import type { ParseKeys } from "i18next";
-import { act, within } from "@testing-library/react-native";
+import { act } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { CityChangeOffer } from "@/components/location/CityChangeOffer";
@@ -109,12 +109,15 @@ const recordOfSaved = (): PlaceRecord => {
   };
 };
 
-/** Writes a device place as an update does; the saved one becomes previous. */
+/**
+ * Writes a device place as an update does; the saved one becomes previous.
+ * `settled` lands its times through the store's own settle.
+ */
 export const writePlace = (place: WrittenPlace, { settled = false } = {}) => {
   const previousPlace = useLocationStore.getState().previousPlace ?? recordOfSaved();
   const address = { city: place.city, country: place.country };
   useLocationStore.setState((state) => ({
-    previousPlace: settled ? null : previousPlace,
+    previousPlace,
     placeRevision: state.placeRevision + 1,
     locationMode: LocationMode.DEVICE,
     manualLocation: null,
@@ -126,6 +129,9 @@ export const writePlace = (place: WrittenPlace, { settled = false } = {}) => {
       timezone: place.zone,
     },
   }));
+  if (settled) {
+    useLocationStore.getState().settlePlace(useLocationStore.getState().placeRevision);
+  }
 };
 
 type RenderOptions = {
@@ -152,8 +158,6 @@ export const label = () =>
 
 export const button = (key: ParseKeys, params?: Record<string, unknown>) =>
   screen.getByRole("button", { name: t(key, params) });
-
-export { within };
 
 /** Every update step done. */
 export const ALL_DONE: StepOutcomes = {

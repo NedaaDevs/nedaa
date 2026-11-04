@@ -36,6 +36,7 @@ import { useNotificationStore } from "@/stores/notification";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { captureAppState, emitAppState } from "@/test-helpers/appStateMock";
 import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
+import { JEDDAH_PLACE, unnamedSavedPlace, writePlace } from "@/test-helpers/cityOfferCard";
 import { HAPTIC, firedHaptics } from "@/test-helpers/hapticMock";
 import { MAKKAH_CITY, RIYADH_CITY, placeFacts } from "@/test-helpers/place";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
@@ -1148,6 +1149,49 @@ describe("Settings › Location", () => {
       );
     });
 
+    it("takes the travel choice away while the card holds a failed run", async () => {
+      offerUp();
+      writePlace(JEDDAH_PLACE);
+      await renderScreen();
+      const travel = () =>
+        screen.queryByRole("header", { name: t("location.settings.travelSection") });
+      await screen.findByTestId(CITY_OFFER_PART.CARD);
+      expect(travel()).toBeTruthy();
+
+      await act(async () =>
+        useLocationUpdateStore.setState({
+          run: {
+            start: { kind: UPDATE_START.CANDIDATE, candidate: candidateAt() },
+            step: UPDATE_STEP.PRAYER_TIMES,
+            failed: true,
+          },
+        })
+      );
+
+      expect(travel()).toBeNull();
+    });
+
+    it("keeps the device hero for a live kept trip while updates are off", async () => {
+      useLocationStore.setState({ travelMode: TRAVEL_MODE.OFF });
+      useCityCheckStore.getState().keep(toPlaceMark(JEDDAH_POINT, Date.now()));
+      await renderScreen();
+
+      expect(await screen.findByTestId(PLACE_HERO_PART.FRAME)).toHaveAccessibleName(
+        heroName(t("location.hero.deviceKicker"), placeName, t("location.hero.deviceNote"))
+      );
+    });
+
+    it("says the times are for the saved place when it has no name", async () => {
+      unnamedSavedPlace();
+      offerUp();
+      await renderScreen();
+
+      await screen.findByTestId(CITY_OFFER_PART.CARD);
+      expect(hero()).toHaveAccessibleName(
+        new RegExp(t("location.hero.timesForSavedPlace").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      );
+    });
+
     it("says each step once with the card on Today and on Location", async () => {
       Platform.OS = PlatformType.IOS;
       jest.spyOn(AccessibilityInfo, "announceForAccessibility");
@@ -1183,7 +1227,9 @@ describe("Settings › Location", () => {
         );
 
       await runAt(UPDATE_STEP.LOCATION);
+      expect(screen.getAllByTestId(LOCATION_UPDATE_PART.FRAME)).toHaveLength(1);
       await runAt(UPDATE_STEP.PRAYER_TIMES);
+      expect(screen.getAllByTestId(LOCATION_UPDATE_PART.FRAME)).toHaveLength(1);
 
       const said = (message: string) =>
         jest

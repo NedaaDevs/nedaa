@@ -80,15 +80,33 @@ describe("useMarkPlace", () => {
     expect(result.current?.city).toBe("Jeddah");
   });
 
-  it("ignores an answer that lands after unmount", async () => {
-    let answer: (value: unknown) => void = () => {};
-    mockFindNearestCity.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+  it("is undefined for a new mark while it looks, not the last mark's place", async () => {
+    mockFindNearestCity
+      .mockResolvedValueOnce({ city: JEDDAH_ROW, distanceKm: 1 })
+      .mockReturnValueOnce(new Promise(() => {}));
 
-    const { unmount } = await renderHook(() => useMarkPlace(JEDDAH_MARK));
-    await unmount();
+    const { result, rerender } = await renderHook(
+      ({ mark }: { mark: PlaceMark }) => useMarkPlace(mark),
+      { initialProps: { mark: JEDDAH_MARK } }
+    );
+    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
 
-    await expect(
-      act(async () => answer({ city: JEDDAH_ROW, distanceKm: 1 }))
-    ).resolves.not.toThrow();
+    await rerender({ mark: MANAMA_MARK });
+
+    expect(result.current).toBeUndefined();
+  });
+
+  it("looks again for the same point at another date", async () => {
+    mockFindNearestCity.mockResolvedValue({ city: JEDDAH_ROW, distanceKm: 1 });
+
+    const { result, rerender } = await renderHook(
+      ({ mark }: { mark: PlaceMark }) => useMarkPlace(mark),
+      { initialProps: { mark: JEDDAH_MARK } }
+    );
+    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
+
+    await rerender({ mark: { ...JEDDAH_MARK, at: JEDDAH_MARK.at + 1 } });
+
+    expect(mockFindNearestCity).toHaveBeenCalledTimes(2);
   });
 });

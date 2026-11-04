@@ -1,7 +1,7 @@
 import { AccessibilityInfo } from "react-native";
 import { act, renderHook } from "@testing-library/react-native";
 
-import { RUN_END, STEP_OUTCOME } from "@/constants/Location";
+import { RUN_END, STEP_OUTCOME, UPDATE_STEP } from "@/constants/Location";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
@@ -68,7 +68,7 @@ describe("applyCandidate", () => {
       ended = await result.current.applyCandidate(candidateAt());
     });
     expect(ended).toMatchObject({
-      outcomes: expect.objectContaining({ notifications: STEP_OUTCOME.DONE }),
+      outcomes: expect.objectContaining({ [UPDATE_STEP.NOTIFICATIONS]: STEP_OUTCOME.DONE }),
     });
   });
 });
