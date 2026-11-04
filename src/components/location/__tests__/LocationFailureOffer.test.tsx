@@ -57,7 +57,7 @@ const renderCard = async (failure: LocationFailure | null, { city }: { city?: st
       variant={FAILURE_OFFER_VARIANT.CARD}
       failure={failure}
       city={city}
-      keep={keep}
+      secondary={keep}
       {...handlers}
     />
   );

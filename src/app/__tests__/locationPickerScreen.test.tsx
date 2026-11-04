@@ -225,7 +225,7 @@ describe("Settings › Location › city picker", () => {
       expect(header("settings.location.title")).toBeTruthy();
     });
 
-    // The city-change sheet opens the picker over any screen.
+    // The city offer on Today opens the picker over the Today screen.
     it.each([
       ["a city from the list", [PICK]],
       ["coordinates reached through the list", [TO_COORDINATES, SAVE]],

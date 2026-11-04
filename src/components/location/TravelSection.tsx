@@ -34,6 +34,11 @@ const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefin
     (saved
       ? t("location.travel.notAsked.near", { distance, saved })
       : t("location.travel.notAsked.nearNoSavedName", { distance }));
+  const askAgainHint = named
+    ? t("a11y.location.travel.askAgainHint", { place: named })
+    : saved
+      ? t("a11y.location.travel.askAgainNearHint", { distance, saved })
+      : t("a11y.location.travel.askAgainNearNoSavedNameHint", { distance });
 
   return (
     <HStack alignItems="center" gap="$3" {...GROUPED_STYLE.frame}>
@@ -45,7 +50,7 @@ const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefin
         size="sm"
         onPress={() => askAgainIn(mark)}
         accessibilityLabel={t("location.travel.notAsked.askAgain")}
-        accessibilityHint={t("a11y.location.travel.askAgainHint", { place })}>
+        accessibilityHint={askAgainHint}>
         <Button.Text>{t("location.travel.notAsked.askAgain")}</Button.Text>
       </Button>
     </HStack>

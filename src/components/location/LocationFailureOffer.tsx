@@ -90,9 +90,9 @@ type Props = Common &
         onEnterCoordinates: () => void;
       }
     | {
-        /** In the city-change card, beside the keep-saved action. */
+        /** In the city-change card, with the card's own way out. */
         variant: typeof FAILURE_OFFER_VARIANT.CARD;
-        keep: PairAction;
+        secondary: PairAction;
         /** Test id of the card. */
         testID?: string;
       }
@@ -205,13 +205,13 @@ const ScreenOffer = ({
 const CardOffer = ({
   onRetry,
   onChooseCity,
-  keep,
+  secondary,
   testID,
   title,
   hint,
   toSettings,
   servicesOffOnAndroid,
-}: ViewProps & { keep: PairAction; testID?: string }) => {
+}: ViewProps & { secondary: PairAction; testID?: string }) => {
   const { t } = useTranslation();
   const settings = useOpenSettingsAction();
   const retry: PairAction = { label: t("common.retry"), onPress: onRetry };
@@ -227,10 +227,10 @@ const CardOffer = ({
           <>
             <ActionButton action={retry} lead />
             <ActionButton action={locationSettings} />
-            <ActionButton action={keep} />
+            <ActionButton action={secondary} />
           </>
         ) : (
-          <ButtonPair primary={toSettings ? settings : retry} secondary={keep} />
+          <ButtonPair primary={toSettings ? settings : retry} secondary={secondary} />
         )}
         <ChooseCityLink onPress={onChooseCity} />
       </VStack>
@@ -243,7 +243,7 @@ export const LocationFailureOffer = (props: Props) => {
   const view = useFailureView(props);
   const common = { ...props, ...view };
   return props.variant === FAILURE_OFFER_VARIANT.CARD ? (
-    <CardOffer {...common} keep={props.keep} testID={props.testID} />
+    <CardOffer {...common} secondary={props.secondary} testID={props.testID} />
   ) : (
     <ScreenOffer {...common} onEnterCoordinates={props.onEnterCoordinates} />
   );

@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { KEPT_MAX, NOT_ASKED_MAX } from "@/constants/CityCheck";
 import { CITY_CHECK_STORAGE_DB_NAME, CITY_CHECK_STORE_KEY } from "@/constants/DB";
 import type { CityCheckMemory, PlaceMark } from "@/types/cityCheck";
-import { sameMark, withMark } from "@/utils/cityCheck/marks";
+import { isLiveKept, markPoint, matchesMark, sameMark, withMark } from "@/utils/cityCheck/marks";
 
 export const EMPTY_MEMORY: CityCheckMemory = {
   lastCheckAt: null,
@@ -55,7 +55,7 @@ const memoryFrom = (saved: unknown): CityCheckMemory => {
   return {
     lastCheckAt: isFiniteNumber(saved.lastCheckAt) ? saved.lastCheckAt : null,
     lastPhoneZone: typeof saved.lastPhoneZone === "string" ? saved.lastPhoneZone : null,
-    kept: marksFrom(saved.kept, KEPT_MAX),
+    kept: marksFrom(saved.kept, KEPT_MAX).filter((entry) => isLiveKept(entry, Date.now())),
     notAsked: marksFrom(saved.notAsked, NOT_ASKED_MAX),
   };
 };
@@ -86,6 +86,10 @@ export const useCityCheckStore = create<CityCheckStore>()(
             cityCheck: {
               ...state.cityCheck,
               notAsked: state.cityCheck.notAsked.filter((entry) => !sameMark(entry, mark)),
+              // A kept trip at this place would end the check before it asks.
+              kept: state.cityCheck.kept.filter(
+                (entry) => !matchesMark(markPoint(mark), null, entry)
+              ),
             },
           })),
         forgetLastCheck: () => update({ lastCheckAt: null }),

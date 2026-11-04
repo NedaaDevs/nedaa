@@ -1,5 +1,4 @@
 import type { ParseKeys } from "i18next";
-import { getTimezoneOffset } from "date-fns-tz";
 
 import {
   ZONE_COPY_KEY,
@@ -14,10 +13,41 @@ const MINUTE_MS = 60_000;
 const MINUTES_PER_HOUR = 60;
 const HALF_HOUR_MINUTES = MINUTES_PER_HOUR / 2;
 
+const HOURS_PER_DAY = 24;
+
+// Read from the zone's own clock: date-fns-tz takes the instant as wall-clock
+// time, which gives the wrong side of a daylight-saving change near it.
+const zoneFormatOf = (zone: string): Intl.DateTimeFormat | null => {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: zone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+  } catch {
+    return null;
+  }
+};
+
 /** Minutes a zone runs ahead of UTC at `at`; null for an unknown zone. */
 export const zoneOffsetMinutes = (zone: string, at: number): number | null => {
-  const offsetMs = getTimezoneOffset(zone, at);
-  return Number.isNaN(offsetMs) ? null : offsetMs / MINUTE_MS;
+  const format = zoneFormatOf(zone);
+  if (!format) return null;
+  const parts = format.formatToParts(at);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((entry) => entry.type === type)?.value);
+  const wall = Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour") % HOURS_PER_DAY,
+    part("minute")
+  );
+  return (wall - Math.floor(at / MINUTE_MS) * MINUTE_MS) / MINUTE_MS;
 };
 
 /** Minutes `to` runs ahead of `from` at `at`; negative when behind. */

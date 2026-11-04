@@ -1,5 +1,6 @@
 import type { ParseKeys } from "i18next";
 
+import { ZONE_COPY_KEY, ZONE_NOTE_KEY } from "@/constants/CityOffer";
 import { AppLocale } from "@/enums/app";
 import ar from "@/localization/locales/ar.json";
 import en from "@/localization/locales/en.json";
@@ -61,25 +62,16 @@ const PARAMS: readonly (readonly [ParseKeys, readonly string[]])[] = [
   ["location.travel.notAsked.near", ["distance", "saved"]],
   ["location.travel.notAsked.nearNoSavedName", ["distance"]],
   ["a11y.location.travel.askAgainHint", ["place"]],
+  ["a11y.location.travel.askAgainNearHint", ["distance", "saved"]],
+  ["a11y.location.travel.askAgainNearNoSavedNameHint", ["distance"]],
 ];
 
 const KEYS = PARAMS.map(([key]) => key);
 
 /** Keys read with `count`; each locale carries its own plural forms. */
-const COUNT_KEYS = [
-  "location.zone.ahead.hours",
-  "location.zone.ahead.halfHours",
-  "location.zone.ahead.minutes",
-  "location.zone.behind.hours",
-  "location.zone.behind.halfHours",
-  "location.zone.behind.minutes",
-  "location.zone.note.ahead.hours",
-  "location.zone.note.ahead.halfHours",
-  "location.zone.note.ahead.minutes",
-  "location.zone.note.behind.hours",
-  "location.zone.note.behind.halfHours",
-  "location.zone.note.behind.minutes",
-] as const satisfies readonly ParseKeys[];
+const COUNT_KEYS: readonly ParseKeys[] = [ZONE_COPY_KEY, ZONE_NOTE_KEY].flatMap((keys) =>
+  Object.values(keys).flatMap(Object.values)
+);
 
 /** The app's name is spelled only through brand.name. */
 const HAND_WRITTEN_NAME = /nedaa|ن[ِ]?داء/i;
