@@ -2,6 +2,9 @@
 
 Buffers OS-level diagnostics and exposes them to JS via `drain()` + `ack()`.
 
+`excludeFromBackup(path)` sets the iOS `isExcludedFromBackup` flag on a file. It throws when
+the file is missing and does nothing on Android, whose manifest rules name excluded files.
+
 **Peek/ack protocol:** `drain()` returns records without consuming them; the native side
 consumes (Android: cursor advance, iOS: file delete) only when JS calls `ack(tokens)` after
 the log write is flushed to disk. A crash between drain and ack replays the records on the

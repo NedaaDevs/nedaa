@@ -16,6 +16,7 @@ export type {
 const NativeModule = requireOptionalNativeModule<{
   drain(): Promise<NativeDiagnostic[]>;
   ack?(tokens: string[]): Promise<void>;
+  excludeFromBackup?(path: string): Promise<void>;
   testNativeCrash?(): void;
   testHang?(): void;
   testAnr?(): void;
@@ -34,6 +35,10 @@ export const ExpoDiagnosticsModule = {
   // that predate the ack API.
   async ack(tokens: string[]): Promise<void> {
     await NativeModule?.ack?.(tokens);
+  },
+  // iOS only: Android leaves files out of backup through its manifest rules.
+  async excludeFromBackup(path: string): Promise<void> {
+    await NativeModule?.excludeFromBackup?.(path);
   },
   // Debug crash triggers — force a real native crash so the drain path can be exercised
   // end-to-end on device. Present on both platforms.
