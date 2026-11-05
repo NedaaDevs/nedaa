@@ -48,4 +48,15 @@ describe("translation keys in the source", () => {
     ]);
     expect(found.length).toBeGreaterThan(1000);
   });
+
+  // A base key resolves on any one form, so a missing form needs its own check.
+  it("has each English plural form of each plural key", () => {
+    const { pluralCategories } = new Intl.PluralRules("en").resolvedOptions();
+    const bases = [...EN_PATHS].filter((path) => PLURAL_SUFFIX.test(path));
+    const missing = bases
+      .map((path) => path.replace(PLURAL_SUFFIX, ""))
+      .flatMap((base) => pluralCategories.map((form) => `${base}_${form}`))
+      .filter((path) => !EN_PATHS.has(path));
+    expect([...new Set(missing)].sort()).toEqual([]);
+  });
 });
