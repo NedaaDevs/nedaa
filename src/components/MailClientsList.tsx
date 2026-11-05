@@ -128,7 +128,7 @@ const MailClientsList = ({ onClose }: Props) => {
         justifyContent="center"
         // eslint-disable-next-line no-restricted-syntax -- sheet frame, owns its own surface
         backgroundColor="$backgroundSecondary">
-        <Text color="$typography">{t("loading")}</Text>
+        <Text color="$typography">{t("common.loading")}</Text>
       </Box>
     );
   }
@@ -197,7 +197,7 @@ const MailClientsList = ({ onClose }: Props) => {
           accessibilityRole="button"
           accessibilityLabel={t("common.cancel")}>
           <Text color="$typography" fontWeight="500">
-            {t("cancel")}
+            {t("common.cancel")}
           </Text>
         </Pressable>
       </Box>
