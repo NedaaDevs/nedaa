@@ -26,7 +26,10 @@ const GROUPED_STYLE = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
 const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefined }) => {
   const { t } = useTranslation();
   const askAgainIn = useCityCheckStore((state) => state.askAgainIn);
-  const savedPoint = useLocationStore((state) => state.locationDetails.coords);
+  // The point the saved name belongs to; a new point's write comes first.
+  const savedPoint = useLocationStore(
+    (state) => state.previousPlace?.coords ?? state.locationDetails.coords
+  );
   const named = useMarkPlace(mark)?.city;
   const distance = Math.round(distanceBetween(savedPoint, markPoint(mark)));
   const place =
