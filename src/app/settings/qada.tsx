@@ -272,7 +272,10 @@ const QadaSettings = () => {
                       const num = parseInt(normalizedText);
                       if (isNaN(num) || num < 1 || num > 365) {
                         setDaysError(
-                          t("qada.daysError", "Please enter a number between 1 and 365")
+                          t("qada.daysError", {
+                            min: formatNumberToLocale("1"),
+                            max: formatNumberToLocale("365"),
+                          })
                         );
                       } else {
                         setDaysError(null);
@@ -479,7 +482,7 @@ const QadaSettings = () => {
                 </HStack>
                 <Select
                   selectedValue={tempQadaSound}
-                  placeholder={t("notification.sound.selectPlaceholder")}
+                  placeholder={t("alarm.settings.selectSound")}
                   onValueChange={(value) => setTempQadaSound(value as any)}
                   items={soundItems}
                 />
