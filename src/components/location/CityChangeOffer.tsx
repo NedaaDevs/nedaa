@@ -31,6 +31,7 @@ import {
   UPDATE_STEP,
   locationPickerRoute,
 } from "@/constants/Location";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
@@ -256,9 +257,11 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     AccessibilityInfo.announceForAccessibility(spoken);
     useLocationStore.getState().markCityOfferAnnounced();
   });
+  // An offer can arrive behind another app, where the words would be lost.
+  const { isActive } = useAppVisibility();
   useEffect(() => {
-    if (focused && view === OFFER_VIEW.OFFER && !offer.announced) announce();
-  }, [focused, view, offer.announced]);
+    if (isActive && focused && view === OFFER_VIEW.OFFER && !offer.announced) announce();
+  }, [isActive, focused, view, offer.announced]);
   // The card's own run announces the rest; this end has no run left to say it.
   const notApplied = view === OFFER_VIEW.NOT_APPLIED;
   useIosAnnouncement(notApplied ? spoken : null);
