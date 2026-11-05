@@ -18,6 +18,7 @@ import {
   UPDATE_STEP,
 } from "@/constants/Location";
 import { AppLocale, PlatformType } from "@/enums/app";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore, type UpdateResult } from "@/stores/locationUpdate";
@@ -236,6 +237,24 @@ describe("a run that stops", () => {
     expect(useLocationStore.getState().cityOffer?.stage.kind).toBe(CITY_OFFER_STAGE.KEPT);
     expect(mockDismissFailure).toHaveBeenCalled();
     expect(label()).toContain(t("location.cityOffer.kept.title", { saved: "Riyadh" }));
+  });
+
+  it.each([
+    ["refetches", true, 1],
+    ["leaves the stored days", false, 0],
+  ])("%s on Keep when a split is %s", async (_name, timesSplit, loads) => {
+    const { loadPrayerTimesAtCurrentPlace } = usePrayerTimesStore.getState();
+    const load = jest.fn(async () => true);
+    usePrayerTimesStore.setState({ timesSplit, loadPrayerTimesAtCurrentPlace: load });
+    stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.PRAYER_TIMES);
+    offerUp();
+    await renderOffer();
+    await pressUse("Jeddah");
+
+    await userEvent.press(button("location.cityOffer.keep", { saved: "Riyadh" }));
+
+    expect(load).toHaveBeenCalledTimes(loads);
+    usePrayerTimesStore.setState({ timesSplit: false, loadPrayerTimesAtCurrentPlace });
   });
 
   it("keeps the saved place on Keep after a failed read, which wrote none", async () => {

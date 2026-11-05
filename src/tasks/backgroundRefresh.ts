@@ -120,7 +120,7 @@ const runBackgroundRefresh = async (): Promise<BackgroundTask.BackgroundTaskResu
 
     const futureData = await PrayerTimesDB.getPrayerTimesByDateRange(todayInt, futureDate);
     // Days fetched for another place are not this one's, however many.
-    const placeMoved = timesMoved(usePrayerTimesStore.getState().timesCoords, coords);
+    const placeMoved = timesMoved(usePrayerTimesStore.getState(), coords);
     const hasSufficientData = futureData.length >= MIN_FUTURE_DAYS && !placeMoved;
 
     let fetchedNewData = false;
