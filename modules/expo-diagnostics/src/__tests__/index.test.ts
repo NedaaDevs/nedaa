@@ -11,6 +11,10 @@ describe("ExpoDiagnosticsModule (native absent)", () => {
     expect(ExpoDiagnosticsModule.isAvailable).toBe(false);
   });
 
+  it("excludeFromBackup does nothing when native module is missing", async () => {
+    await expect(ExpoDiagnosticsModule.excludeFromBackup("/a/file")).resolves.toBeUndefined();
+  });
+
   it("drain resolves to empty array when native module is missing", async () => {
     await expect(ExpoDiagnosticsModule.drain()).resolves.toEqual([]);
   });
