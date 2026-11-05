@@ -75,11 +75,11 @@ describe("useMarkPlace", () => {
       ({ mark }: { mark: PlaceMark }) => useMarkPlace(mark),
       { initialProps: { mark: JEDDAH_MARK } }
     );
-    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
+    await waitFor(() => expect(result.current?.city).toBe(JEDDAH_ROW.name));
     await rerender({ mark: { ...JEDDAH_MARK } });
 
     expect(mockFindNearestCity).toHaveBeenCalledTimes(1);
-    expect(result.current?.city).toBe("Jeddah");
+    expect(result.current?.city).toBe(JEDDAH_ROW.name);
   });
 
   it("looks again once the full city pack installs", async () => {
@@ -91,7 +91,7 @@ describe("useMarkPlace", () => {
     await waitFor(() => expect(result.current).toEqual({ city: null, zone: null }));
     await act(async () => useCitiesPackStore.setState({ isInstalled: true }));
 
-    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
+    await waitFor(() => expect(result.current?.city).toBe(JEDDAH_ROW.name));
   });
 
   it("is undefined for a new mark while it looks, not the last mark's place", async () => {
@@ -103,7 +103,7 @@ describe("useMarkPlace", () => {
       ({ mark }: { mark: PlaceMark }) => useMarkPlace(mark),
       { initialProps: { mark: JEDDAH_MARK } }
     );
-    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
+    await waitFor(() => expect(result.current?.city).toBe(JEDDAH_ROW.name));
 
     await rerender({ mark: MANAMA_MARK });
 
@@ -117,7 +117,7 @@ describe("useMarkPlace", () => {
       ({ mark }: { mark: PlaceMark }) => useMarkPlace(mark),
       { initialProps: { mark: JEDDAH_MARK } }
     );
-    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
+    await waitFor(() => expect(result.current?.city).toBe(JEDDAH_ROW.name));
 
     await rerender({ mark: { ...JEDDAH_MARK, at: JEDDAH_MARK.at + 1 } });
 
