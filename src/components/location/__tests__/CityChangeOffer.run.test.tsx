@@ -244,7 +244,11 @@ describe("a run that stops", () => {
     ["leaves the stored days", false, 0],
   ])("%s on Keep when a split is %s", async (_name, timesSplit, loads) => {
     const { loadPrayerTimesAtCurrentPlace } = usePrayerTimesStore.getState();
-    const load = jest.fn(async () => true);
+    let placeAtLoad: unknown = null;
+    const load = jest.fn(async () => {
+      placeAtLoad = useLocationStore.getState().locationDetails.coords;
+      return true;
+    });
     usePrayerTimesStore.setState({ timesSplit, loadPrayerTimesAtCurrentPlace: load });
     stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.PRAYER_TIMES);
     offerUp();
@@ -254,6 +258,7 @@ describe("a run that stops", () => {
     await userEvent.press(button("location.cityOffer.keep", { saved: "Riyadh" }));
 
     expect(load).toHaveBeenCalledTimes(loads);
+    if (loads) expect(placeAtLoad).toMatchObject(RIYADH_COORDS);
     usePrayerTimesStore.setState({ timesSplit: false, loadPrayerTimesAtCurrentPlace });
   });
 

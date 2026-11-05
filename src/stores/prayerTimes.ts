@@ -271,10 +271,11 @@ const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch>
   // Both years are fetched before either is stored: a move between them
   // leaves no year of the replaced place behind.
   if (placeMovedSince(placeRevision, "the refetch")) return TIMES_FETCH.SUPERSEDED;
+  // Set before the rows land, so a failure after the insert still owes the
+  // refetch. Days with no recorded place may be another place's.
+  if (get().timesCoords === null || timesMoved(get(), fetchedFor)) set({ timesSplit: true });
   const fetched = (await storeYear(thisYear, undefined, firstMonth)) === TIMES_FETCH.STORED;
   if (!fetched) return { ...NOT_STORED, fetched };
-  // Holds through a crash or a move, until the last year lands.
-  if (timesMoved(get(), fetchedFor)) set({ timesSplit: true });
   // This year's store awaits the insert and widgets; the place can move.
   if (placeMovedSince(placeRevision, "this year's store")) return TIMES_FETCH.SUPERSEDED;
   const adjacentStored =
