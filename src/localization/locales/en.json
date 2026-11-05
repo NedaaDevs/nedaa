@@ -473,6 +473,7 @@
     "yaHayyuYaQayyum": "O Ever Living, O Self-Subsisting and Supporter of all, by Your mercy I seek assistance, rectify for me all of my affairs and do not leave me to myself, even for the blink of an eye.\nيَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ"
   },
   "athkar.loading.initializing": "Loading Athkar...",
+  "athkar.loading.resetting": "Resetting progress...",
   "athkar.morning": "Morning Athkar",
   "athkar.myAthkar": "My Athkar",
   "athkar.myAthkar.add": "Search",
@@ -1073,6 +1074,7 @@
   "notification.soundAndVibration": "Sound and Vibration",
   "notification.timeAfterAthan": "Time after Athan",
   "notification.timeBeforeAthan": "Time before Athan",
+  "notification.timing.selectPlaceholder": "Select time",
   "notification.type.iqama": "Iqama",
   "notification.type.prayer": "Prayer",
   "notification.type.preAthan": "Pre-Athan",
@@ -1305,6 +1307,7 @@
   "qada.dangerZone.title": "Danger Zone",
   "qada.dangerZone.willDelete": "This will delete:",
   "qada.dateInPast": "Selected date is in the past",
+  "qada.daysError": "Please enter a number between {{min}} and {{max}}",
   "qada.days_one": "{{count}} day",
   "qada.days_other": "{{count}} days",
   "qada.daysBeforeRamadan": "Days Before Ramadan",

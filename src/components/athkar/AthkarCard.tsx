@@ -158,7 +158,7 @@ const AthkarCard: FC<Props> = ({ athkar, progress, onRequestOnboarding }) => {
                     size="xs"
                     action="default"
                     variant="outline"
-                    accessibilityLabel={t("common.decrement")}
+                    accessibilityLabel={t("a11y.customAthkar.decrementCount")}
                     onPress={(e: any) => {
                       e.stopPropagation();
                       decrementCount(athkar.id);
