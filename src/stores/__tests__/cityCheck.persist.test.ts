@@ -19,6 +19,12 @@ import { toPlaceMark } from "@/utils/cityCheck/marks";
 
 let mockSaved: string | null = null;
 
+const mockExcludeFromBackup = jest.fn();
+
+jest.mock("@/utils/cityCheck/backupExclusion", () => ({
+  excludeCityCheckFromBackup: () => mockExcludeFromBackup(),
+}));
+
 jest.mock("expo-sqlite/kv-store", () => {
   const storage = {
     getItem: jest.fn(() => Promise.resolve(mockSaved)),
@@ -58,6 +64,14 @@ describe("city-check memory persistence", () => {
 
   it("persists to its own database file", () =>
     expect(MockSQLiteStorage).toHaveBeenCalledWith(CITY_CHECK_STORAGE_DB_NAME));
+
+  it("flags its file out of backup once the file is read", async () => {
+    mockExcludeFromBackup.mockClear();
+
+    await rehydrate(null);
+
+    expect(mockExcludeFromBackup).toHaveBeenCalledTimes(1);
+  });
 
   it("loads defaults when nothing is saved", async () => {
     await rehydrate(null);
