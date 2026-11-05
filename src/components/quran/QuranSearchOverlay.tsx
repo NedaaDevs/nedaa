@@ -453,7 +453,7 @@ const QuranSearchOverlay = forwardRef<QuranSearchHandle, { children: ReactNode }
                     <Pressable
                       onPress={() => setQuery("")}
                       accessibilityRole="button"
-                      accessibilityLabel={t("a11y.clear", { defaultValue: "Clear" })}
+                      accessibilityLabel={t("a11y.common.clearSearch")}
                       hitSlop={8}>
                       <X color={chrome.subtleText} size={18} />
                     </Pressable>
