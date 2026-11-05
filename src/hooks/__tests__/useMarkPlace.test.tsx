@@ -4,6 +4,7 @@ import { CITY_ROW_TRUST_KM } from "@/constants/CityCheck";
 import { AppLocale } from "@/enums/app";
 import { useMarkPlace } from "@/hooks/useMarkPlace";
 import i18n from "@/localization/i18n";
+import { useCitiesPackStore } from "@/stores/citiesPack";
 import { JEDDAH_MARK, JEDDAH_ROW, MANAMA_ROW } from "@/test-helpers/cityRows";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { PlaceMark } from "@/types/cityCheck";
@@ -18,6 +19,7 @@ const MANAMA_MARK: PlaceMark = { lat: MANAMA_ROW.latitude, lng: MANAMA_ROW.longi
 
 beforeEach(async () => {
   mockFindNearestCity.mockReset();
+  useCitiesPackStore.setState({ isInstalled: false });
   await act(() => i18n.changeLanguage(AppLocale.EN));
 });
 
@@ -78,6 +80,18 @@ describe("useMarkPlace", () => {
 
     expect(mockFindNearestCity).toHaveBeenCalledTimes(1);
     expect(result.current?.city).toBe("Jeddah");
+  });
+
+  it("looks again once the full city pack installs", async () => {
+    mockFindNearestCity
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ city: JEDDAH_ROW, distanceKm: 1 });
+
+    const { result } = await renderHook(() => useMarkPlace(JEDDAH_MARK));
+    await waitFor(() => expect(result.current).toEqual({ city: null, zone: null }));
+    await act(async () => useCitiesPackStore.setState({ isInstalled: true }));
+
+    await waitFor(() => expect(result.current?.city).toBe("Jeddah"));
   });
 
   it("is undefined for a new mark while it looks, not the last mark's place", async () => {
