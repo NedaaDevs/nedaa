@@ -68,14 +68,15 @@ const canRepairLocation = async (): Promise<boolean> => {
   const place = await readTimesPlace();
   // Unloaded stores hold defaults, not the place; the retry stays for later.
   if (place === TIMES_PLACE.UNKNOWN) return false;
-  const { didGetCurrentLocation, loadingTimes, timesCoords } = usePrayerTimesStore.getState();
+  const times = usePrayerTimesStore.getState();
+  const { didGetCurrentLocation, loadingTimes } = times;
   // The running load owns the outcome; the retry stays for a later foreground.
   if (loadingTimes) return false;
   // A verified place whose own rows a failed fetch never stored.
   if (place === TIMES_PLACE.AWAITING_TIMES) return true;
   const location = useLocationStore.getState();
   // A verified place whose days were fetched for another place.
-  if (place === TIMES_PLACE.VERIFIED && timesMoved(timesCoords, location.locationDetails.coords)) {
+  if (place === TIMES_PLACE.VERIFIED && timesMoved(times, location.locationDetails.coords)) {
     return true;
   }
   if (didGetCurrentLocation) return false;
@@ -86,10 +87,7 @@ const canRepairLocation = async (): Promise<boolean> => {
 /** The stored times are the saved place's, verified and fetched there. */
 const timesAtSavedPlace = async (): Promise<boolean> =>
   (await readTimesPlace()) === TIMES_PLACE.VERIFIED &&
-  !timesMoved(
-    usePrayerTimesStore.getState().timesCoords,
-    useLocationStore.getState().locationDetails.coords
-  );
+  !timesMoved(usePrayerTimesStore.getState(), useLocationStore.getState().locationDetails.coords);
 
 /**
  * Stored rows carry no location, so a fix alone leaves the old city's times in
