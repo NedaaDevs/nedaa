@@ -218,6 +218,7 @@ const placeRecordOf = (state: LocationStore): PlaceRecord | null => {
     localizedLocation: state.localizedLocation,
     locationMode: state.locationMode,
     manualLocation: state.manualLocation,
+    manualLocationChosenAt: state.manualLocationChosenAt,
   };
 };
 
@@ -705,6 +706,7 @@ export const useLocationStore = create<LocationStore>()(
             },
             locationMode: previous.locationMode,
             manualLocation: previous.manualLocation,
+            manualLocationChosenAt: previous.manualLocationChosenAt ?? null,
             previousPlace: null,
             placeRevision: state.placeRevision + 1,
           }));

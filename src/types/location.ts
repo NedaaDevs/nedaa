@@ -132,4 +132,6 @@ export type PlaceRecord = {
   localizedLocation: Address;
   locationMode: LocationModeValue;
   manualLocation: ManualLocation | null;
+  /** Absent on a record saved without it. */
+  manualLocationChosenAt?: number | null;
 };

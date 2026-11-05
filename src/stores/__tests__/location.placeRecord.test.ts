@@ -220,6 +220,40 @@ describe("the place record and the place revision", () => {
     );
   });
 
+  describe("restoring the previous place", () => {
+    it("gives a chosen city back the time it was chosen", async () => {
+      chooseAndSettle(RIYADH_CITY);
+      const chosenAt = useLocationStore.getState().manualLocationChosenAt;
+      expect(chosenAt).not.toBeNull();
+
+      useLocationStore.getState().clearManualLocation();
+      useLocationStore.getState().restorePreviousPlace();
+
+      expect(useLocationStore.getState().locationMode).toBe(LocationMode.MANUAL);
+      expect(useLocationStore.getState().manualLocationChosenAt).toBe(chosenAt);
+    });
+
+    it("clears the chosen time when the place restored was the device's", () => {
+      useLocationStore.getState().setManualLocation(JEDDAH_CITY);
+      useLocationStore.getState().restorePreviousPlace();
+
+      expect(useLocationStore.getState().locationMode).toBe(LocationMode.DEVICE);
+      expect(useLocationStore.getState().manualLocationChosenAt).toBeNull();
+    });
+
+    it("reads a saved place with no chosen time as none", () => {
+      chooseAndSettle(RIYADH_CITY);
+      useLocationStore.getState().clearManualLocation();
+      const { manualLocationChosenAt: _chosenAt, ...record } =
+        useLocationStore.getState().previousPlace!;
+      useLocationStore.setState({ previousPlace: record });
+
+      useLocationStore.getState().restorePreviousPlace();
+
+      expect(useLocationStore.getState().manualLocationChosenAt).toBeNull();
+    });
+  });
+
   it("holds no previous place for the first place ever written", () => {
     useLocationStore.setState({ lastKnownCoords: null, previousPlace: null });
 
