@@ -20,10 +20,15 @@ const NEW_ZONE = RIYADH_ZONE;
 // The prayer_times table: one row per date, a later write replaces the row.
 const mockTable = new Map<number, DayPrayerTimes>();
 let mockNow = new Date();
+// The year whose insert fails; dates are written yyyymmdd.
+let mockFailedInsertYear: number | null = null;
 
 jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
     insertPrayerTimes: async ({ days }: { days: DayPrayerTimes[] }) => {
+      if (days.some(({ date }) => Math.floor(date / 10000) === mockFailedInsertYear)) {
+        return { success: false, error: new Error("disk full") };
+      }
       days.forEach((day) => mockTable.set(day.date, day));
       return { success: true, insertedCount: days.length };
     },
@@ -169,8 +174,10 @@ afterEach(() => {
     getPrayerTimes,
     usingDefaultLocation,
     timesCoords: null,
+    timesSplit: false,
     hasError: false,
   });
+  mockFailedInsertYear = null;
   placeAt(RIYADH_COORDS);
   place.placeRevision = 0;
   jest.mocked(place.settlePlace).mockClear();
@@ -263,6 +270,73 @@ describe("a forced refetch after a place change", () => {
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
 
     expect(place.settlePlace).toHaveBeenCalledWith(7);
+  });
+});
+
+// Rows carry no place, so one year stored of two leaves days of both places.
+describe("a refetch that stored one year of two", () => {
+  const LATE_DECEMBER = new Date(2026, 11, 25, 12);
+
+  /** This year lands for the new place and next year's insert fails. */
+  const splitTheRows = async () => {
+    mockNow = LATE_DECEMBER;
+    storeOldPlace(mockNow);
+    usePrayerTimesStore.setState({
+      getPrayerTimes: jest.fn(servePlaceHeld),
+      timesCoords: OLD_COORDS,
+    });
+    mockFailedInsertYear = 2027;
+    await expect(
+      usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
+    ).rejects.toThrow();
+  };
+
+  it("refetches the last place's days when the place returns to it", async () => {
+    await splitTheRows();
+    expect(mockTable.get(dateToInt(mockNow))?.timezone).toBe(NEW_ZONE);
+
+    placeAt(OLD_COORDS, OLD_ZONE);
+    mockFailedInsertYear = null;
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+
+    expect(datesNotAt(OLD_ZONE)).toEqual([]);
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(false);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(OLD_COORDS);
+  });
+
+  it("stays owed while the return's own refetch fails", async () => {
+    await splitTheRows();
+
+    placeAt(OLD_COORDS, OLD_ZONE);
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).rejects.toThrow();
+
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(true);
+  });
+
+  it("owes the background task a refetch after the return", async () => {
+    await splitTheRows();
+
+    placeAt(OLD_COORDS, OLD_ZONE);
+    mockFailedInsertYear = null;
+    await executeBackgroundRefresh();
+
+    expect(datesNotAt(OLD_ZONE)).toEqual([]);
+  });
+
+  it("owes nothing when the refetch was for the place that the rows hold", async () => {
+    mockNow = LATE_DECEMBER;
+    storeOldPlace(mockNow);
+    usePrayerTimesStore.setState({
+      getPrayerTimes: jest.fn(servePlaceHeld),
+      timesCoords: RIYADH_COORDS,
+    });
+    mockFailedInsertYear = 2027;
+
+    await expect(
+      usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)
+    ).rejects.toThrow();
+
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(false);
   });
 });
 
