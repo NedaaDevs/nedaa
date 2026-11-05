@@ -7,29 +7,44 @@ import en from "@/localization/locales/en.json";
 const SOURCE_ROOT = join(process.cwd(), "src");
 const SOURCE_FILE = /\.tsx?$/;
 const TEST_PATH = /__tests__|test-helpers/;
-// A literal key, dotted or not, as the first argument of a translate call.
-const LITERAL_KEY = /(?<![\w.$])(?:t|i18n\.t|i18next\.t)\(\s*["']([\w-]+(?:\.[\w-]+)*)["']/g;
+// A literal key, dotted or not, as the first argument of a translate call,
+// and whether the call's inline options set `returnObjects: true`.
+const LITERAL_KEY =
+  /(?<![\w.$])(?:t|i18n\.t|i18next\.t)\(\s*["']([\w-]+(?:\.[\w-]+)*)["'](?:\s*,\s*\{[^}]*\b(returnObjects):\s*true)?/g;
 const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
 // Arabic alone speaks the time in words, so English has no such keys.
 const ARABIC_ONLY_PREFIX = "a11y.time.";
 // `headerJuzLabel` writes the Arabic label from its own ordinals.
 const ENGLISH_ONLY_KEY = "quran.header.partLabel";
 
-/** Every path a bundle answers, flat or nested; plurals by their base key. */
-const pathsOf = (node: object, prefix = ""): string[] =>
+const isObject = (value: unknown): value is object => value !== null && typeof value === "object";
+
+/** Every path that holds text, flat or nested; plurals also by base key. */
+const textPathsOf = (node: object, prefix = ""): string[] =>
   Object.entries(node).flatMap(([key, value]) => {
     const path = `${prefix}${key}`;
-    const nested = value !== null && typeof value === "object";
-    return [path, path.replace(PLURAL_SUFFIX, ""), ...(nested ? pathsOf(value, `${path}.`) : [])];
+    return isObject(value)
+      ? textPathsOf(value, `${path}.`)
+      : [path, path.replace(PLURAL_SUFFIX, "")];
   });
 
-const EN_PATHS = new Set(pathsOf(en));
-const AR_PATHS = new Set(pathsOf(ar));
+/** Every path that holds an object; only `returnObjects` can read one. */
+const objectPathsOf = (node: object, prefix = ""): string[] =>
+  Object.entries(node).flatMap(([key, value]) => {
+    const path = `${prefix}${key}`;
+    return isObject(value) ? [path, ...objectPathsOf(value, `${path}.`)] : [];
+  });
 
-const resolves = (key: string): boolean => {
-  if (key.startsWith(ARABIC_ONLY_PREFIX)) return AR_PATHS.has(key);
-  if (key === ENGLISH_ONLY_KEY) return EN_PATHS.has(key);
-  return EN_PATHS.has(key) && AR_PATHS.has(key);
+const EN_PATHS = new Set(textPathsOf(en));
+const AR_PATHS = new Set(textPathsOf(ar));
+const EN_OBJECTS = new Set(objectPathsOf(en));
+const AR_OBJECTS = new Set(objectPathsOf(ar));
+
+const resolves = (key: string, wantsObject: boolean): boolean => {
+  const [enPaths, arPaths] = wantsObject ? [EN_OBJECTS, AR_OBJECTS] : [EN_PATHS, AR_PATHS];
+  if (key.startsWith(ARABIC_ONLY_PREFIX)) return arPaths.has(key);
+  if (key === ENGLISH_ONLY_KEY) return enPaths.has(key);
+  return enPaths.has(key) && arPaths.has(key);
 };
 
 const sourceFiles = (): string[] =>
@@ -41,8 +56,8 @@ describe("translation keys in the source", () => {
   it("resolves each literal key, so nobody reads a raw key", () => {
     const missing = sourceFiles().flatMap((file) =>
       [...readFileSync(file, "utf8").matchAll(LITERAL_KEY)]
+        .filter(([, key, returnObjects]) => !resolves(key, returnObjects !== undefined))
         .map(([, key]) => key)
-        .filter((key) => !resolves(key))
     );
     expect([...new Set(missing)].sort()).toEqual([]);
   });
