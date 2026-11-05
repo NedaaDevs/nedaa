@@ -1551,7 +1551,7 @@
   "qada.dangerZone.title": "مسح البيانات",
   "qada.dangerZone.willDelete": "سيتم حذف:",
   "qada.dateInPast": "التاريخ المحدد في الماضي",
-  "qada.daysError": "يُرجى إدخال رقم من {{min}} إلى {{max}}.",
+  "qada.daysError": "يُرجى إدخال عدد أيام من {{min}} إلى {{max}}.",
   "qada.days_few": "{{count}} أيام",
   "qada.days_many": "{{count}} يومًا",
   "qada.days_one": "يوم واحد",
