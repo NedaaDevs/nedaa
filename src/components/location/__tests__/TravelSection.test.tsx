@@ -13,7 +13,7 @@ import { FAR_MARK, JEDDAH_MARK, JEDDAH_ROW } from "@/test-helpers/cityRows";
 import { controlProblems } from "@/test-helpers/controls";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
-import { JEDDAH_CITY } from "@/test-helpers/place";
+import { JEDDAH_CITY, RIYADH_CITY } from "@/test-helpers/place";
 import { RIYADH_COORDS } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { distanceBetween } from "@/utils/location";
@@ -71,7 +71,7 @@ describe("the travel setting", () => {
       }),
       t("a11y.join", {
         first: t("location.travel.off.title"),
-        second: t("location.travel.off.note", { city: "Riyadh" }),
+        second: t("location.travel.off.note", { city: RIYADH_CITY.name }),
       }),
     ]);
   });
@@ -149,10 +149,10 @@ describe("the places not asked in", () => {
     await renderSection();
 
     expect(notAskedHeader()).toBeTruthy();
-    expect(await screen.findByText("Jeddah")).toBeTruthy();
+    expect(await screen.findByText(JEDDAH_ROW.name)).toBeTruthy();
     expect(
       screen.getByText(
-        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: "Riyadh" })
+        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
       )
     ).toBeTruthy();
   });
@@ -176,7 +176,10 @@ describe("the places not asked in", () => {
 
     expect(
       await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
-    ).toHaveProp("accessibilityHint", t("a11y.location.travel.askAgainHint", { place: "Jeddah" }));
+    ).toHaveProp(
+      "accessibilityHint",
+      t("a11y.location.travel.askAgainHint", { place: JEDDAH_ROW.name })
+    );
   });
 
   it("measures from the saved place while a new point waits for its times", async () => {
@@ -186,7 +189,7 @@ describe("the places not asked in", () => {
 
     expect(
       await screen.findByText(
-        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: "Riyadh" })
+        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
       )
     ).toBeTruthy();
   });
@@ -199,7 +202,7 @@ describe("the places not asked in", () => {
       await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
     ).toHaveProp(
       "accessibilityHint",
-      t("a11y.location.travel.askAgainNearHint", { distance: FAR_MARK_KM, saved: "Riyadh" })
+      t("a11y.location.travel.askAgainNearHint", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
     );
   });
 
