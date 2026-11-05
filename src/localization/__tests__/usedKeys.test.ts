@@ -7,11 +7,13 @@ import en from "@/localization/locales/en.json";
 const SOURCE_ROOT = join(process.cwd(), "src");
 const SOURCE_FILE = /\.tsx?$/;
 const TEST_PATH = /__tests__|test-helpers/;
-// A literal dotted key as the first argument of a translate call.
-const LITERAL_KEY = /(?<![\w.$])(?:t|i18n\.t|i18next\.t)\(\s*["']([\w-]+(?:\.[\w-]+)+)["']/g;
+// A literal key, dotted or not, as the first argument of a translate call.
+const LITERAL_KEY = /(?<![\w.$])(?:t|i18n\.t|i18next\.t)\(\s*["']([\w-]+(?:\.[\w-]+)*)["']/g;
 const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
 // Arabic alone speaks the time in words, so English has no such keys.
 const ARABIC_ONLY_PREFIX = "a11y.time.";
+// `headerJuzLabel` writes the Arabic label from its own ordinals.
+const ENGLISH_ONLY_KEY = "quran.header.partLabel";
 
 /** Every path a bundle answers, flat or nested; plurals by their base key. */
 const pathsOf = (node: object, prefix = ""): string[] =>
@@ -24,8 +26,11 @@ const pathsOf = (node: object, prefix = ""): string[] =>
 const EN_PATHS = new Set(pathsOf(en));
 const AR_PATHS = new Set(pathsOf(ar));
 
-const resolves = (key: string): boolean =>
-  key.startsWith(ARABIC_ONLY_PREFIX) ? AR_PATHS.has(key) : EN_PATHS.has(key);
+const resolves = (key: string): boolean => {
+  if (key.startsWith(ARABIC_ONLY_PREFIX)) return AR_PATHS.has(key);
+  if (key === ENGLISH_ONLY_KEY) return EN_PATHS.has(key);
+  return EN_PATHS.has(key) && AR_PATHS.has(key);
+};
 
 const sourceFiles = (): string[] =>
   readdirSync(SOURCE_ROOT, { recursive: true, encoding: "utf8" })
