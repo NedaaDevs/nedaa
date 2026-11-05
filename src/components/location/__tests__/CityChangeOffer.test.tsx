@@ -12,12 +12,19 @@ import {
   OFFER_SHAPE,
   type OfferShape,
 } from "@/constants/CityOffer";
+import { APP_STATE } from "@/constants/AppState";
 import { E2E_ID } from "@/constants/E2E";
 import { AppLocale } from "@/enums/app";
 import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { useLocationUpdateStore } from "@/stores/locationUpdate";
+import {
+  captureAppState,
+  emitAppState,
+  restoreAppState,
+  setAppState,
+} from "@/test-helpers/appStateMock";
 import { candidateAt, offerUp } from "@/test-helpers/cityOffer";
 import {
   DUBAI_NAME,
@@ -62,11 +69,15 @@ jest.mock("@/hooks/useLocationUpdate", () => ({
 beforeEach(async () => {
   jest.clearAllMocks();
   resetStatus();
+  setAppState(APP_STATE.ACTIVE);
   await act(() => i18n.changeLanguage(AppLocale.EN));
   savedRiyadh();
 });
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  restoreAppState();
+});
 
 describe("the offer", () => {
   it("names the city the device is in over the saved city's times", async () => {
@@ -274,6 +285,20 @@ describe("saying it", () => {
     // A second card on one offer is a remount: the offer remembers it was said.
     await renderWithTheme(<CityChangeOffer />);
     expect(announce).toHaveBeenCalledTimes(1);
+    expect(useLocationStore.getState().cityOffer?.announced).toBe(true);
+  });
+
+  it("holds the announcement until the app returns to the front", async () => {
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    captureAppState();
+    setAppState(APP_STATE.BACKGROUND);
+    offerUp();
+    await renderOffer();
+    expect(announce).not.toHaveBeenCalled();
+    expect(useLocationStore.getState().cityOffer?.announced).toBe(false);
+    await act(async () => emitAppState(APP_STATE.ACTIVE));
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(label());
     expect(useLocationStore.getState().cityOffer?.announced).toBe(true);
   });
 });
