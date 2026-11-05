@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useCitiesPackStore } from "@/stores/citiesPack";
 import type { CitySearchResult } from "@/types/cities";
 import { NO_PLACE } from "@/constants/CityOffer";
 import type { PlaceMark, ZonePlace } from "@/types/cityCheck";
@@ -18,6 +19,8 @@ export const useMarkPlace = (mark: PlaceMark | null): ZonePlace | undefined => {
   const lat = mark?.lat;
   const lng = mark?.lng;
   const at = mark?.at;
+  // The full pack holds rows the bundled seed lacks.
+  const packInstalled = useCitiesPackStore((state) => state.isInstalled);
 
   useEffect(() => {
     if (lat === undefined || lng === undefined || at === undefined) return;
@@ -28,7 +31,7 @@ export const useMarkPlace = (mark: PlaceMark | null): ZonePlace | undefined => {
     return () => {
       current = false;
     };
-  }, [lat, lng, at]);
+  }, [lat, lng, at, packInstalled]);
 
   if (!mark) return NO_PLACE;
   // An answer for another mark is not this one's.

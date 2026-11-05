@@ -94,8 +94,13 @@ export const unnamedSavedPlace = () => {
 };
 
 const recordOfSaved = (): PlaceRecord => {
-  const { locationDetails, localizedLocation, locationMode, manualLocation } =
-    useLocationStore.getState();
+  const {
+    locationDetails,
+    localizedLocation,
+    locationMode,
+    manualLocation,
+    manualLocationChosenAt,
+  } = useLocationStore.getState();
   return {
     coords: locationDetails.coords,
     address: locationDetails.address,
@@ -106,6 +111,7 @@ const recordOfSaved = (): PlaceRecord => {
     localizedLocation,
     locationMode,
     manualLocation,
+    manualLocationChosenAt,
   };
 };
 
