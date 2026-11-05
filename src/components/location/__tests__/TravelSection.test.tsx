@@ -13,6 +13,7 @@ import { FAR_MARK, JEDDAH_MARK, JEDDAH_ROW } from "@/test-helpers/cityRows";
 import { controlProblems } from "@/test-helpers/controls";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
+import { JEDDAH_CITY } from "@/test-helpers/place";
 import { RIYADH_COORDS } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { distanceBetween } from "@/utils/location";
@@ -176,6 +177,18 @@ describe("the places not asked in", () => {
     expect(
       await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
     ).toHaveProp("accessibilityHint", t("a11y.location.travel.askAgainHint", { place: "Jeddah" }));
+  });
+
+  it("measures from the saved place while a new point waits for its times", async () => {
+    useLocationStore.getState().setManualLocation(JEDDAH_CITY);
+    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
+    await renderSection();
+
+    expect(
+      await screen.findByText(
+        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: "Riyadh" })
+      )
+    ).toBeTruthy();
   });
 
   it("measures the distance in the hint of a place with no city row", async () => {
