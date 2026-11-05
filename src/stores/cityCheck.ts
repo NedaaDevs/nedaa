@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { KEPT_MAX, NOT_ASKED_MAX } from "@/constants/CityCheck";
 import { CITY_CHECK_STORAGE_DB_NAME, CITY_CHECK_STORE_KEY } from "@/constants/DB";
 import type { CityCheckMemory, PlaceMark } from "@/types/cityCheck";
+import { excludeCityCheckFromBackup } from "@/utils/cityCheck/backupExclusion";
 import { isLiveKept, markPoint, matchesMark, sameMark, withMark } from "@/utils/cityCheck/marks";
 
 export const EMPTY_MEMORY: CityCheckMemory = {
@@ -100,6 +101,10 @@ export const useCityCheckStore = create<CityCheckStore>()(
       name: CITY_CHECK_STORE_KEY,
       storage: createJSONStorage(() => new SQLiteStorage(CITY_CHECK_STORAGE_DB_NAME)),
       partialize: (state) => ({ cityCheck: state.cityCheck }),
+      // The read creates the file, and iOS sets the flag on a file that exists.
+      onRehydrateStorage: () => () => {
+        void excludeCityCheckFromBackup();
+      },
       merge: (persisted, current) => ({
         ...current,
         cityCheck: memoryFrom(isRecord(persisted) ? persisted.cityCheck : null),
