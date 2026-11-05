@@ -38,6 +38,7 @@ import { usePlace } from "@/hooks/usePlace";
 import { useViewFocus } from "@/hooks/useViewFocus";
 import { useZoneLine } from "@/hooks/useZoneLine";
 import { useLocationStore } from "@/stores/location";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { isRunning } from "@/stores/locationUpdate";
 import type { CityCandidate, CityOffer, ZonePlace } from "@/types/cityCheck";
 import { focusOn } from "@/utils/accessibilityFocus";
@@ -305,6 +306,9 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
       leaveFailure();
       // Puts back a place this offer's runs wrote; with none written, no change.
       location().restorePreviousPlace();
+      const times = usePrayerTimesStore.getState();
+      // A failed refetch stays owed to a later load, which `timesSplit` forces.
+      if (times.timesSplit) void times.loadPrayerTimesAtCurrentPlace().catch(() => {});
     }
     location().keepCityOffer();
   };

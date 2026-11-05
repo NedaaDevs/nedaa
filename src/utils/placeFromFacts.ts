@@ -13,8 +13,12 @@ export const placeFromFacts = ({ usingDefaultLocation, hasCoords }: PlaceFacts):
 /** Drift still counted as the same place; 0.01° of longitude is 2.4 s. */
 const TIMES_DRIFT_DEGREES = 0.01;
 
-/** The stored days were fetched for another place than `place`. */
-export const timesMoved = (timesCoords: Coords | null, place: Coords): boolean =>
-  timesCoords !== null &&
-  (Math.abs(timesCoords.latitude - place.latitude) > TIMES_DRIFT_DEGREES ||
-    Math.abs(timesCoords.longitude - place.longitude) > TIMES_DRIFT_DEGREES);
+/** Where the stored days came from, as the prayer-times store holds it. */
+export type TimesFacts = { timesCoords: Coords | null; timesSplit: boolean };
+
+/** Some stored days were fetched for another place than `place`. */
+export const timesMoved = ({ timesCoords, timesSplit }: TimesFacts, place: Coords): boolean =>
+  timesSplit ||
+  (timesCoords !== null &&
+    (Math.abs(timesCoords.latitude - place.latitude) > TIMES_DRIFT_DEGREES ||
+      Math.abs(timesCoords.longitude - place.longitude) > TIMES_DRIFT_DEGREES));

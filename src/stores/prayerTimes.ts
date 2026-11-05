@@ -64,6 +64,8 @@ export type PrayerTimesStore = {
   usingDefaultLocation: boolean;
   /** Where the stored days were fetched; null until they are first marked. */
   timesCoords: Coords | null;
+  /** A refetch for another place stored some of its years: the days are of two places. */
+  timesSplit: boolean;
   isLoading: boolean;
   /** True while either load verb runs. */
   loadingTimes: boolean;
@@ -271,6 +273,8 @@ const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch>
   if (placeMovedSince(placeRevision, "the refetch")) return TIMES_FETCH.SUPERSEDED;
   const fetched = (await storeYear(thisYear, undefined, firstMonth)) === TIMES_FETCH.STORED;
   if (!fetched) return { ...NOT_STORED, fetched };
+  // Holds through a crash or a move, until the last year lands.
+  if (timesMoved(get(), fetchedFor)) set({ timesSplit: true });
   // This year's store awaits the insert and widgets; the place can move.
   if (placeMovedSince(placeRevision, "this year's store")) return TIMES_FETCH.SUPERSEDED;
   const adjacentStored =
@@ -284,7 +288,7 @@ const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch>
   // Rows before the kept days keep the old place; the widget reads the oldest.
   await get().cleanupOldData();
   // Marked last: until every year lands, a later refetch runs again.
-  set({ timesCoords: fetchedFor });
+  set({ timesCoords: fetchedFor, timesSplit: false });
   return { ...refetch, fetched };
 };
 
@@ -338,7 +342,7 @@ const loadTimes = async (
     }
     // Days fetched for another place count as missing; a newly verified
     // place stays best effort.
-    const placeMoved = placeSettled && timesMoved(get().timesCoords, locationDetails.coords);
+    const placeMoved = placeSettled && timesMoved(get(), locationDetails.coords);
     const required = forceGetAndStore || missing.length > 0 || placeMoved;
 
     const now = timeZonedNow(locationDetails.timezone);
@@ -414,6 +418,7 @@ export const usePrayerTimesStore = create<PrayerTimesStore>()(
         didGetCurrentLocation: false,
         usingDefaultLocation: false,
         timesCoords: null,
+        timesSplit: false,
         isLoading: false,
         loadingTimes: false,
         isGettingProviders: false,
