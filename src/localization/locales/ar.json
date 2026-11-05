@@ -569,6 +569,7 @@
     "yaHayyuYaQayyum": "يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ"
   },
   "athkar.loading.initializing": "جارٍ تحميل الأذكار…",
+  "athkar.loading.resetting": "جارٍ إعادة تعيين التقدم…",
   "athkar.morning": "أذكار الصباح",
   "athkar.myAthkar": "أذكاري",
   "athkar.myAthkar.add": "بحث",
@@ -1282,6 +1283,7 @@
   "notification.soundAndVibration": "الصوت والاهتزاز",
   "notification.timeAfterAthan": "الوقت بعد الأذان",
   "notification.timeBeforeAthan": "الوقت قبل الأذان",
+  "notification.timing.selectPlaceholder": "اختر الوقت",
   "notification.type.iqama": "الإقامة",
   "notification.type.prayer": "الصلاة",
   "notification.type.preAthan": "قبل الأذان",
@@ -1549,6 +1551,7 @@
   "qada.dangerZone.title": "مسح البيانات",
   "qada.dangerZone.willDelete": "سيتم حذف:",
   "qada.dateInPast": "التاريخ المحدد في الماضي",
+  "qada.daysError": "يُرجى إدخال رقم من {{min}} إلى {{max}}.",
   "qada.days_few": "{{count}} أيام",
   "qada.days_many": "{{count}} يومًا",
   "qada.days_one": "يوم واحد",

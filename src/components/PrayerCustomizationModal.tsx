@@ -198,7 +198,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                 selectedValue={sound}
                 onValueChange={(value) => setSound(value as NotificationSoundKey<typeof type>)}
                 items={soundItems}
-                placeholder={t("notification.sound.selectPlaceholder")}
+                placeholder={t("alarm.settings.selectSound")}
               />
 
               <SoundPreviewButton

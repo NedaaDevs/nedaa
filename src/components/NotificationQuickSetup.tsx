@@ -127,7 +127,7 @@ const NotificationQuickSetup: FC<Props> = ({
               selectedValue={localSound}
               onValueChange={handleValueChange}
               items={soundItems}
-              placeholder={t("notification.sound.selectPlaceholder")}
+              placeholder={t("alarm.settings.selectSound")}
             />
 
             <SoundPreviewButton

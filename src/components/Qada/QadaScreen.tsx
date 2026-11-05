@@ -144,7 +144,7 @@ const QadaScreen = () => {
         back={{ to: BACK_DESTINATION.TOOLS }}
         action={{
           icon: Settings,
-          label: t("common.settings"),
+          label: t("settings.title"),
           onPress: () => {
             hapticLight();
             router.push("/settings/qada");
