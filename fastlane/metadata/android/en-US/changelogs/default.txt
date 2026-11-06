@@ -1,4 +1,3 @@
 What's new?
 
-• Fixed the app closing when you snoozed an alarm
 • Bug fixes and improvements
