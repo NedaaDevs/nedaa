@@ -148,35 +148,19 @@ struct SmallQadaView: View {
             Spacer()
 
             // Today's progress and the record prompt
-            if #available(iOS 17.0, *) {
-                HStack(spacing: 6) {
-                    if entry.todayCompleted > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(NedaaColors.success)
-                                .font(.caption2)
-                            Text("+\(entry.todayCompleted)")
-                                .font(.caption2)
-                                .fontWeight(.semibold)
-                        }
+            HStack(spacing: 6) {
+                if entry.todayCompleted > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(NedaaColors.success)
+                            .font(.caption2)
+                        Text("+\(entry.todayCompleted)")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
                     }
-
-                    QadaRecordMark(font: .caption2)
                 }
-            } else if entry.todayCompleted > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(NedaaColors.success)
-                        .font(showsBackground ? .caption2 : .caption)
 
-                    Text(String(format: NSLocalizedString("todayCompleted", comment: ""), entry.todayCompleted))
-                        .font(showsBackground ? .caption2 : .caption)
-                        .fontWeight(.semibold)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(showsBackground ? NedaaColors.success.opacity(0.2) : Color.clear)
-                .clipShape(Capsule())
+                QadaRecordMark(font: .caption2)
             }
         }
         .padding()
