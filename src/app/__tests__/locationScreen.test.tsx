@@ -507,6 +507,21 @@ describe("Settings › Location", () => {
     });
   });
 
+  it("says that the device row asks for location access", async () => {
+    mockAdopt.mockReturnValue(new Promise(() => {}));
+    permit(false, true);
+    await renderScreen();
+
+    const row = await screen.findByRole("button", {
+      name: t("a11y.join", {
+        first: t("onboarding.location.automatic"),
+        second: t("onboarding.location.automaticNote"),
+      }),
+    });
+
+    expect(row).toHaveProp("accessibilityHint", t("a11y.location.askPermissionHint"));
+  });
+
   // The mode choice ticks as it is tapped; what it starts adds no second tick.
   describe("one haptic per tap", () => {
     const automaticRow = () =>

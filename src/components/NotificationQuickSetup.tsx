@@ -124,6 +124,7 @@ const NotificationQuickSetup: FC<Props> = ({
               {t("notification.sound")}
             </Text>
             <Select
+              accessibilityLabel={t("notification.sound")}
               selectedValue={localSound}
               onValueChange={handleValueChange}
               items={soundItems}

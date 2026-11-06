@@ -1,5 +1,5 @@
-import { useRef, useState, type RefObject } from "react";
-import type { HostInstance, ViewInstance } from "react-native";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { AccessibilityInfo, type HostInstance, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -38,6 +38,7 @@ import type {
 
 /** The method list stands tall enough to search; the others fit their rows. */
 const METHOD_SNAP = [90];
+const RESULT_COUNT_DELAY_MS = 500;
 
 type PickProps = {
   label: string;
@@ -58,6 +59,20 @@ const MethodChoices = ({ label, settings, inUse, onPick }: PickProps) => {
     t(`providers.aladhan.methods.${nameKey}`)
   );
   const showAuto = matchesQuery(auto, query);
+  const found = methods.length + (showAuto ? 1 : 0);
+
+  // No drawn count to read; the delay lets the typing settle first.
+  useEffect(() => {
+    if (!query.trim() || found === 0) return;
+    const timer = setTimeout(
+      () =>
+        AccessibilityInfo.announceForAccessibility(
+          t("a11y.calculation.methodResultCount", { count: found })
+        ),
+      RESULT_COUNT_DELAY_MS
+    );
+    return () => clearTimeout(timer);
+  }, [query, found, t]);
 
   return (
     <VStack gap="$3">

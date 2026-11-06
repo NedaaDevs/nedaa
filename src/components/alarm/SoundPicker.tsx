@@ -177,6 +177,7 @@ const SoundPicker: FC<Props> = ({ value, onChange }) => {
         {t("alarm.settings.sound")}
       </Text>
       <Select
+        accessibilityLabel={t("alarm.settings.sound")}
         selectedValue={value}
         onValueChange={handleValueChange}
         items={allSoundItems}

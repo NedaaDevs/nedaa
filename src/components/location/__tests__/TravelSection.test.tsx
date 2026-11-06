@@ -29,6 +29,8 @@ jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMo
 const FAR_MARK_KM = Math.round(distanceBetween(RIYADH_COORDS, markPoint(FAR_MARK)));
 
 const renderSection = () => renderWithTheme(<TravelSection />);
+const ASK_AGAIN_FIRST = new RegExp(`^${i18n.t("location.travel.notAsked.askAgain")}`);
+const askAgainButton = () => screen.findByRole("button", { name: ASK_AGAIN_FIRST });
 
 const radio = (title: ParseKeys) =>
   screen.getAllByRole("radio").find((row) => row.props.accessibilityLabel.startsWith(t(title)))!;
@@ -174,12 +176,42 @@ describe("the places not asked in", () => {
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [JEDDAH_MARK] } });
     await renderSection();
 
-    expect(
-      await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
-    ).toHaveProp(
+    expect(await askAgainButton()).toHaveProp(
       "accessibilityHint",
       t("a11y.location.travel.askAgainHint", { place: JEDDAH_ROW.name })
     );
+  });
+
+  it("names the place in the label of its Ask again button", async () => {
+    mockTrustedCityNear.mockResolvedValue(JEDDAH_ROW);
+    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [JEDDAH_MARK] } });
+    await renderSection();
+
+    expect(
+      await screen.findByRole("button", {
+        name: t("a11y.join", {
+          first: t("location.travel.notAsked.askAgain"),
+          second: JEDDAH_ROW.name,
+        }),
+      })
+    ).toBeTruthy();
+  });
+
+  it("names the distance in the label of a place with no city row", async () => {
+    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
+    await renderSection();
+
+    expect(
+      await screen.findByRole("button", {
+        name: t("a11y.join", {
+          first: t("location.travel.notAsked.askAgain"),
+          second: t("location.travel.notAsked.near", {
+            distance: FAR_MARK_KM,
+            saved: RIYADH_CITY.name,
+          }),
+        }),
+      })
+    ).toBeTruthy();
   });
 
   it("measures from the saved place while a new point waits for its times", async () => {
@@ -198,9 +230,7 @@ describe("the places not asked in", () => {
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
     await renderSection();
 
-    expect(
-      await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
-    ).toHaveProp(
+    expect(await askAgainButton()).toHaveProp(
       "accessibilityHint",
       t("a11y.location.travel.askAgainNearHint", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
     );
@@ -211,9 +241,7 @@ describe("the places not asked in", () => {
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
     await renderSection();
 
-    expect(
-      await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") })
-    ).toHaveProp(
+    expect(await askAgainButton()).toHaveProp(
       "accessibilityHint",
       t("a11y.location.travel.askAgainNearNoSavedNameHint", { distance: FAR_MARK_KM })
     );
@@ -223,9 +251,7 @@ describe("the places not asked in", () => {
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [JEDDAH_MARK] } });
     await renderSection();
 
-    await userEvent
-      .setup()
-      .press(await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") }));
+    await userEvent.setup().press(await askAgainButton());
 
     expect(useCityCheckStore.getState().cityCheck.notAsked).toEqual([]);
     expect(notAskedHeader()).toBeNull();
@@ -234,7 +260,7 @@ describe("the places not asked in", () => {
   it("gives every control a role, a name and a 44pt target", async () => {
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [JEDDAH_MARK] } });
     await renderSection();
-    await screen.findByRole("button", { name: t("location.travel.notAsked.askAgain") });
+    await askAgainButton();
 
     expect(controlProblems()).toEqual([]);
   });
