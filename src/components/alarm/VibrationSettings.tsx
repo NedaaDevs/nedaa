@@ -61,6 +61,7 @@ const VibrationSettings: FC<Props> = ({ value, onChange }) => {
             {t("alarm.settings.pattern")}
           </Text>
           <Select
+            accessibilityLabel={t("alarm.settings.pattern")}
             selectedValue={value.pattern}
             onValueChange={handlePatternChange}
             items={patternItems}

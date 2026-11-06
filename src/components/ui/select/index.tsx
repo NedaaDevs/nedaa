@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Modal, ScrollView, TouchableOpacity, View, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/ui/theme-color";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
@@ -17,6 +18,8 @@ type SelectGroup = {
 };
 
 type SelectProps = {
+  /** What the control sets; a reader hears it before the chosen value. */
+  accessibilityLabel: string;
   selectedValue?: string;
   placeholder?: string;
   onValueChange?: (value: string) => void;
@@ -28,6 +31,7 @@ type SelectProps = {
 const ITEM_HEIGHT = 44;
 
 const Select: React.FC<SelectProps> = ({
+  accessibilityLabel,
   selectedValue,
   placeholder,
   onValueChange,
@@ -35,6 +39,7 @@ const Select: React.FC<SelectProps> = ({
   groups,
   disabled,
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const theme = useTheme();
@@ -80,7 +85,11 @@ const Select: React.FC<SelectProps> = ({
         justifyContent="center"
         opacity={disabled ? 0.5 : 1}
         accessibilityRole="combobox"
-        accessibilityLabel={selectedLabel ?? placeholder}
+        accessibilityLabel={
+          selectedLabel
+            ? t("a11y.join", { first: accessibilityLabel, second: selectedLabel })
+            : accessibilityLabel
+        }
         accessibilityState={{ expanded: open }}>
         <Text color={selectedLabel ? "$typography" : "$typographySecondary"}>
           {selectedLabel ?? placeholder}
@@ -90,9 +99,12 @@ const Select: React.FC<SelectProps> = ({
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         {/* A native modal hosts its children outside RTLProvider's direction wrapper. */}
         <View style={[styles.modalContainer, { direction }]}>
+          {/* Stays readable: a screen reader has no swipe to dismiss the sheet. */}
           <TouchableOpacity
             style={styles.backdrop}
             activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.close")}
             onPress={() => setOpen(false)}
           />
           <View
@@ -111,37 +123,39 @@ const Select: React.FC<SelectProps> = ({
               showsVerticalScrollIndicator={false}
               onLayout={scrollToSelected}
               style={styles.scrollView}>
-              {groups
-                ? groups.map((group, gi) => (
-                    <View key={gi}>
-                      {group.label && (
-                        <Text
-                          color="$typographySecondary"
-                          fontSize="$2"
-                          fontWeight="600"
-                          paddingHorizontal="$group"
-                          paddingVertical="$inline">
-                          {group.label}
-                        </Text>
-                      )}
-                      {group.items.map((item) => (
-                        <SelectOption
-                          key={item.value}
-                          item={item}
-                          isSelected={item.value === selectedValue}
-                          onSelect={handleSelect}
-                        />
-                      ))}
-                    </View>
-                  ))
-                : allItems.map((item) => (
-                    <SelectOption
-                      key={item.value}
-                      item={item}
-                      isSelected={item.value === selectedValue}
-                      onSelect={handleSelect}
-                    />
-                  ))}
+              <View accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
+                {groups
+                  ? groups.map((group, gi) => (
+                      <View key={gi}>
+                        {group.label && (
+                          <Text
+                            color="$typographySecondary"
+                            fontSize="$2"
+                            fontWeight="600"
+                            paddingHorizontal="$group"
+                            paddingVertical="$inline">
+                            {group.label}
+                          </Text>
+                        )}
+                        {group.items.map((item) => (
+                          <SelectOption
+                            key={item.value}
+                            item={item}
+                            isSelected={item.value === selectedValue}
+                            onSelect={handleSelect}
+                          />
+                        ))}
+                      </View>
+                    ))
+                  : allItems.map((item) => (
+                      <SelectOption
+                        key={item.value}
+                        item={item}
+                        isSelected={item.value === selectedValue}
+                        onSelect={handleSelect}
+                      />
+                    ))}
+              </View>
             </ScrollView>
           </View>
         </View>

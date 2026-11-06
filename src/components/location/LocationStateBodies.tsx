@@ -195,6 +195,7 @@ export const PermissionBody = ({ onChooseDevice, onChooseCity }: AskProps) => {
         title={t("onboarding.location.automatic")}
         status={t("onboarding.location.automaticNote")}
         wrapStatus
+        hint={t("a11y.location.askPermissionHint")}
         onPress={onChooseDevice}
       />
       <ChooseCityRow onPress={onChooseCity} />

@@ -37,8 +37,10 @@ import {
   pickImageAttachment,
   generateClientKey,
 } from "@/services/feedback";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { Report, type ReportType, type OutgoingAttachment } from "@/types/feedback";
+import { formatFileSizeLocale } from "@/utils/number";
 
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
 
@@ -73,12 +75,6 @@ const AREA_KEY: Record<(typeof AREAS)[number], string> = {
 
 const logsDefaultFor = (type: ReportType): boolean => type === Report.CRASH || type === Report.BUG;
 
-const formatBytes = (b: number): string => {
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
-  return `${(b / 1024 / 1024).toFixed(1)} MB`;
-};
-
 const FeedbackScreen = () => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -105,6 +101,11 @@ const FeedbackScreen = () => {
   const submittingRef = useRef(false);
   const supportsLogs = type === Report.CRASH || type === Report.BUG;
   const logsAttached = supportsLogs && !logsRemoved;
+
+  useIosAnnouncement(status === "success" ? t("feedback.success.body") : null);
+  useIosAnnouncement(status === "error" ? t("feedback.error") : null);
+  useIosAnnouncement(offline ? t("feedback.offline") : null);
+  useIosAnnouncement(imageError);
 
   // Prepare the log bundle in the background so its size is shown before Send.
   useEffect(() => {
@@ -251,7 +252,11 @@ const FeedbackScreen = () => {
               <Text size="sm" fontWeight="600" color="$typography">
                 {t("feedback.typeLabel")}
               </Text>
-              <HStack gap="$2" flexWrap="wrap">
+              <HStack
+                gap="$2"
+                flexWrap="wrap"
+                accessibilityRole="radiogroup"
+                accessibilityLabel={t("feedback.typeLabel")}>
                 {TYPES.map(({ type: value, icon, labelKey }) => {
                   const selected = type === value;
                   return (
@@ -331,7 +336,7 @@ const FeedbackScreen = () => {
                         </Text>
                         <Text size="xs" color="$typographySecondary" lineHeight={16}>
                           {logsAttached && logAttachment
-                            ? formatBytes(logAttachment.bytes)
+                            ? formatFileSizeLocale(logAttachment.bytes, t)
                             : t("feedback.logs.subtitle")}
                         </Text>
                       </VStack>
@@ -372,11 +377,14 @@ const FeedbackScreen = () => {
                         onPress={() => setShowLogPreview((v) => !v)}
                         hitSlop={6}
                         accessibilityRole="button"
-                        accessibilityLabel={t("feedback.logs.preview")}>
+                        accessibilityState={{ expanded: showLogPreview }}
+                        accessibilityLabel={t(
+                          showLogPreview ? "feedback.logs.hidePreview" : "feedback.logs.preview"
+                        )}>
                         <Text size="xs" color="$accentPrimary">
-                          {showLogPreview
-                            ? t("feedback.logs.hidePreview")
-                            : t("feedback.logs.preview")}
+                          {t(
+                            showLogPreview ? "feedback.logs.hidePreview" : "feedback.logs.preview"
+                          )}
                         </Text>
                       </Pressable>
                       {showLogPreview ? (
@@ -453,7 +461,11 @@ const FeedbackScreen = () => {
                     <Text size="sm" fontWeight="600" color="$typography">
                       {t("feedback.area.label")}
                     </Text>
-                    <HStack gap="$2" flexWrap="wrap">
+                    <HStack
+                      gap="$2"
+                      flexWrap="wrap"
+                      accessibilityRole="radiogroup"
+                      accessibilityLabel={t("feedback.area.label")}>
                       {AREAS.map((value) => {
                         const selected = area === value;
                         return (
@@ -472,7 +484,10 @@ const FeedbackScreen = () => {
                             paddingHorizontal="$3"
                             accessibilityRole="radio"
                             accessibilityState={{ selected }}
-                            accessibilityLabel={t(AREA_KEY[value])}>
+                            accessibilityLabel={t(AREA_KEY[value])}
+                            accessibilityHint={
+                              selected ? t("a11y.feedback.clearAreaHint") : undefined
+                            }>
                             <Text
                               size="sm"
                               color={selected ? "$accentPrimary" : "$typography"}
@@ -497,7 +512,7 @@ const FeedbackScreen = () => {
                           style={{ width: 56, height: 56, borderRadius: 8 }}
                         />
                         <Text size="xs" color="$typographySecondary" flexShrink={1}>
-                          {formatBytes(image.bytes)}
+                          {formatFileSizeLocale(image.bytes, t)}
                         </Text>
                         <Pressable
                           onPress={() => {
@@ -574,7 +589,13 @@ const FeedbackScreen = () => {
                 opacity={!type || offline ? 0.5 : 1}
                 onPress={onSend}
                 accessibilityRole="button"
-                accessibilityLabel={t(status === "error" ? "feedback.retry" : "feedback.send")}>
+                accessibilityLabel={t(
+                  submitting
+                    ? "feedback.sending"
+                    : status === "error"
+                      ? "feedback.retry"
+                      : "feedback.send"
+                )}>
                 {submitting ? (
                   <>
                     <Box
