@@ -57,6 +57,11 @@ export const BACK_DESTINATION = {
     href: "/settings/athanPlayback",
     title: "notification.athanPlayback.title",
   },
+  SETTINGS_OTHER_REMINDERS: {
+    route: "settings/otherReminders",
+    href: "/settings/otherReminders",
+    title: "notification.otherReminders",
+  },
   SETTINGS_CUSTOM_SOUNDS: {
     route: "settings/customSounds",
     href: "/settings/customSounds",
