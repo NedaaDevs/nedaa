@@ -5,7 +5,7 @@ import { userEvent } from "@testing-library/react-native";
 import { usePathname } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 import * as Notifications from "expo-notifications";
-import { Platform, Text } from "react-native";
+import { AccessibilityInfo, Platform, Text } from "react-native";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
@@ -129,6 +129,17 @@ describe("Notification settings debug alert", () => {
       );
     }
   );
+
+  it("says out loud that it is scheduling, on a platform with no live regions", async () => {
+    jest.replaceProperty(Platform, "OS", PlatformType.IOS);
+    useNotificationStore.setState({ isScheduling: true });
+    await renderScreen();
+
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+      i18n.t("notification.schedulingNotifications")
+    );
+    useNotificationStore.setState({ isScheduling: false });
+  });
 
   it("offers athan playback on Android only", async () => {
     jest.replaceProperty(Platform, "OS", PlatformType.IOS);

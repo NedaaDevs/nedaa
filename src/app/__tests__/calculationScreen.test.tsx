@@ -282,6 +282,24 @@ describe("Calculation screen", () => {
     );
   });
 
+  it("says how many methods a search found, once the typing settles", async () => {
+    await renderCalculation();
+    await userEvent.press(button(new RegExp(t("providers.aladhan.method.title"))));
+
+    jest.mocked(AccessibilityInfo.announceForAccessibility).mockClear();
+
+    await userEvent.type(
+      screen.getByLabelText(t("settings.calculation.method.searchPlaceholder")),
+      "League"
+    );
+
+    const said = t("a11y.calculation.methodResultCount", { count: 1 });
+    await waitFor(() =>
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(said)
+    );
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledTimes(1);
+  });
+
   it("drafts the Asr school from its sheet", async () => {
     await renderCalculation();
 
@@ -500,6 +518,9 @@ describe("Adjustment sheet", () => {
 
     expect(draft()?.tune).toEqual(ALADHAN.tuning);
     expect(button(t("providers.aladhan.tuning.resetAll"))).toBeDisabled();
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+      t("prayerDetail.adjustment.none")
+    );
   });
 
   it("shows offsets alone while the draft changes the method", async () => {

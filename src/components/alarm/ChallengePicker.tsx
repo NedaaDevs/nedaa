@@ -81,6 +81,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
           {t("alarm.challenge.type")}
         </Text>
         <Select
+          accessibilityLabel={t("alarm.challenge.type")}
           selectedValue={value.type}
           onValueChange={handleTypeChange}
           items={typeItems}
@@ -95,6 +96,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
               {t("alarm.challenge.difficulty")}
             </Text>
             <Select
+              accessibilityLabel={t("alarm.challenge.difficulty")}
               selectedValue={value.difficulty}
               onValueChange={handleDifficultyChange}
               items={difficultyItems}
@@ -107,6 +109,7 @@ const ChallengePicker: FC<Props> = ({ value, onChange }) => {
               {t("alarm.challenge.count")}
             </Text>
             <Select
+              accessibilityLabel={t("alarm.challenge.count")}
               selectedValue={String(value.count)}
               onValueChange={handleCountChange}
               items={countItems}

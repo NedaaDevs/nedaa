@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { ViewInstance } from "react-native";
+import { AccessibilityInfo, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react-native";
 
@@ -167,7 +167,10 @@ export const TuningEditor = ({ settings, onChange, focus, focusRef }: Props) => 
           variant="link"
           size="sm"
           disabled={!isTuned(current)}
-          onPress={() => onChange({ ...NO_TUNING })}>
+          onPress={() => {
+            onChange({ ...NO_TUNING });
+            AccessibilityInfo.announceForAccessibility(t("prayerDetail.adjustment.none"));
+          }}>
           <Button.Text>{t("providers.aladhan.tuning.resetAll")}</Button.Text>
         </Button>
       </HStack>

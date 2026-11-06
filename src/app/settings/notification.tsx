@@ -30,6 +30,7 @@ import { PlatformType } from "@/enums/app";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 
@@ -99,6 +100,7 @@ const NotificationSettings = () => {
     scheduleAllNotifications,
     rescheduleIfNeeded,
   } = useNotificationSettings();
+  useIosAnnouncement(isScheduling ? t("notification.schedulingNotifications") : null);
 
   // Permission state
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -365,6 +367,7 @@ const NotificationSettings = () => {
               {/* Sync Status */}
               {isScheduling && (
                 <Box
+                  accessibilityLiveRegion="polite"
                   backgroundColor="$backgroundMuted"
                   marginHorizontal="$4"
                   padding="$3"
