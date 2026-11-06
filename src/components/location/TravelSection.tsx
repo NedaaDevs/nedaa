@@ -76,7 +76,7 @@ export const TravelSection = () => {
   };
 
   return (
-    <VStack gap="$3.5">
+    <VStack gap="$section">
       <Section title={label} kind={SECTION_KIND.LABEL}>
         <ChoiceGroup label={label} variant={LIST_ROW_VARIANT.GROUPED}>
           <ChoiceRow
