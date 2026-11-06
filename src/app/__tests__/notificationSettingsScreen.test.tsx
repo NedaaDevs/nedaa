@@ -2,14 +2,19 @@
 // and the screen must bind to the mock below, not to its empty one.
 import NotificationSettings from "@/app/settings/notification";
 import { userEvent } from "@testing-library/react-native";
+import { usePathname } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Platform, Text } from "react-native";
 
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
+import { PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import { useNotificationStore } from "@/stores/notification";
+import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { createNotificationChannels } from "@/utils/notificationChannels";
 import { scheduleNotification } from "@/utils/notifications";
@@ -57,9 +62,15 @@ const TEST_ALERT = "Test Notification (10s)";
 const created = Notifications.setNotificationChannelAsync as jest.Mock;
 const scheduled = scheduleNotification as jest.Mock;
 
+const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
+
 const renderScreen = () =>
   renderRouter(
-    { "settings/notification": () => <NotificationSettings /> },
+    {
+      "settings/notification": () => <NotificationSettings />,
+      [BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK.route]: () => <Pathname />,
+      [BACK_DESTINATION.SETTINGS_OTHER_REMINDERS.route]: () => <Pathname />,
+    },
     {
       initialUrl: "/settings/notification",
       wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>,
@@ -101,5 +112,35 @@ describe("Notification settings debug alert", () => {
     await renderScreen();
 
     expect(await screen.findByText("1 custom setting")).toBeTruthy();
+  });
+
+  it.each([BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK, BACK_DESTINATION.SETTINGS_OTHER_REMINDERS])(
+    "says where the row goes, then opens $route",
+    async (destination) => {
+      await renderScreen();
+      const title = i18n.t(destination.title);
+
+      const row = await screen.findByRole("button", { name: title });
+      expect(row).toHaveProp("accessibilityHint", i18n.t("a11y.opens", { name: title }));
+      await userEvent.press(row);
+
+      expect(screen.getByTestId("pathname")).toHaveTextContent(
+        normalizeRoutePath(destination.href)
+      );
+    }
+  );
+
+  it("offers athan playback on Android only", async () => {
+    jest.replaceProperty(Platform, "OS", PlatformType.IOS);
+    await renderScreen();
+
+    await screen.findByRole("button", {
+      name: i18n.t(BACK_DESTINATION.SETTINGS_OTHER_REMINDERS.title),
+    });
+    expect(
+      screen.queryByRole("button", {
+        name: i18n.t(BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK.title),
+      })
+    ).toBeNull();
   });
 });
