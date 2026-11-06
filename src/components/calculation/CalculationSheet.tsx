@@ -38,10 +38,12 @@ import type {
 
 /** The method list stands tall enough to search; the others fit their rows. */
 const METHOD_SNAP = [90];
-const RESULT_COUNT_DELAY_MS = 500;
+export const RESULT_COUNT_DELAY_MS = 500;
 
 type PickProps = {
   label: string;
+  /** False from a pick or the close button on; the rows stay drawn. */
+  isOpen: boolean;
   settings: AladhanSettings;
   /** The method the provider uses while the choice is left to it. */
   inUse?: AladhanMethodId;
@@ -50,7 +52,7 @@ type PickProps = {
 };
 
 /** The methods by name, searchable, headed by the provider's own choice. */
-const MethodChoices = ({ label, settings, inUse, onPick }: PickProps) => {
+const MethodChoices = ({ label, isOpen, settings, inUse, onPick }: PickProps) => {
   const { t } = useTranslation();
   // Mounted only while the sheet is up, so each opening starts unsearched.
   const [query, setQuery] = useState("");
@@ -63,16 +65,16 @@ const MethodChoices = ({ label, settings, inUse, onPick }: PickProps) => {
 
   // No drawn count to read; the delay lets the typing settle first.
   useEffect(() => {
-    if (!query.trim() || found === 0) return;
+    if (!isOpen || !query.trim() || found === 0) return;
     const timer = setTimeout(
       () =>
         AccessibilityInfo.announceForAccessibility(
-          t("a11y.calculation.methodResultCount", { count: found })
+          t("a11y.calculation.resultCount", { count: found })
         ),
       RESULT_COUNT_DELAY_MS
     );
     return () => clearTimeout(timer);
-  }, [query, found, t]);
+  }, [isOpen, query, found, t]);
 
   return (
     <VStack gap="$3">
@@ -197,7 +199,15 @@ export const CalculationSheet = ({
   const body = () => {
     switch (picker) {
       case CALCULATION_PICKER.METHOD:
-        return <MethodChoices label={title} settings={settings} inUse={inUse} onPick={pick} />;
+        return (
+          <MethodChoices
+            label={title}
+            isOpen={isOpen}
+            settings={settings}
+            inUse={inUse}
+            onPick={pick}
+          />
+        );
       case CALCULATION_PICKER.ASR:
         return (
           <OptionChoices

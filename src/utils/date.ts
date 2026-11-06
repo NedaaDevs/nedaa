@@ -151,6 +151,15 @@ export const formatTime12Hour = (hour: number, minute: number) => {
 export const clockFormat = (use24HourTime: boolean): string => (use24HourTime ? "HH:mm" : "h:mm a");
 
 /**
+ * The mark a 12-hour clock time carries for this hour of the day, in the locale.
+ * @param {number} hour - Hour of the day, 0 to 23
+ * @param {AppLocale} locale - The active locale
+ * @returns {string} - For example "PM" or "م"
+ */
+export const clockPeriod = (hour: number, locale: AppLocale): string =>
+  format(new Date(2000, 0, 1, hour), "a", { locale: getDateLocale(locale) });
+
+/**
  * Clock time for a prayer or adhan in the user's chosen 12- or 24-hour format.
  * Digits come out Latin; wrap the result in formatNumberToLocale to render the
  * locale's numerals. Kept free of store reads so it stays pure and testable.

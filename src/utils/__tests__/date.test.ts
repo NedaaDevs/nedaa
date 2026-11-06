@@ -1,5 +1,8 @@
+import { AppLocale } from "@/enums/app";
 import {
+  clockPeriod,
   dateToInt,
+  formatPrayerTime,
   getThreeDayDateRange,
   getTimezoneMonth,
   getTimezoneYear,
@@ -40,5 +43,25 @@ describe("the day the prayer data is read for", () => {
       today: 20260513,
       tomorrow: 20260514,
     });
+  });
+});
+
+describe("clockPeriod", () => {
+  it.each([
+    [AppLocale.EN, 11, "AM"],
+    [AppLocale.EN, 12, "PM"],
+    [AppLocale.AR, 11, "ص"],
+    [AppLocale.AR, 12, "م"],
+    [AppLocale.AR, 19, "م"],
+  ])("marks in %s at hour %i as %s", (locale, hour, mark) => {
+    expect(clockPeriod(hour, locale)).toBe(mark);
+  });
+
+  it("matches the mark on a drawn clock time", () => {
+    const evening = new Date("2026-03-01T19:00:00Z");
+
+    expect(formatPrayerTime(evening, "UTC", { locale: AppLocale.AR, use24HourTime: false })).toBe(
+      `7:00 ${clockPeriod(19, AppLocale.AR)}`
+    );
   });
 });

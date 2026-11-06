@@ -29,7 +29,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
 
 // Utils
-import { deviceTimeZone } from "@/utils/date";
+import { clockPeriod, deviceTimeZone } from "@/utils/date";
 import { LTR_ISOLATE } from "@/utils/digits";
 import { formatNumberToLocale } from "@/utils/number";
 import { spokenClockTime } from "@/utils/spokenClockTime";
@@ -102,6 +102,8 @@ const OtherRemindersSettings = () => {
   }, [today]);
 
   const allMorning = !use24HourTime && duhaHours.every((hour) => hour < NOON_HOUR);
+  // One caption cannot cover a row that reaches noon, so each hour marks itself.
+  const marksEachHour = !use24HourTime && !allMorning;
   // The hours are the device's, so any one day in its zone gives the same words.
   const spokenHour = (hour: number) =>
     spokenClockTime(
@@ -182,6 +184,7 @@ const OtherRemindersSettings = () => {
                                   contentContainerStyle={{ gap: 8 }}>
                                   {duhaHours.map((hour) => {
                                     const isSelected = duhaTime.hour === hour;
+                                    const ink = isSelected ? "$typographyContrast" : "$typography";
                                     return (
                                       <Pressable
                                         key={hour}
@@ -204,13 +207,16 @@ const OtherRemindersSettings = () => {
                                         <Text
                                           size="sm"
                                           fontWeight={isSelected ? "600" : "400"}
-                                          color={
-                                            isSelected ? "$typographyContrast" : "$typography"
-                                          }>
+                                          color={ink}>
                                           {formatNumberToLocale(
                                             `${use24HourTime ? hour : hour % NOON_HOUR || NOON_HOUR}`
                                           )}
                                         </Text>
+                                        {marksEachHour ? (
+                                          <Text size="xs" color={ink}>
+                                            {clockPeriod(hour, locale)}
+                                          </Text>
+                                        ) : null}
                                       </Pressable>
                                     );
                                   })}

@@ -7,6 +7,7 @@ import { usePathname } from "expo-router";
 import { act, userEvent, waitFor, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
+import { RESULT_COUNT_DELAY_MS } from "@/components/calculation/CalculationSheet";
 import { previewTimeId } from "@/components/calculation/TodayPreview";
 import { ACTIONSHEET_PART } from "@/components/ui/actionsheet";
 import { STICKY_ACTION_PART } from "@/components/ui/sticky-action-bar";
@@ -16,6 +17,7 @@ import {
   CALCULATION_PICKER,
   CALCULATION_TITLE_KEY,
 } from "@/constants/Calculation";
+import { SHEET_MOTION } from "@/constants/Motion";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { ASR_SCHOOL, MIDNIGHT_MODE, PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { AppLocale } from "@/enums/app";
@@ -34,6 +36,8 @@ import { hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 // hijri-native is a native module; the Hijri row reads today's date from it.
 jest.mock("@/utils/date", () => ({
   ...jest.requireActual("@/utils/date"),
@@ -282,22 +286,93 @@ describe("Calculation screen", () => {
     );
   });
 
-  it("says how many methods a search found, once the typing settles", async () => {
-    await renderCalculation();
-    await userEvent.press(button(new RegExp(t("providers.aladhan.method.title"))));
+  describe("the spoken count of a method search", () => {
+    const announce = AccessibilityInfo.announceForAccessibility;
+    const said = (count: number) => t("a11y.calculation.resultCount", { count });
+    const searchField = () =>
+      screen.getByLabelText(t("settings.calculation.method.searchPlaceholder"));
 
-    jest.mocked(AccessibilityInfo.announceForAccessibility).mockClear();
+    afterEach(() => {
+      mockReduced = false;
+    });
 
-    await userEvent.type(
-      screen.getByLabelText(t("settings.calculation.method.searchPlaceholder")),
-      "League"
-    );
+    const openMethods = async () => {
+      await renderCalculation();
+      await userEvent.press(button(new RegExp(t("providers.aladhan.method.title"))));
+      jest.mocked(announce).mockClear();
+    };
 
-    const said = t("a11y.calculation.methodResultCount", { count: 1 });
-    await waitFor(() =>
-      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(said)
-    );
-    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledTimes(1);
+    it("counts one method", async () => {
+      await openMethods();
+      await userEvent.type(searchField(), "League");
+
+      await waitFor(() => expect(announce).toHaveBeenCalledWith(said(1)));
+      expect(announce).toHaveBeenCalledTimes(1);
+    });
+
+    it("counts every drawn choice, the provider's own included", async () => {
+      await openMethods();
+      await userEvent.type(searchField(), "a");
+
+      const group = screen.getByLabelText(t(CALCULATION_TITLE_KEY[CALCULATION_PICKER.METHOD]));
+      const drawn = within(group).getAllByRole("radio");
+      expect(radio(new RegExp(t("settings.summary.methodAuto")))).toBeTruthy();
+      expect(drawn.length).toBeGreaterThan(1);
+      await waitFor(() => expect(announce).toHaveBeenCalledWith(said(drawn.length)));
+    });
+
+    it("counts the provider's own choice when nothing else matches", async () => {
+      await openMethods();
+      await userEvent.type(searchField(), t("settings.summary.methodAuto"));
+
+      await waitFor(() => expect(announce).toHaveBeenCalledWith(said(1)));
+    });
+
+    // renderRouter holds this file on Jest's fake clock.
+    const advance = (ms: number) =>
+      act(() => {
+        jest.advanceTimersByTime(ms);
+      });
+
+    it("waits for the typing to settle", async () => {
+      await openMethods();
+      await userEvent.type(searchField(), "League");
+
+      await advance(RESULT_COUNT_DELAY_MS - 1);
+      expect(announce).not.toHaveBeenCalled();
+
+      await advance(1);
+      expect(announce).toHaveBeenCalledTimes(1);
+      expect(announce).toHaveBeenCalledWith(said(1));
+    });
+
+    it("starts its wait again at each keystroke", async () => {
+      await openMethods();
+
+      await userEvent.type(searchField(), "Lea");
+      await advance(RESULT_COUNT_DELAY_MS - 1);
+      await userEvent.type(searchField(), "gue");
+      await advance(RESULT_COUNT_DELAY_MS - 1);
+      expect(announce).not.toHaveBeenCalled();
+
+      await advance(1);
+      expect(announce).toHaveBeenCalledTimes(1);
+    });
+
+    it("says nothing while a pick closes the sheet", async () => {
+      mockReduced = true;
+      await openMethods();
+      const auto = t("settings.summary.methodAuto");
+
+      await userEvent.type(searchField(), auto);
+      // The press and the fade outlast the count's delay, with the rows still up.
+      await advance(RESULT_COUNT_DELAY_MS - SHEET_MOTION.REDUCED_FADE_MS);
+      await userEvent.press(radio(new RegExp(auto)));
+      await advance(SHEET_MOTION.REDUCED_FADE_MS - 1);
+
+      expect(searchField()).toBeTruthy();
+      expect(announce).not.toHaveBeenCalledWith(said(1));
+    });
   });
 
   it("drafts the Asr school from its sheet", async () => {
