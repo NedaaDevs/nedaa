@@ -3,7 +3,12 @@ import { screen } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import { Icon } from "@/components/ui/icon";
-import { ICON_TILE_TONE, IconTile, type IconTileTone } from "@/components/ui/icon-tile";
+import {
+  ICON_TILE_ID,
+  ICON_TILE_TONE,
+  IconTile,
+  type IconTileTone,
+} from "@/components/ui/icon-tile";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
@@ -73,5 +78,18 @@ describe("IconTile tone", () => {
     expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
       TONE_COLOR[ICON_TILE_TONE.ACCENT]
     );
+  });
+
+  it.each([
+    [ICON_TILE_TONE.ACCENT, LIGHT.tile.val],
+    [ICON_TILE_TONE.MUTED, LIGHT.tile.val],
+    [ICON_TILE_TONE.SUCCESS, LIGHT.successTint.val],
+    [ICON_TILE_TONE.DANGER, LIGHT.dangerTint.val],
+  ])("fills the tile for %s", async (tone, fill) => {
+    await renderWithTheme(<IconTile icon={Glyph} tone={tone} />);
+
+    expect(screen.getByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveStyle({
+      backgroundColor: fill,
+    });
   });
 });

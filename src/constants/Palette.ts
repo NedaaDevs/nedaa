@@ -70,6 +70,10 @@ export const NEDAA_LIGHT = {
   quietTint: { oklch: "oklch(23% 0.055 254 / .07)", hex: "#081D3612" },
   /** A warn pill's fill. */
   warnTint: { oklch: "oklch(57% 0.11 72 / .14)", hex: "#9F6B1E24" },
+  /** A success glyph tile's fill. */
+  successTint: { oklch: "oklch(47% 0.105 155 / .14)", hex: "#196C4024" },
+  /** A danger glyph tile's fill. */
+  dangerTint: { oklch: "oklch(50% 0.14 26 / .12)", hex: "#A43B361F" },
   /** A Today prayer card: the surface thinned below `surfaceGlass`. */
   surfaceQuiet: { oklch: "oklch(97% 0.02 222 / .46)", hex: "#E7F9FF75" },
   /** The 1pt ring inside the next prayer's card. */
@@ -115,6 +119,8 @@ export const NEDAA_DARK = {
   accentTint: { oklch: "oklch(80% 0.125 92 / .12)", hex: "#DBBB561F" },
   quietTint: { oklch: "oklch(93% 0.018 230 / .07)", hex: "#DCEAF212" },
   warnTint: { oklch: "oklch(77% 0.11 80 / .14)", hex: "#D9AC5E24" },
+  successTint: { oklch: "oklch(72% 0.11 175 / .14)", hex: "#4ABBA124" },
+  dangerTint: { oklch: "oklch(74% 0.12 28 / .12)", hex: "#ED8C801F" },
   surfaceQuiet: { oklch: "oklch(100% 0 0 / .06)", hex: "#FFFFFF0F" },
   accentRing: { oklch: "oklch(80% 0.125 92 / .35)", hex: "#DBBB5659" },
   /** The accent for words; the gold already reads on the night sky. */
