@@ -183,8 +183,6 @@
   "a11y.settings.rateHint": "Opens $t(brand.name) in the store",
   "a11y.settings.shareHint": "Opens sharing. Long-press to copy the link",
   "a11y.settings.widgets.persistentNotification": "Prayer times in your notifications",
-  "a11y.settingsItem": "{{name}}, current value: {{value}}",
-  "a11y.settingsItemNav": "Opens {{name}} settings",
   "a11y.shareStreak": "Share your streak",
   "a11y.shareStreakHint": "Opens a shareable image of your streak",
   "a11y.stepProgress": "Step {{current}} of {{total}}",

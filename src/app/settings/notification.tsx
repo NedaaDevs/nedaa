@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Linking, Platform } from "react-native";
 import { useState, useEffect, useEffectEvent } from "react";
@@ -10,15 +11,15 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/icon";
+import { Icon, type IconProps } from "@/components/ui/icon";
 import { Card } from "@/components/ui/card";
+import { ListRow } from "@/components/ui/list-row";
 import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
 import NotificationTypePanel from "@/components/NotificationTypePanel";
-import SettingsItem from "@/components/SettingsItem";
 
 // Icons
 import { Bell, Play } from "lucide-react-native";
@@ -54,6 +55,29 @@ import { Background } from "@/components/ui/background";
 import { debugChannelInfo, getNotificationChannelId } from "@/utils/notificationChannels";
 import { getNotificationSound } from "@/utils/sound";
 import { scheduleAthan, stopAthan, isAthanPlaying } from "expo-alarm";
+
+/** A card leading to a screen for more of these settings. */
+const OpenRow = ({
+  destination,
+  icon,
+}: {
+  destination: BackDestination;
+  icon: IconProps["as"];
+}) => {
+  const { t } = useTranslation();
+  const title = t(destination.title);
+
+  return (
+    <Box marginHorizontal="$4" marginVertical="$2">
+      <ListRow
+        icon={icon}
+        title={title}
+        hint={t("a11y.opens", { name: title })}
+        onPress={() => router.navigate(destination.href)}
+      />
+    </Box>
+  );
+};
 
 const NotificationSettings = () => {
   const { t } = useTranslation();
@@ -276,11 +300,7 @@ const NotificationSettings = () => {
 
               {/* Athan Playback Settings (Android Only) */}
               {Platform.OS === PlatformType.ANDROID && (
-                <SettingsItem
-                  name={t("notification.athanPlayback.title")}
-                  path="/settings/athanPlayback"
-                  icon={Play}
-                />
+                <OpenRow destination={BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK} icon={Play} />
               )}
 
               {/* Prayer Notifications */}
@@ -340,11 +360,7 @@ const NotificationSettings = () => {
               />
 
               {/* Other Reminders */}
-              <SettingsItem
-                name={t("notification.otherReminders")}
-                path="/settings/otherReminders"
-                icon={Bell}
-              />
+              <OpenRow destination={BACK_DESTINATION.SETTINGS_OTHER_REMINDERS} icon={Bell} />
 
               {/* Sync Status */}
               {isScheduling && (
