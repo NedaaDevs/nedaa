@@ -160,6 +160,7 @@ const AthanPlaybackSettings = () => {
               size="lg"
               backgroundColor="$accentPrimary"
               borderRadius="$6"
+              accessibilityHint={t("a11y.opens", { name: t("notification.customSound.title") })}
               onPress={() => {
                 hapticMedium();
                 router.push("/settings/customSounds");

@@ -297,14 +297,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<DaySimulator\b/,
     home: "components/today/DaySimulator.tsx",
   },
-  // A file that plays a sound sample draws SoundPreview. The five files
+  // A file that plays a sound sample draws SoundPreview. The four files
   // `within` leaves out draw their own control through useSoundPreview.
   {
     concept: "a sound's play and stop control",
     shows:
       /\bsoundPreviewManager\.playSource\(|\bpreviewSource\b|\buseSoundPreview\(|<SoundPreviewButton\b/,
     within:
-      /^(?!app\/settings\/(customSounds|qada)\.tsx$|components\/(NotificationQuickSetup|PrayerCustomizationModal|alarm\/SoundPicker)\.tsx$)(app|components|hooks)\//,
+      /^(?!app\/settings\/qada\.tsx$|components\/(NotificationQuickSetup|PrayerCustomizationModal|alarm\/SoundPicker)\.tsx$)(app|components|hooks)\//,
     drawsWith: /<SoundPreview\b/,
     home: "components/ui/sound-preview/index.tsx",
   },

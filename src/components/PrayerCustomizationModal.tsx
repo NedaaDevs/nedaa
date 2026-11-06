@@ -179,6 +179,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                     {timingLabel}
                   </Text>
                   <Select
+                    accessibilityLabel={timingLabel}
                     selectedValue={timing.toString()}
                     onValueChange={(value) => setTiming(parseInt(value))}
                     items={timingItems}
@@ -195,6 +196,7 @@ const PrayerCustomizationModal: FC<Props> = ({
                 {t("notification.sound")}
               </Text>
               <Select
+                accessibilityLabel={t("notification.sound")}
                 selectedValue={sound}
                 onValueChange={(value) => setSound(value as NotificationSoundKey<typeof type>)}
                 items={soundItems}

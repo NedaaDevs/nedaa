@@ -76,6 +76,7 @@ const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
               {t("alarm.settings.maxSnoozes")}
             </Text>
             <Select
+              accessibilityLabel={t("alarm.settings.maxSnoozes")}
               selectedValue={String(value.maxCount)}
               onValueChange={handleMaxCountChange}
               items={maxCountItems}
@@ -88,6 +89,7 @@ const SnoozeSettings: FC<Props> = ({ value, onChange }) => {
               {t("alarm.settings.snoozeDuration")}
             </Text>
             <Select
+              accessibilityLabel={t("alarm.settings.snoozeDuration")}
               selectedValue={String(value.durationMinutes)}
               onValueChange={handleDurationChange}
               items={durationItems}

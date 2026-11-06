@@ -59,6 +59,7 @@ const GentleWakeUpSettings: FC<Props> = ({ value, onChange }) => {
             {t("alarm.settings.duration")}
           </Text>
           <Select
+            accessibilityLabel={t("alarm.settings.duration")}
             selectedValue={String(value.durationMinutes)}
             onValueChange={handleDurationChange}
             items={durationItems}

@@ -52,7 +52,10 @@ const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefin
         variant="link"
         size="sm"
         onPress={() => askAgainIn(mark)}
-        accessibilityLabel={t("location.travel.notAsked.askAgain")}
+        accessibilityLabel={t("a11y.join", {
+          first: t("location.travel.notAsked.askAgain"),
+          second: place,
+        })}
         accessibilityHint={askAgainHint}>
         <Button.Text>{t("location.travel.notAsked.askAgain")}</Button.Text>
       </Button>

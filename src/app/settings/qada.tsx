@@ -481,6 +481,7 @@ const QadaSettings = () => {
                   />
                 </HStack>
                 <Select
+                  accessibilityLabel={t("notification.sound")}
                   selectedValue={tempQadaSound}
                   placeholder={t("alarm.settings.selectSound")}
                   onValueChange={(value) => setTempQadaSound(value as any)}
