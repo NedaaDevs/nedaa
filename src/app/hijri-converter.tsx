@@ -11,7 +11,8 @@ import { useLocationStore } from "@/stores/location";
 
 import { Background } from "@/components/ui/background";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
@@ -20,11 +21,13 @@ import { Icon } from "@/components/ui/icon";
 import HijriWheelPicker from "@/components/hijri/HijriWheelPicker";
 
 import { HijriNative, type HijriDate, getDateLocale } from "@/utils/date";
+import { hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
 import { formatNumberToLocale } from "@/utils/number";
 
 import { ArrowUpDown, TriangleAlert, Copy, Check, Info } from "lucide-react-native";
 
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Direction = "gregorianToHijri" | "hijriToGregorian";
 
@@ -33,7 +36,7 @@ const HijriConverterScreen = () => {
 
   const { locale, hijriDaysOffset } = useAppStore();
   const { locationDetails } = useLocationStore();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const [direction, setDirection] = useState<Direction>("hijriToGregorian");
   const [copied, setCopied] = useState(false);
@@ -109,7 +112,10 @@ const HijriConverterScreen = () => {
   return (
     <Background>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <TopBar title={t("tools.hijriConverter.title")} href="/(tabs)/tools" backOnClick />
+        <ScreenHeader
+          title={t("tools.hijriConverter.title")}
+          back={{ fallback: BACK_DESTINATION.TOOLS }}
+        />
 
         <Box padding="$4">
           <Card padding="$5">
@@ -129,9 +135,7 @@ const HijriConverterScreen = () => {
                     value={gregorianDate}
                     mode="date"
                     display="inline"
-                    onChange={(_event, selectedDate) => {
-                      if (selectedDate) setGregorianDate(selectedDate);
-                    }}
+                    onValueChange={(_event, selectedDate) => setGregorianDate(selectedDate)}
                     locale={locale}
                   />
                 ) : (
@@ -156,10 +160,11 @@ const HijriConverterScreen = () => {
                         value={gregorianDate}
                         mode="date"
                         display="default"
-                        onChange={(_event, selectedDate) => {
+                        onValueChange={(_event, selectedDate) => {
                           setShowGregorianPicker(false);
-                          if (selectedDate) setGregorianDate(selectedDate);
+                          setGregorianDate(selectedDate);
                         }}
+                        onDismiss={() => setShowGregorianPicker(false)}
                         locale={locale}
                       />
                     )}
@@ -214,7 +219,7 @@ const HijriConverterScreen = () => {
               <Icon as={Info} color="$typographySecondary" size="xs" />
               <Text size="xs" color="$typographySecondary">
                 {t("tools.hijriConverter.offsetNote", {
-                  offset: formatNumberToLocale(hijriDaysOffset.toString()),
+                  adjustment: hijriAdjustmentLabel(hijriDaysOffset, t),
                 })}
               </Text>
             </HStack>

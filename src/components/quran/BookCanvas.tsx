@@ -1,7 +1,8 @@
 import { StyleSheet, View } from "react-native";
-import Svg, { Circle, Defs, Pattern, Rect, RadialGradient, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, Pattern, RadialGradient, Stop } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { Rect } from "@/components/ui/svg-geometry";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
 import { QuranThemeType } from "@/enums/quran";
 import type { CanvasFrame } from "@/utils/readerSpread";

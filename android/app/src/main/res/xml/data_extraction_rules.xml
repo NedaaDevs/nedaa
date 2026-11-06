@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+  <cloud-backup>
+    <exclude domain="file" path="SQLite/CityCheckStorage"/>
+    <exclude domain="file" path="SQLite/CityCheckStorage-wal"/>
+    <exclude domain="file" path="SQLite/CityCheckStorage-shm"/>
+    <exclude domain="file" path="SQLite/CityCheckStorage-journal"/>
+  </cloud-backup>
+  <device-transfer>
+    <exclude domain="file" path="SQLite/CityCheckStorage"/>
+    <exclude domain="file" path="SQLite/CityCheckStorage-wal"/>
+    <exclude domain="file" path="SQLite/CityCheckStorage-shm"/>
+    <exclude domain="file" path="SQLite/CityCheckStorage-journal"/>
+  </device-transfer>
+</data-extraction-rules>

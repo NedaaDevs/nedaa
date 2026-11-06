@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Modal, ScrollView, TouchableOpacity, View, StyleSheet } from "react-native";
-import { useTheme } from "tamagui";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@/components/ui/theme-color";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { useRTL } from "@/contexts/RTLContext";
@@ -17,18 +18,20 @@ type SelectGroup = {
 };
 
 type SelectProps = {
+  /** What the control sets; a reader hears it before the chosen value. */
+  accessibilityLabel: string;
   selectedValue?: string;
   placeholder?: string;
   onValueChange?: (value: string) => void;
   items?: SelectItem[];
   groups?: SelectGroup[];
   disabled?: boolean;
-  size?: "$2" | "$3" | "$4" | "$5";
 };
 
 const ITEM_HEIGHT = 44;
 
 const Select: React.FC<SelectProps> = ({
+  accessibilityLabel,
   selectedValue,
   placeholder,
   onValueChange,
@@ -36,8 +39,9 @@ const Select: React.FC<SelectProps> = ({
   groups,
   disabled,
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { direction } = useRTL();
@@ -74,14 +78,18 @@ const Select: React.FC<SelectProps> = ({
         onPress={handleOpen}
         borderColor="$outline"
         borderWidth={1}
-        borderRadius="$4"
+        borderRadius="$control"
         backgroundColor="$backgroundSecondary"
-        minHeight={44}
-        paddingHorizontal="$3"
+        minHeight="$target"
+        paddingHorizontal="$stack"
         justifyContent="center"
         opacity={disabled ? 0.5 : 1}
         accessibilityRole="combobox"
-        accessibilityLabel={selectedLabel ?? placeholder}
+        accessibilityLabel={
+          selectedLabel
+            ? t("a11y.join", { first: accessibilityLabel, second: selectedLabel })
+            : accessibilityLabel
+        }
         accessibilityState={{ expanded: open }}>
         <Text color={selectedLabel ? "$typography" : "$typographySecondary"}>
           {selectedLabel ?? placeholder}
@@ -91,9 +99,12 @@ const Select: React.FC<SelectProps> = ({
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         {/* A native modal hosts its children outside RTLProvider's direction wrapper. */}
         <View style={[styles.modalContainer, { direction }]}>
+          {/* Stays readable: a screen reader has no swipe to dismiss the sheet. */}
           <TouchableOpacity
             style={styles.backdrop}
             activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel={t("a11y.dismiss")}
             onPress={() => setOpen(false)}
           />
           <View
@@ -112,37 +123,39 @@ const Select: React.FC<SelectProps> = ({
               showsVerticalScrollIndicator={false}
               onLayout={scrollToSelected}
               style={styles.scrollView}>
-              {groups
-                ? groups.map((group, gi) => (
-                    <View key={gi}>
-                      {group.label && (
-                        <Text
-                          color="$typographySecondary"
-                          fontSize="$2"
-                          fontWeight="600"
-                          paddingHorizontal="$4"
-                          paddingVertical="$2">
-                          {group.label}
-                        </Text>
-                      )}
-                      {group.items.map((item) => (
-                        <SelectOption
-                          key={item.value}
-                          item={item}
-                          isSelected={item.value === selectedValue}
-                          onSelect={handleSelect}
-                        />
-                      ))}
-                    </View>
-                  ))
-                : allItems.map((item) => (
-                    <SelectOption
-                      key={item.value}
-                      item={item}
-                      isSelected={item.value === selectedValue}
-                      onSelect={handleSelect}
-                    />
-                  ))}
+              <View accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
+                {groups
+                  ? groups.map((group, gi) => (
+                      <View key={gi}>
+                        {group.label && (
+                          <Text
+                            color="$typographySecondary"
+                            fontSize="$2"
+                            fontWeight="600"
+                            paddingHorizontal="$group"
+                            paddingVertical="$inline">
+                            {group.label}
+                          </Text>
+                        )}
+                        {group.items.map((item) => (
+                          <SelectOption
+                            key={item.value}
+                            item={item}
+                            isSelected={item.value === selectedValue}
+                            onSelect={handleSelect}
+                          />
+                        ))}
+                      </View>
+                    ))
+                  : allItems.map((item) => (
+                      <SelectOption
+                        key={item.value}
+                        item={item}
+                        isSelected={item.value === selectedValue}
+                        onSelect={handleSelect}
+                      />
+                    ))}
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -159,10 +172,10 @@ const SelectOption: React.FC<{
 }> = ({ item, isSelected, onSelect }) => (
   <Pressable
     onPress={() => onSelect(item.value)}
-    paddingHorizontal="$4"
-    paddingVertical="$3"
+    paddingHorizontal="$group"
+    paddingVertical="$stack"
     backgroundColor={isSelected ? "$backgroundMuted" : "transparent"}
-    minHeight={44}
+    minHeight="$target"
     accessibilityRole="radio"
     accessibilityState={{ selected: isSelected }}
     accessibilityLabel={item.label}>

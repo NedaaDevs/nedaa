@@ -1,0 +1,362 @@
+import { Linking, Platform, StyleSheet } from "react-native";
+import { act, screen, userEvent, within } from "@testing-library/react-native";
+
+import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
+import { NOTICE_CARD_PART } from "@/components/ui/notice-card";
+import { E2E_ID } from "@/constants/E2E";
+import { DEFAULT_FACES } from "@/constants/Fonts";
+import {
+  ANDROID_LOCATION_SETTINGS,
+  FAILURE_OFFER_VARIANT,
+  LOCATION_FAILURE,
+  type LocationFailure,
+} from "@/constants/Location";
+import { NEDAA_LIGHT } from "@/constants/Palette";
+import { AppLocale, PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
+import { renderWithTheme } from "@/test-helpers/theme";
+import { usesHmsLocation } from "@/adapters/location";
+import { checkLocationPermission } from "@/utils/location";
+
+jest.mock("@/adapters/location", () => ({
+  ...jest.requireActual("@/adapters/location"),
+  usesHmsLocation: jest.fn(() => false),
+}));
+
+jest.mock("@/utils/location", () => ({
+  ...jest.requireActual("@/utils/location"),
+  checkLocationPermission: jest.fn(),
+}));
+
+const permit = (granted: boolean, canAskAgain = true) =>
+  jest.mocked(checkLocationPermission).mockResolvedValue({ granted, canAskAgain });
+
+const t = i18n.t.bind(i18n);
+const PLATFORM = Platform.OS;
+
+type Handlers = { onRetry: jest.Mock; onChooseCity: jest.Mock; onEnterCoordinates: jest.Mock };
+
+const renderOffer = async (failure: LocationFailure | null) => {
+  const handlers: Handlers = {
+    onRetry: jest.fn(),
+    onChooseCity: jest.fn(),
+    onEnterCoordinates: jest.fn(),
+  };
+  await renderWithTheme(<LocationFailureOffer failure={failure} {...handlers} />);
+  return handlers;
+};
+
+const KEEP_LABEL = "Keep Riyadh";
+
+/** The card variant, with the keep action the host hands it. */
+const renderCard = async (failure: LocationFailure | null, { city }: { city?: string } = {}) => {
+  const keep = { label: KEEP_LABEL, onPress: jest.fn() };
+  const handlers = { onRetry: jest.fn(), onChooseCity: jest.fn() };
+  await renderWithTheme(
+    <LocationFailureOffer
+      variant={FAILURE_OFFER_VARIANT.CARD}
+      failure={failure}
+      city={city}
+      secondary={keep}
+      {...handlers}
+    />
+  );
+  return { ...handlers, keep };
+};
+
+const buttonNames = () => screen.getAllByRole("button").map((b) => b.props.accessibilityLabel);
+
+/** The one announced message: what failed, then what to do. */
+const said = (title: string, hint: string) =>
+  screen.getByLabelText(t("a11y.join", { first: title, second: hint }));
+const message = (title: string, hint: string) => said(t(title), t(hint));
+const styleOf = (element: ReturnType<typeof screen.getByRole>) =>
+  StyleSheet.flatten(element.props.style);
+
+beforeEach(() => {
+  permit(true);
+});
+
+afterEach(async () => {
+  Platform.OS = PLATFORM;
+  jest.mocked(usesHmsLocation).mockReturnValue(false);
+  await act(() => i18n.changeLanguage(AppLocale.EN));
+});
+
+describe("LocationFailureOffer", () => {
+  it.each([
+    [LOCATION_FAILURE.TIMEOUT, "location.failure.notFound"],
+    [LOCATION_FAILURE.UNAVAILABLE, "location.failure.notFound"],
+    [LOCATION_FAILURE.DENIED, "location.failure.denied"],
+  ] as const)("says what a %s failure means and what to do", async (failure, copy) => {
+    await renderOffer(failure);
+
+    expect(message(`${copy}.title`, `${copy}.hint`)).toBeTruthy();
+  });
+
+  it("names the Huawei location service when it is the one that failed", async () => {
+    jest.mocked(usesHmsLocation).mockReturnValue(true);
+    await renderOffer(LOCATION_FAILURE.UNAVAILABLE);
+
+    expect(message("location.failure.hms.title", "location.failure.hms.hint")).toBeTruthy();
+  });
+
+  it("says the times failed, not the place, when the read succeeded", async () => {
+    await renderOffer(null);
+
+    expect(message("today.failed.title", "today.failed.body")).toBeTruthy();
+  });
+
+  it("joins what failed and what to do as the language joins two phrases", async () => {
+    await act(() => i18n.changeLanguage(AppLocale.UR));
+    await renderOffer(null);
+
+    expect(message("today.failed.title", "today.failed.body")).toBeTruthy();
+  });
+
+  describe("location services off", () => {
+    it("on iOS, says where to turn them on, with no button for it", async () => {
+      Platform.OS = PlatformType.IOS;
+      await renderOffer(LOCATION_FAILURE.SERVICES_OFF);
+
+      expect(
+        message("location.failure.servicesOff.title", "location.failure.servicesOff.hintIos")
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.failure.servicesOff.open") })
+      ).toBeNull();
+    });
+
+    it("on Android, opens the location settings page", async () => {
+      Platform.OS = PlatformType.ANDROID;
+      const sendIntent = jest.spyOn(Linking, "sendIntent").mockResolvedValue(undefined);
+      await renderOffer(LOCATION_FAILURE.SERVICES_OFF);
+
+      expect(
+        message("location.failure.servicesOff.title", "location.failure.servicesOff.hintAndroid")
+      ).toBeTruthy();
+      const open = screen.getByRole("button", { name: t("location.failure.servicesOff.open") });
+      expect(open).toHaveProp("accessibilityHint", t("a11y.location.openLocationSettingsHint"));
+      await userEvent.press(open);
+
+      expect(sendIntent).toHaveBeenCalledWith(ANDROID_LOCATION_SETTINGS);
+    });
+
+    // Retry leads; the settings button follows it, lighter, on the same card.
+    it("on Android, puts the settings button under Retry, on its card, as an outline", async () => {
+      Platform.OS = PlatformType.ANDROID;
+      await renderOffer(LOCATION_FAILURE.SERVICES_OFF);
+
+      const card = screen.getByTestId(NOTICE_CARD_PART.FRAME);
+      const [retry, open] = within(card).getAllByRole("button");
+      expect(retry).toHaveAccessibleName(t("common.retry"));
+      expect(open).toHaveAccessibleName(t("location.failure.servicesOff.open"));
+      expect(styleOf(open).backgroundColor).not.toBe(NEDAA_LIGHT.accent.hex);
+      expect(styleOf(open).minHeight).toBe(styleOf(retry).minHeight);
+    });
+  });
+
+  describe("access refused", () => {
+    it("leads to Settings and offers no Retry, which could only fail", async () => {
+      permit(false, false);
+      jest.spyOn(Linking, "openSettings").mockResolvedValue(undefined);
+      await renderOffer(LOCATION_FAILURE.DENIED);
+      const settings = await screen.findByRole("button", {
+        name: t("location.permission.openSettings"),
+      });
+
+      expect(settings).toHaveProp("accessibilityHint", t("a11y.location.openSettingsHint"));
+      expect(screen.queryByRole("button", { name: t("common.retry") })).toBeNull();
+      await userEvent.press(settings);
+      expect(Linking.openSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it("offers Retry again once access is back from Settings", async () => {
+      permit(true);
+      await renderOffer(LOCATION_FAILURE.DENIED);
+
+      expect(await screen.findByRole("button", { name: t("common.retry") })).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.permission.openSettings") })
+      ).toBeNull();
+    });
+
+    it("keeps Retry while the access check is unanswered", async () => {
+      jest.mocked(checkLocationPermission).mockReturnValue(new Promise(() => {}));
+      await renderOffer(LOCATION_FAILURE.DENIED);
+
+      expect(screen.getByRole("button", { name: t("common.retry") })).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.permission.openSettings") })
+      ).toBeNull();
+    });
+
+    it("keeps Retry while the system can still ask for access", async () => {
+      permit(false, true);
+      await renderOffer(LOCATION_FAILURE.DENIED);
+
+      expect(await screen.findByRole("button", { name: t("common.retry") })).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: t("location.permission.openSettings") })
+      ).toBeNull();
+    });
+
+    it("keeps Retry for a failure that is not a refusal", async () => {
+      permit(false, false);
+      await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+      expect(await screen.findByRole("button", { name: t("common.retry") })).toBeTruthy();
+    });
+  });
+
+  it("retries first", async () => {
+    const { onRetry } = await renderOffer(LOCATION_FAILURE.TIMEOUT);
+    const buttons = screen.getAllByRole("button");
+
+    expect(buttons[0]).toHaveAccessibleName(t("common.retry"));
+    await userEvent.press(buttons[0]);
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  // The study's failure card: the reason, then a full-width filled Retry.
+  it("sets the reason and a filled Retry on one card", async () => {
+    await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+    const card = screen.getByTestId(NOTICE_CARD_PART.FRAME);
+    expect(
+      within(card).getByLabelText(
+        t("a11y.join", {
+          first: t("location.failure.notFound.title"),
+          second: t("location.failure.notFound.hint"),
+        })
+      )
+    ).toBeTruthy();
+    const retry = within(card).getByRole("button", { name: t("common.retry") });
+    expect(styleOf(retry).backgroundColor).toBe(NEDAA_LIGHT.accent.hex);
+    expect(styleOf(retry).alignSelf).not.toBe("center");
+  });
+
+  // Weight 700 is for display and title text; a card's name tops out at 600.
+  it("names the failure in the semibold face", async () => {
+    await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+    expect(screen.getByText(t("location.failure.notFound.title"))).toHaveStyle({
+      fontFamily: DEFAULT_FACES.semibold,
+    });
+  });
+
+  it("draws the message as the one notice card, its glyph hidden from the reader", async () => {
+    await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+    expect(screen.getAllByTestId(NOTICE_CARD_PART.FRAME)).toHaveLength(1);
+    expect(screen.getByTestId(NOTICE_CARD_PART.GLYPH, { includeHiddenElements: true })).toHaveProp(
+      "accessibilityElementsHidden",
+      true
+    );
+    expect(screen.getByTestId(NOTICE_CARD_PART.TEXT)).toHaveProp(
+      "accessibilityLiveRegion",
+      "polite"
+    );
+  });
+
+  it("offers the manual ways under their own label", async () => {
+    await renderOffer(LOCATION_FAILURE.TIMEOUT);
+
+    expect(screen.getByRole("header", { name: t("location.failure.otherWays") })).toBeTruthy();
+  });
+
+  it("chooses a city from the control the CI flow taps", async () => {
+    const { onChooseCity } = await renderOffer(LOCATION_FAILURE.TIMEOUT);
+    const row = screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY);
+
+    expect(row).toHaveAccessibleName(
+      t("a11y.join", {
+        first: t("onboarding.location.chooseCity"),
+        second: t("location.failure.chooseCityNote"),
+      })
+    );
+    expect(row).toHaveProp("accessibilityHint", t("a11y.location.manual.chooseCityHint"));
+    await userEvent.press(row);
+    expect(onChooseCity).toHaveBeenCalledTimes(1);
+  });
+
+  it("enters coordinates for a place the list lacks", async () => {
+    const { onEnterCoordinates } = await renderOffer(LOCATION_FAILURE.TIMEOUT);
+    const name = t("a11y.join", {
+      first: t("location.picker.enterCoordinates"),
+      second: t("location.failure.coordinatesNote"),
+    });
+    const row = screen.getByRole("button", { name });
+
+    expect(row).toHaveProp("accessibilityHint", t("a11y.location.picker.enterCoordinatesHint"));
+    await userEvent.press(row);
+    expect(onEnterCoordinates).toHaveBeenCalledTimes(1);
+  });
+
+  describe("on the city-change card", () => {
+    it("names the city whose times failed", async () => {
+      await renderCard(null, { city: "Jeddah" });
+
+      expect(
+        said(t("location.failure.times.title", { city: "Jeddah" }), t("today.failed.body"))
+      ).toBeTruthy();
+    });
+
+    it("pairs Retry with Keep and offers the picker as one text action", async () => {
+      await renderCard(LOCATION_FAILURE.TIMEOUT);
+
+      expect(buttonNames().slice(0, 2)).toEqual([t("common.retry"), KEEP_LABEL]);
+      expect(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY)).toHaveProp(
+        "accessibilityHint",
+        t("a11y.location.manual.chooseCityHint")
+      );
+      expect(screen.getByText(t("onboarding.location.chooseCity"))).toBeTruthy();
+      expect(screen.queryByText(t("location.failure.otherWays"))).toBeNull();
+      expect(screen.queryByText(t("location.picker.enterCoordinates"))).toBeNull();
+    });
+
+    it("sends Retry, Keep and the picker to their handlers", async () => {
+      const { onRetry, onChooseCity, keep } = await renderCard(LOCATION_FAILURE.TIMEOUT);
+
+      await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
+      await userEvent.press(screen.getByRole("button", { name: KEEP_LABEL }));
+      await userEvent.press(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY));
+
+      expect(onRetry).toHaveBeenCalledTimes(1);
+      expect(keep.onPress).toHaveBeenCalledTimes(1);
+      expect(onChooseCity).toHaveBeenCalledTimes(1);
+    });
+
+    it("pairs Open Settings with Keep for a refused read", async () => {
+      permit(false, false);
+      await renderCard(LOCATION_FAILURE.DENIED);
+
+      await screen.findByRole("button", { name: t("location.permission.openSettings") });
+      expect(buttonNames().slice(0, 2)).toEqual([
+        t("location.permission.openSettings"),
+        KEEP_LABEL,
+      ]);
+      expect(screen.queryByRole("button", { name: t("common.retry") })).toBeNull();
+    });
+
+    it("stacks Retry, the location settings and Keep on Android with services off", async () => {
+      Platform.OS = PlatformType.ANDROID;
+      await renderCard(LOCATION_FAILURE.SERVICES_OFF);
+
+      expect(buttonNames().slice(0, 3)).toEqual([
+        t("common.retry"),
+        t("location.failure.servicesOff.open"),
+        KEEP_LABEL,
+      ]);
+    });
+
+    it("is one card with the alert glyph, hidden from the reader", async () => {
+      await renderCard(LOCATION_FAILURE.TIMEOUT);
+
+      expect(screen.getAllByTestId(NOTICE_CARD_PART.FRAME)).toHaveLength(1);
+      expect(
+        screen.getByTestId(NOTICE_CARD_PART.GLYPH, { includeHiddenElements: true })
+      ).toHaveProp("accessibilityElementsHidden", true);
+    });
+  });
+});

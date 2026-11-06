@@ -1,0 +1,22 @@
+diff --git a/build/core/types.d.ts b/build/core/types.d.ts
+index 0ee18284ee86af30a97b86cb84ba15e713dfb463..72cb259a364596ebb00f954a85772f9dab57aab2 100644
+--- a/build/core/types.d.ts
++++ b/build/core/types.d.ts
+@@ -1,4 +1,16 @@
+-import type { PerspectiveTransform, RotateTransform, RotateXTransform, RotateYTransform, RotateZTransform, ScaleTransform, ScaleXTransform, ScaleYTransform, TranslateXTransform, TranslateYTransform, SkewXTransform, SkewYTransform, ImageStyle, TextStyle, ViewStyle } from 'react-native';
++import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
++interface PerspectiveTransform { perspective: number }
++interface RotateTransform { rotate: string }
++interface RotateXTransform { rotateX: string }
++interface RotateYTransform { rotateY: string }
++interface RotateZTransform { rotateZ: string }
++interface ScaleTransform { scale: number }
++interface ScaleXTransform { scaleX: number }
++interface ScaleYTransform { scaleY: number }
++interface TranslateXTransform { translateX: number | `${number}%` }
++interface TranslateYTransform { translateY: number | `${number}%` }
++interface SkewXTransform { skewX: string }
++interface SkewYTransform { skewY: string }
+ import type { SharedValue, WithDecayConfig, WithSpringConfig, WithTimingConfig, DerivedValue } from 'react-native-reanimated';
+ export type Transforms = PerspectiveTransform & RotateTransform & RotateXTransform & RotateYTransform & RotateZTransform & ScaleTransform & ScaleXTransform & ScaleYTransform & TranslateXTransform & TranslateYTransform & SkewXTransform & SkewYTransform;
+ export type MotiTranformProps = Partial<Transforms> & Pick<ViewStyle, 'transform'>;

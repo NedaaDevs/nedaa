@@ -1,3 +1,6 @@
+import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
+import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
+import { runCityCheck } from "@/services/cityCheck";
 import { AppLogger } from "@/utils/appLogger";
 
 // Types
@@ -5,7 +8,6 @@ import type { PrayerTimesStore } from "@/stores/prayerTimes";
 import type { NotificationStore } from "@/stores/notification";
 
 // Stores
-import { useLocationStore } from "@/stores/location";
 import { useQadaStore } from "@/stores/qada";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
 import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/providerSettings";
@@ -14,7 +16,7 @@ import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/provider
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { registerAlarmCopySync } from "@/utils/alarmCopy";
 import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
-import { reloadPrayerWidgets } from "../../modules/expo-widget/src";
+import { reloadPrayerWidgets } from "expo-widget";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
 import { logLaunchWidgetAttachContext } from "@/services/widgetDiagnostics";
 
@@ -26,20 +28,25 @@ import { BackgroundTaskLog } from "@/services/background-task-log";
 import { UmrahDB } from "@/services/umrah-db";
 import { cleanupManager } from "@/services/cleanup";
 
-import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
-
 export const appSetup = async (
   prayerStore: PrayerTimesStore,
   notificationStore: NotificationStore
 ) => {
+  // Outside the try: a launch that fails still needs a resume path, and this is
+  // the only one. Synchronous, and it awaits alarm hydration itself.
+  registerForegroundReschedule();
+
+  // Not awaited: the check can wait on a fix and must not hold launch scheduling.
+  if (!IS_SCREENSHOT_MODE) void runCityCheck(CITY_CHECK_TRIGGER.LAUNCH);
+
   try {
     const { loadPrayerTimes } = prayerStore;
 
     // A pending reapply forces the refetch, since cached times satisfy a normal load.
-    // The flag clears only once the fetch lands, so an interrupted launch retries.
+    // The flag clears once every fetched year lands; a later load retries.
     const pendingReapply = await awaitPendingReapply();
-    await loadPrayerTimes(pendingReapply);
-    if (pendingReapply) {
+    const landed = await loadPrayerTimes(pendingReapply);
+    if (pendingReapply && landed) {
       useProviderSettingsStore.getState().clearPendingReapply();
     }
     // Gate scheduling on alarm-store rehydration; reading defaults here silently
@@ -47,13 +54,6 @@ export const appSetup = async (
     await waitForAlarmStores();
     registerAlarmCopySync();
     await ensureAlarmsScheduled();
-
-    // Check for city changes (if auto-update is enabled). Skipped in screenshot
-    // mode: location is seeded, and the GMS settings check pops a native dialog.
-    const locationStore = useLocationStore.getState();
-    if (!IS_SCREENSHOT_MODE && locationStore.autoUpdateLocation) {
-      await locationStore.checkAndPromptCityChange();
-    }
 
     // Load qada data (needed for notification scheduling)
     const qadaStore = useQadaStore.getState();
@@ -66,7 +66,6 @@ export const appSetup = async (
 
     await BackgroundTaskLog.initialize();
     await registerBackgroundRefresh();
-    registerForegroundReschedule();
 
     // Register DB cleanup tasks for graceful shutdown
     cleanupManager.register("umrah-db-flush", () => UmrahDB.flush(), 10);

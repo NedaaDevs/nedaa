@@ -1,4 +1,5 @@
 import path from "node:path";
+import { findDexViolations, findRawViolations } from "./hms-artifact-markers.ts";
 
 const [artifactArgument] = Bun.argv.slice(2);
 const projectRoot = path.resolve(import.meta.dir, "..");
@@ -32,16 +33,6 @@ const capture = async (command: string[]): Promise<Uint8Array> => {
   return output;
 };
 
-const includesBytes = (haystack: Uint8Array, needle: Uint8Array): boolean => {
-  outer: for (let index = 0; index <= haystack.length - needle.length; index += 1) {
-    for (let offset = 0; offset < needle.length; offset += 1) {
-      if (haystack[index + offset] !== needle[offset]) continue outer;
-    }
-    return true;
-  }
-  return false;
-};
-
 console.log("Verifying the HMS release dependency graph...");
 await run(["./gradlew", ":app:verifyHmsReleaseDependencies"], path.join(projectRoot, "android"));
 
@@ -70,29 +61,12 @@ if (!entriesToScan.some((entry) => entry.includes("/dex/") && entry.endsWith(".d
   throw new Error("The AAB contains no DEX entries to inspect");
 }
 
-const bannedMarkers = [
-  "com.google.android.gms",
-  "com.google.android.play",
-  "com.google.firebase",
-  "com/google/android/gms",
-  "com/google/android/play",
-  "com/google/firebase",
-  "ExpoFirebaseMessagingService",
-  "FirebaseInitProvider",
-  "FirebaseInstanceIdReceiver",
-  "FirebaseMessaging",
-  "GoogleApiActivity",
-  "com.google.android.c2dm.permission.RECEIVE",
-  "play.core.integrity",
-  "play.core.review",
-].map((marker) => ({ marker, bytes: new TextEncoder().encode(marker) }));
 const violations: string[] = [];
 
 for (const entry of entriesToScan) {
   const content = await capture(["unzip", "-p", artifactPath, entry]);
-  for (const { marker, bytes } of bannedMarkers) {
-    if (includesBytes(content, bytes)) violations.push(`${entry}: ${marker}`);
-  }
+  const markers = entry.endsWith(".dex") ? findDexViolations(content) : findRawViolations(content);
+  violations.push(...markers.map((marker) => `${entry}: ${marker}`));
 }
 
 if (violations.length > 0) {

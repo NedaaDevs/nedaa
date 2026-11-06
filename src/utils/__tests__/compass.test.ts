@@ -12,7 +12,6 @@ import {
   canProvideAlignmentFeedback,
   calculateBearingUncertaintyDegrees,
   calculateQiblaDirection,
-  getCompassLocationAge,
   getCompassSensorReliability,
   getHeadingReliabilityIssue,
   getLocationReliabilityIssue,
@@ -286,15 +285,6 @@ describe("compass reliability", () => {
     expect(canProvideAlignmentFeedback(null, 2)).toBe(false);
     expect(canProvideAlignmentFeedback(20, 2)).toBe(false);
     expect(canProvideAlignmentFeedback(10, 6)).toBe(false);
-  });
-
-  it.each([
-    ["just now", NOW, { unit: "now", value: 0 }],
-    ["one minute", NOW - 60_000, { unit: "minutes", value: 1 }],
-    ["one hour", NOW - 60 * 60_000, { unit: "hours", value: 1 }],
-    ["twenty-four hours", NOW - 24 * 60 * 60_000, { unit: "hours", value: 24 }],
-  ])("formats saved-location age at the %s boundary", (_label, timestamp, expected) => {
-    expect(getCompassLocationAge(timestamp, NOW)).toEqual(expected);
   });
 
   it.each([

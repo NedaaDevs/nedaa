@@ -12,13 +12,13 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import HijriMonthGrid from "@/components/hijri/HijriMonthGrid";
 import DayObservanceSheet from "@/components/hijri/DayObservanceSheet";
 
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
-import usePreferencesStore from "@/stores/preferences";
+import { usePreferencesStore } from "@/stores/preferences";
 import { HijriNative, getDateLocale } from "@/utils/date";
 import { buildMonthGrid, stepMonth, type MonthCell } from "@/utils/hijriMonthGrid";
 import { MONTH_NOTES } from "@/constants/Observances";
@@ -26,6 +26,7 @@ import { ObservanceClass } from "@/enums/observances";
 import { formatNumberToLocale } from "@/utils/number";
 import { useRTL } from "@/contexts/RTLContext";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 const LEGEND_LABEL: Record<string, string> = {
   [ObservanceClass.RECOMMENDED_FAST]: "hijriCalendar.legend.recommendedFast",
@@ -43,7 +44,7 @@ const LEGEND_COLOR: Record<string, "$success" | "$error" | "$accentPrimary"> = {
 const HijriCalendarScreen = () => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const hijriDaysOffset = useAppStore((s) => s.hijriDaysOffset);
   const locale = useAppStore((s) => s.locale);
@@ -101,7 +102,7 @@ const HijriCalendarScreen = () => {
 
   return (
     <Background>
-      <TopBar title="hijriCalendar.title" backOnClick />
+      <ScreenHeader title={t("hijriCalendar.title")} back />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
           <HStack justifyContent="space-between" alignItems="center">

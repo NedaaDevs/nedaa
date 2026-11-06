@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { useState } from "react";
+import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -12,12 +12,14 @@ import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 
 import { MapPin, Plane, ChevronRight } from "lucide-react-native";
 import { MIQAT_POINTS } from "@/constants/UmrahMiqat";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import type { MiqatPoint } from "@/types/umrah";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Step = "origin" | "direction" | "result";
 
@@ -36,15 +38,11 @@ const DIRECTION_KEYS: Record<string, string> = {
 export default function MiqatScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const selectionHaptic = useHaptic("selection");
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [step, setStep] = useState<Step>("origin");
   const [selectedMiqat, setSelectedMiqat] = useState<MiqatPoint | null>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReducedMotion();
   const isArabic = i18n.language === "ar";
-
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
 
   const outsideMiqats = MIQAT_POINTS.filter((m) => !m.isInsideMakkah);
   const insideMiqat = MIQAT_POINTS.find((m) => m.isInsideMakkah);
@@ -84,7 +82,7 @@ export default function MiqatScreen() {
 
   return (
     <Background>
-      <TopBar title="umrah.prepare.miqat" backOnClick />
+      <ScreenHeader variant="bar" title={t("umrah.prepare.miqat")} back />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 16 }}>
         {step === "origin" && (

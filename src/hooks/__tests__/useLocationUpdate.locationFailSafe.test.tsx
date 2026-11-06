@@ -1,11 +1,12 @@
-import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
+import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
 import { useLocationUpdate } from "@/hooks/useLocationUpdate";
 import { useLocationStore } from "@/stores/location";
+import { useLocationUpdateStore } from "@/stores/locationUpdate";
 import { initialLocationDetails } from "@/types/location";
 
-const mockGetLocationWithTimeout = jest.fn();
+const mockReadLocation = jest.fn();
 const mockLoadPrayerTimes = jest.fn();
 const mockScheduleNotifications = jest.fn();
 const mockRescheduleAlarms = jest.fn();
@@ -25,9 +26,8 @@ jest.mock("expo-sqlite/kv-store", () => ({
 }));
 
 jest.mock("@/utils/location", () => ({
-  CITY_CHANGE_THRESHOLD: 10,
-  calculateDistance: jest.fn(),
-  getLocationWithTimeout: (...args: unknown[]) => mockGetLocationWithTimeout(...args),
+  ...jest.requireActual("@/utils/location"),
+  readLocation: (...args: unknown[]) => mockReadLocation(...args),
 }));
 
 jest.mock("@/stores/app", () => ({
@@ -42,18 +42,22 @@ jest.mock("@/api/geocodeApi", () => ({
 }));
 
 jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: () => ({ loadPrayerTimes: mockLoadPrayerTimes }),
+  usePrayerTimesStore: {
+    getState: () => ({ loadPrayerTimesAtCurrentPlace: mockLoadPrayerTimes }),
+  },
 }));
 
 jest.mock("@/stores/notification", () => ({
-  useNotificationStore: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
+  useNotificationStore: {
+    getState: () => ({ scheduleAllNotifications: mockScheduleNotifications }),
+  },
 }));
 
 jest.mock("@/utils/alarmScheduler", () => ({
   rescheduleAllAlarms: (...args: unknown[]) => mockRescheduleAlarms(...args),
 }));
 
-jest.mock("../../../modules/expo-widget/src", () => ({
+jest.mock("expo-widget", () => ({
   reloadPrayerWidgets: (...args: unknown[]) => mockReloadPrayerWidgets(...args),
 }));
 
@@ -63,25 +67,15 @@ jest.mock("@/utils/appLogger", () => ({
   },
 }));
 
-type HookValue = ReturnType<typeof useLocationUpdate>;
-const results: HookValue[] = [];
-
-const Probe = () => {
-  results.push(useLocationUpdate());
-  return null;
-};
-
-const latest = () => results[results.length - 1];
-
 describe("useLocationUpdate location fail-safe", () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    results.length = 0;
     jest.clearAllMocks();
-    mockGetLocationWithTimeout.mockRejectedValue(new Error("HMS location unavailable"));
+    mockReadLocation.mockRejectedValue(new Error("HMS location unavailable"));
     mockLoadPrayerTimes.mockResolvedValue(undefined);
     mockScheduleNotifications.mockResolvedValue(undefined);
     mockRescheduleAlarms.mockResolvedValue(undefined);
+    useLocationUpdateStore.setState({ run: null });
     useLocationStore.setState({
       locationDetails: initialLocationDetails,
       localizedLocation: { country: "", city: "" },
@@ -97,22 +91,33 @@ describe("useLocationUpdate location fail-safe", () => {
   });
 
   it("stops the refresh pipeline when current location acquisition fails", async () => {
-    await act(async () => {
-      renderer.create(<Probe />);
-      await Promise.resolve();
-    });
+    const { result } = await renderHook(() => useLocationUpdate());
 
     await act(async () => {
-      await latest().executeUpdate();
+      await result.current.executeUpdate();
     });
 
-    expect(latest().updateState.error).toEqual({
-      step: "location",
-      message: "HMS location unavailable",
+    expect(result.current.run).toEqual({
+      start: { kind: UPDATE_START.DEVICE },
+      step: UPDATE_STEP.LOCATION,
+      failed: true,
     });
     expect(mockLoadPrayerTimes).not.toHaveBeenCalled();
     expect(mockScheduleNotifications).not.toHaveBeenCalled();
     expect(mockRescheduleAlarms).not.toHaveBeenCalled();
     expect(mockReloadPrayerWidgets).not.toHaveBeenCalled();
+  });
+
+  it("retries a failed device update with the device", async () => {
+    const { result } = await renderHook(() => useLocationUpdate());
+    await act(async () => {
+      await result.current.executeUpdate();
+    });
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(mockReadLocation).toHaveBeenCalledTimes(2);
   });
 });

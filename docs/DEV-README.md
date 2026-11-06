@@ -15,8 +15,7 @@ Before running the project, make sure you have the following installed:
 
 This project uses several tools to maintain code quality:
 
-- **Husky**: Manages git hooks to run checks before commits(.husky/pre-commit)
-- **lint-staged**: Runs linters on staged git files
+- **Lefthook**: Runs git hooks from `lefthook.yml`: format and lint staged files on commit, and the CI static checks (format, lint, typecheck) on push
 - **ESLint**: Checks code for potential errors and enforces coding standards
 - **Prettier**: Automatically formats code for consistency
 - **Act**: Test GitHub Actions workflows locally

@@ -9,6 +9,7 @@ export const SchedulingSkipReason = {
   PERMISSION_NOT_GRANTED: "permissionNotGranted",
   NO_PRAYER_TIMES: "noPrayerTimes",
   NOTIFICATIONS_DISABLED: "notificationsDisabled",
+  SCREENSHOT_MODE: "screenshotMode",
 } as const;
 
 export type SchedulingSkipReasonValue =

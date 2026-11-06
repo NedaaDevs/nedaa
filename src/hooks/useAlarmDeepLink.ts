@@ -4,6 +4,8 @@ import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 import { getSnoozeQueue, clearSnoozeQueue } from "expo-alarm";
 import { ScheduledAlarmType } from "@/enums/alarm";
+import { ALARM_SCREEN_PATH } from "@/constants/Alarm";
+import { isAlarmLink, linkPath } from "@/utils/alarmLink";
 import { useAlarmStore } from "@/stores/alarm";
 import { completeAndRescheduleAlarm, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
@@ -175,7 +177,7 @@ export function navigateToAlarm(alarmId: string, alarmType: string, _source: str
   navGuard.lastNavTime = now;
 
   router.replace({
-    pathname: "/alarm",
+    pathname: ALARM_SCREEN_PATH.RING,
     params: { alarmId, alarmType },
   });
 
@@ -248,11 +250,11 @@ export function useAlarmDeepLink() {
 
 async function processAlarmUrl(url: string) {
   try {
-    if (!url.includes("alarm")) return;
+    if (!isAlarmLink(url)) return;
 
     // alarm-complete URL: Expo Router already navigated to /alarm-complete,
     // just process the completed queue to sync JS state
-    if (url.includes("alarm-complete")) {
+    if (linkPath(url) === ALARM_SCREEN_PATH.COMPLETE) {
       await processQueues();
       return;
     }

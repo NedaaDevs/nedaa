@@ -1,0 +1,79 @@
+import { AppState } from "react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
+
+import { PhoneZoneRow } from "@/components/about/PhoneZoneRow";
+import { APP_STATE } from "@/constants/AppState";
+import { DEBUG_COPY } from "@/constants/DebugScreens";
+import { DUBAI_ZONE } from "@/test-helpers/place";
+import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
+import { renderWithTheme } from "@/test-helpers/theme";
+import { AppLogger } from "@/utils/appLogger";
+import { phoneZoneReadings } from "@/utils/phoneZone";
+
+jest.mock("@/utils/phoneZone", () => ({ phoneZoneReadings: jest.fn() }));
+jest.mock("@/utils/appLogger", () => {
+  const log = { d: jest.fn(), i: jest.fn(), w: jest.fn(), e: jest.fn() };
+  return { AppLogger: { create: () => log, registerReportSection: jest.fn() } };
+});
+
+const readings = jest.mocked(phoneZoneReadings);
+
+const row = () => screen.getByRole("button", { name: new RegExp(DEBUG_COPY.PHONE_ZONE) });
+const label = () => row().props.accessibilityLabel as string;
+
+describe("PhoneZoneRow", () => {
+  let listeners: ((state: string) => void)[];
+
+  beforeEach(() => {
+    listeners = [];
+    jest.spyOn(AppState, "addEventListener").mockImplementation((_, listener) => {
+      listeners.push(listener as (state: string) => void);
+      return { remove: () => {} } as ReturnType<typeof AppState.addEventListener>;
+    });
+    readings.mockReturnValue({ intl: RIYADH_ZONE, calendar: RIYADH_ZONE });
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it("shows both sources", async () => {
+    await renderWithTheme(<PhoneZoneRow />);
+
+    expect(label()).toContain(`Intl ${RIYADH_ZONE}`);
+    expect(label()).toContain(`Calendar ${RIYADH_ZONE}`);
+  });
+
+  it("names a source that gives no zone", async () => {
+    readings.mockReturnValue({ intl: RIYADH_ZONE, calendar: null });
+    await renderWithTheme(<PhoneZoneRow />);
+
+    expect(label()).toContain(`Calendar ${DEBUG_COPY.NO_ZONE}`);
+  });
+
+  it("reads again on a return to the app", async () => {
+    await renderWithTheme(<PhoneZoneRow />);
+    readings.mockReturnValue({ intl: DUBAI_ZONE, calendar: DUBAI_ZONE });
+
+    await act(() => listeners.forEach((listener) => listener(APP_STATE.ACTIVE)));
+
+    expect(label()).toContain(`Intl ${DUBAI_ZONE}`);
+  });
+
+  it("reads again on a tap", async () => {
+    await renderWithTheme(<PhoneZoneRow />);
+    readings.mockReturnValue({ intl: DUBAI_ZONE, calendar: RIYADH_ZONE });
+
+    await userEvent.press(row());
+
+    expect(label()).toContain(`Intl ${DUBAI_ZONE}`);
+    expect(label()).toContain(`Calendar ${RIYADH_ZONE}`);
+  });
+
+  // A zone id names a city; the row shows it and the log keeps none.
+  it("writes no reading to the log", async () => {
+    await renderWithTheme(<PhoneZoneRow />);
+    await userEvent.press(row());
+
+    const log = AppLogger.create("app");
+    [log.d, log.i, log.w, log.e].forEach((write) => expect(write).not.toHaveBeenCalled());
+  });
+});

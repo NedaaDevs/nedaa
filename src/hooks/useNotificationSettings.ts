@@ -5,12 +5,10 @@ import { Platform } from "react-native";
 import { useNotificationStore } from "@/stores/notification";
 
 // Types
-import type { NotificationType, ConfigForType, PrayerNotificationType } from "@/types/notification";
+import type { ConfigForType, PrayerNotificationType } from "@/types/notification";
 
 // Enums
 import { PlatformType } from "@/enums/app";
-// Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 export const useNotificationSettings = () => {
   const {
@@ -30,6 +28,7 @@ export const useNotificationSettings = () => {
     updateQuickSetup,
     updateDefault,
     updateOverride,
+    replaceOverride,
     resetOverride,
     resetAllOverrides,
     scheduleAllNotifications,
@@ -59,7 +58,7 @@ export const useNotificationSettings = () => {
 
   // Check if a specific prayer/type combination has overrides
   const hasOverride = useCallback(
-    (prayerId: string, type: NotificationType) => {
+    (prayerId: string, type: PrayerNotificationType) => {
       return !!settings.overrides[prayerId]?.[type];
     },
     [settings.overrides]
@@ -120,6 +119,7 @@ export const useNotificationSettings = () => {
     updateQuickSetup,
     updateDefault,
     updateOverride,
+    replaceOverride,
     resetOverride,
     resetAllOverrides,
     scheduleAllNotifications,
@@ -133,46 +133,5 @@ export const useNotificationSettings = () => {
     hasOverride,
     getFormattedConfig,
     getEffectiveConfigForPrayer,
-  };
-};
-
-// Hook for a specific prayer's settings
-export const usePrayerNotificationSettings = (prayerId: string) => {
-  const { settings, updateOverride, resetOverride, getEffectiveConfigForPrayer } =
-    useNotificationStore();
-
-  const hasOverride = useCallback(
-    (type: NotificationType) => {
-      return !!settings.overrides[prayerId]?.[type];
-    },
-    [settings.overrides, prayerId]
-  );
-
-  const prayerConfig = useMemo(
-    () => ({
-      prayer: getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.PRAYER),
-      iqama: getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.IQAMA),
-      preAthan: getEffectiveConfigForPrayer(prayerId, NOTIFICATION_TYPE.PRE_ATHAN),
-    }),
-    [prayerId, getEffectiveConfigForPrayer]
-  );
-
-  const overrides = useMemo(
-    () => ({
-      prayer: hasOverride(NOTIFICATION_TYPE.PRAYER),
-      iqama: hasOverride(NOTIFICATION_TYPE.IQAMA),
-      preAthan: hasOverride(NOTIFICATION_TYPE.PRE_ATHAN),
-    }),
-    [hasOverride]
-  );
-
-  return {
-    config: prayerConfig,
-    overrides,
-    updateOverride: <T extends PrayerNotificationType>(
-      type: T,
-      config: Partial<ConfigForType<T>>
-    ) => updateOverride(prayerId, type, config),
-    resetOverride: (type: PrayerNotificationType) => resetOverride(prayerId, type),
   };
 };

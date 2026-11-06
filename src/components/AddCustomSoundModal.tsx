@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform, ActivityIndicator, TextInput, Alert } from "react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 import * as DocumentPicker from "expo-document-picker";
 
 // Components
@@ -32,6 +32,7 @@ import type { AddCustomSoundResult } from "@/types/customSound";
 import { PlatformType } from "@/enums/app";
 
 // Constants
+import { CUSTOM_SOUND_ERROR, CUSTOM_SOUND_MAX_MB } from "@/constants/CustomSound";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Utils
@@ -40,6 +41,7 @@ import {
   addCustomSound,
   formatFileSize,
   findDuplicateSound,
+  validateAudioFile,
 } from "@/utils/customSoundManager";
 
 // Stores
@@ -80,68 +82,55 @@ export default function AddCustomSoundModal({
     return null;
   }
 
-  const handlePickFile = async () => {
-    try {
-      setError(null);
-      setDuplicateWarning(null);
-      setForceAdd(false);
-      const file = await pickAudioFile();
+  const describeError = (code: string) =>
+    code === CUSTOM_SOUND_ERROR.TOO_LARGE
+      ? t("notification.customSound.fileTooLarge", { maxMb: CUSTOM_SOUND_MAX_MB })
+      : code;
 
-      if (file) {
-        // Check for duplicates
-        const duplicate = findDuplicateSound(file, customSounds);
+  const choose = (file: DocumentPicker.DocumentPickerAsset | null) => {
+    if (!file) return;
 
-        if (duplicate && !forceAdd) {
-          // Show duplicate warning
-          Alert.alert(
-            t("notification.customSound.duplicateTitle"),
-            t("notification.customSound.duplicateMessage", {
-              existingName: duplicate.name,
-            }),
-            [
-              {
-                text: t("common.cancel"),
-                style: "cancel",
-                onPress: () => {
-                  // Don't select the file
-                  setSelectedFile(null);
-                },
-              },
-              {
-                text: t("notification.customSound.addAnyway"),
-                onPress: () => {
-                  // Proceed with the file
-                  setSelectedFile(file);
-                  setForceAdd(true);
-                  setDuplicateWarning(
-                    t("notification.customSound.duplicateMessage", {
-                      existingName: duplicate.name,
-                    })
-                  );
-
-                  // Auto-fill name from filename if empty
-                  if (!soundName) {
-                    const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-                    setSoundName(name);
-                  }
-                },
-              },
-            ]
-          );
-        } else {
-          // No duplicate or user has chosen to proceed
-          setSelectedFile(file);
-
-          // Auto-fill name from filename if empty
-          if (!soundName) {
-            const name = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-            setSoundName(name);
-          }
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to pick file");
+    // A file over the size limit is refused before a name is typed for it.
+    if (validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
+      setSelectedFile(null);
+      setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
+      return;
     }
+
+    // An empty name takes the file's name without its extension.
+    const select = () => {
+      setSelectedFile(file);
+      if (!soundName) setSoundName(file.name.replace(/\.[^/.]+$/, ""));
+    };
+
+    const duplicate = findDuplicateSound(file, customSounds);
+    if (!duplicate) return select();
+
+    const duplicateMessage = t("notification.customSound.duplicateMessage", {
+      existingName: duplicate.name,
+    });
+    Alert.alert(t("notification.customSound.duplicateTitle"), duplicateMessage, [
+      { text: t("common.cancel"), style: "cancel", onPress: () => setSelectedFile(null) },
+      {
+        text: t("notification.customSound.addAnyway"),
+        onPress: () => {
+          select();
+          setForceAdd(true);
+          setDuplicateWarning(duplicateMessage);
+        },
+      },
+    ]);
+  };
+
+  // Chains, not tries: the React Compiler cannot lower a try that holds a
+  // `finally`, a `&&` or a ternary, and skips the whole modal.
+  const handlePickFile = async () => {
+    setError(null);
+    setDuplicateWarning(null);
+    setForceAdd(false);
+    await pickAudioFile()
+      .then(choose)
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to pick file"));
   };
 
   const handleAdd = async () => {
@@ -153,27 +142,26 @@ export default function AddCustomSoundModal({
     setIsProcessing(true);
     setError(null);
 
-    try {
-      // Use the already stored file, passing existing sounds and force flag
-      const result = await addCustomSound(
-        selectedFile,
-        soundName.trim(),
-        CUSTOM_SOUND_NOTIFICATION_TYPES,
-        customSounds,
-        forceAdd
+    // Use the already stored file, passing existing sounds and force flag
+    await addCustomSound(
+      selectedFile,
+      soundName.trim(),
+      CUSTOM_SOUND_NOTIFICATION_TYPES,
+      customSounds,
+      forceAdd
+    )
+      .then((result) => {
+        if (result.success) {
+          onSuccess(result);
+          handleClose();
+        } else {
+          setError(describeError(result.error));
+        }
+      })
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : t("notification.customSound.addError"))
       );
-
-      if (result.success) {
-        onSuccess(result);
-        handleClose();
-      } else {
-        setError(result.error);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("notification.customSound.addError"));
-    } finally {
-      setIsProcessing(false);
-    }
+    setIsProcessing(false);
   };
 
   const handleClose = () => {
@@ -193,7 +181,7 @@ export default function AddCustomSoundModal({
       <ModalContent>
         {/* Header with gradient accent */}
         <ModalHeader>
-          <HStack gap="$3" alignItems="center" flex={1} paddingRight="$8">
+          <HStack gap="$3" alignItems="center" flex={1} paddingEnd="$8">
             <Icon as={Speaker} size="xl" color="$primary" />
             <Text size="xl" bold color="$typography" flex={1}>
               {t("notification.customSound.add")}

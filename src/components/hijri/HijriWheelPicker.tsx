@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HijriNative, type HijriDate } from "@/utils/date";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { HIJRI_YEAR_MIN, HIJRI_YEAR_MAX } from "@/constants/Hijri";
 
 import { HStack } from "@/components/ui/hstack";
@@ -32,7 +33,7 @@ type HijriWheelPickerProps = {
 
 const HijriWheelPicker = ({ value, onChange }: HijriWheelPickerProps) => {
   const { t } = useTranslation();
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
 
   const daysInMonth = useMemo(

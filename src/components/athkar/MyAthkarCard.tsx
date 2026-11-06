@@ -19,6 +19,7 @@ import { useMyAthkarStore } from "@/stores/my-athkar";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Utils
 import { formatNumberToLocale } from "@/utils/number";
@@ -43,10 +44,10 @@ const MyAthkarCard: FC<Props> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { incrementCount, incrementCountBy, decrementCount } = useMyAthkarStore();
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
-  const hapticSuccess = useHaptic("success");
-  const hapticWarning = useHaptic("warning");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
 
   const isRTL = i18n.dir() === "rtl";
   const { currentCount, totalCount, completed } = progress;
@@ -72,6 +73,8 @@ const MyAthkarCard: FC<Props> = ({
 
   return (
     <Pressable
+      // Holds text or a control the reader must reach; as one element iOS would hide them.
+      accessible={false}
       onPress={handleIncrement}
       onLongPress={handleLongPress}
       delayLongPress={400}

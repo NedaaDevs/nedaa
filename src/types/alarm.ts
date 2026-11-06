@@ -1,10 +1,14 @@
-export type AlarmType = "fajr" | "friday";
+import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
-export type TimingMode = "atPrayerTime" | "beforePrayerTime";
+import { ALARM_TIMING_MODE, type ALARM_TYPE } from "@/constants/Alarm";
 
-export type ChallengeType = "tap" | "math" | "dhikr" | "none";
+export type AlarmType = (typeof ALARM_TYPE)[keyof typeof ALARM_TYPE];
 
-export type ChallengeDifficulty = "easy" | "medium" | "hard";
+export type TimingMode = (typeof ALARM_TIMING_MODE)[keyof typeof ALARM_TIMING_MODE];
+
+export type ChallengeType = (typeof CHALLENGE_TYPE)[keyof typeof CHALLENGE_TYPE];
+
+export type ChallengeDifficulty = (typeof CHALLENGE_DIFFICULTY)[keyof typeof CHALLENGE_DIFFICULTY];
 
 export type VibrationPattern = "default" | "gentle" | "aggressive";
 
@@ -43,6 +47,15 @@ export interface TimingConfig {
   minutesBefore: number;
 }
 
+export interface AlarmTimingChoices {
+  /** Modes offered, in display order. */
+  modes: readonly TimingMode[];
+  /** Offsets a before-prayer alarm may take, in minutes. */
+  minuteSteps: readonly number[];
+  /** The offset a switch to before-prayer starts at; one of minuteSteps. */
+  defaultMinutesBefore: number;
+}
+
 export interface AlarmTypeSettings {
   enabled: boolean;
   sound: string;
@@ -60,8 +73,8 @@ export interface AlarmSettings {
 }
 
 export const DEFAULT_CHALLENGE_CONFIG: ChallengeConfig = {
-  type: "tap",
-  difficulty: "easy",
+  type: CHALLENGE_TYPE.TAP,
+  difficulty: CHALLENGE_DIFFICULTY.EASY,
   count: 1,
 };
 
@@ -82,7 +95,7 @@ export const DEFAULT_SNOOZE_CONFIG: SnoozeConfig = {
 };
 
 export const DEFAULT_TIMING_CONFIG: TimingConfig = {
-  mode: "atPrayerTime",
+  mode: ALARM_TIMING_MODE.AT_PRAYER_TIME,
   minutesBefore: 0,
 };
 
@@ -103,11 +116,6 @@ export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   vibration: DEFAULT_VIBRATION_CONFIG,
   snooze: DEFAULT_SNOOZE_CONFIG,
 };
-
-export const TIMING_WINDOW_MINUTES = {
-  fajr: 90,
-  friday: 120,
-} as const;
 
 export const CHALLENGE_DIFFICULTY_CONFIG = {
   tap: {
@@ -136,17 +144,16 @@ export const SNOOZE_MAX_COUNTS: SnoozeMaxCount[] = [1, 2, 3];
 
 export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math", "dhikr"];
+export const CHALLENGE_TYPES: ChallengeType[] = Object.values(CHALLENGE_TYPE);
 
-export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "hard"];
+export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = Object.values(CHALLENGE_DIFFICULTY);
 
-export const GRACE_PERIOD_SECONDS: Record<
-  Exclude<ChallengeType, "none">,
-  Record<ChallengeDifficulty, number>
-> = {
-  tap: { easy: 10, medium: 15, hard: 20 },
-  math: { easy: 15, medium: 20, hard: 30 },
-  dhikr: { easy: 20, medium: 30, hard: 45 },
+// No challenge means no grace period.
+export const GRACE_PERIOD_SECONDS: Record<ChallengeType, Record<ChallengeDifficulty, number>> = {
+  [CHALLENGE_TYPE.NONE]: { easy: 0, medium: 0, hard: 0 },
+  [CHALLENGE_TYPE.TAP]: { easy: 10, medium: 15, hard: 20 },
+  [CHALLENGE_TYPE.MATH]: { easy: 15, medium: 20, hard: 30 },
+  [CHALLENGE_TYPE.DHIKR]: { easy: 20, medium: 30, hard: 45 },
 };
 
 export interface DhikrPhrase {

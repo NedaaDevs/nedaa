@@ -1,5 +1,6 @@
 import { FC, useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -15,6 +16,7 @@ import NoneChallenge from "./NoneChallenge";
 
 import { ChallengeConfig, GRACE_PERIOD_SECONDS } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   config: ChallengeConfig;
@@ -23,10 +25,8 @@ type Props = {
   onGraceExpire?: () => void;
 };
 
-function getGraceDuration(config: ChallengeConfig): number {
-  if (config.type === "none") return 0;
-  return GRACE_PERIOD_SECONDS[config.type][config.difficulty];
-}
+const getGraceDuration = (config: ChallengeConfig): number =>
+  GRACE_PERIOD_SECONDS[config.type][config.difficulty];
 
 function getChallengeInstruction(
   t: (key: string, opts?: Record<string, unknown>) => string,
@@ -34,14 +34,19 @@ function getChallengeInstruction(
   difficulty: string,
   count: number
 ): string {
-  if (type === "tap") {
-    const taps = difficulty === "hard" ? 20 : difficulty === "medium" ? 10 : 5;
+  if (type === CHALLENGE_TYPE.TAP) {
+    const taps =
+      difficulty === CHALLENGE_DIFFICULTY.HARD
+        ? 20
+        : difficulty === CHALLENGE_DIFFICULTY.MEDIUM
+          ? 10
+          : 5;
     return t("alarm.challenge.tapInstruction", { count: taps * count });
   }
-  if (type === "math") {
+  if (type === CHALLENGE_TYPE.MATH) {
     return t("alarm.challenge.mathInstruction", { count });
   }
-  if (type === "dhikr") {
+  if (type === CHALLENGE_TYPE.DHIKR) {
     return t("alarm.challenge.dhikrInstruction", { count });
   }
   return t("alarm.challenge.dismissInstruction");
@@ -51,7 +56,7 @@ type GraceState = "idle" | "active" | "expired";
 
 const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGraceExpire }) => {
   const { t } = useTranslation();
-  const hapticWarning = useHaptic("warning");
+  const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
   const [started, setStarted] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [challengeKey, setChallengeKey] = useState(0);
@@ -228,21 +233,21 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
             <Button.Text size="lg">{t("alarm.challenge.startSolving")}</Button.Text>
           </Button>
         </VStack>
-      ) : type === "tap" ? (
+      ) : type === CHALLENGE_TYPE.TAP ? (
         <TapChallenge
           key={challengeKey}
           difficulty={difficulty}
           onComplete={handleChallengeComplete}
           onInteraction={handleInteraction}
         />
-      ) : type === "math" ? (
+      ) : type === CHALLENGE_TYPE.MATH ? (
         <MathChallenge
           key={challengeKey}
           difficulty={difficulty}
           onComplete={handleChallengeComplete}
           onInteraction={handleInteraction}
         />
-      ) : type === "dhikr" ? (
+      ) : type === CHALLENGE_TYPE.DHIKR ? (
         <DhikrChallenge
           key={challengeKey}
           difficulty={difficulty}

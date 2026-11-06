@@ -1,9 +1,11 @@
 import React from "react";
 import { ActivityIndicator, Platform } from "react-native";
+import { resolveIconSize, type IconSize } from "@/components/ui/icon";
 import { PlatformType } from "@/enums/app";
 import { buttonLabelFontSize } from "@/components/ui/button/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
 import {
+  getTokenValue,
   styled,
   View,
   XStack,
@@ -11,8 +13,8 @@ import {
   Text as TamaguiText,
   createStyledContext,
   withStaticProperties,
-  useTheme,
 } from "tamagui";
+import { useTheme, useThemeColor } from "@/components/ui/theme-color";
 import type { GetProps } from "tamagui";
 
 type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -25,20 +27,75 @@ const ButtonContext = createStyledContext({
   action: "primary" as ButtonAction,
 });
 
-const ICON_SIZE: Record<ButtonSize, number> = {
-  xs: 14,
-  sm: 16,
-  md: 18,
-  lg: 18,
-  xl: 20,
+/** No size step is 50; the default button stands this high. */
+const DEFAULT_HEIGHT = 50;
+
+/**
+ * Each size's drawn height, rising with the name; below `$target`, a touch area
+ * makes up the rest. Sticky action bars and footers carry `lg`.
+ */
+const MIN_HEIGHT = {
+  xs: "$8",
+  sm: "$9",
+  md: DEFAULT_HEIGHT,
+  lg: "$14",
+  xl: "$16",
+} as const satisfies Record<ButtonSize, string | number>;
+
+const heightOf = (size: ButtonSize): number => {
+  const height = MIN_HEIGHT[size];
+  return typeof height === "number" ? height : getTokenValue(height, "size");
 };
 
-const ACTION_THEME_KEY: Record<ButtonAction, string> = {
-  primary: "primary",
+const touchSlop = (size: ButtonSize) => {
+  const short = getTokenValue("$target", "size") - heightOf(size);
+  return short > 0 ? { top: short / 2, bottom: short / 2 } : undefined;
+};
+
+const ICON_SIZE: Record<ButtonSize, IconSize> = {
+  xs: "xs",
+  sm: "sm",
+  md: "md",
+  lg: "md",
+  xl: "lg",
+};
+
+const ACTION_INK = {
+  primary: "accent",
   secondary: "secondary",
   positive: "success",
   negative: "error",
   default: "typography",
+} as const satisfies Record<ButtonAction, string>;
+
+type InkKey = (typeof ACTION_INK)[ButtonAction] | "accentText" | "bg" | "fg" | "typographyContrast";
+
+/** The label's and icon's theme key: a filled button inks in its fill's contrast. */
+const inkKey = (action: ButtonAction, variant: ButtonVariant): InkKey => {
+  if (variant === "solid") return action === "primary" ? "bg" : "typographyContrast";
+  if (variant === "outline" && action === "primary") return "fg";
+  // A text button's label, icon and spinner share the accent made for text.
+  if (variant === "link" && action === "primary") return "accentText";
+  return ACTION_INK[action];
+};
+
+/** An outline's inset ring: a hairline, or the tone of a status action. */
+const RING = {
+  primary: "$hairline",
+  secondary: "$hairline",
+  positive: "$success",
+  negative: "$error",
+  default: "$hairline",
+} as const satisfies Record<ButtonAction, string>;
+
+/** The primary call to action glows; the outline takes an inset ring and a lit edge. */
+const useButtonShadow = (action: ButtonAction, variant: ButtonVariant): string | undefined => {
+  const glow = useThemeColor("$accentGlow");
+  const ring = useThemeColor(RING[action]);
+  const highlight = useThemeColor("$highlight");
+  if (variant === "outline") return `inset 0 0 0 1px ${ring}, inset 0 1px 0 ${highlight}`;
+  if (variant === "solid" && action === "primary") return `0 8px 20px ${glow}`;
+  return undefined;
 };
 
 // --- ButtonFrame ---
@@ -50,42 +107,45 @@ const ButtonFrame = styled(View, {
   name: "Button",
   context: ButtonContext,
   role: "button",
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
-  gap: "$2",
-  borderRadius: "$4",
+  gap: "$inline",
+  borderRadius: "$control",
   pressStyle: {
     opacity: 0.8,
   },
 
   variants: {
     action: {
-      primary: { backgroundColor: "$primary", borderColor: "$primary" },
-      secondary: { backgroundColor: "$secondary", borderColor: "$secondary" },
-      positive: { backgroundColor: "$success", borderColor: "$success" },
-      negative: { backgroundColor: "$error", borderColor: "$error" },
-      default: {
-        backgroundColor: "$backgroundMuted",
-        borderColor: "$backgroundMuted",
-      },
+      primary: { backgroundColor: "$accent" },
+      secondary: { backgroundColor: "$secondary" },
+      positive: { backgroundColor: "$success" },
+      negative: { backgroundColor: "$error" },
+      default: { backgroundColor: "$backgroundMuted" },
     },
     // minHeight, not height: the box is a floor that grows with a scaled or
     // wrapped label instead of clipping it.
     size: {
-      xs: { minHeight: 32, paddingVertical: 4, paddingHorizontal: 14 },
-      sm: { minHeight: 36, paddingVertical: 4, paddingHorizontal: 16 },
-      md: { minHeight: 40, paddingVertical: 4, paddingHorizontal: 20 },
-      lg: { minHeight: 44, paddingVertical: 4, paddingHorizontal: 24 },
-      xl: { minHeight: 48, paddingVertical: 4, paddingHorizontal: 28 },
+      // The inset is the button's own step, never a gap name.
+      xs: { minHeight: MIN_HEIGHT.xs, paddingVertical: "$1", paddingHorizontal: "$3.5" },
+      sm: { minHeight: MIN_HEIGHT.sm, paddingVertical: "$1", paddingHorizontal: "$4" },
+      md: { minHeight: MIN_HEIGHT.md, paddingVertical: "$1", paddingHorizontal: "$5" },
+      lg: { minHeight: MIN_HEIGHT.lg, paddingVertical: "$1", paddingHorizontal: "$6" },
+      xl: { minHeight: MIN_HEIGHT.xl, paddingVertical: "$1", paddingHorizontal: "$7" },
     },
     variant: {
       solid: { borderWidth: 0 },
-      outline: { backgroundColor: "transparent", borderWidth: 1 },
+      // A glass fill; the hairline ring is an inset shadow, not a stroke.
+      outline: { backgroundColor: "$surfaceGlass", borderWidth: 0 },
+      // The text button: no fill, at the touch floor.
       link: {
         backgroundColor: "transparent",
         borderWidth: 0,
-        paddingHorizontal: 0,
+        minHeight: "$target",
+        paddingHorizontal: "$inline",
       },
     },
     disabled: {
@@ -101,25 +161,28 @@ const ButtonFrame = styled(View, {
 });
 
 // --- ButtonText ---
-// Variant order: action sets text to action color, then variant:solid overrides to contrast white.
+// The label's colour comes from `inkKey`, shared with the icon and spinner.
 
 const ButtonTextFrame = styled(TamaguiText, {
   name: "ButtonText",
   context: ButtonContext,
   fontFamily: "$body",
   fontWeight: "600",
-  ...(Platform.OS === PlatformType.ANDROID && { paddingEnd: 8, textBreakStrategy: "simple" }),
+  ...(Platform.OS === PlatformType.ANDROID && {
+    paddingEnd: "$inline",
+    textBreakStrategy: "simple",
+  }),
 
   variants: {
     action: {
-      primary: { color: "$primary" },
-      secondary: { color: "$secondary" },
-      positive: { color: "$success" },
-      negative: { color: "$error" },
-      default: { color: "$typography" },
+      primary: {},
+      secondary: {},
+      positive: {},
+      negative: {},
+      default: {},
     },
     variant: {
-      solid: { color: "$typographyContrast" },
+      solid: {},
       outline: {},
       link: {},
     },
@@ -143,20 +206,19 @@ const ButtonTextFrame = styled(TamaguiText, {
 
 // The public Button.Text: applies the app text-scale to the size variant's
 // label font and keeps OS font scaling off (the app owns text size).
-type ButtonTextProps = GetProps<typeof ButtonTextFrame> & { scaleOverride?: number };
+type ButtonTextProps = GetProps<typeof ButtonTextFrame>;
 
 const ButtonText = React.forwardRef<React.ComponentRef<typeof ButtonTextFrame>, ButtonTextProps>(
-  ({ fontSize, size, scaleOverride, ...props }, ref) => {
+  ({ fontSize, size, color, ...props }, ref) => {
     const ctx = ButtonContext.useStyledContext();
-    // The hook always runs (hooks-order safety); the override only replaces its value.
-    const appScale = useTextScale();
-    const m = scaleOverride ?? appScale;
+    const m = useTextScale();
     // The label's own size prop wins over the Button's size context.
     const sizeKey = typeof size === "string" ? size : ctx.size;
     return (
       <ButtonTextFrame
         ref={ref}
         {...props}
+        color={color ?? `$${inkKey(ctx.action, ctx.variant)}`}
         fontSize={buttonLabelFontSize(sizeKey, fontSize, m)}
         allowFontScaling={false}
       />
@@ -183,17 +245,9 @@ const ButtonIcon: React.FC<ButtonIconProps> = ({
 
   const iconSize = sizeProp ?? ICON_SIZE[ctx.size ?? "md"];
 
-  let resolvedColor: string;
-  if (colorProp) {
-    resolvedColor = colorProp;
-  } else if (ctx.variant === "solid") {
-    resolvedColor = theme.typographyContrast.val;
-  } else {
-    const key = ACTION_THEME_KEY[ctx.action ?? "primary"];
-    resolvedColor = (theme as Record<string, { val: string }>)[key]?.val ?? theme.primary.val;
-  }
+  const resolvedColor = colorProp ?? theme[inkKey(ctx.action, ctx.variant)].val;
 
-  return <IconComponent size={iconSize} color={resolvedColor} />;
+  return <IconComponent size={resolveIconSize(iconSize)} color={resolvedColor} />;
 };
 ButtonIcon.displayName = "ButtonIcon";
 
@@ -203,8 +257,7 @@ const ButtonSpinner: React.FC<{ color?: string }> = ({ color }) => {
   const ctx = ButtonContext.useStyledContext();
   const theme = useTheme();
 
-  const resolvedColor =
-    color ?? (ctx.variant === "solid" ? theme.typographyContrast.val : theme.primary.val);
+  const resolvedColor = color ?? theme[inkKey(ctx.action, ctx.variant)].val;
 
   return <ActivityIndicator color={resolvedColor} />;
 };
@@ -246,14 +299,33 @@ ButtonGroup.displayName = "ButtonGroup";
 
 // --- Compound export ---
 
-const Button = withStaticProperties(ButtonFrame, {
+type ButtonFrameProps = GetProps<typeof ButtonFrame>;
+
+const ButtonRoot = React.forwardRef<React.ComponentRef<typeof ButtonFrame>, ButtonFrameProps>(
+  ({ hitSlop, accessibilityState, style, ...props }, ref) => {
+    const shadow = useButtonShadow(props.action ?? "primary", props.variant ?? "solid");
+    return (
+      <ButtonFrame
+        ref={ref}
+        hitSlop={hitSlop ?? touchSlop(props.size ?? "md")}
+        // The disabled variant only dims; the reader needs the state too.
+        accessibilityState={{ ...accessibilityState, disabled: Boolean(props.disabled) }}
+        {...props}
+        style={shadow ? [{ boxShadow: shadow }, style] : style}
+      />
+    );
+  }
+);
+ButtonRoot.displayName = "Button";
+
+const Button = withStaticProperties(ButtonRoot, {
   Text: ButtonText,
   Icon: ButtonIcon,
   Spinner: ButtonSpinner,
   Group: ButtonGroup,
 });
 
-type ButtonProps = GetProps<typeof ButtonFrame>;
+type ButtonProps = ButtonFrameProps;
 
 export { Button, ButtonIcon, ButtonSpinner, ButtonGroup };
 export type {

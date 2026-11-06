@@ -13,9 +13,10 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Spinner } from "@/components/ui/spinner";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
-import { ListenSearchBar } from "@/components/quran/listen/ListenSearchBar";
+import { SearchField } from "@/components/ui/search-field";
 import { quranReciterRegistry } from "@/services/quran-audio/quranReciterRegistry";
 import { useQuranAudioStore } from "@/stores/quranAudio";
 import { useRTL } from "@/contexts/RTLContext";
@@ -81,10 +82,13 @@ const QuranListenScreen = () => {
 
   return (
     <Background>
-      <TopBar title="tools.quranListen.title" href="/(tabs)/tools" backOnClick />
+      <ScreenHeader
+        title={t("tools.quranListen.title")}
+        back={{ fallback: BACK_DESTINATION.TOOLS }}
+      />
       {status === LOAD_STATUS.READY && reciters.length > 0 ? (
         <VStack paddingHorizontal="$3" paddingTop="$2">
-          <ListenSearchBar
+          <SearchField
             value={query}
             onChangeText={setQuery}
             placeholder={t("quran.listen.searchReciter")}

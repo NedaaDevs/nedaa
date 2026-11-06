@@ -1,0 +1,33 @@
+appId: dev.nedaa.android
+---
+# Each link opens a top-level screen; the run fails on a crash or a missing frame.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "focus-countdown-row"
+    timeout: 30000
+- takeScreenshot: smoke-today
+- openLink: "myapp://settings"
+- extendedWaitUntil:
+    visible:
+      id: "tab-bar-frame"
+    timeout: 15000
+- takeScreenshot: smoke-settings
+- openLink: "myapp://compass"
+- extendedWaitUntil:
+    visible:
+      id: "tab-bar-frame"
+    timeout: 15000
+- takeScreenshot: smoke-qibla
+- openLink: "myapp://athkar"
+- extendedWaitUntil:
+    visible:
+      id: "tab-bar-frame"
+    timeout: 15000
+- takeScreenshot: smoke-athkar
+# Quran hides the tab bar, so the reader only has to stay up.
+- openLink: "myapp://quran"
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: smoke-quran

@@ -13,6 +13,7 @@ app/agconnect-services.json
 *.iml
 *.hprof
 .cxx/
+gradle/gradle-daemon-jvm.properties
 
 # generated inline modules
 app/src/main/java/inline/

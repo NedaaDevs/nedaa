@@ -3,6 +3,22 @@
  * Each provider has a unique ID that corresponds to the API provider ID(hard coded)
  */
 
+/** AlAdhan's midnight modes; each sets the night span that midnight and its thirds divide. */
+export const MIDNIGHT_MODE = {
+  /** Sunset to sunrise. */
+  STANDARD: 0,
+  /** Sunset to Fajr. */
+  JAFARI: 1,
+} as const;
+
+/** AlAdhan's Asr schools; each sets the shadow length that starts Asr. */
+export const ASR_SCHOOL = {
+  /** A shadow equal to its object: Shafi'i, Maliki and Hanbali. */
+  SHAFI: 0,
+  /** A shadow twice its object. */
+  HANAFI: 1,
+} as const;
+
 export const PRAYER_TIME_PROVIDERS = {
   ALADHAN: {
     id: "aladhan",
@@ -12,8 +28,8 @@ export const PRAYER_TIME_PROVIDERS = {
     defaults: {
       method: undefined,
       shafaq: "general", // Defaults to general
-      school: 0, // Default to Shafi
-      midnightMode: 0, // Default to Standard
+      school: ASR_SCHOOL.SHAFI,
+      midnightMode: MIDNIGHT_MODE.STANDARD,
       calendarMethod: "HJCoSA", // Default: HJCoSA
       latitudeAdjustment: undefined,
     },
@@ -54,12 +70,12 @@ export const PRAYER_TIME_PROVIDERS = {
       },
     ],
     schools: [
-      { id: 0, nameKey: "shafi" },
-      { id: 1, nameKey: "hanafi" },
+      { id: ASR_SCHOOL.SHAFI, nameKey: "shafi" },
+      { id: ASR_SCHOOL.HANAFI, nameKey: "hanafi" },
     ],
     midnightModes: [
-      { id: 0, nameKey: "standard" },
-      { id: 1, nameKey: "jafari" },
+      { id: MIDNIGHT_MODE.STANDARD, nameKey: "standard" },
+      { id: MIDNIGHT_MODE.JAFARI, nameKey: "jafari" },
     ],
     latitudeAdjustmentMethods: [
       { id: 1, nameKey: "middleOfNight" },

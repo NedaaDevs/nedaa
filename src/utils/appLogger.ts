@@ -8,7 +8,9 @@ import { useDebugModeStore } from "@/stores/debugMode";
 import * as Sharing from "expo-sharing";
 import { AppState, Platform } from "react-native";
 
+import { APP_STATE } from "@/constants/AppState";
 import { sessionMarker, pruneByAge, pruneGlobalBySize, buildBundle } from "@/utils/logBundle";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 // Logging convention (keep shared diagnostic bundles signal, not noise):
 //   ERROR — a failure that breaks a user-visible operation; pass the Error.
@@ -109,7 +111,7 @@ function writeReportFile(text: string, baseName: string): string {
   } catch {
     // may already exist
   }
-  file.write(text);
+  writeFileSync(file, text);
   return file.uri;
 }
 
@@ -219,7 +221,7 @@ class DomainLogger {
           // may already exist
         }
       }
-      logFile.write(existing + marker + entries.join("\n") + "\n");
+      writeFileSync(logFile, existing + marker + entries.join("\n") + "\n");
     } catch (error) {
       this.buffer.unshift(...entries);
       console.error(`[AppLogger] Flush failed for ${this.domain}:`, error);
@@ -269,7 +271,7 @@ class DomainLogger {
 }
 
 AppState.addEventListener("change", (state) => {
-  if (state === "background") {
+  if (state === APP_STATE.BACKGROUND) {
     AppLogger.flushAll();
     AppLogger.prune();
   }
@@ -332,7 +334,7 @@ export const AppLogger = {
           continue;
         }
         if (!f.exists) f.create();
-        f.write(text);
+        writeFileSync(f, text);
       } catch (e) {
         console.error(`[AppLogger] prune write failed for ${domain}:`, e);
       }

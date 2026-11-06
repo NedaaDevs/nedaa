@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { RefObject } from "react";
-import { View } from "react-native";
-import type { GestureResponderEvent } from "react-native";
+import type { GestureResponderEvent, ViewInstance } from "react-native";
 
 import { MushafVersion } from "@/enums/quran";
 import { GlyphBound } from "@/types/quran";
@@ -30,7 +29,7 @@ type Params = {
   glyphBounds: GlyphBound[];
   surahHeaderLines: Record<number, number>;
   geometry: PageGeometry;
-  pressableRef: RefObject<View | null>;
+  pressableRef: RefObject<ViewInstance | null>;
   // Long-pressing an ayah opens its action sheet (in addition to highlighting it).
   onAyahLongPress?: (surah: number, ayah: number) => void;
   // Long-pressing a surah header opens its info sheet.
