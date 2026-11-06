@@ -104,7 +104,7 @@ const Select: React.FC<SelectProps> = ({
             style={styles.backdrop}
             activeOpacity={1}
             accessibilityRole="button"
-            accessibilityLabel={t("common.close")}
+            accessibilityLabel={t("a11y.dismiss")}
             onPress={() => setOpen(false)}
           />
           <View

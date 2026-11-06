@@ -12,6 +12,7 @@ jest.mock("react-native-safe-area-context", () => ({
 
 const LABEL = "Sound";
 const PLACEHOLDER = "Choose a sound";
+const SECTION = "Custom";
 const CHOSEN = { label: "Beep", value: "beep" };
 const OTHER = { label: "Athan", value: "athan" };
 
@@ -60,11 +61,27 @@ describe("Select", () => {
     expect(screen.getByRole("radio", { name: OTHER.label })).not.toBeSelected();
   });
 
+  it("groups sectioned options under the same name", async () => {
+    await renderWithTheme(
+      <Select
+        accessibilityLabel={LABEL}
+        selectedValue={OTHER.value}
+        groups={[{ label: SECTION, items: [CHOSEN] }, { items: [OTHER] }]}
+      />
+    );
+    await open();
+
+    expect(screen.getByLabelText(LABEL)).toHaveProp("accessibilityRole", "radiogroup");
+    expect(screen.getByText(SECTION)).toBeTruthy();
+    expect(screen.getByRole("radio", { name: CHOSEN.label })).not.toBeSelected();
+    expect(screen.getByRole("radio", { name: OTHER.label })).toBeSelected();
+  });
+
   it("offers a named way to close the options", async () => {
     await renderSelect(CHOSEN.value);
     await open();
 
-    await userEvent.press(screen.getByRole("button", { name: t("common.close") }));
+    await userEvent.press(screen.getByRole("button", { name: t("a11y.dismiss") }));
 
     expect(screen.queryByRole("radio")).toBeNull();
   });
