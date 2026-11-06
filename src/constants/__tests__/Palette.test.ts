@@ -137,6 +137,14 @@ describe("tint tokens", () => {
       expect(tokens.warnTint.hex).toBe(warn);
     }
   );
+
+  it.each([
+    ["light", NEDAA_LIGHT, "#196C4024", "#A43B361F"],
+    ["dark", NEDAA_DARK, "#4ABBA124", "#ED8C801F"],
+  ] as const)("%s tints the success and danger colours", (_n, tokens, success, danger) => {
+    expect(tokens.successTint.hex).toBe(success);
+    expect(tokens.dangerTint.hex).toBe(danger);
+  });
 });
 
 describe("phase gradients", () => {

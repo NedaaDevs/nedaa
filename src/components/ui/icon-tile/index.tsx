@@ -9,7 +9,7 @@ export const TILE_SIZE = 34;
 /** The glyph's stroke on the tile, and the chevron beside a tiled row. */
 export const TILE_STROKE = 1.75;
 
-/** The glyph's colour; the tile keeps its tint in every tone. */
+/** The glyph's colour. */
 export const ICON_TILE_TONE = {
   ACCENT: "accent",
   SUCCESS: "success",
@@ -17,6 +17,14 @@ export const ICON_TILE_TONE = {
   MUTED: "muted",
 } as const;
 export type IconTileTone = (typeof ICON_TILE_TONE)[keyof typeof ICON_TILE_TONE];
+
+/** An outcome tints the tile in its own colour; other tones share `$tile`. */
+const TILE_FILL = {
+  [ICON_TILE_TONE.ACCENT]: "$tile",
+  [ICON_TILE_TONE.SUCCESS]: "$successTint",
+  [ICON_TILE_TONE.DANGER]: "$dangerTint",
+  [ICON_TILE_TONE.MUTED]: "$tile",
+} as const satisfies Record<IconTileTone, string>;
 
 type Props = { icon: IconProps["as"]; tone?: IconTileTone };
 
@@ -27,7 +35,7 @@ export const IconTile = ({ icon, tone = ICON_TILE_TONE.ACCENT }: Props) => (
     width={TILE_SIZE}
     height={TILE_SIZE}
     borderRadius="$chip"
-    backgroundColor="$tile"
+    backgroundColor={TILE_FILL[tone]}
     alignItems="center"
     justifyContent="center">
     <Icon as={icon} size="lg" color={`$${tone}`} strokeWidth={TILE_STROKE} />
