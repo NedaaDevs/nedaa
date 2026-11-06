@@ -1,3 +1,4 @@
+import config from "../../../tamagui.config";
 import {
   BRIGHTNESS,
   COLOR_TOKENS,
@@ -138,12 +139,13 @@ describe("tint tokens", () => {
     }
   );
 
+  // A tile's fill is its glyph's theme colour at low alpha, so both share a hue.
   it.each([
-    ["light", NEDAA_LIGHT, "#196C4024", "#A43B361F"],
-    ["dark", NEDAA_DARK, "#4ABBA124", "#ED8C801F"],
-  ] as const)("%s tints the success and danger colours", (_n, tokens, success, danger) => {
-    expect(tokens.successTint.hex).toBe(success);
-    expect(tokens.dangerTint.hex).toBe(danger);
+    ["light", config.themes.light],
+    ["dark", config.themes.dark],
+  ] as const)("%s tints the success and danger glyph colours", (_n, theme) => {
+    expect(theme.successTint.val).toBe(`${theme.success.val}24`);
+    expect(theme.dangerTint.val).toBe(`${theme.danger.val}1F`);
   });
 });
 
