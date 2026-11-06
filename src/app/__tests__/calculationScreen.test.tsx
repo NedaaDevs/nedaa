@@ -133,7 +133,7 @@ describe("Calculation screen", () => {
     expect(screen.getByText(t("settings.calculation.intro", { city: "Riyadh" }))).toBeTruthy();
   });
 
-  it("groups the screen under its three section titles, in order", async () => {
+  it("titles its three sections in order", async () => {
     await renderCalculation();
 
     const titles = screen.getAllByRole("header").map((node) => String(node.props.children));
