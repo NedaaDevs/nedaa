@@ -1,5 +1,6 @@
 import { Text } from "react-native";
 import { screen } from "@testing-library/react-native";
+import { Theme } from "tamagui";
 
 import config from "../../../../tamagui.config";
 import { Icon } from "@/components/ui/icon";
@@ -12,6 +13,7 @@ import {
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
+const DARK = config.themes.dark;
 const RAW = "#123456";
 
 /** Stands in for a lucide glyph and shows the colour it was handed. */
@@ -87,6 +89,21 @@ describe("IconTile tone", () => {
     [ICON_TILE_TONE.DANGER, LIGHT.dangerTint.val],
   ])("fills the tile for %s", async (tone, fill) => {
     await renderWithTheme(<IconTile icon={Glyph} tone={tone} />);
+
+    expect(screen.getByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveStyle({
+      backgroundColor: fill,
+    });
+  });
+
+  it.each([
+    [ICON_TILE_TONE.SUCCESS, DARK.successTint.val],
+    [ICON_TILE_TONE.DANGER, DARK.dangerTint.val],
+  ])("fills the tile for %s in the dark theme", async (tone, fill) => {
+    await renderWithTheme(
+      <Theme name="dark">
+        <IconTile icon={Glyph} tone={tone} />
+      </Theme>
+    );
 
     expect(screen.getByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveStyle({
       backgroundColor: fill,
