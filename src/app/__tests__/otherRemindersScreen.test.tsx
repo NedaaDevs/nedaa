@@ -36,6 +36,8 @@ const NIGHT = "notification.otherTiming.group.night.description";
 const ALADHAN_ID = PRAYER_TIME_PROVIDERS.ALADHAN.id;
 const MINUTE_OPTION = "a11y.otherTiming.duhaMinute";
 const DUHA_AM = "notification.otherTiming.duha.am";
+const MORNING_MARK = "AM";
+const AFTERNOON_MARK = "PM";
 
 const t = i18n.t.bind(i18n);
 
@@ -129,24 +131,34 @@ describe("Other reminders", () => {
     it("shows the morning caption only while every hour is before noon", async () => {
       await renderDuha("11:50");
 
-      expect(screen.getByText(t(DUHA_AM))).toBeTruthy();
+      expect(screen.getAllByText(t(DUHA_AM))).toHaveLength(1);
+      expect(screen.queryByText(AFTERNOON_MARK)).toBeNull();
     });
 
-    it.each(["12:10", "13:10"])(
-      "leaves the morning caption out when Dhuhr is at %s",
+    it("marks each hour, not the row, once the hours reach noon", async () => {
+      await renderDuha("13:10");
+
+      // Hours 7 to 11, then 12 and 13; a caption would add one more AM.
+      expect(screen.getAllByText(MORNING_MARK)).toHaveLength(5);
+      expect(screen.getAllByText(AFTERNOON_MARK)).toHaveLength(2);
+    });
+
+    it("marks noon itself as PM", async () => {
+      await renderDuha("12:10");
+
+      expect(screen.getAllByText(AFTERNOON_MARK)).toHaveLength(1);
+    });
+
+    it.each(["11:50", "13:10"])(
+      "draws no period on a 24-hour clock when Dhuhr is at %s",
       async (dhuhr) => {
+        usePreferencesStore.setState({ use24HourTime: true });
         await renderDuha(dhuhr);
 
-        expect(screen.queryByText(t(DUHA_AM))).toBeNull();
+        expect(screen.queryByText(MORNING_MARK)).toBeNull();
+        expect(screen.queryByText(AFTERNOON_MARK)).toBeNull();
       }
     );
-
-    it("leaves the morning caption out on a 24-hour clock", async () => {
-      usePreferencesStore.setState({ use24HourTime: true });
-      await renderDuha("11:50");
-
-      expect(screen.queryByText(t(DUHA_AM))).toBeNull();
-    });
 
     it("groups the hours under their name", async () => {
       await renderDuha("11:50");

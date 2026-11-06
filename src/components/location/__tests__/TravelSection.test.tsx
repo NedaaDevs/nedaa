@@ -236,12 +236,21 @@ describe("the places not asked in", () => {
     );
   });
 
-  it("measures the distance in the hint when neither place has a name", async () => {
+  it("measures the distance in the name and the hint when neither place has a name", async () => {
     unnamedSavedPlace();
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
     await renderSection();
 
-    expect(await askAgainButton()).toHaveProp(
+    const button = await askAgainButton();
+
+    expect(button).toHaveProp(
+      "accessibilityLabel",
+      t("a11y.join", {
+        first: t("location.travel.notAsked.askAgain"),
+        second: t("location.travel.notAsked.nearNoSavedName", { distance: FAR_MARK_KM }),
+      })
+    );
+    expect(button).toHaveProp(
       "accessibilityHint",
       t("a11y.location.travel.askAgainNearNoSavedNameHint", { distance: FAR_MARK_KM })
     );
