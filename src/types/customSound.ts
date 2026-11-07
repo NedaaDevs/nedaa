@@ -60,6 +60,11 @@ export const CUSTOM_SOUNDS_STORAGE_KEY = "custom_sounds";
  */
 export const SUPPORTED_AUDIO_EXTENSIONS = [".mp3", ".ogg", ".wav", ".m4a", ".aac"] as const;
 
+/** The formats as a person reads them; the dot needs no per-locale comma. */
+export const SUPPORTED_AUDIO_FORMATS = SUPPORTED_AUDIO_EXTENSIONS.map((extension) =>
+  extension.slice(1).toUpperCase()
+).join(" · ");
+
 /**
  * Custom sound key prefix to distinguish from bundled sounds
  */
