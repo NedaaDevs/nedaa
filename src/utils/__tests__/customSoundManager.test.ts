@@ -223,6 +223,17 @@ describe("validateAudioFile", () => {
     });
   });
 
+  it("rejects a file of another format with a code the modal maps to copy", () => {
+    expect(validateAudioFile({ ...asset(1), name: "notes.txt" })).toEqual({
+      valid: false,
+      error: CUSTOM_SOUND_ERROR.UNSUPPORTED,
+    });
+  });
+
+  it("accepts a supported extension in any case", () => {
+    expect(validateAudioFile({ ...asset(1), name: "ATHAN.MP3" })).toEqual({ valid: true });
+  });
+
   it("measures the file on disk when the picker reports no size", () => {
     mockDiskSize = CUSTOM_SOUND_MAX_BYTES + 1;
     expect(validateAudioFile(asset()).valid).toBe(false);
