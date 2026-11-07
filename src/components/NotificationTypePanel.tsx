@@ -2,7 +2,6 @@ import { FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
-import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -82,6 +81,9 @@ const NotificationTypePanel: FC<Props> = ({
   };
 
   const IconComponent = iconMap[icon];
+  const timingText = hasTiming
+    ? t("common.minute", { count: (defaults as NotificationWithTiming).timing })
+    : null;
 
   const getPrayerStatus = (prayerId: string) => {
     const hasOverride = overrides[prayerId]?.[type];
@@ -103,9 +105,7 @@ const NotificationTypePanel: FC<Props> = ({
 
   const handleToggle = () => {
     hapticSelection();
-    if (defaults.enabled) {
-      setIsExpanded(!isExpanded);
-    }
+    setIsExpanded(!isExpanded);
   };
 
   const handleMainToggle = (value: boolean) => {
@@ -125,57 +125,44 @@ const NotificationTypePanel: FC<Props> = ({
     <>
       <Card variant="grouped" marginHorizontal="$4">
         {/* Header */}
-        <Pressable
-          // Holds text or a control the reader must reach; as one element iOS would hide them.
-          accessible={false}
-          onPress={handleToggle}
-          disabled={!defaults.enabled}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: isExpanded }}
-          accessibilityLabel={title}>
-          <HStack
-            padding="$4"
-            justifyContent="space-between"
-            alignItems="center"
-            backgroundColor="$backgroundMuted">
-            <HStack gap="$2" alignItems="center" flex={1}>
+        <HStack alignItems="center" paddingEnd="$4" backgroundColor="$backgroundMuted">
+          {/* The switch sits beside the button: inside it, a reader could not reach it. */}
+          <Pressable
+            flex={1}
+            onPress={handleToggle}
+            disabled={!defaults.enabled}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: isExpanded && defaults.enabled }}
+            accessibilityLabel={title}
+            accessibilityValue={timingText ? { text: timingText } : undefined}>
+            <HStack padding="$4" gap="$2" alignItems="center">
               <Icon color="$typography" size="xl" as={IconComponent} />
-              <VStack flex={1}>
-                <HStack gap="$2" alignItems="center">
-                  <Text size="lg" fontWeight="600" color="$typography">
-                    {title}
-                  </Text>
-                  {hasTiming && (
-                    <Badge size="sm">
-                      <Badge.Text>
-                        {t("common.minute", {
-                          count: (defaults as NotificationWithTiming).timing,
-                        })}
-                      </Badge.Text>
-                    </Badge>
-                  )}
-                </HStack>
-              </VStack>
-            </HStack>
-            <HStack gap="$2" alignItems="center">
-              <Switch
-                value={defaults.enabled}
-                onValueChange={handleMainToggle}
-                size="md"
-                accessibilityLabel={title}
-              />
+              <HStack gap="$2" alignItems="center" flex={1}>
+                <Text size="lg" fontWeight="600" color="$typography">
+                  {title}
+                </Text>
+                {timingText && (
+                  <Badge size="sm">
+                    <Badge.Text>{timingText}</Badge.Text>
+                  </Badge>
+                )}
+              </HStack>
               {defaults.enabled && (
-                <Box marginStart="$2">
-                  {isExpanded ? (
-                    <Icon color="$typographySecondary" size="lg" as={ChevronUp} />
-                  ) : (
-                    <Icon color="$typographySecondary" size="lg" as={ChevronDown} />
-                  )}
-                </Box>
+                <Icon
+                  color="$typographySecondary"
+                  size="lg"
+                  as={isExpanded ? ChevronUp : ChevronDown}
+                />
               )}
             </HStack>
-          </HStack>
-        </Pressable>
+          </Pressable>
+          <Switch
+            value={defaults.enabled}
+            onValueChange={handleMainToggle}
+            size="md"
+            accessibilityLabel={title}
+          />
+        </HStack>
 
         {/* Expanded Content */}
         {isExpanded && defaults.enabled && (
