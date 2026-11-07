@@ -7,6 +7,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LiveRegion } from "@/components/ui/live-region";
 import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 
 import TapChallenge from "./TapChallenge";
@@ -16,7 +17,11 @@ import NoneChallenge from "./NoneChallenge";
 
 import { ChallengeConfig, GRACE_PERIOD_SECONDS } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+
+/** Test id of the live region that says the grace ended. */
+export const GRACE_STATUS_ID = "challenge-grace-status";
 
 type Props = {
   config: ChallengeConfig;
@@ -165,6 +170,8 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
   const graceSecondsColor =
     graceRemaining <= 2 ? "$error" : graceRemaining <= 5 ? "$warning" : "$typographySecondary";
   const inGraceFinalStretch = graceState === "active" && graceRemaining <= 5;
+  const graceExpired = graceState === "expired" ? t("alarm.grace.expired") : null;
+  useIosAnnouncement(inGraceFinalStretch ? t("a11y.alarm.graceFinalWarning") : graceExpired);
 
   return (
     <VStack gap="$4" width="100%">
@@ -191,7 +198,7 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
       )}
 
       {graceDuration > 0 && graceState !== "idle" && (
-        <VStack gap="$1">
+        <VStack>
           <HStack alignItems="center" gap="$2">
             <Progress
               flex={1}
@@ -216,11 +223,13 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
               </Text>
             )}
           </HStack>
-          {graceState === "expired" && (
-            <Text size="xs" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
-              {t("alarm.grace.expired")}
-            </Text>
-          )}
+          <LiveRegion testID={GRACE_STATUS_ID} message={graceExpired}>
+            {graceExpired && (
+              <Text size="xs" color="$error" textAlign="center" marginTop="$1">
+                {graceExpired}
+              </Text>
+            )}
+          </LiveRegion>
         </VStack>
       )}
 
