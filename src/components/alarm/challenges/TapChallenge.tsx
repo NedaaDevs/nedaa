@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { ChallengeDifficulty, CHALLENGE_DIFFICULTY_CONFIG } from "@/types/alarm";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
@@ -25,6 +26,9 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const [tapCount, setTapCount] = useState(0);
 
   const remainingTaps = requiredTaps - tapCount;
+  useIosAnnouncement(
+    remainingTaps > 0 ? t("a11y.alarm.tapsRemaining", { count: remainingTaps }) : null
+  );
 
   useEffect(() => {
     if (tapCount >= requiredTaps && !completedRef.current) {
