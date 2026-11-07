@@ -15,6 +15,8 @@
   "a11y.alarm.increaseMinutes": "زيادة الدقائق",
   "a11y.alarm.increaseVolume": "رفع مستوى الصوت",
   "a11y.alarm.mathProblem": "كم يساوي {{num1}} {{operation}} {{num2}}؟",
+  "a11y.alarm.newDhikr": "إجابة خاطئة. الذِّكر الجديد المطلوب كتابته: {{arabic}}",
+  "a11y.alarm.newProblem": "إجابة خاطئة. إليك مسألة جديدة. {{problem}}",
   "a11y.alarm.prayerAt": "{{prayer}} في {{time}}",
   "a11y.alarm.previewAlarm": "معاينة المنبّه، يرن خلال {{seconds}} ثانية",
   "a11y.alarm.ringingAnnouncement": "منبّه {{prayer}}. حان وقت الاستيقاظ للصلاة.",

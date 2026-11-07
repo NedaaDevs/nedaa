@@ -1,6 +1,8 @@
-import { FC, useState, useMemo, useCallback } from "react";
+import { FC, useState, useCallback } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { TextInput, Keyboard } from "react-native";
+import { announceMiss } from "@/components/alarm/challenges/announceMiss";
 import { useTheme } from "@/components/ui/theme-color";
 
 import { VStack } from "@/components/ui/vstack";
@@ -31,6 +33,11 @@ type Props = {
   onComplete: () => void;
   onInteraction?: () => void;
 };
+
+const OPERATION_SYMBOL: Record<Operation, string> = { "+": "+", "-": "−", "*": "×" };
+
+const describeProblem = (t: TFunction, { num1, num2, operation }: MathProblem) =>
+  t("a11y.alarm.mathProblem", { num1, operation: OPERATION_SYMBOL[operation], num2 });
 
 const generateProblem = (difficulty: ChallengeDifficulty): MathProblem => {
   const config = CHALLENGE_DIFFICULTY_CONFIG.math[difficulty];
@@ -92,12 +99,15 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
       const nextStrikes = strikeCount + 1;
       if (nextStrikes >= STRIKE_THRESHOLD) {
         // Too many misses on this problem — fresh problem, clean slate.
+        const next = generateProblem(difficulty);
         setStrikeCount(0);
         setUserAnswer("");
-        setProblem(generateProblem(difficulty));
+        setProblem(next);
+        announceMiss(t("a11y.alarm.newProblem", { problem: describeProblem(t, next) }));
       } else {
         // Keep the same problem and typed text so a typo can be fixed in place.
         setStrikeCount(nextStrikes);
+        announceMiss(t("alarm.challenge.wrongAnswer"));
       }
 
       setTimeout(() => setIsWrong(false), 500);
@@ -111,18 +121,10 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
     onInteraction,
     hapticSuccess,
     hapticError,
+    t,
   ]);
 
-  const operationSymbol = useMemo(() => {
-    switch (problem.operation) {
-      case "+":
-        return "+";
-      case "-":
-        return "−";
-      case "*":
-        return "×";
-    }
-  }, [problem.operation]);
+  const operationSymbol = OPERATION_SYMBOL[problem.operation];
 
   return (
     <VStack gap="$4" alignItems="center" width="100%">
@@ -136,12 +138,8 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
         backgroundColor="$backgroundMuted"
         borderWidth={2}
         borderColor={isWrong ? "$borderError" : "transparent"}
-        accessibilityLabel={t("a11y.alarm.mathProblem", {
-          num1: problem.num1,
-          operation: operationSymbol,
-          num2: problem.num2,
-        })}
-        accessibilityLiveRegion="polite">
+        accessible
+        accessibilityLabel={describeProblem(t, problem)}>
         <Text
           size="4xl"
           bold
@@ -184,7 +182,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
       </Button>
 
       {isWrong && (
-        <Text color="$error" size="sm" accessibilityLiveRegion="assertive">
+        <Text color="$error" size="sm">
           {t("alarm.challenge.wrongAnswer")}
         </Text>
       )}

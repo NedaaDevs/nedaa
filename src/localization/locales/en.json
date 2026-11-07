@@ -15,6 +15,8 @@
   "a11y.alarm.increaseMinutes": "Increase minutes",
   "a11y.alarm.increaseVolume": "Increase volume",
   "a11y.alarm.mathProblem": "{{num1}} {{operation}} {{num2}} equals what?",
+  "a11y.alarm.newDhikr": "Wrong answer. New dhikr to type: {{transliteration}}",
+  "a11y.alarm.newProblem": "Wrong answer. Here is a new problem. {{problem}}",
   "a11y.alarm.prayerAt": "{{prayer}} at {{time}}",
   "a11y.alarm.previewAlarm": "Preview alarm, rings in {{seconds}} seconds",
   "a11y.alarm.ringingAnnouncement": "{{prayer}} alarm. Time to wake up for prayer.",
