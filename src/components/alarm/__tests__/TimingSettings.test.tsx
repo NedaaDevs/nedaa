@@ -11,11 +11,14 @@ import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { AlarmType, TimingConfig } from "@/types/alarm";
 
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 
 const BEFORE_30: TimingConfig = { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 30 };
 const AT_PRAYER = i18n.t("alarm.settings.atPrayerTime");
 const BEFORE_PRAYER = i18n.t("alarm.settings.beforePrayerTime");
+
+const minutes = (count: number) => i18n.t("common.minute", { count });
 
 /** The offsets drawn as steps; a zero offset is the at-prayer mode. */
 const offsets = (alarmType: AlarmType) =>
@@ -40,6 +43,49 @@ describe("TimingSettings", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(
       ALARM_TIMING_CHOICES[ALARM_TYPE.FAJR].modes.length + offsets(ALARM_TYPE.FAJR).length
     );
+  });
+
+  it("reads one step as chosen, never every step up to it", async () => {
+    await renderTiming(ALARM_TYPE.FRIDAY, BEFORE_30);
+
+    expect(screen.getByRole("radio", { selected: true })).toBe(
+      screen.getByRole("radio", { name: minutes(30) })
+    );
+  });
+
+  it("writes the step pressed", async () => {
+    const onChange = jest.fn();
+    await renderTiming(ALARM_TYPE.FRIDAY, BEFORE_30, onChange);
+
+    await userEvent.press(screen.getByRole("radio", { name: minutes(45) }));
+
+    expect(onChange).toHaveBeenCalledWith({ ...BEFORE_30, minutesBefore: 45 });
+  });
+
+  // VoiceOver does not speak a group's name, so the caption stays readable.
+  it("names the steps' group and leaves its caption readable", async () => {
+    await renderTiming(ALARM_TYPE.FRIDAY, BEFORE_30);
+
+    const caption = i18n.t("alarm.settings.minutesBefore");
+    expect(screen.getByLabelText(caption)).toHaveProp("accessibilityRole", "radiogroup");
+    expect(screen.getByText(caption)).toBeOnTheScreen();
+  });
+
+  // A stored zero rings at the prayer time, which no step means.
+  it("marks no step for a stored zero, and a press on the first step saves it", async () => {
+    const onChange = jest.fn();
+    const zero = { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 0 };
+    await renderTiming(ALARM_TYPE.FAJR, zero, onChange);
+    const [first] = offsets(ALARM_TYPE.FAJR);
+
+    expect(screen.getByRole("radio", { name: minutes(first) })).toHaveProp(
+      "accessibilityState",
+      expect.objectContaining({ selected: false })
+    );
+
+    await userEvent.press(screen.getByRole("radio", { name: minutes(first) }));
+
+    expect(onChange).toHaveBeenCalledWith({ ...zero, minutesBefore: first });
   });
 
   it("moves Fajr before prayer at its default offset", async () => {
