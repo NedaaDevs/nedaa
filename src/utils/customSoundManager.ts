@@ -75,10 +75,7 @@ export function validateAudioFile(file: DocumentPicker.DocumentPickerAsset): {
   // Check file extension
   const extension = getFileExtension(file.name);
   if (!SUPPORTED_AUDIO_EXTENSIONS.includes(extension as any)) {
-    return {
-      valid: false,
-      error: `Unsupported file format. Supported formats: ${SUPPORTED_AUDIO_EXTENSIONS.join(", ")}`,
-    };
+    return { valid: false, error: CUSTOM_SOUND_ERROR.UNSUPPORTED };
   }
 
   // The picker copies into the cache, so a missing size is read from that copy.
@@ -247,7 +244,7 @@ export async function validateCustomSoundUri(contentUri: string): Promise<boolea
  */
 function getFileExtension(filename: string): string {
   const parts = filename.split(".");
-  return parts.length > 1 ? `.${parts[parts.length - 1]}` : "";
+  return parts.length > 1 ? `.${parts[parts.length - 1].toLowerCase()}` : "";
 }
 
 /**
