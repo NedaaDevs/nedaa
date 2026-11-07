@@ -19,6 +19,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { LiveRegion } from "@/components/ui/live-region";
 import { Pressable } from "@/components/ui/pressable";
 
 // Icons
@@ -26,23 +27,27 @@ import { X, Check, Upload, Speaker, TriangleAlert } from "lucide-react-native";
 
 // Types
 import type { NotificationType } from "@/types/notification";
-import type { AddCustomSoundResult } from "@/types/customSound";
+import { SUPPORTED_AUDIO_FORMATS, type AddCustomSoundResult } from "@/types/customSound";
 
 // Enums
 import { PlatformType } from "@/enums/app";
 
 // Constants
-import { CUSTOM_SOUND_ERROR, CUSTOM_SOUND_MAX_MB } from "@/constants/CustomSound";
+import {
+  CUSTOM_SOUND_ERROR,
+  CUSTOM_SOUND_MAX_MB,
+  CUSTOM_SOUND_STATUS_ID,
+} from "@/constants/CustomSound";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Utils
 import {
   pickAudioFile,
   addCustomSound,
-  formatFileSize,
   findDuplicateSound,
   validateAudioFile,
 } from "@/utils/customSoundManager";
+import { formatFileSizeLocale } from "@/utils/number";
 
 // Stores
 import { useCustomSoundsStore } from "@/stores/customSounds";
@@ -82,18 +87,34 @@ export default function AddCustomSoundModal({
     return null;
   }
 
-  const describeError = (code: string) =>
-    code === CUSTOM_SOUND_ERROR.TOO_LARGE
-      ? t("notification.customSound.fileTooLarge", { maxMb: CUSTOM_SOUND_MAX_MB })
-      : code;
+  // Any other failure reaches the reader as the general add error: the manager
+  // has logged it, and its text is English and technical.
+  const describeError = (code: string) => {
+    switch (code) {
+      case CUSTOM_SOUND_ERROR.TOO_LARGE:
+        return t("notification.customSound.fileTooLarge", { maxMb: CUSTOM_SOUND_MAX_MB });
+      case CUSTOM_SOUND_ERROR.UNSUPPORTED:
+        return t("notification.customSound.unsupportedFormat", {
+          formats: SUPPORTED_AUDIO_FORMATS,
+        });
+      default:
+        return t("notification.customSound.addError");
+    }
+  };
 
   const choose = (file: DocumentPicker.DocumentPickerAsset | null) => {
+    // A cancelled picker changes nothing, and keeps an approved duplicate.
     if (!file) return;
 
-    // A file over the size limit is refused before a name is typed for it.
-    if (validateAudioFile(file).error === CUSTOM_SOUND_ERROR.TOO_LARGE) {
+    setError(null);
+    setDuplicateWarning(null);
+    setForceAdd(false);
+
+    // A file the add would refuse is refused before a name is typed for it.
+    const refused = validateAudioFile(file).error;
+    if (refused) {
       setSelectedFile(null);
-      setError(describeError(CUSTOM_SOUND_ERROR.TOO_LARGE));
+      setError(describeError(refused));
       return;
     }
 
@@ -125,12 +146,9 @@ export default function AddCustomSoundModal({
   // Chains, not tries: the React Compiler cannot lower a try that holds a
   // `finally`, a `&&` or a ternary, and skips the whole modal.
   const handlePickFile = async () => {
-    setError(null);
-    setDuplicateWarning(null);
-    setForceAdd(false);
     await pickAudioFile()
       .then(choose)
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to pick file"));
+      .catch(() => setError(t("notification.customSound.pickError")));
   };
 
   const handleAdd = async () => {
@@ -158,9 +176,7 @@ export default function AddCustomSoundModal({
           setError(describeError(result.error));
         }
       })
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : t("notification.customSound.addError"))
-      );
+      .catch(() => setError(t("notification.customSound.addError")));
     setIsProcessing(false);
   };
 
@@ -174,6 +190,7 @@ export default function AddCustomSoundModal({
   };
 
   const canAdd = selectedFile && soundName.trim() && !isProcessing;
+  const fileSize = selectedFile ? formatFileSizeLocale(selectedFile.size ?? 0, t) : null;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg">
@@ -204,6 +221,9 @@ export default function AddCustomSoundModal({
                 disabled={isProcessing}
                 accessibilityRole="button"
                 accessibilityLabel={t("a11y.customSound.pickFile")}
+                accessibilityValue={
+                  selectedFile ? { text: `${selectedFile.name} ${fileSize}` } : undefined
+                }
                 borderWidth={2}
                 borderStyle="dashed"
                 borderRadius="$6"
@@ -222,7 +242,7 @@ export default function AddCustomSoundModal({
                     </Text>
                     {selectedFile && (
                       <Text size="xs" color="$typographySecondary" marginTop="$1">
-                        {formatFileSize(selectedFile.size ?? 0)}
+                        {fileSize}
                       </Text>
                     )}
                   </VStack>
@@ -254,11 +274,15 @@ export default function AddCustomSoundModal({
                 placeholderTextColor={theme.typographySecondary?.val}
               />
             </VStack>
+          </VStack>
 
+          {/* Stays mounted so Android speaks a message that arrives later. */}
+          <LiveRegion testID={CUSTOM_SOUND_STATUS_ID} message={error ?? duplicateWarning}>
             {/* Duplicate Warning Message */}
             {duplicateWarning && (
               <HStack
                 gap="$2"
+                marginTop="$5"
                 backgroundColor="$backgroundWarning"
                 borderWidth={1}
                 borderColor="$borderWarning"
@@ -275,6 +299,7 @@ export default function AddCustomSoundModal({
             {error && (
               <HStack
                 gap="$2"
+                marginTop="$5"
                 backgroundColor="$backgroundError"
                 borderWidth={1}
                 borderColor="$borderError"
@@ -286,7 +311,7 @@ export default function AddCustomSoundModal({
                 </Text>
               </HStack>
             )}
-          </VStack>
+          </LiveRegion>
         </ModalBody>
 
         <ModalFooter>
@@ -294,6 +319,7 @@ export default function AddCustomSoundModal({
             <Button
               size="lg"
               onPress={handleAdd}
+              accessibilityLabel={t("common.add")}
               backgroundColor={canAdd ? "$accentPrimary" : "$backgroundMuted"}
               borderRadius="$6"
               disabled={!canAdd}>

@@ -6,6 +6,10 @@ export const CUSTOM_SOUND_MAX_BYTES = CUSTOM_SOUND_MAX_MB * 1024 * 1024;
 export const CUSTOM_SOUND_ERROR = {
   DUPLICATE: "duplicate",
   TOO_LARGE: "tooLarge",
+  UNSUPPORTED: "unsupported",
 } as const;
+
+/** Test id of the add-sound modal's live region. */
+export const CUSTOM_SOUND_STATUS_ID = "custom-sound-status";
 
 export type CustomSoundError = (typeof CUSTOM_SOUND_ERROR)[keyof typeof CUSTOM_SOUND_ERROR];
