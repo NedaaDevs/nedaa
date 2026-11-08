@@ -353,6 +353,11 @@ const Settings = () => {
 
       <TimePicker
         isVisible={showTimePicker}
+        title={
+          activeTimeType === ATHKAR_TYPE.MORNING
+            ? t("settings.athkar.notifications.morning.title")
+            : t("settings.athkar.notifications.evening.title")
+        }
         currentHour={
           activeTimeType === "morning" ? morningNotification.hour : eveningNotification.hour
         }
