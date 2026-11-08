@@ -131,6 +131,7 @@
   "a11y.location.refreshHint": "يحدّث موقعك لحساب مواقيت صلاة دقيقة",
   "a11y.notification.customize": "تخصيص تنبيه {{name}}",
   "a11y.notification.customizeHint": "يفتح إعدادات التنبيهات لهذه الصلاة",
+  "a11y.notification.expandHint": "يعرض إعدادات كل صلاة أو يخفيها",
   "a11y.onboarding.changeLanguageHint": "يفتح قائمة اللغات",
   "a11y.onboarding.chooseCityManually": "اختيار المدينة يدويًا بدلًا من مشاركة الموقع",
   "a11y.onboarding.dayPreview.adaptiveChosen": "أصبح المظهر تلقائيًا.",
