@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { t } from "i18next";
 import { BackHandler, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -26,6 +27,10 @@ const convert12HourTo24Hour = (hour12: number, isPM: boolean) => {
   }
   return isPM ? hour12 + 12 : hour12;
 };
+
+// At the card's height limit the two lists shrink, down to a touch target's
+// height; the row and each radio group shrink with them.
+const LIST_STYLE = { height: 176, flexShrink: 1, minHeight: 44 };
 
 export type TimePickerBodyProps = {
   /** Says which time the picker sets; the time alone does not. */
@@ -70,6 +75,9 @@ export const TimePickerBody = ({
 
   const displayHour = use12HourFormat ? convert24HourTo12Hour(selectedHour) : selectedHour;
 
+  // The root safe area leaves the bottom inset to each screen.
+  const insets = useSafeAreaInsets();
+
   return (
     <Box
       position="absolute"
@@ -77,6 +85,7 @@ export const TimePickerBody = ({
       left={0}
       right={0}
       bottom={0}
+      paddingBottom={insets.bottom}
       backgroundColor="rgba(0,0,0,0.6)"
       zIndex={50}
       justifyContent="center"
@@ -88,6 +97,7 @@ export const TimePickerBody = ({
         padding="$6"
         marginHorizontal="$4"
         width={320}
+        maxHeight="100%"
         borderWidth={1}
         borderColor="$outline">
         <Text
@@ -110,7 +120,7 @@ export const TimePickerBody = ({
         </Box>
 
         {/* Time Selectors */}
-        <HStack gap="$4" justifyContent="space-between" marginBottom="$6">
+        <HStack gap="$4" justifyContent="space-between" marginBottom="$6" flexShrink={1}>
           {/* Hour Picker */}
           <VStack flex={1}>
             <Text
@@ -127,10 +137,11 @@ export const TimePickerBody = ({
               padding="$2"
               borderWidth={1}
               borderColor="$outline"
+              flexShrink={1}
               accessibilityRole="radiogroup"
               accessibilityLabel={t("common.hourLabel")}>
               <ScrollView
-                style={{ height: 176 }}
+                style={LIST_STYLE}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 4 }}>
                 {hours.map((hour) => (
@@ -190,10 +201,11 @@ export const TimePickerBody = ({
               padding="$2"
               borderWidth={1}
               borderColor="$outline"
+              flexShrink={1}
               accessibilityRole="radiogroup"
               accessibilityLabel={t("common.minute")}>
               <ScrollView
-                style={{ height: 176 }}
+                style={LIST_STYLE}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 4 }}>
                 {minutes.map((minute) => (
