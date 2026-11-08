@@ -20,7 +20,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
-/** Test id of the live region that says the grace ended. */
+/** Test id of the live region that says the final warning, then the end. */
 export const GRACE_STATUS_ID = "challenge-grace-status";
 
 type Props = {
@@ -171,7 +171,8 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
     graceRemaining <= 2 ? "$error" : graceRemaining <= 5 ? "$warning" : "$typographySecondary";
   const inGraceFinalStretch = graceState === "active" && graceRemaining <= 5;
   const graceExpired = graceState === "expired" ? t("alarm.grace.expired") : null;
-  useIosAnnouncement(inGraceFinalStretch ? t("a11y.alarm.graceFinalWarning") : graceExpired);
+  const graceStatus = inGraceFinalStretch ? t("a11y.alarm.graceFinalWarning") : graceExpired;
+  useIosAnnouncement(graceStatus);
 
   return (
     <VStack gap="$4" width="100%">
@@ -210,20 +211,12 @@ const ChallengeWrapper: FC<Props> = ({ config, onAllComplete, onGraceStart, onGr
               <ProgressFilledTrack bg={graceColor} />
             </Progress>
             {graceState === "active" && (
-              <Text
-                size="xs"
-                color={graceSecondsColor}
-                minWidth={26}
-                textAlign="center"
-                accessibilityLiveRegion={inGraceFinalStretch ? "polite" : "none"}
-                accessibilityLabel={
-                  inGraceFinalStretch ? t("a11y.alarm.graceFinalWarning") : undefined
-                }>
+              <Text size="xs" color={graceSecondsColor} minWidth={26} textAlign="center">
                 {`${graceSeconds}s`}
               </Text>
             )}
           </HStack>
-          <LiveRegion testID={GRACE_STATUS_ID} message={graceExpired}>
+          <LiveRegion testID={GRACE_STATUS_ID} message={graceStatus}>
             {graceExpired && (
               <Text size="xs" color="$error" textAlign="center" marginTop="$1">
                 {graceExpired}
