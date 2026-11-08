@@ -165,6 +165,7 @@ export const BottomSheetBackdrop = ({
   />
 );
 
+export const BottomSheetView = View;
 export const BottomSheetScrollView = ScrollView;
 export const BottomSheetFlatList = FlatList;
 export const BottomSheetTextInput = TextInput;

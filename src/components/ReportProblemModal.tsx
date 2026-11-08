@@ -22,6 +22,12 @@ import { HStack } from "@/components/ui/hstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon, MailIcon } from "@/components/ui/icon";
 import { MessageToast } from "@/components/feedback";
+import { SpokenStatus } from "@/components/ui/live-region";
+import {
+  REPORT_PROBLEM_STATUS_ID,
+  REPORT_SUBMIT_STATUS,
+  type ReportSubmitStatus,
+} from "@/constants/ReportProblem";
 import { AppLogger } from "@/utils/appLogger";
 import { submitFeedback, generateClientKey, utf8ByteLength } from "@/services/feedback";
 import { Report, Attachment, type ReportType, type OutgoingAttachment } from "@/types/feedback";
@@ -46,8 +52,6 @@ interface ReportProblemModalProps {
   onCopy?: () => Promise<void> | void;
 }
 
-type SubmitStatus = "idle" | "submitting" | "error";
-
 // One reusable "Report a problem" bottom sheet (alarm, athkar audio, app logs). The
 // user describes the issue; the primary action submits directly to Nedaa's servers
 // (same backend as Settings → Feedback). Other channels stay available below it:
@@ -69,7 +73,13 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const [description, setDescription] = useState("");
-  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
+  const [submitStatus, setSubmitStatus] = useState<ReportSubmitStatus>(REPORT_SUBMIT_STATUS.IDLE);
+  const submitting = submitStatus === REPORT_SUBMIT_STATUS.SUBMITTING;
+  const sendLabel = t(
+    submitting ? "settings.shareLogs.sending" : "settings.shareLogs.submitDirect"
+  );
+  const failure =
+    submitStatus === REPORT_SUBMIT_STATUS.ERROR ? t("settings.shareLogs.submitFailed") : null;
 
   const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
   const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
@@ -96,7 +106,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
 
   const handleDismiss = useCallback(() => {
     setDescription("");
-    setSubmitStatus("idle");
+    setSubmitStatus(REPORT_SUBMIT_STATUS.IDLE);
     onClose();
   }, [onClose]);
 
@@ -126,7 +136,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   // Feedback), skipping the OS share sheet entirely. Stays open on failure so the
   // user can retry or fall back to one of the channels below instead.
   const handleDirectSubmit = async () => {
-    setSubmitStatus("submitting");
+    setSubmitStatus(REPORT_SUBMIT_STATUS.SUBMITTING);
     try {
       const { full, sum } = await compose();
       const attachment: OutgoingAttachment = {
@@ -142,12 +152,12 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
         attachments: [attachment],
         clientKey: generateClientKey(),
       });
-      setSubmitStatus("idle");
+      setSubmitStatus(REPORT_SUBMIT_STATUS.IDLE);
       MessageToast.showSuccess(t("settings.shareLogs.submitted"));
       onClose();
     } catch (e) {
       console.error("Failed to submit report directly:", e);
-      setSubmitStatus("error");
+      setSubmitStatus(REPORT_SUBMIT_STATUS.ERROR);
     }
   };
 
@@ -272,17 +282,13 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
             backgroundColor="$accentPrimary"
             alignItems="center"
             justifyContent="center"
-            opacity={submitStatus === "submitting" ? 0.7 : 1}
-            onPress={submitStatus === "submitting" ? undefined : handleDirectSubmit}
+            opacity={submitting ? 0.7 : 1}
+            onPress={submitting ? undefined : handleDirectSubmit}
             accessibilityRole="button"
-            accessibilityLabel={t(
-              submitStatus === "submitting"
-                ? "settings.shareLogs.sending"
-                : "settings.shareLogs.submitDirect"
-            )}
-            accessibilityState={{ disabled: submitStatus === "submitting" }}>
+            accessibilityLabel={sendLabel}
+            accessibilityState={{ disabled: submitting }}>
             <HStack alignItems="center" gap="$2">
-              {submitStatus === "submitting" ? (
+              {submitting ? (
                 <ActivityIndicator size="small" color={theme.typographyContrast?.val} />
               ) : (
                 <Icon as={Send} size="lg" color="$typographyContrast" />
@@ -295,20 +301,21 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
                 // Balance the Android-only paddingEnd the Text component adds for
                 // Arabic glyph measurement, so the label stays centered in this row.
                 style={Platform.OS === "android" ? { paddingStart: 8 } : undefined}>
-                {t(
-                  submitStatus === "submitting"
-                    ? "settings.shareLogs.sending"
-                    : "settings.shareLogs.submitDirect"
-                )}
+                {sendLabel}
               </Text>
             </HStack>
           </Pressable>
 
-          {submitStatus === "error" && (
-            <Text size="xs" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
-              {t("settings.shareLogs.submitFailed")}
+          {failure !== null && (
+            <Text size="xs" color="$error" textAlign="center">
+              {failure}
             </Text>
           )}
+          {/* Mounted before the send, so TalkBack hears each change. */}
+          <SpokenStatus
+            testID={REPORT_PROBLEM_STATUS_ID}
+            message={submitting ? sendLabel : failure}
+          />
 
           <Text size="xs" color="$typographySecondary" textAlign="center">
             {t("settings.shareLogs.orShareVia")}
