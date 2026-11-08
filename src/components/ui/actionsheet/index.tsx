@@ -48,6 +48,7 @@ import {
 import { BlurTargetView } from "expo-blur";
 import { X } from "lucide-react-native";
 import { useAppCovered, useCoverApp, useSheetLayer } from "@/components/ui/actionsheet/cover";
+import { SheetBackground, UNGROUPED_CONTENT } from "@/components/ui/sheet-chrome";
 import { Icon } from "@/components/ui/icon";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { useElevationShadow } from "@/components/ui/material/edge";
@@ -344,20 +345,12 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       onDismiss={handleDismiss}
       animationConfigs={SPRING.SETTLE}
       overrideReduceMotion={reduced ? ReduceMotion.Always : ReduceMotion.Never}
-      // gorhom's defaults make the content one "Bottom Sheet" element.
-      accessible={false}
-      accessibilityLabel={null}
-      accessibilityRole={null}
+      {...UNGROUPED_CONTENT}
       containerComponent={renderLayer}
       backdropComponent={renderBackdrop}
       handleComponent={renderHandle}
-      backgroundStyle={{
-        backgroundColor: theme.raised.val,
-        // Set explicitly, or gorhom's own default applies.
-        borderTopLeftRadius: getTokenValue("$sheet", "radius"),
-        borderTopRightRadius: getTokenValue("$sheet", "radius"),
-        boxShadow: shadow,
-      }}>
+      backgroundComponent={SheetBackground}
+      backgroundStyle={{ backgroundColor: theme.raised.val, boxShadow: shadow }}>
       <TitleContext value={title}>
         <BlurTargetContext value={blurTarget}>{children}</BlurTargetContext>
       </TitleContext>

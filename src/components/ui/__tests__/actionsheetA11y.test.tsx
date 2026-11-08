@@ -15,7 +15,7 @@ import {
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import i18n from "@/localization/i18n";
-import { BOTTOM_SHEET_PART, modalProps } from "@/test-helpers/bottomSheetMock";
+import { gorhomStops, modalProps } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -88,14 +88,10 @@ describe("Actionsheet accessibility", () => {
     expect(layer.props.accessibilityViewIsModal).toBe(true);
   });
 
-  // gorhom groups its content into one "Bottom Sheet" element unless told not to.
-  it("lets a screen reader reach each part of the content", async () => {
+  it("adds no screen-reader stop of gorhom's own", async () => {
     await renderWithTheme(<Screen open />);
 
-    const content = screen.getByTestId(BOTTOM_SHEET_PART.CONTENT, hidden);
-    expect(content.props.accessible).toBeFalsy();
-    expect(content.props.accessibilityLabel).toBeUndefined();
-    expect(content.props.accessibilityRole).toBeUndefined();
+    expect(gorhomStops()).toEqual([]);
   });
 
   it("moves screen-reader focus to the title once the sheet is up", async () => {
