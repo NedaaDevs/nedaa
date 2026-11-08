@@ -109,6 +109,7 @@
   "a11y.location.refreshHint": "Refreshes your GPS location for accurate prayer times",
   "a11y.notification.customize": "Customize {{name}} notification",
   "a11y.notification.customizeHint": "Opens notification settings for this prayer",
+  "a11y.notification.expandHint": "Shows or hides each prayer's settings",
   "a11y.onboarding.changeLanguageHint": "Opens the list of languages",
   "a11y.onboarding.chooseCityManually": "Choose my city instead of sharing location",
   "a11y.onboarding.dayPreview.adaptiveChosen": "Your look is now Adaptive.",
