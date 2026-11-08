@@ -2,12 +2,13 @@ import { FC, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, BackHandler, Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+  DismissBackdrop,
+  SheetBackground,
+  SilentHandle,
+  UNGROUPED_CONTENT,
+} from "@/components/ui/sheet-chrome";
 import { SheetInput } from "@/components/ui/sheet-input";
 import { openComposer } from "react-native-email-link";
 import * as MailComposer from "expo-mail-composer";
@@ -109,18 +110,6 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
     setSubmitStatus(REPORT_SUBMIT_STATUS.IDLE);
     onClose();
   }, [onClose]);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   // Build the full report and short summary, threading the user's note into both.
   const compose = async () => {
@@ -248,14 +237,13 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
       onDismiss={handleDismiss}
       enablePanDownToClose
       enableDynamicSizing
-      // gorhom's defaults make the content one "Bottom Sheet" element.
-      accessible={false}
-      accessibilityLabel={null}
-      accessibilityRole={null}
+      {...UNGROUPED_CONTENT}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
-      backdropComponent={renderBackdrop}
+      backdropComponent={DismissBackdrop}
+      backgroundComponent={SheetBackground}
+      handleComponent={SilentHandle}
       backgroundStyle={{ backgroundColor: theme.backgroundSecondary?.val ?? theme.background?.val }}
       handleIndicatorStyle={{
         backgroundColor: theme.typographySecondary?.val ?? theme.outline?.val,
