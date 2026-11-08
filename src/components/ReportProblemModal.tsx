@@ -248,6 +248,10 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
       onDismiss={handleDismiss}
       enablePanDownToClose
       enableDynamicSizing
+      // gorhom's defaults make the content one "Bottom Sheet" element.
+      accessible={false}
+      accessibilityLabel={null}
+      accessibilityRole={null}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"

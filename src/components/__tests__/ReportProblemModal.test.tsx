@@ -6,6 +6,7 @@ import { REPORT_PROBLEM_STATUS_ID } from "@/constants/ReportProblem";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { submitFeedback } from "@/services/feedback";
+import { BOTTOM_SHEET_PART } from "@/test-helpers/bottomSheetMock";
 import { layOut } from "@/test-helpers/layout";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -48,6 +49,16 @@ describe("ReportProblemModal", () => {
   });
   afterEach(() => {
     Platform.OS = PLATFORM;
+  });
+
+  // gorhom groups its content into one "Bottom Sheet" element unless told not to.
+  it("lets a screen reader reach each part of the sheet", async () => {
+    await openSheet();
+
+    const content = screen.getByTestId(BOTTOM_SHEET_PART.CONTENT);
+    expect(content.props.accessible).toBeFalsy();
+    expect(content.props.accessibilityLabel).toBeUndefined();
+    expect(content.props.accessibilityRole).toBeUndefined();
   });
 
   it("says on iOS that the report did not send", async () => {
