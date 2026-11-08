@@ -199,6 +199,7 @@
   "a11y.settings.widgets.persistentNotification": "Prayer times in your notifications",
   "a11y.shareStreak": "Share your streak",
   "a11y.shareStreakHint": "Opens a shareable image of your streak",
+  "a11y.sheet.dismissHint": "Closes the sheet",
   "a11y.stepProgress": "Step {{current}} of {{total}}",
   "a11y.tab.athkar": "Athkar",
   "a11y.tab.home": "Today",

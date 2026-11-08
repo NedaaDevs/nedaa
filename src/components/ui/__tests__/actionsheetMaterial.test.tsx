@@ -10,6 +10,7 @@ import {
   ActionsheetContent,
   ActionsheetHero,
 } from "@/components/ui/actionsheet";
+import { SHEET_CHROME_PART } from "@/components/ui/sheet-chrome";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ELEVATION } from "@/constants/Elevation";
 import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
@@ -87,23 +88,21 @@ describe("Actionsheet surface", () => {
   it("lifts the sheet with the e3 shadow pair", async () => {
     await renderWithTheme(<Sheet open />);
 
-    expect(sheetProps()?.backgroundStyle?.boxShadow).toBe(ELEVATION.e3.boxShadow.light);
+    expect(styleOf(SHEET_CHROME_PART.BACKGROUND).boxShadow).toBe(ELEVATION.e3.boxShadow.light);
   });
 
-  // gorhom applies its own default radius when none is set.
-  it("rounds the sheet's top corners at $sheet", async () => {
+  it("rounds the sheet at $sheet", async () => {
     await renderWithTheme(<Sheet open />);
 
-    expect(sheetProps()?.backgroundStyle).toMatchObject({
-      borderTopLeftRadius: getTokenValue("$sheet", "radius"),
-      borderTopRightRadius: getTokenValue("$sheet", "radius"),
+    expect(styleOf(SHEET_CHROME_PART.BACKGROUND)).toMatchObject({
+      borderRadius: getTokenValue("$sheet", "radius"),
     });
   });
 
   it("fills the sheet body with the raised colour", async () => {
     await renderWithTheme(<Sheet open />);
 
-    expect(sheetProps()?.backgroundStyle?.backgroundColor).toBe(NEDAA_LIGHT.raised.hex);
+    expect(styleOf(SHEET_CHROME_PART.BACKGROUND).backgroundColor).toBe(NEDAA_LIGHT.raised.hex);
   });
 
   // A tall sheet stops this far below the status bar.

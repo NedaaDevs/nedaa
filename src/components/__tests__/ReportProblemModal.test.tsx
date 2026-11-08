@@ -1,12 +1,13 @@
 import { AccessibilityInfo, Platform } from "react-native";
 import { screen, userEvent, waitFor } from "@testing-library/react-native";
+import { getTokenValue } from "tamagui";
 
 import ReportProblemModal from "@/components/ReportProblemModal";
 import { REPORT_PROBLEM_STATUS_ID } from "@/constants/ReportProblem";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { submitFeedback } from "@/services/feedback";
-import { BOTTOM_SHEET_PART } from "@/test-helpers/bottomSheetMock";
+import { BOTTOM_SHEET_PART, gorhomStops } from "@/test-helpers/bottomSheetMock";
 import { layOut } from "@/test-helpers/layout";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -26,12 +27,13 @@ const SENDING = t("settings.shareLogs.sending");
 const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
 // A send that never settles holds the sheet in its sending state.
 const pending = () => new Promise<never>(() => {});
+const onClose = jest.fn();
 
 const openSheet = () =>
   renderWithTheme(
     <ReportProblemModal
       isOpen
-      onClose={jest.fn()}
+      onClose={onClose}
       emailSubject="Subject"
       getReportText={async () => "Report"}
       getSummaryText={async () => "Summary"}
@@ -51,14 +53,27 @@ describe("ReportProblemModal", () => {
     Platform.OS = PLATFORM;
   });
 
-  // gorhom groups its content into one "Bottom Sheet" element unless told not to.
-  it("lets a screen reader reach each part of the sheet", async () => {
+  it("adds no screen-reader stop of gorhom's own", async () => {
     await openSheet();
 
-    const content = screen.getByTestId(BOTTOM_SHEET_PART.CONTENT);
-    expect(content.props.accessible).toBeFalsy();
-    expect(content.props.accessibilityLabel).toBeUndefined();
-    expect(content.props.accessibilityRole).toBeUndefined();
+    expect(gorhomStops()).toEqual([]);
+  });
+
+  // No close button: on iOS the backdrop is VoiceOver's only way out.
+  it("closes from a backdrop named in the app's language", async () => {
+    await openSheet();
+
+    await userEvent.press(screen.getByRole("button", { name: t("a11y.dismiss") }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws the handle bar in the secondary text colour", async () => {
+    await openSheet();
+
+    expect(screen.getByTestId(BOTTOM_SHEET_PART.HANDLE_BAR)).toHaveStyle({
+      backgroundColor: getTokenValue("$lightTypographySecondary", "color"),
+    });
   });
 
   it("says on iOS that the report did not send", async () => {
