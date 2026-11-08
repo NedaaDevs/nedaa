@@ -1,6 +1,8 @@
-import { screen, userEvent, waitFor } from "@testing-library/react-native";
+import { Alert } from "react-native";
+import { screen, userEvent, waitFor, within } from "@testing-library/react-native";
 
 import AudioSettings from "@/components/athkar/AudioSettings";
+import { PLAYBACK_MODE } from "@/constants/AthkarAudio";
 import { TOAST_KIND } from "@/constants/Toast";
 import i18n from "@/localization/i18n";
 import { audioDownloadManager } from "@/services/athkar-audio-download";
@@ -44,12 +46,15 @@ jest.mock("@/components/athkar/AudioOnboarding", () => ({ __esModule: true, defa
 jest.mock("@/components/ReportProblemModal", () => ({ __esModule: true, default: () => null }));
 
 const t = i18n.t.bind(i18n);
+const NAME = RECITER.name.en;
+const DELETE = t("a11y.join", { first: t("common.delete"), second: NAME });
+const ON_DEVICE = [{ reciterId: RECITER.id, size: RECITER.totalSize }];
 
 // Choosing a reciter whose pack is not on the device downloads it.
 const downloadFirstPack = async (result: PackResult) => {
   jest.mocked(audioDownloadManager.downloadPack).mockResolvedValue(result);
   await renderWithTheme(<AudioSettings />);
-  await userEvent.press(await screen.findByText(RECITER.name.en));
+  await userEvent.press(await screen.findByText(NAME));
 };
 
 describe("AudioSettings", () => {
@@ -82,5 +87,54 @@ describe("AudioSettings", () => {
 
     await waitFor(() => expect(audioDownloadManager.getStorageBreakdown).toHaveBeenCalledTimes(2));
     expect(useToastStore.getState().toast?.kind).toBe(TOAST_KIND.WARNING);
+  });
+
+  it("groups the reciters as one named choice", async () => {
+    await renderWithTheme(<AudioSettings />);
+
+    await screen.findByText(NAME);
+    const reciters = screen.getByLabelText(t("settings.athkarAudio.reciter"));
+    expect(reciters).toHaveProp("accessibilityRole", "radiogroup");
+    expect(within(reciters).getAllByRole("radio")).toHaveLength(1);
+  });
+
+  // The radio's name hides the line under it, so it says that line too.
+  it("groups the playback modes and says what each one does", async () => {
+    useAthkarAudioStore.setState({ playbackMode: PLAYBACK_MODE.OFF });
+    await renderWithTheme(<AudioSettings />);
+
+    const modes = screen.getByLabelText(t("settings.athkarAudio.playbackMode"));
+    expect(modes).toHaveProp("accessibilityRole", "radiogroup");
+    expect(
+      within(modes).getByRole("radio", {
+        name: t("a11y.join", {
+          first: t("settings.athkarAudio.mode.off"),
+          second: t("settings.athkarAudio.mode.offDesc"),
+        }),
+        selected: true,
+      })
+    ).toBeTruthy();
+  });
+
+  // The storage list holds one delete button per reciter.
+  it("names each delete button with its reciter", async () => {
+    jest.mocked(audioDownloadManager.getStorageBreakdown).mockResolvedValue(ON_DEVICE);
+    await renderWithTheme(<AudioSettings />);
+
+    expect(await screen.findByRole("button", { name: DELETE })).toBeTruthy();
+  });
+
+  it("names the reciter in the delete confirmation", async () => {
+    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    jest.mocked(audioDownloadManager.getStorageBreakdown).mockResolvedValue(ON_DEVICE);
+    await renderWithTheme(<AudioSettings />);
+
+    await userEvent.press(await screen.findByRole("button", { name: DELETE }));
+
+    expect(alert).toHaveBeenCalledWith(
+      t("settings.athkarAudio.deleteConfirm.title"),
+      t("settings.athkarAudio.deleteConfirm.reciterMessage", { name: NAME }),
+      expect.any(Array)
+    );
   });
 });

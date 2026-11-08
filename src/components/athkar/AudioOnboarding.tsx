@@ -301,7 +301,10 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                 </VStack>
 
                 <ScrollView style={{ maxHeight: 300 }}>
-                  <VStack gap="$2">
+                  <VStack
+                    gap="$2"
+                    accessibilityRole="radiogroup"
+                    accessibilityLabel={t("settings.athkarAudio.reciter")}>
                     {reciters.map((reciter) => (
                       <ReciterCard
                         key={reciter.id}
@@ -335,14 +338,20 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                   </Text>
                 </VStack>
 
-                <VStack gap="$2">
+                <VStack
+                  gap="$2"
+                  accessibilityRole="radiogroup"
+                  accessibilityLabel={t("athkar.onboarding.mode.title")}>
                   {modeOptions.map((option) => (
                     <Pressable
                       key={option.mode}
                       onPress={() => setSelectedMode(option.mode)}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: selectedMode === option.mode }}
-                      accessibilityLabel={t(option.titleKey)}>
+                      accessibilityLabel={t("a11y.join", {
+                        first: t(option.titleKey),
+                        second: t(option.descKey),
+                      })}>
                       <Box
                         padding="$3"
                         borderRadius="$6"

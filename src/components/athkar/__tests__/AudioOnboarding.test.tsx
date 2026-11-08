@@ -1,5 +1,5 @@
 import { AccessibilityInfo, Platform } from "react-native";
-import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { act, screen, userEvent, waitFor, within } from "@testing-library/react-native";
 
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 import { TOAST_KIND } from "@/constants/Toast";
@@ -15,7 +15,7 @@ import {
   RECITER,
   type PackResult,
 } from "@/test-helpers/athkarAudio";
-import { later } from "@/test-helpers/promises";
+import { later, never } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -113,5 +113,32 @@ describe("AudioOnboarding", () => {
     await reopen();
 
     expect(announce).not.toHaveBeenCalledWith(COMPLETE);
+  });
+
+  it("groups the reciters as one named choice", async () => {
+    await renderWithTheme(<AudioOnboarding isOpen onClose={jest.fn()} />);
+
+    await screen.findByText(RECITER.name.en);
+    const reciters = screen.getByLabelText(t("settings.athkarAudio.reciter"));
+    expect(reciters).toHaveProp("accessibilityRole", "radiogroup");
+    expect(within(reciters).getAllByRole("radio")).toHaveLength(1);
+  });
+
+  // The radio's name hides the line under it, so it says that line too.
+  it("groups the playback modes and says what each one does", async () => {
+    downloadPack.mockReturnValue(never<PackResult>());
+    await leaveReciterStep();
+
+    const modes = await screen.findByLabelText(t("athkar.onboarding.mode.title"));
+    expect(modes).toHaveProp("accessibilityRole", "radiogroup");
+    expect(
+      within(modes).getByRole("radio", {
+        name: t("a11y.join", {
+          first: t("athkar.onboarding.mode.autopilot.title"),
+          second: t("athkar.onboarding.mode.autopilot.description"),
+        }),
+        selected: true,
+      })
+    ).toBeTruthy();
   });
 });

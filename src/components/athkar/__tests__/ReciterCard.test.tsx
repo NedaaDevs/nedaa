@@ -16,20 +16,15 @@ const join = (...parts: string[]) =>
 
 const renderCard = (
   selected: boolean,
-  {
-    onSelect = jest.fn(),
-    downloaded,
-    isDownloading,
-  }: Partial<ComponentProps<typeof ReciterCard>> = {}
+  { onSelect = jest.fn(), ...props }: Partial<ComponentProps<typeof ReciterCard>> = {}
 ) =>
   renderWithTheme(
     <ReciterCard
       reciter={RECITER}
       selected={selected}
-      downloaded={downloaded}
-      isDownloading={isDownloading}
       onSelect={onSelect}
       onPlaySample={jest.fn()}
+      {...props}
     />
   );
 
@@ -79,9 +74,20 @@ describe("ReciterCard", () => {
     expect(onSelect).toHaveBeenCalledWith(RECITER.id);
   });
 
-  it("keeps the sample button reachable on its own", async () => {
+  // A list holds one sample button per reciter, so each says whose it is.
+  it("names the sample button with its reciter", async () => {
     await renderCard(false);
 
-    expect(screen.getByRole("button", { name: i18n.t("a11y.athkar.playSample") })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: join(t("a11y.athkar.playSample"), NAME) })
+    ).toBeTruthy();
+  });
+
+  it("names the stop button with its reciter while the sample plays", async () => {
+    await renderCard(false, { isSamplePlaying: true });
+
+    expect(
+      screen.getByRole("button", { name: join(t("a11y.athkar.stopSample"), NAME) })
+    ).toBeTruthy();
   });
 });
