@@ -49,6 +49,7 @@
   "a11y.athkar.overallProgress": "التقدم الإجمالي",
   "a11y.athkar.playSample": "تشغيل عينة",
   "a11y.athkar.reciterSelected": "{{name}}، محدد",
+  "a11y.athkar.retrying": "جارٍ إعادة تنزيل الصوت",
   "a11y.athkar.sessionProgress": "تقدم الجلسة",
   "a11y.athkar.stopSample": "إيقاف العينة",
   "a11y.athkar.tapToCount": "اضغط للعدّ، واضغط مطوّلًا لإضافة عشر مرات",

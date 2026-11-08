@@ -1,6 +1,13 @@
 import { FC, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Easing, Image, View, useAnimatedValue } from "react-native";
+import {
+  Animated,
+  Easing,
+  GestureResponderEvent,
+  Image,
+  View,
+  useAnimatedValue,
+} from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "@/components/ui/theme-color";
 
@@ -49,6 +56,17 @@ const ReciterCard: FC<Props> = ({
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const name = reciterRegistry.getLocalizedName(reciter.name, i18n.language);
+  const size = formatFileSize(reciter.totalSize);
+  const downloadedNote = downloaded === true ? t("athkar.audio.downloaded") : null;
+  // A label hides the text inside the radio, and the badge has no words.
+  const label = [
+    selected ? t("a11y.athkar.reciterSelected", { name }) : name,
+    size,
+    downloadedNote,
+    selected && isDownloading ? t("a11y.athkar.downloading") : null,
+  ]
+    .filter((part) => part !== null)
+    .reduce((first, second) => t("a11y.join", { first, second }));
 
   const reduceMotion = useReducedMotion();
 
@@ -89,7 +107,7 @@ const ReciterCard: FC<Props> = ({
             accessible
             role="radio"
             accessibilityState={{ selected }}
-            accessibilityLabel={selected ? t("a11y.athkar.reciterSelected", { name }) : name}>
+            accessibilityLabel={label}>
             {reciter.avatar ? (
               <Image
                 source={{ uri: reciter.avatar }}
@@ -114,8 +132,8 @@ const ReciterCard: FC<Props> = ({
                 {name}
               </Text>
               <Text size="sm" color={selected ? "$typographyContrast" : "$typographySecondary"}>
-                {formatFileSize(reciter.totalSize)}
-                {downloaded === true ? ` · ${t("athkar.audio.downloaded")}` : ""}
+                {size}
+                {downloadedNote === null ? "" : ` · ${downloadedNote}`}
               </Text>
             </VStack>
           </Pressable>
@@ -139,7 +157,7 @@ const ReciterCard: FC<Props> = ({
                 </Svg>
               )}
               <Pressable
-                onPress={(e: any) => {
+                onPress={(e: GestureResponderEvent) => {
                   e.stopPropagation();
                   if (isSamplePlaying) {
                     onStopSample?.();
