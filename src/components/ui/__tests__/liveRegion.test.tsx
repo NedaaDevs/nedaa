@@ -58,8 +58,9 @@ describe("SpokenStatus", () => {
     expect(announce).not.toHaveBeenCalled();
 
     await screen.rerender(<SpokenStatus testID={REGION} message={MESSAGE} />);
+    await screen.rerender(<SpokenStatus testID={REGION} message={NEXT} />);
 
-    expect(announce).toHaveBeenCalledWith(MESSAGE);
+    expect(announce.mock.calls).toEqual([[MESSAGE], [NEXT]]);
     expect(screen.queryByTestId(REGION)).toBeNull();
   });
 
@@ -70,9 +71,11 @@ describe("SpokenStatus", () => {
     await layOut(mounted);
 
     await screen.rerender(<SpokenStatus testID={REGION} message={MESSAGE} />);
+    expect(mounted).toHaveProp("accessibilityLabel", MESSAGE);
+    await screen.rerender(<SpokenStatus testID={REGION} message={NEXT} />);
 
     expect(region()).toBe(mounted);
-    expect(mounted).toHaveProp("accessibilityLabel", MESSAGE);
+    expect(mounted).toHaveProp("accessibilityLabel", NEXT);
     expect(mounted).toHaveProp("accessibilityLiveRegion", "polite");
     expect(announce).not.toHaveBeenCalled();
   });
