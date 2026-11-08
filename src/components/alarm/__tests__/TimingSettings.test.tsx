@@ -24,10 +24,6 @@ const minutes = (count: number) => i18n.t("common.minute", { count });
 /** The names of the choice groups the picker can draw. */
 const GROUP_NAMES = [i18n.t("alarm.settings.timing"), i18n.t("alarm.settings.minutesBefore")];
 
-/** The offsets drawn as steps; a zero offset is the at-prayer mode. */
-const offsets = (alarmType: AlarmType) =>
-  ALARM_TIMING_CHOICES[alarmType].minuteSteps.filter((minutes) => minutes > 0);
-
 const renderTiming = (alarmType: AlarmType, value: TimingConfig, onChange = jest.fn()) =>
   renderWithTheme(<TimingSettings value={value} alarmType={alarmType} onChange={onChange} />);
 
@@ -36,17 +32,18 @@ describe("TimingSettings", () => {
     await renderTiming(ALARM_TYPE.FRIDAY, BEFORE_30);
 
     expect(screen.queryByRole("radio", { name: AT_PRAYER })).toBeNull();
-    expect(screen.getAllByRole("radio")).toHaveLength(offsets(ALARM_TYPE.FRIDAY).length);
+    expect(screen.getAllByRole("radio")).toHaveLength(
+      ALARM_TIMING_CHOICES[ALARM_TYPE.FRIDAY].minuteSteps.length
+    );
   });
 
   it("offers Fajr both modes and its before-prayer steps", async () => {
     await renderTiming(ALARM_TYPE.FAJR, BEFORE_30);
+    const { modes, minuteSteps } = ALARM_TIMING_CHOICES[ALARM_TYPE.FAJR];
 
     expect(screen.getByRole("radio", { name: AT_PRAYER })).toBeOnTheScreen();
     expect(screen.getByRole("radio", { name: BEFORE_PRAYER })).toBeOnTheScreen();
-    expect(screen.getAllByRole("radio")).toHaveLength(
-      ALARM_TIMING_CHOICES[ALARM_TYPE.FAJR].modes.length + offsets(ALARM_TYPE.FAJR).length
-    );
+    expect(screen.getAllByRole("radio")).toHaveLength(modes.length + minuteSteps.length);
   });
 
   it("reads one step as chosen, never every step up to it", async () => {
@@ -80,7 +77,7 @@ describe("TimingSettings", () => {
     const onChange = jest.fn();
     const zero = { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 0 };
     await renderTiming(ALARM_TYPE.FAJR, zero, onChange);
-    const [first] = offsets(ALARM_TYPE.FAJR);
+    const [first] = ALARM_TIMING_CHOICES[ALARM_TYPE.FAJR].minuteSteps;
 
     expect(screen.getByRole("radio", { name: minutes(first) })).toHaveProp(
       "accessibilityState",
