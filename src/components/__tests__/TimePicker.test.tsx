@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react-native";
 
 import TimePicker from "@/components/TimePicker";
 
-// Each entry is one MOUNT of the body with the props it mounted with. A re-render of
-// an already-mounted body adds nothing, so the length counts remounts.
+// One entry per MOUNT of the body, with the props it mounted with; a re-render
+// adds nothing, so the length counts remounts.
 const mockMounts: { currentHour: number; currentMinute: number }[] = [];
 
 jest.mock("@/components/TimePickerBody", () => ({
@@ -19,11 +19,13 @@ jest.mock("@/components/TimePickerBody", () => ({
 }));
 
 const noop = () => {};
+const TITLE = "Reminder time";
 
 const show = (props: Partial<React.ComponentProps<typeof TimePicker>>) =>
   render(
     <TimePicker
       isVisible
+      title={TITLE}
       currentHour={7}
       currentMinute={30}
       onTimeChange={noop}
@@ -51,7 +53,14 @@ describe("TimePicker", () => {
   it("restarts the body when the caller supplies a new time while open", async () => {
     await show({});
     await screen.rerender(
-      <TimePicker isVisible currentHour={9} currentMinute={15} onTimeChange={noop} onClose={noop} />
+      <TimePicker
+        isVisible
+        title={TITLE}
+        currentHour={9}
+        currentMinute={15}
+        onTimeChange={noop}
+        onClose={noop}
+      />
     );
     expect(mockMounts).toEqual([
       { currentHour: 7, currentMinute: 30 },
@@ -64,6 +73,7 @@ describe("TimePicker", () => {
     await screen.rerender(
       <TimePicker
         isVisible
+        title={TITLE}
         currentHour={7}
         currentMinute={30}
         onTimeChange={noop}

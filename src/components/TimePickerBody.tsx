@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { t } from "i18next";
-import { ScrollView } from "react-native";
+import { BackHandler, ScrollView } from "react-native";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -28,6 +28,8 @@ const convert12HourTo24Hour = (hour12: number, isPM: boolean) => {
 };
 
 export type TimePickerBodyProps = {
+  /** Says which time the picker sets; the time alone does not. */
+  title: string;
   currentHour: number;
   currentMinute: number;
   onTimeChange: (hour: number, minute: number) => void;
@@ -39,6 +41,7 @@ export type TimePickerBodyProps = {
 // The picker surface. Its selection seeds from the caller's time when it mounts and
 // then belongs to the user; the gate in TimePicker remounts it for a new time.
 export const TimePickerBody = ({
+  title,
   currentHour,
   currentMinute,
   onTimeChange,
@@ -48,6 +51,17 @@ export const TimePickerBody = ({
 }: TimePickerBodyProps) => {
   const [selectedHour, setSelectedHour] = useState(currentHour);
   const [selectedMinute, setSelectedMinute] = useState(currentMinute);
+
+  // Back cancels, as the Cancel button does. The listener registers once, so
+  // a dialog opened above this one stays first.
+  const cancel = useEffectEvent(() => onClose());
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      cancel();
+      return true;
+    });
+    return () => subscription.remove();
+  }, []);
 
   const hours = use12HourFormat
     ? Array.from({ length: 12 }, (_, i) => i + 1) // 1-12 for 12-hour format
@@ -76,6 +90,16 @@ export const TimePickerBody = ({
         width={320}
         borderWidth={1}
         borderColor="$outline">
+        <Text
+          accessibilityRole="header"
+          size="xl"
+          bold
+          color="$typography"
+          textAlign="center"
+          marginBottom="$4">
+          {title}
+        </Text>
+
         {/* Current Time Display */}
         <Box backgroundColor="$backgroundElevated" borderRadius="$7" padding="$5" marginBottom="$6">
           <Text color="$typographyContrast" textAlign="center" size="3xl" bold>
