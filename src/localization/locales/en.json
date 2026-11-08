@@ -1757,7 +1757,7 @@
   "settings.athkarAudio.debug.share": "Share",
   "settings.athkarAudio.debug.shared": "Log shared",
   "settings.athkarAudio.debug.title": "Debug Log",
-  "settings.athkarAudio.deleteConfirm.message": "This will remove all downloaded audio for this reciter. You can re-download anytime.",
+  "settings.athkarAudio.deleteConfirm.reciterMessage": "This will remove all downloaded audio for {{name}}. You can re-download anytime.",
   "settings.athkarAudio.deleteConfirm.title": "Delete Audio Pack",
   "settings.athkarAudio.description": "Audio recitation, reciter, and playback settings",
   "settings.athkarAudio.mode.autopilot": "Auto-pilot",

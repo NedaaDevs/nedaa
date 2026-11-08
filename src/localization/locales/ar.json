@@ -2027,7 +2027,7 @@
   "settings.athkarAudio.debug.share": "مشاركة",
   "settings.athkarAudio.debug.shared": "تمت مشاركة السجل",
   "settings.athkarAudio.debug.title": "سجل الأخطاء",
-  "settings.athkarAudio.deleteConfirm.message": "سيتم حذف جميع الملفات الصوتية لهذا القارئ. يمكنك إعادة التنزيل في أي وقت.",
+  "settings.athkarAudio.deleteConfirm.reciterMessage": "ستُحذف جميع الملفات الصوتية المنزّلة للقارئ ⁨{{name}}⁩. يمكنك إعادة التنزيل في أي وقت.",
   "settings.athkarAudio.deleteConfirm.title": "حذف حزمة الصوت",
   "settings.athkarAudio.description": "إعدادات التلاوة الصوتية والقارئ والتشغيل",
   "settings.athkarAudio.mode.autopilot": "تلقائي",
