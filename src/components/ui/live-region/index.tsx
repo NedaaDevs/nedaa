@@ -1,6 +1,9 @@
 import { useState, type ComponentProps } from "react";
+import { Platform } from "react-native";
 
 import { Box } from "@/components/ui/box";
+import { PlatformType } from "@/enums/app";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 
 type Props = Omit<
   ComponentProps<typeof Box>,
@@ -31,4 +34,26 @@ export const LiveRegion = ({ message, ...rest }: Props) => {
       accessibilityLiveRegion="polite"
     />
   );
+};
+
+type SpokenStatusProps = {
+  /** What VoiceOver and TalkBack say as it changes; null says nothing. */
+  message: string | null;
+  testID?: string;
+};
+
+/** Says each message and draws nothing; keep it mounted while it can change. */
+export const SpokenStatus = ({ message, testID }: SpokenStatusProps) => {
+  useIosAnnouncement(message);
+  return Platform.OS === PlatformType.ANDROID ? (
+    <LiveRegion
+      testID={testID}
+      message={message}
+      position="absolute"
+      bottom={0}
+      width="$0.5"
+      height="$0.5"
+      pointerEvents="none"
+    />
+  ) : null;
 };

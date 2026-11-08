@@ -213,6 +213,8 @@ const AudioSettings: FC = () => {
             onPress: () => retryFailed(reciterId, manifest, result.failedIds),
           },
         });
+      } else {
+        MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
       }
 
       setIsDownloading(false);
@@ -312,7 +314,7 @@ const AudioSettings: FC = () => {
                     <DownloadProgress
                       completed={downloadCompleted}
                       total={downloadTotal}
-                      label={t("athkar.audio.retrying")}
+                      retrying
                     />
                   )}
                   {isSelected && !isDownloading && !isRetrying && failedIds.length > 0 && (
