@@ -16,14 +16,17 @@ import { Volume2, ChevronRight } from "lucide-react-native";
 import TimePicker from "@/components/TimePicker";
 
 // Store
+import { useAppStore } from "@/stores/app";
 import { useAthkarStore } from "@/stores/athkar";
 import { useNotificationStore } from "@/stores/notification";
+import { usePreferencesStore } from "@/stores/preferences";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 
 // Utils
-import { formatTime12Hour } from "@/utils/date";
+import { deviceTimeZone, formatTime12Hour } from "@/utils/date";
+import { spokenClockTime } from "@/utils/spokenClockTime";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
@@ -38,6 +41,21 @@ const Settings = () => {
 
   const { morningNotification, eveningNotification, updateAthkarNotificationSetting } =
     useNotificationStore();
+  const locale = useAppStore((state) => state.locale);
+  const western = usePreferencesStore((state) => state.useWesternNumerals);
+
+  // A device-local time, so any day gives the same words. It is spoken on the
+  // 12-hour clock it is drawn in.
+  const timeLabel = (hour: number, minute: number) =>
+    t("a11y.join", {
+      first: t("settings.athkar.notifications.time"),
+      second: spokenClockTime(
+        new Date(2000, 0, 1, hour, minute),
+        deviceTimeZone(),
+        { locale, use24HourTime: false, western },
+        t
+      ),
+    });
 
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [activeTimeType, setActiveTimeType] = useState<"morning" | "evening" | null>(null);
@@ -108,14 +126,22 @@ const Settings = () => {
                 <VStack gap="$2" marginTop="$3">
                   <HStack alignItems="center" justifyContent="space-between">
                     <HStack alignItems="center" gap="$2">
-                      <Text size="sm" color="$typographySecondary">
+                      {/* The time button says this label. */}
+                      <Text
+                        size="sm"
+                        color="$typographySecondary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
                     <VStack>
                       <Pressable
                         onPress={() => openTimePicker("morning")}
-                        accessibilityLabel={t("settings.athkar.notifications.time")}
+                        accessibilityLabel={timeLabel(
+                          morningNotification.hour,
+                          morningNotification.minute || 0
+                        )}
                         borderRadius="$2"
                         paddingHorizontal="$4"
                         minHeight={44}
@@ -128,7 +154,13 @@ const Settings = () => {
                           )}
                         </Text>
                       </Pressable>
-                      <Text size="xs" textAlign="center" color="$primary">
+                      {/* The time button says the period. */}
+                      <Text
+                        size="xs"
+                        textAlign="center"
+                        color="$primary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.morning.time.note")}
                       </Text>
                     </VStack>
@@ -158,14 +190,22 @@ const Settings = () => {
                 <VStack gap="$2" marginTop="$3">
                   <HStack alignItems="center" justifyContent="space-between">
                     <HStack alignItems="center" gap="$2">
-                      <Text size="sm" color="$typographySecondary">
+                      {/* The time button says this label. */}
+                      <Text
+                        size="sm"
+                        color="$typographySecondary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
                     <VStack>
                       <Pressable
                         onPress={() => openTimePicker("evening")}
-                        accessibilityLabel={t("settings.athkar.notifications.time")}
+                        accessibilityLabel={timeLabel(
+                          eveningNotification.hour,
+                          eveningNotification.minute || 0
+                        )}
                         borderRadius="$2"
                         paddingHorizontal="$4"
                         minHeight={44}
@@ -178,7 +218,13 @@ const Settings = () => {
                           )}
                         </Text>
                       </Pressable>
-                      <Text size="xs" textAlign="center" color="$primary">
+                      {/* The time button says the period. */}
+                      <Text
+                        size="xs"
+                        textAlign="center"
+                        color="$primary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.evening.time.note")}
                       </Text>
                     </VStack>
@@ -316,7 +362,6 @@ const Settings = () => {
             : eveningNotification.minute || 0
         }
         use12HourFormat
-        hideTimeOption
         isPM={activeTimeType === "evening"}
         onTimeChange={handleTimeChange}
         onClose={() => {
