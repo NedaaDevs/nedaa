@@ -32,6 +32,7 @@ import {
   CHALLENGE_TYPES,
   CHALLENGE_DIFFICULTIES,
   VIBRATION_PATTERNS,
+  ALARM_VOLUME_STEPS,
 } from "@/types/alarm";
 
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
@@ -605,7 +606,7 @@ const AlarmDebugScreen = () => {
                   Volume: {Math.round(testVolume * 100)}%
                 </Text>
                 <HStack gap="$2">
-                  {[0, 0.25, 0.5, 0.75, 1.0].map((vol) => (
+                  {ALARM_VOLUME_STEPS.map((vol) => (
                     <Button
                       key={vol}
                       size="sm"
