@@ -1,7 +1,7 @@
-import React, { use } from "react";
+import React, { use, useEffect, useEffectEvent } from "react";
 import { styled, View, XStack, YStack, Dialog } from "tamagui";
 import type { GetProps } from "tamagui";
-import { ScrollView, View as RNView } from "react-native";
+import { BackHandler, ScrollView, View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { RTLContext, useRTL } from "@/contexts/RTLContext";
@@ -34,6 +34,18 @@ const Modal: React.FC<ModalProps> = ({
 }) => {
   // Read here, above the portal, where the app's providers are still in scope.
   const rtl = useRTL();
+
+  // Back closes the dialog, not the screen it covers. The listener registers
+  // once per opening, so a dialog opened above this one stays first.
+  const close = useEffectEvent(() => onClose?.());
+  useEffect(() => {
+    if (!isOpen) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      close();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isOpen]);
 
   return (
     <Dialog

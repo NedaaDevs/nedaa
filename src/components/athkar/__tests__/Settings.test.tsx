@@ -1,6 +1,7 @@
-import { screen, within } from "@testing-library/react-native";
+import { screen, userEvent, within } from "@testing-library/react-native";
 
 import Settings from "@/components/athkar/Settings";
+import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -71,5 +72,24 @@ describe("Athkar settings reminder time", () => {
     const label = t("settings.athkar.notifications.time");
     expect(screen.getAllByText(label, { includeHiddenElements: true })).toHaveLength(2);
     expect(screen.queryAllByText(label, { includeHiddenElements: false })).toHaveLength(0);
+  });
+
+  it.each([
+    {
+      type: ATHKAR_TYPE.MORNING,
+      spoken: t("a11y.time.am", { time: "6:00" }),
+      title: t("settings.athkar.notifications.morning.title"),
+    },
+    {
+      type: ATHKAR_TYPE.EVENING,
+      spoken: t("a11y.time.pm", { time: "5:30" }),
+      title: t("settings.athkar.notifications.evening.title"),
+    },
+  ])("titles the picker with the $type reminder", async ({ spoken, title }) => {
+    await renderWithTheme(<Settings />);
+
+    await userEvent.press(timeButton(spoken));
+
+    expect(screen.getByRole("header", { name: title })).toBeTruthy();
   });
 });
