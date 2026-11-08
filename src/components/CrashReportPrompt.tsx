@@ -101,6 +101,10 @@ const CrashReportPrompt = () => {
       onDismiss={clearPendingReport}
       enablePanDownToClose={!submitting}
       enableDynamicSizing
+      // gorhom's defaults make the content one "Bottom Sheet" element.
+      accessible={false}
+      accessibilityLabel={null}
+      accessibilityRole={null}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor: theme.backgroundSecondary?.val ?? theme.background?.val,
