@@ -33,7 +33,6 @@ export type TimePickerBodyProps = {
   onTimeChange: (hour: number, minute: number) => void;
   onClose: () => void;
   use12HourFormat?: boolean;
-  hideTimeOption?: boolean;
   isPM?: boolean;
 };
 
@@ -103,7 +102,9 @@ export const TimePickerBody = ({
               borderRadius="$6"
               padding="$2"
               borderWidth={1}
-              borderColor="$outline">
+              borderColor="$outline"
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t("common.hourLabel")}>
               <ScrollView
                 style={{ height: 176 }}
                 showsVerticalScrollIndicator={false}
@@ -164,7 +165,9 @@ export const TimePickerBody = ({
               borderRadius="$6"
               padding="$2"
               borderWidth={1}
-              borderColor="$outline">
+              borderColor="$outline"
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t("common.minute")}>
               <ScrollView
                 style={{ height: 176 }}
                 showsVerticalScrollIndicator={false}
