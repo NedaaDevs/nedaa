@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+  DismissBackdrop,
+  SheetBackground,
+  SilentHandle,
+  UNGROUPED_CONTENT,
+} from "@/components/ui/sheet-chrome";
 import { SheetInput } from "@/components/ui/sheet-input";
 import { useTheme } from "@/components/ui/theme-color";
 
@@ -81,18 +82,6 @@ const CrashReportPrompt = () => {
     ref.current?.dismiss();
   }, []);
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
   const submitting = status === "submitting";
 
   return (
@@ -101,11 +90,10 @@ const CrashReportPrompt = () => {
       onDismiss={clearPendingReport}
       enablePanDownToClose={!submitting}
       enableDynamicSizing
-      // gorhom's defaults make the content one "Bottom Sheet" element.
-      accessible={false}
-      accessibilityLabel={null}
-      accessibilityRole={null}
-      backdropComponent={renderBackdrop}
+      {...UNGROUPED_CONTENT}
+      backdropComponent={DismissBackdrop}
+      backgroundComponent={SheetBackground}
+      handleComponent={SilentHandle}
       backgroundStyle={{
         backgroundColor: theme.backgroundSecondary?.val ?? theme.background?.val,
       }}

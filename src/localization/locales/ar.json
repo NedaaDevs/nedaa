@@ -237,6 +237,7 @@
   "a11y.settings.widgets.persistentNotification": "مواقيت الصلاة في إشعاراتك",
   "a11y.shareStreak": "مشاركة السلسلة",
   "a11y.shareStreakHint": "يفتح صورة قابلة للمشاركة لسلسلتك",
+  "a11y.sheet.dismissHint": "يغلق النافذة",
   "a11y.stepProgress": "الخطوة {{current}} من {{total}}",
   "a11y.tab.athkar": "الأذكار",
   "a11y.tab.home": "اليوم",
