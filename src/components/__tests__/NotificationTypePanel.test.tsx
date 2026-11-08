@@ -46,6 +46,12 @@ describe("NotificationTypePanel", () => {
     expect(header()).toBeExpanded();
   });
 
+  it("tells the reader what the button shows and hides", async () => {
+    await renderPanel();
+
+    expect(screen.getByHintText(i18n.t("a11y.notification.expandHint"))).toBe(header());
+  });
+
   // A switch inside an accessible element cannot take the reader's focus.
   it("keeps the switch outside the button, where the reader reaches it", async () => {
     await renderPanel();
@@ -60,6 +66,13 @@ describe("NotificationTypePanel", () => {
     expect(header()).toHaveProp("accessibilityValue", {
       text: i18n.t("common.minute", { count: MINUTES }),
     });
+  });
+
+  it("gives the button no value when the type has no timing", async () => {
+    await renderPanel(DEFAULTS, false);
+
+    // RNTL's value matcher checks only the keys it is given.
+    expect(header().props.accessibilityValue).toBeUndefined();
   });
 
   it("holds the button still while the type is off", async () => {
