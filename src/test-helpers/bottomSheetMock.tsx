@@ -24,6 +24,8 @@ import {
 } from "react-native";
 import { screen } from "@testing-library/react-native";
 
+import { SHEET_CHROME_PART } from "@/constants/SheetChrome";
+
 /** Test ids for the parts gorhom draws around a sheet's content. */
 export const BOTTOM_SHEET_PART = {
   CONTENT: "bottom-sheet-content",
@@ -242,11 +244,12 @@ export const BottomSheetBackdrop = ({
   );
 };
 
-/** gorhom's parts that a screen reader must skip. */
+/** gorhom's parts, and the app's sheet background, that a reader must skip. */
 const SILENT_PARTS = [
   BOTTOM_SHEET_PART.CONTENT,
   BOTTOM_SHEET_PART.BACKGROUND,
   BOTTOM_SHEET_PART.HANDLE,
+  SHEET_CHROME_PART.BACKGROUND,
 ];
 
 const isStop = ({ props }: ReturnType<typeof screen.getByTestId>) =>
