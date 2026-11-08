@@ -1,4 +1,4 @@
-import { screen, userEvent } from "@testing-library/react-native";
+import { screen, userEvent, within } from "@testing-library/react-native";
 
 import TimingSettings from "@/components/alarm/TimingSettings";
 import {
@@ -8,6 +8,7 @@ import {
   timingForMode,
 } from "@/constants/Alarm";
 import i18n from "@/localization/i18n";
+import { loadSavedSettings, SAVED_TIMINGS } from "@/test-helpers/alarmSettings";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { AlarmType, TimingConfig } from "@/types/alarm";
 
@@ -19,6 +20,9 @@ const AT_PRAYER = i18n.t("alarm.settings.atPrayerTime");
 const BEFORE_PRAYER = i18n.t("alarm.settings.beforePrayerTime");
 
 const minutes = (count: number) => i18n.t("common.minute", { count });
+
+/** The names of the choice groups the picker can draw. */
+const GROUP_NAMES = [i18n.t("alarm.settings.timing"), i18n.t("alarm.settings.minutesBefore")];
 
 /** The offsets drawn as steps; a zero offset is the at-prayer mode. */
 const offsets = (alarmType: AlarmType) =>
@@ -71,8 +75,8 @@ describe("TimingSettings", () => {
     expect(screen.getByText(caption)).toBeOnTheScreen();
   });
 
-  // A stored zero rings at the prayer time, which no step means.
-  it("marks no step for a stored zero, and a press on the first step saves it", async () => {
+  // The before steps leave out zero, which is the at-prayer mode.
+  it("marks no step for an offset outside the steps, and saves the step pressed", async () => {
     const onChange = jest.fn();
     const zero = { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 0 };
     await renderTiming(ALARM_TYPE.FAJR, zero, onChange);
@@ -87,6 +91,20 @@ describe("TimingSettings", () => {
 
     expect(onChange).toHaveBeenCalledWith({ ...zero, minutesBefore: first });
   });
+
+  it.each(SAVED_TIMINGS)(
+    "marks a choice in each group for a loaded $alarmType $timing.mode $timing.minutesBefore",
+    async ({ alarmType, timing }) => {
+      const { timing: loaded } = await loadSavedSettings(alarmType, { timing });
+      await renderTiming(alarmType, loaded);
+
+      const groups = GROUP_NAMES.flatMap((name) => screen.queryAllByLabelText(name));
+      expect(groups).not.toHaveLength(0);
+      groups.forEach((group) =>
+        expect(within(group).getAllByRole("radio", { selected: true })).toHaveLength(1)
+      );
+    }
+  );
 
   it("moves Fajr before prayer at its default offset", async () => {
     const onChange = jest.fn();
