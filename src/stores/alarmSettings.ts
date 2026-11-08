@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 
-import { ALARM_TIMING_MODE } from "@/constants/Alarm";
+import { ALARM_TIMING_MODE, ALARM_TYPE, timingForMode } from "@/constants/Alarm";
 import {
   AlarmType,
   AlarmTypeSettings,
@@ -114,7 +114,7 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
 
         resetToDefaults: (alarmType) => {
           set(() => ({
-            [alarmType]: { ...DEFAULT_ALARM_TYPE_SETTINGS },
+            [alarmType]: { ...defaultState[alarmType] },
           }));
         },
 
@@ -130,7 +130,13 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
           if (!persisted) return currentState;
 
           // Ensure timing field exists with defaults for old data
-          const fajrTiming = persisted.fajr?.timing ?? DEFAULT_TIMING_CONFIG;
+          const savedFajrTiming = persisted.fajr?.timing ?? DEFAULT_TIMING_CONFIG;
+          // Zero minutes before rings at prayer time: Fajr's at-prayer mode.
+          const fajrTiming =
+            savedFajrTiming.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME &&
+            savedFajrTiming.minutesBefore <= 0
+              ? timingForMode(ALARM_TYPE.FAJR, ALARM_TIMING_MODE.AT_PRAYER_TIME)
+              : savedFajrTiming;
           const fridayTiming = persisted.friday?.timing ?? FRIDAY_DEFAULT_TIMING;
 
           // Volumes saved before the floor existed can be zero, which rings silently.
