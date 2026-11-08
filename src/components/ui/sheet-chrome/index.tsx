@@ -10,8 +10,7 @@ import {
   type BottomSheetModalProps,
 } from "@gorhom/bottom-sheet";
 
-/** Test ids for the parts the app draws in place of gorhom's own. */
-export const SHEET_CHROME_PART = { BACKGROUND: "sheet-background" } as const;
+import { SHEET_CHROME_PART } from "@/constants/SheetChrome";
 
 // gorhom groups its content into one "Bottom Sheet" element by default.
 export const UNGROUPED_CONTENT = {

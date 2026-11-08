@@ -10,11 +10,11 @@ import {
   ActionsheetContent,
   ActionsheetHero,
 } from "@/components/ui/actionsheet";
-import { SHEET_CHROME_PART } from "@/components/ui/sheet-chrome";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ELEVATION } from "@/constants/Elevation";
 import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
 import { NEDAA_LIGHT } from "@/constants/Palette";
+import { SHEET_CHROME_PART } from "@/constants/SheetChrome";
 import { BOTTOM_SHEET_PART, dismissConfigs, modalProps } from "@/test-helpers/bottomSheetMock";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 import { renderWithTheme } from "@/test-helpers/theme";
