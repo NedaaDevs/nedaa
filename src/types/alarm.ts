@@ -50,7 +50,7 @@ export interface TimingConfig {
 export interface AlarmTimingChoices {
   /** Modes offered, in display order. */
   modes: readonly TimingMode[];
-  /** Offsets a before-prayer alarm may take, in minutes. */
+  /** Offsets a before-prayer alarm may take, in minutes, each above zero. */
   minuteSteps: readonly number[];
   /** The offset a switch to before-prayer starts at; one of minuteSteps. */
   defaultMinutesBefore: number;

@@ -29,7 +29,7 @@ export const ALARM_TIMING_MODE = {
 export const ALARM_TIMING_CHOICES: Record<AlarmType, AlarmTimingChoices> = {
   [ALARM_TYPE.FAJR]: {
     modes: [ALARM_TIMING_MODE.AT_PRAYER_TIME, ALARM_TIMING_MODE.BEFORE_PRAYER_TIME],
-    minuteSteps: [0, 5, 10, 15, 20, 30, 45, 60, 90],
+    minuteSteps: [5, 10, 15, 20, 30, 45, 60, 90],
     defaultMinutesBefore: 15,
   },
   [ALARM_TYPE.FRIDAY]: {

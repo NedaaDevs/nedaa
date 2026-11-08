@@ -235,7 +235,7 @@ describe("AlarmDisclosure", () => {
     expect(screen.getByText(caption, { includeHiddenElements: true })).toBeTruthy();
   });
 
-  it("offers Fajr's steps above zero as pills, and a pill writes its minutes", async () => {
+  it("offers Fajr's steps as pills, and a pill writes its minutes", async () => {
     const user = userEvent.setup();
     setAlarm(ALARM_TYPE.FAJR, true, {
       mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME,
@@ -245,7 +245,7 @@ describe("AlarmDisclosure", () => {
 
     const pills = screen.getByLabelText(i18n.t("prayerDetail.alarm.minutesBefore"));
     expect(pills).toHaveStyle({ flexWrap: "wrap" });
-    for (const step of ALARM_TIMING_CHOICES.fajr.minuteSteps.filter((m) => m > 0)) {
+    for (const step of ALARM_TIMING_CHOICES.fajr.minuteSteps) {
       expect(screen.getByRole("radio", { name: minutes(step) })).toBeTruthy();
     }
     expect(screen.getByRole("radio", { name: minutes(15) }).props.accessibilityState).toMatchObject(
