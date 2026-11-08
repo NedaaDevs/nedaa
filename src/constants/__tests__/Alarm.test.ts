@@ -20,3 +20,10 @@ describe("timingForMode", () => {
     });
   });
 });
+
+describe("ALARM_TIMING_CHOICES", () => {
+  // A zero offset is the at-prayer mode, not a step.
+  it.each(Object.values(ALARM_TYPE))("offers %s only steps before the prayer", (type) => {
+    expect(Math.min(...ALARM_TIMING_CHOICES[type].minuteSteps)).toBeGreaterThan(0);
+  });
+});

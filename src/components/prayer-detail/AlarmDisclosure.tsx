@@ -57,8 +57,6 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
   const [failed, setFailed] = useState(false);
 
   const { modes, minuteSteps } = ALARM_TIMING_CHOICES[type];
-  // A zero offset is the at-prayer mode, not a step.
-  const beforeSteps = minuteSteps.filter((minutes) => minutes > 0);
   const { timing } = settings;
 
   const toggle = async (enabled: boolean) => {
@@ -118,7 +116,7 @@ export const AlarmDisclosure = ({ type }: { type: AlarmType }) => {
               {t("prayerDetail.alarm.minutesBefore")}
             </Text>
             <SegmentedChoice
-              options={beforeSteps}
+              options={minuteSteps}
               value={timing.minutesBefore}
               onChange={(minutesBefore) => update({ timing: { ...timing, minutesBefore } })}
               accessibilityLabel={t("prayerDetail.alarm.minutesBefore")}

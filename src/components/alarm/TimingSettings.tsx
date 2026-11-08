@@ -27,8 +27,6 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
 
   const { modes, minuteSteps } = ALARM_TIMING_CHOICES[alarmType];
   const offersModeChoice = modes.length > 1;
-  // A zero offset is the at-prayer mode, not a step.
-  const beforeSteps = minuteSteps.filter((minutes) => minutes > 0);
 
   return (
     <VStack gap="$3">
@@ -48,7 +46,7 @@ const TimingSettings: FC<Props> = ({ value, alarmType, onChange }) => {
             {t("alarm.settings.minutesBefore")}
           </Text>
           <SegmentedChoice
-            options={beforeSteps}
+            options={minuteSteps}
             value={timing.minutesBefore}
             onChange={(minutesBefore) => onChange({ ...timing, minutesBefore })}
             accessibilityLabel={t("alarm.settings.minutesBefore")}
