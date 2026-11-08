@@ -193,6 +193,15 @@ describe("AudioOnboarding", () => {
       expect(screen.getByText(COMPLETE)).toBeOnTheScreen();
     });
 
+    it("says only the latest download's completion", async () => {
+      const [earlier, latest] = await reopenAndDownload();
+      await act(async () => earlier.end(PACK_WHOLE));
+      expect(announce).not.toHaveBeenCalledWith(COMPLETE);
+
+      await act(async () => latest.end(PACK_WHOLE));
+      expect(announce).toHaveBeenCalledWith(COMPLETE);
+    });
+
     it("keeps the latest pack's size when an earlier manifest arrives", async () => {
       const manifest = later<ReciterManifest | null>();
       fetchManifest.mockReturnValueOnce(manifest.promise);
