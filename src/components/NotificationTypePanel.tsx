@@ -134,6 +134,7 @@ const NotificationTypePanel: FC<Props> = ({
             accessibilityRole="button"
             accessibilityState={{ expanded: isExpanded && defaults.enabled }}
             accessibilityLabel={title}
+            accessibilityHint={t("a11y.notification.expandHint")}
             accessibilityValue={timingText ? { text: timingText } : undefined}>
             <HStack padding="$4" gap="$2" alignItems="center">
               <Icon color="$typography" size="xl" as={IconComponent} />
