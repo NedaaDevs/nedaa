@@ -35,6 +35,7 @@
   "a11y.athkar.overallProgress": "Overall progress",
   "a11y.athkar.playSample": "Play sample",
   "a11y.athkar.reciterSelected": "{{name}}, selected",
+  "a11y.athkar.retrying": "Retrying audio download",
   "a11y.athkar.sessionProgress": "Session progress",
   "a11y.athkar.stopSample": "Stop sample",
   "a11y.athkar.tapToCount": "Tap to count. Long press to count by ten",

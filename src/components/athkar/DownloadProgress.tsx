@@ -9,10 +9,11 @@ import { Progress, ProgressFilledTrack } from "@/components/ui/progress";
 type Props = {
   completed: number;
   total: number;
-  label?: string;
+  /** A second pass over the files that failed. */
+  retrying?: boolean;
 };
 
-const DownloadProgress: FC<Props> = ({ completed, total, label }) => {
+const DownloadProgress: FC<Props> = ({ completed, total, retrying = false }) => {
   const { t } = useTranslation();
   const percentage = total > 0 ? (completed / total) * 100 : 0;
 
@@ -20,7 +21,7 @@ const DownloadProgress: FC<Props> = ({ completed, total, label }) => {
     <VStack gap="$2">
       <HStack justifyContent="space-between" alignItems="center">
         <Text size="sm" color="$typographySecondary">
-          {label ?? t("athkar.audio.downloading")}
+          {retrying ? t("athkar.audio.retrying") : t("athkar.audio.downloading")}
         </Text>
         <Text size="sm" color="$typographySecondary">
           {completed}/{total}
@@ -30,7 +31,7 @@ const DownloadProgress: FC<Props> = ({ completed, total, label }) => {
         value={percentage}
         size="sm"
         backgroundColor="$backgroundMuted"
-        accessibilityLabel={t("a11y.athkar.downloading")}
+        accessibilityLabel={retrying ? t("a11y.athkar.retrying") : t("a11y.athkar.downloading")}
         accessibilityValue={{ min: 0, max: 100, now: Math.round(percentage) }}>
         <ProgressFilledTrack backgroundColor="$primary" />
       </Progress>
