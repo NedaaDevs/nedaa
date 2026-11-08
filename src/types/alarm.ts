@@ -106,6 +106,9 @@ export const DEFAULT_TIMING_CONFIG: TimingConfig = {
  */
 export const MIN_ALARM_VOLUME = 0.25;
 
+/** The volume levels the pickers offer; the lowest is the floor. */
+export const ALARM_VOLUME_STEPS: readonly number[] = [MIN_ALARM_VOLUME, 0.5, 0.75, 1];
+
 export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   enabled: false,
   sound: "beep",
