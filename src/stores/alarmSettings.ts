@@ -31,7 +31,6 @@ interface AlarmSettingsActions {
   setVibration: (alarmType: AlarmType, config: VibrationConfig) => void;
   setSnooze: (alarmType: AlarmType, config: SnoozeConfig) => void;
   updateSettings: (alarmType: AlarmType, settings: Partial<AlarmTypeSettings>) => void;
-  resetToDefaults: (alarmType: AlarmType) => void;
   getSettings: (alarmType: AlarmType) => AlarmTypeSettings;
 }
 
@@ -109,12 +108,6 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
         updateSettings: (alarmType, settings) => {
           set((state) => ({
             [alarmType]: { ...state[alarmType], ...settings },
-          }));
-        },
-
-        resetToDefaults: (alarmType) => {
-          set(() => ({
-            [alarmType]: { ...defaultState[alarmType] },
           }));
         },
 

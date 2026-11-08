@@ -60,13 +60,4 @@ describe("alarm settings store", () => {
 
     expect(loaded).toEqual(timingForMode(ALARM_TYPE.FAJR, ALARM_TIMING_MODE.AT_PRAYER_TIME));
   });
-
-  it.each(Object.values(ALARM_TYPE))("resets %s to the timing it starts on", (alarmType) => {
-    const { setTiming, resetToDefaults } = useAlarmSettingsStore.getState();
-    setTiming(alarmType, { mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME, minutesBefore: 90 });
-
-    resetToDefaults(alarmType);
-
-    expect(useAlarmSettingsStore.getState()[alarmType].timing).toEqual(INITIAL[alarmType].timing);
-  });
 });
