@@ -15,6 +15,9 @@ const mockReminders = {
 };
 
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock("react-native-safe-area-context", () =>
+  jest.requireActual("@/test-helpers/safeAreaMock")
+);
 // The real stores open SQLite and reach the notification scheduler.
 jest.mock("@/stores/notification", () => ({ useNotificationStore: () => mockReminders }));
 jest.mock("@/stores/athkar", () => ({
