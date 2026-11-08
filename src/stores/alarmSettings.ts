@@ -37,10 +37,10 @@ interface AlarmSettingsActions {
 export type AlarmSettingsStore = AlarmSettingsState & AlarmSettingsActions;
 
 // Friday offers no at-prayer mode.
-const FRIDAY_DEFAULT_TIMING: TimingConfig = {
-  mode: ALARM_TIMING_MODE.BEFORE_PRAYER_TIME,
-  minutesBefore: 30,
-};
+const FRIDAY_DEFAULT_TIMING = timingForMode(
+  ALARM_TYPE.FRIDAY,
+  ALARM_TIMING_MODE.BEFORE_PRAYER_TIME
+);
 
 const defaultState: AlarmSettingsState = {
   fajr: { ...DEFAULT_ALARM_TYPE_SETTINGS },
