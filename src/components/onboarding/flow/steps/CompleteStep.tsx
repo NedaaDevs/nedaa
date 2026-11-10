@@ -9,14 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { ONBOARDING_PART, ONBOARDING_PATH } from "@/constants/Onboarding";
 import { useHaptic } from "@/hooks/useHaptic";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { usePlace } from "@/hooks/usePlace";
 import { useTodayStored } from "@/hooks/useTodayStored";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const GROW = { flexGrow: 1 };
+const HUG = { alignSelf: "center" } as const;
 
 /** The last page: what was set up, and the way into the app. */
 export const CompleteStep = ({
@@ -29,6 +32,7 @@ export const CompleteStep = ({
   const { t } = useTranslation();
   const city = usePlace().city;
   const todayStored = useTodayStored();
+  const counting = usePreferencesStore((s) => s.shareUsageStats);
   const success = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
   const arrive = useEffectEvent(() => {
@@ -74,18 +78,27 @@ export const CompleteStep = ({
           />
         </VStack>
 
-        <SkyOccluder>
-          <Button
-            testID={ONBOARDING_PART.COMPLETE_OPEN}
-            action="primary"
-            variant="solid"
-            size="lg"
-            onPress={onNext}
-            accessibilityRole="button"
-            accessibilityLabel={open}>
-            <Button.Text>{open}</Button.Text>
-          </Button>
-        </SkyOccluder>
+        <VStack gap="$3">
+          {counting ? (
+            <SkyOccluder style={HUG}>
+              <Text size="sm" typography="body" color="$mutedSky" textAlign="center">
+                {t("onboarding.complete.usage")}
+              </Text>
+            </SkyOccluder>
+          ) : null}
+          <SkyOccluder>
+            <Button
+              testID={ONBOARDING_PART.COMPLETE_OPEN}
+              action="primary"
+              variant="solid"
+              size="lg"
+              onPress={onNext}
+              accessibilityRole="button"
+              accessibilityLabel={open}>
+              <Button.Text>{open}</Button.Text>
+            </Button>
+          </SkyOccluder>
+        </VStack>
       </ScreenContent>
     </SkyScrollView>
   );
