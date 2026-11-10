@@ -51,6 +51,7 @@ import QuranSearchOverlay, { type QuranSearchHandle } from "@/components/quran/Q
 import ReaderLibraryDrawer, {
   type ReaderLibraryDrawerHandle,
 } from "@/components/quran/ReaderLibraryDrawer";
+import ReaderBarButton from "@/components/quran/ReaderBarButton";
 import ReaderIcon from "@/components/quran/ReaderIcon";
 import AyahActionSheet from "@/components/quran/sheets/AyahActionSheet";
 import QuranIntroSheet from "@/components/quran/sheets/QuranIntroSheet";
@@ -482,24 +483,16 @@ const QuranScreen = () => {
                 backgroundColor={`${themeColors.background}F0`}
                 borderBottomWidth={1}
                 borderBottomColor={themeColors.frameColor}>
-                <XStack alignItems="center" gap="$2">
-                  <Pressable
-                    onPress={() => router.navigate("/")}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("common.back")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                {/* A 2 pt overhang lets 44 pt targets keep the bar height and icon spots. */}
+                <XStack alignItems="center" gap="$1" margin="$-0.5">
+                  <ReaderBarButton onPress={() => router.navigate("/")} label={t("common.back")}>
                     <ReaderIcon
                       sf={isRTL ? "chevron.right" : "chevron.left"}
                       lucide={BackIcon}
                       color={themeColors.headerColor}
                       size={22}
                     />
-                  </Pressable>
+                  </ReaderBarButton>
                   {quranPlayerState !== QURAN_PLAYER_STATE.IDLE && playingSurah != null ? (
                     <Pressable
                       onPress={goToPlaying}
@@ -521,104 +514,69 @@ const QuranScreen = () => {
                     <YStack flex={1} />
                   )}
                   {isColoredVersion(currentVersion) && readerMode !== ReaderViewMode.TEXT && (
-                    <Pressable
+                    <ReaderBarButton
                       onPress={() => openGuide(GuideCategory.TAJWEED)}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("quran.guide.category.tajweed")}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}>
+                      label={t("quran.guide.category.tajweed")}>
                       <ReaderIcon
                         sf="paintpalette"
                         lucide={Palette}
                         color={themeColors.headerColor}
                         size={20}
                       />
-                    </Pressable>
+                    </ReaderBarButton>
                   )}
-                  <Pressable
+                  <ReaderBarButton
                     onPress={() => {
                       setShowOverlay(false);
                       searchRef.current?.open();
                     }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("quran.search.placeholder")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                    label={t("quran.search.placeholder")}>
                     <ReaderIcon
                       sf="magnifyingglass"
                       lucide={Search}
                       color={themeColors.headerColor}
                       size={20}
                     />
-                  </Pressable>
-                  <Pressable
+                  </ReaderBarButton>
+                  <ReaderBarButton
                     onPress={() => {
                       setShowOverlay(false);
                       libraryRef.current?.open(QURAN_LIBRARY_TAB.BOOKMARKS);
                     }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("quran.library.bookmarks")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                    label={t("quran.library.bookmarks")}>
                     <ReaderIcon
                       sf="bookmark"
                       lucide={Bookmark}
                       color={themeColors.headerColor}
                       size={20}
                     />
-                  </Pressable>
-                  <Pressable
+                  </ReaderBarButton>
+                  <ReaderBarButton
                     onPress={() => {
                       setShowOverlay(false);
                       setShowIntro(true);
                     }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("quran.intro.help")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                    label={t("quran.intro.help")}>
                     <ReaderIcon
                       sf="questionmark.circle"
                       lucide={HelpCircle}
                       color={themeColors.headerColor}
                       size={20}
                     />
-                  </Pressable>
-                  <Pressable
+                  </ReaderBarButton>
+                  <ReaderBarButton
                     onPress={() => {
                       setShowOverlay(false);
                       setShowSettings(true);
                     }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("quran.settings.title")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                    label={t("quran.settings.title")}>
                     <ReaderIcon
                       sf="gearshape"
                       lucide={Settings2}
                       color={themeColors.headerColor}
                       size={20}
                     />
-                  </Pressable>
+                  </ReaderBarButton>
                 </XStack>
 
                 {/* Highlight legend — colours/labels/counts; renders only when ayahs
