@@ -167,7 +167,7 @@ const yearLanded = (stored: boolean, needed: boolean): Landed => ({
 });
 
 /** The adjacent year a refetch fetches, and whether the window needs it. */
-const adjacentYearOf = (now: Date): { year: number; needed: boolean } | null => {
+const adjacentYearOf = (now: Date, fetchedNow: Date): { year: number; needed: boolean } | null => {
   const year = getYear(now);
   const month = getMonth(now) + 1;
   if (month === 1) {
@@ -176,8 +176,9 @@ const adjacentYearOf = (now: Date): { year: number; needed: boolean } | null => 
     return needed ? { year: year - 1, needed } : null;
   }
   if (month === 12) {
-    // Next year's days are read later, so they must be this place's too.
-    return { year: year + 1, needed: getYear(addDays(now, READ_AHEAD_DAYS)) > year };
+    // Next year's days are read later, so they must be this place's too. The
+    // window is read in the fetched place's zone, which the store may not hold.
+    return { year: year + 1, needed: getYear(addDays(fetchedNow, READ_AHEAD_DAYS)) > year };
   }
   return null;
 };
@@ -264,7 +265,7 @@ const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch>
   const firstMonth = getYear(oldestKept) === getYear(now) ? getMonth(oldestKept) + 1 : 1;
   const thisYear = await fetchYear(get, undefined, firstMonth);
   if (thisYear === null) return { ...NOT_STORED, fetched: false };
-  const adjacent = adjacentYearOf(now);
+  const adjacent = adjacentYearOf(now, timeZonedNow(thisYear.timezone));
   const adjacentDays = adjacent && (await fetchYear(get, adjacent.year));
   // A needed year missing would leave half the window at another place.
   if (adjacent?.needed && adjacentDays === null) return { ...NOT_STORED, fetched: false };
