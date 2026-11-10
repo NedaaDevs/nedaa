@@ -1,14 +1,17 @@
 import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { CompleteStep } from "@/components/onboarding/flow/steps/CompleteStep";
-import { ONBOARDING_PART } from "@/constants/Onboarding";
+import { ONBOARDING_PART, ONBOARDING_PATH } from "@/constants/Onboarding";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import { expectCopyNaming } from "@/test-helpers/copy";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { clearHaptics, firedHaptics, HAPTIC } from "@/test-helpers/hapticMock";
+import { HAND_WRITTEN_LOCALES } from "@/test-helpers/locales";
 import { stepProps } from "@/test-helpers/onboardingStepProps";
 import { RIYADH_DAY } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -28,6 +31,7 @@ beforeEach(async () => {
     localizedLocation: { city: "Riyadh", country: "Saudi Arabia" },
   });
   usePrayerTimesStore.setState({ todayTimings: RIYADH_DAY, usingDefaultLocation: false });
+  usePreferencesStore.setState({ shareUsageStats: true });
   clearHaptics();
 });
 
@@ -95,4 +99,50 @@ it("hands reader focus a heading of the title alone, and labels its button", asy
   expect(screen.getByRole("header")).toHaveAccessibleName(t("onboarding.complete.title"));
   expect(props.headingRef.current).not.toBeNull();
   expect(controlProblems()).toEqual([]);
+});
+
+const BODIES = [
+  { body: "onboarding.complete.body", path: ONBOARDING_PATH.FIRST_RUN, todayTimings: RIYADH_DAY },
+  { body: "onboarding.complete.bodyNoCity", path: ONBOARDING_PATH.FIRST_RUN, todayTimings: null },
+  {
+    body: "onboarding.upgrade.completeBody",
+    path: ONBOARDING_PATH.UPGRADE,
+    todayTimings: RIYADH_DAY,
+  },
+] as const;
+
+describe.each(HAND_WRITTEN_LOCALES)("in %s", (locale) => {
+  beforeEach(() => act(() => i18n.changeLanguage(locale)));
+
+  it.each(BODIES)("says in $body where the choices change later", async (row) => {
+    usePrayerTimesStore.setState({ todayTimings: row.todayTimings });
+    await renderWithTheme(<CompleteStep {...stepProps({ path: row.path })} />);
+
+    expectCopyNaming(row.body, "settings.title");
+  });
+
+  it.each(Object.values(ONBOARDING_PATH))(
+    "says on the %s path what the app counts, and where to turn it off",
+    async (path) => {
+      await renderWithTheme(<CompleteStep {...stepProps({ path })} />);
+
+      expectCopyNaming("onboarding.complete.usage", "settings.preferences.title");
+    }
+  );
+});
+
+it("puts the counting note before the Open Today button in reading order", async () => {
+  await renderWithTheme(<CompleteStep {...stepProps()} />);
+
+  const texts = screen.getAllByText(/./);
+  const note = texts.indexOf(screen.getByText(t("onboarding.complete.usage")));
+  expect(note).toBeGreaterThanOrEqual(0);
+  expect(note).toBeLessThan(texts.indexOf(screen.getByText(t("onboarding.complete.open"))));
+});
+
+it("says nothing of counting while the counts are off", async () => {
+  usePreferencesStore.setState({ shareUsageStats: false });
+  await renderWithTheme(<CompleteStep {...stepProps()} />);
+
+  expect(screen.queryByText(t("onboarding.complete.usage"))).toBeNull();
 });
