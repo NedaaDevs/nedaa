@@ -17,6 +17,7 @@ export const LanguageStep = ({ headingRef, onHeadingLayout, progress }: StepProp
         onHeadingLayout={onHeadingLayout}
         progress={progress}
         title={t("onboarding.language.title")}
+        body={t("onboarding.language.body")}
       />
       <SkyOccluder>
         <LanguageChoices />
