@@ -32,6 +32,29 @@ jobs:
       - name: Check formatting
         run: bun run format:check
 
+  # Dependabot reads package.json ranges only; this audits the locked versions.
+  audit:
+    name: Audit lockfiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # .bun-version has no bun audit; audit reads only the lockfile.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+
+      - name: Audit app lockfile
+        run: bun audit --audit-level=high
+
+      - name: Audit screenshot tool lockfile
+        run: bun audit --audit-level=high --cwd scripts/screenshots
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
