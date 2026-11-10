@@ -5,7 +5,7 @@ import { StyleSheet, type Insets } from "react-native";
 type HostElement = NonNullable<ReturnType<typeof screen.toJSON>>;
 
 /** The platform floor for a touch target, in points. */
-const MIN_TARGET = 44;
+export const MIN_TARGET = 44;
 
 const hidden = ({ props }: HostElement) =>
   props.accessibilityElementsHidden === true ||
@@ -18,16 +18,23 @@ const controlsIn = (node: HostElement | string | null, out: HostElement[] = []) 
   return out;
 };
 
+type Style = Parameters<typeof StyleSheet.flatten>[0];
+
+/** The larger of a size and its minimum: the least the layout draws. */
+const drawn = (size: unknown, min: unknown) => Math.max(Number(size) || 0, Number(min) || 0);
+
+/** The least width the layout draws for a control's style. */
+export const drawnWidthOf = (style: Style) => {
+  const { width, minWidth } = StyleSheet.flatten(style) ?? {};
+  return drawn(width, minWidth);
+};
+
 /** The drawn height plus any invisible touch area above and below it. */
-const touchHeightOf = (
-  style: Parameters<typeof StyleSheet.flatten>[0],
-  hitSlop: Insets | number | undefined
-) => {
-  const { minHeight, height } = StyleSheet.flatten(style) ?? {};
-  const drawn = Math.max(Number(minHeight) || 0, Number(height) || 0);
+const touchHeightOf = (style: Style, hitSlop: Insets | number | undefined) => {
+  const { height, minHeight } = StyleSheet.flatten(style) ?? {};
   const slop =
     typeof hitSlop === "number" ? 2 * hitSlop : (hitSlop?.top ?? 0) + (hitSlop?.bottom ?? 0);
-  return drawn + slop;
+  return drawn(height, minHeight) + slop;
 };
 
 /** Every control on screen that lacks a role, a name, or a 44pt target. */
