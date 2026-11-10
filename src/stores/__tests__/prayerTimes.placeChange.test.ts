@@ -22,6 +22,10 @@ const mockTable = new Map<number, DayPrayerTimes>();
 let mockNow = new Date();
 // The year whose insert fails; dates are written yyyymmdd.
 let mockFailedInsertYear: number | null = null;
+// While set, deleting the days after a date fails.
+let mockDeleteFails = false;
+// Runs inside that delete, before it ends.
+let mockDuringDelete = () => {};
 
 jest.mock("@/services/db", () => ({
   PrayerTimesDB: {
@@ -31,6 +35,12 @@ jest.mock("@/services/db", () => ({
       }
       days.forEach((day) => mockTable.set(day.date, day));
       return { success: true, insertedCount: days.length };
+    },
+    deleteDaysAfter: async (lastKept: number) => {
+      mockDuringDelete();
+      if (mockDeleteFails) return false;
+      [...mockTable.keys()].filter((date) => date > lastKept).forEach((d) => mockTable.delete(d));
+      return true;
     },
     getPrayerTimesByDate: async (date: number) => mockTable.get(date) ?? null,
     getPrayerTimesByDateRange: async (start: number, end: number) =>
@@ -180,6 +190,8 @@ afterEach(() => {
     hasError: false,
   });
   mockFailedInsertYear = null;
+  mockDeleteFails = false;
+  mockDuringDelete = () => {};
   placeAt(RIYADH_COORDS);
   place.placeRevision = 0;
   jest.mocked(place.settlePlace).mockClear();
@@ -362,27 +374,81 @@ describe("a refetch that stored one year of two", () => {
     expect(usePrayerTimesStore.getState().timesSplit).toBe(true);
   });
 
-  it("owes a refetch when the replaced days had no recorded place", async () => {
-    // Early enough in December that the window does not need next year.
-    mockNow = new Date(2026, 11, 10, 12);
-    storeOldPlace(mockNow);
-    const nextYearDay = row(new Date(2027, 0, 5, 12), OLD_ZONE);
+  // Early enough in December that the window does not read next year.
+  const EARLY_DECEMBER = new Date(2026, 11, 10, 12);
+
+  /** A place's days, with next year's first day among them. */
+  const storeBothYears = (zone: string) => {
+    mockNow = EARLY_DECEMBER;
+    storePlace(mockNow, zone);
+    const nextYearDay = row(new Date(2027, 0, 1, 12), zone);
     mockTable.set(nextYearDay.date, nextYearDay);
+    return nextYearDay.date;
+  };
+
+  it("keeps next year's days when the refetch was for the place they hold", async () => {
+    const nextYearDay = storeBothYears(NEW_ZONE);
+    mockFailedInsertYear = 2027;
+    usePrayerTimesStore.setState({
+      getPrayerTimes: jest.fn(servePlaceHeld),
+      timesCoords: RIYADH_COORDS,
+    });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)).resolves.toBe(
+      false
+    );
+
+    expect(mockTable.has(nextYearDay)).toBe(true);
+  });
+
+  it("drops next year's days of the replaced place when their insert fails", async () => {
+    storeBothYears(OLD_ZONE);
+    mockFailedInsertYear = 2027;
     usePrayerTimesStore.setState({
       getPrayerTimes: jest.fn(servePlaceHeld),
       timesCoords: null,
       usingDefaultLocation: true,
     });
-    mockFailedInsertYear = 2027;
-    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
-    expect(datesNotAt(NEW_ZONE)).toEqual([nextYearDay.date]);
 
-    mockFailedInsertYear = null;
-    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
 
     expect(datesNotAt(NEW_ZONE)).toEqual([]);
+    expect(mockTable.get(dateToInt(new Date(2026, 11, 31, 12)))?.timezone).toBe(NEW_ZONE);
     expect(usePrayerTimesStore.getState().timesSplit).toBe(false);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
   });
+
+  it.each([
+    ["were fetched for another place", OLD_COORDS, false],
+    ["had no recorded place", null, true],
+  ])(
+    "owes a refetch while next year's days stay, when the replaced days %s",
+    async (_name, timesCoords, usingDefaultLocation) => {
+      const nextYearDay = storeBothYears(OLD_ZONE);
+      mockFailedInsertYear = 2027;
+      usePrayerTimesStore.setState({
+        getPrayerTimes: jest.fn(servePlaceHeld),
+        timesCoords,
+        usingDefaultLocation,
+      });
+      mockDeleteFails = true;
+      await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+        false
+      );
+      expect(datesNotAt(NEW_ZONE)).toEqual([nextYearDay]);
+      expect(usePrayerTimesStore.getState().timesSplit).toBe(true);
+      expect(usePrayerTimesStore.getState().timesCoords).toEqual(timesCoords);
+
+      mockDeleteFails = false;
+      await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
+
+      expect(datesNotAt(NEW_ZONE)).toEqual([]);
+      expect(usePrayerTimesStore.getState().timesSplit).toBe(false);
+      expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
+    }
+  );
 });
 
 // The table keeps two days back and a load reads 13 days on; near New Year
@@ -438,7 +504,7 @@ describe("a refetch at a year boundary", () => {
   });
 
   // This year's days hold the whole window; next year's are owed.
-  it("settles a December window that landed without next year", async () => {
+  it("settles and marks a December window that landed without next year", async () => {
     mockNow = new Date(2026, 11, 5, 12);
     storeOldPlace(mockNow);
     usePrayerTimesStore.setState({
@@ -451,17 +517,65 @@ describe("a refetch at a year boundary", () => {
     );
 
     expect(place.settlePlace).toHaveBeenCalledWith(place.placeRevision);
-    expect(usePrayerTimesStore.getState().timesCoords).toEqual(OLD_COORDS);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
   });
 
-  it("resolves true once every year it fetched landed", async () => {
+  // An install's first load: no other place's day is stored.
+  it("on 5 December, lets an offline load stand after next year's fetch failed", async () => {
+    mockNow = new Date(2026, 11, 5, 12);
+    mockTable.clear();
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) });
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
+    const api = jest.fn(async () => {
+      throw new Error("offline");
+    });
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      true
+    );
+
+    expect(api).not.toHaveBeenCalled();
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(false);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
+  });
+
+  // The window reads next year's days from the 19th.
+  it("on 19 December, fetches only next year after the 5th's fetch of it failed", async () => {
     mockNow = new Date(2026, 11, 5, 12);
     storeOldPlace(mockNow);
-    usePrayerTimesStore.setState({ getPrayerTimes: jest.fn(serveNewPlace) });
+    usePrayerTimesStore.setState({
+      getPrayerTimes: serveNewPlaceExcept(2027),
+      timesCoords: OLD_COORDS,
+    });
+    await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true);
+    mockNow = new Date(2026, 11, 19, 12);
+    const api = jest.fn(serveNewPlace);
+    usePrayerTimesStore.setState({ getPrayerTimes: api });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      true
+    );
+
+    expect(api.mock.calls.map(([year]) => year)).toEqual([2027]);
+    expect(oldPlaceDates()).toEqual([]);
+  });
+
+  it("resolves true, keeping next year's days, once every year it fetched landed", async () => {
+    mockNow = new Date(2026, 11, 5, 12);
+    storeOldPlace(mockNow);
+    usePrayerTimesStore.setState({
+      getPrayerTimes: jest.fn(serveNewPlace),
+      timesCoords: OLD_COORDS,
+    });
 
     await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace(true)).resolves.toBe(
       true
     );
+
+    expect(mockTable.get(dateToInt(new Date(2027, 0, 1, 12)))?.timezone).toBe(NEW_ZONE);
   });
 
   // A newly verified place is best effort; the flag waits for a full refetch.
@@ -621,6 +735,20 @@ describe("a load after the place moved", () => {
     await usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace();
 
     expect(datesNotAt(NEW_ZONE)).toEqual([]);
+  });
+
+  it("on 5 December, leaves the place unmarked when it moves during the delete", async () => {
+    mockNow = new Date(2026, 11, 5, 12);
+    storeOldPlace(mockNow);
+    mockDuringDelete = () => placeAt(SECOND_COORDS, SECOND_ZONE);
+    usePrayerTimesStore.setState({ getPrayerTimes: serveNewPlaceExcept(2027) });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
+
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(OLD_COORDS);
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(true);
   });
 
   it("on 5 December, stores no next year of a place moved during this year's", async () => {
@@ -862,7 +990,7 @@ describe.each([
   });
 
   it.each([
-    ["5 December", new Date(2026, 11, 5, 12), 2027, false],
+    ["5 December", new Date(2026, 11, 5, 12), 2027, true],
     ["25 December", new Date(2026, 11, 25, 12), 2027, false],
     ["1 January", new Date(2027, 0, 1, 12), 2026, false],
     ["3 January", new Date(2027, 0, 3, 12), 2026, true],
