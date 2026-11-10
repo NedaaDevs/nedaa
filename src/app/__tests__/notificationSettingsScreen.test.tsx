@@ -1,19 +1,20 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads,
 // and the screen must bind to the mock below, not to its empty one.
 import NotificationSettings from "@/app/settings/notification";
-import { userEvent } from "@testing-library/react-native";
+import { act, userEvent } from "@testing-library/react-native";
 import { usePathname } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 import * as Notifications from "expo-notifications";
 import { AccessibilityInfo, Platform, Text } from "react-native";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { NOTIFICATION_SCHEDULING_STATUS_ID, NOTIFICATION_TYPE } from "@/constants/Notification";
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { PrayerSoundKey } from "@/constants/sounds";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useNotificationStore } from "@/stores/notification";
+import { layOut } from "@/test-helpers/layout";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { createNotificationChannels } from "@/utils/notificationChannels";
@@ -82,6 +83,7 @@ describe("Notification settings debug alert", () => {
     jest.replaceProperty(Platform, "OS", "android");
     useNotificationStore.setState((state) => ({
       fullAthanPlayback: false,
+      isScheduling: false,
       settings: {
         ...state.settings,
         enabled: true,
@@ -138,7 +140,29 @@ describe("Notification settings debug alert", () => {
     expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
       i18n.t("notification.schedulingNotifications")
     );
-    useNotificationStore.setState({ isScheduling: false });
+  });
+
+  // TalkBack says a change only on a region that is already drawn.
+  it("says on Android that it is scheduling when the screen opens during it", async () => {
+    useNotificationStore.setState({ isScheduling: true });
+    await renderScreen();
+    const region = await screen.findByTestId(NOTIFICATION_SCHEDULING_STATUS_ID);
+    await layOut(region);
+
+    expect(region).toHaveProp("accessibilityLabel", i18n.t("notification.schedulingNotifications"));
+  });
+
+  it("says on Android that it is scheduling through a region drawn before it", async () => {
+    await renderScreen();
+    const region = await screen.findByTestId(NOTIFICATION_SCHEDULING_STATUS_ID);
+    await layOut(region);
+    expect(region).toHaveProp("accessibilityLabel", "");
+
+    await act(async () => {
+      useNotificationStore.setState({ isScheduling: true });
+    });
+
+    expect(region).toHaveProp("accessibilityLabel", i18n.t("notification.schedulingNotifications"));
   });
 
   it("offers athan playback on Android only", async () => {

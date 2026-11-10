@@ -50,3 +50,6 @@ export const NOTIFICATION_FIELD = {
 
 /** Minutes from the Athan: after it for Iqama, before it for pre-Athan. */
 export const NOTIFICATION_TIMING_CHOICES = [5, 10, 15, 20, 30] as const;
+
+/** Test id of the settings screen's spoken "scheduling" status. */
+export const NOTIFICATION_SCHEDULING_STATUS_ID = "notification-scheduling-status";

@@ -1,12 +1,13 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import FeedbackScreen from "@/app/settings/feedback";
-import { AccessibilityInfo } from "react-native";
-import { userEvent } from "@testing-library/react-native";
+import { AccessibilityInfo, Platform } from "react-native";
+import { userEvent, waitFor } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { AppLocale } from "@/enums/app";
+import { FEEDBACK_STATUS_ID } from "@/constants/Feedback";
+import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import {
   buildLogAttachment,
@@ -15,15 +16,15 @@ import {
   type FeedbackReceipt,
 } from "@/services/feedback";
 import { useAppStore } from "@/stores/app";
+import { layOut } from "@/test-helpers/layout";
+import { resetOffline, setOffline } from "@/test-helpers/offlineMock";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { Attachment, Report, Tier, type OutgoingAttachment } from "@/types/feedback";
 import { formatFileSizeLocale } from "@/utils/number";
 
-let mockOffline = false;
-
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
-jest.mock("@/hooks/useIsOffline", () => ({ useIsOffline: () => mockOffline }));
+jest.mock("@/hooks/useIsOffline", () => jest.requireActual("@/test-helpers/offlineMock"));
 jest.mock("@/services/feedback", () => ({
   ...jest.requireActual("@/services/feedback"),
   submitFeedback: jest.fn(),
@@ -40,6 +41,7 @@ const LOG: OutgoingAttachment = {
 const RECEIPT: FeedbackReceipt = { id: "report-1", tier: Tier.BASIC };
 
 const t = i18n.t.bind(i18n);
+const PLATFORM = Platform.OS;
 
 const renderFeedback = () =>
   renderRouter(
@@ -54,7 +56,7 @@ const sendButton = (key: string) => screen.getByRole("button", { name: t(key) })
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockOffline = false;
+  resetOffline();
   useAppStore.setState({ locale: AppLocale.EN });
   jest.mocked(buildLogAttachment).mockResolvedValue(LOG);
 });
@@ -128,7 +130,7 @@ describe("Feedback", () => {
     });
 
     it("says the phone is offline", async () => {
-      mockOffline = true;
+      await setOffline(true);
       await renderFeedback();
 
       expect(announce).toHaveBeenCalledWith(t("feedback.offline"));
@@ -144,6 +146,94 @@ describe("Feedback", () => {
 
       expect(await screen.findByText(t("feedback.image.tooLarge"))).toBeTruthy();
       expect(announce).toHaveBeenCalledWith(t("feedback.image.tooLarge"));
+    });
+  });
+
+  // TalkBack says a change only on a region that is already drawn.
+  describe("on Android", () => {
+    beforeEach(() => {
+      Platform.OS = PlatformType.ANDROID;
+    });
+    afterEach(() => {
+      Platform.OS = PLATFORM;
+    });
+
+    it("says the report arrived", async () => {
+      jest.mocked(submitFeedback).mockResolvedValue(RECEIPT);
+      await renderFeedback();
+      const user = userEvent.setup();
+
+      await user.press(screen.getByLabelText(t("feedback.type.feature")));
+      await user.press(sendButton("feedback.send"));
+      const region = await screen.findByTestId(FEEDBACK_STATUS_ID.SENT);
+      await layOut(region);
+
+      expect(region).toHaveProp("accessibilityLabel", t("feedback.success.body"));
+    });
+
+    it("says the send failed through a region drawn before it", async () => {
+      jest.mocked(submitFeedback).mockRejectedValue(new Error());
+      await renderFeedback();
+      const region = screen.getByTestId(FEEDBACK_STATUS_ID.FAILED);
+      await layOut(region);
+      const user = userEvent.setup();
+
+      await user.press(screen.getByLabelText(t("feedback.type.feature")));
+      await user.press(sendButton("feedback.send"));
+
+      await waitFor(() => expect(region).toHaveProp("accessibilityLabel", t("feedback.error")));
+      expect(screen.getByTestId(FEEDBACK_STATUS_ID.FAILED)).toBe(region);
+    });
+
+    it("says the phone is offline when the screen opens offline", async () => {
+      await setOffline(true);
+      await renderFeedback();
+      const region = screen.getByTestId(FEEDBACK_STATUS_ID.OFFLINE);
+      await layOut(region);
+
+      expect(region).toHaveProp("accessibilityLabel", t("feedback.offline"));
+    });
+
+    it("says the phone went offline through a region drawn before it", async () => {
+      await renderFeedback();
+      const region = screen.getByTestId(FEEDBACK_STATUS_ID.OFFLINE);
+      await layOut(region);
+      expect(region).toHaveProp("accessibilityLabel", "");
+
+      await setOffline(true);
+
+      expect(region).toHaveProp("accessibilityLabel", t("feedback.offline"));
+      expect(screen.getByTestId(FEEDBACK_STATUS_ID.OFFLINE)).toBe(region);
+    });
+
+    it("says why an image was refused through a region drawn before it", async () => {
+      jest.mocked(pickImageAttachment).mockResolvedValue({ ok: false, reason: "tooLarge" });
+      await renderFeedback();
+      const user = userEvent.setup();
+      await user.press(sendButton("feedback.details.show"));
+      const region = screen.getByTestId(FEEDBACK_STATUS_ID.IMAGE);
+      await layOut(region);
+
+      await user.press(sendButton("feedback.image.add"));
+
+      await waitFor(() =>
+        expect(region).toHaveProp("accessibilityLabel", t("feedback.image.tooLarge"))
+      );
+    });
+
+    // A swipe would otherwise reach an error the closed details do not show.
+    it("leaves no stop for an image error inside the closed details", async () => {
+      jest.mocked(pickImageAttachment).mockResolvedValue({ ok: false, reason: "tooLarge" });
+      await renderFeedback();
+      const user = userEvent.setup();
+      await user.press(sendButton("feedback.details.show"));
+      await layOut(screen.getByTestId(FEEDBACK_STATUS_ID.IMAGE));
+      await user.press(sendButton("feedback.image.add"));
+      await screen.findByText(t("feedback.image.tooLarge"));
+
+      await user.press(sendButton("feedback.details.hide"));
+
+      expect(screen.queryByLabelText(t("feedback.image.tooLarge"))).toBeNull();
     });
   });
 
