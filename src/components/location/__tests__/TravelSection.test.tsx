@@ -2,6 +2,7 @@ import type { ParseKeys } from "i18next";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { TravelSection } from "@/components/location/TravelSection";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { TRAVEL_MODE, type TravelMode } from "@/constants/CityCheck";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -37,6 +38,35 @@ const radio = (title: ParseKeys) =>
 
 const notAskedHeader = () =>
   screen.queryByRole("header", { name: t("location.travel.notAsked.title") });
+
+const hidden = { includeHiddenElements: true } as const;
+
+/** A muted place of each kind; each setup returns the text its row shows. */
+const MUTED_PLACES: readonly (readonly [string, () => string])[] = [
+  [
+    "a place on the city list",
+    () => {
+      mockTrustedCityNear.mockResolvedValue(JEDDAH_ROW);
+      useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [JEDDAH_MARK] } });
+      return JEDDAH_ROW.name;
+    },
+  ],
+  [
+    "a place off the list",
+    () => {
+      useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
+      return t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name });
+    },
+  ],
+  [
+    "a place off the list, from a saved place with no name",
+    () => {
+      unnamedSavedPlace();
+      useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
+      return t("location.travel.notAsked.nearNoSavedName", { distance: FAR_MARK_KM });
+    },
+  ],
+];
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -151,10 +181,11 @@ describe("the places not asked in", () => {
     await renderSection();
 
     expect(notAskedHeader()).toBeTruthy();
-    expect(await screen.findByText(JEDDAH_ROW.name)).toBeTruthy();
+    expect(await screen.findByText(JEDDAH_ROW.name, hidden)).toBeTruthy();
     expect(
       screen.getByText(
-        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
+        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name }),
+        hidden
       )
     ).toBeTruthy();
   });
@@ -166,19 +197,32 @@ describe("the places not asked in", () => {
 
     expect(
       await screen.findByText(
-        t("location.travel.notAsked.nearNoSavedName", { distance: FAR_MARK_KM })
+        t("location.travel.notAsked.nearNoSavedName", { distance: FAR_MARK_KM }),
+        hidden
       )
     ).toBeTruthy();
   });
 
-  it("names the place in the hint of its Ask again button", async () => {
-    mockTrustedCityNear.mockResolvedValue(JEDDAH_ROW);
-    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [JEDDAH_MARK] } });
+  it.each(MUTED_PLACES)("hides the row text of %s; its button says it", async (_kind, mute) => {
+    const text = mute();
+    await renderSection();
+
+    expect((await screen.findByText(text, hidden)).props).toEqual(
+      expect.objectContaining(HIDDEN_FROM_READER)
+    );
+    expect(await askAgainButton()).toHaveProp(
+      "accessibilityLabel",
+      t("a11y.join", { first: t("location.travel.notAsked.askAgain"), second: text })
+    );
+  });
+
+  it.each(MUTED_PLACES)("hints at asking again in %s without the place", async (_kind, mute) => {
+    mute();
     await renderSection();
 
     expect(await askAgainButton()).toHaveProp(
       "accessibilityHint",
-      t("a11y.location.travel.askAgainHint", { place: JEDDAH_ROW.name })
+      t("a11y.location.travel.askAgainThereHint")
     );
   });
 
@@ -221,38 +265,23 @@ describe("the places not asked in", () => {
 
     expect(
       await screen.findByText(
-        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
+        t("location.travel.notAsked.near", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name }),
+        hidden
       )
     ).toBeTruthy();
   });
 
-  it("measures the distance in the hint of a place with no city row", async () => {
-    useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
-    await renderSection();
-
-    expect(await askAgainButton()).toHaveProp(
-      "accessibilityHint",
-      t("a11y.location.travel.askAgainNearHint", { distance: FAR_MARK_KM, saved: RIYADH_CITY.name })
-    );
-  });
-
-  it("measures the distance in the name and the hint when neither place has a name", async () => {
+  it("measures the distance in the name when neither place has a name", async () => {
     unnamedSavedPlace();
     useCityCheckStore.setState({ cityCheck: { ...EMPTY_MEMORY, notAsked: [FAR_MARK] } });
     await renderSection();
 
-    const button = await askAgainButton();
-
-    expect(button).toHaveProp(
+    expect(await askAgainButton()).toHaveProp(
       "accessibilityLabel",
       t("a11y.join", {
         first: t("location.travel.notAsked.askAgain"),
         second: t("location.travel.notAsked.nearNoSavedName", { distance: FAR_MARK_KM }),
       })
-    );
-    expect(button).toHaveProp(
-      "accessibilityHint",
-      t("a11y.location.travel.askAgainNearNoSavedNameHint", { distance: FAR_MARK_KM })
     );
   });
 
