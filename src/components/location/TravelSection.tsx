@@ -41,7 +41,7 @@ const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefin
 
   return (
     <HStack alignItems="center" gap="$3" {...GROUPED_STYLE.frame}>
-      {/* The button's label carries the place, so the reader hears it once. */}
+      {/* Hidden from screen readers: the button's label carries the place. */}
       <Text {...GROUPED_STYLE.title} {...HIDDEN_FROM_READER} color="$fg" flex={1}>
         {place}
       </Text>
