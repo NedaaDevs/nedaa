@@ -12,7 +12,9 @@ import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { controlProblems } from "@/test-helpers/controls";
+import { expectCopyNaming } from "@/test-helpers/copy";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
+import { HAND_WRITTEN_LOCALES } from "@/test-helpers/locales";
 import { stepProps } from "@/test-helpers/onboardingStepProps";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -144,5 +146,12 @@ describe("LanguageStep", () => {
     expect(
       screen.getByRole("radio", { name: new RegExp(t("settings.languages.ar.title")) })
     ).toHaveProp("accessibilityState", expect.objectContaining({ selected: true }));
+  });
+
+  it.each(HAND_WRITTEN_LOCALES)("says in %s where the language changes later", async (locale) => {
+    await act(() => i18n.changeLanguage(locale));
+    await renderWithTheme(<LanguageStep {...stepProps()} />);
+
+    expectCopyNaming("onboarding.language.body", "settings.title");
   });
 });

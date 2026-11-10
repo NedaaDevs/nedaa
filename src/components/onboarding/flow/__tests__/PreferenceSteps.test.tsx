@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AccessibilityInfo, PixelRatio, StyleSheet } from "react-native";
 import { act, screen, userEvent, waitFor, within } from "@testing-library/react-native";
+import type { ParseKeys } from "i18next";
 
 import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
 import { PLAY_DAY_PART } from "@/components/onboarding/flow/PlayDayButton";
@@ -37,8 +38,10 @@ import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
+import { expectCopyNaming } from "@/test-helpers/copy";
 import { Player } from "@/test-helpers/dayRunPlayer";
 import { clearHaptics, HAPTIC } from "@/test-helpers/hapticMock";
+import { HAND_WRITTEN_LOCALES } from "@/test-helpers/locales";
 import { lastPrimary, stepProps } from "@/test-helpers/onboardingStepProps";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
@@ -59,6 +62,11 @@ const mockTransition = jest.fn(async (fn: () => void | Promise<void>) => {
   await fn();
 });
 let scaleSpy: jest.SpyInstance<number, []>;
+/** Puts the copy and the app store in `locale`. */
+const switchLocale = async (locale: AppLocale) => {
+  await act(() => i18n.changeLanguage(locale));
+  useAppStore.setState({ locale });
+};
 
 beforeEach(async () => {
   mockReduced = false;
@@ -137,8 +145,7 @@ describe("NumeralsStep", () => {
       },
       otherTimings: { [OTHER_TIMING.SUNRISE]: at("16:50") } as DayPrayerTimes["otherTimings"],
     };
-    await act(() => i18n.changeLanguage(AppLocale.AR));
-    useAppStore.setState({ locale: AppLocale.AR });
+    await switchLocale(AppLocale.AR);
     usePreferencesStore.setState({ useWesternNumerals: false });
     usePrayerTimesStore.setState({ todayTimings: day });
     await renderWithTheme(
@@ -173,6 +180,24 @@ describe("NumeralsStep", () => {
     );
 
     expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
+  });
+
+  const NUMERALS_BODY: Record<OnboardingPath, ParseKeys> = {
+    [ONBOARDING_PATH.FIRST_RUN]: "onboarding.numerals.body",
+    [ONBOARDING_PATH.UPGRADE]: "onboarding.numerals.upgradeBody",
+  };
+
+  describe.each(HAND_WRITTEN_LOCALES)("in %s", (locale) => {
+    beforeEach(() => switchLocale(locale));
+
+    it.each(Object.values(ONBOARDING_PATH))(
+      "says on the %s path where the clock changes later",
+      async (path) => {
+        await renderWithTheme(<NumeralsStep {...stepProps({ path })} />);
+
+        expectCopyNaming(NUMERALS_BODY[path], "settings.preferences.title");
+      }
+    );
   });
 });
 
@@ -285,6 +310,13 @@ describe("AppearanceStep", () => {
     await renderAppearance();
 
     expect(screen.queryByText(t("onboarding.upgrade.currentSetting"))).toBeNull();
+  });
+
+  it.each(HAND_WRITTEN_LOCALES)("says in %s where the look changes later", async (locale) => {
+    await switchLocale(locale);
+    await renderAppearance();
+
+    expectCopyNaming("onboarding.appearance.body", "settings.title");
   });
 
   it("applies a mode through the theme dissolve", async () => {
@@ -594,6 +626,13 @@ describe("TextSizeStep", () => {
 
     expect(screen.getByText(t("onboarding.textSize.chooseTitle"))).toBeTruthy();
     expect(screen.getByText(t("onboarding.textSize.chooseBody"))).toBeTruthy();
+  });
+
+  it.each(HAND_WRITTEN_LOCALES)("says in %s where the size changes later", async (locale) => {
+    await switchLocale(locale);
+    await renderWithTheme(<TextSizeStep {...stepProps()} />);
+
+    expectCopyNaming("onboarding.textSize.chooseBody", "settings.preferences.title");
   });
 
   it("sets the text size", async () => {
