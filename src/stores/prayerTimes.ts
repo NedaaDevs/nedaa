@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import Storage from "expo-sqlite/kv-store";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import { addDays, format, getMonth, getYear, subDays } from "date-fns";
+import { addDays, endOfYear, format, getMonth, getYear, subDays } from "date-fns";
 
 // Types
 import {
@@ -81,7 +81,7 @@ export type PrayerTimesStore = {
   getPrayerTimes: (yearOverride?: number, month?: number) => Promise<PrayerTimesResponse>;
   getProviders: () => Promise<Provider[]>;
   getAndStorePrayerTimes: (yearOverride?: number, month?: number) => Promise<TimesFetch>;
-  /** Fetches the place's years; once all land for it, cleans up, then marks. */
+  /** Fetches the place's years; marks it once no day is another place's. */
   refetchPlaceTimes: () => Promise<PlaceRefetch>;
   /**
    * Resolves false while a year the load fetched is still owed, or when the
@@ -283,12 +283,21 @@ const refetchYears = async (set: SetTimes, get: GetTimes): Promise<PlaceRefetch>
     adjacentDays !== null &&
     (await storeYear(adjacentDays, adjacent.year)) === TIMES_FETCH.STORED;
   const refetch = adjacent ? yearLanded(adjacentStored, adjacent.needed) : ALL_LANDED;
-  if (!refetch.complete) return { ...refetch, fetched };
+  if (!refetch.stands) return { ...refetch, fetched };
+  if (!refetch.complete && get().timesSplit) {
+    // Next year did not land, and its rows may be another place's: they are
+    // deleted, and the read-ahead fetches the year once the window reaches it.
+    const deleted = await PrayerTimesDB.deleteDaysAfter(dateToInt(endOfYear(now)));
+    if (!deleted) {
+      log.w("Fetch", "next year's rows stay: their delete failed");
+      return { ...refetch, fetched };
+    }
+  }
   // A move during the stores leaves the place unmarked.
   if (placeMovedSince(placeRevision, "the refetch's stores")) return TIMES_FETCH.SUPERSEDED;
   // Rows before the kept days keep the old place; the widget reads the oldest.
   await get().cleanupOldData();
-  // Marked last: until every year lands, a later refetch runs again.
+  // Marked last: while a day may be another place's, a refetch runs again.
   set({ timesCoords: fetchedFor, timesSplit: false });
   return { ...refetch, fetched };
 };

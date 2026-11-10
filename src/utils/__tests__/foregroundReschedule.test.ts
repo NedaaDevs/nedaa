@@ -40,11 +40,13 @@ const mockPrayerTimesState: {
   usingDefaultLocation: boolean;
   loadingTimes: boolean;
   timesCoords: Coords | null;
+  timesSplit: boolean;
 } = {
   didGetCurrentLocation: true,
   usingDefaultLocation: false,
   loadingTimes: false,
   timesCoords: null,
+  timesSplit: false,
 };
 /** Both stores' disk read: whether it has landed, and who waits for it. */
 const mockHydration = { landed: true, listeners: [] as (() => void)[] };
@@ -71,6 +73,7 @@ jest.mock("@/stores/prayerTimes", () => ({
       usingDefaultLocation: mockPrayerTimesState.usingDefaultLocation,
       loadingTimes: mockPrayerTimesState.loadingTimes,
       timesCoords: mockPrayerTimesState.timesCoords,
+      timesSplit: mockPrayerTimesState.timesSplit,
     }),
     persist: mockPersist,
   },
@@ -124,6 +127,7 @@ beforeEach(() => {
   mockPrayerTimesState.usingDefaultLocation = false;
   mockPrayerTimesState.loadingTimes = false;
   mockPrayerTimesState.timesCoords = { latitude: 24.7136, longitude: 46.6753 };
+  mockPrayerTimesState.timesSplit = false;
   mockLocationState.locationMode = LocationMode.DEVICE;
   mockLocationState.lastKnownCoords = { latitude: 24.7136, longitude: 46.6753 };
   mockLocationState.locationDetails = { coords: { latitude: 24.7136, longitude: 46.6753 } };
@@ -324,6 +328,49 @@ describe("registerForegroundReschedule", () => {
   it("only tops up the alarms when the repair leaves the times elsewhere", async () => {
     mockLocationState.locationDetails = { coords: { latitude: 21.4858, longitude: 39.1925 } };
     mockLoadPrayerTimes.mockRejectedValue(new Error("offline"));
+    const handler = registerFresh();
+
+    handler(APP_STATE.ACTIVE);
+    await settle();
+
+    expect(mockRescheduleAlarms).not.toHaveBeenCalled();
+    expect(mockEnsureAlarms).toHaveBeenCalledTimes(1);
+  });
+
+  // A refetch that stored one year of two leaves days of both places.
+  it("refetches for a verified place whose days are of two places", async () => {
+    mockPrayerTimesState.timesSplit = true;
+    const handler = registerFresh();
+
+    handler(APP_STATE.ACTIVE);
+    await settle();
+
+    expect(mockLoadPrayerTimes).toHaveBeenCalledWith(true);
+    expect(mockRefreshTimings).not.toHaveBeenCalled();
+  });
+
+  // In December a repair can leave one place's days with next year owed.
+  it.each([
+    ["every year landed", true],
+    ["next year stays owed", false],
+  ])("moves the alarms once a repair leaves one place's days, when %s", async (_name, landed) => {
+    mockPrayerTimesState.timesSplit = true;
+    mockLoadPrayerTimes.mockImplementation(async () => {
+      mockPrayerTimesState.timesSplit = false;
+      return landed;
+    });
+    const handler = registerFresh();
+
+    handler(APP_STATE.ACTIVE);
+    await settle();
+
+    expect(mockRescheduleAlarms).toHaveBeenCalledTimes(1);
+    expect(mockEnsureAlarms).not.toHaveBeenCalled();
+  });
+
+  it("only tops up the alarms while the repair leaves days of two places", async () => {
+    mockPrayerTimesState.timesSplit = true;
+    mockLoadPrayerTimes.mockResolvedValue(false);
     const handler = registerFresh();
 
     handler(APP_STATE.ACTIVE);
