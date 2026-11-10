@@ -20,6 +20,8 @@ const NEW_ZONE = RIYADH_ZONE;
 // The prayer_times table: one row per date, a later write replaces the row.
 const mockTable = new Map<number, DayPrayerTimes>();
 let mockNow = new Date();
+// A zone's own clock, where it differs from mockNow.
+const mockZoneNow = new Map<string, Date>();
 // The year whose insert fails; dates are written yyyymmdd.
 let mockFailedInsertYear: number | null = null;
 // While set, deleting the days after a date fails.
@@ -105,7 +107,7 @@ jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
 // The place's clock is a wall time; the test sets it directly.
 jest.mock("@/utils/date", () => ({
   ...jest.requireActual("@/utils/date"),
-  timeZonedNow: () => mockNow,
+  timeZonedNow: (zone: string) => mockZoneNow.get(zone) ?? mockNow,
   getTimezoneYear: () => mockNow.getFullYear(),
   getTimezoneMonth: () => mockNow.getMonth() + 1,
 }));
@@ -192,10 +194,12 @@ afterEach(() => {
   mockFailedInsertYear = null;
   mockDeleteFails = false;
   mockDuringDelete = () => {};
+  mockZoneNow.clear();
   placeAt(RIYADH_COORDS);
   place.placeRevision = 0;
   jest.mocked(place.settlePlace).mockClear();
   jest.mocked(place.setTimezone).mockClear();
+  jest.mocked(reloadPrayerWidgets).mockReset();
 });
 
 /** The dates of stored days that hold another place's times than `zone`'s. */
@@ -449,6 +453,61 @@ describe("a refetch that stored one year of two", () => {
       expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
     }
   );
+});
+
+// The store holds the old place's zone until the refetch stores the new
+// place's days; the days are then read in the new place's zone.
+describe("a December refetch for a place in another zone", () => {
+  it.each([
+    // 11 pm on 18 December in London is 2 am on the 19th in Riyadh.
+    { day: "19 December", held: new Date(2026, 11, 18, 23), fetched: new Date(2026, 11, 19, 2) },
+    // 11 pm on 31 December in London is 2 am on 1 January in Riyadh.
+    { day: "1 January", held: new Date(2026, 11, 31, 23), fetched: new Date(2027, 0, 1, 2) },
+  ])("owes next year when it is $day in the new zone", async ({ held, fetched }) => {
+    mockNow = held;
+    mockZoneNow.set(NEW_ZONE, fetched);
+    storeOldPlace(mockNow);
+    placeAt(RIYADH_COORDS, OLD_ZONE);
+    usePrayerTimesStore.setState({
+      getPrayerTimes: jest.fn(serveNewPlace),
+      timesCoords: OLD_COORDS,
+    });
+    // This year's store reloads the widgets first; next year's reload fails.
+    jest
+      .mocked(reloadPrayerWidgets)
+      .mockImplementationOnce(() => {})
+      .mockImplementationOnce(() => {
+        throw new Error("widget reload failed");
+      });
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).rejects.toThrow();
+
+    expect(mockTable.get(dateToInt(new Date(2027, 0, 1, 12)))?.timezone).toBe(NEW_ZONE);
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(true);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(OLD_COORDS);
+    expect(place.settlePlace).not.toHaveBeenCalled();
+  });
+
+  it("stands without next year when only the old zone's window reads it", async () => {
+    // 12:30 am on 19 December in Dubai is 11:30 pm on the 18th in Riyadh.
+    mockNow = new Date(2026, 11, 19, 0, 30);
+    mockZoneNow.set(NEW_ZONE, new Date(2026, 11, 18, 23, 30));
+    storePlace(mockNow, SECOND_ZONE);
+    placeAt(RIYADH_COORDS, SECOND_ZONE);
+    usePrayerTimesStore.setState({
+      getPrayerTimes: jest.fn(serveNewPlace),
+      timesCoords: SECOND_COORDS,
+    });
+    mockFailedInsertYear = 2027;
+
+    await expect(usePrayerTimesStore.getState().loadPrayerTimesAtCurrentPlace()).resolves.toBe(
+      false
+    );
+
+    expect(datesNotAt(NEW_ZONE)).toEqual([]);
+    expect(usePrayerTimesStore.getState().timesSplit).toBe(false);
+    expect(usePrayerTimesStore.getState().timesCoords).toEqual(RIYADH_COORDS);
+  });
 });
 
 // The table keeps two days back and a load reads 13 days on; near New Year
