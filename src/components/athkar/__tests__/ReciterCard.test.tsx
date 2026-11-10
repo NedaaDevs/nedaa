@@ -1,11 +1,14 @@
 import type { ComponentProps } from "react";
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import ReciterCard from "@/components/athkar/ReciterCard";
+import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { useAppStore } from "@/stores/app";
 import { RECITER } from "@/test-helpers/athkarAudio";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { formatFileSize } from "@/utils/customSoundManager";
+import { formatFileSizeLocale } from "@/utils/number";
 
 const NAME = RECITER.name.en;
 const SIZE = formatFileSize(RECITER.totalSize);
@@ -29,16 +32,19 @@ const renderCard = (
   );
 
 describe("ReciterCard", () => {
-  // The screen reader must hear a choice, its name and whether it is chosen.
-  it("reads as a radio with the reciter's name and state", async () => {
+  // The card is still mounted here, so its re-render goes inside act.
+  afterEach(() =>
+    act(async () => {
+      useAppStore.setState({ locale: AppLocale.EN });
+      await i18n.changeLanguage(AppLocale.EN);
+    })
+  );
+
+  // The screen reader says the radio state, so the name holds no state word.
+  it("says the choice once, through the radio state", async () => {
     await renderCard(true);
 
-    expect(
-      screen.getByRole("radio", {
-        name: join(t("a11y.athkar.reciterSelected", { name: NAME }), SIZE),
-        selected: true,
-      })
-    ).toBeTruthy();
+    expect(screen.getByRole("radio", { name: join(NAME, SIZE), selected: true })).toBeTruthy();
   });
 
   // The radio's name hides the line under it, so it says that line too.
@@ -50,19 +56,22 @@ describe("ReciterCard", () => {
     ).toBeTruthy();
   });
 
-  // The spinning badge has no words of its own.
-  it("says the download while the chosen pack downloads", async () => {
+  // The progress bar under the chosen card says the download.
+  it("leaves the download to the progress bar", async () => {
     await renderCard(true, { downloaded: false, isDownloading: true });
 
-    expect(
-      screen.getByRole("radio", {
-        name: join(
-          t("a11y.athkar.reciterSelected", { name: NAME }),
-          SIZE,
-          t("a11y.athkar.downloading")
-        ),
-      })
-    ).toBeTruthy();
+    expect(screen.getByRole("radio", { name: join(NAME, SIZE), selected: true })).toBeTruthy();
+  });
+
+  it("says the size in the app's language", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    await i18n.changeLanguage(AppLocale.AR);
+    const spokenSize = formatFileSizeLocale(RECITER.totalSize, t);
+    expect(spokenSize).not.toBe(SIZE);
+
+    await renderCard(false);
+
+    expect(screen.getByRole("radio", { name: join(NAME, spokenSize) })).toBeTruthy();
   });
 
   it("chooses the reciter when the radio is pressed", async () => {
