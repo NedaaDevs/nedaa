@@ -17,6 +17,7 @@ import {
   RECITER,
   type PackResult,
 } from "@/test-helpers/athkarAudio";
+import { later } from "@/test-helpers/promises";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
@@ -80,6 +81,21 @@ describe("AudioSettings", () => {
         message: t("athkar.audio.downloadRetrySuccess"),
       })
     );
+  });
+
+  // The progress bar says the download; the card's spinning badge has no words.
+  it("says a running download once", async () => {
+    const download = later<PackResult>();
+    jest.mocked(audioDownloadManager.downloadPack).mockReturnValue(download.promise);
+    await renderWithTheme(<AudioSettings />);
+    await userEvent.press(await screen.findByText(NAME));
+
+    expect(await screen.findByText(t("athkar.audio.downloading"))).toBeTruthy();
+    const said = screen.getAllByLabelText(t("a11y.athkar.downloading"), { exact: false });
+    expect(said).toHaveLength(1);
+
+    download.release(PACK_WHOLE);
+    await waitFor(() => expect(audioDownloadManager.getStorageBreakdown).toHaveBeenCalledTimes(2));
   });
 
   it("keeps the failure toast when a file of the first download fails", async () => {
