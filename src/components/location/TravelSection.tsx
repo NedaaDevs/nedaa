@@ -8,6 +8,7 @@ import { LIST_ROW_STYLE, LIST_ROW_VARIANT } from "@/components/ui/list-row";
 import { Section } from "@/components/ui/section";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { TRAVEL_MODE, type TravelMode } from "@/constants/CityCheck";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { SECTION_KIND } from "@/constants/Section";
@@ -37,15 +38,11 @@ const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefin
     (saved
       ? t("location.travel.notAsked.near", { distance, saved })
       : t("location.travel.notAsked.nearNoSavedName", { distance }));
-  const askAgainHint = named
-    ? t("a11y.location.travel.askAgainHint", { place: named })
-    : saved
-      ? t("a11y.location.travel.askAgainNearHint", { distance, saved })
-      : t("a11y.location.travel.askAgainNearNoSavedNameHint", { distance });
 
   return (
     <HStack alignItems="center" gap="$3" {...GROUPED_STYLE.frame}>
-      <Text {...GROUPED_STYLE.title} color="$fg" flex={1}>
+      {/* The button's label carries the place, so the reader hears it once. */}
+      <Text {...GROUPED_STYLE.title} {...HIDDEN_FROM_READER} color="$fg" flex={1}>
         {place}
       </Text>
       <Button
@@ -56,7 +53,7 @@ const NotAskedRow = ({ mark, saved }: { mark: PlaceMark; saved: string | undefin
           first: t("location.travel.notAsked.askAgain"),
           second: place,
         })}
-        accessibilityHint={askAgainHint}>
+        accessibilityHint={t("a11y.location.travel.askAgainThereHint")}>
         <Button.Text>{t("location.travel.notAsked.askAgain")}</Button.Text>
       </Button>
     </HStack>

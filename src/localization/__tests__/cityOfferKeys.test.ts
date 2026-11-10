@@ -61,9 +61,7 @@ const PARAMS: readonly (readonly [ParseKeys, readonly string[]])[] = [
   ["location.travel.notAsked.askAgain", []],
   ["location.travel.notAsked.near", ["distance", "saved"]],
   ["location.travel.notAsked.nearNoSavedName", ["distance"]],
-  ["a11y.location.travel.askAgainHint", ["place"]],
-  ["a11y.location.travel.askAgainNearHint", ["distance", "saved"]],
-  ["a11y.location.travel.askAgainNearNoSavedNameHint", ["distance"]],
+  ["a11y.location.travel.askAgainThereHint", []],
 ];
 
 const KEYS = PARAMS.map(([key]) => key);
