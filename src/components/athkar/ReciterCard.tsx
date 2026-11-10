@@ -21,6 +21,7 @@ import { Check, Play, Pause, Download, Loader } from "lucide-react-native";
 
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { formatFileSize } from "@/utils/customSoundManager";
+import { formatFileSizeLocale } from "@/utils/number";
 
 import type { ReciterCatalogEntry } from "@/types/athkar-audio";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -61,12 +62,8 @@ const ReciterCard: FC<Props> = ({
   const size = formatFileSize(reciter.totalSize);
   const downloadedNote = downloaded === true ? t("athkar.audio.downloaded") : null;
   // A label hides the text inside the radio, and the badge has no words.
-  const label = [
-    selected ? t("a11y.athkar.reciterSelected", { name }) : name,
-    size,
-    downloadedNote,
-    selected && isDownloading ? t("a11y.athkar.downloading") : null,
-  ]
+  // The radio state says the choice; a progress bar says the download.
+  const label = [name, formatFileSizeLocale(reciter.totalSize, t), downloadedNote]
     .filter((part) => part !== null)
     .reduce((first, second) => t("a11y.join", { first, second }));
 
