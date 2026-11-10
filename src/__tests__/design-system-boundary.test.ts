@@ -23,7 +23,7 @@ const CEILING = {
   /** Radius props not set to a named token ($chip, $control, $card, $sheet, $pill). */
   rawRadius: 356,
   /** Width, height and their bounds given a non-zero number. */
-  rawSize: 516,
+  rawSize: 504,
   /** `styled()` belongs in `ui/`, and nowhere else ever. */
   styledCalls: 0,
 } as const;
