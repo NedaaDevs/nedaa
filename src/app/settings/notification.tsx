@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon, type IconProps } from "@/components/ui/icon";
 import { Card } from "@/components/ui/card";
 import { ListRow } from "@/components/ui/list-row";
+import { SpokenStatus } from "@/components/ui/live-region";
 import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -30,7 +31,6 @@ import { PlatformType } from "@/enums/app";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
-import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 
@@ -48,7 +48,11 @@ import { getEffectiveConfig } from "@/types/notification";
 
 // Constants
 import { PRAYER_ID } from "@/constants/Prayer";
-import { NOTIFICATION_TYPE, SYSTEM_SOUND } from "@/constants/Notification";
+import {
+  NOTIFICATION_SCHEDULING_STATUS_ID,
+  NOTIFICATION_TYPE,
+  SYSTEM_SOUND,
+} from "@/constants/Notification";
 import { Background } from "@/components/ui/background";
 
 // Utils
@@ -100,7 +104,6 @@ const NotificationSettings = () => {
     scheduleAllNotifications,
     rescheduleIfNeeded,
   } = useNotificationSettings();
-  useIosAnnouncement(isScheduling ? t("notification.schedulingNotifications") : null);
 
   // Permission state
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -367,7 +370,6 @@ const NotificationSettings = () => {
               {/* Sync Status */}
               {isScheduling && (
                 <Box
-                  accessibilityLiveRegion="polite"
                   backgroundColor="$backgroundMuted"
                   marginHorizontal="$4"
                   padding="$3"
@@ -379,6 +381,11 @@ const NotificationSettings = () => {
                   </HStack>
                 </Box>
               )}
+              {/* Mounted before the run, so TalkBack hears it start. */}
+              <SpokenStatus
+                testID={NOTIFICATION_SCHEDULING_STATUS_ID}
+                message={isScheduling ? t("notification.schedulingNotifications") : null}
+              />
             </>
           )}
 

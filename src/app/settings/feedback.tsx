@@ -21,6 +21,7 @@ import {
 import { Background } from "@/components/ui/background";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { FEEDBACK_STATUS_ID } from "@/constants/Feedback";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -30,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Pressable } from "@/components/ui/pressable";
+import { SpokenStatus } from "@/components/ui/live-region";
 
 import {
   submitFeedback,
@@ -37,7 +39,6 @@ import {
   pickImageAttachment,
   generateClientKey,
 } from "@/services/feedback";
-import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { Report, type ReportType, type OutgoingAttachment } from "@/types/feedback";
 import { formatFileSizeLocale } from "@/utils/number";
@@ -101,11 +102,6 @@ const FeedbackScreen = () => {
   const submittingRef = useRef(false);
   const supportsLogs = type === Report.CRASH || type === Report.BUG;
   const logsAttached = supportsLogs && !logsRemoved;
-
-  useIosAnnouncement(status === "success" ? t("feedback.success.body") : null);
-  useIosAnnouncement(status === "error" ? t("feedback.error") : null);
-  useIosAnnouncement(offline ? t("feedback.offline") : null);
-  useIosAnnouncement(imageError);
 
   // Prepare the log bundle in the background so its size is shown before Send.
   useEffect(() => {
@@ -201,14 +197,10 @@ const FeedbackScreen = () => {
           <Text size="lg" fontWeight="700" color="$typography" textAlign="center">
             {t("feedback.success.title")}
           </Text>
-          <Text
-            size="sm"
-            color="$typographySecondary"
-            textAlign="center"
-            lineHeight={20}
-            accessibilityLiveRegion="polite">
+          <Text size="sm" color="$typographySecondary" textAlign="center" lineHeight={20}>
             {t("feedback.success.body")}
           </Text>
+          <SpokenStatus testID={FEEDBACK_STATUS_ID.SENT} message={t("feedback.success.body")} />
           {receiptId ? (
             <Text size="xs" color="$typographySecondary" selectable>
               {t("feedback.success.reference", { id: receiptId })}
@@ -544,10 +536,11 @@ const FeedbackScreen = () => {
                       </Card.Pressable>
                     )}
                     {imageError ? (
-                      <Text size="xs" color="$error" accessibilityLiveRegion="polite">
+                      <Text size="xs" color="$error">
                         {imageError}
                       </Text>
                     ) : null}
+                    <SpokenStatus testID={FEEDBACK_STATUS_ID.IMAGE} message={imageError} />
                   </VStack>
                 </VStack>
               ) : null}
@@ -558,11 +551,7 @@ const FeedbackScreen = () => {
           <Animated.View entering={enter(6)}>
             <VStack gap="$3">
               {offline ? (
-                <HStack
-                  gap="$2"
-                  alignItems="center"
-                  justifyContent="center"
-                  accessibilityLiveRegion="polite">
+                <HStack gap="$2" alignItems="center" justifyContent="center">
                   <Icon as={WifiOff} size={16} color="$typographySecondary" />
                   <Text size="sm" color="$typographySecondary">
                     {t("feedback.offline")}
@@ -571,14 +560,19 @@ const FeedbackScreen = () => {
               ) : null}
 
               {status === "error" ? (
-                <Text
-                  size="sm"
-                  color="$error"
-                  textAlign="center"
-                  accessibilityLiveRegion="assertive">
+                <Text size="sm" color="$error" textAlign="center">
                   {t("feedback.error")}
                 </Text>
               ) : null}
+              {/* Mounted before either status, so TalkBack hears each change. */}
+              <SpokenStatus
+                testID={FEEDBACK_STATUS_ID.OFFLINE}
+                message={offline ? t("feedback.offline") : null}
+              />
+              <SpokenStatus
+                testID={FEEDBACK_STATUS_ID.FAILED}
+                message={status === "error" ? t("feedback.error") : null}
+              />
 
               <Button
                 variant="outline"
