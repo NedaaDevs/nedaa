@@ -89,7 +89,7 @@
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAlarmKitUsageDescription</key>
-    <string>Nedaa needs alarm access to wake you up for Fajr and Jummah prayers.</string>
+    <string>Nedaa needs alarm access to wake you for Fajr and Friday prayers.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
@@ -104,15 +104,15 @@
     <key>NSLocalNetworkUsageDescription</key>
     <string>Expo Dev Launcher uses the local network to discover and connect to development servers running on your computer.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used while you are using the app and may also be used in the background to send you notifications about upcoming prayers. Your location data will not be shared with any third parties.</string>
+    <string>Nedaa uses your location to find your city and its prayer times.</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>This app uses your location to provide accurate prayer times and reminders based on your current location. Your location data will be used only for this purpose and will not be shared with any third parties.</string>
+    <string>Nedaa uses your location to find your city and its prayer times.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Nedaa uses your precise location while you use the app to calculate the Qibla direction and provide accurate prayer times and reminders. Your location is not shared with third parties.</string>
+    <string>Nedaa uses your location while you use the app to find your city, its prayer times and the Qibla direction.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>This app does not require microphone access.</string>
+    <string>Nedaa does not use the microphone.</string>
     <key>NSMotionUsageDescription</key>
-    <string>$(PRODUCT_NAME) does not require motion access.</string>
+    <string>Nedaa does not use motion data.</string>
     <key>NSSupportsLiveActivities</key>
     <true/>
     <key>NSUserActivityTypes</key>

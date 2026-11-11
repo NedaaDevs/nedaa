@@ -1,34 +1,29 @@
 import { forwardRef } from "react";
 import { withStaticProperties } from "@tamagui/helpers";
 import { styled, YStack } from "tamagui";
-import type { GetProps } from "tamagui";
+import type { GetProps, TamaguiElement } from "tamagui";
+
+import { useRestingSurface } from "@/components/ui/material/edge";
+import { usePressScale } from "@/components/ui/pressable/pressScale";
 
 const CardFrame = styled(YStack, {
   name: "Card",
-  backgroundColor: "$backgroundSecondary",
-  borderRadius: "$6",
-  padding: "$4",
+  backgroundColor: "$surfaceGlass",
+  borderRadius: "$card",
+  padding: "$cardPad",
 
   variants: {
-    // Radius climbs with padding so a card reads at the same "softness" at any
-    // size. md is the default and matches the grouped list radius.
+    // Size changes the inset, not the shape: a card is a card at any size. The
+    // small one reads as a chip, which is its own intent.
     size: {
-      sm: { padding: "$3", borderRadius: "$4" },
-      md: { padding: "$4", borderRadius: "$6" },
-      lg: { padding: "$6", borderRadius: "$7" },
+      sm: { padding: "$stack", borderRadius: "$chip" },
+      md: { padding: "$cardPad", borderRadius: "$card" },
+      // 24 is $section, a gap name; a card's inset stays on the numeric step.
+      lg: { padding: "$6", borderRadius: "$card" },
     },
     variant: {
-      // Flat surface. The default: surfaces separate from the page by radius and
-      // a background step rather than by shadow.
+      // The resting surface: a glass tone, the e1 lift and a lit top edge.
       plain: {},
-      elevated: {
-        backgroundColor: "$backgroundSecondary",
-        shadowColor: "$shadowColor",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-      },
       outline: {
         backgroundColor: "transparent",
         borderWidth: 1,
@@ -41,11 +36,15 @@ const CardFrame = styled(YStack, {
       filled: {
         backgroundColor: "$backgroundMuted",
       },
+      // Nested in a sheet: the thinned panel tone; glass never lies on glass.
+      panel: {
+        backgroundColor: "$panel",
+      },
       // Inset-grouped list container: one surface holding rows that supply their
       // own padding, clipped so the first and last row inherit the corners.
       grouped: {
         padding: 0,
-        borderRadius: "$6",
+        borderRadius: "$card",
         overflow: "hidden",
       },
     },
@@ -57,13 +56,52 @@ const CardFrame = styled(YStack, {
   },
 });
 
+type CardVariant = NonNullable<GetProps<typeof CardFrame>["variant"]>;
+type CardRestProps = Pick<
+  GetProps<typeof CardFrame>,
+  "testID" | "size" | "borderRadius" | "variant"
+>;
+
+/** Transparent and nested cards draw no lift and no lit edge. */
+const RESTS: Record<CardVariant, boolean> = {
+  plain: true,
+  outline: false,
+  ghost: false,
+  filled: true,
+  panel: false,
+  grouped: true,
+};
+
+/** The resting look on the card's corner; null for a card that lies flat. */
+const useCardRest = ({ testID, size, borderRadius, variant }: CardRestProps) => {
+  const resting = useRestingSurface({
+    owner: testID,
+    radius: borderRadius ?? (size === "sm" ? "$chip" : "$card"),
+  });
+  return RESTS[variant ?? "plain"] ? resting : null;
+};
+
+const RestingCard = forwardRef<TamaguiElement, GetProps<typeof CardFrame>>(
+  ({ children, style, ...props }, ref) => {
+    const rest = useCardRest(props);
+    return (
+      <CardFrame ref={ref} {...props} style={rest ? [rest.lift, style] : style}>
+        {rest?.edge}
+        {children}
+      </CardFrame>
+    );
+  }
+);
+RestingCard.displayName = "Card";
+
 // Tappable card. Mirrors the `Pressable` primitive's touch behaviour so a
 // hand-rolled `<Pressable>` surface swaps over without changing feel.
 const CardPressableFrame = styled(CardFrame, {
   name: "CardPressable",
-  role: "button",
-  minHeight: 44,
-  minWidth: 44,
+  // A View carrying a role is not yet an accessibility element.
+  accessible: true,
+  minHeight: "$target",
+  minWidth: "$target",
   pressStyle: {
     opacity: 0.7,
   },
@@ -79,16 +117,41 @@ const CardPressableFrame = styled(CardFrame, {
 
 /** Same reason as the `Pressable` primitive: the `disabled` variant only dims. */
 const CardPressable = forwardRef<never, GetProps<typeof CardPressableFrame>>(
-  ({ onPress, onLongPress, disabled, accessibilityState, ...props }, ref) => (
-    <CardPressableFrame
-      ref={ref}
-      disabled={disabled}
-      onPress={disabled ? undefined : onPress}
-      onLongPress={disabled ? undefined : onLongPress}
-      accessibilityState={{ disabled: Boolean(disabled), ...accessibilityState }}
-      {...props}
-    />
-  )
+  (
+    {
+      onPress,
+      onLongPress,
+      disabled,
+      accessibilityState,
+      role,
+      children,
+      style,
+      pressStyle,
+      ...props
+    },
+    ref
+  ) => {
+    const rest = useCardRest(props);
+    const press = usePressScale();
+    return (
+      <CardPressableFrame
+        ref={ref}
+        transition={press.transition}
+        animateOnly={press.animateOnly}
+        pressStyle={{ ...press.pressStyle, ...pressStyle }}
+        // A button unless the caller names a role; `role` would override theirs.
+        role={role ?? (props.accessibilityRole ? undefined : "button")}
+        disabled={disabled}
+        onPress={disabled ? undefined : onPress}
+        onLongPress={disabled ? undefined : onLongPress}
+        accessibilityState={{ disabled: Boolean(disabled), ...accessibilityState }}
+        {...props}
+        style={rest ? [rest.lift, style] : style}>
+        {rest?.edge}
+        {children}
+      </CardPressableFrame>
+    );
+  }
 );
 CardPressable.displayName = "CardPressable";
 
@@ -97,10 +160,10 @@ CardPressable.displayName = "CardPressable";
 const CardDivider = styled(YStack, {
   name: "CardDivider",
   height: 1,
-  backgroundColor: "$outline",
+  backgroundColor: "$hairline",
 });
 
-export const Card = withStaticProperties(CardFrame, {
+export const Card = withStaticProperties(RestingCard, {
   Pressable: CardPressable,
   Divider: CardDivider,
 });

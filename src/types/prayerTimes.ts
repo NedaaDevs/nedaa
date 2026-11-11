@@ -1,3 +1,4 @@
+import type { OtherTimingName, PrayerId } from "@/constants/Prayer";
 export type AllTimings = {
   fajr: string;
   sunrise: string;
@@ -24,6 +25,8 @@ export type PrayerTimesResponse = {
   months: {
     [monthNumber: string]: PrayerMonthEntry[];
   };
+  /** The settings the provider used, in the app's names; the adapter reads it. */
+  applied?: unknown;
 };
 
 export type PrayerTimesParams = {
@@ -31,15 +34,9 @@ export type PrayerTimesParams = {
   lng: number;
 };
 
-export type PrayerName = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
+export type PrayerName = PrayerId;
 
-export type OtherTimingName =
-  | "sunrise"
-  | "sunset"
-  | "imsak"
-  | "midnight"
-  | "firstthird"
-  | "lastthird";
+export type { OtherTimingName };
 
 export type PrayerTimings = Record<PrayerName, string>;
 export type OtherTimings = Record<OtherTimingName, string>;

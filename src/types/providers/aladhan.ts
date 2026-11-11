@@ -40,6 +40,9 @@ type Methods = AlAdhan["methods"];
  */
 export type AladhanMethodId = Methods[number]["id"] | null;
 
+/** A calculation method the provider applies; never "left to the provider". */
+export type MethodId = NonNullable<AladhanMethodId>;
+
 /**
  * Full method object containing ID and name information
  * @example { id: 3, nameKey: "mwl" }
@@ -81,8 +84,8 @@ type Shafaqs = AlAdhan["shafaqs"];
 
 /**
  * ID of the midnight calculation mode
- * - 0: Standard (mid-point between Maghrib and Fajr)
- * - 1: Jafari (mid-point between Maghrib and Sunrise)
+ * - 0: Standard (mid-point between sunset and sunrise)
+ * - 1: Jafari (mid-point between sunset and Fajr)
  */
 export type AladhanMidnightModeId = MidnightModes[number]["id"];
 
@@ -134,7 +137,7 @@ export type AladhanTuning = Record<AladhanPrayerTimeName, number>;
 /**
  * Tuning string format for API requests
  * Order: Imsak,Fajr,Sunrise,Dhuhr,Asr,Maghrib,Sunset,Isha,Midnight
- * Values range from -60 to +60 minutes
+ * Values range from -30 to +30 minutes
  * @example "5,3,5,7,9,-1,0,8,-6"
  */
 export type AladhanTuningString = string;
@@ -183,7 +186,7 @@ export interface AladhanSettings {
 
   /**
    * Fine adjustments to prayer times in minutes
-   * Values can be positive or negative (-60 to +60)
+   * Values can be positive or negative (-30 to +30)
    * @example { imsak: 5, fajr: 3, sunrise: 5, dhuhr: 7, asr: 9, maghrib: -1, sunset: 0, isha: 8, midnight: -6 }
    */
   tune?: AladhanTuning;

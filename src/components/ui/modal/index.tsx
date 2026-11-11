@@ -1,7 +1,7 @@
-import React, { use } from "react";
+import React, { use, useEffect, useEffectEvent } from "react";
 import { styled, View, XStack, YStack, Dialog } from "tamagui";
 import type { GetProps } from "tamagui";
-import { ScrollView, View as RNView } from "react-native";
+import { BackHandler, ScrollView, View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { RTLContext, useRTL } from "@/contexts/RTLContext";
@@ -12,18 +12,40 @@ type ModalSize = "xs" | "sm" | "md" | "lg" | "full";
 
 const ModalSizeContext = React.createContext<ModalSize>("md");
 
+// Names the dialog surface for screen readers; the surface sits inside the portal.
+const ModalLabelContext = React.createContext<string | undefined>(undefined);
+
 // --- Modal ---
 
 type ModalProps = {
   isOpen?: boolean;
   onClose?: () => void;
   size?: ModalSize;
+  accessibilityLabel?: string;
   children?: React.ReactNode;
 };
 
-const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", children }) => {
+const Modal: React.FC<ModalProps> = ({
+  isOpen = false,
+  onClose,
+  size = "md",
+  accessibilityLabel,
+  children,
+}) => {
   // Read here, above the portal, where the app's providers are still in scope.
   const rtl = useRTL();
+
+  // Back closes the dialog, not the screen it covers. The listener registers
+  // once per opening, so a dialog opened above this one stays first.
+  const close = useEffectEvent(() => onClose?.());
+  useEffect(() => {
+    if (!isOpen) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      close();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isOpen]);
 
   return (
     <Dialog
@@ -37,7 +59,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen = false, onClose, size = "md", chi
           {/* A portal renders outside this subtree, so contexts are re-provided inside
               it — otherwise ModalContent silently falls back to the defaults. */}
           <ModalSizeContext value={size}>
-            <RTLContext value={rtl}>{children}</RTLContext>
+            <ModalLabelContext value={accessibilityLabel}>
+              <RTLContext value={rtl}>{children}</RTLContext>
+            </ModalLabelContext>
           </ModalSizeContext>
         </Dialog.Portal>
       )}
@@ -55,7 +79,7 @@ ModalBackdrop.displayName = "ModalBackdrop";
 
 // --- ModalContent ---
 
-const SIZE_MAX_WIDTH: Record<ModalSize, number | string> = {
+const SIZE_MAX_WIDTH: Record<ModalSize, number | `${number}%`> = {
   xs: 320,
   sm: 384,
   md: 448,
@@ -69,11 +93,13 @@ type ModalContentProps = {
 
 const ModalContent: React.FC<ModalContentProps> = ({ children }) => {
   const size = use(ModalSizeContext);
+  const accessibilityLabel = use(ModalLabelContext);
   const { direction } = useRTL();
 
   return (
     <Dialog.Content
       key="modal-content"
+      accessibilityLabel={accessibilityLabel}
       backgroundColor="$backgroundSecondary"
       borderRadius="$6"
       padding="$0"

@@ -1,10 +1,11 @@
 import * as Linking from "expo-linking";
 import { router as expoRouter } from "expo-router";
-import { useScreenshotStore, type ScreenshotScreenKey } from "@/stores/screenshotStore";
+import { useScreenshotStore } from "@/stores/screenshotStore";
 import { getPreset } from "@/screenshot-mode/presets";
 import { IS_SCREENSHOT_MODE } from "@/screenshot-mode/flag";
 import { parseScreenshotDeepLink } from "@/screenshot-mode/parseScreenshotDeepLink";
 import { seedScreenshotState } from "@/screenshot-mode/seedScreenshotState";
+import { SCREEN_TO_PATH } from "@/screenshot-mode/screenPaths";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
 import { AppLocale, AppMode } from "@/enums/app";
@@ -13,19 +14,6 @@ import { AppLocale, AppMode } from "@/enums/app";
 // readiness marker. Keeps a single long-lived app session from letting the
 // capture fire against the previous screen during an in-place navigation.
 const SETTLE_MS = 900;
-
-const SCREEN_TO_PATH: Record<ScreenshotScreenKey, string> = {
-  "prayer-times": "/(tabs)/",
-  "reliable-alarms": "/alarm",
-  athkar: "/(tabs)/athkar",
-  qibla: "/(tabs)/compass",
-  privacy: "/privacy",
-  qada: "/(tabs)/qada",
-  quran: "/quran",
-  "athkar-with-audio": "/athkar-focus",
-  tools: "/(tabs)/tools",
-  umrah: "/umrah",
-};
 
 function handleUrl(url: string | null | undefined) {
   if (!url) return;

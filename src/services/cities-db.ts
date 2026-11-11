@@ -27,6 +27,7 @@ import { stripTashkeel } from "@/utils/tashkeel";
 import { boundingBoxFor } from "@/utils/cities";
 import { calculateDistance } from "@/utils/location";
 import { AppLogger } from "@/utils/appLogger";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 const log = AppLogger.create("location");
 
@@ -99,7 +100,7 @@ const ensureSeedCopied = async (): Promise<void> => {
   // is never stamped installed and the next open re-copies instead.
   if (versionFile.exists) versionFile.delete();
   versionFile.create();
-  versionFile.write(String(SEED_VERSION));
+  writeFileSync(versionFile, String(SEED_VERSION));
   log.i("CitiesDB", `installed seed v${SEED_VERSION}`);
 };
 

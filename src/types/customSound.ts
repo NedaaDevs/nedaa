@@ -5,7 +5,7 @@ import { NotificationType } from "@/types/notification";
  */
 export type CustomSound = {
   /** Unique identifier */
-  id: string;
+  id: CustomSoundKey;
 
   /** User-defined name for the sound */
   name: string;
@@ -60,7 +60,15 @@ export const CUSTOM_SOUNDS_STORAGE_KEY = "custom_sounds";
  */
 export const SUPPORTED_AUDIO_EXTENSIONS = [".mp3", ".ogg", ".wav", ".m4a", ".aac"] as const;
 
+/** The formats as a person reads them; the dot needs no per-locale comma. */
+export const SUPPORTED_AUDIO_FORMATS = SUPPORTED_AUDIO_EXTENSIONS.map((extension) =>
+  extension.slice(1).toUpperCase()
+).join(" · ");
+
 /**
  * Custom sound key prefix to distinguish from bundled sounds
  */
 export const CUSTOM_SOUND_KEY_PREFIX = "custom_";
+
+/** How a stored alert names a custom sound. */
+export type CustomSoundKey = `${typeof CUSTOM_SOUND_KEY_PREFIX}${string}`;

@@ -8,7 +8,7 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { generateDeterministicUUID, getAlarmKey, getLegacyAlarmKey } from "@/utils/alarmId";
 import { applyTimingOffset, pickNextTrigger } from "@/utils/alarmTrigger";
-import { toSettingsAlarmType } from "@/utils/alarmTypes";
+import { toScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import type { TimingConfig } from "@/types/alarm";
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
 import { SAME_OCCURRENCE_WINDOW_MS } from "@/constants/PrayerOccurrence";
@@ -16,8 +16,10 @@ import { readLedger, recordBooked } from "@/services/firedPrayerLedger";
 import { hasFired } from "@/utils/firedPrayerGuard";
 import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 import { waitForHydration } from "@/utils/storeHydration";
-
-const ALARM_HYDRATION_TIMEOUT_MS = 5000;
+import { readTimesPlace } from "@/utils/timesPlace";
+import { ALARM_DEFAULTS, ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
+import { STEP_OUTCOME, TIMES_PLACE, type StepOutcome, type TimesPlace } from "@/constants/Location";
+import { PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 
 // Alarm stores rehydrate asynchronously; startup readers (scheduling, native
 // queue drain) must await this or they read defaults and lose recurrences.
@@ -40,9 +42,7 @@ export const waitForAlarmStores = async (): Promise<void> => {
   ]);
 };
 
-export function getNextPrayerDate(
-  prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha"
-): Date | null {
+export function getNextPrayerDate(prayerName: PrayerId): Date | null {
   const { todayTimings, tomorrowTimings } = usePrayerTimesStore.getState();
 
   if (todayTimings?.timings[prayerName]) {
@@ -73,7 +73,7 @@ function getFridayDhuhrCandidates(): Date[] {
 }
 
 export async function schedulePrayerAlarm(
-  prayerName: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha",
+  prayerName: PrayerId,
   alarmType: ScheduledAlarmType = ScheduledAlarmType.CUSTOM,
   after = 0
 ): Promise<string | null> {
@@ -177,10 +177,17 @@ const armNextOccurrences = (
     const settingsType = toSettingsAlarmType(alarmType);
     const settings = settingsType ? useAlarmSettingsStore.getState()[settingsType] : null;
     if (settings && !settings.enabled) return null;
+    const place = await readTimesPlace();
+    // Only a verified place's times ring at the right hour.
+    if (place !== TIMES_PLACE.VERIFIED) {
+      alarmLog.w("Scheduler", `${alarmType}: place ${place}, not verified — alarm not scheduled`);
+      return null;
+    }
     const timing = settings?.timing;
 
     // A solved trigger can still be ahead of now; arm only what follows it.
     const from = Math.max(Date.now(), after);
+    // Read after the place check, which waits for the stored times to load.
     const unrung = withoutRungOccurrences(readCandidates(), timing, alarmType, from);
     const next = pickNextTrigger(unrung, timing, from);
     if (!next) {
@@ -217,7 +224,7 @@ export async function scheduleFajrAlarm(after = 0): Promise<string | null> {
   const settings = useAlarmSettingsStore.getState().fajr;
   if (!settings.enabled) return null;
 
-  return schedulePrayerAlarm("fajr", ScheduledAlarmType.FAJR, after);
+  return schedulePrayerAlarm(PRAYER_ID.FAJR, ScheduledAlarmType.FAJR, after);
 }
 
 export async function scheduleFridayAlarm(after = 0): Promise<string | null> {
@@ -305,11 +312,43 @@ const hasLegacyOccurrence = (alarmType: ScheduledAlarmType, now: number): boolea
     (alarm) => alarm.alarmType === alarmType && alarm.triggerTime > now && isLegacyOccurrence(alarm)
   );
 
-export async function ensureAlarmsScheduled(): Promise<void> {
-  const alarmSettings = useAlarmSettingsStore.getState();
+/** Cancels the prayer alarms armed for the default place's times. */
+const cancelDefaultPlaceAlarms = async (place: TimesPlace): Promise<void> => {
   const alarmStore = useAlarmStore.getState();
+  const armed = Object.values(ALARM_TYPE)
+    .map(toScheduledAlarmType)
+    .filter((type) => alarmStore.getAlarmByType(type));
+  if (armed.length === 0) return;
+  // Only both stores agreeing on the default place cancels.
+  if (place !== TIMES_PLACE.DEFAULT) {
+    alarmLog.w("Scheduler", `place ${place}, not the default one — alarms kept`);
+    return;
+  }
+  for (const type of armed) await alarmStore.cancelAlarmsByType(type);
+  alarmLog.w("Scheduler", `${armed.join(", ")}: times are for the default location — cancelled`);
+};
+
+/** Whether a non-rehearsal record of this type is not yet stale. */
+const hasLiveAlarm = (type: ScheduledAlarmType): boolean => {
+  const now = Date.now();
+  return Object.values(useAlarmStore.getState().scheduledAlarms).some(
+    (alarm) =>
+      alarm.alarmType === type &&
+      !alarm.isPreview &&
+      now - alarm.triggerTime <= ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS
+  );
+};
+
+export async function ensureAlarmsScheduled(): Promise<void> {
+  const place = await readTimesPlace();
+  // The switches stay on; a verified place arms them again on a later top-up.
+  if (place !== TIMES_PLACE.VERIFIED) {
+    await cancelDefaultPlaceAlarms(place);
+    return;
+  }
+  const alarmSettings = useAlarmSettingsStore.getState();
   const needsPlan = (alarmType: ScheduledAlarmType): boolean =>
-    !alarmStore.getAlarmByType(alarmType) || hasLegacyOccurrence(alarmType, Date.now());
+    !hasLiveAlarm(alarmType) || hasLegacyOccurrence(alarmType, Date.now());
 
   if (alarmSettings.fajr.enabled && needsPlan(ScheduledAlarmType.FAJR)) {
     await scheduleFajrAlarm();
@@ -319,16 +358,31 @@ export async function ensureAlarmsScheduled(): Promise<void> {
   }
 }
 
-export async function rescheduleAllAlarms(): Promise<void> {
+/** Cancels a type's alarms, then arms its next ones; partial if one stays. */
+const rescheduleType = async (
+  type: ScheduledAlarmType,
+  schedule: () => Promise<string | null>
+): Promise<StepOutcome> => {
+  const cancelled = await useAlarmStore.getState().cancelAlarmsByType(type);
+  if ((await schedule()) === null) return STEP_OUTCOME.FAILED;
+  return cancelled ? STEP_OUTCOME.DONE : STEP_OUTCOME.PARTIAL;
+};
+
+// Re-arms each enabled alarm at the stored times. Skipped with none enabled;
+// else done, partial or failed by how many types moved cleanly.
+export async function rescheduleAllAlarms(): Promise<StepOutcome> {
   const alarmSettings = useAlarmSettingsStore.getState();
-  const alarmStore = useAlarmStore.getState();
+  const moved: StepOutcome[] = [];
 
   if (alarmSettings.fajr.enabled) {
-    await alarmStore.cancelAlarmsByType(ScheduledAlarmType.FAJR);
-    await scheduleFajrAlarm();
+    moved.push(await rescheduleType(ScheduledAlarmType.FAJR, scheduleFajrAlarm));
   }
   if (alarmSettings.friday.enabled) {
-    await alarmStore.cancelAlarmsByType(ScheduledAlarmType.JUMMAH);
-    await scheduleFridayAlarm();
+    moved.push(await rescheduleType(ScheduledAlarmType.JUMMAH, scheduleFridayAlarm));
   }
+
+  if (moved.length === 0) return STEP_OUTCOME.SKIPPED;
+  if (moved.every((outcome) => outcome === STEP_OUTCOME.DONE)) return STEP_OUTCOME.DONE;
+  if (moved.every((outcome) => outcome === STEP_OUTCOME.FAILED)) return STEP_OUTCOME.FAILED;
+  return STEP_OUTCOME.PARTIAL;
 }

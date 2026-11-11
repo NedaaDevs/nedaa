@@ -1,15 +1,52 @@
-// Components
-import { Background } from "@/components/ui/background";
-import LanguageList from "@/components/LanguageList";
-import TopBar from "@/components/TopBar";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const LanguageSettings = () => {
+import { LanguageChoices } from "@/components/settings/LanguageChoices";
+import { LanguageHero } from "@/components/settings/LanguageHero";
+import { ScreenContent } from "@/components/ui/screen-content";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { Section } from "@/components/ui/section";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { SECTION_KIND } from "@/constants/Section";
+
+export default function LanguageScreen() {
   return (
-    <Background>
-      <TopBar title="settings.language" href="/settings" backOnClick />
-      <LanguageList />
-    </Background>
+    <ScreenSky>
+      <LanguageContent />
+    </ScreenSky>
+  );
+}
+
+/** The screen over its sky; the hero shows the place in the language in use. */
+const LanguageContent = () => {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+
+  return (
+    // The sky runs under the status bar; the content pads itself clear of it.
+    <SkyScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}>
+      <SkyOccluder>
+        <ScreenHeader
+          title={t("settings.language")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        />
+      </SkyOccluder>
+
+      <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
+        <LanguageHero />
+
+        <SkyOccluder>
+          <Section title={t("settings.languages.choose")} kind={SECTION_KIND.LABEL}>
+            <LanguageChoices />
+          </Section>
+        </SkyOccluder>
+      </ScreenContent>
+    </SkyScrollView>
   );
 };
-
-export default LanguageSettings;

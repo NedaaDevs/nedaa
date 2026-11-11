@@ -5,7 +5,9 @@ import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { DEBUG_SCREEN } from "@/constants/DebugScreens";
 import { Background } from "@/components/ui/background";
 
 import { PlatformType } from "@/enums/app";
@@ -25,7 +27,10 @@ const DiagnosticsDebugScreen = () => {
 
   return (
     <Background>
-      <TopBar title="Diagnostics Debug" href="/settings" backOnClick />
+      <ScreenHeader
+        title={DEBUG_SCREEN.DIAGNOSTICS.label}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

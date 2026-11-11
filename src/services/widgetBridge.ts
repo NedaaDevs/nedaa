@@ -8,13 +8,13 @@ import {
   getWidgetLastRenderedAt as iosLastRendered,
   isWidgetReloadAvailable,
   reloadAllWidgets,
-} from "../../modules/expo-widget/src";
+} from "expo-widget";
 import {
   getPlacedWidgetCount as androidPlacedCount,
   getWidgetLastRenderedAt as androidLastRendered,
   isWidgetsModuleAvailable,
   refreshAllWidgets,
-} from "../../modules/expo-widgets/src";
+} from "expo-widgets";
 
 const isIOS = Platform.OS === PlatformType.IOS;
 

@@ -5,8 +5,9 @@ import { localizeDigits } from "@/utils/digits";
 // Keys whose Western digits are part of the text rather than a quantity, so the
 // numeral preference must not reach them.
 export const LITERAL_DIGIT_KEYS = [
-  "settings.preferences.westernNumerals.description", // shows both digit sets as samples
+  "settings.preferences.numerals.options.", // each option shows its own digit set
   "settings.acknowledgements.", // licence identifiers such as CC BY 4.0
+  "location.coordinates.", // matches the coordinate fields, which show Western digits
 ];
 
 const hasLiteralDigits = (key: string | string[]) =>

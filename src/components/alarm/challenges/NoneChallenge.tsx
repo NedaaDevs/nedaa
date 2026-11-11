@@ -6,6 +6,7 @@ import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 type Props = {
   onComplete: () => void;
@@ -13,7 +14,7 @@ type Props = {
 
 const NoneChallenge: FC<Props> = ({ onComplete }) => {
   const { t } = useTranslation();
-  const hapticSuccess = useHaptic("success");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
   const handleDismiss = () => {
     hapticSuccess();

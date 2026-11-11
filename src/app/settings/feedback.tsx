@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, Image } from "react-native";
 import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 
 import {
   AlertTriangle,
@@ -19,7 +19,9 @@ import {
 } from "lucide-react-native";
 
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { FEEDBACK_STATUS_ID } from "@/constants/Feedback";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Box } from "@/components/ui/box";
@@ -29,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Pressable } from "@/components/ui/pressable";
+import { SpokenStatus } from "@/components/ui/live-region";
 
 import {
   submitFeedback,
@@ -38,6 +41,7 @@ import {
 } from "@/services/feedback";
 import { useIsOffline } from "@/hooks/useIsOffline";
 import { Report, type ReportType, type OutgoingAttachment } from "@/types/feedback";
+import { formatFileSizeLocale } from "@/utils/number";
 
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
 
@@ -70,26 +74,14 @@ const AREA_KEY: Record<(typeof AREAS)[number], string> = {
   other: "feedback.area.other",
 };
 
-const REPORT_VALUES = Object.values(Report) as string[];
-const validType = (value?: string): ReportType | null =>
-  value && REPORT_VALUES.includes(value) ? (value as ReportType) : null;
-
 const logsDefaultFor = (type: ReportType): boolean => type === Report.CRASH || type === Report.BUG;
-
-const formatBytes = (b: number): string => {
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
-  return `${(b / 1024 / 1024).toFixed(1)} MB`;
-};
 
 const FeedbackScreen = () => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const offline = useIsOffline();
-  const params = useLocalSearchParams<{ type?: string }>();
-  const initialType = validType(params.type);
 
-  const [type, setType] = useState<ReportType | null>(initialType);
+  const [type, setType] = useState<ReportType | null>(null);
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
   const [area, setArea] = useState<string | undefined>(undefined);
@@ -158,26 +150,29 @@ const FeedbackScreen = () => {
   const onSend = useCallback(async () => {
     if (!type) return;
     if (!clientKey.current) clientKey.current = generateClientKey();
+    const key = clientKey.current;
     submittingRef.current = true;
     setStatus("submitting");
     setProgress(0);
-    try {
-      const attachments: OutgoingAttachment[] = [];
-      if (logsAttached) {
-        attachments.push(logAttachment ?? (await buildLogAttachment({ category: type })));
-      }
-      if (image) attachments.push(image);
-      const receipt = await submitFeedback(
-        { type, message, contact, area, attachments, clientKey: clientKey.current },
+    const send = async () => {
+      const logs = logsAttached
+        ? [logAttachment ?? (await buildLogAttachment({ category: type }))]
+        : [];
+      const attachments = image ? [...logs, image] : logs;
+      return submitFeedback(
+        { type, message, contact, area, attachments, clientKey: key },
         setProgress
       );
-      setReceiptId(receipt.id);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    } finally {
-      submittingRef.current = false;
-    }
+    };
+    // A chain, not a try: the React Compiler cannot lower a try that holds a
+    // `finally` or a `??`, and skips the whole screen.
+    await send()
+      .then((receipt) => {
+        setReceiptId(receipt.id);
+        setStatus("success");
+      })
+      .catch(() => setStatus("error"));
+    submittingRef.current = false;
   }, [type, logsAttached, logAttachment, image, message, contact, area]);
 
   const enter = (i: number) => (reduceMotion ? undefined : FadeInDown.duration(320).delay(i * 55));
@@ -185,7 +180,10 @@ const FeedbackScreen = () => {
   if (status === "success") {
     return (
       <Background>
-        <TopBar title={t("feedback.title")} href="/settings" backOnClick />
+        <ScreenHeader
+          title={t("feedback.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+        />
         <VStack flex={1} padding="$4" gap="$4" justifyContent="center" alignItems="center">
           <VStack
             width={56}
@@ -199,14 +197,10 @@ const FeedbackScreen = () => {
           <Text size="lg" fontWeight="700" color="$typography" textAlign="center">
             {t("feedback.success.title")}
           </Text>
-          <Text
-            size="sm"
-            color="$typographySecondary"
-            textAlign="center"
-            lineHeight={20}
-            accessibilityLiveRegion="polite">
+          <Text size="sm" color="$typographySecondary" textAlign="center" lineHeight={20}>
             {t("feedback.success.body")}
           </Text>
+          <SpokenStatus testID={FEEDBACK_STATUS_ID.SENT} message={t("feedback.success.body")} />
           {receiptId ? (
             <Text size="xs" color="$typographySecondary" selectable>
               {t("feedback.success.reference", { id: receiptId })}
@@ -229,7 +223,10 @@ const FeedbackScreen = () => {
 
   return (
     <Background>
-      <TopBar title={t("feedback.title")} href="/settings" backOnClick />
+      <ScreenHeader
+        title={t("feedback.title")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -247,7 +244,11 @@ const FeedbackScreen = () => {
               <Text size="sm" fontWeight="600" color="$typography">
                 {t("feedback.typeLabel")}
               </Text>
-              <HStack gap="$2" flexWrap="wrap">
+              <HStack
+                gap="$2"
+                flexWrap="wrap"
+                accessibilityRole="radiogroup"
+                accessibilityLabel={t("feedback.typeLabel")}>
                 {TYPES.map(({ type: value, icon, labelKey }) => {
                   const selected = type === value;
                   return (
@@ -302,7 +303,7 @@ const FeedbackScreen = () => {
                   type ? `feedback.messagePlaceholder.${type}` : "feedback.messagePlaceholder"
                 )}
                 multiline
-                size="$4"
+                size="md"
                 minHeight={120}
                 paddingTop="$3"
                 fontSize={16}
@@ -327,7 +328,7 @@ const FeedbackScreen = () => {
                         </Text>
                         <Text size="xs" color="$typographySecondary" lineHeight={16}>
                           {logsAttached && logAttachment
-                            ? formatBytes(logAttachment.bytes)
+                            ? formatFileSizeLocale(logAttachment.bytes, t)
                             : t("feedback.logs.subtitle")}
                         </Text>
                       </VStack>
@@ -368,11 +369,14 @@ const FeedbackScreen = () => {
                         onPress={() => setShowLogPreview((v) => !v)}
                         hitSlop={6}
                         accessibilityRole="button"
-                        accessibilityLabel={t("feedback.logs.preview")}>
+                        accessibilityState={{ expanded: showLogPreview }}
+                        accessibilityLabel={t(
+                          showLogPreview ? "feedback.logs.hidePreview" : "feedback.logs.preview"
+                        )}>
                         <Text size="xs" color="$accentPrimary">
-                          {showLogPreview
-                            ? t("feedback.logs.hidePreview")
-                            : t("feedback.logs.preview")}
+                          {t(
+                            showLogPreview ? "feedback.logs.hidePreview" : "feedback.logs.preview"
+                          )}
                         </Text>
                       </Pressable>
                       {showLogPreview ? (
@@ -407,7 +411,7 @@ const FeedbackScreen = () => {
                 placeholder={t("feedback.contactPlaceholder")}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                size="$4"
+                size="md"
                 height={48}
                 fontSize={16}
                 maxLength={256}
@@ -449,7 +453,11 @@ const FeedbackScreen = () => {
                     <Text size="sm" fontWeight="600" color="$typography">
                       {t("feedback.area.label")}
                     </Text>
-                    <HStack gap="$2" flexWrap="wrap">
+                    <HStack
+                      gap="$2"
+                      flexWrap="wrap"
+                      accessibilityRole="radiogroup"
+                      accessibilityLabel={t("feedback.area.label")}>
                       {AREAS.map((value) => {
                         const selected = area === value;
                         return (
@@ -468,7 +476,10 @@ const FeedbackScreen = () => {
                             paddingHorizontal="$3"
                             accessibilityRole="radio"
                             accessibilityState={{ selected }}
-                            accessibilityLabel={t(AREA_KEY[value])}>
+                            accessibilityLabel={t(AREA_KEY[value])}
+                            accessibilityHint={
+                              selected ? t("a11y.feedback.clearAreaHint") : undefined
+                            }>
                             <Text
                               size="sm"
                               color={selected ? "$accentPrimary" : "$typography"}
@@ -493,7 +504,7 @@ const FeedbackScreen = () => {
                           style={{ width: 56, height: 56, borderRadius: 8 }}
                         />
                         <Text size="xs" color="$typographySecondary" flexShrink={1}>
-                          {formatBytes(image.bytes)}
+                          {formatFileSizeLocale(image.bytes, t)}
                         </Text>
                         <Pressable
                           onPress={() => {
@@ -525,10 +536,11 @@ const FeedbackScreen = () => {
                       </Card.Pressable>
                     )}
                     {imageError ? (
-                      <Text size="xs" color="$error" accessibilityLiveRegion="polite">
+                      <Text size="xs" color="$error">
                         {imageError}
                       </Text>
                     ) : null}
+                    <SpokenStatus testID={FEEDBACK_STATUS_ID.IMAGE} message={imageError} />
                   </VStack>
                 </VStack>
               ) : null}
@@ -539,11 +551,7 @@ const FeedbackScreen = () => {
           <Animated.View entering={enter(6)}>
             <VStack gap="$3">
               {offline ? (
-                <HStack
-                  gap="$2"
-                  alignItems="center"
-                  justifyContent="center"
-                  accessibilityLiveRegion="polite">
+                <HStack gap="$2" alignItems="center" justifyContent="center">
                   <Icon as={WifiOff} size={16} color="$typographySecondary" />
                   <Text size="sm" color="$typographySecondary">
                     {t("feedback.offline")}
@@ -552,14 +560,19 @@ const FeedbackScreen = () => {
               ) : null}
 
               {status === "error" ? (
-                <Text
-                  size="sm"
-                  color="$error"
-                  textAlign="center"
-                  accessibilityLiveRegion="assertive">
+                <Text size="sm" color="$error" textAlign="center">
                   {t("feedback.error")}
                 </Text>
               ) : null}
+              {/* Mounted before either status, so TalkBack hears each change. */}
+              <SpokenStatus
+                testID={FEEDBACK_STATUS_ID.OFFLINE}
+                message={offline ? t("feedback.offline") : null}
+              />
+              <SpokenStatus
+                testID={FEEDBACK_STATUS_ID.FAILED}
+                message={status === "error" ? t("feedback.error") : null}
+              />
 
               <Button
                 variant="outline"
@@ -570,12 +583,18 @@ const FeedbackScreen = () => {
                 opacity={!type || offline ? 0.5 : 1}
                 onPress={onSend}
                 accessibilityRole="button"
-                accessibilityLabel={t(status === "error" ? "feedback.retry" : "feedback.send")}>
+                accessibilityLabel={t(
+                  submitting
+                    ? "feedback.sending"
+                    : status === "error"
+                      ? "feedback.retry"
+                      : "feedback.send"
+                )}>
                 {submitting ? (
                   <>
                     <Box
                       position="absolute"
-                      left={0}
+                      start={0}
                       top={0}
                       bottom={0}
                       width={`${Math.round(progress * 100)}%`}

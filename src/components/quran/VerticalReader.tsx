@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useWindowDimensions, View, ViewToken } from "react-native";
+import { useWindowDimensions, View, type ListViewToken } from "react-native";
 import Animated, { scrollTo } from "react-native-reanimated";
 import { scheduleOnUI } from "react-native-worklets";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -82,7 +82,7 @@ const VerticalReader = ({
       lastFollowRef.current = "";
       scheduleOnUI(() => {
         "worklet";
-        maxOffset.value = Number.MAX_SAFE_INTEGER; // no recitation → uncapped glide
+        maxOffset.set(Number.MAX_SAFE_INTEGER); // no recitation → uncapped glide
       });
       return;
     }
@@ -103,13 +103,13 @@ const VerticalReader = ({
       // While recitation drives the view, the teleprompter creep parks entirely —
       // all movement comes from the discrete nudge below (stop → glide → stop
       // reads better than a constant crawl pinned under the highlight).
-      maxOffset.value = 0;
-      const viewportY = lineTop - liveOffset.value;
-      const view = layoutH.value || height;
+      maxOffset.set(0);
+      const viewportY = lineTop - liveOffset.get();
+      const view = layoutH.get() || height;
       // In-band → leave it; the line is already comfortably visible.
       if (viewportY >= view * 0.2 && viewportY <= view * 0.7) return;
       const dest = Math.max(0, lineTop - view * 0.35);
-      glideTarget.value = dest; // keep the auto-scroll glide in step with the follow
+      glideTarget.set(dest); // keep the auto-scroll glide in step with the follow
       scrollTo(animatedRef, 0, dest, true);
     });
   }, [
@@ -146,7 +146,7 @@ const VerticalReader = ({
   const visiblePageRef = useRef(currentPage);
   const onViewableItemsChanged = useMemo(
     () =>
-      ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
         const top = viewableItems[0]?.index;
         if (top != null) {
           visiblePageRef.current = top + 1;

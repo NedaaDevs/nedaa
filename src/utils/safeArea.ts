@@ -1,0 +1,62 @@
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { isSkyTab } from "@/constants/SkyTabs";
+import { TAB_BAR_EDGE_GAP } from "@/constants/TabBar";
+import { TOAST_GAP } from "@/constants/Toast";
+import { OpeningTab } from "@/enums/app";
+
+export const SAFE_EDGE = { TOP: "top", RIGHT: "right", LEFT: "left" } as const;
+export type SafeEdge = (typeof SAFE_EDGE)[keyof typeof SAFE_EDGE];
+
+const [TAB_GROUP] = BACK_DESTINATION.HOME.route.split("/");
+const [, QURAN_TAB] = BACK_DESTINATION.QURAN.route.split("/");
+
+/** The Quran tab or a screen under it. */
+export const isQuranSegments = (segments: readonly string[]) =>
+  segments[0] === TAB_GROUP && segments[1] === QURAN_TAB;
+
+/** Stack screens drawn on the sky, by navigator route name. */
+const SKY_STACK_ROUTES: readonly string[] = [
+  BACK_DESTINATION.SETTINGS_ABOUT.route,
+  BACK_DESTINATION.SETTINGS_PRIVACY.route,
+];
+
+/** A sky tab or stack screen; the router may omit Today's name, the index. */
+export const isSkySegments = (segments: readonly string[]) =>
+  segments[0] === TAB_GROUP
+    ? isSkyTab(segments[1] ?? OpeningTab.HOME)
+    : SKY_STACK_ROUTES.includes(segments.join("/"));
+
+type Screen = {
+  sky: boolean;
+  /** The flow covers the router and draws on the sky, whatever the route. */
+  onboarding: boolean;
+  immersiveReader: boolean;
+  android: boolean;
+};
+
+// A sky screen draws under the status bar and pads its own content. Android's
+// reader goes full-bleed so hiding the bar never reflows the page; iOS keeps
+// the top edge, since the notch inset stays whether the bar shows or not.
+export const rootSafeAreaEdges = ({
+  sky,
+  onboarding,
+  immersiveReader,
+  android,
+}: Screen): SafeEdge[] =>
+  sky || onboarding || (immersiveReader && android)
+    ? [SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT]
+    : [SAFE_EDGE.TOP, SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT];
+
+type ToastPlacement = { segments: readonly string[]; tabBarHeight: number; insetBottom: number };
+
+// On a tab route the measured frame covers the bar and any mini player, the
+// inset its floor; elsewhere that measurement is stale.
+export const toastBottom = ({ segments, tabBarHeight, insetBottom }: ToastPlacement) =>
+  (segments[0] === TAB_GROUP ? Math.max(tabBarHeight, insetBottom) : insetBottom) + TOAST_GAP;
+
+type TabBarEdge = { android: boolean; insetBottom: number };
+
+// iOS's bottom inset is the home indicator, which the gap holds; Android's is
+// a navigation bar, which the bar must clear.
+export const tabBarEdgeGap = ({ android, insetBottom }: TabBarEdge) =>
+  android ? Math.max(TAB_BAR_EDGE_GAP, insetBottom) : TAB_BAR_EDGE_GAP;

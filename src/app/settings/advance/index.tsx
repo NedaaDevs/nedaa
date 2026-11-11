@@ -1,23 +1,8 @@
-// Plugins
-import { useTranslation } from "react-i18next";
+import { Redirect } from "expo-router";
 
-// Components
-import { Background } from "@/components/ui/background";
-import { Divider } from "@/components/ui/divider";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
-import TopBar from "@/components/TopBar";
-import SettingsItem from "@/components/SettingsItem";
-
-const AdvanceSettings = () => {
-  const { t } = useTranslation();
-  return (
-    <Background>
-      <TopBar title="settings.advance.title" href="/settings" backOnClick />
-      <SettingsItem name={t("settings.advance.provider.title")} path="/settings/advance/provider" />
-      <Divider />
-      <SettingsItem name={t("settings.advance.hijri.title")} path="/settings/advance/hijri" />
-    </Background>
-  );
-};
+// /settings/advance opens the Calculation screen.
+const AdvanceSettings = () => <Redirect href={BACK_DESTINATION.SETTINGS_PROVIDER.href} />;
 
 export default AdvanceSettings;

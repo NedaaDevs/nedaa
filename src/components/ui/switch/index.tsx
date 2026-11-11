@@ -1,5 +1,6 @@
 import React from "react";
-import { Switch as TSwitch, useTheme, useThemeName } from "tamagui";
+import { Switch as TSwitch } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 type SwitchSize = "sm" | "md" | "lg";
 
@@ -12,6 +13,7 @@ type SwitchProps = {
   accessibilityRole?: "switch";
   accessibilityState?: { checked?: boolean; disabled?: boolean };
   accessibilityHint?: string;
+  testID?: string;
   style?: any;
 };
 
@@ -22,11 +24,11 @@ const SCALE: Record<SwitchSize, { transform: { scale: number }[] } | undefined> 
 };
 
 const Switch = React.forwardRef<any, SwitchProps>(
-  ({ value, onValueChange, size = "md", disabled, style, ...props }, ref) => {
+  ({ value, onValueChange, size = "md", disabled, style, ...nativeOnly }, ref) => {
     const theme = useTheme();
-    const themeName = useThemeName();
-    const isDark = themeName === "dark";
 
+    // On a phone Tamagui renders the platform switch from `nativeProps` alone,
+    // so its name, state, testID and look travel there too.
     return (
       <TSwitch
         ref={ref}
@@ -35,19 +37,13 @@ const Switch = React.forwardRef<any, SwitchProps>(
         onCheckedChange={onValueChange}
         disabled={disabled}
         nativeProps={{
-          trackColor: {
-            false: theme.outline.val,
-            true: theme.primary.val,
-          },
-          thumbColor: value
-            ? isDark
-              ? theme.background.val
-              : theme.typographyContrast.val
-            : theme.typographyContrast.val,
-          ios_backgroundColor: theme.outline.val,
+          ...nativeOnly,
+          disabled,
+          style: [SCALE[size], disabled && { opacity: 0.4 }, style],
+          trackColor: { false: theme.track.val, true: theme.accent.val },
+          thumbColor: theme.thumb.val,
+          ios_backgroundColor: theme.track.val,
         }}
-        style={[SCALE[size], disabled && { opacity: 0.4 }, style]}
-        {...props}
       />
     );
   }

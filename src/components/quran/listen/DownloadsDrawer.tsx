@@ -10,7 +10,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, DownloadCloud, Pause, Signal, Trash2, X } from "lucide-react-native";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";

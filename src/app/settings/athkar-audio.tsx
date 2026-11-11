@@ -1,11 +1,14 @@
+import { useTranslation } from "react-i18next";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import AudioSettings from "@/components/athkar/AudioSettings";
 
 const AthkarAudioSettings = () => {
+  const { t } = useTranslation();
+
   return (
     <Background>
-      <TopBar title="settings.athkarAudio.title" backOnClick />
+      <ScreenHeader title={t("settings.athkarAudio.title")} back />
       <AudioSettings />
     </Background>
   );

@@ -1,8 +1,7 @@
 name: Build iOS
 
+# Manual only: EAS signs remotely with the iOS credentials stored on EAS.
 on:
-  push:
-    branches: [disabled-temporarily] # For now disable iOS builds as it needs interactivity for signing the app
   workflow_dispatch:
     inputs:
       profile:
@@ -14,47 +13,42 @@ on:
           - preview
           - production
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.profile }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   build-ios:
-    name: Build iOS IPA
-    runs-on: ubuntu-latest # EAS handles the macOS building
+    name: Queue iOS build on EAS
+    runs-on: ubuntu-latest # EAS builds on its own macOS workers
+    timeout-minutes: 15
 
     steps:
       - name: 🏗 Setup repo
-        uses: actions/checkout@v4
-
-      - name: 🏗 Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          bun-version-file: ".bun-version"
+          persist-credentials: false
+
+      - name: 📦 Setup Bun and dependencies
+        uses: ./.github/actions/setup-deps # zizmor: ignore[self-repository] -- actionlint rejects $/
 
       - name: 🏗 Setup EAS
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # 9.0.0
         with:
-          eas-version: ">= 13.1.0"
+          eas-version: 24.11.0
+          packager: "bun"
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: 🍎 Build iOS
-        id: build
+      - name: 🍎 Queue iOS build
+        env:
+          PROFILE: ${{ inputs.profile }}
         run: |
-          PROFILE=${{ github.event.inputs.profile || 'preview' }}
-          echo "Building with profile: $PROFILE"
-          eas build --platform ios --profile $PROFILE --non-interactive --json > build_result.json
-          echo "build_id=$(cat build_result.json | jq -r '.[] | select(.platform=="ios") | .id')" >> $GITHUB_OUTPUT
-
-      - name: 📋 Comment Build Status
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const buildId = '${{ steps.build.outputs.build_id }}';
-            const profile = '${{ github.event.inputs.profile || 'preview' }}';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🍎 iOS build started!\n\n**Build ID:** ${buildId}\n**Profile:** ${profile}\n**Trigger:** ${{ github.event_name }}\n\nCheck progress: https://expo.dev/accounts/nedaadev/projects/nedaa/builds/${buildId}`
-            })
+          echo "Queueing iOS build with profile: $PROFILE"
+          eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait --json > build_result.json
+          BUILD_ID=$(jq -r '.[0].id' build_result.json)
+          OWNER=$(jq -r '.expo.owner' app.json)
+          SLUG=$(jq -r '.expo.slug' app.json)
+          echo "Build queued: https://expo.dev/accounts/$OWNER/projects/$SLUG/builds/$BUILD_ID" | tee -a "$GITHUB_STEP_SUMMARY"

@@ -1,6 +1,7 @@
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Linking, Platform } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useEffectEvent } from "react";
 
 // Components
 import { Box } from "@/components/ui/box";
@@ -10,14 +11,16 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/icon";
+import { Icon, type IconProps } from "@/components/ui/icon";
 import { Card } from "@/components/ui/card";
+import { ListRow } from "@/components/ui/list-row";
+import { SpokenStatus } from "@/components/ui/live-region";
 import ScheduledNotificationDebugModal from "@/components/ScheduledNotificationDebugModal";
 
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
 import NotificationQuickSetup from "@/components/NotificationQuickSetup";
 import NotificationTypePanel from "@/components/NotificationTypePanel";
-import SettingsItem from "@/components/SettingsItem";
 
 // Icons
 import { Bell, Play } from "lucide-react-native";
@@ -28,6 +31,7 @@ import { PlatformType } from "@/enums/app";
 // Hooks
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 // Utils
@@ -40,9 +44,15 @@ import { shouldForceReschedule } from "@/utils/notificationReschedule";
 
 // Types
 import { PermissionStatus } from "expo-notifications";
+import { getEffectiveConfig } from "@/types/notification";
 
 // Constants
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import { PRAYER_ID } from "@/constants/Prayer";
+import {
+  NOTIFICATION_SCHEDULING_STATUS_ID,
+  NOTIFICATION_TYPE,
+  SYSTEM_SOUND,
+} from "@/constants/Notification";
 import { Background } from "@/components/ui/background";
 
 // Utils
@@ -51,11 +61,34 @@ import { debugChannelInfo, getNotificationChannelId } from "@/utils/notification
 import { getNotificationSound } from "@/utils/sound";
 import { scheduleAthan, stopAthan, isAthanPlaying } from "expo-alarm";
 
+/** A card leading to a screen for more of these settings. */
+const OpenRow = ({
+  destination,
+  icon,
+}: {
+  destination: BackDestination;
+  icon: IconProps["as"];
+}) => {
+  const { t } = useTranslation();
+  const title = t(destination.title);
+
+  return (
+    <Box marginHorizontal="$4" marginVertical="$2">
+      <ListRow
+        icon={icon}
+        title={title}
+        hint={t("a11y.opens", { name: title })}
+        onPress={() => router.navigate(destination.href)}
+      />
+    </Box>
+  );
+};
+
 const NotificationSettings = () => {
   const { t } = useTranslation();
   const { becameActiveAt } = useAppVisibility();
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
 
   const {
     settings,
@@ -66,7 +99,7 @@ const NotificationSettings = () => {
     updateAllNotificationToggle,
     updateQuickSetup,
     updateDefault,
-    updateOverride,
+    replaceOverride,
     resetOverride,
     scheduleAllNotifications,
     rescheduleIfNeeded,
@@ -80,40 +113,34 @@ const NotificationSettings = () => {
   // For debugging
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
+  // Reads the permission held before this check, not the one at mount.
+  const applyPermissionStatus = useEffectEvent((status: PermissionStatus | null) => {
+    const wasGranted = hasPermission === true;
+    const granted = status === PermissionStatus.GRANTED;
+
+    setHasPermission(granted);
+    // iOS can only send a denied user to Settings; Android may ask again.
+    setCanAskPermission(status === PermissionStatus.UNDETERMINED);
+    // Render as soon as the cheap permission read resolves — never hold the
+    // screen behind a full reschedule.
+    setIsCheckingPermission(false);
+
+    // Reschedule off the critical path: forced only when permission has just
+    // become granted, otherwise guarded so it skips work already done today. The
+    // inline scheduling banner reflects it; the screen never blocks on it.
+    if (granted) {
+      void rescheduleIfNeeded(shouldForceReschedule(wasGranted, granted));
+    }
+  });
+
   // Check permission when app becomes active (user returns from settings)
   useEffect(() => {
-    const checkPermissionStatus = async () => {
-      setIsCheckingPermission(true);
-      const wasGranted = hasPermission === true;
-      let granted = false;
-      try {
-        const { status } = await checkPermissions();
-        granted = status === PermissionStatus.GRANTED;
-
-        setHasPermission(granted);
-        // On iOS, if permission is denied, we can only redirect to settings
-        // On Android, we might be able to ask again depending on the situation
-        setCanAskPermission(status === PermissionStatus.UNDETERMINED);
-      } catch (error) {
+    checkPermissions()
+      .then(({ status }) => applyPermissionStatus(status))
+      .catch((error) => {
         console.error("Failed to check notification permission:", error);
-        setHasPermission(false);
-        setCanAskPermission(false);
-      } finally {
-        // Render as soon as the cheap permission read resolves — never hold the
-        // screen behind a full reschedule.
-        setIsCheckingPermission(false);
-      }
-
-      // Reschedule off the critical path: forced only when permission has just
-      // become granted, otherwise guarded so it skips work already done today. The
-      // inline scheduling banner reflects it; the screen never blocks on it.
-      if (granted) {
-        void rescheduleIfNeeded(shouldForceReschedule(wasGranted, granted));
-      }
-    };
-
-    checkPermissionStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        applyPermissionStatus(null);
+      });
   }, [becameActiveAt]);
 
   const handleRequestPermission = async () => {
@@ -149,7 +176,10 @@ const NotificationSettings = () => {
   if (isCheckingPermission) {
     return (
       <Background>
-        <TopBar title="settings.notification.title" href="/settings" backOnClick />
+        <ScreenHeader
+          title={t("settings.notification.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        />
         <Box flex={1} alignItems="center" justifyContent="center" padding="$4">
           <Text color="$typography">{t("common.loading")}</Text>
         </Box>
@@ -160,7 +190,10 @@ const NotificationSettings = () => {
   if (!hasPermission) {
     return (
       <Background>
-        <TopBar title="settings.notification.title" href="/settings" backOnClick />
+        <ScreenHeader
+          title={t("settings.notification.title")}
+          back={{ fallback: BACK_DESTINATION.SETTINGS }}
+        />
         <VStack flex={1} padding="$4" alignItems="center" justifyContent="center" gap="$4">
           <Card padding="$6" width="100%" style={{ maxWidth: 320 }}>
             <VStack gap="$4" alignItems="center">
@@ -224,7 +257,10 @@ const NotificationSettings = () => {
 
   return (
     <Background>
-      <TopBar title="settings.notification.title" href="/settings" backOnClick />
+      <ScreenHeader
+        title={t("settings.notification.title")}
+        back={{ fallback: BACK_DESTINATION.SETTINGS }}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -238,9 +274,9 @@ const NotificationSettings = () => {
                   {t("notification.enableAll")}
                 </Text>
                 {totalOverrideCount > 0 && (
-                  <Badge size="sm" variant="outline" marginTop="$1" alignSelf="flex-start">
+                  <Badge size="sm" marginTop="$1" alignSelf="flex-start">
                     <Badge.Text>
-                      {totalOverrideCount} {t("notification.customSettings")}
+                      {t("notification.customSettings", { count: totalOverrideCount })}
                     </Badge.Text>
                   </Badge>
                 )}
@@ -269,11 +305,7 @@ const NotificationSettings = () => {
 
               {/* Athan Playback Settings (Android Only) */}
               {Platform.OS === PlatformType.ANDROID && (
-                <SettingsItem
-                  name={t("notification.athanPlayback.title")}
-                  path="/settings/athanPlayback"
-                  icon={Play}
-                />
+                <OpenRow destination={BACK_DESTINATION.SETTINGS_ATHAN_PLAYBACK} icon={Play} />
               )}
 
               {/* Prayer Notifications */}
@@ -287,7 +319,7 @@ const NotificationSettings = () => {
                   updateDefault(NOTIFICATION_TYPE.PRAYER, field, value)
                 }
                 onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, NOTIFICATION_TYPE.PRAYER, config)
+                  replaceOverride(prayerId, NOTIFICATION_TYPE.PRAYER, config)
                 }
                 onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.PRAYER)}
                 defaultExpanded={true}
@@ -305,7 +337,7 @@ const NotificationSettings = () => {
                   updateDefault(NOTIFICATION_TYPE.IQAMA, field, value)
                 }
                 onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, NOTIFICATION_TYPE.IQAMA, config)
+                  replaceOverride(prayerId, NOTIFICATION_TYPE.IQAMA, config)
                 }
                 onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.IQAMA)}
                 hasTiming={true}
@@ -324,7 +356,7 @@ const NotificationSettings = () => {
                   updateDefault(NOTIFICATION_TYPE.PRE_ATHAN, field, value)
                 }
                 onOverrideUpdate={(prayerId, config) =>
-                  updateOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN, config)
+                  replaceOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN, config)
                 }
                 onResetOverride={(prayerId) => resetOverride(prayerId, NOTIFICATION_TYPE.PRE_ATHAN)}
                 hasTiming={true}
@@ -333,11 +365,7 @@ const NotificationSettings = () => {
               />
 
               {/* Other Reminders */}
-              <SettingsItem
-                name={t("notification.otherReminders")}
-                path="/settings/otherReminders"
-                icon={Bell}
-              />
+              <OpenRow destination={BACK_DESTINATION.SETTINGS_OTHER_REMINDERS} icon={Bell} />
 
               {/* Sync Status */}
               {isScheduling && (
@@ -353,6 +381,11 @@ const NotificationSettings = () => {
                   </HStack>
                 </Box>
               )}
+              {/* Mounted before the run, so TalkBack hears it start. */}
+              <SpokenStatus
+                testID={NOTIFICATION_SCHEDULING_STATUS_ID}
+                message={isScheduling ? t("notification.schedulingNotifications") : null}
+              />
             </>
           )}
 
@@ -385,27 +418,32 @@ const NotificationSettings = () => {
                     size="sm"
                     onPress={async () => {
                       const triggerDate = new Date(Date.now() + 10_000);
+                      const fajrConfig = getEffectiveConfig(
+                        PRAYER_ID.FAJR,
+                        NOTIFICATION_TYPE.PRAYER,
+                        settings.defaults,
+                        settings.overrides
+                      );
                       if (fullAthanPlayback) {
-                        const soundKey = settings.defaults.prayer.sound;
+                        const soundKey = fajrConfig.sound;
                         const sound =
                           getNotificationSound(NOTIFICATION_TYPE.PRAYER, soundKey) || soundKey;
                         await scheduleAthan({
                           id: `test_athan_${Date.now()}`,
                           triggerDate,
-                          prayerId: "fajr",
+                          prayerId: PRAYER_ID.FAJR,
                           soundName: sound,
                           title: t("prayerTimes.fajr"),
                           stopLabel: t("common.stop"),
                         });
                       } else {
-                        const prayerDefaults = settings.defaults.prayer;
-                        const soundKey = prayerDefaults.sound;
                         const sound =
-                          getNotificationSound(NOTIFICATION_TYPE.PRAYER, soundKey) || "default";
+                          getNotificationSound(NOTIFICATION_TYPE.PRAYER, fajrConfig.sound) ||
+                          SYSTEM_SOUND;
                         const channelId = getNotificationChannelId(
-                          "fajr",
+                          PRAYER_ID.FAJR,
                           NOTIFICATION_TYPE.PRAYER,
-                          prayerDefaults
+                          fajrConfig
                         );
                         await scheduleNotification(
                           triggerDate,

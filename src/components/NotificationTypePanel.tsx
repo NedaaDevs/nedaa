@@ -2,7 +2,6 @@ import { FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 // Components
-import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -26,16 +25,20 @@ import {
 // Components
 import PrayerCustomizationModal from "@/components/PrayerCustomizationModal";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Types
 import { NotificationType, NotificationConfig, NotificationWithTiming } from "@/types/notification";
 
+// Constants
+import { PRAYER_ID } from "@/constants/Prayer";
+
 const PRAYERS = [
-  { id: "fajr", name: "prayerTimes.fajr" },
-  { id: "dhuhr", name: "prayerTimes.dhuhr" },
-  { id: "asr", name: "prayerTimes.asr" },
-  { id: "maghrib", name: "prayerTimes.maghrib" },
-  { id: "isha", name: "prayerTimes.isha" },
+  { id: PRAYER_ID.FAJR, name: "prayerTimes.fajr" },
+  { id: PRAYER_ID.DHUHR, name: "prayerTimes.dhuhr" },
+  { id: PRAYER_ID.ASR, name: "prayerTimes.asr" },
+  { id: PRAYER_ID.MAGHRIB, name: "prayerTimes.maghrib" },
+  { id: PRAYER_ID.ISHA, name: "prayerTimes.isha" },
 ];
 
 type Props = {
@@ -78,6 +81,9 @@ const NotificationTypePanel: FC<Props> = ({
   };
 
   const IconComponent = iconMap[icon];
+  const timingText = hasTiming
+    ? t("common.minute", { count: (defaults as NotificationWithTiming).timing })
+    : null;
 
   const getPrayerStatus = (prayerId: string) => {
     const hasOverride = overrides[prayerId]?.[type];
@@ -93,15 +99,13 @@ const NotificationTypePanel: FC<Props> = ({
     return { isCustom: true, label };
   };
 
-  const hapticSelection = useHaptic("selection");
-  const hapticMedium = useHaptic("medium");
-  const hapticLight = useHaptic("light");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const handleToggle = () => {
     hapticSelection();
-    if (defaults.enabled) {
-      setIsExpanded(!isExpanded);
-    }
+    setIsExpanded(!isExpanded);
   };
 
   const handleMainToggle = (value: boolean) => {
@@ -121,55 +125,45 @@ const NotificationTypePanel: FC<Props> = ({
     <>
       <Card variant="grouped" marginHorizontal="$4">
         {/* Header */}
-        <Pressable
-          onPress={handleToggle}
-          disabled={!defaults.enabled}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: isExpanded }}
-          accessibilityLabel={title}>
-          <HStack
-            padding="$4"
-            justifyContent="space-between"
-            alignItems="center"
-            backgroundColor="$backgroundMuted">
-            <HStack gap="$2" alignItems="center" flex={1}>
+        <HStack alignItems="center" paddingEnd="$4" backgroundColor="$backgroundMuted">
+          {/* The switch sits beside the button: inside it, a reader could not reach it. */}
+          <Pressable
+            flex={1}
+            onPress={handleToggle}
+            disabled={!defaults.enabled}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: isExpanded && defaults.enabled }}
+            accessibilityLabel={title}
+            accessibilityHint={t("a11y.notification.expandHint")}
+            accessibilityValue={timingText ? { text: timingText } : undefined}>
+            <HStack padding="$4" gap="$2" alignItems="center">
               <Icon color="$typography" size="xl" as={IconComponent} />
-              <VStack flex={1}>
-                <HStack gap="$2" alignItems="center">
-                  <Text size="lg" fontWeight="600" color="$typography">
-                    {title}
-                  </Text>
-                  {hasTiming && (
-                    <Badge size="sm" variant="outline">
-                      <Badge.Text>
-                        {t("common.minute", {
-                          count: (defaults as NotificationWithTiming).timing,
-                        })}
-                      </Badge.Text>
-                    </Badge>
-                  )}
-                </HStack>
-              </VStack>
-            </HStack>
-            <HStack gap="$2" alignItems="center">
-              <Switch
-                value={defaults.enabled}
-                onValueChange={handleMainToggle}
-                size="md"
-                accessibilityLabel={title}
-              />
+              <HStack gap="$2" alignItems="center" flex={1}>
+                <Text size="lg" fontWeight="600" color="$typography">
+                  {title}
+                </Text>
+                {timingText && (
+                  <Badge size="sm">
+                    <Badge.Text>{timingText}</Badge.Text>
+                  </Badge>
+                )}
+              </HStack>
               {defaults.enabled && (
-                <Box marginStart="$2">
-                  {isExpanded ? (
-                    <Icon color="$typographySecondary" size="lg" as={ChevronUp} />
-                  ) : (
-                    <Icon color="$typographySecondary" size="lg" as={ChevronDown} />
-                  )}
-                </Box>
+                <Icon
+                  color="$typographySecondary"
+                  size="lg"
+                  as={isExpanded ? ChevronUp : ChevronDown}
+                />
               )}
             </HStack>
-          </HStack>
-        </Pressable>
+          </Pressable>
+          <Switch
+            value={defaults.enabled}
+            onValueChange={handleMainToggle}
+            size="md"
+            accessibilityLabel={title}
+          />
+        </HStack>
 
         {/* Expanded Content */}
         {isExpanded && defaults.enabled && (

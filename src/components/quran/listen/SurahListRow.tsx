@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioLines, Download, CheckCircle2, Pause, Headphones } from "lucide-react-native";
 import Svg, { Circle } from "react-native-svg";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -92,7 +92,7 @@ const SurahListRowBase = ({
   // Whatever has landed is shown, so the row never waits on the slower source.
   const metaLine =
     [
-      ayahCount ? t("quran.surah.ayahCount", { n: formatNumberToLocale(String(ayahCount)) }) : null,
+      ayahCount ? t("quran.surah.ayahCount", { count: ayahCount }) : null,
       revelationPlace
         ? revelationPlace === RevelationPlace.MAKKAH
           ? t("quran.surah.makki")
@@ -105,6 +105,8 @@ const SurahListRowBase = ({
 
   return (
     <Pressable
+      // Holds text or a control the reader must reach; as one element iOS would hide them.
+      accessible={false}
       onPress={() => onPress(surah)}
       accessibilityRole="button"
       accessibilityLabel={name}

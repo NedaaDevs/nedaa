@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
 import { Modal, ModalBackdrop, ModalContent, ModalBody } from "@/components/ui/modal";
+import { SpokenStatus } from "@/components/ui/live-region";
 import { Headphones, Hand, VolumeX } from "lucide-react-native";
 
 import ReciterCard from "@/components/athkar/ReciterCard";
@@ -51,6 +52,10 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
   const [failedIds, setFailedIds] = useState<string[]>([]);
   const [cachedManifest, setCachedManifest] = useState<ReciterManifest | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  // The dialog stays mounted between openings, so a download writes state only
+  // in the opening it began in.
+  const openingRef = useRef(0);
+  const [downloadDone, setDownloadDone] = useState(false);
 
   // Sample player via the shared preview player
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
@@ -140,12 +145,25 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
     loadReciters();
   }, [isOpen]);
 
+  // Cleared here, not on open: the next opening's first render reads it.
+  const close = () => {
+    openingRef.current += 1;
+    setDownloadDone(false);
+    onClose();
+  };
+
+  /** A check that holds until the dialog next closes. */
+  const inThisOpening = () => {
+    const began = openingRef.current;
+    return () => openingRef.current === began;
+  };
+
   const handleSkip = () => {
     // Apply smart defaults
     if (selectedId) selectReciter(selectedId);
     setPlaybackMode(PLAYBACK_MODE.AUTOPILOT);
     setOnboardingCompleted(true);
-    onClose();
+    close();
   };
 
   const handleNext = async () => {
@@ -161,45 +179,48 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
       setStep(3);
     } else if (step === 3) {
       setOnboardingCompleted(true);
-      onClose();
+      close();
     }
   };
 
   const startDownload = async (reciterId: string) => {
     const reciter = reciters.find((r) => r.id === reciterId);
     if (!reciter) return;
+    const isCurrent = inThisOpening();
 
     setIsDownloading(true);
     setFailedIds([]);
 
     const manifest = await reciterRegistry.fetchManifest(reciterId);
     if (!manifest) {
-      setIsDownloading(false);
+      if (isCurrent()) setIsDownloading(false);
       return;
     }
 
-    setCachedManifest(manifest);
-    const total = Object.keys(manifest.files).length;
-    setDownloadTotal(total);
-
-    const result = await audioDownloadManager.downloadPack(
-      reciterId,
-      manifest,
-      (completed, _total) => {
-        setDownloadCompleted(completed);
-      }
-    );
-
-    if (result.failed > 0) {
-      setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+    if (isCurrent()) {
+      setCachedManifest(manifest);
+      setDownloadTotal(Object.keys(manifest.files).length);
     }
 
+    const result = await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
+      if (isCurrent()) setDownloadCompleted(completed);
+    });
+
+    if (result.failed > 0) {
+      // The toast shows after a close too; an open dialog covers it and has
+      // its own Retry button.
+      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
+    }
+    if (!isCurrent()) return;
+
+    if (result.failed > 0) setFailedIds(result.failedIds);
+    else setDownloadDone(true);
     setIsDownloading(false);
   };
 
   const handleRetryFailed = async () => {
     if (!selectedId || !cachedManifest || failedIds.length === 0) return;
+    const isCurrent = inThisOpening();
 
     setIsRetrying(true);
     setDownloadTotal(failedIds.length);
@@ -210,18 +231,18 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
       cachedManifest,
       failedIds,
       (completed) => {
-        setDownloadCompleted(completed);
+        if (isCurrent()) setDownloadCompleted(completed);
       }
     );
 
     if (result.failed > 0) {
-      setFailedIds(result.failedIds);
       MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
     } else {
-      setFailedIds([]);
       MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
     }
+    if (!isCurrent()) return;
 
+    setFailedIds(result.failed > 0 ? result.failedIds : []);
     setIsRetrying(false);
   };
 
@@ -287,7 +308,10 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                 </VStack>
 
                 <ScrollView style={{ maxHeight: 300 }}>
-                  <VStack gap="$2">
+                  <VStack
+                    gap="$2"
+                    accessibilityRole="radiogroup"
+                    accessibilityLabel={t("settings.athkarAudio.reciter")}>
                     {reciters.map((reciter) => (
                       <ReciterCard
                         key={reciter.id}
@@ -321,14 +345,20 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                   </Text>
                 </VStack>
 
-                <VStack gap="$2">
+                <VStack
+                  gap="$2"
+                  accessibilityRole="radiogroup"
+                  accessibilityLabel={t("athkar.onboarding.mode.title")}>
                   {modeOptions.map((option) => (
                     <Pressable
                       key={option.mode}
                       onPress={() => setSelectedMode(option.mode)}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: selectedMode === option.mode }}
-                      accessibilityLabel={t(option.titleKey)}>
+                      accessibilityLabel={t("a11y.join", {
+                        first: t(option.titleKey),
+                        second: t(option.descKey),
+                      })}>
                       <Box
                         padding="$3"
                         borderRadius="$6"
@@ -398,11 +428,7 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                 )}
 
                 {isRetrying && (
-                  <DownloadProgress
-                    completed={downloadCompleted}
-                    total={downloadTotal}
-                    label={t("athkar.audio.retrying")}
-                  />
+                  <DownloadProgress completed={downloadCompleted} total={downloadTotal} retrying />
                 )}
 
                 {!isDownloading && !isRetrying && failedIds.length > 0 && (
@@ -450,6 +476,11 @@ const AudioOnboarding: FC<Props> = ({ isOpen, onClose }) => {
                 </Text>
               </Pressable>
             </VStack>
+
+            {/* The dialog covers toasts, so the finished download is said. */}
+            <SpokenStatus
+              message={downloadDone ? t("athkar.onboarding.download.complete") : null}
+            />
           </VStack>
         </ModalBody>
       </ModalContent>

@@ -1,4 +1,4 @@
-import { FC, useCallback } from "react";
+import { FC, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LayoutChangeEvent, TouchableOpacity } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -9,7 +9,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import { useTheme } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
 
 // Components
 import { Text } from "@/components/ui/text";
@@ -39,17 +39,21 @@ const SwipeableAthkarCard: FC<Props> = ({ onDelete, children }) => {
   const translateX = useSharedValue(0);
   const offset = useSharedValue(0);
   const actionsWidth = useSharedValue(80);
+  // Gesture worklets run on the UI thread and cannot read React context,
+  // so the layout direction is mirrored into a shared value.
   const isRTLShared = useSharedValue(isRTL);
-  isRTLShared.value = isRTL;
+  useEffect(() => {
+    isRTLShared.set(isRTL);
+  }, [isRTL, isRTLShared]);
 
   const close = useCallback(() => {
-    translateX.value = withSpring(0, SPRING_CONFIG);
-    offset.value = 0;
+    translateX.set(withSpring(0, SPRING_CONFIG));
+    offset.set(0);
   }, [translateX, offset]);
 
   const onActionsLayout = useCallback(
     (e: LayoutChangeEvent) => {
-      actionsWidth.value = e.nativeEvent.layout.width;
+      actionsWidth.set(e.nativeEvent.layout.width);
     },
     [actionsWidth]
   );
@@ -57,47 +61,49 @@ const SwipeableAthkarCard: FC<Props> = ({ onDelete, children }) => {
   const panGesture = Gesture.Pan()
     .activeOffsetX([-DRAG_OFFSET, DRAG_OFFSET])
     .onUpdate((e) => {
-      const pos = offset.value + e.translationX;
-      translateX.value = isRTLShared.value
-        ? Math.max(0, Math.min(actionsWidth.value, pos))
-        : Math.min(0, Math.max(-actionsWidth.value, pos));
+      const pos = offset.get() + e.translationX;
+      translateX.set(
+        isRTLShared.get()
+          ? Math.max(0, Math.min(actionsWidth.get(), pos))
+          : Math.min(0, Math.max(-actionsWidth.get(), pos))
+      );
     })
     .onEnd(() => {
-      if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
-        const target = (isRTLShared.value ? 1 : -1) * actionsWidth.value;
-        translateX.value = withSpring(target, SPRING_CONFIG);
-        offset.value = target;
+      if (Math.abs(translateX.get()) > SWIPE_THRESHOLD) {
+        const target = (isRTLShared.get() ? 1 : -1) * actionsWidth.get();
+        translateX.set(withSpring(target, SPRING_CONFIG));
+        offset.set(target);
       } else {
-        translateX.value = withSpring(0, SPRING_CONFIG);
-        offset.value = 0;
+        translateX.set(withSpring(0, SPRING_CONFIG));
+        offset.set(0);
       }
     });
 
   const tapGesture = Gesture.Tap().onEnd(() => {
-    if (offset.value !== 0) {
-      translateX.value = withSpring(0, SPRING_CONFIG);
-      offset.value = 0;
+    if (offset.get() !== 0) {
+      translateX.set(withSpring(0, SPRING_CONFIG));
+      offset.set(0);
     }
   });
 
   const gesture = Gesture.Exclusive(panGesture, tapGesture);
 
   const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
+    transform: [{ translateX: translateX.get() }],
   }));
 
   const actionsStyle = useAnimatedStyle(() => {
-    const abs = Math.abs(translateX.value);
+    const abs = Math.abs(translateX.get());
     const opacity = interpolate(abs, [20, 80], [0, 1], Extrapolation.CLAMP);
     const slide = interpolate(
       abs,
-      [0, actionsWidth.value],
-      [actionsWidth.value * 0.5, 0],
+      [0, actionsWidth.get()],
+      [actionsWidth.get() * 0.5, 0],
       Extrapolation.CLAMP
     );
     return {
       opacity,
-      transform: [{ translateX: isRTLShared.value ? -slide : slide }],
+      transform: [{ translateX: isRTLShared.get() ? -slide : slide }],
     };
   });
 

@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-  BottomSheetTextInput,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
-import { useTheme } from "tamagui";
+  DismissBackdrop,
+  SheetBackground,
+  SilentHandle,
+  UNGROUPED_CONTENT,
+} from "@/components/ui/sheet-chrome";
+import { SheetInput } from "@/components/ui/sheet-input";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { WifiOff } from "lucide-react-native";
 
@@ -19,6 +20,8 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { SpokenStatus } from "@/components/ui/live-region";
+import { CRASH_REPORT_STATUS_ID } from "@/constants/Feedback";
 import {
   readPendingReport,
   clearPendingReport,
@@ -81,18 +84,6 @@ const CrashReportPrompt = () => {
     ref.current?.dismiss();
   }, []);
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
   const submitting = status === "submitting";
 
   return (
@@ -101,7 +92,10 @@ const CrashReportPrompt = () => {
       onDismiss={clearPendingReport}
       enablePanDownToClose={!submitting}
       enableDynamicSizing
-      backdropComponent={renderBackdrop}
+      {...UNGROUPED_CONTENT}
+      backdropComponent={DismissBackdrop}
+      backgroundComponent={SheetBackground}
+      handleComponent={SilentHandle}
       backgroundStyle={{
         backgroundColor: theme.backgroundSecondary?.val ?? theme.background?.val,
       }}
@@ -119,14 +113,13 @@ const CrashReportPrompt = () => {
             <Text size="lg" fontWeight="700" color="$typography" textAlign="center">
               {t("feedback.success.title")}
             </Text>
-            <Text
-              size="sm"
-              color="$typographySecondary"
-              textAlign="center"
-              lineHeight={20}
-              accessibilityLiveRegion="polite">
+            <Text size="sm" color="$typographySecondary" textAlign="center" lineHeight={20}>
               {t("feedback.success.body")}
             </Text>
+            <SpokenStatus
+              testID={CRASH_REPORT_STATUS_ID.SENT}
+              message={t("feedback.success.body")}
+            />
             <Button
               onPress={dismiss}
               width="100%"
@@ -144,33 +137,23 @@ const CrashReportPrompt = () => {
               {t("crashPrompt.body")}
             </Text>
 
-            <BottomSheetTextInput
+            <SheetInput
+              variant="boxed"
               value={note}
               onChangeText={setNote}
               editable={!submitting}
               placeholder={t("crashPrompt.notePlaceholder")}
-              placeholderTextColor={theme.typographySecondary?.val}
               multiline
               accessibilityLabel={t("crashPrompt.notePlaceholder")}
               style={{
-                color: theme.typography?.val,
                 backgroundColor: theme.backgroundMuted?.val ?? theme.background?.val,
-                borderColor: theme.borderColor?.val,
-                borderWidth: 1,
-                borderRadius: 12,
-                padding: 12,
                 minHeight: 72,
                 fontSize: 15,
-                textAlignVertical: "top",
               }}
             />
 
             {offline ? (
-              <HStack
-                gap="$2"
-                alignItems="center"
-                justifyContent="center"
-                accessibilityLiveRegion="polite">
+              <HStack gap="$2" alignItems="center" justifyContent="center">
                 <Icon as={WifiOff} size={16} color="$typographySecondary" />
                 <Text size="sm" color="$typographySecondary">
                   {t("feedback.offline")}
@@ -179,10 +162,19 @@ const CrashReportPrompt = () => {
             ) : null}
 
             {status === "error" ? (
-              <Text size="sm" color="$error" textAlign="center" accessibilityLiveRegion="assertive">
+              <Text size="sm" color="$error" textAlign="center">
                 {t("feedback.error")}
               </Text>
             ) : null}
+            {/* Mounted before either status, so TalkBack hears each change. */}
+            <SpokenStatus
+              testID={CRASH_REPORT_STATUS_ID.OFFLINE}
+              message={offline ? t("feedback.offline") : null}
+            />
+            <SpokenStatus
+              testID={CRASH_REPORT_STATUS_ID.FAILED}
+              message={status === "error" ? t("feedback.error") : null}
+            />
 
             <Button
               onPress={send}

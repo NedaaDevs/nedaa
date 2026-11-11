@@ -310,6 +310,18 @@ const cleanData = (cutoffDate: number): Promise<boolean> =>
     }
   });
 
+/** Deletes the days after `lastKeptDate` (YYYYMMDD); false on failure. */
+const deleteDaysAfter = (lastKeptDate: number): Promise<boolean> =>
+  sdb.run(async (db) => {
+    try {
+      await db.runAsync(`DELETE FROM ${TABLE_NAME} WHERE date > ?`, [lastKeptDate]);
+      return true;
+    } catch (error) {
+      console.error("[DB] Error deleting prayer times after a date:", error);
+      return false;
+    }
+  });
+
 export const PrayerTimesDB = {
   run: sdb.run,
   initialize: initializeDB,
@@ -319,4 +331,5 @@ export const PrayerTimesDB = {
   getPrayerTimesByDate,
   getPrayerTimesByDateRange,
   cleanData,
+  deleteDaysAfter,
 };

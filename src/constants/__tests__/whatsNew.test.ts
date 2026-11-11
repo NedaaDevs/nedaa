@@ -1,6 +1,7 @@
 import {
   getApplicableEntries,
   getUnseenEntries,
+  WHATS_NEW_ACTION,
   WHATS_NEW_ENTRIES,
   WhatsNewId,
   ALL_WHATS_NEW_IDS,
@@ -69,7 +70,7 @@ describe("getApplicableEntries", () => {
 describe("important-days optIn action", () => {
   test("enable() turns the Home rotator on and isEnabled() reflects it", () => {
     const entry = WHATS_NEW_ENTRIES.find((e) => e.id === WhatsNewId.IMPORTANT_DAYS)!;
-    if (entry.action.type !== "optIn") throw new Error("expected optIn action");
+    if (entry.action.type !== WHATS_NEW_ACTION.OPT_IN) throw new Error("expected optIn action");
 
     usePreferencesStore.setState({ showImportantDaysOnHome: false });
     expect(entry.action.isEnabled()).toBe(false);

@@ -1,0 +1,626 @@
+import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
+import { getTokenValue } from "tamagui";
+import { act, fireEvent, screen, userEvent, within } from "@testing-library/react-native";
+
+import { DAY_RUN_PLAYER_PART } from "@/components/onboarding/flow/DayRunPlayer";
+import { DAY_RUN_TRACK_PART } from "@/components/onboarding/flow/DayRunTrack";
+import { digitsOf } from "@/components/ui/digit-reserve";
+import { A11Y_ACTION } from "@/constants/Accessibility";
+import { PIN_REPORT_LIMIT_MS } from "@/constants/Appearance";
+import { DAY_RUN, DAY_RUN_CLOCK_SAMPLES, DAY_RUN_KIND, DAY_RUN_STATUS } from "@/constants/DayRun";
+import { PHASE, type Phase } from "@/constants/Phase";
+import { AppDirection, AppLocale, AppMode, PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
+import { useAppStore } from "@/stores/app";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { usePreferencesStore } from "@/stores/preferences";
+import { controlProblems } from "@/test-helpers/controls";
+import {
+  liveTime,
+  renderPlayer as renderPreview,
+  type PlayerView,
+} from "@/test-helpers/dayRunPlayer";
+import { layOut } from "@/test-helpers/layout";
+import { hostNodesIn } from "@/test-helpers/text";
+import { appearancePreview, PHASE_NAME } from "@/utils/appearancePreview";
+import { formatPrayerTime } from "@/utils/date";
+import { localizeDigits } from "@/utils/digits";
+import { spokenClockTime } from "@/utils/spokenClockTime";
+
+jest.mock("expo-blur", () => jest.requireActual("@/test-helpers/blurMock"));
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
+
+const t = i18n.t.bind(i18n);
+const PHASES = Object.values(PHASE);
+const PREVIEW = DAY_RUN[DAY_RUN_KIND.PREVIEW];
+const NOON = new Date(2026, 9, 24, 12, 30);
+const hidden = { includeHiddenElements: true };
+const mockTransition = jest.fn(async (fn: () => void | Promise<void>) => {
+  await fn();
+});
+const realSetMode = useAppStore.getState().setMode;
+const originalOS = Platform.OS;
+const setPlatform = (os: string) =>
+  Object.defineProperty(Platform, "OS", { configurable: true, get: () => os });
+
+const renderPlayer = ({ isRTL = false } = {}) =>
+  renderPreview({ isRTL, transition: mockTransition });
+
+/** Lets `count` run ticks pass, one render apart. */
+const tick = async (count = 1) => {
+  for (let step = 0; step < count; step++) {
+    await act(() => jest.advanceTimersByTime(PREVIEW.tickMs));
+  }
+};
+/** Lets `count` phases pass; Reduce Motion holds each for one timer. */
+const phasesPass = async (count: number) => {
+  for (let step = 0; step < count; step++) {
+    await act(() => jest.advanceTimersByTime(PREVIEW.phaseMs));
+  }
+};
+
+const start = (result: PlayerView) => act(() => result.current.run?.start());
+const press = (testID: string) =>
+  userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).press(screen.getByTestId(testID));
+const toggle = () => screen.getByTestId(DAY_RUN_PLAYER_PART.TOGGLE);
+const track = () => screen.getByTestId(DAY_RUN_TRACK_PART.TRACK);
+const useAdaptive = () =>
+  screen.queryByRole("button", { name: t("onboarding.dayPreview.useAdaptive") });
+const adjust = (actionName: string) =>
+  act(async () => {
+    // userEvent has no accessibility actions, so the action is fired.
+    fireEvent(track(), "accessibilityAction", { nativeEvent: { actionName } });
+  });
+/** Each phase name's style, in the track's order. */
+const nameStyles = () =>
+  screen
+    .getAllByTestId(DAY_RUN_TRACK_PART.NAME, hidden)
+    .map((name) => StyleSheet.flatten(name.props.style));
+/** Plays a Reduce Motion run on through to its end. */
+const playToTheEnd = () => phasesPass(PHASES.length);
+// Whole-sky renders can exceed 5 s on a loaded machine.
+jest.setTimeout(20_000);
+
+describe("DayRunPlayer", () => {
+  beforeEach(async () => {
+    jest.useFakeTimers({ now: NOON });
+    mockReduced = false;
+    await act(() => i18n.changeLanguage(AppLocale.EN));
+    useAppStore.setState({ locale: AppLocale.EN, mode: AppMode.SYSTEM, setMode: realSetMode });
+    usePreferencesStore.setState({ use24HourTime: false, useWesternNumerals: true });
+    // No stored times: the run plays the sample day.
+    usePrayerTimesStore.setState({ todayTimings: null, usingDefaultLocation: false });
+    mockTransition.mockClear();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+    setPlatform(originalOS);
+    useAppStore.setState({ setMode: realSetMode });
+  });
+
+  it("offers Use Adaptive while another look is chosen", async () => {
+    mockReduced = true;
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(useAdaptive()).toBeOnTheScreen();
+
+    await act(() => result.current.run?.pause());
+    expect(useAdaptive()).toBeOnTheScreen();
+
+    await act(() => result.current.run?.resume());
+    await playToTheEnd();
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.ENDED);
+    expect(useAdaptive()).toBeOnTheScreen();
+  });
+
+  it("offers no Use Adaptive while Adaptive is chosen", async () => {
+    useAppStore.setState({ mode: AppMode.ADAPTIVE });
+    const { result } = await renderPlayer();
+    await start(result);
+
+    expect(screen.getByTestId(DAY_RUN_PLAYER_PART.FRAME)).toBeOnTheScreen();
+    expect(useAdaptive()).toBeNull();
+  });
+
+  it("Use Adaptive ends the run and writes Adaptive once", async () => {
+    const setMode = jest.fn(realSetMode);
+    useAppStore.setState({ setMode });
+    const { result } = await renderPlayer();
+    await start(result);
+    await tick(3);
+
+    await press(DAY_RUN_PLAYER_PART.USE_ADAPTIVE);
+    await act(() => jest.advanceTimersByTime(PIN_REPORT_LIMIT_MS));
+
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
+    expect(setMode).toHaveBeenCalledTimes(1);
+    expect(setMode).toHaveBeenCalledWith(AppMode.ADAPTIVE);
+    expect(mockTransition).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().mode).toBe(AppMode.ADAPTIVE);
+  });
+
+  // The card leaves with the button, so the reader hears the look that stays.
+  it("Use Adaptive says the new look once it is stored", async () => {
+    const setMode = jest.fn(realSetMode);
+    useAppStore.setState({ setMode });
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+    announce.mockClear();
+    const { result } = await renderPlayer();
+    await start(result);
+
+    await press(DAY_RUN_PLAYER_PART.USE_ADAPTIVE);
+    expect(announce).not.toHaveBeenCalled();
+    await act(() => jest.advanceTimersByTime(PIN_REPORT_LIMIT_MS));
+
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(t("a11y.onboarding.dayPreview.adaptiveChosen"), {
+      queue: true,
+    });
+    expect(setMode.mock.invocationCallOrder[0]).toBeLessThan(announce.mock.invocationCallOrder[0]);
+  });
+
+  // A look stored while the dissolve runs is the look that stays.
+  it("Use Adaptive says nothing when another look is stored by then", async () => {
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+    announce.mockClear();
+    mockTransition.mockImplementationOnce(async (fn) => {
+      await fn();
+      useAppStore.setState({ mode: AppMode.DARK });
+    });
+    const { result } = await renderPlayer();
+    await start(result);
+
+    await press(DAY_RUN_PLAYER_PART.USE_ADAPTIVE);
+    await act(() => jest.advanceTimersByTime(PIN_REPORT_LIMIT_MS));
+
+    expect(useAppStore.getState().mode).toBe(AppMode.DARK);
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it("Done restores the chosen look", async () => {
+    useAppStore.setState({ mode: AppMode.LIGHT });
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(result.current.drawn).toBe(AppMode.ADAPTIVE);
+
+    const done = screen.getByRole("button", { name: t("onboarding.dayPreview.done") });
+    expect(done.props.accessibilityHint).toBe(t("a11y.onboarding.dayPreview.doneHint"));
+    await press(DAY_RUN_PLAYER_PART.DONE);
+
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.IDLE);
+    expect(result.current.drawn).toBe(AppMode.LIGHT);
+    expect(useAppStore.getState().mode).toBe(AppMode.LIGHT);
+    expect(screen.queryByTestId(DAY_RUN_PLAYER_PART.FRAME)).toBeNull();
+  });
+
+  // Reduce Motion starts the run at Fajr, playing.
+  it("the track jumps a phase and pauses", async () => {
+    mockReduced = true;
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+    expect(result.current.run?.phase).toBe(PHASE.DAWN);
+
+    await adjust(A11Y_ACTION.INCREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
+    expect(result.current.run?.phase).toBe(PHASE.DAY);
+
+    await adjust(A11Y_ACTION.DECREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
+    expect(result.current.run?.phase).toBe(PHASE.DAWN);
+    await phasesPass(1);
+    expect(result.current.run?.phase).toBe(PHASE.DAWN);
+  });
+
+  it("a tap on a phase jumps there and pauses", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const segments = screen.getAllByTestId(DAY_RUN_TRACK_PART.SEGMENT, hidden);
+    await act(async () => fireEvent.press(segments[PHASES.indexOf(PHASE.MAGHRIB)]));
+
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
+    expect(result.current.run?.phase).toBe(PHASE.MAGHRIB);
+  });
+
+  it("speaks the phase and the time as the track's value", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+    await act(() => result.current.run?.jumpTo(PHASE.ASR));
+
+    const { now, day } = result.current.shown;
+    const spoken = spokenClockTime(
+      now,
+      day?.timezone ?? "",
+      { locale: AppLocale.EN, use24HourTime: false, western: true },
+      t
+    );
+    expect(track()).toHaveAccessibilityValue({
+      min: 0,
+      max: PHASES.length - 1,
+      now: PHASES.indexOf(PHASE.ASR),
+      text: t("a11y.join", { first: t(PHASE_NAME[PHASE.ASR]), second: spoken }),
+    });
+  });
+
+  // Equal time per phase: each phase's start sits at its fifth of the track.
+  it.each([PHASE.DAWN, PHASE.ASR, PHASE.NIGHT])("puts the playhead at %s's start", async (to) => {
+    const { result } = await renderPlayer();
+    await start(result);
+    await act(() => result.current.run?.jumpTo(to));
+
+    const head = screen.getByTestId(DAY_RUN_TRACK_PART.PLAYHEAD, hidden);
+    expect(StyleSheet.flatten(head.props.style).start).toBe(
+      `${(PHASES.indexOf(to) / PHASES.length) * 100}%`
+    );
+  });
+
+  it("toggle swaps its label between pause and play", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(toggle()).toHaveAccessibleName(t("common.pause"));
+    expect(toggle().props.accessibilityHint).toBe(t("a11y.onboarding.dayPreview.pauseHint"));
+
+    await press(DAY_RUN_PLAYER_PART.TOGGLE);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
+    expect(toggle()).toHaveAccessibleName(t("common.play"));
+    expect(toggle().props.accessibilityHint).toBe(t("a11y.onboarding.dayPreview.playHint"));
+    // iOS speaks a selected or checked state in English in every locale.
+    expect(toggle().props.accessibilityState).not.toHaveProperty("selected");
+    expect(toggle().props.accessibilityState).not.toHaveProperty("checked");
+
+    // Off the run's start, so a resume and a fresh start differ.
+    await act(() => result.current.run?.jumpTo(PHASE.ASR));
+    const kept = result.current.run?.progress ?? 0;
+    expect(kept).toBeGreaterThan(0);
+    await press(DAY_RUN_PLAYER_PART.TOGGLE);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+    expect(result.current.run?.phase).toBe(PHASE.ASR);
+    expect(result.current.run?.progress).toBeGreaterThanOrEqual(kept);
+    expect(toggle()).toHaveAccessibleName(t("common.pause"));
+  });
+
+  it("offers the day again from its end", async () => {
+    mockReduced = true;
+    const { result } = await renderPlayer();
+    await start(result);
+    await playToTheEnd();
+    expect(toggle()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.replay"));
+
+    await press(DAY_RUN_PLAYER_PART.TOGGLE);
+
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+  });
+
+  it("every player control meets the target size", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    expect(useAdaptive()).toBeOnTheScreen();
+    expect(controlProblems()).toEqual([]);
+    // The track's segments take taps but speak through the track.
+    for (const segment of screen.getAllByTestId(DAY_RUN_TRACK_PART.SEGMENT, hidden)) {
+      expect(StyleSheet.flatten(segment.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  it.each([
+    [false, AppDirection.LTR, undefined],
+    [true, AppDirection.RTL, [{ scaleX: -1 }]],
+  ])("the track runs from the reading start (RTL: %s)", async (isRTL, direction, transform) => {
+    const { result } = await renderPlayer({ isRTL });
+    await start(result);
+    await act(() => result.current.run?.pause());
+
+    expect(StyleSheet.flatten(track().props.style).direction).toBe(direction);
+    const glyph = screen.getByTestId(DAY_RUN_PLAYER_PART.GLYPH, hidden);
+    expect(StyleSheet.flatten(glyph.props.style)?.transform).toEqual(transform);
+  });
+
+  // A focus event sent before the toggle's native view exists reaches nothing.
+  it("moves reader focus to its toggle once the toggle is laid out", async () => {
+    const focus = jest
+      .spyOn(AccessibilityInfo, "sendAccessibilityEvent")
+      .mockImplementation(() => {});
+    focus.mockClear();
+    const layout = { nativeEvent: { layout: { x: 0, y: 0, width: 44, height: 44 } } };
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(focus).not.toHaveBeenCalled();
+
+    await act(async () => fireEvent(toggle(), "layout", layout));
+    await act(async () => fireEvent(toggle(), "layout", layout));
+
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        props: expect.objectContaining({ testID: DAY_RUN_PLAYER_PART.TOGGLE }),
+      }),
+      "focus"
+    );
+  });
+
+  it("announces a pause and the end, never a phase", async () => {
+    mockReduced = true;
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
+    announce.mockClear();
+    const { result } = await renderPlayer();
+    await start(result);
+    await phasesPass(2);
+    expect(result.current.run?.phase).toBe(PHASE.ASR);
+    expect(announce).not.toHaveBeenCalled();
+
+    await act(() => result.current.run?.pause());
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenLastCalledWith(
+      screen.getByTestId(DAY_RUN_PLAYER_PART.COPY).props.accessibilityLabel
+    );
+
+    await act(() => result.current.run?.resume());
+    await playToTheEnd();
+    expect(announce).toHaveBeenCalledTimes(2);
+    expect(announce).toHaveBeenLastCalledWith(t("a11y.onboarding.dayPreview.ended"));
+    // iOS has no live regions; the announcement says it all.
+    expect(screen.queryByTestId(DAY_RUN_PLAYER_PART.STATUS, hidden)).toBeNull();
+  });
+
+  // One region, mounted throughout; only its words change.
+  it("says the pause and the end in one live region on Android", async () => {
+    setPlatform(PlatformType.ANDROID);
+    mockReduced = true;
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
+    announce.mockClear();
+    const status = () => screen.getByTestId(DAY_RUN_PLAYER_PART.STATUS);
+    const copy = () => screen.getByTestId(DAY_RUN_PLAYER_PART.COPY);
+    const { result } = await renderPlayer();
+    await start(result);
+    const region = status();
+    await layOut(region);
+    expect(region).toHaveProp("accessibilityLiveRegion", "polite");
+    expect(region).toHaveProp("importantForAccessibility", "yes");
+    expect(region).toHaveProp("accessibilityLabel", "");
+    expect(region).toHaveProp("accessible", false);
+    await phasesPass(2);
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", "");
+
+    await act(() => result.current.run?.pause());
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", copy().props.accessibilityLabel);
+    expect(status()).toHaveProp("accessible", true);
+    expect(copy().props.accessibilityLiveRegion).toBeUndefined();
+
+    await act(() => result.current.run?.resume());
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", "");
+
+    await playToTheEnd();
+    expect(status()).toBe(region);
+    expect(status()).toHaveProp("accessibilityLabel", t("a11y.onboarding.dayPreview.ended"));
+    expect(copy().props.accessibilityLiveRegion).toBeUndefined();
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  // Android keeps actions and iOS keeps the role on null, so each is sent.
+  it.each([PlatformType.ANDROID, PlatformType.IOS])(
+    "offers no adjusting once the run has ended (%s)",
+    async (os) => {
+      setPlatform(os);
+      mockReduced = true;
+      const { result } = await renderPlayer();
+      await start(result);
+      expect(track()).toHaveProp("accessibilityRole", "adjustable");
+      expect(track()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.track"));
+      expect(track().props.accessibilityActions).toEqual(
+        os === PlatformType.ANDROID
+          ? expect.arrayContaining([expect.objectContaining({ name: A11Y_ACTION.INCREMENT })])
+          : []
+      );
+
+      await playToTheEnd();
+
+      expect(track()).toHaveProp("accessibilityRole", "text");
+      expect(track().props.accessibilityActions).toEqual([]);
+      expect(track()).toHaveAccessibleName(t("a11y.onboarding.dayPreview.track"));
+      expect(track().props.accessibilityValue).toEqual({
+        text: t(`settings.themes.${AppMode.ADAPTIVE}.title`),
+      });
+    }
+  );
+
+  // The cell holds every copy unseen, so a longer note never moves the toggle.
+  it("keeps the copy's height with every copy the run can show", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const sizers = screen.getAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER, hidden);
+    expect(screen.queryAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER)).toHaveLength(0);
+    const texts = sizers.map((sizer) =>
+      within(sizer)
+        .getAllByText(/./, hidden)
+        .map((text) => text.props.children)
+        .join(" | ")
+    );
+    expect(texts).toHaveLength(PHASES.length + 1);
+    for (const phase of PHASES) {
+      const { kicker, note } = appearancePreview(t, AppMode.ADAPTIVE, null, phase);
+      expect(texts).toContainEqual(expect.stringContaining(kicker));
+      expect(texts).toContainEqual(expect.stringContaining(note));
+    }
+    expect(texts).toContainEqual(
+      expect.stringContaining(t(`settings.themes.${AppMode.ADAPTIVE}.description`))
+    );
+    const layer = screen.getByTestId(DAY_RUN_PLAYER_PART.COPY_SIZERS, hidden);
+    expect(layer).toHaveProp("accessibilityElementsHidden", true);
+    expect(layer).toHaveProp("importantForAccessibility", "no-hide-descendants");
+    expect(layer).toHaveProp("pointerEvents", "none");
+    // Side by side, each the cell's width: the row is as tall as the tallest.
+    expect(StyleSheet.flatten(layer.props.style)).toEqual(
+      expect.objectContaining({ opacity: 0, flexDirection: "row", overflow: "hidden" })
+    );
+    for (const sizer of sizers) {
+      expect(StyleSheet.flatten(sizer.props.style)).toEqual(
+        expect.objectContaining({ width: "100%", flexShrink: 0 })
+      );
+    }
+  });
+
+  // A slot as wide as any clock, so the kicker beside it never reflows.
+  it.each([
+    [AppLocale.EN, true],
+    [AppLocale.AR, false],
+  ])("reserves every digit of a morning and an evening clock (%s)", async (locale, western) => {
+    await act(() => i18n.changeLanguage(locale));
+    useAppStore.setState({ locale });
+    usePreferencesStore.setState({ useWesternNumerals: western });
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const samples = DAY_RUN_CLOCK_SAMPLES.ISOS.map((iso) =>
+      localizeDigits(
+        formatPrayerTime(new Date(iso), DAY_RUN_CLOCK_SAMPLES.TIMEZONE, {
+          locale,
+          use24HourTime: false,
+        }),
+        locale,
+        western
+      )
+    );
+    const rows = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getAllByTestId(
+      DAY_RUN_PLAYER_PART.CLOCK_RESERVE,
+      hidden
+    );
+    const shown = (row: (typeof rows)[number]) =>
+      within(row)
+        .getAllByText(/./, hidden)
+        .filter((text) => text.parent?.props.testID !== DAY_RUN_PLAYER_PART.DIGIT_SIZER)
+        .map((text) => text.props.children)
+        .join("");
+    expect(rows.map(shown)).toEqual(samples);
+    expect(new Set(samples).size).toBe(2);
+
+    for (const [index, row] of rows.entries()) {
+      const digits = [...samples[index]].filter((character) => digitsOf(character));
+      const columns = within(row).getAllByTestId(DAY_RUN_PLAYER_PART.DIGIT_SIZER, hidden);
+      expect(columns).toHaveLength(digits.length);
+      for (const [at, column] of columns.entries()) {
+        expect(
+          within(column)
+            .getAllByText(/./, hidden)
+            .map((text) => text.props.children)
+            .join("")
+        ).toBe(digitsOf(digits[at]));
+      }
+    }
+  });
+
+  // The samples sit in a column of no height: they set only the slot's width.
+  it("gives the clock reserve no height", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const [row] = within(screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT)).getAllByTestId(
+      DAY_RUN_PLAYER_PART.CLOCK_RESERVE,
+      hidden
+    );
+    expect(StyleSheet.flatten(row.parent?.props.style)).toEqual(
+      expect.objectContaining({ height: 0, overflow: "hidden" })
+    );
+  });
+
+  // The sizers reserve the live slot's width, so their kickers wrap as it does.
+  it("gives each phase's sizer the live time slot's width", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+    const slot = screen.getByTestId(DAY_RUN_PLAYER_PART.TIME_SLOT);
+    expect(slot.props.onLayout).toEqual(expect.any(Function));
+    const SLOT_WIDTH = 64;
+
+    await act(async () => {
+      fireEvent(slot, "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: SLOT_WIDTH, height: 20 } },
+      });
+    });
+
+    const spacers = screen
+      .getAllByTestId(DAY_RUN_PLAYER_PART.COPY_SIZER, hidden)
+      .map(
+        (sizer) =>
+          hostNodesIn(sizer).filter(
+            (node) => StyleSheet.flatten(node.props.style)?.width === SLOT_WIDTH
+          ).length
+      );
+    expect(spacers).toEqual([...PHASES.map(() => 1), 0]);
+  });
+
+  // The live time sits flush at the copy's trailing edge as its width changes.
+  it("holds the time at the slot's end", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const time = within(screen.getByTestId(DAY_RUN_PLAYER_PART.COPY)).getByText(liveTime(result));
+    expect(StyleSheet.flatten(time.parent?.props.style).alignItems).toBe("flex-end");
+  });
+
+  // Small but on screen, and last, so swiping reaches the controls first.
+  it("draws the Android region small and last in the card", async () => {
+    setPlatform(PlatformType.ANDROID);
+    const { result } = await renderPlayer();
+    await start(result);
+
+    const status = screen.getByTestId(DAY_RUN_PLAYER_PART.STATUS);
+    const side = getTokenValue("$0.5", "size");
+    expect(side).toBeGreaterThan(0);
+    expect(StyleSheet.flatten(status.props.style)).toEqual(
+      expect.objectContaining({ width: side, height: side, position: "absolute" })
+    );
+    expect(screen.getByTestId(DAY_RUN_PLAYER_PART.FRAME).children.at(-1)).toBe(status);
+  });
+
+  // Each name is one word: it shrinks to fit rather than break.
+  it("fits each phase name on one line", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+
+    for (const name of screen.getAllByTestId(DAY_RUN_TRACK_PART.NAME, hidden)) {
+      expect(name).toHaveProp("numberOfLines", 1);
+      expect(name).toHaveProp("adjustsFontSizeToFit", true);
+      expect(name).toHaveProp("minimumFontScale", 0.75);
+    }
+  });
+
+  // The prelude is the night before Fajr: the track has not reached its start.
+  it("holds the track at its start through the prelude", async () => {
+    const { result } = await renderPlayer();
+    await start(result);
+    expect(result.current.run?.phase).toBe(PHASE.NIGHT);
+    expect(track()).toHaveAccessibilityValue({ now: 0 });
+    // No phase name is lit: all five are drawn alike.
+    expect(new Set(nameStyles().map((style) => JSON.stringify(style))).size).toBe(1);
+
+    await adjust(A11Y_ACTION.DECREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PLAYING);
+
+    await adjust(A11Y_ACTION.INCREMENT);
+    expect(result.current.run?.status).toBe(DAY_RUN_STATUS.PAUSED);
+    expect(result.current.run?.phase).toBe(PHASE.DAWN);
+    expect(track()).toHaveAccessibilityValue({ now: 0 });
+    const [fajr, ...rest] = nameStyles();
+    expect(fajr).not.toEqual(rest[0]);
+  });
+
+  it.each([[PHASE.DAWN], [PHASE.MAGHRIB]] as [Phase][])(
+    "reads the card as one element at %s",
+    async (to) => {
+      const { result } = await renderPlayer();
+      await start(result);
+      await act(() => result.current.run?.jumpTo(to));
+
+      const copy = screen.getByTestId(DAY_RUN_PLAYER_PART.COPY);
+      expect(copy.props.accessible).toBe(true);
+      expect(copy.props.accessibilityLabel).toContain(t(`settings.themes.phases.${to}.note`));
+    }
+  );
+});
