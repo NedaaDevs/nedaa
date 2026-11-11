@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { AccessibilityInfo } from "react-native";
-import { CircleAlert, Download, RefreshCw } from "lucide-react-native";
+import { Download, RefreshCw } from "lucide-react-native";
 
 // Components
 import { Button } from "@/components/ui/button";
+import { CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { HStack } from "@/components/ui/hstack";
-import { Icon } from "@/components/ui/icon";
 import { IconTile } from "@/components/ui/icon-tile";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_STYLE, LIST_ROW_VARIANT } from "@/components/ui/list-row";
@@ -34,7 +34,10 @@ import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
 import { countText } from "@/utils/digits";
 
 /** Test ids for the parts a test reaches. */
-export const CITIES_PACK_PART = { OFFER: "cities-pack-offer" } as const;
+export const CITIES_PACK_PART = {
+  OFFER: "cities-pack-offer",
+  WITH_NOTE: "cities-pack-with-note",
+} as const;
 
 /** A row of the list group, laid out as every grouped row is. */
 const ROW = LIST_ROW_STYLE[LIST_ROW_VARIANT.GROUPED];
@@ -140,17 +143,7 @@ const Failed = ({ onRetry }: { onRetry: () => void }) => {
   useIosAnnouncement(failure);
   return (
     <VStack gap="$3" padding="$cardPad">
-      <HStack
-        alignItems="flex-start"
-        gap="$2"
-        accessible
-        accessibilityLabel={failure}
-        accessibilityLiveRegion="polite">
-        <Icon as={CircleAlert} size="sm" color="$danger" />
-        <Text size="sm" fontWeight="600" color="$fg" flex={1}>
-          {failure}
-        </Text>
-      </HStack>
+      <Callout tone={CALLOUT_TONE.DANGER} body={failure} />
       <Button action="secondary" variant="outline" onPress={onRetry} accessibilityLabel={retry}>
         <Button.Icon as={RefreshCw} />
         <Button.Text>{retry}</Button.Text>
@@ -189,7 +182,8 @@ const CitiesPackRow = () => {
   }
 
   return (
-    <VStack gap="$2">
+    // The note sits 10 under the search: the host's 8, and 2 more.
+    <VStack testID={CITIES_PACK_PART.WITH_NOTE} gap="$2" paddingTop="$0.5">
       <SeedNote />
       <ListGroup>
         {isDownloading ? (

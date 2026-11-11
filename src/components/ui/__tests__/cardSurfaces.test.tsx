@@ -8,9 +8,11 @@ import { StatePanel } from "@/components/ui/state-panel";
 import { Text } from "@/components/ui/text";
 import { Tile } from "@/components/ui/tile";
 import { ReleaseNoteCard } from "@/components/whats-new/ReleaseNoteCard";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { WHATS_NEW_ENTRIES } from "@/constants/WhatsNew";
 import i18n from "@/localization/i18n";
 import { expectOnRestingSurface } from "@/test-helpers/surface";
+import { styleOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -53,6 +55,27 @@ describe("card surfaces", () => {
     );
 
     expectOnRestingSurface(screen.getByRole("button", { name: "Rate" }));
+  });
+
+  it("sets a support tile's label and thanks in the semibold face", async () => {
+    await renderWithTheme(
+      <SupportTile
+        icon={Heart}
+        ink="$accent"
+        label="Rate"
+        thanksLabel="Thanks"
+        thanked={false}
+        hint="Opens the store"
+        onPress={jest.fn()}
+      />
+    );
+
+    const face = (text: string) =>
+      styleOf(screen.getByText(text, { includeHiddenElements: true })).fontFamily;
+    expect([face("Rate"), face("Thanks")]).toEqual([
+      DEFAULT_FACES.semibold,
+      DEFAULT_FACES.semibold,
+    ]);
   });
 
   it("draws a release note as a card", async () => {

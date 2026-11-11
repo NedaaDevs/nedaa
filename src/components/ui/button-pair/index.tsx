@@ -3,11 +3,13 @@ import type { LayoutChangeEvent } from "react-native";
 import { getTokenValue, type TamaguiElement } from "tamagui";
 
 import { Box } from "@/components/ui/box";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonIconProps } from "@/components/ui/button";
 import { pairFits } from "@/components/ui/button-pair/fit";
 
 export type PairAction = {
   label: string;
+  /** Set before the label. */
+  icon?: ButtonIconProps["as"];
   hint?: string;
   onPress: () => void;
   disabled?: boolean;
@@ -66,6 +68,16 @@ const useWidths = (labels: readonly [string, string]) => {
   };
 };
 
+type CopyProps = { action: PairAction; numberOfLines?: number };
+
+/** What a pair button shows: its icon, then its label. */
+const ActionCopy = ({ action, numberOfLines }: CopyProps) => (
+  <>
+    {action.icon ? <Button.Icon as={action.icon} /> : null}
+    <Button.Text numberOfLines={numberOfLines}>{action.label}</Button.Text>
+  </>
+);
+
 type ActionButtonProps = { action: PairAction; lead?: boolean; flex?: number };
 
 /** One action as a full button; the lead action is filled. */
@@ -81,7 +93,7 @@ export const ActionButton = ({ action, lead = false, flex }: ActionButtonProps) 
     disabled={action.disabled}
     onPress={action.onPress}
     flex={flex}>
-    <Button.Text>{action.label}</Button.Text>
+    <ActionCopy action={action} />
   </Button>
 );
 
@@ -128,8 +140,11 @@ export const ButtonPair = ({ primary, secondary }: Props) => {
           pointerEvents="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
+          flexDirection="row"
+          gap="$inline"
           onLayout={onLayout}>
-          <Button.Text numberOfLines={1}>{action.label}</Button.Text>
+          {/* What the button draws, in its frame's row and gap. */}
+          <ActionCopy action={action} numberOfLines={1} />
         </Box>
       ))}
     </Box>

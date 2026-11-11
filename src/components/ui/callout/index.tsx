@@ -17,6 +17,8 @@ export const CALLOUT_TONE = {
   INFO: "info",
   /** A place found for what was entered, such as the nearest city. */
   PLACE: "place",
+  /** Something failed, such as a download that stopped. */
+  DANGER: "danger",
 } as const;
 export type CalloutTone = (typeof CALLOUT_TONE)[keyof typeof CALLOUT_TONE];
 
@@ -26,6 +28,7 @@ export const CALLOUT_PART = {
   ICON_WARN: "callout-icon-warn",
   ICON_INFO: "callout-icon-info",
   ICON_PLACE: "callout-icon-place",
+  ICON_DANGER: "callout-icon-danger",
   CHEVRON_LEFT: "callout-chevron-left",
   CHEVRON_RIGHT: "callout-chevron-right",
 } as const;
@@ -34,15 +37,33 @@ export const CALLOUT_PART = {
 const TONE_LOOK = {
   [CALLOUT_TONE.WARN]: {
     frame: { borderWidth: 1, borderColor: "$warn", backgroundColor: "$surface2" },
-    icon: { as: TriangleAlert, color: "$warn", testID: CALLOUT_PART.ICON_WARN },
+    row: { alignItems: "flex-start" },
+    icon: { as: TriangleAlert, color: "$warn", size: "sm", testID: CALLOUT_PART.ICON_WARN },
+    text: { color: "$fg" },
   },
   [CALLOUT_TONE.INFO]: {
     frame: { backgroundColor: "$tile" },
-    icon: { as: Info, color: "$fg", testID: CALLOUT_PART.ICON_INFO },
+    row: { alignItems: "flex-start" },
+    icon: { as: Info, color: "$fg", size: "sm", testID: CALLOUT_PART.ICON_INFO },
+    text: { color: "$fg" },
   },
   [CALLOUT_TONE.PLACE]: {
     frame: { backgroundColor: "$tile" },
-    icon: { as: MapPin, color: "$fg", testID: CALLOUT_PART.ICON_PLACE },
+    row: { alignItems: "flex-start" },
+    icon: { as: MapPin, color: "$fg", size: "sm", testID: CALLOUT_PART.ICON_PLACE },
+    text: { color: "$fg" },
+  },
+  // A failure in its own colour: a control-sized box, the sign centred.
+  [CALLOUT_TONE.DANGER]: {
+    frame: {
+      borderWidth: 1,
+      borderColor: "$dangerEdge",
+      backgroundColor: "$dangerTint",
+      borderRadius: "$control",
+    },
+    row: { alignItems: "center" },
+    icon: { as: TriangleAlert, color: "$danger", size: "md", testID: CALLOUT_PART.ICON_DANGER },
+    text: { color: "$danger", fontWeight: "600" },
   },
 } as const;
 
@@ -71,21 +92,21 @@ export const Callout = ({ title, body, tone = CALLOUT_TONE.WARN, action, live = 
       borderRadius="$card"
       {...look.frame}>
       <HStack
-        alignItems="flex-start"
+        {...look.row}
         gap="$2"
         accessible
         accessibilityLabel={title ? t("a11y.join", { first: title, second: body }) : body}
         accessibilityLiveRegion={live ? "polite" : "none"}>
         <Box testID={look.icon.testID}>
-          <Icon as={look.icon.as} size="sm" color={look.icon.color} />
+          <Icon as={look.icon.as} size={look.icon.size} color={look.icon.color} />
         </Box>
         <VStack flex={1}>
           {title ? (
-            <Text size="sm" bold color="$fg">
+            <Text size="sm" bold color={look.text.color}>
               {title}
             </Text>
           ) : null}
-          <Text size="sm" color="$fg">
+          <Text size="sm" {...look.text}>
             {body}
           </Text>
         </VStack>

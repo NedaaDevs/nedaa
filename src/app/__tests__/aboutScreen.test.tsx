@@ -6,7 +6,9 @@ import * as Haptics from "expo-haptics";
 import { usePathname } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
+import { getTokenValue } from "tamagui";
 
+import { SECRET_TAP_COUNT } from "@/components/about/VersionLine";
 import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
@@ -29,6 +31,7 @@ import {
 import { appVersionLabel } from "@/utils/appVersion";
 import { LTR_ISOLATE } from "@/utils/digits";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
+import { styleOf } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 jest.mock("@/utils/cityCheckDebug", () => ({
@@ -183,6 +186,15 @@ describe("About", () => {
 
     expect(versionLine()).toBeTruthy();
     expect(versionLine()).toHaveStyle({ minHeight: 44 });
+  });
+
+  // The column's gap is the whole step; the line adds no padding of its own.
+  it("sets the version one section step under the last section", async () => {
+    await renderAbout();
+
+    const line = versionLine().parent!;
+    const step = Number(styleOf(line.parent!).gap) + Number(styleOf(line).paddingTop ?? 0);
+    expect(step).toBe(getTokenValue("$section", "space"));
   });
 
   // The version is a Latin identifier in every language, read left to right.
@@ -345,28 +357,28 @@ describe("About", () => {
     });
   });
 
-  it("turns debug mode on after seven taps on the version", async () => {
+  it("turns debug mode on after the debug taps on the version", async () => {
     await renderAbout();
 
-    await tapVersion(7);
+    await tapVersion(SECRET_TAP_COUNT);
 
     expect(useDebugModeStore.getState().isEnabled).toBe(true);
     expect(developerHeader()).toBeTruthy();
   });
 
-  it("leaves debug mode alone after six taps", async () => {
+  it("leaves debug mode alone one tap short", async () => {
     await renderAbout();
 
-    await tapVersion(6);
+    await tapVersion(SECRET_TAP_COUNT - 1);
 
     expect(useDebugModeStore.getState().isEnabled).toBe(false);
   });
 
-  it("turns debug mode off after seven more taps", async () => {
+  it("turns debug mode off after the debug taps again", async () => {
     useDebugModeStore.setState({ isEnabled: true });
     await renderAbout();
 
-    await tapVersion(7);
+    await tapVersion(SECRET_TAP_COUNT);
 
     expect(useDebugModeStore.getState().isEnabled).toBe(false);
     expect(developerHeader()).toBeNull();
@@ -379,9 +391,9 @@ describe("About", () => {
     const now = jest.spyOn(Date, "now");
 
     now.mockReturnValue(0);
-    await tapVersion(4);
+    await tapVersion(SECRET_TAP_COUNT - 1);
     now.mockReturnValue(10_000);
-    await tapVersion(3);
+    await tapVersion(1);
 
     now.mockRestore();
     expect(useDebugModeStore.getState().isEnabled).toBe(false);

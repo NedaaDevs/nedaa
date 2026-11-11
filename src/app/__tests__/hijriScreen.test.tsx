@@ -9,12 +9,14 @@ import { renderRouter, screen } from "expo-router/testing-library";
 import { STEPPED_SLIDER_GESTURE, STEPPED_SLIDER_PART } from "@/components/ui/stepped-slider";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useLocationStore } from "@/stores/location";
 import { usePreferencesStore } from "@/stores/preferences";
 import { expectOnRestingSurface } from "@/test-helpers/surface";
+import { styleOf } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { LTR_ISOLATE } from "@/utils/digits";
 import { HIJRI_OFFSETS, hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
@@ -191,5 +193,18 @@ describe("Hijri date screen", () => {
 
     expect(screen.getByText(i18n.t("settings.hijri.date.sections.adjustment"))).toBeTruthy();
     expect(screen.getByText(i18n.t("settings.hijri.date.adjustmentHead"), hidden)).toBeTruthy();
+  });
+
+  it("sets the card's head, value and track ends in the semibold face", async () => {
+    await renderHijri();
+
+    const end = (part: string) => within(screen.getByTestId(part, hidden)).getByText(/./, hidden);
+    const shown = [
+      screen.getByText(t("settings.hijri.date.adjustmentHead"), hidden),
+      screen.getByText(hijriAdjustmentLabel(0, t), hidden),
+      end(STEPPED_SLIDER_PART.START_MARK),
+      end(STEPPED_SLIDER_PART.END_MARK),
+    ].map((text) => styleOf(text).fontFamily);
+    expect(shown).toEqual(shown.map(() => DEFAULT_FACES.semibold));
   });
 });

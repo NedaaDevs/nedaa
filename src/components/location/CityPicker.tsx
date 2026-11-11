@@ -42,6 +42,7 @@ export const CITY_PICKER_PART = {
   PROMPT: "city-picker-prompt",
   NONE: "city-picker-none",
   SKELETON: "city-picker-skeleton",
+  ROOT: "city-picker-root",
 } as const;
 
 /** Rows held in place while the first search of a word runs. */
@@ -230,7 +231,7 @@ const CityPicker = ({ onPick, onEnterCoordinates }: Props) => {
   };
 
   return (
-    <VStack gap="$section">
+    <VStack testID={CITY_PICKER_PART.ROOT} gap="$2">
       <VStack gap="$3">
         <SearchField
           testID={E2E_ID.CITY_SEARCH_INPUT}

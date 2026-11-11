@@ -18,6 +18,7 @@ import { candidateAt } from "@/test-helpers/cityOffer";
 import { PLACE } from "@/test-helpers/cityPickerStubs";
 import { HAND_WRITTEN_LOCALES, type HandWrittenLocale } from "@/test-helpers/locales";
 import { restingSurfaceOf } from "@/test-helpers/surface";
+import { fontSizeOf, hostNodesIn, styleOf, type HostElement } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const t = i18n.t.bind(i18n);
@@ -33,7 +34,7 @@ const runAt = (step: UpdateStep, failed = false, start: UpdateStart = DEVICE_STA
 
 const renderProgress = (
   run: UpdateRun | null,
-  { isRTL = false, surface }: { isRTL?: boolean; surface?: LocationUpdateSurface } = {}
+  { surface }: { surface?: LocationUpdateSurface } = {}
 ) => {
   const onRetry = jest.fn();
   const progress =
@@ -42,12 +43,18 @@ const renderProgress = (
     ) : (
       <LocationUpdateProgress run={run} onRetry={onRetry} />
     );
-  return renderWithTheme(progress, { isRTL }).then(() => onRetry);
+  return renderWithTheme(progress).then(() => onRetry);
 };
 
 /** A row read with its state: done, in progress, or next. */
 const row = (label: string, state: "stepDone" | "stepNow" | "stepNext") =>
   screen.getByLabelText(t(`a11y.location.update.${state}`, { step: t(label) }));
+
+/** The width the element's icon draws at: its SVG's width. */
+const drawnWidthOf = (element: HostElement) =>
+  hostNodesIn(element)
+    .map((node) => node.props.width)
+    .find((width) => typeof width === "number");
 
 /** Words naming the city, and words naming the person's own position. */
 const PLACE_WORDS: Record<HandWrittenLocale, { place: RegExp; city: RegExp; position: RegExp }> = {
@@ -187,6 +194,23 @@ describe("LocationUpdateProgress", () => {
     expect(screen.getByText(t("location.update.keepsTimes"))).toBeTruthy();
   });
 
+  it("sets the status at the large size", async () => {
+    await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES));
+
+    expect(screen.getByText(t("location.update.step.prayerTimes"))).toHaveStyle({
+      fontSize: fontSizeOf("lg"),
+    });
+  });
+
+  it("sets the steps at the body size, medium", async () => {
+    await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES));
+
+    expect(screen.getByText(t("location.update.steps.alerts"))).toHaveStyle({
+      fontSize: fontSizeOf("md"),
+      fontFamily: DEFAULT_FACES.medium,
+    });
+  });
+
   // A wait never spins, so Reduce Motion has nothing to stop.
   it("draws no spinner", async () => {
     await renderProgress(runAt(UPDATE_STEP.LOCATION));
@@ -194,12 +218,15 @@ describe("LocationUpdateProgress", () => {
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/ActivityIndicator/);
   });
 
-  it("sets the rows in from the start edge, the same in Arabic", async () => {
-    await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES), { isRTL: true });
+  // The status icon's width plus the row's gap: steps start under its text.
+  it("starts the steps under the status text", async () => {
+    await renderProgress(runAt(UPDATE_STEP.PRAYER_TIMES));
 
-    const style = StyleSheet.flatten(screen.getByTestId(LOCATION_UPDATE_PART.STEPS).props.style);
-    expect(style.paddingStart).toBeGreaterThan(0);
-    expect(style.paddingLeft).toBeUndefined();
+    const status = screen.getByLabelText(t("location.update.step.prayerTimes"));
+    const inset = screen.getByTestId(LOCATION_UPDATE_PART.INSET);
+    const [spacer] = inset.children;
+    expect(styleOf(inset).gap).toBe(styleOf(status).gap);
+    expect(typeof spacer === "string" ? null : styleOf(spacer).width).toBe(drawnWidthOf(status));
   });
 
   it.each([

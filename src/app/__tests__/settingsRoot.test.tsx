@@ -7,10 +7,13 @@ import { usePathname } from "expo-router";
 import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 import { withTiming } from "react-native-reanimated";
+import { getTokenValue } from "tamagui";
 
+import { SECRET_TAP_COUNT } from "@/components/about/VersionLine";
 import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
+import { DEBUG_COPY } from "@/constants/DebugScreens";
 import { SETTINGS_LAYOUT, SETTINGS_ROW } from "@/constants/SettingsRoot";
 import { PRAYER_TIME_PROVIDERS } from "@/constants/providers";
 import { STORE_LINKS } from "@/constants/StoreLinks";
@@ -19,6 +22,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAppStore } from "@/stores/app";
+import { useDebugModeStore } from "@/stores/debugMode";
 import { useLocationStore } from "@/stores/location";
 import { useNotificationStore } from "@/stores/notification";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -26,7 +30,9 @@ import { useProviderSettingsStore } from "@/stores/providerSettings";
 import { useToastStore } from "@/stores/toast";
 import { controlProblems } from "@/test-helpers/controls";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
+import { styleOf } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { appVersionLabel } from "@/utils/appVersion";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@/hooks/useAlarmSupported", () => ({ useAlarmSupported: () => true }));
@@ -75,6 +81,9 @@ const row = (titleKey: string) =>
 const labelOf = (titleKey: string) => row(titleKey).props.accessibilityLabel as string;
 
 const summaryOf = (titleKey: string) => labelOf(titleKey).slice(i18n.t(titleKey).length + 2);
+
+/** The version line's spoken name, as About reads it. */
+const versionName = () => i18n.t("a11y.about.version", { version: appVersionLabel() });
 
 type Row = readonly [titleKey: string, destination: BackDestination];
 
@@ -244,6 +253,43 @@ describe("Settings root", () => {
     await renderSettings();
 
     expect(controlProblems()).toEqual([]);
+  });
+
+  it("ends with the app version and build, as text", async () => {
+    await renderSettings();
+
+    expect(screen.getByLabelText(versionName())).toBeOnTheScreen();
+    expect(screen.queryByRole("button", { name: versionName() })).toBeNull();
+  });
+
+  // The column's gap is the whole step; the line adds no padding of its own.
+  it("sets the version one section step under the last section", async () => {
+    await renderSettings();
+
+    const line = screen.getByLabelText(versionName());
+    const step = Number(styleOf(line.parent!).gap) + Number(styleOf(line).paddingTop ?? 0);
+    expect(step).toBe(getTokenValue("$section", "space"));
+  });
+
+  // Debug mode turns on from About alone.
+  it("leaves debug mode alone after the debug taps on the version", async () => {
+    useDebugModeStore.setState({ isEnabled: false });
+    await renderSettings();
+    const user = userEvent.setup();
+
+    for (let i = 0; i < SECRET_TAP_COUNT; i++) {
+      await user.press(screen.getByLabelText(versionName()));
+    }
+
+    expect(useDebugModeStore.getState().isEnabled).toBe(false);
+  });
+
+  it("shows no debug badge while debug mode is on", async () => {
+    useDebugModeStore.setState({ isEnabled: true });
+    await renderSettings();
+
+    expect(screen.getByLabelText(versionName())).toBeOnTheScreen();
+    expect(screen.queryByText(DEBUG_COPY.ON)).toBeNull();
   });
 
   it("places every row in exactly one section", () => {

@@ -31,7 +31,7 @@ export const ReleaseNotesCard = () => {
       borderRadius="$card"
       backgroundColor="$accentSoft">
       <VStack flex={1}>
-        <Text size="md" bold typography="title" color="$fg">
+        <Text size="md" fontWeight="600" typography="title" color="$fg">
           {t("settings.about.releaseTitle")}
         </Text>
         <Text size="sm" typography="helper" color="$muted">

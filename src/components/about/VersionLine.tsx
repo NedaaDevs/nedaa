@@ -13,11 +13,35 @@ import { useDebugModeStore } from "@/stores/debugMode";
 import { appVersionLabel } from "@/utils/appVersion";
 import { LTR_ISOLATE } from "@/utils/digits";
 
-const SECRET_TAP_COUNT = 7;
+/** Quick taps on the version that turn debug mode on or off. */
+export const SECRET_TAP_COUNT = 7;
 const TAP_WINDOW_MS = 3000;
 
-/** The version and build; seven quick taps turn debug mode on or off. */
+/** The version in Latin, isolated so RTL cannot reorder it. */
+const VersionText = ({ label }: { label: string }) => (
+  <Text size="sm" color="$muted" textAlign="center">
+    {`${LTR_ISOLATE.OPEN}${APP_NAME_LATIN} · ${label}${LTR_ISOLATE.CLOSE}`}
+  </Text>
+);
+
+/** The version and build, read as one line. */
 export const VersionLine = () => {
+  const { t } = useTranslation();
+  const label = appVersionLabel();
+
+  return (
+    <VStack
+      alignItems="center"
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={t("a11y.about.version", { version: label })}>
+      <VersionText label={label} />
+    </VStack>
+  );
+};
+
+/** The version line; seven quick taps turn debug mode on or off. */
+export const DebugVersionLine = () => {
   const { t } = useTranslation();
   const isDebugEnabled = useDebugModeStore((s) => s.isEnabled);
   const toggleDebugMode = useDebugModeStore((s) => s.toggle);
@@ -36,8 +60,7 @@ export const VersionLine = () => {
   };
 
   return (
-    // With the parent's gap, 24 above: the study's space before the version.
-    <VStack alignItems="center" gap="$2" paddingTop="$1">
+    <VStack alignItems="center" gap="$2">
       {/* A hidden gesture, not a control: no button role and no hint. */}
       <Pressable
         onPress={handleTap}
@@ -45,10 +68,7 @@ export const VersionLine = () => {
         accessibilityLabel={t("a11y.about.version", { version: label })}
         justifyContent="center"
         paddingHorizontal="$3">
-        {/* A Latin identifier in every language, isolated so RTL cannot reorder it. */}
-        <Text size="sm" color="$muted" textAlign="center">
-          {`${LTR_ISOLATE.OPEN}${APP_NAME_LATIN} · ${label}${LTR_ISOLATE.CLOSE}`}
-        </Text>
+        <VersionText label={label} />
       </Pressable>
       {isDebugEnabled ? <Pill tone={PILL_TONE.WARN}>{DEBUG_COPY.ON}</Pill> : null}
     </VStack>

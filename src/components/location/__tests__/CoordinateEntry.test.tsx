@@ -1,7 +1,6 @@
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
-import config from "../../../../tamagui.config";
 import CoordinateEntry, { NEAREST_LOOKUP_DEBOUNCE_MS } from "@/components/location/CoordinateEntry";
 import { CALLOUT_PART } from "@/components/ui/callout";
 import { UPDATE_START, UPDATE_STEP } from "@/constants/Location";
@@ -77,13 +76,11 @@ afterEach(() => {
 });
 
 describe("CoordinateEntry", () => {
-  // The description sits on the bare sky, where plain muted ink falls to 3:1.
-  it("writes its description in the ink kept for the sky", async () => {
+  // The card comes first; the labels, ranges and errors say the format.
+  it("opens on the latitude field, with no paragraph over the card", async () => {
     await renderEntry();
 
-    expect(screen.getByText(t("location.coordinates.description"))).toHaveStyle({
-      color: config.themes.light.mutedSky.val,
-    });
+    expect(screen.getAllByText(/\S/)[0]).toHaveTextContent(t("location.coordinates.latitude"));
   });
 
   it("names each field and its range, and holds Save until both are typed", async () => {

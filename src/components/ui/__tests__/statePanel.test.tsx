@@ -1,10 +1,12 @@
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
-import { CALLOUT_PART, CALLOUT_TONE, Callout } from "@/components/ui/callout";
+import { CALLOUT_PART, CALLOUT_TONE, Callout, type CalloutTone } from "@/components/ui/callout";
+import { ICON_SIZES } from "@/components/ui/icon/sizing";
 import { STATE_PANEL_ICON_ID, STATE_PANEL_ROOT_ID, StatePanel } from "@/components/ui/state-panel";
-import { Theme } from "tamagui";
+import { getTokenValue, Theme } from "tamagui";
 
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
 import { STATE_PANEL_KIND, STATE_PANEL_VARIANT } from "@/constants/StatePanel";
 import { AppLocale, PlatformType } from "@/enums/app";
@@ -194,6 +196,54 @@ describe("Callout tones", () => {
       expect(glyph).toHaveProp("stroke", palette.fg.hex);
     }
   );
+});
+
+describe("Callout's danger tone", () => {
+  // A failure keeps an edge and a tint of its own colour, and is written in it.
+  it.each([
+    ["light", NEDAA_LIGHT, false],
+    ["dark", NEDAA_DARK, true],
+  ] as const)(
+    "boxes a failure in %s: danger edge, tint and ink, a triangle",
+    async (_n, palette, dark) => {
+      const callout = <Callout tone={CALLOUT_TONE.DANGER} body="The download stopped." />;
+      await renderWithTheme(dark ? <Theme name="dark">{callout}</Theme> : callout);
+
+      expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+        borderTopWidth: 1,
+        borderTopColor: palette.dangerEdge.hex,
+        backgroundColor: palette.dangerTint.hex,
+        borderTopLeftRadius: getTokenValue("$control", "radius"),
+      });
+      expect(screen.getByText("The download stopped.")).toHaveStyle({
+        color: palette.danger.hex,
+        fontFamily: DEFAULT_FACES.semibold,
+      });
+      const sign = screen.getByTestId(CALLOUT_PART.ICON_DANGER, { includeHiddenElements: true });
+      const [glyph] = sign.queryAll((node) => node.type === "RNSVGSvgView");
+      expect(glyph).toHaveProp("stroke", palette.danger.hex);
+      expect(glyph).toHaveProp("width", ICON_SIZES.md);
+    }
+  );
+});
+
+/** Where each tone sets its sign beside a message of several lines. */
+const SIGN_ALIGN: Record<CalloutTone, "center" | "flex-start"> = {
+  [CALLOUT_TONE.WARN]: "flex-start",
+  [CALLOUT_TONE.INFO]: "flex-start",
+  [CALLOUT_TONE.PLACE]: "flex-start",
+  [CALLOUT_TONE.DANGER]: "center",
+};
+
+describe("Callout's sign", () => {
+  // A failure's triangle centres on its words; other signs top the first line.
+  it.each(Object.values(CALLOUT_TONE))("sits beside a %s message", async (tone) => {
+    await renderWithTheme(<Callout tone={tone} body="Showing Makkah's times." />);
+
+    expect(screen.getByLabelText("Showing Makkah's times.")).toHaveStyle({
+      alignItems: SIGN_ALIGN[tone],
+    });
+  });
 });
 
 describe("Callout's place tone", () => {
