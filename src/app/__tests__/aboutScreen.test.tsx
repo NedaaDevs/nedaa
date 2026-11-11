@@ -122,6 +122,18 @@ describe("About", () => {
     expect(screen.getByRole("header", { name: i18n.t("settings.about.title") })).toBeTruthy();
   });
 
+  it("titles its three sections in order", async () => {
+    await renderAbout();
+
+    const headers = screen.getAllByRole("header");
+    const order = [
+      i18n.t("settings.about.latest"),
+      i18n.t("brand.name"),
+      i18n.t("settings.about.helpSection"),
+    ].map((name) => headers.indexOf(screen.getByRole("header", { name })));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
   it("lists privacy, acknowledgements, help and feedback in order", async () => {
     await renderAbout();
 

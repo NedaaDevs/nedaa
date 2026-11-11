@@ -15,6 +15,7 @@ import {
   ActionsheetCloseButton,
   ActionsheetContent,
   ActionsheetTitle,
+  useActionsheetOpen,
 } from "@/components/ui/actionsheet";
 import { ChoiceGroup, ChoiceRow } from "@/components/ui/choice-row";
 import { HStack } from "@/components/ui/hstack";
@@ -42,8 +43,6 @@ export const RESULT_COUNT_DELAY_MS = 500;
 
 type PickProps = {
   label: string;
-  /** False from a pick or the close button on; the rows stay drawn. */
-  isOpen: boolean;
   settings: AladhanSettings;
   /** The method the provider uses while the choice is left to it. */
   inUse?: AladhanMethodId;
@@ -52,8 +51,9 @@ type PickProps = {
 };
 
 /** The methods by name, searchable, headed by the provider's own choice. */
-const MethodChoices = ({ label, isOpen, settings, inUse, onPick }: PickProps) => {
+const MethodChoices = ({ label, settings, inUse, onPick }: PickProps) => {
   const { t } = useTranslation();
+  const open = useActionsheetOpen();
   // Mounted only while the sheet is up, so each opening starts unsearched.
   const [query, setQuery] = useState("");
   const auto = t("settings.summary.methodAuto");
@@ -63,9 +63,9 @@ const MethodChoices = ({ label, isOpen, settings, inUse, onPick }: PickProps) =>
   const showAuto = matchesQuery(auto, query);
   const found = methods.length + (showAuto ? 1 : 0);
 
-  // No drawn count to read; the delay lets the typing settle first.
+  // No drawn count to read; it waits for typing to settle. A close cancels it.
   useEffect(() => {
-    if (!isOpen || !query.trim() || found === 0) return;
+    if (!open || !query.trim() || found === 0) return;
     const timer = setTimeout(
       () =>
         AccessibilityInfo.announceForAccessibility(
@@ -74,7 +74,7 @@ const MethodChoices = ({ label, isOpen, settings, inUse, onPick }: PickProps) =>
       RESULT_COUNT_DELAY_MS
     );
     return () => clearTimeout(timer);
-  }, [isOpen, query, found, t]);
+  }, [open, query, found, t]);
 
   return (
     <VStack gap="$3">
@@ -199,15 +199,7 @@ export const CalculationSheet = ({
   const body = () => {
     switch (picker) {
       case CALCULATION_PICKER.METHOD:
-        return (
-          <MethodChoices
-            label={title}
-            isOpen={isOpen}
-            settings={settings}
-            inUse={inUse}
-            onPick={pick}
-          />
-        );
+        return <MethodChoices label={title} settings={settings} inUse={inUse} onPick={pick} />;
       case CALCULATION_PICKER.ASR:
         return (
           <OptionChoices
