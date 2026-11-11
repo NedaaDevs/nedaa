@@ -6,10 +6,11 @@ import { act, userEvent } from "@testing-library/react-native";
 import { router, type Href } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 
+import config from "../../../tamagui.config";
 import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
 import { PLACE_HERO_PART } from "@/components/ui/place-hero";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { CITY_PICKER_VIEW, LOCATION_PICKER } from "@/constants/Location";
+import { CITY_PICKER_VIEW, LOCATION_PICKER, LOCATION_PICKER_PART } from "@/constants/Location";
 import { AppLocale } from "@/enums/app";
 import { LocationMode } from "@/enums/location";
 import i18n from "@/localization/i18n";
@@ -148,6 +149,14 @@ describe("Settings › Location › city picker", () => {
         second: t("location.hero.coordinatesNote"),
       })
     );
+  });
+
+  it("sets the coordinates card 12 under the hero", async () => {
+    await renderPicker(coordinatesUrl);
+
+    expect(screen.getByTestId(LOCATION_PICKER_PART.COORDINATES)).toHaveStyle({
+      gap: config.tokens.space["3"].val,
+    });
   });
 
   it("draws no hero over the city list", async () => {

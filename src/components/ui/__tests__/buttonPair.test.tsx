@@ -1,9 +1,10 @@
 import { View } from "react-native";
-import { fireEvent, screen, userEvent } from "@testing-library/react-native";
+import { fireEvent, screen, userEvent, within } from "@testing-library/react-native";
 
 import { BUTTON_PAIR_PART, ButtonPair, type PairAction } from "@/components/ui/button-pair";
 import { pairFits } from "@/components/ui/button-pair/fit";
 import { controlProblems } from "@/test-helpers/controls";
+import { GLYPH_ID, Glyph } from "@/test-helpers/glyph";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const SECONDARY: PairAction = { label: "Keep Riyadh", onPress: jest.fn() };
@@ -37,6 +38,15 @@ describe("pairFits", () => {
 });
 
 describe("ButtonPair", () => {
+  it("draws an action's icon in its button and in the copy the fit measures", async () => {
+    await renderPair({ icon: Glyph });
+
+    const lead = screen.getByRole("button", { name: "Use Jeddah" });
+    expect(within(lead).getByTestId(GLYPH_ID, { includeHiddenElements: true })).toBeTruthy();
+    const [copy] = screen.getAllByTestId(BUTTON_PAIR_PART.MEASURE, { includeHiddenElements: true });
+    expect(within(copy).getByTestId(GLYPH_ID, { includeHiddenElements: true })).toBeTruthy();
+  });
+
   it("stacks, primary first, until both labels are measured", async () => {
     await renderPair();
 

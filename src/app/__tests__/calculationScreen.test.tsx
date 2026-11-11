@@ -17,6 +17,7 @@ import {
   CALCULATION_PICKER,
   CALCULATION_TITLE_KEY,
 } from "@/constants/Calculation";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { SHEET_MOTION } from "@/constants/Motion";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { ASR_SCHOOL, MIDNIGHT_MODE, PRAYER_TIME_PROVIDERS } from "@/constants/providers";
@@ -138,6 +139,15 @@ describe("Calculation screen", () => {
     expect(screen.getByText(t("settings.calculation.intro", { city: "Riyadh" }))).toBeTruthy();
   });
 
+  it("introduces the choices under the screen's title", async () => {
+    await renderCalculation();
+    const title = screen.getByRole("header", { name: t(BACK_DESTINATION.SETTINGS_PROVIDER.title) });
+
+    expect(title.parent).toContainElement(
+      screen.getByText(t("settings.calculation.intro", { city: "Riyadh" }))
+    );
+  });
+
   it("titles its three sections in order", async () => {
     await renderCalculation();
 
@@ -155,6 +165,15 @@ describe("Calculation screen", () => {
     expect(
       button(new RegExp(t(`providers.aladhan.methods.${MAKKAH.nameKey}`).replace(/[()]/g, ".")))
     ).toBeTruthy();
+  });
+
+  it("sets the method's name in the semibold face", async () => {
+    await renderCalculation();
+
+    const name = t(`providers.aladhan.methods.${MAKKAH.nameKey}`);
+    const card = button(new RegExp(name.replace(/[()]/g, ".")));
+    const shown = within(card).getByText(name, { includeHiddenElements: true });
+    expect(shown).toHaveStyle({ fontFamily: DEFAULT_FACES.semibold });
   });
 
   it("says the provider picks the method when none is set", async () => {

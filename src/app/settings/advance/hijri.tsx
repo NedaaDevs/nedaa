@@ -43,7 +43,7 @@ const HijriContent = () => {
   const limit = localizeDigits(String(HIJRI_OFFSET_LIMIT), locale, useWesternNumerals);
   // Held left to right, so RTL text keeps the sign in front of the figure.
   const end = (sign: string) => (
-    <Text size="sm" bold color="$fg">
+    <Text size="sm" fontWeight="600" color="$fg">
       {`${LTR_ISOLATE.OPEN}${sign}${limit}${LTR_ISOLATE.CLOSE}`}
     </Text>
   );
@@ -75,10 +75,10 @@ const HijriContent = () => {
                 alignItems="baseline"
                 justifyContent="space-between"
                 gap="$3">
-                <Text flex={1} size="md" bold color="$fg">
+                <Text flex={1} size="md" fontWeight="600" color="$fg">
                   {t("settings.hijri.date.adjustmentHead")}
                 </Text>
-                <Text size="sm" bold color="$accentText">
+                <Text size="sm" fontWeight="600" color="$accentText">
                   {label(shown)}
                 </Text>
               </HStack>

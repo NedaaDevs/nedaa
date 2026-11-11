@@ -114,6 +114,7 @@ const PreferencesContent = () => {
       <SkyOccluder>
         <ScreenHeader
           title={t("settings.preferences.title")}
+          subtitle={t("settings.preferences.intro")}
           back={{ fallback: BACK_DESTINATION.SETTINGS }}
         />
       </SkyOccluder>

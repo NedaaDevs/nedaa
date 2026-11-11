@@ -22,7 +22,7 @@ import {
 import { AboutBrand } from "@/components/about/AboutBrand";
 import { PhoneZoneRow } from "@/components/about/PhoneZoneRow";
 import { ReleaseNotesCard } from "@/components/about/ReleaseNotesCard";
-import { VersionLine } from "@/components/about/VersionLine";
+import { DebugVersionLine } from "@/components/about/VersionLine";
 import type { IconProps } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
@@ -154,7 +154,7 @@ export default function AboutScreen() {
               <ListGroup>{rowsOf(HELP_ROWS)}</ListGroup>
             </Section>
 
-            <VersionLine />
+            <DebugVersionLine />
 
             {isDebugEnabled ? (
               <Section title={DEBUG_COPY.SECTION} kind={SECTION_KIND.LABEL}>

@@ -244,7 +244,7 @@ export const SteppedSlider = <V extends string | number>({
                     size="xs"
                     typography="helper"
                     textAlign="center"
-                    fontWeight={index === shown ? "700" : "600"}
+                    fontWeight="600"
                     color={index === shown ? "$fg" : "$mutedSky"}>
                     {stopLabel(stop) ?? ""}
                   </Text>
