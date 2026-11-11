@@ -413,6 +413,7 @@ const lightTheme = {
   warnTint: NEDAA_LIGHT.warnTint.hex,
   successTint: NEDAA_LIGHT.successTint.hex,
   dangerTint: NEDAA_LIGHT.dangerTint.hex,
+  dangerEdge: NEDAA_LIGHT.dangerEdge.hex,
 };
 
 const darkTheme = {
@@ -512,6 +513,7 @@ const darkTheme = {
   warnTint: NEDAA_DARK.warnTint.hex,
   successTint: NEDAA_DARK.successTint.hex,
   dangerTint: NEDAA_DARK.dangerTint.hex,
+  dangerEdge: NEDAA_DARK.dangerEdge.hex,
 };
 
 // Animations (moti driver — reuses existing react-native-reanimated)

@@ -96,13 +96,19 @@ export const NoticeCard = ({
                 {eyebrow}
               </Text>
             ) : null}
-            <Text size="md" fontWeight="600" color="$fg">
+            <Text size="lg" typography="title" fontWeight="600" color="$fg">
               {title}
             </Text>
             {lines.map((line) => (
               <HStack key={`${line.kind}:${line.text}`} gap="$1.5" alignItems="center">
-                {line.icon ? <Icon as={line.icon} size="xs" color={LINE_COLOR[line.kind]} /> : null}
-                <Text size="sm" fontWeight="500" color={LINE_COLOR[line.kind]} flexShrink={1}>
+                {/* A line's icon recedes, whatever ink its words take. */}
+                {line.icon ? <Icon as={line.icon} size="xs" color="$muted" /> : null}
+                <Text
+                  size="helper"
+                  typography="helper"
+                  fontWeight="500"
+                  color={LINE_COLOR[line.kind]}
+                  flexShrink={1}>
                   {line.text}
                 </Text>
               </HStack>

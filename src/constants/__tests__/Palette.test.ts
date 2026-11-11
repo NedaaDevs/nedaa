@@ -147,6 +147,14 @@ describe("tint tokens", () => {
     expect(theme.successTint.val).toBe(`${theme.success.val}24`);
     expect(theme.dangerTint.val).toBe(`${theme.danger.val}1F`);
   });
+
+  // A danger note's outline is its ink at half strength, so both share a hue.
+  it.each([
+    ["light", config.themes.light],
+    ["dark", config.themes.dark],
+  ] as const)("%s edges a danger note in the danger colour at half alpha", (_n, theme) => {
+    expect(theme.dangerEdge.val).toBe(`${theme.danger.val}80`);
+  });
 });
 
 describe("phase gradients", () => {

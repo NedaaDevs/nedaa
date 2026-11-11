@@ -4,6 +4,7 @@ import { act, userEvent } from "@testing-library/react-native";
 import { screen } from "expo-router/testing-library";
 
 import { LOCATION_UPDATE_PART } from "@/components/LocationUpdateProgress";
+import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { NOTICE_CARD_PART } from "@/components/ui/notice-card";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { CITY_OFFER_PART, CITY_OFFER_STAGE } from "@/constants/CityOffer";
@@ -17,6 +18,7 @@ import {
   UPDATE_START,
   UPDATE_STEP,
 } from "@/constants/Location";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppLocale, PlatformType } from "@/enums/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import i18n from "@/localization/i18n";
@@ -91,6 +93,16 @@ beforeEach(async () => {
 afterEach(() => jest.restoreAllMocks());
 
 describe("the run inside the card", () => {
+  it("draws a run stopped at the alerts on the warn tile", async () => {
+    stopWith(mockApplyCandidate, JEDDAH_PLACE, UPDATE_STEP.NOTIFICATIONS);
+    offerUp();
+    await renderOffer();
+    await pressUse("Jeddah");
+    expect(screen.getByTestId(ICON_TILE_ID, { includeHiddenElements: true })).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.warnTint.hex,
+    });
+  });
+
   it("starts the candidate's update on Use and draws its steps flat under the title", async () => {
     mockApplyCandidate.mockImplementation(() => new Promise(() => {}));
     offerUp();

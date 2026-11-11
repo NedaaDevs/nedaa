@@ -145,6 +145,13 @@ describe("Preferences", () => {
     expect(screen.getByRole("header", { name: t("settings.preferences.title") })).toBeTruthy();
   });
 
+  it("introduces the screen under its name", async () => {
+    await renderPreferences();
+    const title = screen.getByRole("header", { name: t("settings.preferences.title") });
+
+    expect(title.parent).toContainElement(screen.getByText(t("settings.preferences.intro")));
+  });
+
   // The countdown the seconds switch changes, as Today draws it.
   it("shows Today's countdown above the settings", async () => {
     await renderPreferences();

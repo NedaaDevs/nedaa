@@ -16,7 +16,6 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
 import { StickyActionBar } from "@/components/ui/sticky-action-bar";
-import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import {
@@ -99,17 +98,16 @@ const CalculationContent = () => {
         <SkyOccluder>
           <ScreenHeader
             title={t("settings.advance.provider.title")}
+            subtitle={
+              city
+                ? t("settings.calculation.intro", { city })
+                : t("settings.calculation.introNoPlace")
+            }
             back={{ fallback: BACK_DESTINATION.SETTINGS }}
           />
         </SkyOccluder>
 
         <ScreenContent paddingTop="$2" paddingBottom="$8" gap="$5">
-          <Text size="sm" color="$mutedSky">
-            {city
-              ? t("settings.calculation.intro", { city })
-              : t("settings.calculation.introNoPlace")}
-          </Text>
-
           <TodayPreview draft={draft} />
 
           <SkyOccluder>
