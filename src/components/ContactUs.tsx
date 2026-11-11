@@ -104,7 +104,12 @@ const ContactUs = () => {
         flexDirection="column"
         backgroundColor="$background">
         <Box width="100%" flexDirection="column" alignItems="flex-start" marginBottom="$4">
-          <Text size="2xl" color="$typographySecondary" fontWeight="500" accessibilityRole="header">
+          <Text
+            size="2xl"
+            color="$typographySecondary"
+            fontWeight="500"
+            accessibilityRole="header"
+            accessibilityLabel={t("settings.help.contactUs")}>
             {t("settings.help.contactUs").toUpperCase()}
           </Text>
         </Box>

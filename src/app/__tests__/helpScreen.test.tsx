@@ -34,12 +34,12 @@ describe("Help", () => {
     expect(screen.getByRole("header", { name: t("settings.help.title") })).toBeOnTheScreen();
   });
 
-  // A reader jumps between sections by heading; the title draws upper-cased.
-  it("titles its contact section as a heading", async () => {
+  // A reader jumps between sections by heading; the title draws upper-cased,
+  // and a reader spells some upper-cased words out letter by letter.
+  it("titles its contact section as a heading, in normal case", async () => {
     await renderHelp();
 
-    const title = new RegExp(`^${t("settings.help.contactUs")}$`, "i");
-    expect(screen.getByRole("header", { name: title })).toBeOnTheScreen();
+    expect(screen.getByRole("header", { name: t("settings.help.contactUs") })).toBeOnTheScreen();
   });
 
   it("offers email as a button", async () => {

@@ -9,6 +9,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
+import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -18,7 +19,10 @@ const ALL_CREDITS = [...GENERAL_CREDITS, ...CREDITS];
 
 const renderAcknowledgements = () =>
   renderRouter(
-    { [BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.route]: () => <AcknowledgementsScreen /> },
+    {
+      [BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.route]: () => <AcknowledgementsScreen />,
+      [BACK_DESTINATION.SETTINGS_FEEDBACK.route]: () => null,
+    },
     {
       initialUrl: BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.href,
       wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>,
@@ -73,5 +77,15 @@ describe("Acknowledgements", () => {
       name: t("settings.acknowledgements.contribute.cta"),
     });
     expect(invite.props.accessibilityHint).toBe(t("a11y.acknowledgements.contribute"));
+  });
+
+  it("opens the feedback screen from its invite", async () => {
+    const opened = await renderAcknowledgements();
+
+    await userEvent.press(
+      screen.getByRole("button", { name: t("settings.acknowledgements.contribute.cta") })
+    );
+
+    expect(opened.getPathname()).toBe(normalizeRoutePath(BACK_DESTINATION.SETTINGS_FEEDBACK.href));
   });
 });
