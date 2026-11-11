@@ -6,6 +6,8 @@ import { Bell } from "lucide-react-native";
 
 import { ICON_SIZES } from "@/components/ui/icon/sizing";
 import { DURATION_MS } from "@/constants/Motion";
+import { AppLocale } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import { LIST_GROUP_PART, ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT } from "@/components/ui/list-row";
 import { SWITCH_GROUP_PART, SwitchGroup } from "@/components/ui/switch-group";
@@ -22,7 +24,8 @@ const LABEL = "Athan";
 const SUMMARY = "Makkah";
 const HINT = "Plays at prayer time";
 const BODY = "Sound";
-const NAME = `${LABEL}, ${SUMMARY}`;
+/** The switch's name, joined as the app's language joins two phrases. */
+const nameOf = () => i18n.t("a11y.join", { first: LABEL, second: SUMMARY });
 const NESTED = "Vibration";
 
 const Group = ({ initial = false }: { initial?: boolean }) => {
@@ -40,7 +43,7 @@ const Group = ({ initial = false }: { initial?: boolean }) => {
   );
 };
 
-const row = () => screen.getByRole("switch", { name: NAME });
+const row = () => screen.getByRole("switch", { name: nameOf() });
 type Host = ReturnType<typeof row>;
 const styleOf = (element: Host) => StyleSheet.flatten(element.props.style) ?? {};
 
@@ -65,6 +68,23 @@ describe("SwitchGroup", () => {
     expect(screen.getAllByRole("switch")).toHaveLength(1);
     expect(row()).toBeChecked();
     expect(row().props.accessibilityHint).toBe(HINT);
+  });
+
+  describe("in Arabic", () => {
+    const ARABIC_COMMA = "،";
+
+    afterEach(async () => {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    });
+
+    // A reader pauses where the app's language puts its comma.
+    it("joins its label and summary with the language's own comma", async () => {
+      await act(() => i18n.changeLanguage(AppLocale.AR));
+      await renderWithTheme(<Group />);
+
+      expect(row()).toBeOnTheScreen();
+      expect(nameOf()).toContain(ARABIC_COMMA);
+    });
   });
 
   it("reads its label alone when it has no summary", async () => {

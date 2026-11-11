@@ -92,6 +92,7 @@ type ModalProps = PropsWithChildren<
     onChange?: (index: number) => void;
     onAnimate?: (fromIndex: number, toIndex: number) => void;
     onDismiss?: () => void;
+    animatedIndex?: { set: (index: number) => void };
     overrideReduceMotion?: string;
     topInset?: number;
     animationConfigs?: { duration?: number; easing?: unknown; stiffness?: number };
@@ -113,6 +114,9 @@ const IN_SHEET = {};
 
 /** Every render's props, newest last. */
 export const modalProps = jest.fn<void, [ModalProps]>();
+
+/** Puts the newest sheet at an index, as a drag or a spring moves it. */
+export const moveSheet = (index: number) => modalProps.mock.lastCall?.[0].animatedIndex?.set(index);
 
 /** The animation each programmatic dismiss asked for, newest last. */
 export const dismissConfigs = jest.fn<void, [object | undefined]>();

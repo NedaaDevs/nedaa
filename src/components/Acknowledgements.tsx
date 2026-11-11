@@ -67,7 +67,12 @@ const Acknowledgements = () => {
                     justifyContent="center">
                     <Icon color="$accentPrimary" size="md" as={credit.icon} />
                   </Box>
-                  <Text size="lg" fontWeight="600" color="$typography" flexShrink={1}>
+                  <Text
+                    size="lg"
+                    fontWeight="600"
+                    color="$typography"
+                    flexShrink={1}
+                    accessibilityRole="header">
                     {t(credit.titleKey)}
                   </Text>
                 </HStack>

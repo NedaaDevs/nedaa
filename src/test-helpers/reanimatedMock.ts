@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
 /** Reanimated without the worklets runtime jest lacks; Views keep the props. */
@@ -24,6 +24,20 @@ export const useSharedValue = <T>(initial: T) => {
   return box;
 };
 export const useAnimatedStyle = <T>(style: () => T) => style();
+/** Runs `react` once a render changes what `prepare` returns. */
+export const useAnimatedReaction = <T>(
+  prepare: () => T,
+  react: (now: T, before: T | null) => void
+) => {
+  const before = useRef<T | null>(null);
+  const now = prepare();
+  useEffect(() => {
+    if (Object.is(now, before.current)) return;
+    const previous = before.current;
+    before.current = now;
+    react(now, previous);
+  });
+};
 /** Gesture Handler's detector asks for these; jest-utils drives callbacks. */
 export const useEvent = () => () => undefined;
 export const useComposedEventHandler = () => () => undefined;
