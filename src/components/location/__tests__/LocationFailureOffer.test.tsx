@@ -1,5 +1,6 @@
 import { Linking, Platform, StyleSheet } from "react-native";
 import { act, screen, userEvent, within } from "@testing-library/react-native";
+import { getTokenValue } from "tamagui";
 
 import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
 import { NOTICE_CARD_PART } from "@/components/ui/notice-card";
@@ -14,6 +15,7 @@ import {
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { fontSizeOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { usesHmsLocation } from "@/adapters/location";
 import { checkLocationPermission } from "@/utils/location";
@@ -348,6 +350,19 @@ describe("LocationFailureOffer", () => {
         t("location.failure.servicesOff.open"),
         KEEP_LABEL,
       ]);
+    });
+
+    it("sets the picker link at the start, flush with the copy, at the body size", async () => {
+      await renderCard(LOCATION_FAILURE.TIMEOUT);
+
+      expect(styleOf(screen.getByTestId(E2E_ID.LOCATION_CHOOSE_CITY))).toMatchObject({
+        alignSelf: "flex-start",
+        minHeight: getTokenValue("$target", "size"),
+        marginBottom: -getTokenValue("$2.5", "space"),
+      });
+      expect(screen.getByText(t("onboarding.location.chooseCity"))).toHaveStyle({
+        fontSize: fontSizeOf("md"),
+      });
     });
 
     it("is one card with the alert glyph, hidden from the reader", async () => {

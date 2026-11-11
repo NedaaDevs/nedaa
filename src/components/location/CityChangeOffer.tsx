@@ -3,16 +3,25 @@ import { useTranslation } from "react-i18next";
 import { AccessibilityInfo, type ViewInstance } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
-import { Check, CircleAlert, Hourglass, MapPin, WifiOff } from "lucide-react-native";
+import {
+  Check,
+  CircleAlert,
+  Clock,
+  Hourglass,
+  MapPin,
+  RefreshCw,
+  TriangleAlert,
+  WifiOff,
+} from "lucide-react-native";
 
 import { ChooseCityLink } from "@/components/location/ChooseCityLink";
 import { LocationFailureOffer } from "@/components/location/LocationFailureOffer";
 import { offerShapeOf, offerViewOf, ownRunOf } from "@/components/location/cityOfferView";
 import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
-import { Button } from "@/components/ui/button";
 import { ActionButton, ButtonPair, type PairAction } from "@/components/ui/button-pair";
 import { ICON_TILE_TONE, type IconTileTone } from "@/components/ui/icon-tile";
 import { NOTICE_LINE, NoticeCard, noticeLabel, type NoticeLine } from "@/components/ui/notice-card";
+import { TEXT_ACTION_GAP, TextAction } from "@/components/ui/text-action";
 import { VStack } from "@/components/ui/vstack";
 import {
   CITY_OFFER_PART,
@@ -130,7 +139,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     return [NO_PLACE, NO_PLACE];
   })();
   const zoneLine = useZoneLine(...zonePair);
-  const fact = zoneLine ? [line(zoneLine, NOTICE_LINE.FACT)] : [];
+  const fact = zoneLine ? [line(zoneLine, NOTICE_LINE.FACT, Clock)] : [];
 
   // --- Titles and lines -----------------------------------------------------
   const savedBody = saved.city
@@ -216,7 +225,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
           ],
         };
       case OFFER_VIEW.STOPPED:
-        return { icon: CircleAlert, tone: ICON_TILE_TONE.DANGER, title: landedTitle, lines: [] };
+        return { icon: TriangleAlert, tone: ICON_TILE_TONE.WARN, title: landedTitle, lines: [] };
       case OFFER_VIEW.NOT_APPLIED:
         return {
           icon: CircleAlert,
@@ -355,7 +364,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     onPress: update,
     disabled: offline || busy,
   };
-  const retryAction: PairAction = { label: t("common.retry"), onPress: update };
+  const retryAction: PairAction = { label: t("common.retry"), icon: RefreshCw, onPress: update };
   const closeAction: PairAction = { label: t("common.close"), onPress: close };
   const dontAskLabel =
     here && shape === OFFER_SHAPE.NAMED
@@ -366,7 +375,7 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
     switch (view) {
       case OFFER_VIEW.OFFER:
         return (
-          <VStack gap="$2">
+          <VStack gap={TEXT_ACTION_GAP}>
             <ButtonPair primary={useAction} secondary={keepAction} />
             {shape === OFFER_SHAPE.UNNAMED ? <ChooseCityLink onPress={chooseCity} /> : null}
           </VStack>
@@ -388,13 +397,11 @@ const OfferCard = ({ offer }: { offer: CityOffer }) => {
         return <ActionButton action={closeAction} />;
       case OFFER_VIEW.KEPT:
         return (
-          <Button
-            variant="link"
+          <TextAction
+            label={dontAskLabel}
+            hint={t("a11y.location.cityOffer.dontAskHint")}
             onPress={dontAsk}
-            accessibilityLabel={dontAskLabel}
-            accessibilityHint={t("a11y.location.cityOffer.dontAskHint")}>
-            <Button.Text>{dontAskLabel}</Button.Text>
-          </Button>
+          />
         );
       case OFFER_VIEW.UPDATED:
       case OFFER_VIEW.MUTED:

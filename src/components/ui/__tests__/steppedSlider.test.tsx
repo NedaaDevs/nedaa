@@ -13,6 +13,7 @@ import {
   stopOffset,
 } from "@/components/ui/stepped-slider";
 import { A11Y_ACTION } from "@/constants/Accessibility";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { PlatformType } from "@/enums/app";
 import { ThemeProvider } from "@/test-helpers/theme";
@@ -399,7 +400,7 @@ describe("SteppedSlider", () => {
   });
 
   describe("labels", () => {
-    it("draws each stop's label, the chosen one bolder and in the text colour", async () => {
+    it("draws each stop's label, the chosen one in the text colour", async () => {
       await show("m");
 
       const style = (name: string) =>
@@ -410,7 +411,17 @@ describe("SteppedSlider", () => {
         NEDAA_LIGHT.fg.hex,
         NEDAA_LIGHT.mutedSky.hex,
       ]);
-      expect(style(NAMES.m).fontFamily).not.toBe(style(NAMES.s).fontFamily);
+    });
+
+    // Weight stays at the 600 cap; the chosen stop shows by colour alone.
+    it("sets every stop's label in the semibold face", async () => {
+      await show("m");
+
+      const face = (name: string) =>
+        StyleSheet.flatten(screen.getByText(name, hidden).props.style).fontFamily;
+      expect(STOPS.map((stop) => face(NAMES[stop]))).toEqual(
+        STOPS.map(() => DEFAULT_FACES.semibold)
+      );
     });
 
     it("takes touches on the labels as well as the track", async () => {

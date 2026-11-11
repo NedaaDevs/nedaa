@@ -1,6 +1,7 @@
-import { AccessibilityInfo } from "react-native";
+import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
+import config from "../../../../tamagui.config";
 import { CITIES_PACK_PART } from "@/components/location/CitiesPackRow";
 import CityPicker, { CITY_PICKER_PART } from "@/components/location/CityPicker";
 import { CITY_SEARCH_STATUS, type CitySearchStatus } from "@/constants/Cities";
@@ -212,6 +213,15 @@ describe("CityPicker's search states", () => {
     expect(rows()).toHaveLength(0);
   });
 
+  // A part of the root, so the root's gap is the link's step.
+  it("sets the coordinates link 8 under the search", async () => {
+    await renderPicker();
+
+    const root = screen.getByTestId(CITY_PICKER_PART.ROOT);
+    expect(root.children).toContain(coordinatesLink());
+    expect(root).toHaveStyle({ gap: config.tokens.space["2"].val });
+  });
+
   it("leads to coordinates from under the list", async () => {
     const { onEnterCoordinates } = await renderPicker();
 
@@ -245,6 +255,21 @@ describe("CityPicker's full city list", () => {
     await renderPicker();
 
     expect(screen.getByTestId(CITIES_PACK_PART.OFFER)).toBeTruthy();
+  });
+
+  // Steps under the search: the coverage note 10, a failure 8.
+  it.each([
+    ["the coverage note", null, "2.5"],
+    ["a failed download", "Network request failed", "2"],
+  ] as const)("sets %s its step under the search", async (_part, error, step) => {
+    useCitiesPackStore.setState({ error });
+    showing(search(CITY_SEARCH_STATUS.DONE, [FIRST], true));
+    await renderPicker();
+
+    const noted = screen.queryByTestId(CITIES_PACK_PART.WITH_NOTE);
+    const lead = noted ? Number(StyleSheet.flatten(noted.props.style).paddingTop ?? 0) : 0;
+    const root = StyleSheet.flatten(screen.getByTestId(CITY_PICKER_PART.ROOT).props.style);
+    expect(Number(root.gap) + lead).toBe(config.tokens.space[step].val);
   });
 
   it("offers nothing once the full list is installed", async () => {

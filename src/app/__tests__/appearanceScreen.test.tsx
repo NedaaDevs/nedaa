@@ -17,6 +17,7 @@ import { AppLocale, AppMode } from "@/enums/app";
 import { SimulatedClockContext } from "@/hooks/useTodayClock";
 import i18n from "@/localization/i18n";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
@@ -166,6 +167,14 @@ describe("Appearance", () => {
     expect(screen.getByLabelText(heroName(AppMode.ADAPTIVE, PHASE.MAGHRIB))).toBeOnTheScreen();
   });
 
+  it("sets the hero's kicker in the semibold face", async () => {
+    await renderAppearance(PHASE.MAGHRIB);
+
+    const { kicker } = appearancePreview(t, AppMode.ADAPTIVE, NATIVE_SCHEME.LIGHT, PHASE.MAGHRIB);
+    const shown = screen.getByText(kicker, { includeHiddenElements: true });
+    expect(shown).toHaveStyle({ fontFamily: DEFAULT_FACES.semibold });
+  });
+
   it("describes a fixed mode without the phase", async () => {
     useAppStore.setState({ mode: AppMode.LIGHT });
     await renderAppearance(PHASE.NIGHT);
@@ -196,7 +205,7 @@ describe("Appearance", () => {
     );
     expect(screen.getByText("تلقائي")).toBeOnTheScreen();
     expect(screen.getByText("النظام")).toBeOnTheScreen();
-    await i18n.changeLanguage(AppLocale.EN);
+    await act(() => i18n.changeLanguage(AppLocale.EN));
   });
 
   // Jest never steps a native-driver fade; Reduce Motion sets the opacity.
