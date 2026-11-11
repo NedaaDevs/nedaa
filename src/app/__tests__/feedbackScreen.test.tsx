@@ -62,6 +62,12 @@ beforeEach(() => {
 });
 
 describe("Feedback", () => {
+  it("heads the screen with its name", async () => {
+    await renderFeedback();
+
+    expect(screen.getByRole("header", { name: t("feedback.title") })).toBeOnTheScreen();
+  });
+
   it("sends a bug report with its logs and shows the reference", async () => {
     jest.mocked(submitFeedback).mockResolvedValue(RECEIPT);
     await renderFeedback();

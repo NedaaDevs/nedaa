@@ -9,13 +9,19 @@ import {
   Actionsheet,
   ActionsheetContent,
   ActionsheetHero,
+  CLOSED_INDEX,
 } from "@/components/ui/actionsheet";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { ELEVATION } from "@/constants/Elevation";
 import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { SHEET_CHROME_PART } from "@/constants/SheetChrome";
-import { BOTTOM_SHEET_PART, dismissConfigs, modalProps } from "@/test-helpers/bottomSheetMock";
+import {
+  BOTTOM_SHEET_PART,
+  dismissConfigs,
+  modalProps,
+  moveSheet,
+} from "@/test-helpers/bottomSheetMock";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 import i18n from "@/localization/i18n";
@@ -47,9 +53,14 @@ jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduc
 
 const BODY = "body";
 const hidden = { includeHiddenElements: true };
+// A hand catches a close this far below the detent it left.
+const PARTWAY_DOWN = -0.4;
+const TWO_DETENTS = [50, 90];
 
-const Sheet = ({ open, fitContent }: { open: boolean; fitContent?: boolean }) => (
-  <Actionsheet isOpen={open} fitContent={fitContent}>
+type SheetProps = { open: boolean; fitContent?: boolean; snapPoints?: number[] };
+
+const Sheet = ({ open, fitContent, snapPoints }: SheetProps) => (
+  <Actionsheet isOpen={open} fitContent={fitContent} snapPoints={snapPoints}>
     <ActionsheetContent>
       <View testID={BODY} />
     </ActionsheetContent>
@@ -240,10 +251,31 @@ describe("Actionsheet motion", () => {
     await renderWithTheme(<Sheet open />);
     jest.mocked(withTiming).mockClear();
 
-    await act(() => sheetProps()?.onAnimate?.(0, -1));
+    await act(() => sheetProps()?.onAnimate?.(0, CLOSED_INDEX));
 
     expect(withTiming).toHaveBeenCalledWith(0, { duration: SHEET_MOTION.SCRIM_MS });
     expect(styleOf(ACTIONSHEET_PART.SCRIM).opacity).toBe(0);
+  });
+
+  // gorhom reports nothing when a caught close springs back to its detent.
+  it("dims the screen again once a caught close climbs back to its detent", async () => {
+    await renderWithTheme(<Sheet open />);
+    await act(() => moveSheet(0));
+
+    await act(() => sheetProps()?.onAnimate?.(0, CLOSED_INDEX));
+    await act(() => moveSheet(PARTWAY_DOWN));
+    await act(() => moveSheet(0));
+
+    expect(styleOf(ACTIONSHEET_PART.SCRIM).opacity).toBe(1);
+  });
+
+  it("dims the screen again once a caught close settles on another detent", async () => {
+    await renderWithTheme(<Sheet open snapPoints={TWO_DETENTS} />);
+
+    await act(() => sheetProps()?.onAnimate?.(0, CLOSED_INDEX));
+    await act(() => sheetProps()?.onAnimate?.(0, 1));
+
+    expect(styleOf(ACTIONSHEET_PART.SCRIM).opacity).toBe(1);
   });
 
   it("leaves on the system sheet curve from a tap on the scrim", async () => {

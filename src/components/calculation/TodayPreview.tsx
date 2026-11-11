@@ -50,8 +50,8 @@ export const TodayPreview = ({ draft }: Props) => {
     ...prayers.map(({ name, spoken: time }) => t("a11y.join", { first: name, second: time })),
     pending ? t("settings.calculation.today.pending") : undefined,
   ]
-    .filter(Boolean)
-    .join(". ");
+    .filter((part): part is string => Boolean(part))
+    .reduce((first, second) => t("a11y.sentences", { first, second }));
 
   return (
     <SkyHero compact accessibilityLabel={spoken}>

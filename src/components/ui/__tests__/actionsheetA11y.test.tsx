@@ -11,11 +11,13 @@ import {
   ActionsheetContent,
   ActionsheetOverlay,
   ActionsheetTitle,
+  CLOSED_INDEX,
+  useActionsheetOpen,
 } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import i18n from "@/localization/i18n";
-import { gorhomStops, modalProps } from "@/test-helpers/bottomSheetMock";
+import { gorhomStops, modalProps, moveSheet } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -224,6 +226,85 @@ describe("Actionsheet accessibility", () => {
       await renderWithTheme(<Stacked second={false} />);
 
       expect(screen.getByTestId(LAYER_UP, hidden).props.children).toBe(String(true));
+    });
+  });
+
+  // Content that speaks goes quiet once the sheet starts to leave.
+  describe("open state for its content", () => {
+    const OPEN = "open";
+    // A hand catches a close this far below the detent it left.
+    const PARTWAY_DOWN = -0.4;
+    const TWO_DETENTS = [50, 90];
+    const OpenProbe = () => <Text testID={OPEN}>{String(useActionsheetOpen())}</Text>;
+    const Probed = ({ open, snapPoints }: { open: boolean; snapPoints?: number[] }) => (
+      <Actionsheet isOpen={open} snapPoints={snapPoints}>
+        <ActionsheetContent>
+          <OpenProbe />
+        </ActionsheetContent>
+      </Actionsheet>
+    );
+    const readsOpen = () => screen.getByTestId(OPEN, hidden).props.children;
+    /** gorhom's report that the sheet moves between two indexes. */
+    const animate = (from: number, to: number) =>
+      act(() => lastSheetProps()?.onAnimate?.(from, to));
+    const moveTo = (index: number) => act(() => moveSheet(index));
+
+    it("reads open while the sheet is up", async () => {
+      await renderWithTheme(<Probed open />);
+
+      expect(readsOpen()).toBe(String(true));
+    });
+
+    it("reads closed from the start of a close, while the content still shows", async () => {
+      await renderWithTheme(<Probed open />);
+
+      await animate(0, CLOSED_INDEX);
+
+      expect(readsOpen()).toBe(String(false));
+    });
+
+    // gorhom reports nothing when a caught close springs back to its detent.
+    it("reads open again once a caught close climbs back to its detent", async () => {
+      await renderWithTheme(<Probed open />);
+      await moveTo(0);
+
+      await animate(0, CLOSED_INDEX);
+      await moveTo(PARTWAY_DOWN);
+      await moveTo(0);
+
+      expect(readsOpen()).toBe(String(true));
+    });
+
+    it("reads open again once a caught close settles on another detent", async () => {
+      await renderWithTheme(<Probed open snapPoints={TWO_DETENTS} />);
+
+      await animate(0, CLOSED_INDEX);
+      await animate(0, 1);
+
+      expect(readsOpen()).toBe(String(true));
+    });
+
+    // Under Reduce Motion the content stays up while the sheet fades.
+    it("reads closed once its owner closes it", async () => {
+      mockReduced = true;
+      await renderWithTheme(<Probed open />);
+
+      await screen.rerender(<Probed open={false} />);
+
+      expect(readsOpen()).toBe(String(false));
+    });
+
+    it("reads open at the next opening after a reader's escape", async () => {
+      await renderWithTheme(<Probed open />);
+      await animate(0, CLOSED_INDEX);
+      await act(() =>
+        fireEvent(screen.getByTestId(ACTIONSHEET_PART.LAYER, hidden), "accessibilityEscape")
+      );
+
+      await screen.rerender(<Probed open={false} />);
+      await screen.rerender(<Probed open />);
+
+      expect(readsOpen()).toBe(String(true));
     });
   });
 

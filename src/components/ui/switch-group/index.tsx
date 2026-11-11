@@ -1,4 +1,5 @@
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
@@ -61,6 +62,7 @@ export const SwitchGroup = ({
   variant = LIST_ROW_VARIANT.PLAIN,
   children,
 }: Props) => {
+  const { t } = useTranslation();
   const nested = use(Nested);
   const grouped = variant === LIST_ROW_VARIANT.GROUPED;
   const frame = LIST_ROW_STYLE[variant].frame;
@@ -93,7 +95,7 @@ export const SwitchGroup = ({
       <Pressable
         onPress={() => onValueChange(!value)}
         accessibilityRole="switch"
-        accessibilityLabel={summary ? `${label}, ${summary}` : label}
+        accessibilityLabel={summary ? t("a11y.join", { first: label, second: summary }) : label}
         accessibilityHint={hint}
         accessibilityState={{ checked: value, busy, disabled: busy }}
         disabled={busy}

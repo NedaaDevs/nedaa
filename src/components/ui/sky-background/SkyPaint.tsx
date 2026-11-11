@@ -5,18 +5,12 @@ import { MoonGlyph } from "@/components/ui/sky-background/MoonGlyph";
 import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { SunGlyph } from "@/components/ui/sky-background/SunGlyph";
 import { useThemeDissolving } from "@/components/ui/theme-transition/context";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { DURATION_MS } from "@/constants/Motion";
 import { CELESTIAL_BODY, type CelestialBody, type SkyDisc } from "@/constants/Sky";
 import type { CelestialPosition } from "@/utils/celestial";
 import { moonPhaseFor } from "@/utils/moonPhase";
 import { bodyCentre, skyBackgroundImage, type SkyScene } from "@/utils/sky";
-
-const HIDDEN_FROM_READER = {
-  accessible: false,
-  accessibilityElementsHidden: true,
-  importantForAccessibility: "no-hide-descendants",
-  pointerEvents: "none",
-} as const;
 
 export type SkyPaintProps = {
   scene: SkyScene;
@@ -147,12 +141,17 @@ export const SkyPaint = ({
   return (
     <>
       {fadingFrom && (
-        <Animated.View {...HIDDEN_FROM_READER} testID={testID} style={StyleSheet.absoluteFill}>
+        <Animated.View
+          {...HIDDEN_FROM_READER}
+          pointerEvents="none"
+          testID={testID}
+          style={StyleSheet.absoluteFill}>
           {layer(fadingFrom)}
         </Animated.View>
       )}
       <Animated.View
         {...HIDDEN_FROM_READER}
+        pointerEvents="none"
         ref={ref}
         testID={testID}
         style={[StyleSheet.absoluteFill, { opacity: fadingFrom ? opacity : 1 }]}>
