@@ -178,6 +178,21 @@ describe("Calculation screen", () => {
     expect(previewLabel()).toContain(t(`providers.aladhan.methods.${MAKKAH.nameKey}`));
   });
 
+  describe("in Urdu", () => {
+    const URDU_FULL_STOP = "۔";
+
+    // A reader pauses where the app's language ends a sentence.
+    it("ends each sentence of the preview with the language's own full stop", async () => {
+      await act(() => i18n.changeLanguage(AppLocale.UR));
+      useAppStore.setState({ locale: AppLocale.UR });
+      await renderCalculation();
+
+      const label = previewLabel();
+      expect(label).toContain(`${URDU_FULL_STOP} `);
+      expect(label).not.toContain(". ");
+    });
+  });
+
   it("names no method for a drafted provider's choice", async () => {
     applied({ method: MWL.id });
     reported({ method: MWL.id });
