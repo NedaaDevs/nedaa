@@ -116,6 +116,12 @@ describe("Text size", () => {
   });
   afterEach(() => jest.useRealTimers());
 
+  it("heads the screen with its name", async () => {
+    await renderTextSize();
+
+    expect(screen.getByRole("header", { name: t("settings.textSize.title") })).toBeOnTheScreen();
+  });
+
   it("states what it changes and where the Quran's size lives", async () => {
     await renderTextSize();
 

@@ -33,12 +33,14 @@ import {
 import Animated, {
   Easing,
   ReduceMotion,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { scheduleOnRN } from "react-native-worklets";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
@@ -81,7 +83,7 @@ const SCRIM_FADE = { duration: SHEET_MOTION.SCRIM_MS };
 const HERO_FADE = { duration: SHEET_MOTION.HERO_FADE_MS };
 
 /** gorhom's index for a sheet that is closed or closing. */
-const CLOSED_INDEX = -1;
+export const CLOSED_INDEX = -1;
 
 const AnimatedPressable = Animated.createAnimatedComponent(RNPressable);
 
@@ -106,6 +108,12 @@ const NO_TITLE = createRef<ViewInstance>();
 
 /** The sheet's title, for content that sends reader focus back to it. */
 const useActionsheetTitle = (): RefObject<ViewInstance | null> => use(TitleContext) ?? NO_TITLE;
+
+/** Whether the sheet stays up; false from the start of any close. */
+const OpenContext = createContext(false);
+
+/** For content that speaks: whether its sheet stays up; false outside one. */
+const useActionsheetOpen = () => use(OpenContext);
 
 type BlurTarget = RefObject<ViewInstance | null>;
 
@@ -218,6 +226,10 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   // The whole layer's opacity; it moves only under Reduce Motion.
   const fade = useSharedValue(1);
   const scrim = useSharedValue(0);
+  // The sheet's index as it moves, fractional between detents.
+  const animatedIndex = useSharedValue(CLOSED_INDEX);
+  // The detent a running close left; null while none runs.
+  const leftFrom = useSharedValue<number | null>(null);
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<ViewInstance>(null);
@@ -228,6 +240,19 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   const settled = useRef(false);
   // Up from its first settle until gorhom reports it dismissed.
   const [shown, setShown] = useState(false);
+  // From the start of a close until the sheet is back at a detent or dismissed.
+  const [closing, setClosing] = useState(false);
+  // A caught close ends once the sheet is back at the detent it left.
+  useAnimatedReaction(
+    () => animatedIndex.get(),
+    (now) => {
+      const from = leftFrom.get();
+      if (from === null || now < from) return;
+      leftFrom.set(null);
+      scrim.set(withTiming(1, SCRIM_FADE));
+      scheduleOnRN(setClosing, false);
+    }
+  );
   useCoverApp(shown);
   const covered = useAppCovered();
   const points = useMemo(
@@ -291,20 +316,28 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     [snapHaptic]
   );
 
-  // Every way out starts here, so the scrim leaves on its own timing.
+  // Every close passes here: the scrim fades and the content goes quiet.
   const handleAnimate = useCallback(
-    (_from: number, to: number) => {
-      if (to === CLOSED_INDEX) scrim.set(withTiming(0, SCRIM_FADE));
+    (from: number, to: number) => {
+      const closes = to === CLOSED_INDEX;
+      // A caught close sent on to another detent brings the scrim back.
+      const caught = !closes && leftFrom.get() !== null;
+      leftFrom.set(closes ? from : null);
+      setClosing(closes);
+      if (closes) scrim.set(withTiming(0, SCRIM_FADE));
+      if (caught) scrim.set(withTiming(1, SCRIM_FADE));
     },
-    [scrim]
+    [leftFrom, scrim]
   );
 
   const handleDismiss = useCallback(() => {
     hasPresented.current = false;
     settled.current = false;
+    leftFrom.set(null);
     setShown(false);
+    setClosing(false);
     onClose?.();
-  }, [onClose]);
+  }, [leftFrom, onClose]);
 
   const dismissOnCurve = useCallback(() => ref.current?.dismiss(LEAVE), []);
 
@@ -343,6 +376,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       onChange={handleChange}
       onAnimate={handleAnimate}
       onDismiss={handleDismiss}
+      animatedIndex={animatedIndex}
       animationConfigs={SPRING.SETTLE}
       overrideReduceMotion={reduced ? ReduceMotion.Always : ReduceMotion.Never}
       {...UNGROUPED_CONTENT}
@@ -352,7 +386,9 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       backgroundComponent={SheetBackground}
       backgroundStyle={{ backgroundColor: theme.raised.val, boxShadow: shadow }}>
       <TitleContext value={title}>
-        <BlurTargetContext value={blurTarget}>{children}</BlurTargetContext>
+        <BlurTargetContext value={blurTarget}>
+          <OpenContext value={isOpen && !closing}>{children}</OpenContext>
+        </BlurTargetContext>
       </TitleContext>
     </BottomSheetModal>
   );
@@ -558,6 +594,7 @@ export {
   ActionsheetHero,
   ActionsheetScrollView,
   ActionsheetTitle,
+  useActionsheetOpen,
   useActionsheetTitle,
 };
 export type {

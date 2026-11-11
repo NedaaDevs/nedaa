@@ -8,6 +8,7 @@ import { Pill, PILL_TONE } from "@/components/ui/pill";
 import { Text } from "@/components/ui/text";
 import { useBrightness } from "@/components/ui/theme-color";
 import { VStack } from "@/components/ui/vstack";
+import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { BRIGHTNESS, PLACE_HERO_PAINT, type Brightness } from "@/constants/Palette";
 import type { PlaceHeroTone } from "@/constants/PlaceHero";
 
@@ -32,12 +33,6 @@ const SKYLINE = {
   drop: 2,
   viewBox: "0 0 420 90",
   path: "M0 91V53l34-18 20 10 28-27 39 22 30-18 27 17 41-33 42 32 35-16 39 20 29-23 36 21v51Z",
-} as const;
-
-/** Not for a screen reader: the hero reads as its words alone. */
-const HIDDEN = {
-  accessibilityElementsHidden: true,
-  importantForAccessibility: "no-hide-descendants",
 } as const;
 
 type Props = {
@@ -87,7 +82,11 @@ export const PlaceHero = ({ tone, kicker, title, subtitle }: Props) => {
       />
       {size.width > 0 ? (
         // The page sky holds the one sun or moon; the hero draws none.
-        <View testID={PLACE_HERO_PART.SCENERY} pointerEvents="none" style={styles.fill} {...HIDDEN}>
+        <View
+          testID={PLACE_HERO_PART.SCENERY}
+          pointerEvents="none"
+          style={styles.fill}
+          {...HIDDEN_FROM_READER}>
           <View testID={PLACE_HERO_PART.SKYLINE} style={styles.skyline}>
             <Svg
               width={size.width * (1 + 2 * SKYLINE.overhang)}
