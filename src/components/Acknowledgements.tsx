@@ -14,6 +14,7 @@ import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { ExternalLink } from "@/components/ExternalLink";
 import { CREDITS, GENERAL_CREDITS, CONTRIBUTORS } from "@/constants/Acknowledgements";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 // Icons
 import {
@@ -162,7 +163,7 @@ const Acknowledgements = () => {
         )}
 
         {/* Closing: gratitude to the sources and the user, then an open invite
-            to contribute (any kind of help), routing to the Contact screen. */}
+            to contribute (any kind of help) through the feedback screen. */}
         <Animated.View entering={enter(SHOW_CONTRIBUTORS ? creditsCount + 1 : creditsCount)}>
           <Card padding="$5" borderWidth={1} borderColor="$borderColor">
             <VStack gap="$4">
@@ -173,7 +174,7 @@ const Acknowledgements = () => {
                 {t("settings.acknowledgements.contribute.body")}
               </Text>
               <Pressable
-                onPress={() => router.push("/settings/feedback" as never)}
+                onPress={() => router.push(BACK_DESTINATION.SETTINGS_FEEDBACK.href)}
                 accessibilityRole="button"
                 accessibilityLabel={t("settings.acknowledgements.contribute.cta")}
                 accessibilityHint={t("a11y.acknowledgements.contribute")}>
