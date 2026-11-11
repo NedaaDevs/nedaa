@@ -45,7 +45,7 @@ export const MethodCard = ({ name, auto, onPress, disabled, ref }: Props) => {
         {title}
       </Text>
       <HStack alignItems="center" justifyContent="space-between" gap="$3">
-        <Text size="lg" bold typography="title" color="$fg" flex={1}>
+        <Text size="lg" fontWeight="600" typography="title" color="$fg" flex={1}>
           {name}
         </Text>
         <Icon as={isRTL ? ChevronLeft : ChevronRight} size="md" color="$accent" />

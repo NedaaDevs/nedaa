@@ -110,7 +110,12 @@ export const SupportTile = ({
       <Animated.View style={main}>
         <VStack alignItems="center" gap="$1">
           <Icon as={icon} size="xl" color={ink} strokeWidth={GLYPH_STROKE} />
-          <Text size="sm" bold typography="title" color={LABEL_INK[ink]} textAlign="center">
+          <Text
+            size="sm"
+            fontWeight="600"
+            typography="title"
+            color={LABEL_INK[ink]}
+            textAlign="center">
             {label}
           </Text>
         </VStack>
@@ -120,7 +125,7 @@ export const SupportTile = ({
           <Animated.View style={pop}>
             <Icon as={Heart} size="xl" color="$danger" fill="$danger" strokeWidth={GLYPH_STROKE} />
           </Animated.View>
-          <Text size="sm" bold typography="title" color="$danger" textAlign="center">
+          <Text size="sm" fontWeight="600" typography="title" color="$danger" textAlign="center">
             {thanksLabel}
           </Text>
         </VStack>

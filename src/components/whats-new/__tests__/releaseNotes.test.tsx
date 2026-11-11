@@ -17,6 +17,7 @@ import {
 import i18n from "@/localization/i18n";
 import { UPGRADE_PATH_STATE, type UpgradePathState } from "@/constants/UpgradePath";
 import { OS_FONT_SCALE_OFFER_THRESHOLD } from "@/constants/TextSize";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useUmrahGuideStore } from "@/stores/umrahGuide";
@@ -255,6 +256,15 @@ describe("WhatsNewSheet", () => {
 
     expect(mockPush).toHaveBeenCalledWith(entry.action.route);
     expect(useAppStore.getState().dismissedFeatureCards).toEqual([entry.id]);
+  });
+});
+
+describe("ReleaseNotesCard", () => {
+  it("sets its title in the semibold face", async () => {
+    await renderWithTheme(<ReleaseNotesCard />);
+
+    const title = screen.getByText(i18n.t("settings.about.releaseTitle"), hidden);
+    expect(title).toHaveStyle({ fontFamily: DEFAULT_FACES.semibold });
   });
 });
 

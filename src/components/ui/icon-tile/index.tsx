@@ -13,6 +13,7 @@ export const TILE_STROKE = 1.75;
 export const ICON_TILE_TONE = {
   ACCENT: "accent",
   SUCCESS: "success",
+  WARN: "warn",
   DANGER: "danger",
   MUTED: "muted",
 } as const;
@@ -22,6 +23,7 @@ export type IconTileTone = (typeof ICON_TILE_TONE)[keyof typeof ICON_TILE_TONE];
 const TILE_FILL = {
   [ICON_TILE_TONE.ACCENT]: "$tile",
   [ICON_TILE_TONE.SUCCESS]: "$successTint",
+  [ICON_TILE_TONE.WARN]: "$warnTint",
   [ICON_TILE_TONE.DANGER]: "$dangerTint",
   [ICON_TILE_TONE.MUTED]: "$tile",
 } as const satisfies Record<IconTileTone, string>;

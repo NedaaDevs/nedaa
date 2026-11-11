@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Platform, Text } from "react-native";
 import { act, fireEvent, render, screen, userEvent } from "@testing-library/react-native";
+import { getTokenValue } from "tamagui";
 
 import { RETENTION_SLOP } from "@/components/ui/pressable/retention";
 import { STEPPER_PART, Stepper } from "@/components/ui/stepper";
 import { A11Y_ACTION } from "@/constants/Accessibility";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { PlatformType } from "@/enums/app";
+import { hostNodesIn } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 const mockHaptic = jest.fn();
@@ -111,6 +114,28 @@ describe("Stepper", () => {
       await render(<Harness start={5} />);
 
       expect(adjustable().props.accessibilityActions).toEqual(actions);
+    });
+  });
+
+  describe("buttons", () => {
+    const BUTTONS = Object.values(STEPPER_PART);
+
+    it.each(BUTTONS)("draws %s as a bordered control on the lifted surface", async (id) => {
+      await render(<Harness start={5} />);
+
+      expect(part(id)).toHaveStyle({
+        borderTopLeftRadius: getTokenValue("$control", "radius"),
+        borderTopWidth: 1,
+        borderTopColor: NEDAA_LIGHT.border.hex,
+        backgroundColor: NEDAA_LIGHT.surface2.hex,
+      });
+    });
+
+    it.each(BUTTONS)("sets the %s glyph in the text colour", async (id) => {
+      await render(<Harness start={5} />);
+
+      const strokes = hostNodesIn(part(id)).map((node) => node.props.stroke);
+      expect(strokes.find((stroke) => typeof stroke === "string")).toBe(NEDAA_LIGHT.fg.hex);
     });
   });
 
@@ -234,6 +259,14 @@ describe("Stepper", () => {
       await wait(800);
       expect(shown()).toBe(disabledAt);
     });
+  });
+
+  it("draws no frame round the buttons and the value", async () => {
+    await render(<Harness start={5} />);
+
+    expect(adjustable()).not.toHaveStyle({ borderTopWidth: 1 });
+    expect(adjustable()).not.toHaveStyle({ paddingTop: getTokenValue("$inline", "space") });
+    expect(adjustable()).toHaveStyle({ gap: getTokenValue("$tight", "space") });
   });
 
   it.each([false, true])(

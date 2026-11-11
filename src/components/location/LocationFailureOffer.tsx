@@ -17,6 +17,7 @@ import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { ICON_TILE_TONE } from "@/components/ui/icon-tile";
 import { NOTICE_LINE, NoticeCard } from "@/components/ui/notice-card";
 import { Section } from "@/components/ui/section";
+import { TEXT_ACTION_GAP } from "@/components/ui/text-action";
 import { VStack } from "@/components/ui/vstack";
 import { E2E_ID } from "@/constants/E2E";
 import {
@@ -214,7 +215,7 @@ const CardOffer = ({
 }: ViewProps & { secondary: PairAction; testID?: string }) => {
   const { t } = useTranslation();
   const settings = useOpenSettingsAction();
-  const retry: PairAction = { label: t("common.retry"), onPress: onRetry };
+  const retry: PairAction = { label: t("common.retry"), icon: RefreshCw, onPress: onRetry };
   const locationSettings: PairAction = {
     label: t("location.failure.servicesOff.open"),
     hint: t("a11y.location.openLocationSettingsHint"),
@@ -222,13 +223,13 @@ const CardOffer = ({
   };
   return (
     <FailureCard title={title} hint={hint} testID={testID}>
-      <VStack gap="$2">
+      <VStack gap={TEXT_ACTION_GAP}>
         {servicesOffOnAndroid ? (
-          <>
+          <VStack gap="$2">
             <ActionButton action={retry} lead />
             <ActionButton action={locationSettings} />
             <ActionButton action={secondary} />
-          </>
+          </VStack>
         ) : (
           <ButtonPair primary={toSettings ? settings : retry} secondary={secondary} />
         )}
