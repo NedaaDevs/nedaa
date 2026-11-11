@@ -9,6 +9,12 @@ jest.mock("@tamagui/animations-moti", () => ({
   createAnimations: (animations) => animations,
 }));
 
+// App code calls react-native-worklets for one thing: a hop back to the JS
+// thread, which runs the call in place here. A suite may mock it again.
+jest.mock("react-native-worklets", () => ({
+  scheduleOnRN: (fn, ...args) => fn(...args),
+}));
+
 // jest-expo's stub would read as Expo Go, which the app never runs in.
 jest.mock("expo/src/environment/ExpoGo", () => ({
   isRunningInExpoGo: () => false,

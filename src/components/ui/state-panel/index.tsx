@@ -1,4 +1,5 @@
 import { CircleAlert, Clock, Hourglass, Info, type LucideIcon } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
@@ -87,7 +88,8 @@ export const StatePanel = ({
   variant = STATE_PANEL_VARIANT.CARD,
   action,
 }: Props) => {
-  const message = `${title}. ${body}`;
+  const { t } = useTranslation();
+  const message = t("a11y.sentences", { first: title, second: body });
   const { icon, color } = KIND_ICON[variant][kind];
   const look = LOOK[variant];
   useIosAnnouncement(message);

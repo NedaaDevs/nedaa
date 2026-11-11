@@ -1,5 +1,5 @@
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import { CALLOUT_PART, CALLOUT_TONE, Callout } from "@/components/ui/callout";
 import { STATE_PANEL_ICON_ID, STATE_PANEL_ROOT_ID, StatePanel } from "@/components/ui/state-panel";
@@ -7,19 +7,20 @@ import { Theme } from "tamagui";
 
 import { NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
 import { STATE_PANEL_KIND, STATE_PANEL_VARIANT } from "@/constants/StatePanel";
-import { PlatformType } from "@/enums/app";
+import { AppLocale, PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const PLATFORM = Platform.OS;
+const TITLE = "Couldn't load the times";
+const BODY = "Check your connection.";
+/** The panel's message, joined as the app's language joins two sentences. */
+const message = (first = TITLE, second = BODY) => i18n.t("a11y.sentences", { first, second });
 
 describe("StatePanel", () => {
   const renderPanel = async (onAction = jest.fn()) => {
     await renderWithTheme(
-      <StatePanel
-        title="Couldn't load the times"
-        body="Check your connection."
-        action={{ label: "Retry", onPress: onAction }}
-      />
+      <StatePanel title={TITLE} body={BODY} action={{ label: "Retry", onPress: onAction }} />
     );
     return onAction;
   };
@@ -28,8 +29,24 @@ describe("StatePanel", () => {
   it("announces its message politely, as one element", async () => {
     await renderPanel();
 
-    const message = screen.getByLabelText("Couldn't load the times. Check your connection.");
-    expect(message.props.accessibilityLiveRegion).toBe("polite");
+    expect(screen.getByLabelText(message()).props.accessibilityLiveRegion).toBe("polite");
+  });
+
+  describe("in Urdu", () => {
+    const URDU_FULL_STOP = "۔";
+
+    afterEach(async () => {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    });
+
+    // A reader pauses where the app's language ends a sentence.
+    it("joins its title and body with the language's own full stop", async () => {
+      await act(() => i18n.changeLanguage(AppLocale.UR));
+      await renderPanel();
+
+      expect(screen.getByLabelText(message())).toBeOnTheScreen();
+      expect(message()).toContain(URDU_FULL_STOP);
+    });
   });
 
   it("keeps its action reachable on its own, and runs it", async () => {
@@ -46,9 +63,8 @@ describe("StatePanel", () => {
       <StatePanel kind={STATE_PANEL_KIND.LOADING} title="Loading" body="Getting things ready." />
     );
 
-    expect(
-      screen.getByLabelText("Loading. Getting things ready.").props.accessibilityLiveRegion
-    ).toBe("polite");
+    const loading = screen.getByLabelText(message("Loading", "Getting things ready."));
+    expect(loading.props.accessibilityLiveRegion).toBe("polite");
     expect(screen.queryByRole("button")).toBeNull();
   });
 
@@ -84,9 +100,7 @@ describe("StatePanel", () => {
       Platform.OS = PlatformType.IOS;
       await renderPanel();
 
-      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
-        "Couldn't load the times. Check your connection."
-      );
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(message());
     });
 
     it("leaves Android to its live region", async () => {

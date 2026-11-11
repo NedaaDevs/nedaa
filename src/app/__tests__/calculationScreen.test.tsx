@@ -9,7 +9,7 @@ import { renderRouter, screen } from "expo-router/testing-library";
 
 import { RESULT_COUNT_DELAY_MS } from "@/components/calculation/CalculationSheet";
 import { previewTimeId } from "@/components/calculation/TodayPreview";
-import { ACTIONSHEET_PART } from "@/components/ui/actionsheet";
+import { ACTIONSHEET_PART, CLOSED_INDEX } from "@/components/ui/actionsheet";
 import { STICKY_ACTION_PART } from "@/components/ui/sticky-action-bar";
 import { BACK_DESTINATION, SETTINGS_ADVANCE } from "@/constants/BackDestinations";
 import {
@@ -27,6 +27,7 @@ import { useLocationStore } from "@/stores/location";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useProviderSettingsStore } from "@/stores/providerSettings";
+import { modalProps } from "@/test-helpers/bottomSheetMock";
 import { normalizeRoutePath } from "@/test-helpers/routeTree";
 import { ThemeProvider } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
@@ -372,6 +373,18 @@ describe("Calculation screen", () => {
 
       expect(searchField()).toBeTruthy();
       expect(announce).not.toHaveBeenCalledWith(said(1));
+    });
+
+    // A swipe, the scrim, back and escape all start with gorhom's move to -1.
+    it("says nothing once the sheet starts to close by itself", async () => {
+      await openMethods();
+      await userEvent.type(searchField(), "League");
+
+      await act(() => modalProps.mock.lastCall?.[0].onAnimate?.(0, CLOSED_INDEX));
+      await advance(RESULT_COUNT_DELAY_MS);
+
+      expect(searchField()).toBeTruthy();
+      expect(announce).not.toHaveBeenCalled();
     });
   });
 
