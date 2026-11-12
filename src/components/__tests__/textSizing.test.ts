@@ -4,6 +4,10 @@ import {
   SIZE_MAP,
   resolveTextSizing,
   roleLineHeight,
+  sizeValuesOf,
+  tokenLine,
+  type TextRole,
+  type TextSize as TextSizeName,
 } from "@/components/ui/text/sizing";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -190,5 +194,31 @@ describe("title role", () => {
 
   test("display holds 1.3 at the 40pt step", () => {
     expect(roleLineHeight("display", 40)).toBe(52);
+  });
+});
+
+describe("tokenLine", () => {
+  const SIZES = Object.keys(SIZE_MAP) as TextSizeName[];
+  const ROLES = [undefined, ...(Object.keys(ROLE_RATIO) as TextRole[])];
+
+  // Text sizes token text through resolveTextSizing; tokenLine must agree.
+  it.each(Object.values(TEXT_SIZE_MULTIPLIERS))(
+    "matches resolveTextSizing for token text at %p",
+    (m) => {
+      for (const size of SIZES) {
+        const values = sizeValuesOf(size);
+        for (const role of ROLES) {
+          expect(tokenLine(m, size, role)).toEqual(
+            resolveTextSizing(m, undefined, values, roleLineHeight(role, values.fontSize))
+          );
+        }
+      }
+    }
+  );
+});
+
+describe("sizeValuesOf", () => {
+  test("an unknown size takes md's row", () => {
+    expect(sizeValuesOf("unknown" as TextSizeName)).toBe(FONT_SIZES[SIZE_MAP.md]);
   });
 });
