@@ -1,11 +1,15 @@
+import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
 import { BOWL } from "@/constants/Timeline";
-import { bowlPath, bowlPoint } from "@/utils/bowl";
+import { TextSize } from "@/enums/app";
+import { bowlFootRoom, bowlPath, bowlPoint } from "@/utils/bowl";
 
-/** A 320 by 160 frame. */
+/** A 320 by 160 frame at the default text size. */
 const [WIDTH, HEIGHT] = [320, 160];
-const horizon = HEIGHT - BOWL.footRoom;
+const ROOM = bowlFootRoom(TEXT_SIZE_MULTIPLIERS[TextSize.DEFAULT]);
+const frame = (height = HEIGHT) => ({ width: WIDTH, height, footRoom: ROOM });
+const horizon = HEIGHT - ROOM;
 const point = (share: number, isRTL = false, height = HEIGHT) =>
-  bowlPoint(share, WIDTH, height, isRTL);
+  bowlPoint(share, frame(height), isRTL);
 
 describe("bowlPoint", () => {
   it("stands its feet on the horizon, inset from each edge", () => {
@@ -50,7 +54,7 @@ describe("bowlPoint", () => {
   it("keeps the feet and crest when the bowl grows taller than it is wide", () => {
     const tall = 260;
 
-    expect(point(0, false, tall).y).toBeCloseTo(tall - BOWL.footRoom);
+    expect(point(0, false, tall).y).toBeCloseTo(tall - ROOM);
     expect(point(0, false, tall).x).toBeCloseTo(BOWL.inset);
     expect(point(0.5, false, tall).y).toBeCloseTo(BOWL.crest);
   });
@@ -61,18 +65,18 @@ describe("bowlPath", () => {
 
   it("draws an arc from one share to another", () => {
     const [a, b] = [point(0.2), point(0.7)];
-    const numbers = ends(bowlPath(0.2, 0.7, WIDTH, HEIGHT, false));
+    const numbers = ends(bowlPath(0.2, 0.7, frame(), false));
 
     expect(numbers.slice(0, 2)).toEqual([a.x, a.y].map((v) => Number(v.toFixed(2))));
     expect(numbers.slice(-2)).toEqual([b.x, b.y].map((v) => Number(v.toFixed(2))));
   });
 
   it("turns clockwise in LTR and the other way in RTL", () => {
-    expect(bowlPath(0, 1, WIDTH, HEIGHT, false)).toMatch(/ 0 0 1 [\d.]+ [\d.]+$/);
-    expect(bowlPath(0, 1, WIDTH, HEIGHT, true)).toMatch(/ 0 0 0 [\d.]+ [\d.]+$/);
+    expect(bowlPath(0, 1, frame(), false)).toMatch(/ 0 0 1 [\d.]+ [\d.]+$/);
+    expect(bowlPath(0, 1, frame(), true)).toMatch(/ 0 0 0 [\d.]+ [\d.]+$/);
   });
 
   it("takes the large arc once the stretch passes half a turn", () => {
-    expect(bowlPath(0, 1, WIDTH, 260, false)).toMatch(/ 0 1 1 [\d.]+ [\d.]+$/);
+    expect(bowlPath(0, 1, frame(260), false)).toMatch(/ 0 1 1 [\d.]+ [\d.]+$/);
   });
 });
