@@ -9,7 +9,8 @@ import { router, Slot, usePathname, type Href } from "expo-router";
 import { userEvent } from "@testing-library/react-native";
 import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
 
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { screenTopEdgeId } from "@/components/navigation/screen-edge";
+import { BACK_DESTINATION, TAB_GROUP } from "@/constants/BackDestinations";
 import { AppLocale, AppMode, HiddenTab, OpeningTab } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
@@ -40,7 +41,6 @@ jest.mock("@/components/quran/listen/QuranMiniPlayer", () => {
   return { QuranMiniPlayer: () => <View testID={mockMiniPlayerId} /> };
 });
 
-const TABS_GROUP = "(tabs)";
 const LAYOUT = "_layout";
 
 const Pathname = () => <Text testID="pathname">{usePathname()}</Text>;
@@ -85,20 +85,17 @@ const backgrounds = (): string[] => {
 const renderTabs = () =>
   renderRouter(
     {
-      _layout: () => (
+      [LAYOUT]: () => (
         <>
           <Slot />
           <Pathname />
         </>
       ),
-      "(tabs)/_layout": TabsLayout,
-      "(tabs)/index": TodayStandIn,
-      "(tabs)/athkar": () => null,
-      "(tabs)/quran": () => null,
-      "(tabs)/qada": () => null,
-      "(tabs)/tools": ToolsScreen,
-      "(tabs)/compass": () => null,
-      "(tabs)/settings": () => null,
+      [`${TAB_GROUP}/${LAYOUT}`]: TabsLayout,
+      // A route for each declared tab; Today and Tools carry what the tests read.
+      ...Object.fromEntries(TAB_ROUTES.map((name) => [`${TAB_GROUP}/${name}`, () => null])),
+      [BACK_DESTINATION.HOME.route]: TodayStandIn,
+      [BACK_DESTINATION.TOOLS.route]: ToolsScreen,
     },
     {
       initialUrl: "/",
@@ -194,11 +191,19 @@ describe("tabs layout", () => {
 
   // The layout declares one screen for each of TAB_ROUTES.
   it("declares every tab route file", () => {
-    const files = readdirSync(join(REPO_ROOT, "src", "app", TABS_GROUP))
+    const files = readdirSync(join(REPO_ROOT, "src", "app", TAB_GROUP))
       .map((file) => parse(file).name)
       .filter((name) => name !== LAYOUT);
 
     expect(files.sort()).toEqual([...TAB_ROUTES].sort());
+  });
+
+  // Each tab pads its own top, so a tab switch never moves the frame.
+  it("wraps each tab in its own top edge", async () => {
+    await renderTabs();
+    await act(() => router.navigate(BACK_DESTINATION.ATHKAR.href));
+
+    expect(screen.getByTestId(screenTopEdgeId(BACK_DESTINATION.ATHKAR.route))).toBeOnTheScreen();
   });
 
   // The reader is full screen; the tabs would cover the page.
@@ -306,7 +311,7 @@ const COMPONENT_IMPORT = /from "@\/(components\/[^"]+)"/g;
 
 /** A route file's source and the component files it imports. */
 const routeSources = (name: string): string[] => {
-  const route = readFileSync(join(REPO_ROOT, "src", "app", TABS_GROUP, `${name}.tsx`), "utf8");
+  const route = readFileSync(join(REPO_ROOT, "src", "app", TAB_GROUP, `${name}.tsx`), "utf8");
   const imported = [...route.matchAll(COMPONENT_IMPORT)].flatMap(([, path]) =>
     [`${path}.tsx`, `${path}/index.tsx`]
       .map((file) => join(REPO_ROOT, "src", file))
