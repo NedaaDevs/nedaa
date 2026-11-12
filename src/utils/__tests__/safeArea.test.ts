@@ -1,67 +1,22 @@
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { BACK_DESTINATION, TAB_GROUP } from "@/constants/BackDestinations";
 import { TOAST_GAP } from "@/constants/Toast";
 import { TAB_BAR_EDGE_GAP } from "@/constants/TabBar";
-import {
-  SAFE_EDGE,
-  isQuranSegments,
-  isSkySegments,
-  rootSafeAreaEdges,
-  tabBarEdgeGap,
-  toastBottom,
-} from "@/utils/safeArea";
+import { isQuranSegments, isSkyRoute, tabBarEdgeGap, toastBottom } from "@/utils/safeArea";
 
-/** A routed screen: no onboarding flow over it, no immersive reader. */
-const ROUTE = { onboarding: false, immersiveReader: false };
+const segmentsOf = ({ route }: { route: string }) => route.split("/");
 
-describe("rootSafeAreaEdges", () => {
-  it("pads the top of an ordinary screen", () => {
-    expect(rootSafeAreaEdges({ ...ROUTE, sky: false, android: false })).toEqual([
-      SAFE_EDGE.TOP,
-      SAFE_EDGE.RIGHT,
-      SAFE_EDGE.LEFT,
-    ]);
-  });
-
-  // A sky screen draws under the status bar and pads its own content instead.
-  it.each([true, false])("leaves the top of a sky screen open (android: %s)", (android) => {
-    expect(rootSafeAreaEdges({ ...ROUTE, sky: true, android })).not.toContain(SAFE_EDGE.TOP);
-  });
-
-  // The flow draws on the sky over any route, so it pads its own top.
-  it.each([true, false])("leaves the top open under the onboarding flow (sky: %s)", (sky) => {
-    expect(rootSafeAreaEdges({ ...ROUTE, sky, onboarding: true, android: true })).not.toContain(
-      SAFE_EDGE.TOP
-    );
-  });
-
-  it("opens the top for the immersive reader on Android only", () => {
-    expect(
-      rootSafeAreaEdges({ ...ROUTE, sky: false, immersiveReader: true, android: true })
-    ).not.toContain(SAFE_EDGE.TOP);
-    expect(
-      rootSafeAreaEdges({ ...ROUTE, sky: false, immersiveReader: true, android: false })
-    ).toContain(SAFE_EDGE.TOP);
-  });
-});
-
-describe("isSkySegments", () => {
+describe("isSkyRoute", () => {
   it.each([
-    [["(tabs)"], true],
-    [["(tabs)", "index"], true],
-    [["(tabs)", "tools"], true],
-    [["(tabs)", "quran"], false],
-    [["settings", "location"], false],
-  ])("reads %j as a sky screen: %s", (segments, sky) => {
-    expect(isSkySegments(segments)).toBe(sky);
+    ["Today", BACK_DESTINATION.HOME.route, true],
+    ["the Settings tab", BACK_DESTINATION.SETTINGS.route, true],
+    ["Location, a stack screen", BACK_DESTINATION.SETTINGS_LOCATION.route, true],
+    ["Calculation, a folder down", BACK_DESTINATION.SETTINGS_PROVIDER.route, true],
+    ["the Quran tab", BACK_DESTINATION.QURAN.route, false],
+    ["Acknowledgements", BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.route, false],
+    ["the tab group, which is no screen", TAB_GROUP, false],
+  ])("reads %s (%s) as a sky screen: %s", (_name, route, sky) => {
+    expect(isSkyRoute(route)).toBe(sky);
   });
-
-  // About and Privacy are stack screens drawn on the sky.
-  it.each([BACK_DESTINATION.SETTINGS_ABOUT, BACK_DESTINATION.SETTINGS_PRIVACY])(
-    "reads $route as a sky screen",
-    ({ route }) => {
-      expect(isSkySegments(route.split("/"))).toBe(true);
-    }
-  );
 });
 
 describe("toastBottom", () => {
@@ -69,11 +24,8 @@ describe("toastBottom", () => {
   const INSET = 34;
 
   // The measured frame holds the bar, any mini player and the bottom inset.
-  const segmentsOf = ({ route }: { route: string }) => route.split("/");
-  const [TABS] = segmentsOf(BACK_DESTINATION.HOME);
-
   it.each([
-    ["Today, under the floating bar", [TABS], BAR, BAR],
+    ["Today, under the floating bar", [TAB_GROUP], BAR, BAR],
     ["Athkar, above the bar in the flow", segmentsOf(BACK_DESTINATION.ATHKAR), BAR, BAR],
     ["the Quran reader, where the bar is gone", segmentsOf(BACK_DESTINATION.QURAN), 0, INSET],
     ["a tab before the bar has measured", segmentsOf(BACK_DESTINATION.TOOLS), 0, INSET],
@@ -108,8 +60,6 @@ describe("tabBarEdgeGap", () => {
 });
 
 describe("isQuranSegments", () => {
-  const segmentsOf = ({ route }: { route: string }) => route.split("/");
-
   it.each([
     ["the Quran tab", segmentsOf(BACK_DESTINATION.QURAN), true],
     ["a screen under the Quran tab", [...segmentsOf(BACK_DESTINATION.QURAN), "reader"], true],
