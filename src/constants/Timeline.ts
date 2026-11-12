@@ -11,8 +11,10 @@ export const BOWL = {
   inset: 22,
   /** The top of the arc, below the bowl's top. */
   crest: 22,
-  /** Under the horizon, where the feet's names sit. */
-  footRoom: 24,
+  /** The feet's names' size and role; their line box sits under the horizon. */
+  footName: { size: "helper", typography: "helper" },
+  /** Between the horizon and the top of the feet's names' line box. */
+  footGap: 4,
   /** The countdown's top, clear of a body at the crest. */
   insideTop: 30,
   /** How far each foot's name sits inward of its foot. */
