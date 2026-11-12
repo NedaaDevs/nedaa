@@ -11,7 +11,8 @@ import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
 import { BODY_BEHIND_TEXT, CELESTIAL_BODY, MOON_GLYPH, SUN_GLYPH } from "@/constants/Sky";
 import { BOWL, TICK_STATE } from "@/constants/Timeline";
 import { useRTL } from "@/contexts/RTLContext";
-import { bowlPath, bowlPoint } from "@/utils/bowl";
+import { useTextScale } from "@/hooks/useTextScale";
+import { bowlFootRoom, bowlPath, bowlPoint } from "@/utils/bowl";
 import type { RhythmLine, RhythmMark } from "@/utils/rhythm";
 
 export const BOWL_PART = {
@@ -54,10 +55,12 @@ export const Bowl = ({ line, width, height, selected, body, feet }: Props) => {
   const ink = useThemeColor("$fg");
   const accent = useThemeColor("$accent");
   const trail = useThemeColor("$trail");
+  const textScale = useTextScale();
   const { track, lit, tick, foot, focus, selected: ring } = BOWL;
 
-  const at = (share: number) => bowlPoint(share, width, height, isRTL);
-  const path = (from: number, to: number) => bowlPath(from, to, width, height, isRTL);
+  const frame = { width, height, footRoom: bowlFootRoom(textScale) };
+  const at = (share: number) => bowlPoint(share, frame, isRTL);
+  const path = (from: number, to: number) => bowlPath(from, to, frame, isRTL);
   const shareOf = (id: PrayerId) => line.marks.find((mark) => mark.id === id)?.share ?? 0;
 
   // By day the rim is lit behind the body; by night, from the body to Isha.
@@ -225,8 +228,7 @@ const FootName = ({ testID, edge, next, children }: FootNameProps) => (
     minWidth="$14"
     alignItems="center">
     <Text
-      size="helper"
-      typography="helper"
+      {...BOWL.footName}
       fontWeight={next ? "600" : "500"}
       color={next ? "$accentText" : "$mutedSky"}>
       {children}
