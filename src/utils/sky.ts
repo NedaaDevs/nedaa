@@ -14,6 +14,7 @@ import {
   DARK_SKY,
   LIGHT_SKY,
   SKY_ARC,
+  STATUS_BAR_FADE,
   type CelestialBody,
   type SkyDisc,
   type SkyEllipse,
@@ -259,3 +260,33 @@ export const discOverlaps = (
     const nearestY = Math.min(Math.max(cy, y), y + height);
     return (cx - nearestX) ** 2 + (cy - nearestY) ** 2 <= radius ** 2;
   });
+
+/** The parts of the boxes below `line`. */
+export const belowLine = (boxes: readonly WindowRect[], line: number): WindowRect[] =>
+  boxes
+    .filter(({ y, height }) => y + height > line)
+    .map((box) => (box.y >= line ? box : { ...box, y: line, height: box.y + box.height - line }));
+
+/** Content under the status bar: hidden, then fading in over the ramp. */
+export type StatusBarFade = { hidden: number; ramp: number };
+
+type StatusBarEdge = { insetTop: number; reduceTransparency: boolean };
+
+// The fade ends at the inset, where content rests fully drawn.
+export const statusBarFade = ({ insetTop, reduceTransparency }: StatusBarEdge): StatusBarFade => {
+  const hidden = reduceTransparency ? insetTop : insetTop * STATUS_BAR_FADE.hiddenShare;
+  return { hidden, ramp: insetTop - hidden };
+};
+
+/** Android's fading edge: nothing hidden outright, one ramp to the inset. */
+export const statusBarEdgeFade = (insetTop: number): StatusBarFade => ({
+  hidden: 0,
+  ramp: insetTop,
+});
+
+// Only a mask's alpha counts: content shows where the mask is opaque.
+const MASK_SHOWN = "#000000";
+
+/** A mask clear down to the hidden line, then opaque from the ramp's end. */
+export const statusBarMaskImage = ({ hidden, ramp }: StatusBarFade) =>
+  `linear-gradient(180deg, ${clear(MASK_SHOWN)} ${hidden}px, ${MASK_SHOWN} ${hidden + ramp}px)`;
