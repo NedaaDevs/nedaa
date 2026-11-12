@@ -1,4 +1,4 @@
-import { Animated, Text } from "react-native";
+import { Animated, Platform, Text } from "react-native";
 import { act, screen } from "@testing-library/react-native";
 
 import { SKY_PART, ScreenSky, SkyBackground, SkyOccluder } from "@/components/ui/sky-background";
@@ -11,16 +11,17 @@ import { PHASE, type Phase } from "@/constants/Phase";
 import { AppHiddenContext } from "@/contexts/AppHiddenContext";
 import { DrawnModeContext } from "@/contexts/DrawnModeContext";
 import { PhaseContext } from "@/contexts/PhaseContext";
+import { UnderStatusBarContext } from "@/contexts/UnderStatusBarContext";
 import { SampleDaysContext } from "@/hooks/useStoredDays";
 import { SimulatedClockContext } from "@/hooks/useTodayClock";
-import { AppMode } from "@/enums/app";
+import { AppMode, PlatformType } from "@/enums/app";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { useAppStore } from "@/stores/app";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { phaseAt, type StoredDays } from "@/utils/phase";
-import { skyScene } from "@/utils/sky";
+import { skyScene, statusBarFade } from "@/utils/sky";
 
 /** Fajr 04:00, sunrise 06:00, Maghrib 18:00, in UTC. */
 const TODAY: DayPrayerTimes = {
@@ -449,6 +450,50 @@ describe("SkyBackground", () => {
         await settle();
 
         expect(bodies()).toHaveStyle({ opacity: 1 });
+      });
+
+      describe("under the status bar", () => {
+        // Taller than the sky, so its hidden band holds the moon wherever it is.
+        const TALL_INSET = 10_000;
+        const { hidden } = statusBarFade({ insetTop: TALL_INSET, reduceTransparency: false });
+
+        beforeEach(() => {
+          mockTextBox = { x: 0, y: 0, width: 10_000, height: hidden };
+        });
+
+        it("keeps the moon bright behind text the status bar hides", async () => {
+          await renderWithTheme(
+            <UnderStatusBarContext value={TALL_INSET}>
+              <TextOverSky />
+            </UnderStatusBarContext>
+          );
+          await settle();
+
+          expect(bodies()).toHaveStyle({ opacity: 1 });
+        });
+
+        it("dims the moon behind the same text below a padded top", async () => {
+          await renderWithTheme(<TextOverSky />);
+          await settle();
+
+          expect(bodies()).toHaveStyle({ opacity: BODY_BEHIND_TEXT.opacity });
+        });
+
+        it("dims the moon behind the same text on Android, whose fade hides none", async () => {
+          const os = jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
+          try {
+            await renderWithTheme(
+              <UnderStatusBarContext value={TALL_INSET}>
+                <TextOverSky />
+              </UnderStatusBarContext>
+            );
+            await settle();
+
+            expect(bodies()).toHaveStyle({ opacity: BODY_BEHIND_TEXT.opacity });
+          } finally {
+            os.restore();
+          }
+        });
       });
     });
 

@@ -94,6 +94,9 @@ export const DARK_SKY = {
 /** A sun or moon behind text fades to this, so the text stays legible. */
 export const BODY_BEHIND_TEXT = { opacity: 0.4 } as const;
 
+/** Content under the status bar is hidden over this share, then fades in. */
+export const STATUS_BAR_FADE = { hiddenShare: 0.65 } as const;
+
 export const CELESTIAL_BODY = { SUN: "sun", MOON: "moon" } as const;
 export type CelestialBody = (typeof CELESTIAL_BODY)[keyof typeof CELESTIAL_BODY];
 

@@ -14,6 +14,7 @@ import processBackgroundImage from "react-native/Libraries/StyleSheet/processBac
 
 import {
   arcCentre,
+  belowLine,
   discOverlaps,
   fadedDisc,
   flattenOver,
@@ -21,7 +22,96 @@ import {
   skyScene,
   skySceneFor,
   skySwatchFor,
+  statusBarEdgeFade,
+  statusBarFade,
+  statusBarMaskImage,
+  type StatusBarFade,
 } from "@/utils/sky";
+
+/** Status-bar heights from the SE to the Dynamic Island phones, in points. */
+const INSETS = [20, 47, 54, 59, 62];
+
+describe("statusBarFade", () => {
+  it.each(INSETS)("ends the fade at the %s pt line where content rests", (insetTop) => {
+    const { hidden, ramp } = statusBarFade({ insetTop, reduceTransparency: false });
+
+    expect(hidden + ramp).toBeCloseTo(insetTop);
+  });
+
+  it("hides the top 40 pt of a 62 pt status bar, then fades in over 22", () => {
+    const { hidden, ramp } = statusBarFade({ insetTop: 62, reduceTransparency: false });
+
+    expect(hidden).toBeCloseTo(40, 0);
+    expect(ramp).toBeCloseTo(22, 0);
+  });
+
+  it.each(INSETS)("cuts at the %s pt line under Reduce Transparency", (insetTop) => {
+    expect(statusBarFade({ insetTop, reduceTransparency: true })).toEqual({
+      hidden: insetTop,
+      ramp: 0,
+    });
+  });
+
+  it("has nothing to hide without a status bar", () => {
+    expect(statusBarFade({ insetTop: 0, reduceTransparency: false })).toEqual({
+      hidden: 0,
+      ramp: 0,
+    });
+  });
+});
+
+describe("statusBarEdgeFade", () => {
+  // The classic 24 dp status bar, and a 52 dp one beside a camera cutout.
+  it.each([24, 52])("hides nothing outright and ends at the %s dp inset", (insetTop) => {
+    expect(statusBarEdgeFade(insetTop)).toEqual({ hidden: 0, ramp: insetTop });
+  });
+});
+
+describe("statusBarMaskImage", () => {
+  const imageOf = (fade: StatusBarFade) => processBackgroundImage(statusBarMaskImage(fade))[0];
+  const positionsOf = (fade: StatusBarFade) =>
+    imageOf(fade)?.colorStops.map(({ position }) => position);
+
+  it.each(INSETS)("runs down clear to the hidden line, opaque from %s pt", (insetTop) => {
+    const fade = statusBarFade({ insetTop, reduceTransparency: false });
+    const image = imageOf(fade);
+
+    expect(image).toMatchObject({ type: "linear-gradient", direction: { value: 180 } });
+    expect(positionsOf(fade)).toEqual([fade.hidden, fade.hidden + fade.ramp]);
+    expect(image?.colorStops.map(({ color }) => (color >>> 24) / 255)).toEqual([0, 1]);
+  });
+
+  it.each(INSETS)("cuts in one step at %s pt under Reduce Transparency", (insetTop) => {
+    const fade = statusBarFade({ insetTop, reduceTransparency: true });
+
+    expect(positionsOf(fade)).toEqual([insetTop, insetTop]);
+  });
+});
+
+describe("belowLine", () => {
+  const LINE = 40;
+  const box = (y: number, height: number) => ({ x: 8, y, width: 100, height });
+
+  it("keeps a box below the line whole", () => {
+    expect(belowLine([box(50, 20)], LINE)).toEqual([box(50, 20)]);
+  });
+
+  it("keeps a box that starts on the line whole", () => {
+    expect(belowLine([box(LINE, 20)], LINE)).toEqual([box(LINE, 20)]);
+  });
+
+  it("drops a box above the line", () => {
+    expect(belowLine([box(10, 20)], LINE)).toEqual([]);
+  });
+
+  it("drops a box that ends on the line", () => {
+    expect(belowLine([box(20, 20)], LINE)).toEqual([]);
+  });
+
+  it("keeps the part of a box below the line", () => {
+    expect(belowLine([box(30, 20)], LINE)).toEqual([box(LINE, 10)]);
+  });
+});
 
 describe("fadedDisc", () => {
   it("fades evenly either side of the disc's edge", () => {

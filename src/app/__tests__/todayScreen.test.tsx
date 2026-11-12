@@ -1,6 +1,7 @@
 // First, before expo-router's testing library: that library re-mocks Reanimated
 // as it loads, and the screen must bind to the mock below, not to its empty one.
 import TodayScreen from "@/app/(tabs)/index";
+import { StyleSheet } from "react-native";
 import { act, userEvent, within } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
@@ -16,8 +17,11 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
 import { UTC_DAY } from "@/test-helpers/prayerDay";
+import { styleOf, type HostElement } from "@/test-helpers/text";
 import { ThemeProvider } from "@/test-helpers/theme";
+import { ALARM_TYPE } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import type { ActiveAlarmInfo } from "@/utils/activeAlarmDetector";
 import type { HijriDate } from "@/utils/date";
 import { TODAY_SCREEN_PART, TODAY_STYLE } from "@/constants/Today";
 import config from "../../../tamagui.config";
@@ -26,6 +30,16 @@ import config from "../../../tamagui.config";
 jest.setTimeout(20_000);
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
+const mockInsets = { top: 59, right: 0, bottom: 0, left: 0 };
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  useSafeAreaInsets: () => mockInsets,
+}));
+// The banner reads no alarm's source.
+let mockActiveAlarm: Omit<ActiveAlarmInfo, "source"> | null = null;
+jest.mock("@/utils/activeAlarmDetector", () => ({
+  detectActiveAlarm: () => Promise.resolve(mockActiveAlarm),
+}));
 jest.mock("@/utils/date", () => {
   // A 30-day-month calendar, enough for the occasions to count their days.
   const serial = ({ year, month, day }: HijriDate) => year * 360 + (month - 1) * 30 + day;
@@ -41,6 +55,18 @@ jest.mock("@/utils/date", () => {
 });
 
 const hidden = { includeHiddenElements: true };
+const ALARM_ID = "alarm-1";
+const ALARM_TITLE = "Fajr";
+
+/** The top padding the views around `element` add above it. */
+const topPaddingAbove = (element: HostElement): number => {
+  let total = 0;
+  for (let node = element.parent; node; node = node.parent) {
+    total += Number(styleOf(node)?.paddingTop ?? 0);
+  }
+  return total;
+};
+
 const renderToday = () =>
   renderRouter(
     { [BACK_DESTINATION.HOME.route]: () => <TodayScreen /> },
@@ -52,6 +78,7 @@ const renderToday = () =>
 
 describe("Today", () => {
   beforeEach(async () => {
+    mockActiveAlarm = null;
     jest.useFakeTimers({ now: new Date("2026-09-23T14:02:00.000Z") });
     await act(() => i18n.changeLanguage(AppLocale.EN));
     useAppStore.setState({ mode: AppMode.LIGHT, locale: AppLocale.EN, hijriDaysOffset: 0 });
@@ -77,6 +104,27 @@ describe("Today", () => {
     expect(
       screen.getAllByTestId(SKY_PART.CANVAS, { includeHiddenElements: true })
     ).not.toHaveLength(0);
+  });
+
+  // The status bar's fade lines up with the bar only from the window's top.
+  it("starts its scroll view at the window top, the day below the status bar", async () => {
+    await renderToday();
+    const scroll = screen.getByTestId(TODAY_SCREEN_PART.SCROLL);
+
+    expect(topPaddingAbove(scroll)).toBe(0);
+    expect(StyleSheet.flatten(scroll.props.contentContainerStyle)).toMatchObject({
+      paddingTop: mockInsets.top,
+    });
+  });
+
+  it("scrolls an active alarm's banner with the day", async () => {
+    mockActiveAlarm = { alarmId: ALARM_ID, alarmType: ALARM_TYPE.FAJR, title: ALARM_TITLE };
+    await renderToday();
+    const name = i18n.t("alarm.banner.activeAlarm");
+
+    const banner = await screen.findByRole("button", { name });
+    const scroll = screen.getByTestId(TODAY_SCREEN_PART.SCROLL);
+    expect(within(scroll).getByRole("button", { name })).toBe(banner);
   });
 
   it("heads the screen with the Hijri date", async () => {
