@@ -66,7 +66,6 @@ export const DebugVersionLine = () => {
         onPress={handleTap}
         accessibilityRole="text"
         accessibilityLabel={t("a11y.about.version", { version: label })}
-        justifyContent="center"
         paddingHorizontal="$3">
         <VersionText label={label} />
       </Pressable>
