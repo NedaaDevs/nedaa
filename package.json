@@ -68,6 +68,7 @@
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-community/datetimepicker": "9.2.1",
+    "@react-native-masked-view/masked-view": "0.3.2",
     "@tamagui/animations-moti": "^2.7.7",
     "@tamagui/config": "^2.7.7",
     "@tamagui/native": "^2.7.7",
@@ -167,7 +168,8 @@
     "react-native-worklets@0.13.0": "patches/react-native-worklets@0.13.0.patch",
     "moti@0.30.0": "patches/moti@0.30.0.patch",
     "@tamagui/web@2.7.7": "patches/@tamagui%2Fweb@2.7.7.patch",
-    "react-native@0.88.1": "patches/react-native@0.88.1.patch"
+    "react-native@0.88.1": "patches/react-native@0.88.1.patch",
+    "@react-native-masked-view/masked-view@0.3.2": "patches/@react-native-masked-view%2Fmasked-view@0.3.2.patch"
   },
   "expo": {
     "autolinking": {
