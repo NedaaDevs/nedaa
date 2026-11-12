@@ -8,6 +8,7 @@ import { useThemeColor } from "@/components/ui/theme-color";
 import { BACK_DESTINATION, TAB_GROUP } from "@/constants/BackDestinations";
 import { PRESENTATION } from "@/constants/Navigation";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { UnderStatusBarContext } from "@/contexts/UnderStatusBarContext";
 import { PlatformType } from "@/enums/app";
 import { useResolvedQuranTheme } from "@/hooks/useResolvedQuranTheme";
 import { useQuranStore } from "@/stores/quran";
@@ -38,7 +39,7 @@ const TopEdge = ({ route, open, band, children }: EdgeProps) => {
       style={
         open ? styles.fill : [styles.fill, { paddingTop: top, backgroundColor: band ?? background }]
       }>
-      {children}
+      <UnderStatusBarContext value={open ? top : null}>{children}</UnderStatusBarContext>
     </View>
   );
 };

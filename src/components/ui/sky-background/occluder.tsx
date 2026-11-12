@@ -1,13 +1,8 @@
 import { createContext, use, useEffect, useId, useRef, type ReactNode } from "react";
-import {
-  ScrollView,
-  View,
-  type ScrollViewProps,
-  type ViewInstance,
-  type ViewProps,
-} from "react-native";
+import { View, type ScrollViewProps, type ViewInstance, type ViewProps } from "react-native";
 
 import { SCREEN_GUTTER, ScreenGutterContext } from "@/components/ui/screen-content";
+import { StatusBarFadeScrollView } from "@/components/ui/sky-background/status-bar-fade";
 import { measureInWindow } from "@/utils/measureInWindow";
 import type { WindowRect } from "@/utils/sky";
 
@@ -69,7 +64,7 @@ export const SkyScrollView = (props: ScrollViewProps) => {
   return (
     // A screen on the sky sets its header in the screen gutter.
     <ScreenGutterContext value={SCREEN_GUTTER}>
-      <ScrollView
+      <StatusBarFadeScrollView
         {...props}
         onScrollEndDrag={settled(props.onScrollEndDrag)}
         onMomentumScrollEnd={settled(props.onMomentumScrollEnd)}
