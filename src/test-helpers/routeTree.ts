@@ -38,6 +38,11 @@ export const walkFiles = (directory: string): string[] => {
 
 const ROUTE_FILE = /\.(tsx|ts|jsx|js)$/;
 
+/** The file name Expo Router reads as its folder's own route. */
+const INDEX_SEGMENT = "index";
+
+const GROUP_SEGMENT = /^\(.*\)$/;
+
 /**
  * A route is any file that is not a layout (`_layout`), a framework file (`+…`)
  * or a declaration. A link landing only on `+not-found` is a broken link.
@@ -49,15 +54,16 @@ const isRouteFile = (name: string) =>
   !name.startsWith("_") &&
   !name.startsWith("+");
 
+/** The file's path under the routes root, extension dropped: its route's name. */
+const toRouteName = (relativeFile: string) =>
+  relativeFile.split(sep).join("/").replace(ROUTE_FILE, "");
+
 /** Groups `(tabs)` vanish from the URL, a trailing `index` collapses, `.tsx` drops. */
 const toRoutePath = (relativeFile: string) => {
-  const segments = relativeFile
-    .split(sep)
-    .join("/")
-    .replace(ROUTE_FILE, "")
+  const segments = toRouteName(relativeFile)
     .split("/")
-    .filter((segment) => !/^\(.*\)$/.test(segment));
-  if (segments[segments.length - 1] === "index") segments.pop();
+    .filter((segment) => !GROUP_SEGMENT.test(segment));
+  if (segments.at(-1) === INDEX_SEGMENT) segments.pop();
   return `/${segments.join("/")}`.replace(/\/$/, "") || "/";
 };
 
@@ -74,7 +80,13 @@ const toRouteMatcher = (routePath: string) =>
       .join("/")}$`
   );
 
-export type Route = { file: string; routePath: string; matcher: RegExp };
+export type Route = {
+  file: string;
+  routePath: string;
+  matcher: RegExp;
+  /** The name the file's navigator gives it, as `BACK_DESTINATION` spells it. */
+  name: string;
+};
 
 export const readRoutes = (): Route[] =>
   walkFiles(ROUTES_DIR)
@@ -82,8 +94,14 @@ export const readRoutes = (): Route[] =>
     .filter((path) => !path.split(sep).includes("__tests__"))
     .map((path) => {
       const file = relative(REPO_ROOT, path).split(sep).join("/");
-      const routePath = toRoutePath(relative(ROUTES_DIR, path));
-      return { file, routePath, matcher: toRouteMatcher(routePath) };
+      const routeFile = relative(ROUTES_DIR, path);
+      const routePath = toRoutePath(routeFile);
+      return {
+        file,
+        routePath,
+        matcher: toRouteMatcher(routePath),
+        name: toRouteName(routeFile),
+      };
     });
 
 /** `/(tabs)/athkar` and `/athkar` address the same file; query and trailing slash drop. */
@@ -91,7 +109,7 @@ export const normalizeRoutePath = (path: string) => {
   const withoutQuery = path.split(/[?#]/)[0];
   const segments = withoutQuery
     .split("/")
-    .filter((segment) => segment !== "" && !/^\(.*\)$/.test(segment));
+    .filter((segment) => segment !== "" && !GROUP_SEGMENT.test(segment));
   return `/${segments.join("/")}`.replace(/\/$/, "") || "/";
 };
 

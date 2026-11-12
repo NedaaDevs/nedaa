@@ -32,6 +32,7 @@ import { Box } from "@/components/ui/box";
 import { TabBar, TabBarItem } from "@/components/ui/tab-bar-item";
 import MiniPlayerBar from "@/components/athkar/MiniPlayerBar";
 import { QuranMiniPlayer } from "@/components/quran/listen/QuranMiniPlayer";
+import { tabScreenLayout } from "@/components/navigation/screen-edge";
 
 /** Where each bar tab lives; the opening-tab preference lands there too. */
 const TAB_HREF = {
@@ -151,7 +152,10 @@ const TabsLayout = () => {
 
   // Every tab route is declared; the bar shows TAB_ITEMS alone.
   return (
-    <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
+    <Tabs
+      tabBar={renderTabBar}
+      screenOptions={{ headerShown: false }}
+      screenLayout={tabScreenLayout}>
       {TAB_ROUTES.map((name) => {
         const item = TAB_ITEMS.find((tab) => tab.name === name);
         return <Tabs.Screen key={name} name={name} options={item && { title: t(item.title) }} />;
