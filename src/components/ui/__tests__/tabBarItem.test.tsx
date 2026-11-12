@@ -6,6 +6,7 @@ import { withSpring } from "react-native-reanimated";
 import { getTokenValue } from "tamagui";
 
 import config from "../../../../tamagui.config";
+import { materialTintId } from "@/components/ui/material";
 import { TAB_BAR_ITEM_PART, TabBar, TabBarItem } from "@/components/ui/tab-bar-item";
 import { ELEVATION } from "@/constants/Elevation";
 import { SPRING } from "@/constants/Motion";
@@ -156,6 +157,8 @@ const layOut = () =>
     })
   );
 
+const TRACK_TINT = materialTintId(TAB_BAR_ITEM_PART.TRACK);
+
 const indicator = () => styleOfId(TAB_BAR_ITEM_PART.INDICATOR);
 const translateOf = () =>
   (indicator().transform as { translateX: number }[] | undefined)?.[0]?.translateX;
@@ -188,19 +191,16 @@ describe("TabBar", () => {
       height: getTokenValue("$16", "size"),
       padding: PAD,
       borderRadius: getTokenValue("$pill", "radius"),
-      backgroundColor: NEDAA_LIGHT.surfaceFloat.hex,
+      boxShadow: ELEVATION.e2.boxShadow.light,
     });
-    const shadow = String(styleOfId(TAB_BAR_ITEM_PART.TRACK).boxShadow);
-    expect(shadow.startsWith(ELEVATION.e2.boxShadow.light)).toBe(true);
+    expect(styleOfId(TRACK_TINT).backgroundColor).toBe(NEDAA_LIGHT.surfaceFloat.hex);
   });
 
   // Over a bright sky the pill keeps a faint edge of its own.
   it("rings its edge with a hairline inside", async () => {
     await renderBar();
 
-    expect(styleOfId(TAB_BAR_ITEM_PART.TRACK).boxShadow).toBe(
-      `${ELEVATION.e2.boxShadow.light}, inset 0 0 0 0.5px ${NEDAA_LIGHT.hairline.hex}`
-    );
+    expect(styleOfId(TRACK_TINT).boxShadow).toBe(`inset 0 0 0 0.5px ${NEDAA_LIGHT.hairline.hex}`);
   });
 
   it("draws no rule along its top", async () => {
@@ -215,7 +215,7 @@ describe("TabBar", () => {
     await renderBar();
 
     expect(screen.queryByTestId(BLUR_VIEW)).toBeNull();
-    expect(styleOfId(TAB_BAR_ITEM_PART.TRACK).backgroundColor).toBe(
+    expect(styleOfId(TRACK_TINT).backgroundColor).toBe(
       `${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`
     );
   });

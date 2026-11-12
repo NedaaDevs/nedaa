@@ -1,11 +1,13 @@
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { getTokenValue } from "tamagui";
 
 import { Fab, FAB_PART } from "@/components/ui/fab";
+import { materialTintId } from "@/components/ui/material";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { AppDirection } from "@/enums/app";
+import { Glyph, GLYPH_ID } from "@/test-helpers/glyph";
 import { PHONE_APP_PAIRS, onPhone } from "@/test-helpers/nativeSurface";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { layOutSpans } from "@/test-helpers/yogaPlacement";
@@ -35,6 +37,8 @@ const setPlatform = (os: string, version: string | number) => {
 };
 
 const surface = () => StyleSheet.flatten(screen.getByTestId(FAB_PART.SURFACE).props.style);
+const surfaceTint = () =>
+  StyleSheet.flatten(screen.getByTestId(materialTintId(FAB_PART.SURFACE)).props.style);
 const transformOf = () => StyleSheet.flatten(screen.getByTestId(FAB_ID).props.style).transform;
 const press = () => act(() => fireEvent(screen.getByTestId(FAB_ID), "responderGrant", {}));
 
@@ -49,10 +53,10 @@ describe("Fab surface", () => {
 
     expect(screen.getByTestId(BLUR_VIEW)).toBeTruthy();
     expect(surface()).toMatchObject({
-      backgroundColor: NEDAA_LIGHT.surfaceFloat.hex,
       boxShadow: ELEVATION.e2.boxShadow.light,
       borderRadius: getTokenValue("$pill", "radius"),
     });
+    expect(surfaceTint().backgroundColor).toBe(NEDAA_LIGHT.surfaceFloat.hex);
   });
 
   // Blurring the screen behind would mean wrapping every screen in a target.
@@ -61,20 +65,17 @@ describe("Fab surface", () => {
     await renderWithTheme(<Fab testID={FAB_ID} onPress={jest.fn()} />);
 
     expect(screen.queryByTestId(BLUR_VIEW)).toBeNull();
-    expect(surface().backgroundColor).toBe(`${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`);
+    expect(surfaceTint().backgroundColor).toBe(`${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`);
   });
 
   it("draws its icon in the accent", async () => {
-    const Glyph = ({ color }: { size?: number; color?: string }) => (
-      <View testID="glyph" accessibilityLabel={color} />
-    );
     await renderWithTheme(
       <Fab testID={FAB_ID} onPress={jest.fn()}>
         <Fab.Icon as={Glyph} />
       </Fab>
     );
 
-    expect(screen.getByTestId("glyph").props.accessibilityLabel).toBe(NEDAA_LIGHT.accent.hex);
+    expect(screen.getByTestId(GLYPH_ID)).toHaveTextContent(NEDAA_LIGHT.accent.hex);
   });
 
   it("shrinks to .98 under the finger", async () => {

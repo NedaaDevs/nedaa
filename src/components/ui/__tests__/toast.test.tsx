@@ -1,6 +1,7 @@
 import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { fireEvent, screen, userEvent } from "@testing-library/react-native";
 
+import { materialTintId } from "@/components/ui/material";
 import { Toast, TOAST_PART } from "@/components/ui/toast";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { ELEVATION } from "@/constants/Elevation";
@@ -33,6 +34,8 @@ describe("Toast surface", () => {
   afterEach(() => setPlatform(originalOS, originalVersion));
 
   const frame = () => StyleSheet.flatten(screen.getByTestId(TOAST_PART.FRAME).props.style);
+  const surfaceTint = () =>
+    StyleSheet.flatten(screen.getByTestId(materialTintId(TOAST_PART.FRAME)).props.style);
 
   it("floats on the blurred float material, lifted by e2", async () => {
     await renderWithTheme(
@@ -40,7 +43,7 @@ describe("Toast surface", () => {
     );
 
     expect(screen.getByTestId(BLUR_VIEW)).toBeTruthy();
-    expect(frame().backgroundColor).toBe(NEDAA_LIGHT.surfaceFloat.hex);
+    expect(surfaceTint().backgroundColor).toBe(NEDAA_LIGHT.surfaceFloat.hex);
     expect(frame().boxShadow).toBe(ELEVATION.e2.boxShadow.light);
     expect(frame().borderTopWidth ?? 0).toBe(0);
   });
@@ -53,7 +56,7 @@ describe("Toast surface", () => {
     );
 
     expect(screen.queryByTestId(BLUR_VIEW)).toBeNull();
-    expect(frame().backgroundColor).toBe(`${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`);
+    expect(surfaceTint().backgroundColor).toBe(`${NEDAA_LIGHT.surfaceFloat.hex.slice(0, 7)}FF`);
   });
 });
 

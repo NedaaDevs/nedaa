@@ -70,6 +70,13 @@ type MaterialProps = ComponentProps<typeof View> & {
 /** The hairline ring's width, under a point so it reads as an edge. */
 const RING_WIDTH = 0.5;
 
+/** Test id of the layer that paints a material's tint. */
+const MATERIAL_TINT_ID = "material-tint";
+
+/** The tint layer's test id, prefixed with the owner's id if there is one. */
+export const materialTintId = (owner?: string): string =>
+  owner ? `${owner}-${MATERIAL_TINT_ID}` : MATERIAL_TINT_ID;
+
 /** A tinted, blurred surface with a lit top edge; opaque where blur is unavailable. */
 export const Material = ({
   material,
@@ -94,19 +101,11 @@ export const Material = ({
   const corner = getTokenValue(radius, "radius");
   const radii = cornerRadii(spec.corners, corner);
   const lift = useElevationShadow(spec.elevation);
-  const inner = ring ? `inset 0 0 0 ${RING_WIDTH}px ${hairline}` : undefined;
-  const shadow = [lift, inner].filter(Boolean).join(", ") || undefined;
+  const blurs = surface === MATERIAL_SURFACE.BLUR;
 
   return (
-    <View
-      {...props}
-      style={[
-        radii,
-        { backgroundColor: surface === MATERIAL_SURFACE.BLUR ? tint : opaque(tint) },
-        shadow == null ? undefined : { boxShadow: shadow },
-        style,
-      ]}>
-      {surface === MATERIAL_SURFACE.BLUR && (
+    <View {...props} style={[radii, { boxShadow: lift }, style]}>
+      {blurs && (
         <BlurView
           intensity={BLUR_INTENSITY[spec.blur]}
           tint={BLUR_TINT[brightness]}
@@ -116,6 +115,19 @@ export const Material = ({
           style={[StyleSheet.absoluteFill, radii, { overflow: "hidden" }]}
         />
       )}
+      {/* Over the blur, as CSS paints a background over its backdrop filter. */}
+      <View
+        testID={materialTintId(props.testID)}
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          radii,
+          {
+            backgroundColor: blurs ? tint : opaque(tint),
+            boxShadow: ring ? `inset 0 0 0 ${RING_WIDTH}px ${hairline}` : undefined,
+          },
+        ]}
+      />
       <HighlightEdge owner={props.testID} radius={radius} />
       {children}
     </View>
