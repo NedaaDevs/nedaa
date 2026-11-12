@@ -11,4 +11,8 @@ export const SKY_PART = {
   MOON_FACE: "sky-moon-face",
   MOON_BODY: "sky-moon-body",
   MOON_HALO: "sky-moon-halo",
+  /** Masks the scrolling content under the status bar, on iOS. */
+  STATUS_BAR_MASK: "sky-status-bar-mask",
+  /** The gradient whose alpha the mask applies to the content. */
+  STATUS_BAR_MASK_IMAGE: "sky-status-bar-mask-image",
 } as const;

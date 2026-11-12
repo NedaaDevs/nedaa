@@ -13,8 +13,9 @@ import { SkyPaint } from "@/components/ui/sky-background/SkyPaint";
 import { useBodyOpacity } from "@/components/ui/sky-background/useBodyOpacity";
 import { LiveSkyContext, useLiveSky } from "@/components/ui/sky-background/useLiveSky";
 import { useScreenLive } from "@/hooks/useScreenLive";
+import { useStatusBarFade } from "@/hooks/useStatusBarFade";
 import { measureInWindow } from "@/utils/measureInWindow";
-import type { WindowRect } from "@/utils/sky";
+import { belowLine, type WindowRect } from "@/utils/sky";
 
 export { SKY_PART, SkyOccluder, SkyScrollView };
 
@@ -53,7 +54,11 @@ export const SkyBackground = ({ children, paused = false }: Props) => {
   );
   const registry = { report, epoch, remeasure: () => setEpoch((value) => value + 1) };
 
-  const onSky = Object.values(boxes).map(({ x, y, width, height }) => ({
+  // Text the status bar hides leaves the sun and moon bright.
+  const fade = useStatusBarFade();
+  const all = Object.values(boxes);
+  const shown = fade ? belowLine(all, fade.hidden) : all;
+  const onSky = shown.map(({ x, y, width, height }) => ({
     x: x - origin.x,
     y: y - origin.y,
     width,
