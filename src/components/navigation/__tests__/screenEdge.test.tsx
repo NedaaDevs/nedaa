@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Platform, StyleSheet } from "react-native";
+import { use, useEffect } from "react";
+import { Platform, StyleSheet, Text } from "react-native";
 import { Stack } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
 import { renderRouter, screen } from "expo-router/testing-library";
@@ -13,6 +13,7 @@ import { ALARM_SCREEN_PATH } from "@/constants/Alarm";
 import { BACK_DESTINATION, TAB_GROUP } from "@/constants/BackDestinations";
 import { PRESENTATION } from "@/constants/Navigation";
 import { QURAN_THEME_COLORS } from "@/constants/Quran";
+import { UnderStatusBarContext } from "@/contexts/UnderStatusBarContext";
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
 import { QuranTheme } from "@/enums/quran";
 import { useQuranStore } from "@/stores/quran";
@@ -44,7 +45,11 @@ const RingStandIn = () => {
   return <Stack.Screen options={{ presentation: PRESENTATION.FULL_SCREEN_MODAL }} />;
 };
 
-const Blank = () => null;
+const UNDER_STATUS_BAR = "under-status-bar";
+/** Shows the status bar its edge leaves it to draw under, if any. */
+const ScreenStandIn = () => (
+  <Text testID={UNDER_STATUS_BAR}>{String(use(UnderStatusBarContext))}</Text>
+);
 
 // The tabs render only the tabs they declare.
 const TAB_STAND_INS = [BACK_DESTINATION.HOME, BACK_DESTINATION.ATHKAR, BACK_DESTINATION.QURAN];
@@ -66,10 +71,10 @@ const renderApp = (initialUrl: string) =>
           ))}
         </Tabs>
       ),
-      ...Object.fromEntries(TAB_STAND_INS.map(({ route }) => [route, Blank])),
-      [BACK_DESTINATION.SETTINGS_ABOUT.route]: Blank,
-      [BACK_DESTINATION.SETTINGS_PROVIDER.route]: Blank,
-      [BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.route]: Blank,
+      ...Object.fromEntries(TAB_STAND_INS.map(({ route }) => [route, ScreenStandIn])),
+      [BACK_DESTINATION.SETTINGS_ABOUT.route]: ScreenStandIn,
+      [BACK_DESTINATION.SETTINGS_PROVIDER.route]: ScreenStandIn,
+      [BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.route]: ScreenStandIn,
       [RING_ROUTE]: RingStandIn,
     },
     { initialUrl, wrapper: ThemeProvider }
@@ -114,6 +119,24 @@ describe("screen top edge", () => {
       await renderApp(href);
 
       expect(edgeOf(route)).toEqual(padded(APP_BACKGROUND));
+    }
+  );
+
+  it.each([BACK_DESTINATION.SETTINGS_ABOUT, BACK_DESTINATION.HOME])(
+    "tells $route the height of the status bar it draws under",
+    async ({ href }) => {
+      await renderApp(href);
+
+      expect(screen.getByTestId(UNDER_STATUS_BAR)).toHaveTextContent(String(mockInsets.top));
+    }
+  );
+
+  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.ATHKAR])(
+    "tells $route its top is padded",
+    async ({ href }) => {
+      await renderApp(href);
+
+      expect(screen.getByTestId(UNDER_STATUS_BAR)).toHaveTextContent(String(null));
     }
   );
 
