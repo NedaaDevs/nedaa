@@ -3,8 +3,11 @@ import { act, render } from "@testing-library/react-native";
 import * as SplashScreen from "expo-splash-screen";
 
 import RootLayout from "@/app/_layout";
+import { rootScreenLayout } from "@/components/navigation/screen-edge";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { ONBOARDING_PATH, type OnboardingPath } from "@/constants/Onboarding";
 import { useAppStore } from "@/stores/app";
+import { SAFE_EDGE } from "@/utils/safeArea";
 
 const passThrough = ({ children }: { children?: ReactNode }) => children;
 
@@ -14,11 +17,25 @@ jest.mock("expo-splash-screen", () => ({
   preventAutoHideAsync: jest.fn(),
   hideAsync: jest.fn(),
 }));
+let mockSegments: string[] = [];
 jest.mock("expo-router", () => {
   const Screen = () => null;
-  const Stack = Object.assign(() => null, { Screen });
-  return { Stack, useSegments: () => [] };
+  const Stack = Object.assign(
+    ({ screenLayout }: { screenLayout?: unknown }) => {
+      mockSeen.screenLayout = screenLayout;
+      return null;
+    },
+    { Screen }
+  );
+  return { Stack, useSegments: () => mockSegments };
 });
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  SafeAreaView: ({ edges, children }: { edges?: unknown; children?: ReactNode }) => {
+    mockSeen.edges = edges;
+    return children;
+  },
+}));
 jest.mock("@/tasks/backgroundRefresh", () => ({}));
 jest.mock("@/config/fonts", () => ({ useLoadFonts: () => [true, null] }));
 jest.mock("@/hooks/usePreferencesHydrated", () => ({ usePreferencesHydrated: () => true }));
@@ -51,6 +68,8 @@ const mockSeen: {
   gatePath?: unknown;
   canNavigate?: boolean;
   alertLaunch?: boolean;
+  screenLayout?: unknown;
+  edges?: unknown;
 } = {};
 jest.mock("@/hooks/useNotificationResponses", () => ({
   useNotificationResponses: (canNavigate: boolean) => {
@@ -58,13 +77,13 @@ jest.mock("@/hooks/useNotificationResponses", () => ({
   },
 }));
 jest.mock("@/components/onboarding/flow/OnboardingGate", () => ({
-  OnboardingGate: ({ path }: { path: unknown }) => {
+  OnboardingGate: ({ path, children }: { path: unknown; children?: ReactNode }) => {
     mockSeen.gatePath = path;
     // The app under the gate reads the launch's alert latch.
     const { use } = jest.requireActual("react");
     const { AlertLaunchContext } = jest.requireActual("@/contexts/AlertLaunchContext");
     mockSeen.alertLaunch = use(AlertLaunchContext);
-    return null;
+    return children;
   },
 }));
 
@@ -80,6 +99,7 @@ beforeEach(() => {
   mockLaunch.launchedByAlert = false;
   mockPath = null;
   mockAlertLaunch = false;
+  mockSegments = [];
   for (const key of Object.keys(mockSeen)) delete mockSeen[key as keyof typeof mockSeen];
   useAppStore.setState({ hasHydrated: true });
 });
@@ -127,5 +147,25 @@ describe("RootLayout wiring", () => {
 
     expect(mockSeen.gatePath).toBeNull();
     expect(mockSeen.canNavigate).toBe(true);
+  });
+});
+
+// Each screen pads its own top, so the frame never flips mid-transition.
+describe("RootLayout frame", () => {
+  it("hands the stack each screen's top edge", async () => {
+    await renderRoot();
+
+    expect(mockSeen.screenLayout).toBe(rootScreenLayout);
+  });
+
+  it.each([
+    ["a sky screen", BACK_DESTINATION.SETTINGS_ABOUT.route],
+    ["a padded screen", BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS.route],
+  ])("pads the sides and leaves the top to %s", async (_name, route) => {
+    mockSegments = route.split("/");
+    await renderRoot();
+
+    expect(mockSeen.edges).toEqual(expect.arrayContaining([SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT]));
+    expect(mockSeen.edges).not.toContain(SAFE_EDGE.TOP);
   });
 });

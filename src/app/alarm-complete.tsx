@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Sun, Building2, CircleCheck } from "lucide-react-native";
+import { PRESENTATION } from "@/constants/Navigation";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
@@ -97,7 +98,7 @@ export default function AlarmCompleteScreen() {
         options={{
           gestureEnabled: true,
           headerShown: false,
-          presentation: "fullScreenModal",
+          presentation: PRESENTATION.FULL_SCREEN_MODAL,
         }}
       />
       <Theme name="dark">
