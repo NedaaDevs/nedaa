@@ -14,6 +14,7 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import {
   CITY_PICKER_VIEW,
   LOCATION_PICKER,
+  LOCATION_PICKER_PART,
   locationPickerRoute,
   type CityPickerView,
 } from "@/constants/Location";
@@ -64,7 +65,7 @@ const PickerContent = () => {
           {view === CITY_PICKER_VIEW.LIST ? (
             <CityPicker onPick={handOver} onEnterCoordinates={openCoordinates} />
           ) : (
-            <VStack gap="$3.5">
+            <VStack testID={LOCATION_PICKER_PART.COORDINATES} gap="$3">
               {/* A typed place is a chosen one, so it takes the city tint. */}
               <PlaceHero
                 tone={PLACE_HERO_TONE.CITY}

@@ -6,7 +6,7 @@ import { Box } from "@/components/ui/box";
 import { Callout } from "@/components/ui/callout";
 import { Card } from "@/components/ui/card";
 import { HStack } from "@/components/ui/hstack";
-import { Icon } from "@/components/ui/icon";
+import { ICON_SIZES, Icon, type IconSize } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import {
@@ -24,7 +24,13 @@ export const LOCATION_UPDATE_PART = {
   FRAME: "location-update-frame",
   STEPS: "location-update-steps",
   MARK: "location-update-mark",
+  INSET: "location-update-inset",
 } as const;
+
+/** The status icon's step; the steps are set in by its width. */
+const STATUS_ICON: IconSize = "md";
+/** The status row's gap, repeated in the steps' inset. */
+const STATUS_GAP = "$2";
 
 /** The line naming what runs now, read aloud as it changes. */
 const STATUS: Record<UpdateStep, ParseKeys> = {
@@ -114,9 +120,9 @@ const StepRow = ({ row, state }: { row: ProgressRow; state: RowState }) => {
       accessibilityLabel={t(SPOKEN[state], { step: label })}>
       <Mark state={state} />
       <Text
-        size="sm"
+        size="md"
         flex={1}
-        fontWeight={state === ROW_STATE.NOW ? "600" : undefined}
+        fontWeight={state === ROW_STATE.NOW ? "600" : "500"}
         color={state === ROW_STATE.NOW ? "$fg" : "$muted"}>
         {label}
       </Text>
@@ -136,21 +142,24 @@ const RunningSteps = ({ run, flat }: { run: UpdateRun; flat: boolean }) => {
     <Frame testID={LOCATION_UPDATE_PART.FRAME} gap="$3">
       <HStack
         alignItems="center"
-        gap="$2"
+        gap={STATUS_GAP}
         accessible
         accessibilityLabel={status}
         accessibilityLiveRegion="polite">
-        <Icon as={Hourglass} size="sm" color="$muted" />
-        <Text size="md" fontWeight="600" color="$fg" flex={1}>
+        <Icon as={Hourglass} size={STATUS_ICON} color="$muted" />
+        <Text size="lg" fontWeight="600" color="$fg" flex={1}>
           {status}
         </Text>
       </HStack>
-      {/* Set in under the status text: the icon's width and the gap. */}
-      <VStack testID={LOCATION_UPDATE_PART.STEPS} gap="$2" paddingStart="$6">
-        {ROWS.map((row) => (
-          <StepRow key={row} row={row} state={stateOf(row, step)} />
-        ))}
-      </VStack>
+      {/* Set in under the status text: the icon's width and the row's gap. */}
+      <HStack testID={LOCATION_UPDATE_PART.INSET} gap={STATUS_GAP}>
+        <Box width={ICON_SIZES[STATUS_ICON]} />
+        <VStack testID={LOCATION_UPDATE_PART.STEPS} flex={1} gap="$2">
+          {ROWS.map((row) => (
+            <StepRow key={row} row={row} state={stateOf(row, step)} />
+          ))}
+        </VStack>
+      </HStack>
       <HStack alignItems="flex-start" gap="$2">
         <Icon as={Info} size="sm" color="$muted" />
         <Text size="sm" color="$muted" flex={1}>

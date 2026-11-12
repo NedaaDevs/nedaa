@@ -11,15 +11,15 @@ import {
   NoticeCard,
   type NoticeLine,
 } from "@/components/ui/notice-card";
+import { DEFAULT_FACES } from "@/constants/Fonts";
 import i18n from "@/localization/i18n";
+import { GLYPH_ID, Glyph } from "@/test-helpers/glyph";
+import { fontSizeOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
 const TITLE = "You're in Jeddah";
 const t = i18n.t.bind(i18n);
-
-/** Stands in for a lucide glyph and shows the colour it was handed. */
-const Glyph = ({ color }: { color?: string }) => <Text testID="glyph">{color}</Text>;
 
 const BODY_LINE: NoticeLine = {
   text: "Prayer times are still for Riyadh.",
@@ -88,7 +88,7 @@ describe("NoticeCard", () => {
       screen.getByTestId(NOTICE_CARD_PART.TEXT).props.accessibilityLabel.endsWith("You're offline.")
     ).toBe(true);
     expect(screen.getByText("You're offline.")).toHaveStyle({ color: LIGHT.muted.val });
-    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
       LIGHT.muted.val
     );
   });
@@ -98,6 +98,37 @@ describe("NoticeCard", () => {
 
     expect(screen.getByText(BODY_LINE.text)).toHaveStyle({ color: LIGHT.muted.val });
     expect(screen.getByText("Asr is 1 hour earlier.")).toHaveStyle({ color: LIGHT.fg.val });
+  });
+
+  it("sets the title at the large size, semibold", async () => {
+    await renderCard([BODY_LINE]);
+
+    expect(screen.getByText(TITLE)).toHaveStyle({
+      fontSize: fontSizeOf("lg"),
+      fontFamily: DEFAULT_FACES.semibold,
+    });
+  });
+
+  it("sets every line at the helper size, medium", async () => {
+    const fact: NoticeLine = { text: "Dubai is 1 hour ahead of Riyadh.", kind: NOTICE_LINE.FACT };
+    await renderCard([BODY_LINE, fact]);
+
+    [BODY_LINE.text, fact.text].forEach((text) =>
+      expect(screen.getByText(text)).toHaveStyle({
+        fontSize: fontSizeOf("helper"),
+        fontFamily: DEFAULT_FACES.medium,
+      })
+    );
+  });
+
+  it("inks a fact's icon muted, its words in the foreground", async () => {
+    const fact = "Dubai is 1 hour ahead of Riyadh.";
+    await renderCard([{ text: fact, kind: NOTICE_LINE.FACT, icon: Glyph }]);
+
+    expect(screen.getByText(fact)).toHaveStyle({ color: LIGHT.fg.val });
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
+      LIGHT.muted.val
+    );
   });
 
   it("is a polite live region only when asked", async () => {

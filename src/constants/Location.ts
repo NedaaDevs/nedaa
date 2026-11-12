@@ -118,6 +118,9 @@ export type FailureOfferVariant =
 /** The search param naming the city picker's view. */
 export const LOCATION_PICKER = { viewParam: "view" } as const;
 
+/** Test ids for the picker screen's parts. */
+export const LOCATION_PICKER_PART = { COORDINATES: "location-picker-coordinates" } as const;
+
 /** The route that opens the city picker on one view. */
 export const locationPickerRoute = (view: CityPickerView) => ({
   pathname: BACK_DESTINATION.SETTINGS_LOCATION_PICKER.href,

@@ -4,6 +4,7 @@ import { useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isPinningSupported } from "expo-widgets";
 
+import { VersionLine } from "@/components/about/VersionLine";
 import { SupportActions } from "@/components/settings/SupportActions";
 import { SETTINGS_ROWS } from "@/components/settings/settingsRows";
 import { ListGroup } from "@/components/ui/list-group";
@@ -102,6 +103,7 @@ export default function SettingsScreen() {
                 </Section>
               );
             })}
+            <VersionLine />
           </ScreenContent>
         </SkyOccluder>
       </SkyScrollView>

@@ -10,14 +10,12 @@ import {
   IconTile,
   type IconTileTone,
 } from "@/components/ui/icon-tile";
+import { GLYPH_ID, Glyph } from "@/test-helpers/glyph";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 const LIGHT = config.themes.light;
 const DARK = config.themes.dark;
 const RAW = "#123456";
-
-/** Stands in for a lucide glyph and shows the colour it was handed. */
-const Glyph = ({ color }: { color?: string }) => <Text testID="glyph">{color}</Text>;
 
 describe("Icon colour", () => {
   it.each([
@@ -28,7 +26,7 @@ describe("Icon colour", () => {
     await renderWithTheme(<Icon as={Glyph} color={color} />);
 
     // A glyph with no label is decorative, so Icon hides it from the screen reader.
-    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
       expected
     );
   });
@@ -36,14 +34,14 @@ describe("Icon colour", () => {
 
 /** Shows the fill it was handed, or that it had none. */
 const FilledGlyph = ({ fill }: { fill?: string }) => (
-  <Text testID="glyph">{fill ?? "no fill"}</Text>
+  <Text testID={GLYPH_ID}>{fill ?? "no fill"}</Text>
 );
 
 describe("Icon fill", () => {
   it("resolves a token fill against the theme", async () => {
     await renderWithTheme(<Icon as={FilledGlyph} fill="$danger" />);
 
-    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
       LIGHT.danger.val
     );
   });
@@ -52,7 +50,7 @@ describe("Icon fill", () => {
   it("hands no fill when none is asked for", async () => {
     await renderWithTheme(<Icon as={FilledGlyph} />);
 
-    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
       "no fill"
     );
   });
@@ -61,6 +59,7 @@ describe("Icon fill", () => {
 const TONE_COLOR: Record<IconTileTone, string> = {
   [ICON_TILE_TONE.ACCENT]: LIGHT.accent.val,
   [ICON_TILE_TONE.SUCCESS]: LIGHT.success.val,
+  [ICON_TILE_TONE.WARN]: LIGHT.warn.val,
   [ICON_TILE_TONE.DANGER]: LIGHT.danger.val,
   [ICON_TILE_TONE.MUTED]: LIGHT.muted.val,
 };
@@ -69,7 +68,7 @@ describe("IconTile tone", () => {
   it.each(Object.values(ICON_TILE_TONE))("tints the tile's glyph for %s", async (tone) => {
     await renderWithTheme(<IconTile icon={Glyph} tone={tone} />);
 
-    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
       TONE_COLOR[tone]
     );
   });
@@ -77,7 +76,7 @@ describe("IconTile tone", () => {
   it("defaults to the accent", async () => {
     await renderWithTheme(<IconTile icon={Glyph} />);
 
-    expect(screen.getByTestId("glyph", { includeHiddenElements: true })).toHaveTextContent(
+    expect(screen.getByTestId(GLYPH_ID, { includeHiddenElements: true })).toHaveTextContent(
       TONE_COLOR[ICON_TILE_TONE.ACCENT]
     );
   });
@@ -87,6 +86,7 @@ describe("IconTile tone", () => {
     [ICON_TILE_TONE.MUTED, LIGHT.tile.val],
     [ICON_TILE_TONE.SUCCESS, LIGHT.successTint.val],
     [ICON_TILE_TONE.DANGER, LIGHT.dangerTint.val],
+    [ICON_TILE_TONE.WARN, LIGHT.warnTint.val],
   ])("fills the tile for %s", async (tone, fill) => {
     await renderWithTheme(<IconTile icon={Glyph} tone={tone} />);
 
@@ -98,6 +98,7 @@ describe("IconTile tone", () => {
   it.each([
     [ICON_TILE_TONE.SUCCESS, DARK.successTint.val],
     [ICON_TILE_TONE.DANGER, DARK.dangerTint.val],
+    [ICON_TILE_TONE.WARN, DARK.warnTint.val],
   ])("fills the tile for %s in the dark theme", async (tone, fill) => {
     await renderWithTheme(
       <Theme name="dark">

@@ -265,33 +265,27 @@ const CoordinateEntry = ({ onSave }: CoordinateEntryProps) => {
   };
 
   return (
-    <VStack gap="$3">
-      {/* Drawn on the bare sky, where plain muted ink falls short of AA. */}
-      <Text size="sm" color="$mutedSky" paddingHorizontal="$1">
-        {t("location.coordinates.description")}
-      </Text>
-      <Card gap="$3.5">
-        <CoordinateField
-          axis={CoordinateAxis.LATITUDE}
-          text={latitudeText}
-          onChangeText={setLatitudeText}
-        />
-        <CoordinateField
-          axis={CoordinateAxis.LONGITUDE}
-          text={longitudeText}
-          onChangeText={setLongitudeText}
-        />
-        {latitude !== null && longitude !== null ? (
-          <NearestPreview lookup={current} onRetry={() => setAttempt((count) => count + 1)} />
-        ) : null}
-        <Button
-          onPress={handleSave}
-          disabled={!canSave}
-          accessibilityLabel={t("a11y.location.coordinates.save")}>
-          <Button.Text>{t("location.coordinates.save")}</Button.Text>
-        </Button>
-      </Card>
-    </VStack>
+    <Card gap="$3.5">
+      <CoordinateField
+        axis={CoordinateAxis.LATITUDE}
+        text={latitudeText}
+        onChangeText={setLatitudeText}
+      />
+      <CoordinateField
+        axis={CoordinateAxis.LONGITUDE}
+        text={longitudeText}
+        onChangeText={setLongitudeText}
+      />
+      {latitude !== null && longitude !== null ? (
+        <NearestPreview lookup={current} onRetry={() => setAttempt((count) => count + 1)} />
+      ) : null}
+      <Button
+        onPress={handleSave}
+        disabled={!canSave}
+        accessibilityLabel={t("a11y.location.coordinates.save")}>
+        <Button.Text>{t("location.coordinates.save")}</Button.Text>
+      </Button>
+    </Card>
   );
 };
 

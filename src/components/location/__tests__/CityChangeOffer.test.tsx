@@ -43,6 +43,7 @@ import {
   writePlace,
 } from "@/test-helpers/cityOfferCard";
 import { controlProblems } from "@/test-helpers/controls";
+import { fontSizeOf } from "@/test-helpers/text";
 import { DUBAI_ZONE } from "@/test-helpers/place";
 import { RIYADH_ZONE } from "@/test-helpers/prayerDay";
 import type { CityCandidate, CityOfferStage } from "@/types/cityCheck";
@@ -222,6 +223,15 @@ describe("the answers", () => {
       "accessibilityHint",
       t("a11y.location.cityOffer.dontAskHint")
     );
+  });
+
+  it("sets Don't ask as the card's text action, at the body size", async () => {
+    offerUp();
+    await renderOffer();
+    await userEvent.press(button("location.cityOffer.keep", { saved: "Riyadh" }));
+    expect(screen.getByText(t("location.cityOffer.dontAsk", { city: "Jeddah" }))).toHaveStyle({
+      fontSize: fontSizeOf("md"),
+    });
   });
 
   it("confirms Don't ask in place and drops the action", async () => {

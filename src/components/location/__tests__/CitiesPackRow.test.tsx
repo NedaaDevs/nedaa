@@ -3,6 +3,7 @@ import { act, screen, userEvent } from "@testing-library/react-native";
 
 import config from "../../../../tamagui.config";
 import CitiesPackRow, { CITIES_PACK_PART } from "@/components/location/CitiesPackRow";
+import { CALLOUT_PART } from "@/components/ui/callout";
 import {
   CITIES_FULL_CITY_COUNT,
   CITIES_PACK_BYTES,
@@ -143,6 +144,22 @@ describe("CitiesPackRow", () => {
       screen.getByRole("button", { name: t("a11y.location.picker.cancelDownload") })
     );
     expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("boxes the failure as a danger note, the triangle beside it", async () => {
+    useCitiesPackStore.setState({ error: "Network request failed" });
+    await renderWithTheme(<CitiesPackRow />);
+
+    expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+      backgroundColor: LIGHT.dangerTint.val,
+      borderTopColor: LIGHT.dangerEdge.val,
+    });
+    expect(
+      screen.getByTestId(CALLOUT_PART.ICON_DANGER, { includeHiddenElements: true })
+    ).toBeTruthy();
+    expect(screen.getByText(t("location.picker.packFailedBody"))).toHaveStyle({
+      color: LIGHT.danger.val,
+    });
   });
 
   it("says a failed download in words, retries it, and keeps the major cities", async () => {

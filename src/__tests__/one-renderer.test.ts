@@ -70,6 +70,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<VersionPill\b/,
     home: "components/whats-new/VersionPill.tsx",
   },
+  // About and the Settings root end with the same version and build line.
+  {
+    concept: "the version and build line",
+    shows: /<(Debug)?VersionLine\b|\bappVersionLabel\(\)|\bAPP_NAME_LATIN\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<(Debug)?VersionLine\b/,
+    home: "components/about/VersionLine.tsx",
+  },
   // The page sky and the Appearance previews paint one scene the same way.
   {
     concept: "the app's sky",

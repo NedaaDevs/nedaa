@@ -51,7 +51,7 @@ const AppearanceContent = () => {
             first: t("a11y.join", { first: kicker, second: title }),
             second: note,
           })}>
-          <Text size="sm" bold typography="helper" color="$fg">
+          <Text size="sm" fontWeight="600" typography="helper" color="$fg">
             {kicker}
           </Text>
           <Text size="xl" bold typography="title" color="$fg" marginTop="$0.5">

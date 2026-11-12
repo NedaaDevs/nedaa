@@ -104,12 +104,14 @@ export const Stepper = ({
       onPressOut={() => setHeld(null)}
       {...retention}
       opacity={disabled ? 0.4 : 1}
-      backgroundColor="$accentSoft"
-      borderRadius="$chip"
+      backgroundColor="$surface2"
+      borderWidth={1}
+      borderColor="$border"
+      borderRadius="$control"
       alignItems="center"
       justifyContent="center">
       <Box pointerEvents="none">
-        <Icon as={glyph} size="md" color="$accent" />
+        <Icon as={glyph} size="md" color="$fg" />
       </Box>
     </Pressable>
   );
@@ -125,11 +127,7 @@ export const Stepper = ({
       onAccessibilityAction={handleAccessibilityAction}
       accessibilityState={{ disabled: Boolean(disabled) }}
       alignItems="center"
-      spacing="stack"
-      pad="inline"
-      borderWidth={1}
-      borderColor="$border"
-      borderRadius="$control">
+      spacing="tight">
       {button(DIRECTION.DOWN, Minus, STEPPER_PART.DECREMENT)}
       <Box flex={1} alignItems="center">
         {children}
