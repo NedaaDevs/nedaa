@@ -22,6 +22,7 @@ import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { ChallengeWrapper } from "@/components/alarm/challenges";
 import { ChallengeConfig } from "@/types/alarm";
 import { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";
+import { PRESENTATION } from "@/constants/Navigation";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
@@ -112,7 +113,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
         options={{
           gestureEnabled: false,
           headerShown: false,
-          presentation: "fullScreenModal",
+          presentation: PRESENTATION.FULL_SCREEN_MODAL,
         }}
       />
       <Theme name="dark">
