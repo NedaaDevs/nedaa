@@ -13,6 +13,7 @@ import { usePressScale } from "@/components/ui/pressable/pressScale";
 import { Text, type TextProps } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { useRTL } from "@/contexts/RTLContext";
+import { useEnlargedText } from "@/hooks/useTextScale";
 
 export const LIST_ROW_VARIANT = {
   /** Stands alone on a screen, drawing its own edge. */
@@ -119,7 +120,7 @@ type Props = BaseProps &
         linkLabel?: string;
         /** The row's test id, where a flow presses it. */
         testID?: string;
-        /** The status explains the row, not a live value, so it wraps. */
+        /** The status explains the row, so it wraps at every text size. */
         wrapStatus?: boolean;
       }
     | {
@@ -154,6 +155,8 @@ export const ListRow = ({
 }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
+  // Larger text cuts a one-line status short, so above the default it wraps.
+  const enlarged = useEnlargedText();
   const style = LIST_ROW_STYLE[variant];
   const resting = useRestingSurface({ radius: style.frame.borderRadius });
   const lift = style.rests ? resting.lift : undefined;
@@ -211,7 +214,10 @@ export const ListRow = ({
           {title}
         </Text>
         {status ? (
-          <Text {...style.status} color="$muted" numberOfLines={wrapStatus ? undefined : 1}>
+          <Text
+            {...style.status}
+            color="$muted"
+            numberOfLines={wrapStatus || enlarged ? undefined : 1}>
             {status}
           </Text>
         ) : null}

@@ -15,7 +15,8 @@ import { LTR_ISOLATE } from "@/utils/digits";
 
 /** Quick taps on the version that turn debug mode on or off. */
 export const SECRET_TAP_COUNT = 7;
-const TAP_WINDOW_MS = 3000;
+/** Taps further apart than this start the count again. */
+export const TAP_WINDOW_MS = 3000;
 
 /** The version in Latin, isolated so RTL cannot reorder it. */
 const VersionText = ({ label }: { label: string }) => (
