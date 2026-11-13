@@ -264,7 +264,13 @@ const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose: closeSheet }) => {
 
         <VStack gap="$3" padding="$4" width="100%">
           {/* Search Input */}
-          <Card gap="$2" alignItems="center" flexDirection="row" paddingHorizontal="$3" height={44}>
+          <Card
+            gap="$2"
+            alignItems="center"
+            flexDirection="row"
+            paddingHorizontal="$3"
+            paddingVertical="$0"
+            height={44}>
             <Icon as={Search} size="sm" color="$typographySecondary" />
             <SheetInput
               placeholder={t("athkar.myAthkar.search")}

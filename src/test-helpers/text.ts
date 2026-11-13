@@ -24,6 +24,21 @@ export const endRoomOf = (element: HostElement): number => {
   return typeof room === "number" ? room : 0;
 };
 
+/** Room a pinned row leaves its field: height less padding and border. */
+export const lineRoomOf = (field: HostElement): number => {
+  const row = field.parent ? styleOf(field.parent) : undefined;
+  const padding = (side: unknown) => Number(side ?? row?.paddingVertical ?? row?.padding ?? 0);
+  const border = (side: unknown) => Number(side ?? row?.borderWidth ?? 0);
+
+  return (
+    Number(row?.height) -
+    padding(row?.paddingTop) -
+    padding(row?.paddingBottom) -
+    border(row?.borderTopWidth) -
+    border(row?.borderBottomWidth)
+  );
+};
+
 /** A rendered text's line box as a multiple of its font size. */
 export const lineRatioOf = (element: HostElement): number => {
   const { fontSize, lineHeight } = styleOf(element) ?? {};

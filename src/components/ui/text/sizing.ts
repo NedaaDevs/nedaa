@@ -1,4 +1,4 @@
-// Pure sizing tables and math for the shared Text primitive. Kept free of
+// Pure sizing tables and math for Text and the text fields. Kept free of
 // Tamagui imports so jest can test the scaling without rendering.
 
 /** A font size and its line box, in points. */
@@ -98,12 +98,8 @@ export const resolveLineHeight = (value: unknown): number | undefined => {
   return isNaN(num) ? undefined : num;
 };
 
-/**
- * Final font geometry for a Text instance: the app text-scale multiplier `m`
- * applied to the caller's explicit values or the size-token table. An explicit
- * line box wins and scales with the font. Without one, an explicit fontSize
- * leaves the box undefined so React Native derives it from the scaled font.
- */
+/** Font and line box at app text scale `m`, for Text and the text fields. An
+ * explicit box scales with the font; a bare fontSize leaves the box unset. */
 export const resolveTextSizing = (
   m: number,
   fontSize: unknown,
