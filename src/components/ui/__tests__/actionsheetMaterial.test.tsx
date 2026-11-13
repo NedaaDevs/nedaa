@@ -1,5 +1,6 @@
-import { BackHandler, Platform, StyleSheet, View } from "react-native";
+import { BackHandler, Dimensions, Platform, StyleSheet, View } from "react-native";
 import { act, screen, userEvent, within } from "@testing-library/react-native";
+import { normalizeSnapPoint } from "@gorhom/bottom-sheet/src/utilities/normalizeSnapPoint";
 import { Easing, ReduceMotion, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTokenValue } from "tamagui";
@@ -23,6 +24,7 @@ import {
   moveSheet,
 } from "@/test-helpers/bottomSheetMock";
 import { clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
+import { DYNAMIC_ISLAND_INSETS } from "@/test-helpers/safeAreaInsets";
 import { renderWithTheme } from "@/test-helpers/theme";
 import i18n from "@/localization/i18n";
 
@@ -46,7 +48,6 @@ jest.mock("react-native-safe-area-context", () => ({
   ...jest.requireActual("react-native-safe-area-context"),
   useSafeAreaInsets: jest.fn(),
 }));
-const INSETS = { top: 59, bottom: 34, left: 0, right: 0 };
 
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
@@ -79,7 +80,7 @@ const setPlatform = (os: string, version: string | number) => {
 
 beforeEach(() => {
   mockReduced = false;
-  jest.mocked(useSafeAreaInsets).mockReturnValue(INSETS);
+  jest.mocked(useSafeAreaInsets).mockReturnValue(DYNAMIC_ISLAND_INSETS);
   modalProps.mockClear();
   dismissConfigs.mockClear();
   jest.mocked(withTiming).mockClear();
@@ -116,11 +117,25 @@ describe("Actionsheet surface", () => {
     expect(styleOf(SHEET_CHROME_PART.BACKGROUND).backgroundColor).toBe(NEDAA_LIGHT.raised.hex);
   });
 
-  // A tall sheet stops this far below the status bar.
-  it("keeps a content-sized sheet the $5 step below the status bar", async () => {
-    await renderWithTheme(<Sheet open fitContent />);
+  it.each([
+    ["its content", { fitContent: true }],
+    ["detents", { snapPoints: TWO_DETENTS }],
+  ])("keeps a sheet sized by %s the $5 step below the status bar", async (_, size) => {
+    await renderWithTheme(<Sheet open {...size} />);
 
-    expect(sheetProps()?.topInset).toBe(INSETS.top + getTokenValue("$5", "space"));
+    expect(sheetProps()?.topInset).toBe(DYNAMIC_ISLAND_INSETS.top + getTokenValue("$5", "space"));
+  });
+
+  // gorhom measures a detent below the top inset; the sheet's top stays put.
+  it.each(TWO_DETENTS)("keeps a %s%% detent that share of the screen tall", async (percent) => {
+    await renderWithTheme(<Sheet open snapPoints={[percent]} />);
+
+    const topInset = sheetProps()?.topInset ?? 0;
+    const [detent] = sheetProps()?.snapPoints ?? [];
+    const screenHeight = Dimensions.get("window").height;
+    const top = topInset + normalizeSnapPoint(detent, screenHeight - topInset);
+
+    expect(top).toBeCloseTo(screenHeight * (1 - percent / 100));
   });
 });
 
