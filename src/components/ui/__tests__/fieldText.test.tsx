@@ -60,6 +60,7 @@ const renderPair = async (
 };
 
 const fontOf = (element: HostElement) => styleOf(element)?.fontSize;
+const faceOf = (element: HostElement) => styleOf(element)?.fontFamily;
 const lineOf = (element: HostElement) => Number(styleOf(element)?.lineHeight);
 
 describe.each(STEPS)("at text scale %s", (m) => {
@@ -71,6 +72,18 @@ describe.each(STEPS)("at text scale %s", (m) => {
     );
 
     expect(fontOf(field)).toBe(fontOf(line));
+    expect(faceOf(field)).toBe(faceOf(line));
+  });
+
+  it("a multiline Input sets its text as Text does", async () => {
+    const { field, line } = await renderPair(
+      m,
+      <Input multiline placeholder={FIELD} />,
+      <Text size={INPUT_SIZE.md.text}>{SAMPLE}</Text>
+    );
+
+    expect(fontOf(field)).toBe(fontOf(line));
+    expect(faceOf(field)).toBe(faceOf(line));
   });
 
   it("an Input scales a caller's font size as Text does", async () => {
@@ -147,10 +160,12 @@ describe("the Input box", () => {
 describe("text fields and the OS font scale", () => {
   it.each([
     ["an Input", <Input key="input" placeholder={FIELD} />],
+    // @ts-expect-error a field takes no font scaling from its caller
     ["an Input asked to scale", <Input key="input" allowFontScaling placeholder={FIELD} />],
     ["a search pill", search],
     ["a search pill in a sheet", inSheet(search)],
     ["a SheetInput", inSheet(<SheetInput placeholder={FIELD} />)],
+    // @ts-expect-error a field takes no font scaling from its caller
     ["a SheetInput asked to scale", inSheet(<SheetInput allowFontScaling placeholder={FIELD} />)],
   ])("%s ignores it", async (_field, ui) => {
     await renderWithTheme(ui);
