@@ -11,8 +11,10 @@ import { Tile } from "@/components/ui/tile";
 import { ELEVATION } from "@/constants/Elevation";
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import { SECTION_KIND } from "@/constants/Section";
-import { AppLocale } from "@/enums/app";
+import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
+import { AppLocale, TextSize } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import { usePreferencesStore } from "@/stores/preferences";
 import { fontSizeOf, styleOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -128,14 +130,30 @@ describe("ListRow", () => {
   });
 });
 
-// A live value stays on one line; a row's explanation is read in full.
+// A live value keeps one line only at the default size; an explanation wraps.
 describe("ListRow status lines", () => {
   const NOTE = "We ask for location access if you haven't given it.";
+  const LIVE = "12 minutes ago";
+  const LARGER_SIZES = Object.values(TextSize).filter(
+    (size) => TEXT_SIZE_MULTIPLIERS[size] > TEXT_SIZE_MULTIPLIERS[TextSize.DEFAULT]
+  );
+  const atDefaultSize = () => usePreferencesStore.setState({ textSize: TextSize.DEFAULT });
 
-  it("keeps a live status to one line", async () => {
-    await renderWithTheme(<ListRow title="Refresh" status="12 minutes ago" onPress={jest.fn()} />);
+  // Every case, and every describe after these, starts at the default size.
+  beforeEach(atDefaultSize);
+  afterAll(atDefaultSize);
 
-    expect(screen.getByText("12 minutes ago").props.numberOfLines).toBe(1);
+  it("keeps a live status to one line at the default size", async () => {
+    await renderWithTheme(<ListRow title="Refresh" status={LIVE} onPress={jest.fn()} />);
+
+    expect(screen.getByText(LIVE).props.numberOfLines).toBe(1);
+  });
+
+  it.each(LARGER_SIZES)("wraps a live status at text size %s", async (textSize) => {
+    usePreferencesStore.setState({ textSize });
+    await renderWithTheme(<ListRow title="Refresh" status={LIVE} onPress={jest.fn()} />);
+
+    expect(screen.getByText(LIVE).props.numberOfLines).toBeUndefined();
   });
 
   it("wraps a status that explains the row", async () => {
