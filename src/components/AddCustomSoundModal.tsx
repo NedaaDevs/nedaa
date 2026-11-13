@@ -268,10 +268,10 @@ export default function AddCustomSoundModal({
                   borderWidth: 2,
                   borderColor: theme.outline?.val,
                   fontWeight: "500",
-                  color: theme.typography?.val,
-                  backgroundColor: theme.background?.val,
+                  color: theme.fg?.val,
+                  backgroundColor: theme.surface2Soft?.val,
                 }}
-                placeholderTextColor={theme.typographySecondary?.val}
+                placeholderTextColor={theme.placeholderColor?.val}
               />
             </VStack>
           </VStack>
