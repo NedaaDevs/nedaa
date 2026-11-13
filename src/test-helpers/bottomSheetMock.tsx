@@ -94,6 +94,7 @@ type ModalProps = PropsWithChildren<
     onDismiss?: () => void;
     animatedIndex?: { set: (index: number) => void };
     overrideReduceMotion?: string;
+    snapPoints?: (number | string)[];
     topInset?: number;
     animationConfigs?: { duration?: number; easing?: unknown; stiffness?: number };
     backgroundStyle?: ViewStyle;
