@@ -15,6 +15,7 @@ import { BACK_DESTINATION, SETTINGS_ADVANCE } from "@/constants/BackDestinations
 import {
   CALCULATION_PARAM,
   CALCULATION_PICKER,
+  CALCULATION_PREVIEW_PART,
   CALCULATION_TITLE_KEY,
 } from "@/constants/Calculation";
 import { DEFAULT_FACES } from "@/constants/Fonts";
@@ -232,6 +233,15 @@ describe("Calculation screen", () => {
     expect(radio(new RegExp(t("settings.calculation.method.inUse")))).toHaveAccessibleName(
       new RegExp(t(`providers.aladhan.methods.${MAKKAH.nameKey}`).replace(/[()]/g, "."))
     );
+  });
+
+  // A long method name or large text leaves one line too narrow for both.
+  it("wraps the place under the method when one line cannot hold both", async () => {
+    await renderCalculation();
+
+    expect(screen.getByTestId(CALCULATION_PREVIEW_PART.METHOD_AND_PLACE)).toHaveStyle({
+      flexWrap: "wrap",
+    });
   });
 
   it("shows today's times without an apply action while nothing changed", async () => {
