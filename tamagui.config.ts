@@ -371,7 +371,7 @@ const lightTheme = {
   color: tokens.color.lightTypography,
   borderColor: tokens.color.lightOutline,
   shadowColor: "rgba(38, 38, 38, 0.1)",
-  placeholderColor: tokens.color.lightTypographySecondary,
+  placeholderColor: NEDAA_LIGHT.muted.hex,
 
   // The design palette. Additive only: `success` already exists above and keeps its
   // current value, so no consumer shifts.
@@ -471,7 +471,7 @@ const darkTheme = {
   color: tokens.color.darkTypography,
   borderColor: tokens.color.darkOutline,
   shadowColor: "rgba(0, 0, 0, 0.3)",
-  placeholderColor: tokens.color.darkTypographySecondary,
+  placeholderColor: NEDAA_DARK.muted.hex,
 
   // The design palette. Additive only: `success` already exists above and keeps its
   // current value, so no consumer shifts.

@@ -4,6 +4,7 @@ import ts from "typescript";
 import type * as Gorhom from "@gorhom/bottom-sheet";
 
 import type * as SheetChrome from "@/components/ui/sheet-chrome";
+import { nodesOf, parseTsx } from "@/test-helpers/ast";
 import { appSourceFiles, REPO_ROOT } from "@/test-helpers/routeTree";
 
 /** gorhom's modal sheet, by its JSX name. */
@@ -18,26 +19,9 @@ const TOP_INSET_HOOK: keyof typeof SheetChrome = "useSheetTopInset";
 /** The Quran reader's tree, outside this rule. */
 const QURAN_READER = "src/components/quran/";
 
-/** Every node in a file's syntax tree. */
-const nodesOf = (file: ts.SourceFile) => {
-  const nodes: ts.Node[] = [];
-  const visit = (node: ts.Node) => {
-    nodes.push(node);
-    ts.forEachChild(node, visit);
-  };
-  visit(file);
-  return nodes;
-};
-
 /** Whether each gorhom modal takes its top inset from the hook. */
 const readSheets = (text: string) => {
-  const file = ts.createSourceFile(
-    "sheet.tsx",
-    text,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
+  const file = parseTsx(text);
   const nodes = nodesOf(file);
   const isHookCall = (node?: ts.Node) =>
     node !== undefined &&
