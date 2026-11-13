@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { COLOR_TOKENS, NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
+import { COLOR_TOKENS, type ColorToken, NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
 
 // Importing tamagui.config.ts runs createTamagui(), so the keys are read from source.
 const source = () => readFileSync(join(__dirname, "../../../../tamagui.config.ts"), "utf8");
@@ -34,6 +34,9 @@ const themeKeys = (name: string): string[] =>
 const THEMES = ["lightTheme", "darkTheme"];
 
 const PALETTE_BY_THEME = { lightTheme: NEDAA_LIGHT, darkTheme: NEDAA_DARK } as const;
+
+/** Theme keys wired to a palette token of another name. */
+const ALIASES: Partial<Record<string, ColorToken>> = { placeholderColor: "muted" };
 
 describe("theme keys", () => {
   // Without a floor on each scale, a reformat that breaks a regex passes vacuously.
@@ -83,7 +86,9 @@ describe("theme keys", () => {
 
     expect(missing).toEqual([]);
     expect(wired.length).toBeGreaterThan(30);
-    expect(wired.filter(([, key, from, token]) => from !== own || key !== token)).toEqual([]);
+    expect(
+      wired.filter(([, key, from, token]) => from !== own || (ALIASES[key] ?? key) !== token)
+    ).toEqual([]);
   });
 
   // `size` and `space` resolve by the same lookup, so a theme key named for one
