@@ -419,11 +419,11 @@ const QadaScreen = () => {
                         fontSize: 14,
                         borderWidth: 1,
                         borderColor: theme.outline?.val,
-                        color: theme.typography?.val,
-                        backgroundColor: theme.backgroundSecondary?.val,
+                        color: theme.fg?.val,
+                        backgroundColor: theme.surface2Soft?.val,
                         minHeight: 80,
                       }}
-                      placeholderTextColor={theme.typographySecondary?.val}
+                      placeholderTextColor={theme.placeholderColor?.val}
                     />
                   </VStack>
                 </VStack>

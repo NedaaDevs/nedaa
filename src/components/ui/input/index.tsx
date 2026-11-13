@@ -40,9 +40,10 @@ export const Input = ({ ref, size = "md", invalid, disabled, fontSize, ...props 
       fontSize={sized.fontSize}
       fontWeight={TEXT_WEIGHT}
       borderRadius="$control"
-      placeholderTextColor="$typographySecondary"
+      color="$fg"
+      placeholderTextColor="$placeholderColor"
       borderColor={invalid ? "$error" : "$borderColor"}
-      backgroundColor="$backgroundSecondary"
+      backgroundColor="$surface"
       opacity={disabled ? 0.5 : 1}
       disabled={disabled}
       focusStyle={{ borderColor: invalid ? "$error" : "$primary" }}
