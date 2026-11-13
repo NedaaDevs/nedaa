@@ -8,6 +8,7 @@ import {
   SheetBackground,
   SilentHandle,
   UNGROUPED_CONTENT,
+  useSheetTopInset,
 } from "@/components/ui/sheet-chrome";
 import { SheetInput } from "@/components/ui/sheet-input";
 import { openComposer } from "react-native-email-link";
@@ -72,6 +73,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const topInset = useSheetTopInset();
   const ref = useRef<BottomSheetModal>(null);
   const [description, setDescription] = useState("");
   const [submitStatus, setSubmitStatus] = useState<ReportSubmitStatus>(REPORT_SUBMIT_STATUS.IDLE);
@@ -237,6 +239,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
       onDismiss={handleDismiss}
       enablePanDownToClose
       enableDynamicSizing
+      topInset={topInset}
       {...UNGROUPED_CONTENT}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
