@@ -12,7 +12,7 @@ type SheetInputVariant = "bare" | "boxed";
 /** The Text size a field takes when its caller sets no font size. */
 export const SHEET_INPUT_TEXT: TextSize = "md";
 
-type Props = TextInputProps & {
+type Props = Omit<TextInputProps, "allowFontScaling"> & {
   ref?: Ref<ComponentRef<typeof BottomSheetTextInput>>;
   /** `bare` sits inside a container that draws the border; `boxed` draws its own. */
   variant?: SheetInputVariant;
