@@ -23,6 +23,7 @@ import {
   Platform,
   Pressable as RNPressable,
   StyleSheet,
+  useWindowDimensions,
   View as RNView,
   type StyleProp,
   type ViewStyle,
@@ -50,7 +51,7 @@ import {
 import { BlurTargetView } from "expo-blur";
 import { X } from "lucide-react-native";
 import { useAppCovered, useCoverApp, useSheetLayer } from "@/components/ui/actionsheet/cover";
-import { SheetBackground, UNGROUPED_CONTENT } from "@/components/ui/sheet-chrome";
+import { SheetBackground, UNGROUPED_CONTENT, useSheetTopInset } from "@/components/ui/sheet-chrome";
 import { Icon } from "@/components/ui/icon";
 import { Material, MATERIAL } from "@/components/ui/material";
 import { useElevationShadow } from "@/components/ui/material/edge";
@@ -62,9 +63,6 @@ import { SHEET_CURVE, SHEET_MOTION, SPRING } from "@/constants/Motion";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { focusOn } from "@/utils/accessibilityFocus";
-
-/** The space step a tall sheet keeps below the status bar. */
-const SHEET_TOP_GAP = "$5";
 
 /** No size token sits at 5. */
 const GRABBER_HEIGHT = 5;
@@ -199,8 +197,8 @@ const ModalLayer = ({ fade, children }: ModalLayerProps) => {
 type ActionsheetProps = {
   isOpen?: boolean;
   onClose?: () => void;
-  /** A number is a percentage of the screen; a string passes to gorhom as written. */
-  snapPoints?: (number | string)[];
+  /** Each detent as a percentage of the screen's height. */
+  snapPoints?: number[];
   /** Sizes the sheet to its content instead of a detent. */
   fitContent?: boolean;
   /** Gets screen-reader focus back once the sheet closes: its opener. */
@@ -230,7 +228,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   const animatedIndex = useSharedValue(CLOSED_INDEX);
   // The detent a running close left; null while none runs.
   const leftFrom = useSharedValue<number | null>(null);
-  const insets = useSafeAreaInsets();
+  const topInset = useSheetTopInset();
   const ref = useRef<BottomSheetModal>(null);
   const title = useRef<ViewInstance>(null);
   const blurTarget = useRef<ViewInstance>(null);
@@ -255,10 +253,10 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   );
   useCoverApp(shown);
   const covered = useAppCovered();
-  const points = useMemo(
-    () => snapPoints.map((n) => (typeof n === "number" ? `${n}%` : n)),
-    [snapPoints]
-  );
+  const { height } = useWindowDimensions();
+  // gorhom measures a percentage below the top inset, so it gets points.
+  // The window is gorhom's container: its provider fills the root view.
+  const points = useMemo(() => snapPoints.map((n) => (n * height) / 100), [snapPoints, height]);
 
   // Focus moves into the sheet once it is up, and back out after.
   useEffect(() => {
@@ -370,8 +368,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       ref={ref}
       snapPoints={fitContent ? undefined : points}
       enableDynamicSizing={fitContent}
-      // A tall body stops below the status bar and scrolls.
-      topInset={fitContent ? insets.top + getTokenValue(SHEET_TOP_GAP, "space") : undefined}
+      topInset={topInset}
       enablePanDownToClose
       onChange={handleChange}
       onAnimate={handleAnimate}

@@ -1,23 +1,27 @@
 import { AccessibilityInfo, Platform } from "react-native";
 import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getTokenValue } from "tamagui";
 
 import CrashReportPrompt from "@/components/CrashReportPrompt";
 import { CRASH_REPORT_STATUS_ID } from "@/constants/Feedback";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { buildLogAttachment, submitFeedback, type FeedbackReceipt } from "@/services/feedback";
-import { gorhomStops } from "@/test-helpers/bottomSheetMock";
+import { gorhomStops, modalProps } from "@/test-helpers/bottomSheetMock";
 import { layOut } from "@/test-helpers/layout";
 import { resetOffline, setOffline } from "@/test-helpers/offlineMock";
 import { later } from "@/test-helpers/promises";
+import { DYNAMIC_ISLAND_INSETS } from "@/test-helpers/safeAreaInsets";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { Attachment, Tier, type OutgoingAttachment } from "@/types/feedback";
 import { clearPendingReport } from "@/utils/crashHandler";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
-jest.mock("react-native-safe-area-context", () =>
-  jest.requireActual("@/test-helpers/safeAreaMock")
-);
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  useSafeAreaInsets: jest.fn(),
+}));
 jest.mock("@/hooks/useIsOffline", () => jest.requireActual("@/test-helpers/offlineMock"));
 jest.mock("@/services/feedback", () => ({
   ...jest.requireActual("@/services/feedback"),
@@ -48,6 +52,7 @@ describe("CrashReportPrompt", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetOffline();
+    jest.mocked(useSafeAreaInsets).mockReturnValue(DYNAMIC_ISLAND_INSETS);
     jest.mocked(buildLogAttachment).mockResolvedValue(LOG);
   });
 
@@ -55,6 +60,15 @@ describe("CrashReportPrompt", () => {
     await renderWithTheme(<CrashReportPrompt />);
 
     expect(gorhomStops()).toEqual([]);
+  });
+
+  // The keyboard lifts the sheet no higher than its top inset.
+  it("keeps the sheet the $5 step below the status bar", async () => {
+    await renderWithTheme(<CrashReportPrompt />);
+
+    expect(modalProps.mock.lastCall?.[0].topInset).toBe(
+      DYNAMIC_ISLAND_INSETS.top + getTokenValue("$5", "space")
+    );
   });
 
   it("closes from a backdrop named in the app's language", async () => {
