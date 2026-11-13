@@ -30,6 +30,11 @@ export const CALCULATION_TITLE_KEY: Record<CalculationPicker, string> = {
 /** The prayers the calculation preview shows: dawn, noon and night. */
 export const PREVIEW_PRAYERS = [PRAYER_ID.FAJR, PRAYER_ID.DHUHR, PRAYER_ID.ISHA] as const;
 
+/** Test ids for the parts of the calculation preview. */
+export const CALCULATION_PREVIEW_PART = {
+  METHOD_AND_PLACE: "calculation-preview-method-and-place",
+} as const;
+
 /** Search params the Calculation screen reads. */
 export const CALCULATION_PARAM = {
   /** A timing to open the adjustment sheet on, e.g. from a prayer's own sheet. */

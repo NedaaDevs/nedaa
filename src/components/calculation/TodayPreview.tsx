@@ -9,7 +9,7 @@ import { HStack } from "@/components/ui/hstack";
 import { SkyHero } from "@/components/ui/sky-preview";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { PREVIEW_PRAYERS } from "@/constants/Calculation";
+import { CALCULATION_PREVIEW_PART, PREVIEW_PRAYERS } from "@/constants/Calculation";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useDraftTimes } from "@/hooks/useDraftTimes";
@@ -59,14 +59,19 @@ export const TodayPreview = ({ draft }: Props) => {
         <Text size="xs" fontWeight="600" color="$mutedSky">
           {kicker}
         </Text>
-        <HStack alignItems="flex-end" justifyContent="space-between" gap="$2.5">
+        <HStack
+          flexWrap="wrap"
+          alignItems="flex-end"
+          justifyContent="space-between"
+          gap="$2.5"
+          testID={CALCULATION_PREVIEW_PART.METHOD_AND_PLACE}>
           {method ? (
-            <Text size="lg" bold typography="title" color="$fg" flexShrink={1}>
+            <Text size="lg" bold typography="title" color="$fg">
               {method}
             </Text>
           ) : null}
           {place ? (
-            <Text size="xs" color="$mutedSky" flexShrink={1}>
+            <Text size="xs" color="$mutedSky">
               {place}
             </Text>
           ) : null}
