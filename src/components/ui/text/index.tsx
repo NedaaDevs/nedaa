@@ -49,13 +49,16 @@ type TextProps = TamaguiTextProps & {
   typography?: TextRole;
 };
 
+/** The weight Text takes when none is given; text fields take it too. */
+export const TEXT_WEIGHT = "400";
+
 const resolveFontWeight = (
   bold?: boolean,
   fontWeight?: TamaguiTextProps["fontWeight"]
 ): TamaguiTextProps["fontWeight"] => {
   if (bold) return "700";
   if (fontWeight) return fontWeight;
-  return "400";
+  return TEXT_WEIGHT;
 };
 
 const IS_ANDROID = Platform.OS === PlatformType.ANDROID;
