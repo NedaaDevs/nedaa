@@ -36,6 +36,16 @@ export const walkFiles = (directory: string): string[] => {
   });
 };
 
+/** Folders under `src` that hold tests and their helpers, not the app. */
+const TEST_DIRECTORIES = ["__tests__", "test-helpers"];
+
+/** The app's files under `src`, as posix paths from the repo root. */
+export const appSourceFiles = () =>
+  walkFiles(join(REPO_ROOT, "src"))
+    .map((path) => relative(REPO_ROOT, path).split(sep))
+    .filter((parts) => !parts.some((part) => TEST_DIRECTORIES.includes(part)))
+    .map((parts) => parts.join("/"));
+
 const ROUTE_FILE = /\.(tsx|ts|jsx|js)$/;
 
 /** The file name Expo Router reads as its folder's own route. */
