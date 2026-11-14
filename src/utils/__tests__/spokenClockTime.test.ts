@@ -1,7 +1,10 @@
+import { OTHER_TIMING } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { usePreferencesStore } from "@/stores/preferences";
+import { RIYADH_DAY, RIYADH_ZONE, riyadhAt } from "@/test-helpers/prayerDay";
 import { formatPrayerTime } from "@/utils/date";
+import type { StoredDays } from "@/utils/phase";
 import { spokenClockTime } from "@/utils/spokenClockTime";
 
 const RIYADH = "Asia/Riyadh";
@@ -43,17 +46,25 @@ const speak = (
   timezone: string,
   locale: AppLocale,
   use24HourTime: boolean,
-  western = false
+  western = false,
+  days?: StoredDays
 ) => {
   // Translated copy reads the same preference, as it does in the app.
   usePreferencesStore.setState({ useWesternNumerals: western });
   return spokenClockTime(
     date,
     timezone,
-    { locale, use24HourTime, western },
+    { locale, use24HourTime, western, days },
     i18n.getFixedT(locale)
   );
 };
+
+// Riyadh's stored day, whose sun sets at 17:40.
+const RIYADH_DAYS: StoredDays = { today: RIYADH_DAY };
+
+/** A Riyadh clock reading spoken in Arabic, against the stored days. */
+const speakInRiyadh = (time: string, days: StoredDays) =>
+  speak(riyadhAt(time), RIYADH_ZONE, AppLocale.AR, false, false, days);
 
 describe("spokenClockTime", () => {
   it.each(CASES)("speaks %s (24-hour %s) at %s as %s", (locale, use24HourTime, iso, expected) => {
@@ -71,6 +82,30 @@ describe("spokenClockTime", () => {
     ["2026-09-23T00:30:00.000Z", "الثانية عشرة و٣٠ دقيقة ليلًا"],
   ])("speaks %s in Arabic as %s", (iso, expected) => {
     expect(speak(iso, UTC, AppLocale.AR, false)).toBe(expected);
+  });
+
+  // Asr ends at sunset, so a winter Maghrib before 18:00 is already evening.
+  it.each([
+    ["17:40", "الخامسة و٤٠ دقيقة مساءً"],
+    ["17:50", "الخامسة و٥٠ دقيقة مساءً"],
+    ["17:30", "الخامسة و٣٠ دقيقة عصرًا"],
+  ])("speaks %s on a day whose sun sets at 17:40 as %s", (time, expected) => {
+    expect(speakInRiyadh(time, RIYADH_DAYS)).toBe(expected);
+  });
+
+  // The device can sit in another zone than the place whose day it holds.
+  it("reads the sunset only for a time in the day's own zone", () => {
+    const spoken = speak(riyadhAt("17:40"), UTC, AppLocale.AR, false, false, RIYADH_DAYS);
+    expect(spoken).toBe("الثانية و٤٠ دقيقة ظهرًا");
+  });
+
+  // Near the polar night the sun can set before noon.
+  it("keeps a time before noon in the morning after an early sunset", () => {
+    const early = {
+      ...RIYADH_DAY,
+      otherTimings: { ...RIYADH_DAY.otherTimings, [OTHER_TIMING.SUNSET]: riyadhAt("11:30") },
+    };
+    expect(speakInRiyadh("11:45", { today: early })).toBe("الحادية عشرة و٤٥ دقيقة صباحًا");
   });
 
   it("keeps Western digits when the reader prefers them", () => {
