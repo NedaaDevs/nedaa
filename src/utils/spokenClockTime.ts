@@ -2,9 +2,12 @@ import { parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 
+import { DAY_PERIOD, type DayPeriod } from "@/constants/Accessibility";
+import { OTHER_TIMING } from "@/constants/Prayer";
 import { AppLocale } from "@/enums/app";
 import { clockFormat } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
+import { type StoredDays, storedDayOn } from "@/utils/phase";
 
 // The 12-hour clock without its period, and the hour that decides the period.
 const BARE_12_HOUR = "h:mm";
@@ -18,21 +21,30 @@ const SPOKEN_IN_WORDS: readonly AppLocale[] = [AppLocale.AR];
 
 // The part of the day each hour belongs to, as Arabic names it.
 const PERIOD_OF_HOUR = [
-  { from: 0, period: "night" },
-  { from: 4, period: "morning" },
-  { from: 12, period: "noon" },
-  { from: 15, period: "afternoon" },
-  { from: 18, period: "evening" },
+  { from: 0, period: DAY_PERIOD.NIGHT },
+  { from: 4, period: DAY_PERIOD.MORNING },
+  { from: 12, period: DAY_PERIOD.NOON },
+  { from: 15, period: DAY_PERIOD.AFTERNOON },
+  { from: 18, period: DAY_PERIOD.EVENING },
 ] as const;
-type DayPeriod = (typeof PERIOD_OF_HOUR)[number]["period"];
 
-const periodOf = (hour: number): DayPeriod =>
-  PERIOD_OF_HOUR.filter(({ from }) => hour >= from).at(-1)?.period ?? "night";
+// Whether a time is past its own day's sunset, read in that day's zone only.
+const pastSunset = (date: Date, timezone: string, days: StoredDays) => {
+  const day = storedDayOn(date, days);
+  return day?.timezone === timezone && date >= parseISO(day.otherTimings[OTHER_TIMING.SUNSET]);
+};
 
-const inWords = (hour: number, minute: number, t: TFunction): string => {
+// Asr ends at sunset, so an afternoon past it is evening. Before noon the clock
+// decides, as the sun can set that early near the poles.
+const periodOf = (date: Date, hour: number, timezone: string, days: StoredDays = {}) =>
+  hour >= NOON && pastSunset(date, timezone, days)
+    ? DAY_PERIOD.EVENING
+    : (PERIOD_OF_HOUR.findLast(({ from }) => hour >= from)?.period ?? DAY_PERIOD.NIGHT);
+
+const inWords = (hour: number, minute: number, period: DayPeriod, t: TFunction): string => {
   const words = {
     hour: t(`a11y.time.hours.${hour % NOON || NOON}`),
-    period: t(`a11y.time.periods.${periodOf(hour)}`),
+    period: t(`a11y.time.periods.${period}`),
   };
   return minute === 0
     ? t("a11y.time.onTheHour", words)
@@ -43,14 +55,15 @@ const inWords = (hour: number, minute: number, t: TFunction): string => {
 export const spokenClockTime = (
   date: string | Date,
   timezone: string,
-  options: { locale: AppLocale; use24HourTime: boolean; western: boolean },
+  options: { locale: AppLocale; use24HourTime: boolean; western: boolean; days?: StoredDays },
   t: TFunction
 ): string => {
   const parsed = typeof date === "string" ? parseISO(date) : date;
   const digits = (text: string) => localizeDigits(text, options.locale, options.western);
   if (SPOKEN_IN_WORDS.includes(options.locale)) {
     const hour = Number(formatInTimeZone(parsed, timezone, HOUR_OF_DAY));
-    return inWords(hour, Number(formatInTimeZone(parsed, timezone, MINUTE)), t);
+    const minute = Number(formatInTimeZone(parsed, timezone, MINUTE));
+    return inWords(hour, minute, periodOf(parsed, hour, timezone, options.days), t);
   }
   if (options.use24HourTime) return digits(formatInTimeZone(parsed, timezone, clockFormat(true)));
 

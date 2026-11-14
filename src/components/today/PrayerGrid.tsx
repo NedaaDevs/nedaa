@@ -21,16 +21,11 @@ import {
   PRAYER_CARD_STATE,
   PRAYER_CELL_HEIGHT,
 } from "@/constants/PrayerCard";
-import { OTHER_TIMING, PRAYER_ID, type PrayerId } from "@/constants/Prayer";
+import { OTHER_TIMING, type PrayerId } from "@/constants/Prayer";
+import { useClockTime } from "@/hooks/useClockTime";
+import { usePrayerCardText } from "@/hooks/usePrayerCardText";
 import { useShownDay } from "@/hooks/useShownDay";
-import { useAppStore } from "@/stores/app";
-import { usePreferencesStore } from "@/stores/preferences";
-import { formatPrayerTime } from "@/utils/date";
-import { localizeDigits } from "@/utils/digits";
 import { prayerCards, type PrayerCard } from "@/utils/prayerCards";
-import { prayerNameKey } from "@/utils/prayerName";
-import { spokenClockTime } from "@/utils/spokenClockTime";
-import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 export const PRAYER_GRID_PART = {
   SUNRISE: "prayer-grid-sunrise",
@@ -186,41 +181,35 @@ type Props = {
 export const PrayerGrid = ({ selected, onSelect, nextOnly = false, progress = false }: Props) => {
   const { t } = useTranslation();
   const { now, day, following } = useShownDay();
-  const locale = useAppStore((state) => state.locale);
-  const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
-  const western = usePreferencesStore((state) => state.useWesternNumerals);
+  const cardText = usePrayerCardText();
+  const clock = useClockTime();
 
   if (!day) return null;
 
   const { lead, cards, progress: share } = prayerCards(day, now, following);
-  const friday = isFridayInTimeZone(parseISO(day.timings[PRAYER_ID.DHUHR]), day.timezone);
-  const shown = (time: string) =>
-    localizeDigits(
-      formatPrayerTime(time, day.timezone, { locale, use24HourTime }),
-      locale,
-      western
-    );
-  const spoken = (time: string) =>
-    spokenClockTime(time, day.timezone, { locale, use24HourTime, western }, t);
-  const sunrise = day.otherTimings[OTHER_TIMING.SUNRISE];
+  const sunrise = parseISO(day.otherTimings[OTHER_TIMING.SUNRISE]);
+  const sunriseTime = clock(sunrise, day.timezone);
   const sunriseName = t("otherTimings.sunrise");
-  const sunrisePassed = parseISO(sunrise).getTime() <= now.getTime();
+  const sunrisePassed = sunrise.getTime() <= now.getTime();
 
   return (
     <Grid columns={2} gap="$2.5">
-      {(nextOnly ? [lead] : cards).map((card) => (
-        <Grid.Item key={card.id} wide={nextOnly}>
-          <PrayerCardView
-            card={card}
-            name={t(prayerNameKey(card.id, friday))}
-            time={shown(card.time)}
-            spoken={spoken(card.time)}
-            selected={card.id === selected}
-            progress={progress ? share : null}
-            onPress={(opener) => onSelect(card.id, opener)}
-          />
-        </Grid.Item>
-      ))}
+      {(nextOnly ? [lead] : cards).map((card) => {
+        const { name, shown, spoken } = cardText(card, day);
+        return (
+          <Grid.Item key={card.id} wide={nextOnly}>
+            <PrayerCardView
+              card={card}
+              name={name}
+              time={shown}
+              spoken={spoken}
+              selected={card.id === selected}
+              progress={progress ? share : null}
+              onPress={(opener) => onSelect(card.id, opener)}
+            />
+          </Grid.Item>
+        );
+      })}
       {nextOnly ? null : (
         <Grid.Item key={OTHER_TIMING.SUNRISE}>
           {/* A card like the prayers', never lit and never a control. */}
@@ -229,14 +218,14 @@ export const PrayerGrid = ({ selected, onSelect, nextOnly = false, progress = fa
             accessible
             accessibilityLabel={t("a11y.today.prayerCard", {
               prayer: sunriseName,
-              time: spoken(sunrise),
+              time: sunriseTime.spoken,
             })}
             {...CARD_FRAME}
             backgroundColor="$surfaceQuiet">
             <CardFace
               icon={PRAYER_ICONS[OTHER_TIMING.SUNRISE]}
               name={sunriseName}
-              time={shown(sunrise)}
+              time={sunriseTime.shown}
               lit={false}
               past={sunrisePassed}
               iconTestID={PRAYER_GRID_PART.SUNRISE_ICON}

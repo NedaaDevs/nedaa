@@ -53,6 +53,7 @@ const day = (date: string): DayPrayerTimes => ({
   },
   otherTimings: {
     [OTHER_TIMING.SUNRISE]: `${date}T05:50:00.000Z`,
+    [OTHER_TIMING.SUNSET]: `${date}T18:05:00.000Z`,
   } as DayPrayerTimes["otherTimings"],
 });
 
@@ -101,12 +102,17 @@ describe("PrayerDetailSheet", () => {
     expect(screen.getByRole(HEADER, { name: i18n.t("prayerTimes.jumuah") })).toBeOnTheScreen();
   });
 
-  it("offers the reliable alarm for Fajr and not for Asr", async () => {
-    const alarms = { name: i18n.t("prayerDetail.sections.alarms"), ...hidden };
+  it("offers the reliable alarm for Fajr", async () => {
     await renderOn("2026-09-23", PRAYER_ID.FAJR);
-    expect(screen.getByRole(HEADER, alarms)).toBeOnTheScreen();
 
+    const alarms = { name: i18n.t("prayerDetail.sections.alarms"), ...hidden };
+    expect(screen.getByRole(HEADER, alarms)).toBeOnTheScreen();
+  });
+
+  it("offers no reliable alarm for Asr", async () => {
     await renderOn("2026-09-23", PRAYER_ID.ASR);
+
+    const alarms = { name: i18n.t("prayerDetail.sections.alarms"), ...hidden };
     expect(screen.queryByRole(HEADER, alarms)).toBeNull();
   });
 
@@ -135,7 +141,7 @@ describe("PrayerDetailSheet", () => {
 
     expect(wordsIn(screen.toJSON()).filter((word) => RAW_KEY.test(word))).toEqual([]);
     await act(() => i18n.changeLanguage(AppLocale.EN));
-    useNotificationStore.setState({ settings });
+    await act(() => useNotificationStore.setState({ settings }));
   });
 
   it("reports a close from the sheet itself", async () => {

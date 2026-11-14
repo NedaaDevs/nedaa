@@ -226,10 +226,18 @@ const ONE_RENDERER: readonly Rule[] = [
   {
     concept: "a clock time a screen reader speaks",
     shows:
-      /\b(formatPrayerTime|toLocaleTimeString)\([\s\S]*\baccessibilityLabel\b|\baccessibilityLabel\b[\s\S]*\b(formatPrayerTime|toLocaleTimeString)\(/,
+      /\buseClockTime\(|\b(formatPrayerTime|toLocaleTimeString)\([\s\S]*\baccessibilityLabel\b|\baccessibilityLabel\b[\s\S]*\b(formatPrayerTime|toLocaleTimeString)\(/,
     within: /\.tsx$/,
     drawsWith: /\bspokenClockTime\(|\buseClockTime\(/,
     home: "utils/spokenClockTime.ts",
+  },
+  // Today's card and the prayer's sheet name the prayer and its time alike.
+  {
+    concept: "a prayer card's name and time",
+    shows: /\bprayerCards\(/,
+    within: /\.tsx$/,
+    drawsWith: /\busePrayerCardText\(/,
+    home: "hooks/usePrayerCardText.ts",
   },
   // A screen reading why the device read failed offers the one way out.
   {
