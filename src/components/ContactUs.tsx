@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking } from "react-native";
 
 // Components
-import { ActionsheetFlatList } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -21,6 +20,8 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 import { useTheme } from "@/components/ui/theme-color";
 
+type ContactOption = { title: string; hint: string; icon: ReactNode; action: () => void };
+
 const ContactUs = () => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -31,18 +32,9 @@ const ContactUs = () => {
   const whatsappNumber = process.env.EXPO_PUBLIC_WHATSAPP_NUMBER;
   const telegramUsername = process.env.EXPO_PUBLIC_TELEGRAM_USERNAME;
 
-  const handleOpenWhatsApp = () => {
+  const openChat = (url: string) => {
     hapticMedium();
-    if (whatsappNumber) {
-      Linking.openURL(`https://wa.me/${whatsappNumber}`);
-    }
-  };
-
-  const handleOpenTelegram = () => {
-    hapticMedium();
-    if (telegramUsername) {
-      Linking.openURL(`https://t.me/${telegramUsername}`);
-    }
+    Linking.openURL(url);
   };
 
   const handleEmailContact = () => {
@@ -54,48 +46,35 @@ const ContactUs = () => {
     setMailModalVisible(false);
   };
 
-  const contactOptions = [
+  // A chat option shows only when the build carries its address.
+  const contactOptions: ContactOption[] = [
     {
-      id: "email",
       title: t("settings.help.contact.email"),
       hint: t("a11y.help.emailHint"),
-      icon: "mail",
+      icon: <Icon as={MailIcon} size="xl" color="$accentPrimary" />,
       action: handleEmailContact,
     },
+    ...(whatsappNumber
+      ? [
+          {
+            title: t("settings.help.contact.whatsapp"),
+            hint: t("a11y.help.whatsappHint"),
+            icon: <FontAwesome5 name="whatsapp" size={24} color="#25D366" />,
+            action: () => openChat(`https://wa.me/${whatsappNumber}`),
+          },
+        ]
+      : []),
+    ...(telegramUsername
+      ? [
+          {
+            title: t("settings.help.contact.telegram"),
+            hint: t("a11y.help.telegramHint"),
+            icon: <FontAwesome5 name="telegram-plane" size={24} color={theme.typography?.val} />,
+            action: () => openChat(`https://t.me/${telegramUsername}`),
+          },
+        ]
+      : []),
   ];
-
-  if (whatsappNumber) {
-    contactOptions.push({
-      id: "whatsapp",
-      title: t("settings.help.contact.whatsapp"),
-      hint: t("a11y.help.whatsappHint"),
-      icon: "whatsapp",
-      action: handleOpenWhatsApp,
-    });
-  }
-
-  if (telegramUsername) {
-    contactOptions.push({
-      id: "telegram",
-      title: t("settings.help.contact.telegram"),
-      hint: t("a11y.help.telegramHint"),
-      icon: "telegram",
-      action: handleOpenTelegram,
-    });
-  }
-
-  const renderIcon = (icon: string) => {
-    switch (icon) {
-      case "mail":
-        return <Icon as={MailIcon} size="xl" color="$accentPrimary" />;
-      case "whatsapp":
-        return <FontAwesome5 name="whatsapp" size={24} color="#25D366" />;
-      case "telegram":
-        return <FontAwesome5 name="telegram-plane" size={24} color={theme.typography?.val} />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <>
@@ -118,33 +97,33 @@ const ContactUs = () => {
         </Box>
 
         <Box width="100%" borderRadius="$4">
-          <ActionsheetFlatList
-            data={contactOptions}
-            renderItem={({ item, index }: any) => (
+          {contactOptions.map((option, index) => {
+            const divided = index < contactOptions.length - 1;
+            return (
               <Box
+                key={option.title}
                 width="100%"
-                borderBottomWidth={index < contactOptions.length - 1 ? 1 : 0}
-                borderColor={index < contactOptions.length - 1 ? "$outline" : undefined}>
+                borderBottomWidth={divided ? 1 : 0}
+                borderColor={divided ? "$outline" : undefined}>
                 <Pressable
-                  onPress={item.action}
+                  onPress={option.action}
                   paddingVertical="$5"
                   paddingHorizontal="$5"
                   flexDirection="row"
                   alignItems="center"
                   accessibilityRole="button"
-                  accessibilityLabel={item.title}
-                  accessibilityHint={item.hint}>
+                  accessibilityLabel={option.title}
+                  accessibilityHint={option.hint}>
                   <HStack alignItems="center" width="100%" gap="$4">
-                    {renderIcon(item.icon)}
+                    {option.icon}
                     <Text size="xl" fontWeight="600" color="$typography">
-                      {item.title}
+                      {option.title}
                     </Text>
                   </HStack>
                 </Pressable>
               </Box>
-            )}
-            keyExtractor={(item: any) => item.id}
-          />
+            );
+          })}
         </Box>
       </Box>
 
