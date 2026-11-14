@@ -1,7 +1,7 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import FeedbackScreen from "@/app/settings/feedback";
-import { AccessibilityInfo, Platform } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
 import { userEvent, waitFor } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 
@@ -265,6 +265,22 @@ describe("Feedback", () => {
     await user.press(sendButton("feedback.send"));
 
     expect(await screen.findByRole("button", { name: t("feedback.sending") })).toBeDisabled();
+  });
+
+  it("scrolls the reply field clear of the keyboard", async () => {
+    await renderFeedback();
+
+    let node = screen.getByLabelText(t("feedback.contactLabel")).parent;
+    while (node && node.props.keyboardShouldPersistTaps === undefined) node = node.parent;
+
+    expect(node).toHaveProp("automaticallyAdjustKeyboardInsets", true);
+  });
+
+  it("leaves the height of the reply field to its text", async () => {
+    await renderFeedback();
+
+    const field = screen.getByLabelText(t("feedback.contactLabel"));
+    expect(StyleSheet.flatten(field.props.style).height).toBe("auto");
   });
 
   it("writes the size of the logs in the reader's units", async () => {

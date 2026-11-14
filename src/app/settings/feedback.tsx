@@ -228,6 +228,7 @@ const FeedbackScreen = () => {
         back={{ fallback: BACK_DESTINATION.SETTINGS_ABOUT }}
       />
       <ScrollView
+        automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
@@ -306,7 +307,6 @@ const FeedbackScreen = () => {
                 size="md"
                 minHeight={120}
                 paddingTop="$3"
-                fontSize={16}
                 textAlignVertical="top"
                 maxLength={4000}
                 accessibilityLabel={t("feedback.messageLabel")}
@@ -412,8 +412,6 @@ const FeedbackScreen = () => {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 size="md"
-                height={48}
-                fontSize={16}
                 maxLength={256}
                 accessibilityLabel={t("feedback.contactLabel")}
               />
