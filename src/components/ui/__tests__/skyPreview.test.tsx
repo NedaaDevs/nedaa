@@ -2,7 +2,8 @@ import { Animated, StyleSheet, Text } from "react-native";
 import { screen } from "@testing-library/react-native";
 
 import { SKY_PART } from "@/components/ui/sky-background";
-import { SKY_SWATCH_ID, SkyHero, SkySwatch } from "@/components/ui/sky-preview";
+import { SKY_SWATCH_EDGE_ID, SKY_SWATCH_ID, SkyHero, SkySwatch } from "@/components/ui/sky-preview";
+import { NEDAA_LIGHT } from "@/constants/Palette";
 import { PHASE } from "@/constants/Phase";
 import { ADAPTIVE_SWATCH_WEIGHT, SKY_SWATCH_SIZE, type SkySwatchSize } from "@/constants/Sky";
 import { AppMode } from "@/enums/app";
@@ -46,6 +47,29 @@ describe("SkySwatch", () => {
 
       expect(flat(screen.getByTestId(SKY_SWATCH_ID))).toEqual(
         expect.objectContaining({ width, height, borderTopLeftRadius: borderRadius })
+      );
+    }
+  );
+
+  // A sky as dark as its row has no outline of its own.
+  it.each([
+    [SKY_SWATCH_SIZE.CHOICE, 12],
+    [SKY_SWATCH_SIZE.CARD, 12],
+    [SKY_SWATCH_SIZE.BUTTON, 8],
+  ] as [SkySwatchSize, number][])(
+    "edges the %s size with a hairline over the paint",
+    async (size, borderRadius) => {
+      await renderWithTheme(
+        <SkySwatch bands={skySwatchFor(AppMode.DARK)} hijriDay={3} isRTL={false} size={size} />
+      );
+
+      expect(flat(part(SKY_SWATCH_EDGE_ID)[0])).toEqual(
+        expect.objectContaining({
+          position: "absolute",
+          borderTopWidth: 1,
+          borderTopColor: NEDAA_LIGHT.border.hex,
+          borderTopLeftRadius: borderRadius,
+        })
       );
     }
   );
