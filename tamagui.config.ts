@@ -1,5 +1,6 @@
 import { createFont, createTamagui, createTokens } from "tamagui";
 
+import { ARABIC_FACES, faceMapOf, LATIN_FACES } from "./src/constants/Fonts";
 import { DURATION_MS, SPRING } from "./src/constants/Motion";
 import { NEDAA_DARK, NEDAA_LIGHT } from "./src/constants/Palette";
 import { createAnimations } from "@tamagui/animations-moti";
@@ -9,7 +10,7 @@ import { defaultConfig } from "@tamagui/config/v5";
 // FontLanguage component handles runtime switching: wrap content with
 // <FontLanguage body="ar" heading="ar"> to switch to Arabic fonts.
 const latinFont = createFont({
-  family: "IBMPlexSans-Regular",
+  family: LATIN_FACES.regular,
   size: {
     1: 10, // 2xs, xs
     2: 12, // sm
@@ -62,16 +63,11 @@ const latinFont = createFont({
     4: 0,
     true: 0,
   },
-  face: {
-    400: { normal: "IBMPlexSans-Regular" },
-    500: { normal: "IBMPlexSans-Medium" },
-    600: { normal: "IBMPlexSans-SemiBold" },
-    700: { normal: "IBMPlexSans-Bold" },
-  },
+  face: faceMapOf(LATIN_FACES),
 });
 
 const arabicFont = createFont({
-  family: "IBMPlexSansArabic-Regular",
+  family: ARABIC_FACES.regular,
   size: {
     1: 10,
     2: 12,
@@ -124,12 +120,7 @@ const arabicFont = createFont({
     4: 0,
     true: 0,
   },
-  face: {
-    400: { normal: "IBMPlexSansArabic-Regular" },
-    500: { normal: "IBMPlexSansArabic-Medium" },
-    600: { normal: "IBMPlexSansArabic-SemiBold" },
-    700: { normal: "IBMPlexSansArabic-Bold" },
-  },
+  face: faceMapOf(ARABIC_FACES),
 });
 
 const monoFont = createFont({
