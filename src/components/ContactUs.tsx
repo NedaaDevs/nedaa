@@ -58,6 +58,7 @@ const ContactUs = () => {
     {
       id: "email",
       title: t("settings.help.contact.email"),
+      hint: t("a11y.help.emailHint"),
       icon: "mail",
       action: handleEmailContact,
     },
@@ -67,6 +68,7 @@ const ContactUs = () => {
     contactOptions.push({
       id: "whatsapp",
       title: t("settings.help.contact.whatsapp"),
+      hint: t("a11y.help.whatsappHint"),
       icon: "whatsapp",
       action: handleOpenWhatsApp,
     });
@@ -76,6 +78,7 @@ const ContactUs = () => {
     contactOptions.push({
       id: "telegram",
       title: t("settings.help.contact.telegram"),
+      hint: t("a11y.help.telegramHint"),
       icon: "telegram",
       action: handleOpenTelegram,
     });
@@ -129,7 +132,8 @@ const ContactUs = () => {
                   flexDirection="row"
                   alignItems="center"
                   accessibilityRole="button"
-                  accessibilityLabel={item.title}>
+                  accessibilityLabel={item.title}
+                  accessibilityHint={item.hint}>
                   <HStack alignItems="center" width="100%" gap="$4">
                     {renderIcon(item.icon)}
                     <Text size="xl" fontWeight="600" color="$typography">
