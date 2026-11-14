@@ -34,45 +34,39 @@ describe("SkySwatch", () => {
   });
 
   // A mode's row and the day preview's button, from the design.
-  it.each([
-    [SKY_SWATCH_SIZE.CHOICE, 77, 58, 12],
-    [SKY_SWATCH_SIZE.CARD, 58, 44, 12],
-    [SKY_SWATCH_SIZE.BUTTON, 44, 30, 8],
-  ] as [SkySwatchSize, number, number, number][])(
-    "draws the %s size at its frame",
-    async (size, width, height, borderRadius) => {
-      await renderWithTheme(
-        <SkySwatch bands={skySwatchFor(AppMode.ADAPTIVE)} hijriDay={3} isRTL={false} size={size} />
-      );
+  const FRAME: Record<SkySwatchSize, { width: number; height: number; borderRadius: number }> = {
+    [SKY_SWATCH_SIZE.CHOICE]: { width: 77, height: 58, borderRadius: 12 },
+    [SKY_SWATCH_SIZE.CARD]: { width: 58, height: 44, borderRadius: 12 },
+    [SKY_SWATCH_SIZE.BUTTON]: { width: 44, height: 30, borderRadius: 8 },
+  };
+  const SIZES = Object.values(SKY_SWATCH_SIZE);
 
-      expect(flat(screen.getByTestId(SKY_SWATCH_ID))).toEqual(
-        expect.objectContaining({ width, height, borderTopLeftRadius: borderRadius })
-      );
-    }
-  );
+  it.each(SIZES)("draws the %s size at its frame", async (size) => {
+    const { width, height, borderRadius } = FRAME[size];
+    await renderWithTheme(
+      <SkySwatch bands={skySwatchFor(AppMode.ADAPTIVE)} hijriDay={3} isRTL={false} size={size} />
+    );
+
+    expect(flat(screen.getByTestId(SKY_SWATCH_ID))).toEqual(
+      expect.objectContaining({ width, height, borderTopLeftRadius: borderRadius })
+    );
+  });
 
   // A sky as dark as its row has no outline of its own.
-  it.each([
-    [SKY_SWATCH_SIZE.CHOICE, 12],
-    [SKY_SWATCH_SIZE.CARD, 12],
-    [SKY_SWATCH_SIZE.BUTTON, 8],
-  ] as [SkySwatchSize, number][])(
-    "edges the %s size with a hairline over the paint",
-    async (size, borderRadius) => {
-      await renderWithTheme(
-        <SkySwatch bands={skySwatchFor(AppMode.DARK)} hijriDay={3} isRTL={false} size={size} />
-      );
+  it.each(SIZES)("edges the %s size with a hairline that follows its frame", async (size) => {
+    await renderWithTheme(
+      <SkySwatch bands={skySwatchFor(AppMode.DARK)} hijriDay={3} isRTL={false} size={size} />
+    );
 
-      expect(flat(part(SKY_SWATCH_EDGE_ID)[0])).toEqual(
-        expect.objectContaining({
-          position: "absolute",
-          borderTopWidth: 1,
-          borderTopColor: NEDAA_LIGHT.border.hex,
-          borderTopLeftRadius: borderRadius,
-        })
-      );
-    }
-  );
+    expect(flat(part(SKY_SWATCH_EDGE_ID)[0])).toEqual(
+      expect.objectContaining({
+        position: "absolute",
+        borderTopWidth: 1,
+        borderTopColor: NEDAA_LIGHT.border.hex,
+        borderTopLeftRadius: flat(screen.getByTestId(SKY_SWATCH_ID)).borderTopLeftRadius,
+      })
+    );
+  });
 
   // Each size shrinks one painted sky, so the swatches read as one sky.
   it("paints the same sky at every size", async () => {
