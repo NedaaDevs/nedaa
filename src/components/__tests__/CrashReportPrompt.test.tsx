@@ -8,7 +8,7 @@ import { CRASH_REPORT_STATUS_ID } from "@/constants/Feedback";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { buildLogAttachment, submitFeedback, type FeedbackReceipt } from "@/services/feedback";
-import { gorhomStops, modalProps } from "@/test-helpers/bottomSheetMock";
+import { gorhomStops, modalProps, sheetScrollerOf } from "@/test-helpers/bottomSheetMock";
 import { layOut } from "@/test-helpers/layout";
 import { resetOffline, setOffline } from "@/test-helpers/offlineMock";
 import { later } from "@/test-helpers/promises";
@@ -69,6 +69,14 @@ describe("CrashReportPrompt", () => {
     expect(modalProps.mock.lastCall?.[0].topInset).toBe(
       DYNAMIC_ISLAND_INSETS.top + getTokenValue("$5", "space")
     );
+  });
+
+  // A body taller than the room under the top inset scrolls to its last row.
+  it("scrolls its body, and a tap lands with the keyboard up", async () => {
+    await renderWithTheme(<CrashReportPrompt />);
+
+    const send = screen.getByRole("button", { name: t("crashPrompt.send") });
+    expect(sheetScrollerOf(send)).toHaveProp("keyboardShouldPersistTaps", "handled");
   });
 
   it("closes from a backdrop named in the app's language", async () => {

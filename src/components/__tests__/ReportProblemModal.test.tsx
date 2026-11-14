@@ -8,7 +8,12 @@ import { REPORT_PROBLEM_STATUS_ID } from "@/constants/ReportProblem";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { submitFeedback } from "@/services/feedback";
-import { BOTTOM_SHEET_PART, gorhomStops, modalProps } from "@/test-helpers/bottomSheetMock";
+import {
+  BOTTOM_SHEET_PART,
+  gorhomStops,
+  modalProps,
+  sheetScrollerOf,
+} from "@/test-helpers/bottomSheetMock";
 import { layOut } from "@/test-helpers/layout";
 import { DYNAMIC_ISLAND_INSETS } from "@/test-helpers/safeAreaInsets";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -70,6 +75,14 @@ describe("ReportProblemModal", () => {
     expect(modalProps.mock.lastCall?.[0].topInset).toBe(
       DYNAMIC_ISLAND_INSETS.top + getTokenValue("$5", "space")
     );
+  });
+
+  // A body taller than the room under the top inset scrolls to its last row.
+  it("scrolls its body, and a tap lands with the keyboard up", async () => {
+    await openSheet();
+
+    const lastRow = screen.getByRole("button", { name: t("alarm.report.copyToClipboard") });
+    expect(sheetScrollerOf(lastRow)).toHaveProp("keyboardShouldPersistTaps", "handled");
   });
 
   // No close button: on iOS the backdrop is VoiceOver's only way out.

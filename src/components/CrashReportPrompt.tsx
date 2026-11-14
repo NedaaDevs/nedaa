@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import {
   DismissBackdrop,
   SheetBackground,
@@ -105,8 +105,10 @@ const CrashReportPrompt = () => {
       handleIndicatorStyle={{
         backgroundColor: theme.typographySecondary?.val ?? theme.outline?.val,
       }}>
-      <BottomSheetView
-        style={{
+      {/* Scrolls when the body is taller than the room under the top inset. */}
+      <BottomSheetScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 4,
           paddingBottom: Math.max(insets.bottom, 16) + 8,
@@ -209,7 +211,7 @@ const CrashReportPrompt = () => {
             </Pressable>
           </VStack>
         )}
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
 };
