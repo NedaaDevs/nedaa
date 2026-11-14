@@ -13,8 +13,12 @@ import type { SwatchBand } from "@/utils/sky";
 export const SKY_HERO_ID = "sky-hero";
 /** Test id for a swatch's frame. */
 export const SKY_SWATCH_ID = "sky-swatch";
+/** Test id for the hairline over a swatch's paint. */
+export const SKY_SWATCH_EDGE_ID = "sky-swatch-edge";
 
-const HERO = { minHeight: 153, edge: 1 } as const;
+/** The hairline around a hero and over a swatch. */
+const EDGE = 1;
+const HERO = { minHeight: 153 } as const;
 
 const SWATCH = {
   [SKY_SWATCH_SIZE.CHOICE]: { width: 77, height: 58, radius: "$control" },
@@ -41,7 +45,7 @@ export const SkyHero = ({ accessibilityLabel, compact = false, children }: HeroP
       minHeight={compact ? undefined : HERO.minHeight}
       padding="$4"
       justifyContent="flex-end"
-      borderWidth={HERO.edge}
+      borderWidth={EDGE}
       borderColor="$border"
       borderRadius="$sheet">
       {children}
@@ -92,6 +96,16 @@ export const SkySwatch = ({
           </Box>
         );
       })}
+      {/* Over the paint, so the bands keep the frame's full width. */}
+      <Box
+        testID={SKY_SWATCH_EDGE_ID}
+        position="absolute"
+        inset={0}
+        pointerEvents="none"
+        borderWidth={EDGE}
+        borderColor="$border"
+        borderRadius={frame.radius}
+      />
     </HStack>
   );
 };
