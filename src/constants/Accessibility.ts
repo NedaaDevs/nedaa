@@ -26,6 +26,17 @@ export const adjustActions = () =>
     ? [{ name: A11Y_ACTION.INCREMENT }, { name: A11Y_ACTION.DECREMENT }]
     : undefined;
 
+/** The parts of the day a spoken time names, as `a11y.time.periods` keys. */
+export const DAY_PERIOD = {
+  NIGHT: "night",
+  MORNING: "morning",
+  NOON: "noon",
+  AFTERNOON: "afternoon",
+  EVENING: "evening",
+} as const;
+
+export type DayPeriod = (typeof DAY_PERIOD)[keyof typeof DAY_PERIOD];
+
 /** Keeps a subtree out of the accessibility tree; its frame speaks for it. */
 export const HIDDEN_FROM_READER = {
   accessible: false,
