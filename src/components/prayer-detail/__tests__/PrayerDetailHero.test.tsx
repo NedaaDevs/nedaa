@@ -10,6 +10,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { controlProblems } from "@/test-helpers/controls";
+import { RIYADH_DAY, riyadhAt } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
@@ -31,6 +32,7 @@ const day = (date: string): DayPrayerTimes => ({
   },
   otherTimings: {
     [OTHER_TIMING.SUNRISE]: `${date}T05:50:00.000Z`,
+    [OTHER_TIMING.SUNSET]: `${date}T18:05:00.000Z`,
   } as DayPrayerTimes["otherTimings"],
 });
 
@@ -121,6 +123,26 @@ describe("PrayerDetailHero", () => {
       await renderAt("2026-09-23", "14:02", PRAYER_ID.MAGHRIB);
 
       expect(screen.getByText("٦:٠٥ م")).toHaveAccessibleName("السادسة و٥ دقائق مساءً");
+    } finally {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    }
+  });
+
+  // Asr ends at sunset, so a Maghrib before six still reads as evening.
+  it("speaks a Maghrib past its day's sunset as evening, before six", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    usePreferencesStore.setState({ useWesternNumerals: false });
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+    try {
+      jest.useFakeTimers({ now: new Date(riyadhAt("12:00")) });
+      usePrayerTimesStore.setState({
+        yesterdayTimings: null,
+        todayTimings: RIYADH_DAY,
+        tomorrowTimings: null,
+      });
+      await renderWithTheme(<PrayerDetailHero prayerId={PRAYER_ID.MAGHRIB} />);
+
+      expect(screen.getByText("٥:٤٠ م")).toHaveAccessibleName("الخامسة و٤٠ دقيقة مساءً");
     } finally {
       await act(() => i18n.changeLanguage(AppLocale.EN));
     }

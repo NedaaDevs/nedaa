@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { parseISO } from "date-fns";
 import { ArrowDownUp } from "lucide-react-native";
 
 import { PRAYER_ICONS } from "@/components/today/prayerIcons";
@@ -15,17 +14,14 @@ import { VStack } from "@/components/ui/vstack";
 import { COUNT_AXIS } from "@/constants/Countdown";
 import type { PrayerId } from "@/constants/Prayer";
 import { usePrayerCountdown } from "@/hooks/useCountdownTimer";
+import { usePrayerCardText } from "@/hooks/usePrayerCardText";
 import { useShownDay } from "@/hooks/useShownDay";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
-import { formatPrayerTime } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
 import { countReserve, formatCount } from "@/utils/focusCount";
 import { prayerCards } from "@/utils/prayerCards";
-import { prayerNameKey } from "@/utils/prayerName";
-import { spokenClockTime } from "@/utils/spokenClockTime";
 import { spokenDuration } from "@/utils/spokenDuration";
-import { isFridayInTimeZone } from "@/utils/weekdayTimeZone";
 
 /** The prayer as its Today card shows it, and how long until or since it. */
 export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
@@ -33,15 +29,15 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
   const [flipped, setFlipped] = useState(false);
   const count = usePrayerCountdown(prayerId, flipped);
   const { now, day, following } = useShownDay();
+  const cardText = usePrayerCardText();
   const locale = useAppStore((state) => state.locale);
-  const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
 
   if (!day) return null;
   const card = prayerCards(day, now, following).cards.find((each) => each.id === prayerId);
   if (!card) return null;
 
-  const name = t(prayerNameKey(prayerId, isFridayInTimeZone(parseISO(card.time), day.timezone)));
+  const { name, shown, spoken } = cardText(card, day);
   const digits = (text: string) => localizeDigits(text, locale, western);
   const until = count?.axis === COUNT_AXIS.UNTIL;
 
@@ -68,17 +64,8 @@ export const PrayerDetailHero = ({ prayerId }: { prayerId: PrayerId }) => {
                 {name}
               </Text>
             </ActionsheetTitle>
-            <Text
-              size="md"
-              numeric
-              color="$muted"
-              accessibilityLabel={spokenClockTime(
-                card.time,
-                day.timezone,
-                { locale, use24HourTime, western },
-                t
-              )}>
-              {digits(formatPrayerTime(card.time, day.timezone, { locale, use24HourTime }))}
+            <Text size="md" numeric color="$muted" accessibilityLabel={spoken}>
+              {shown}
             </Text>
           </VStack>
         </HStack>
