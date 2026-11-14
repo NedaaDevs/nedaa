@@ -267,7 +267,7 @@ describe("Feedback", () => {
     expect(await screen.findByRole("button", { name: t("feedback.sending") })).toBeDisabled();
   });
 
-  it("scrolls the reply field clear of the keyboard", async () => {
+  it("lets the form's scroll view inset itself for the keyboard", async () => {
     await renderFeedback();
 
     let node = screen.getByLabelText(t("feedback.contactLabel")).parent;
