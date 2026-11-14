@@ -1,16 +1,12 @@
 import { useFonts } from "expo-font";
-import {
-  IBMPlexSansArabic_400Regular,
-  IBMPlexSansArabic_500Medium,
-  IBMPlexSansArabic_600SemiBold,
-  IBMPlexSansArabic_700Bold,
-} from "@expo-google-fonts/ibm-plex-sans-arabic";
-import {
-  IBMPlexSans_400Regular,
-  IBMPlexSans_500Medium,
-  IBMPlexSans_600SemiBold,
-  IBMPlexSans_700Bold,
-} from "@expo-google-fonts/ibm-plex-sans";
+import { IBMPlexSansArabic_400Regular } from "@expo-google-fonts/ibm-plex-sans-arabic/400Regular";
+import { IBMPlexSansArabic_500Medium } from "@expo-google-fonts/ibm-plex-sans-arabic/500Medium";
+import { IBMPlexSansArabic_600SemiBold } from "@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold";
+import { IBMPlexSansArabic_700Bold } from "@expo-google-fonts/ibm-plex-sans-arabic/700Bold";
+import { IBMPlexSans_400Regular } from "@expo-google-fonts/ibm-plex-sans/400Regular";
+import { IBMPlexSans_500Medium } from "@expo-google-fonts/ibm-plex-sans/500Medium";
+import { IBMPlexSans_600SemiBold } from "@expo-google-fonts/ibm-plex-sans/600SemiBold";
+import { IBMPlexSans_700Bold } from "@expo-google-fonts/ibm-plex-sans/700Bold";
 
 import { ARABIC_FACES, LATIN_FACES } from "@/constants/Fonts";
 
