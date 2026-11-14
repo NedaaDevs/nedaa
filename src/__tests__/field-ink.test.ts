@@ -38,6 +38,39 @@ const themeKeyOf = (node: ts.Node | undefined, file: ts.SourceFile) => {
     : undefined;
 };
 
+/** A member's static name; undefined for a spread or a computed name. */
+const nameOf = (member: ts.ObjectLiteralElementLike) =>
+  member.name &&
+  (ts.isIdentifier(member.name) ||
+    ts.isStringLiteral(member.name) ||
+    ts.isNumericLiteral(member.name))
+    ? member.name.text
+    : undefined;
+
+/** Whether a member may write a property; one that cannot be read may. */
+const mayWrite = (member: ts.ObjectLiteralElementLike, name: string): boolean =>
+  ts.isSpreadAssignment(member)
+    ? maySet(member.expression, name)
+    : (nameOf(member) ?? name) === name;
+
+/** Whether a spread value may write a property; one that cannot be read may. */
+const maySet = (value: ts.Expression, name: string): boolean => {
+  if (ts.isParenthesizedExpression(value)) return maySet(value.expression, name);
+  if (
+    ts.isBinaryExpression(value) &&
+    value.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+  ) {
+    return maySet(value.right, name);
+  }
+  if (ts.isConditionalExpression(value)) {
+    return maySet(value.whenTrue, name) || maySet(value.whenFalse, name);
+  }
+  return (
+    !ts.isObjectLiteralExpression(value) ||
+    value.properties.some((member) => mayWrite(member, name))
+  );
+};
+
 /** The theme keys of each raw field that sets a placeholder colour. */
 const readFields = (text: string) => {
   const file = parseTsx(text);
@@ -51,15 +84,14 @@ const readFields = (text: string) => {
       };
       if (!props.some((prop) => prop.name.getText(file) === PLACEHOLDER_PROP)) return [];
       const style = valueOf(STYLE_PROP);
-      const styleKey = (name: string) =>
-        style && ts.isObjectLiteralExpression(style)
-          ? themeKeyOf(
-              style.properties
-                .filter(ts.isPropertyAssignment)
-                .find((prop) => prop.name.getText(file) === name)?.initializer,
-              file
-            )
+      // The last write wins; a member that only may write hides the key.
+      const styleKey = (name: string) => {
+        if (!style || !ts.isObjectLiteralExpression(style)) return undefined;
+        const last = style.properties.findLast((member) => mayWrite(member, name));
+        return last && ts.isPropertyAssignment(last) && nameOf(last) === name
+          ? themeKeyOf(last.initializer, file)
           : undefined;
+      };
       return [
         {
           placeholder: themeKeyOf(valueOf(PLACEHOLDER_PROP), file),
@@ -110,6 +142,26 @@ describe("raw field reader", () => {
     [
       '<TextInput placeholderTextColor="#999" style={[base, { color: theme.fg.val }]} />',
       [{ placeholder: undefined, typed: undefined, fill: undefined }],
+    ],
+    [
+      "<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val, backgroundColor: theme.surface.val, ...(empty && { color: theme.placeholderColor.val }) }} />",
+      [{ placeholder: "placeholderColor", typed: undefined, fill: "surface" }],
+    ],
+    [
+      "<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val, backgroundColor: theme.surface.val, ...shared }} />",
+      [{ placeholder: "placeholderColor", typed: undefined, fill: undefined }],
+    ],
+    [
+      '<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val, "color": theme.muted.val }} />',
+      [{ placeholder: "placeholderColor", typed: "muted", fill: undefined }],
+    ],
+    [
+      "<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val, backgroundColor: theme.surface.val, [INK]: theme.muted.val }} />",
+      [{ placeholder: "placeholderColor", typed: undefined, fill: undefined }],
+    ],
+    [
+      "<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val, color, backgroundColor: theme.surface.val }} />",
+      [{ placeholder: "placeholderColor", typed: undefined, fill: "surface" }],
     ],
     ['<TextInput placeholder="30" />', []],
   ])("reads %s", (text, fields) => {
