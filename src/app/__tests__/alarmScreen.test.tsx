@@ -12,6 +12,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { deviceTimeZone } from "@/utils/date";
 
 const mockAlarmId = "alarm-1";
 /** A type no alarm is scheduled with, as a stale or hand-made link carries. */
@@ -29,8 +30,10 @@ jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
 }));
 // 18:10 on the device clock, whatever zone the device is in.
+const EVENING = new Date(2026, 8, 25, 18, 10);
+let mockNow = EVENING;
 jest.mock("@/hooks/useMinuteClock", () => ({
-  useMinuteClock: () => new Date(2026, 8, 25, 18, 10),
+  useMinuteClock: () => mockNow,
 }));
 jest.mock("@/components/alarm/challenges", () => ({ ChallengeWrapper: () => null }));
 jest.mock("@/hooks/useAlarmScreen", () => ({
@@ -63,6 +66,7 @@ const DAY: DayPrayerTimes = {
   },
   otherTimings: {
     [OTHER_TIMING.SUNRISE]: "2026-09-25T05:50:00.000Z",
+    [OTHER_TIMING.SUNSET]: "2026-09-25T18:05:00.000Z",
   } as DayPrayerTimes["otherTimings"],
 };
 
@@ -71,6 +75,7 @@ describe("AlarmTriggeredScreen", () => {
   afterAll(() => act(() => i18n.changeLanguage(AppLocale.EN)));
   beforeEach(() => {
     mockAlarmType = ScheduledAlarmType.JUMMAH;
+    mockNow = EVENING;
     useAppStore.setState({ locale: AppLocale.AR });
     usePreferencesStore.setState({ use24HourTime: false, useWesternNumerals: false });
     usePrayerTimesStore.setState({ todayTimings: DAY, tomorrowTimings: null });
@@ -89,6 +94,24 @@ describe("AlarmTriggeredScreen", () => {
 
     expect(screen.getByText("٦:١٠ م")).toHaveAccessibleName(
       i18n.t("a11y.alarm.currentTime", { time: "السادسة و١٠ دقائق مساءً" })
+    );
+  });
+
+  // Asr ends at sunset, so the clock past the day's sunset reads as evening.
+  it("speaks the clock past its day's sunset as evening, before six", async () => {
+    mockNow = new Date(2026, 8, 25, 17, 45);
+    const sunset = new Date(2026, 8, 25, 17, 40).toISOString();
+    usePrayerTimesStore.setState({
+      todayTimings: {
+        ...DAY,
+        timezone: deviceTimeZone(),
+        otherTimings: { ...DAY.otherTimings, [OTHER_TIMING.SUNSET]: sunset },
+      },
+    });
+    await renderWithTheme(<AlarmTriggeredScreen />);
+
+    expect(screen.getByText("٥:٤٥ م")).toHaveAccessibleName(
+      i18n.t("a11y.alarm.currentTime", { time: "الخامسة و٤٥ دقيقة مساءً" })
     );
   });
 
