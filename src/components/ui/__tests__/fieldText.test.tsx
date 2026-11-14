@@ -129,8 +129,8 @@ describe("the Input box", () => {
     const style = styleOf(screen.getByPlaceholderText(FIELD));
 
     expect(style?.height).toBe("auto");
-    expect(typeof style?.paddingTop).toBe("number");
-    expect(typeof style?.paddingBottom).toBe("number");
+    expect(style?.paddingTop).toBe(0);
+    expect(style?.paddingBottom).toBe(0);
   });
 
   it("a multiline Input keeps padding around its text", async () => {
