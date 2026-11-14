@@ -2,6 +2,8 @@ import { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 
+import { MY_ATHKAR_PART } from "@/constants/Athkar";
+
 // Components
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -31,7 +33,11 @@ const MyAthkarEmpty: FC<Props> = ({ onOpenSearch }) => {
           {t("athkar.myAthkar.empty.subtitle")}
         </Text>
       </VStack>
-      <HStack gap="$3">
+      <HStack
+        flexWrap="wrap"
+        justifyContent="center"
+        gap="$3"
+        testID={MY_ATHKAR_PART.EMPTY_ACTIONS}>
         <Button
           size="lg"
           action="primary"

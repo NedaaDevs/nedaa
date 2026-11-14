@@ -4,18 +4,16 @@ import { Text as TamaguiText, type TextProps as TamaguiTextProps } from "tamagui
 import { useTheme } from "@/components/ui/theme-color";
 import { AppLocale, PlatformType } from "@/enums/app";
 import {
-  FONT_SIZES,
-  SIZE_MAP,
   resolveFontSize,
   resolveTextSizing,
   roleLineHeight,
+  sizeValuesOf,
   type TextRole,
+  type TextSize,
 } from "@/components/ui/text/sizing";
 import { useTextScale } from "@/hooks/useTextScale";
 import { getDirection, useAppStore } from "@/stores/app";
 import i18n from "@/localization/i18n";
-
-type TextSize = keyof typeof SIZE_MAP;
 
 // Arabic-script locales. Tracking these breaks cursive joins (CSS Text 3 §7.2.1),
 // and React Native spaces glyphs uniformly with no cursive-elongation fallback.
@@ -92,8 +90,7 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
     const writingDirection = getDirection(useAppStore((state) => state.locale));
     const m = useTextScale();
     const resolvedWeight = resolveFontWeight(bold, fontWeight);
-    const tokenKey = SIZE_MAP[size] ?? "$3";
-    const sizeValues = FONT_SIZES[tokenKey] ?? FONT_SIZES["$3"];
+    const sizeValues = sizeValuesOf(size);
     // A role states the line box as a ratio, so it reaches the same path an
     // explicit lineHeight does. An explicit value still wins.
     const roleBox = roleLineHeight(typography, resolveFontSize(fontSize) ?? sizeValues.fontSize);
@@ -111,8 +108,8 @@ const Text = React.forwardRef<React.ComponentRef<typeof TamaguiText>, TextProps>
         fontSize={sized.fontSize}
         lineHeight={sized.lineHeight}
         allowFontScaling={false}
-        // Android mismeasures Arabic glyph widths; "simple" break strategy
-        // uses a more generous width calculation in StaticLayout.
+        // "simple" changes where Android breaks lines, not the measured width;
+        // the end room pads Arabic's short measure.
         {...(IS_ANDROID && !glyph && { textBreakStrategy: "simple", paddingEnd: TEXT_END_ROOM })}
         style={[
           !IS_ANDROID && { writingDirection },

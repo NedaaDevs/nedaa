@@ -94,6 +94,7 @@ type ModalProps = PropsWithChildren<
     onDismiss?: () => void;
     animatedIndex?: { set: (index: number) => void };
     overrideReduceMotion?: string;
+    snapPoints?: (number | string)[];
     topInset?: number;
     animationConfigs?: { duration?: number; easing?: unknown; stiffness?: number };
     backgroundStyle?: ViewStyle;
@@ -265,6 +266,13 @@ const isStop = ({ props }: ReturnType<typeof screen.getByTestId>) =>
   );
 
 /** gorhom's stops: its English, or one of SILENT_PARTS a reader lands on. */
+/** The sheet scroll view that holds a node, or null when none does. */
+export const sheetScrollerOf = (node: ReturnType<typeof screen.getByRole>) => {
+  let host = node.parent;
+  while (host && host.props.keyboardShouldPersistTaps === undefined) host = host.parent;
+  return host;
+};
+
 export const gorhomStops = () => {
   const all = { includeHiddenElements: true };
   const stops = new Set([

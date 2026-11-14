@@ -117,6 +117,7 @@ export default function AboutScreen() {
         title={t(destination.title)}
         status={t(summaryKey)}
         hint={t("a11y.opens", { name: t(destination.title) })}
+        wrapStatus
         onPress={() => open(destination.href)}
       />
     ));

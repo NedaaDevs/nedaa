@@ -6,9 +6,13 @@ import { BOWL_PART, Bowl, bowlMarkTestId } from "@/components/today/Bowl";
 import { SKY_PART } from "@/components/ui/sky-background/parts";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
 import { BODY_BEHIND_TEXT, CELESTIAL_BODY, MOON_GLYPH, SUN_GLYPH } from "@/constants/Sky";
+import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
 import { BOWL, TICK_STATE } from "@/constants/Timeline";
+import { TextSize } from "@/enums/app";
+import { TextScaleContext } from "@/hooks/useTextScale";
+import { styleOf } from "@/test-helpers/text";
 import { renderWithTheme } from "@/test-helpers/theme";
-import { bowlPath, bowlPoint } from "@/utils/bowl";
+import { bowlFootRoom, bowlPath, bowlPoint } from "@/utils/bowl";
 import type { RhythmLine } from "@/utils/rhythm";
 
 const LIGHT = config.themes.light;
@@ -55,7 +59,13 @@ const renderBowl = (props: Props = {}, isRTL = false) =>
 
 const mark = (id: string) => screen.getByTestId(bowlMarkTestId(id), hidden);
 const part = (id: string) => screen.queryAllByTestId(id, hidden);
-const at = (share: number, isRTL = false) => bowlPoint(share, WIDTH, HEIGHT, isRTL);
+/** The frame the renders below draw, at the default text size. */
+const FRAME = {
+  width: WIDTH,
+  height: HEIGHT,
+  footRoom: bowlFootRoom(TEXT_SIZE_MULTIPLIERS[TextSize.DEFAULT]),
+};
+const at = (share: number, isRTL = false) => bowlPoint(share, FRAME, isRTL);
 /** A tick's middle, or a dot's centre. */
 const centreOf = (id: string) => {
   const { props } = mark(id);
@@ -88,7 +98,7 @@ describe("Bowl by day", () => {
     await renderBowl();
     const track = screen.getByTestId(BOWL_PART.TRACK, hidden);
 
-    expect(track.props.d).toBe(bowlPath(0, 1, WIDTH, HEIGHT, false));
+    expect(track.props.d).toBe(bowlPath(0, 1, FRAME, false));
     expect(track.props.stroke).toEqual(paint(LIGHT.fg.val));
     expect(track.props.strokeOpacity).toBe(BOWL.track.opacity);
     expect(track.props.strokeDasharray).toEqual(BOWL.track.dash);
@@ -98,7 +108,7 @@ describe("Bowl by day", () => {
     await renderBowl();
     const lit = screen.getByTestId(BOWL_PART.LIT, hidden);
 
-    expect(lit.props.d).toBe(bowlPath(0, DAY_LINE.now, WIDTH, HEIGHT, false));
+    expect(lit.props.d).toBe(bowlPath(0, DAY_LINE.now, FRAME, false));
     expect(lit.props.stroke).toEqual(paint(LIGHT.trail.val));
   });
 
@@ -226,7 +236,7 @@ describe("Bowl by night", () => {
     await renderNight();
 
     expect(screen.getByTestId(BOWL_PART.LIT, hidden).props.d).toBe(
-      bowlPath(NIGHT_LINE.now, 1, WIDTH, HEIGHT, false)
+      bowlPath(NIGHT_LINE.now, 1, FRAME, false)
     );
   });
 
@@ -271,4 +281,23 @@ describe("Bowl by night", () => {
     expect(part(SKY_PART.MOON)).toHaveLength(0);
     expect(part(SKY_PART.SUN)).toHaveLength(0);
   });
+});
+
+describe("Bowl's feet at every text size", () => {
+  // The names' line grows with the text, so the horizon rises with it.
+  it.each(Object.values(TEXT_SIZE_MULTIPLIERS))(
+    "keeps the Fajr dot clear of Fajr's name at %p",
+    async (scale) => {
+      await renderWithTheme(
+        <TextScaleContext value={scale}>
+          <Bowl line={NIGHT_LINE} width={WIDTH} height={HEIGHT} body={null} feet={FEET} />
+        </TextScaleContext>
+      );
+      const { lineHeight } = styleOf(screen.getByText(FEET.start, hidden));
+      const { cy, r } = mark(PRAYER_ID.FAJR).props;
+
+      expect(cy + r).toBeLessThanOrEqual(HEIGHT - lineHeight);
+      expect(HEIGHT - cy).toBeCloseTo(lineHeight + BOWL.footGap);
+    }
+  );
 });

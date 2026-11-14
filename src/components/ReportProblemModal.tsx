@@ -2,12 +2,13 @@ import { FC, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, BackHandler, Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import {
   DismissBackdrop,
   SheetBackground,
   SilentHandle,
   UNGROUPED_CONTENT,
+  useSheetTopInset,
 } from "@/components/ui/sheet-chrome";
 import { SheetInput } from "@/components/ui/sheet-input";
 import { openComposer } from "react-native-email-link";
@@ -72,6 +73,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const topInset = useSheetTopInset();
   const ref = useRef<BottomSheetModal>(null);
   const [description, setDescription] = useState("");
   const [submitStatus, setSubmitStatus] = useState<ReportSubmitStatus>(REPORT_SUBMIT_STATUS.IDLE);
@@ -237,6 +239,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
       onDismiss={handleDismiss}
       enablePanDownToClose
       enableDynamicSizing
+      topInset={topInset}
       {...UNGROUPED_CONTENT}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
@@ -248,8 +251,13 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
       handleIndicatorStyle={{
         backgroundColor: theme.typographySecondary?.val ?? theme.outline?.val,
       }}>
-      <BottomSheetView
-        style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) + 8 }}>
+      {/* Scrolls when the body is taller than the room under the top inset. */}
+      <BottomSheetScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: Math.max(insets.bottom, 16) + 8,
+        }}>
         <VStack gap="$3">
           <Text size="lg" fontWeight="700" color="$typography" textAlign="center">
             {t("settings.shareLogs.label")}
@@ -345,7 +353,7 @@ const ReportProblemModal: FC<ReportProblemModalProps> = ({
             )}
           </VStack>
         </VStack>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
 };

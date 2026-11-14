@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { join, relative, sep } from "path";
+import { join } from "path";
 import { tokenCategories } from "@tamagui/helpers";
 
 import config from "../../tamagui.config";
@@ -8,7 +8,7 @@ import {
   type BoundaryCounts,
   type BoundaryVocabulary,
 } from "@/test-helpers/designSystemBoundary";
-import { REPO_ROOT, walkFiles } from "@/test-helpers/routeTree";
+import { appSourceFiles, REPO_ROOT } from "@/test-helpers/routeTree";
 
 /**
  * How far screens reach past `src/components/ui`. Each ceiling is the count on the
@@ -119,16 +119,10 @@ describe("design-system boundary", () => {
   });
 
   describe("tree", () => {
-    const skipped = ["__tests__", "test-helpers"];
-    const files = walkFiles(join(REPO_ROOT, "src")).filter((path) => {
-      const parts = relative(REPO_ROOT, path).split(sep);
-      return (
-        /\.tsx?$/.test(path) &&
-        !path.endsWith(".d.ts") &&
-        !parts.some((part) => skipped.includes(part)) &&
-        !parts.join("/").startsWith("src/components/ui/")
-      );
-    });
+    const files = appSourceFiles().filter(
+      (path) =>
+        /\.tsx?$/.test(path) && !path.endsWith(".d.ts") && !path.startsWith("src/components/ui/")
+    );
 
     const totals: Record<Bucket, number> = {
       tamaguiValueImporters: 0,
@@ -138,7 +132,8 @@ describe("design-system boundary", () => {
       styledCalls: 0,
     };
     for (const path of files) {
-      const found: BoundaryCounts = countBoundary(path, readFileSync(path, "utf8"), VOCABULARY);
+      const source = readFileSync(join(REPO_ROOT, path), "utf8");
+      const found: BoundaryCounts = countBoundary(path, source, VOCABULARY);
       if (found.importsTamaguiValue) totals.tamaguiValueImporters += 1;
       totals.useThemeCalls += found.useThemeCalls;
       totals.rawRadius += found.rawRadius;

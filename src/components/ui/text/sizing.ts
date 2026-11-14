@@ -1,10 +1,13 @@
-// Pure sizing tables and math for the shared Text primitive. Kept free of
+// Pure sizing tables and math for Text and the text fields. Kept free of
 // Tamagui imports so jest can test the scaling without rendering.
+
+/** A font size and its line box, in points. */
+type SizeValues = { fontSize: number; lineHeight: number };
 
 // Font size + line height mapping (from tamagui.config.ts font definitions).
 // We resolve sizes to numeric values directly because Android's Fabric renderer
 // rejects string token values for fontSize on RCTText.
-export const FONT_SIZES: Record<string, { fontSize: number; lineHeight: number }> = {
+export const FONT_SIZES: Record<string, SizeValues> = {
   $1: { fontSize: 10, lineHeight: 14 },
   $2: { fontSize: 12, lineHeight: 16 },
   "$2.75": { fontSize: 13, lineHeight: 20 },
@@ -41,6 +44,8 @@ export const SIZE_MAP = {
   figure: "$8.5",
   display: "$10.5",
 } as const satisfies Record<string, keyof typeof FONT_SIZES>;
+
+export type TextSize = keyof typeof SIZE_MAP;
 
 /**
  * Line box as a ratio of the font size. Arabic is cursive and carries diacritics,
@@ -93,16 +98,12 @@ export const resolveLineHeight = (value: unknown): number | undefined => {
   return isNaN(num) ? undefined : num;
 };
 
-/**
- * Final font geometry for a Text instance: the app text-scale multiplier `m`
- * applied to the caller's explicit values or the size-token table. An explicit
- * line box wins and scales with the font. Without one, an explicit fontSize
- * leaves the box undefined so React Native derives it from the scaled font.
- */
+/** Font and line box at app text scale `m`, for Text and the text fields. An
+ * explicit box scales with the font; a bare fontSize leaves the box unset. */
 export const resolveTextSizing = (
   m: number,
   fontSize: unknown,
-  sizeValues: { fontSize: number; lineHeight: number },
+  sizeValues: SizeValues,
   lineHeight?: unknown
 ): { fontSize: number | undefined; lineHeight: number | undefined } => {
   const base = fontSize != null ? resolveFontSize(fontSize) : sizeValues.fontSize;
@@ -112,5 +113,18 @@ export const resolveTextSizing = (
   return {
     fontSize: base == null ? undefined : base * m,
     lineHeight: box == null ? undefined : box * m,
+  };
+};
+
+/** A size's row in the table; an unknown size takes md's. */
+export const sizeValuesOf = (size: TextSize): SizeValues =>
+  FONT_SIZES[SIZE_MAP[size]] ?? FONT_SIZES[SIZE_MAP.md];
+
+/** A token size's font and line box at scale `m`, as Text renders it. */
+export const tokenLine = (m: number, size: TextSize, typography?: TextRole): SizeValues => {
+  const { fontSize, lineHeight } = sizeValuesOf(size);
+  return {
+    fontSize: fontSize * m,
+    lineHeight: (roleLineHeight(typography, fontSize) ?? lineHeight) * m,
   };
 };

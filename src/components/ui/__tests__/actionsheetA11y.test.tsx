@@ -18,6 +18,7 @@ import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cove
 import { NEDAA_LIGHT } from "@/constants/Palette";
 import i18n from "@/localization/i18n";
 import { gorhomStops, modalProps, moveSheet } from "@/test-helpers/bottomSheetMock";
+import { DYNAMIC_ISLAND_INSETS } from "@/test-helpers/safeAreaInsets";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -27,8 +28,6 @@ jest.mock("react-native-safe-area-context", () => ({
   ...jest.requireActual("react-native-safe-area-context"),
   useSafeAreaInsets: jest.fn(),
 }));
-// A Dynamic Island iPhone's top inset.
-const INSETS = { top: 59, bottom: 34, left: 0, right: 0 };
 
 let mockReduced = false;
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
@@ -78,7 +77,7 @@ const lastSheetProps = () => modalProps.mock.lastCall?.[0];
 describe("Actionsheet accessibility", () => {
   beforeEach(() => {
     mockReduced = false;
-    jest.mocked(useSafeAreaInsets).mockReturnValue(INSETS);
+    jest.mocked(useSafeAreaInsets).mockReturnValue(DYNAMIC_ISLAND_INSETS);
     focusEvent.mockReset();
     modalProps.mockClear();
   });
@@ -155,7 +154,7 @@ describe("Actionsheet accessibility", () => {
       </Actionsheet>
     );
 
-    expect(lastSheetProps()?.topInset).toBeGreaterThan(INSETS.top);
+    expect(lastSheetProps()?.topInset).toBeGreaterThan(DYNAMIC_ISLAND_INSETS.top);
   });
 
   describe("content bottom padding", () => {
@@ -175,12 +174,12 @@ describe("Actionsheet accessibility", () => {
       await renderContent();
 
       expect(bottomPadding()).toMatchObject({
-        paddingBottom: INSETS.bottom + getTokenValue("$2", "space"),
+        paddingBottom: DYNAMIC_ISLAND_INSETS.bottom + getTokenValue("$2", "space"),
       });
     });
 
     it("keeps its own padding where there is no home indicator", async () => {
-      jest.mocked(useSafeAreaInsets).mockReturnValue({ ...INSETS, bottom: 0 });
+      jest.mocked(useSafeAreaInsets).mockReturnValue({ ...DYNAMIC_ISLAND_INSETS, bottom: 0 });
       await renderContent();
 
       expect(bottomPadding()).toMatchObject({ paddingBottom: getTokenValue("$6", "space") });

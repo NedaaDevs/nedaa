@@ -3,9 +3,8 @@ import "@/localization/i18n";
 import { useEffect } from "react";
 import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { isQuranSegments, isSkySegments, rootSafeAreaEdges } from "@/utils/safeArea";
+import { isQuranSegments, SAFE_EDGE } from "@/utils/safeArea";
 import * as SplashScreen from "expo-splash-screen";
 
 import { TamaguiProvider, FontLanguage, useThemeName } from "tamagui";
@@ -16,8 +15,9 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { FontProvider } from "@/contexts/FontContext";
 import { RTLProvider } from "@/contexts/RTLContext";
 
-import { AppMode, PlatformType } from "@/enums/app";
+import { AppMode } from "@/enums/app";
 
+import { TAB_GROUP } from "@/constants/BackDestinations";
 import { isArabicScript } from "@/constants/Fonts";
 import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { useAppStore } from "@/stores/app";
@@ -36,6 +36,7 @@ import { ToastHost } from "@/components/ToastHost";
 import { ActionsheetOverlay } from "@/components/ui/actionsheet";
 import { useAppCovered, useSheetLayerUp } from "@/components/ui/actionsheet/cover";
 import { OnboardingGate } from "@/components/onboarding/flow/OnboardingGate";
+import { rootScreenLayout } from "@/components/navigation/screen-edge";
 import PlayerBottomSheet from "@/components/athkar/PlayerBottomSheet";
 import CrashReportPrompt from "@/components/CrashReportPrompt";
 import WhatsNewSheet from "@/components/WhatsNewSheet";
@@ -70,6 +71,9 @@ SplashScreen.setOptions({
 });
 SplashScreen.preventAutoHideAsync();
 
+// Each screen pads its own top, so the frame never moves in a transition.
+const FRAME_EDGES = [SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT] as const;
+
 function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
   const theme = useTheme();
   const themeName = useThemeName();
@@ -87,12 +91,6 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
     : theme.background.val;
   const showOnboarding = path !== null && !IS_SCREENSHOT_MODE;
   const gatePath = showOnboarding ? path : null;
-  const safeAreaEdges = rootSafeAreaEdges({
-    sky: isSkySegments(segments),
-    onboarding: showOnboarding,
-    immersiveReader: readerImmersive,
-    android: Platform.OS === PlatformType.ANDROID,
-  });
   const appCovered = useAppCovered();
   const sheetLayerUp = useSheetLayerUp();
 
@@ -108,18 +106,15 @@ function AppShell({ launchedByAlert }: { launchedByAlert: boolean }) {
         <BottomSheetModalProvider>
           {/* TalkBack skips the app under an open sheet; iOS uses the sheet layer. */}
           <SafeAreaView
-            edges={safeAreaEdges}
+            edges={FRAME_EDGES}
             style={{ flex: 1, backgroundColor: safeAreaBg }}
             importantForAccessibility={appCovered ? "no-hide-descendants" : "auto"}>
             <StatusBar animated style={themeName === AppMode.DARK ? AppMode.LIGHT : AppMode.DARK} />
 
             <AlertLaunchContext value={alertLaunch}>
               <OnboardingGate path={gatePath}>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                  }}>
-                  <Stack.Screen name="(tabs)" />
+                <Stack screenOptions={{ headerShown: false }} screenLayout={rootScreenLayout}>
+                  <Stack.Screen name={TAB_GROUP} />
                 </Stack>
               </OnboardingGate>
             </AlertLaunchContext>

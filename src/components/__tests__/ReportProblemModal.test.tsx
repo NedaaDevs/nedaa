@@ -1,5 +1,6 @@
 import { AccessibilityInfo, Platform } from "react-native";
 import { screen, userEvent, waitFor } from "@testing-library/react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTokenValue } from "tamagui";
 
 import ReportProblemModal from "@/components/ReportProblemModal";
@@ -7,14 +8,21 @@ import { REPORT_PROBLEM_STATUS_ID } from "@/constants/ReportProblem";
 import { PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { submitFeedback } from "@/services/feedback";
-import { BOTTOM_SHEET_PART, gorhomStops } from "@/test-helpers/bottomSheetMock";
+import {
+  BOTTOM_SHEET_PART,
+  gorhomStops,
+  modalProps,
+  sheetScrollerOf,
+} from "@/test-helpers/bottomSheetMock";
 import { layOut } from "@/test-helpers/layout";
+import { DYNAMIC_ISLAND_INSETS } from "@/test-helpers/safeAreaInsets";
 import { renderWithTheme } from "@/test-helpers/theme";
 
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
-jest.mock("react-native-safe-area-context", () =>
-  jest.requireActual("@/test-helpers/safeAreaMock")
-);
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  useSafeAreaInsets: jest.fn(),
+}));
 jest.mock("@/services/feedback", () => ({
   ...jest.requireActual("@/services/feedback"),
   submitFeedback: jest.fn(),
@@ -46,6 +54,7 @@ const send = () =>
 describe("ReportProblemModal", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useSafeAreaInsets).mockReturnValue(DYNAMIC_ISLAND_INSETS);
     jest.mocked(submitFeedback).mockRejectedValue(new Error("offline"));
     jest.spyOn(console, "error").mockImplementation();
   });
@@ -57,6 +66,23 @@ describe("ReportProblemModal", () => {
     await openSheet();
 
     expect(gorhomStops()).toEqual([]);
+  });
+
+  // The keyboard lifts the sheet no higher than its top inset.
+  it("keeps the sheet the $5 step below the status bar", async () => {
+    await openSheet();
+
+    expect(modalProps.mock.lastCall?.[0].topInset).toBe(
+      DYNAMIC_ISLAND_INSETS.top + getTokenValue("$5", "space")
+    );
+  });
+
+  // A body taller than the room under the top inset scrolls to its last row.
+  it("scrolls its body, and a tap lands with the keyboard up", async () => {
+    await openSheet();
+
+    const lastRow = screen.getByRole("button", { name: t("alarm.report.copyToClipboard") });
+    expect(sheetScrollerOf(lastRow)).toHaveProp("keyboardShouldPersistTaps", "handled");
   });
 
   // No close button: on iOS the backdrop is VoiceOver's only way out.

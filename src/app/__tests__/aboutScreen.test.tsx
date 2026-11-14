@@ -4,11 +4,11 @@ import AboutScreen from "@/app/settings/about";
 import { Text } from "react-native";
 import * as Haptics from "expo-haptics";
 import { usePathname } from "expo-router";
-import { userEvent } from "@testing-library/react-native";
+import { act, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
 import { getTokenValue } from "tamagui";
 
-import { SECRET_TAP_COUNT } from "@/components/about/VersionLine";
+import { SECRET_TAP_COUNT, TAP_WINDOW_MS } from "@/components/about/VersionLine";
 import { ICON_TILE_ID } from "@/components/ui/icon-tile";
 import { SKY_PART } from "@/components/ui/sky-background";
 import { BACK_DESTINATION, type BackDestination } from "@/constants/BackDestinations";
@@ -109,9 +109,8 @@ describe("About", () => {
     useDebugModeStore.setState({ isEnabled: false });
   });
 
-  afterEach(async () => {
-    await i18n.changeLanguage(AppLocale.EN);
-  });
+  // The tree is still mounted here, so the language reset runs inside act.
+  afterEach(() => act(() => i18n.changeLanguage(AppLocale.EN)));
 
   it("draws the sky behind its content", async () => {
     await renderAbout();
@@ -159,6 +158,14 @@ describe("About", () => {
       expect(screen.getByRole("button", { name: rowName(row) }).props.accessibilityHint).toBe(
         i18n.t("a11y.opens", { name: i18n.t(row.titleKey) })
       );
+    }
+  });
+
+  it("shows each row's summary in full", async () => {
+    await renderAbout();
+
+    for (const { summaryKey } of ROWS) {
+      expect(screen.getByText(i18n.t(summaryKey)).props.numberOfLines).toBeUndefined();
     }
   });
 
@@ -392,7 +399,7 @@ describe("About", () => {
 
     now.mockReturnValue(0);
     await tapVersion(SECRET_TAP_COUNT - 1);
-    now.mockReturnValue(10_000);
+    now.mockReturnValue(TAP_WINDOW_MS + 1);
     await tapVersion(1);
 
     now.mockRestore();

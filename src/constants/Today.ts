@@ -1,5 +1,6 @@
-/** Test ids for Today's spacing groups. */
+/** Test ids for Today's scroll view and spacing groups. */
 export const TODAY_SCREEN_PART = {
+  SCROLL: "today-scroll",
   CONTENT: "today-content",
   FOCUS: "today-focus",
   DAY: "today-day",

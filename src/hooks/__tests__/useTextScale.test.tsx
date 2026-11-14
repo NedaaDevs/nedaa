@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react-native";
 import { Text } from "@/components/ui/text";
 import { TEXT_SIZE_MULTIPLIERS } from "@/constants/TextSize";
 import { TextSize } from "@/enums/app";
-import { TextScaleContext, useTextScale } from "@/hooks/useTextScale";
+import { TextScaleContext, useEnlargedText, useTextScale } from "@/hooks/useTextScale";
 import { usePreferencesStore } from "@/stores/preferences";
 import { ThemeProvider } from "@/test-helpers/theme";
 import { fontSizeOf, styleOf } from "@/test-helpers/text";
@@ -16,6 +16,15 @@ const Probe = () => {
 };
 
 const scaleRead = () => Number(screen.getByTestId(SCALE).props.children);
+
+const ENLARGED = "enlarged";
+
+const EnlargedProbe = () => {
+  const enlarged = useEnlargedText();
+  return <Text testID={ENLARGED}>{String(enlarged)}</Text>;
+};
+
+const enlargedRead = () => screen.getByTestId(ENLARGED).props.children === String(true);
 
 describe("useTextScale", () => {
   beforeEach(() => usePreferencesStore.setState({ textSize: TextSize.LARGE }));
@@ -56,5 +65,33 @@ describe("useTextScale", () => {
     expect(styleOf(screen.getByTestId("scaled")).fontSize).toBe(
       fontSizeOf("md") * TEXT_SIZE_MULTIPLIERS[TextSize.MAX]
     );
+  });
+});
+
+describe("useEnlargedText", () => {
+  it("is false at the Default preset", async () => {
+    usePreferencesStore.setState({ textSize: TextSize.DEFAULT });
+    await render(<EnlargedProbe />, { wrapper: ThemeProvider });
+
+    expect(enlargedRead()).toBe(false);
+  });
+
+  it("is true at the first preset above Default", async () => {
+    usePreferencesStore.setState({ textSize: TextSize.LARGE });
+    await render(<EnlargedProbe />, { wrapper: ThemeProvider });
+
+    expect(enlargedRead()).toBe(true);
+  });
+
+  it("reads a context's scale in place of the preset", async () => {
+    usePreferencesStore.setState({ textSize: TextSize.MAX });
+    await render(
+      <TextScaleContext value={TEXT_SIZE_MULTIPLIERS[TextSize.DEFAULT]}>
+        <EnlargedProbe />
+      </TextScaleContext>,
+      { wrapper: ThemeProvider }
+    );
+
+    expect(enlargedRead()).toBe(false);
   });
 });

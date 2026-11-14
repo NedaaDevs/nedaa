@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import {
   DismissBackdrop,
   SheetBackground,
   SilentHandle,
   UNGROUPED_CONTENT,
+  useSheetTopInset,
 } from "@/components/ui/sheet-chrome";
 import { SheetInput } from "@/components/ui/sheet-input";
 import { useTheme } from "@/components/ui/theme-color";
@@ -41,6 +42,7 @@ const CrashReportPrompt = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const topInset = useSheetTopInset();
   const ref = useRef<BottomSheetModal>(null);
   const offline = useIsOffline();
   const [status, setStatus] = useState<Status>("idle");
@@ -92,6 +94,7 @@ const CrashReportPrompt = () => {
       onDismiss={clearPendingReport}
       enablePanDownToClose={!submitting}
       enableDynamicSizing
+      topInset={topInset}
       {...UNGROUPED_CONTENT}
       backdropComponent={DismissBackdrop}
       backgroundComponent={SheetBackground}
@@ -102,8 +105,10 @@ const CrashReportPrompt = () => {
       handleIndicatorStyle={{
         backgroundColor: theme.typographySecondary?.val ?? theme.outline?.val,
       }}>
-      <BottomSheetView
-        style={{
+      {/* Scrolls when the body is taller than the room under the top inset. */}
+      <BottomSheetScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 4,
           paddingBottom: Math.max(insets.bottom, 16) + 8,
@@ -206,7 +211,7 @@ const CrashReportPrompt = () => {
             </Pressable>
           </VStack>
         )}
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
 };

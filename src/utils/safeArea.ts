@@ -1,51 +1,27 @@
-import { BACK_DESTINATION } from "@/constants/BackDestinations";
-import { isSkyTab } from "@/constants/SkyTabs";
+import {
+  BACK_DESTINATION,
+  TAB_GROUP,
+  type BackDestinationEntry,
+} from "@/constants/BackDestinations";
 import { TAB_BAR_EDGE_GAP } from "@/constants/TabBar";
 import { TOAST_GAP } from "@/constants/Toast";
-import { OpeningTab } from "@/enums/app";
 
 export const SAFE_EDGE = { TOP: "top", RIGHT: "right", LEFT: "left" } as const;
-export type SafeEdge = (typeof SAFE_EDGE)[keyof typeof SAFE_EDGE];
 
-const [TAB_GROUP] = BACK_DESTINATION.HOME.route.split("/");
 const [, QURAN_TAB] = BACK_DESTINATION.QURAN.route.split("/");
 
 /** The Quran tab or a screen under it. */
 export const isQuranSegments = (segments: readonly string[]) =>
   segments[0] === TAB_GROUP && segments[1] === QURAN_TAB;
 
-/** Stack screens drawn on the sky, by navigator route name. */
-const SKY_STACK_ROUTES: readonly string[] = [
-  BACK_DESTINATION.SETTINGS_ABOUT.route,
-  BACK_DESTINATION.SETTINGS_PRIVACY.route,
-];
+const DESTINATIONS: readonly BackDestinationEntry[] = Object.values(BACK_DESTINATION);
 
-/** A sky tab or stack screen; the router may omit Today's name, the index. */
-export const isSkySegments = (segments: readonly string[]) =>
-  segments[0] === TAB_GROUP
-    ? isSkyTab(segments[1] ?? OpeningTab.HOME)
-    : SKY_STACK_ROUTES.includes(segments.join("/"));
+const SKY_ROUTES: ReadonlySet<string> = new Set(
+  DESTINATIONS.filter(({ sky }) => sky).map(({ route }) => route)
+);
 
-type Screen = {
-  sky: boolean;
-  /** The flow covers the router and draws on the sky, whatever the route. */
-  onboarding: boolean;
-  immersiveReader: boolean;
-  android: boolean;
-};
-
-// A sky screen draws under the status bar and pads its own content. Android's
-// reader goes full-bleed so hiding the bar never reflows the page; iOS keeps
-// the top edge, since the notch inset stays whether the bar shows or not.
-export const rootSafeAreaEdges = ({
-  sky,
-  onboarding,
-  immersiveReader,
-  android,
-}: Screen): SafeEdge[] =>
-  sky || onboarding || (immersiveReader && android)
-    ? [SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT]
-    : [SAFE_EDGE.TOP, SAFE_EDGE.RIGHT, SAFE_EDGE.LEFT];
+/** A screen drawn on the sky, by the navigator's name for it. */
+export const isSkyRoute = (route: string) => SKY_ROUTES.has(route);
 
 type ToastPlacement = { segments: readonly string[]; tabBarHeight: number; insetBottom: number };
 

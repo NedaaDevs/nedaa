@@ -1,6 +1,7 @@
 import type { ComponentProps } from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getTokenValue } from "tamagui";
 import {
   BottomSheetBackdrop,
@@ -18,6 +19,13 @@ export const UNGROUPED_CONTENT = {
   accessibilityLabel: null,
   accessibilityRole: null,
 } as const satisfies Partial<BottomSheetModalProps>;
+
+/** The space step a sheet keeps below the status bar. */
+const SHEET_TOP_GAP = "$5";
+
+/** gorhom's `topInset`: a tall body or the keyboard stops a sheet here. */
+export const useSheetTopInset = () =>
+  useSafeAreaInsets().top + getTokenValue(SHEET_TOP_GAP, "space");
 
 /** The surface in backgroundStyle's colour, silent, rounded at $sheet. */
 export const SheetBackground = ({ pointerEvents, style }: BottomSheetBackgroundProps) => (

@@ -41,33 +41,32 @@ export default function MainScreen() {
   return (
     <DaySimulator kind={DAY_RUN_KIND.DEBUG}>
       <ScreenSky>
-        {/* The sky runs under both bars; the content scrolls clear of the tab bar. */}
-        <Box flex={1} paddingTop={insets.top}>
+        {/* The sky runs under both bars; the content pads itself clear of them. */}
+        <SkyScrollView
+          testID={TODAY_SCREEN_PART.SCROLL}
+          contentContainerStyle={{ paddingTop: insets.top, paddingBottom: tabBarInset }}
+          showsVerticalScrollIndicator={false}>
           <ActiveAlarmBanner />
-          <SkyScrollView
-            contentContainerStyle={{ paddingBottom: tabBarInset }}
-            showsVerticalScrollIndicator={false}>
-            {/* More air around the date and the prayer; the day below sits closer. */}
-            <ScreenContent testID={TODAY_SCREEN_PART.CONTENT} paddingTop="$2" gap="$heroGap">
-              <TodayHeader />
-              <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
-                {/* The countdown sits inside the bowl that draws the day, or alone. */}
-                <Box testID={TODAY_SCREEN_PART.FOCUS}>
-                  <TodayHero todayStyle={todayStyle} selected={detail.prayerId} paused={!live} />
-                </Box>
-                <SkyOccluder>
-                  <LocationNotice />
-                </SkyOccluder>
-                <UpgradeCard />
-                <PrayerGrid selected={detail.prayerId} onSelect={detail.open} progress={!bowl} />
-                <OtherTimes />
-                <PrayerTimesState />
-                {showOccasions ? <UpcomingOccasions /> : null}
-                <DaySimulatorButton />
+          {/* More air around the date and the prayer; the day below sits closer. */}
+          <ScreenContent testID={TODAY_SCREEN_PART.CONTENT} paddingTop="$2" gap="$heroGap">
+            <TodayHeader />
+            <Box testID={TODAY_SCREEN_PART.DAY} gap="$3.5">
+              {/* The countdown sits inside the bowl that draws the day, or alone. */}
+              <Box testID={TODAY_SCREEN_PART.FOCUS}>
+                <TodayHero todayStyle={todayStyle} selected={detail.prayerId} paused={!live} />
               </Box>
-            </ScreenContent>
-          </SkyScrollView>
-        </Box>
+              <SkyOccluder>
+                <LocationNotice />
+              </SkyOccluder>
+              <UpgradeCard />
+              <PrayerGrid selected={detail.prayerId} onSelect={detail.open} progress={!bowl} />
+              <OtherTimes />
+              <PrayerTimesState />
+              {showOccasions ? <UpcomingOccasions /> : null}
+              <DaySimulatorButton />
+            </Box>
+          </ScreenContent>
+        </SkyScrollView>
         <PrayerDetailSheet
           prayerId={detail.prayerId}
           onClose={detail.close}

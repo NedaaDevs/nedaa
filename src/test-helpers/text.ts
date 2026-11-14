@@ -2,12 +2,12 @@ import { screen } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 
 import type { TextSize } from "@/components/ui/text";
-import { FONT_SIZES, SIZE_MAP } from "@/components/ui/text/sizing";
+import { sizeValuesOf } from "@/components/ui/text/sizing";
 
 export type HostElement = ReturnType<typeof screen.getByText>;
 
 /** The font size a size name renders at the default text preset. */
-export const fontSizeOf = (size: TextSize): number => FONT_SIZES[SIZE_MAP[size]].fontSize;
+export const fontSizeOf = (size: TextSize): number => sizeValuesOf(size).fontSize;
 
 /** A rendered element's style, flattened from RN's array-or-object form. */
 export const styleOf = (element: HostElement) => StyleSheet.flatten(element.props.style);
@@ -22,6 +22,21 @@ export const hostNodesIn = (element: HostElement): HostElement[] => [
 export const endRoomOf = (element: HostElement): number => {
   const room = styleOf(element)?.paddingEnd;
   return typeof room === "number" ? room : 0;
+};
+
+/** Room a pinned row leaves its field: height less padding and border. */
+export const lineRoomOf = (field: HostElement): number => {
+  const row = field.parent ? styleOf(field.parent) : undefined;
+  const padding = (side: unknown) => Number(side ?? row?.paddingVertical ?? row?.padding ?? 0);
+  const border = (side: unknown) => Number(side ?? row?.borderWidth ?? 0);
+
+  return (
+    Number(row?.height) -
+    padding(row?.paddingTop) -
+    padding(row?.paddingBottom) -
+    border(row?.borderTopWidth) -
+    border(row?.borderBottomWidth)
+  );
 };
 
 /** A rendered text's line box as a multiple of its font size. */

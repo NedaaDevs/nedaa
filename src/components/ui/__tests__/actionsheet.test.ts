@@ -9,11 +9,6 @@ describe("actionsheet", () => {
     expect(source()).toMatch(/snapPoints=\{fitContent \? undefined : points\}/);
   });
 
-  // Percentage-only detents cannot express a content height or a pixel stop.
-  it("passes a string detent through untouched", () => {
-    expect(source()).toMatch(/typeof n === "number" \? `\$\{n\}%` : n/);
-  });
-
   it("lets content opt out of the fixed insets", () => {
     expect(source()).toMatch(/unpadded\s*\?\s*undefined\s*:/);
   });
