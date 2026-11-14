@@ -10,8 +10,11 @@ import { REPO_ROOT, walkFiles } from "@/test-helpers/routeTree";
  */
 const FACE_LITERAL = /["'](IBMPlexSans(?:Arabic)?-(?:Regular|Medium|SemiBold|Bold))["']/g;
 
-/** The font wiring itself must name the faces. */
-const ALLOWED = ["src/config/fonts.ts", "src/constants/Fonts.ts"];
+/** The one file that names the faces. */
+const ALLOWED = ["src/constants/Fonts.ts"];
+
+/** Outside `src`, and it names faces for the theme. */
+const THEME_CONFIG = "tamagui.config.ts";
 
 /**
  * Files whose text is Arabic by content rather than by locale, so the face is
@@ -22,7 +25,7 @@ const ARABIC_BY_CONTENT: Record<string, string> = {
 };
 
 const offenders = () =>
-  walkFiles(`${REPO_ROOT}${sep}src`)
+  [...walkFiles(`${REPO_ROOT}${sep}src`), `${REPO_ROOT}${sep}${THEME_CONFIG}`]
     .filter((path) => /\.tsx?$/.test(path) && !path.split(sep).includes("__tests__"))
     .map((path) => ({
       file: relative(REPO_ROOT, path).split(sep).join("/"),
