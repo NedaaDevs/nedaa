@@ -16,6 +16,7 @@ import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { RIYADH_DAY, riyadhAt } from "@/test-helpers/prayerDay";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { formatPrayerTime } from "@/utils/date";
@@ -103,9 +104,28 @@ describe("OtherTimes", () => {
       await user.press(screen.getByRole("button", { name: i18n.t("otherTimings.title") }));
 
       const sunset = i18n.t(OTHER_TIME_LABEL_KEY[OTHER_TIMING.SUNSET]);
-      expect(
-        screen.getByLabelText(`${sunset}, السادسة و٥ دقائق مساءً`, { includeHiddenElements: true })
-      ).toBeTruthy();
+      const label = i18n.t("a11y.join", { first: sunset, second: "السادسة و٥ دقائق مساءً" });
+      expect(screen.getByLabelText(label, { includeHiddenElements: true })).toBeTruthy();
+    } finally {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    }
+  });
+
+  // Asr ends at sunset, so a sunset before six reads as evening.
+  it("speaks a sunset before six as evening in Arabic", async () => {
+    useAppStore.setState({ locale: AppLocale.AR });
+    usePreferencesStore.setState({ useWesternNumerals: false });
+    jest.setSystemTime(new Date(riyadhAt("12:00")));
+    usePrayerTimesStore.setState({ todayTimings: RIYADH_DAY });
+    await act(() => i18n.changeLanguage(AppLocale.AR));
+    try {
+      await renderWithTheme(<OtherTimes />);
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole("button", { name: i18n.t("otherTimings.title") }));
+
+      const sunset = i18n.t(OTHER_TIME_LABEL_KEY[OTHER_TIMING.SUNSET]);
+      const label = i18n.t("a11y.join", { first: sunset, second: "الخامسة و٤٠ دقيقة مساءً" });
+      expect(screen.getByLabelText(label, { includeHiddenElements: true })).toBeTruthy();
     } finally {
       await act(() => i18n.changeLanguage(AppLocale.EN));
     }

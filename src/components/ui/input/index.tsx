@@ -2,6 +2,7 @@ import type { Ref } from "react";
 import type { TextInputInstance } from "react-native";
 import { Input as TamaguiInput, type InputProps } from "tamagui";
 
+import { TEXT_WEIGHT } from "@/components/ui/text";
 import { resolveTextSizing, sizeValuesOf } from "@/components/ui/text/sizing";
 import { useRTL } from "@/contexts/RTLContext";
 import { useTextScale } from "@/hooks/useTextScale";
@@ -18,7 +19,7 @@ type InputSize = keyof typeof INPUT_SIZE;
 /** A single-line box grows with its line and drops Android's theme inset. */
 const SINGLE_LINE_BOX = { height: "auto", paddingVertical: "$0" } as const;
 
-type Props = Omit<InputProps, "size"> & {
+type Props = Omit<InputProps, "size" | "allowFontScaling"> & {
   ref?: Ref<TextInputInstance>;
   size?: InputSize;
   invalid?: boolean;
@@ -37,10 +38,12 @@ export const Input = ({ ref, size = "md", invalid, disabled, fontSize, ...props 
       minHeight={metrics.minHeight}
       paddingHorizontal={metrics.paddingHorizontal}
       fontSize={sized.fontSize}
+      fontWeight={TEXT_WEIGHT}
       borderRadius="$control"
-      placeholderTextColor="$typographySecondary"
+      color="$fg"
+      placeholderTextColor="$placeholderColor"
       borderColor={invalid ? "$error" : "$borderColor"}
-      backgroundColor="$backgroundSecondary"
+      backgroundColor="$surface"
       opacity={disabled ? 0.5 : 1}
       disabled={disabled}
       focusStyle={{ borderColor: invalid ? "$error" : "$primary" }}

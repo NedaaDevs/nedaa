@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { useStoredDays } from "@/hooks/useStoredDays";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { formatPrayerTime } from "@/utils/date";
@@ -15,6 +16,7 @@ export const useClockTime = () => {
   const locale = useAppStore((state) => state.locale);
   const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
   const western = usePreferencesStore((state) => state.useWesternNumerals);
+  const days = useStoredDays();
 
   return (time: Date, timezone: string): ClockTime => ({
     shown: localizeDigits(
@@ -22,6 +24,6 @@ export const useClockTime = () => {
       locale,
       western
     ),
-    spoken: spokenClockTime(time, timezone, { locale, use24HourTime, western }, t),
+    spoken: spokenClockTime(time, timezone, { locale, use24HourTime, western, days }, t),
   });
 };

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { parseISO } from "date-fns";
 
 import { Box } from "@/components/ui/box";
 import { Disclosure } from "@/components/ui/disclosure";
@@ -6,42 +7,26 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { OTHER_TIME_LABEL_KEY, TODAY_OTHER_TIMES, type OtherTimingName } from "@/constants/Prayer";
+import { useClockTime } from "@/hooks/useClockTime";
 import { useShownDay } from "@/hooks/useShownDay";
-import { useAppStore } from "@/stores/app";
-import { usePreferencesStore } from "@/stores/preferences";
-import { formatPrayerTime } from "@/utils/date";
-import { localizeDigits } from "@/utils/digits";
-import { spokenClockTime } from "@/utils/spokenClockTime";
 
 /** The day's times beside the prayers, folded away under one row. */
 export const OtherTimes = () => {
   const { t } = useTranslation();
   const { day } = useShownDay();
-  const locale = useAppStore((state) => state.locale);
-  const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
-  const western = usePreferencesStore((state) => state.useWesternNumerals);
+  const clock = useClockTime();
 
   if (!day) return null;
 
   const item = (name: OtherTimingName) => {
     const label = t(OTHER_TIME_LABEL_KEY[name]);
-    const time = localizeDigits(
-      formatPrayerTime(day.otherTimings[name], day.timezone, { locale, use24HourTime }),
-      locale,
-      western
-    );
-    const spoken = spokenClockTime(
-      day.otherTimings[name],
-      day.timezone,
-      { locale, use24HourTime, western },
-      t
-    );
+    const { shown, spoken } = clock(parseISO(day.otherTimings[name]), day.timezone);
     return (
       <HStack
         key={name}
         flex={1}
         accessible
-        accessibilityLabel={`${label}, ${spoken}`}
+        accessibilityLabel={t("a11y.join", { first: label, second: spoken })}
         alignItems="center"
         justifyContent="space-between"
         gap="$1.5"
@@ -50,7 +35,7 @@ export const OtherTimes = () => {
           {label}
         </Text>
         <Text size="md" fontWeight="600" numeric color="$fg">
-          {time}
+          {shown}
         </Text>
       </HStack>
     );

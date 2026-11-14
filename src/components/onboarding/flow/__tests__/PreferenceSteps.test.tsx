@@ -143,7 +143,10 @@ describe("NumeralsStep", () => {
         [PRAYER_ID.MAGHRIB]: at("19:00"),
         [PRAYER_ID.ISHA]: at("20:00"),
       },
-      otherTimings: { [OTHER_TIMING.SUNRISE]: at("16:50") } as DayPrayerTimes["otherTimings"],
+      otherTimings: {
+        [OTHER_TIMING.SUNRISE]: at("16:50"),
+        [OTHER_TIMING.SUNSET]: at("19:00"),
+      } as DayPrayerTimes["otherTimings"],
     };
     await switchLocale(AppLocale.AR);
     usePreferencesStore.setState({ useWesternNumerals: false });

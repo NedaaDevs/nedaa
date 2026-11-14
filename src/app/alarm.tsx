@@ -5,7 +5,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { Theme } from "tamagui";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { VStack } from "@/components/ui/vstack";
@@ -18,6 +18,7 @@ import { Icon } from "@/components/ui/icon";
 import { Clock } from "lucide-react-native";
 
 import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
+import { useClockTime } from "@/hooks/useClockTime";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { ChallengeWrapper } from "@/components/alarm/challenges";
 import { ChallengeConfig } from "@/types/alarm";
@@ -26,13 +27,9 @@ import { PRESENTATION } from "@/constants/Navigation";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { useAppStore } from "@/stores/app";
-import { clockFormat, deviceTimeZone, formatPrayerTime, getDateLocale } from "@/utils/date";
-import { usePreferencesStore } from "@/stores/preferences";
-import { formatNumberToLocale } from "@/utils/number";
+import { deviceTimeZone } from "@/utils/date";
 import { isAlarmDue } from "@/utils/alarmDue";
 import { isScheduledAlarmType } from "@/utils/alarmTypes";
-import { spokenClockTime } from "@/utils/spokenClockTime";
 import { PRAYER_ID } from "@/constants/Prayer";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
@@ -44,13 +41,6 @@ const PRAYER_BY_ALARM: Record<
   [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: PRAYER_ID.FAJR },
   [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: PRAYER_ID.DHUHR },
 };
-
-const localeTime = (
-  date: Date,
-  locale: ReturnType<typeof useAppStore.getState>["locale"],
-  use24HourTime: boolean
-) =>
-  formatNumberToLocale(format(date, clockFormat(use24HourTime), { locale: getDateLocale(locale) }));
 
 const DUE_STATUS = { CHECKING: "checking", DUE: "due", NOT_DUE: "notDue" } as const;
 type DueStatus = (typeof DUE_STATUS)[keyof typeof DUE_STATUS];
@@ -227,10 +217,8 @@ function ActiveAlarmView({
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const locale = useAppStore((state) => state.locale);
-  const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
-  const western = usePreferencesStore((state) => state.useWesternNumerals);
   const now = useMinuteClock();
+  const clockTime = useClockTime();
 
   const triggerTime = useAlarmStore((state) => state.getAlarm(alarmId)?.triggerTime);
   const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
@@ -257,15 +245,11 @@ function ActiveAlarmView({
         ? entry
         : closest
     );
-    return {
-      drawn: formatNumberToLocale(formatPrayerTime(best.iso, best.tz, { locale, use24HourTime })),
-      spoken: spokenClockTime(best.iso, best.tz, { locale, use24HourTime, western }, t),
-    };
-  }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, locale, use24HourTime, western, t]);
+    return clockTime(parseISO(best.iso), best.tz);
+  }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, clockTime]);
 
-  const clock = localeTime(now, locale, use24HourTime);
-  // The wall clock is drawn in the device's zone, so it is spoken in it too.
-  const spokenClock = spokenClockTime(now, deviceTimeZone(), { locale, use24HourTime, western }, t);
+  // The wall clock is drawn and spoken in the device's zone.
+  const wallClock = clockTime(now, deviceTimeZone());
 
   // Announced once per screen; a later re-render must not repeat it.
   const announced = useRef(false);
@@ -289,8 +273,8 @@ function ActiveAlarmView({
           bold
           color="$typography"
           accessibilityRole="header"
-          accessibilityLabel={t("a11y.alarm.currentTime", { time: spokenClock })}>
-          {clock}
+          accessibilityLabel={t("a11y.alarm.currentTime", { time: wallClock.spoken })}>
+          {wallClock.shown}
         </Text>
 
         <Text
@@ -304,7 +288,7 @@ function ActiveAlarmView({
               ? t("a11y.alarm.prayerAt", { prayer: prayerName, time: prayerTime.spoken })
               : prayerName
           }>
-          {prayerTime ? `${prayerName} · ${prayerTime.drawn}` : prayerName}
+          {prayerTime ? `${prayerName} · ${prayerTime.shown}` : prayerName}
         </Text>
 
         {alarmType === ScheduledAlarmType.FAJR && (
