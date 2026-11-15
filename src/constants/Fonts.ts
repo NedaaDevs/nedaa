@@ -29,8 +29,11 @@ export const FONT_MAPPINGS: Record<AppLocale, FaceSet> = {
 
 export const DEFAULT_FACES = LATIN_FACES;
 
-/** The generic family the OS resolves; no font file loads for it. */
-export const SYSTEM_MONO_FAMILY = "monospace";
+/** A family name with no font file of its own. */
+type GenericFamily = "monospace" | "serif" | "sans-serif";
+
+/** Android's monospace family. iOS has none and draws its system font. */
+export const SYSTEM_MONO_FAMILY: GenericFamily = "monospace";
 
 export const isArabicScript = (locale: AppLocale): boolean =>
   FONT_MAPPINGS[locale] === ARABIC_FACES;
