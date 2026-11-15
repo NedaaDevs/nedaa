@@ -19,6 +19,7 @@ import {
   TextInput,
   View,
   type AccessibilityRole,
+  type ScrollViewProps,
   type ViewProps,
   type ViewStyle,
 } from "react-native";
@@ -265,14 +266,17 @@ const isStop = ({ props }: ReturnType<typeof screen.getByTestId>) =>
     props.accessibilityRole
   );
 
-/** gorhom's stops: its English, or one of SILENT_PARTS a reader lands on. */
+/** The native id the mock's sheet scroll view carries. */
+const SHEET_SCROLLER_ID = "bottom-sheet-scroll-view";
+
 /** The sheet scroll view that holds a node, or null when none does. */
 export const sheetScrollerOf = (node: ReturnType<typeof screen.getByRole>) => {
   let host = node.parent;
-  while (host && host.props.keyboardShouldPersistTaps === undefined) host = host.parent;
+  while (host && host.props.nativeID !== SHEET_SCROLLER_ID) host = host.parent;
   return host;
 };
 
+/** gorhom's stops: its English, or one of SILENT_PARTS a reader lands on. */
 export const gorhomStops = () => {
   const all = { includeHiddenElements: true };
   const stops = new Set([
@@ -289,7 +293,10 @@ export const gorhomStops = () => {
 };
 
 export const BottomSheetView = View;
-export const BottomSheetScrollView = ScrollView;
+/** Marked, so a test can tell it from a plain ScrollView. */
+export const BottomSheetScrollView = (props: ScrollViewProps) => (
+  <ScrollView nativeID={SHEET_SCROLLER_ID} {...props} />
+);
 export const BottomSheetFlatList = FlatList;
 export const BottomSheetTextInput = TextInput;
 
