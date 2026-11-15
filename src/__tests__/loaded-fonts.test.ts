@@ -3,16 +3,13 @@ import { join, relative, sep } from "node:path";
 
 import config from "../../tamagui.config";
 import { APP_FONTS } from "@/config/fonts";
-import { FONT_MAPPINGS } from "@/constants/Fonts";
+import { FONT_MAPPINGS, SYSTEM_MONO_FAMILY } from "@/constants/Fonts";
 import { REPO_ROOT, walkFiles } from "@/test-helpers/routeTree";
 
 const PBXPROJ = join(REPO_ROOT, "ios", "nedaa.xcodeproj", "project.pbxproj");
 
 /** A font package's root module, which requires every face of the family. */
 const BARREL_IMPORT = /["'`]@expo-google-fonts\/[^/"'`]+(?:\/index(?:\.js)?)?["'`]/;
-
-/** Tamagui's generic family, which the OS resolves. */
-const SYSTEM_FAMILY = "monospace";
 
 const localeFaces = Object.values(FONT_MAPPINGS).flatMap((faces) => Object.values(faces));
 
@@ -27,12 +24,11 @@ const sources = walkFiles(`${REPO_ROOT}${sep}src`)
 
 describe("loaded fonts", () => {
   // A face the app names but never loads draws in a system font, with no error.
-  it.each([...new Set([...localeFaces, ...themeFaces])].filter((face) => face !== SYSTEM_FAMILY))(
-    "loads %s",
-    (face) => {
-      expect(Object.keys(APP_FONTS)).toContain(face);
-    }
-  );
+  it.each(
+    [...new Set([...localeFaces, ...themeFaces])].filter((face) => face !== SYSTEM_MONO_FAMILY)
+  )("loads %s", (face) => {
+    expect(Object.keys(APP_FONTS)).toContain(face);
+  });
 
   it("reads the theme's faces", () => {
     expect(new Set(themeFaces).size).toBeGreaterThan(8);

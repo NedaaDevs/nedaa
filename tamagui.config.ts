@@ -1,6 +1,6 @@
 import { createFont, createTamagui, createTokens } from "tamagui";
 
-import { ARABIC_FACES, faceMapOf, LATIN_FACES } from "./src/constants/Fonts";
+import { ARABIC_FACES, faceMapOf, LATIN_FACES, SYSTEM_MONO_FAMILY } from "./src/constants/Fonts";
 import { DURATION_MS, SPRING } from "./src/constants/Motion";
 import { NEDAA_DARK, NEDAA_LIGHT } from "./src/constants/Palette";
 import { createAnimations } from "@tamagui/animations-moti";
@@ -124,14 +124,14 @@ const arabicFont = createFont({
 });
 
 const monoFont = createFont({
-  family: "monospace",
+  family: SYSTEM_MONO_FAMILY,
   size: { ...latinFont.size },
   lineHeight: { ...latinFont.lineHeight },
   weight: { ...latinFont.weight },
   letterSpacing: { ...latinFont.letterSpacing },
   face: {
-    400: { normal: "monospace" },
-    700: { normal: "monospace" },
+    400: { normal: SYSTEM_MONO_FAMILY },
+    700: { normal: SYSTEM_MONO_FAMILY },
   },
 });
 
