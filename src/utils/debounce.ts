@@ -35,6 +35,8 @@ export const createDebouncedQueue = <T extends (...args: any[]) => Promise<any>>
 
     flush,
 
+    hasPending: () => pendingUpdates.size > 0,
+
     clear: () => {
       if (timeoutId) {
         clearTimeout(timeoutId);

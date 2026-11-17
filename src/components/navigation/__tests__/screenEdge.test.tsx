@@ -52,7 +52,12 @@ const ScreenStandIn = () => (
 );
 
 // The tabs render only the tabs they declare.
-const TAB_STAND_INS = [BACK_DESTINATION.HOME, BACK_DESTINATION.ATHKAR, BACK_DESTINATION.QURAN];
+const TAB_STAND_INS = [
+  BACK_DESTINATION.HOME,
+  BACK_DESTINATION.ATHKAR,
+  BACK_DESTINATION.QADA,
+  BACK_DESTINATION.QURAN,
+];
 const tabName = (route: string) => route.slice(`${TAB_GROUP}/`.length);
 
 const renderApp = (initialUrl: string) =>
@@ -107,13 +112,14 @@ describe("screen top edge", () => {
     BACK_DESTINATION.SETTINGS_ABOUT,
     BACK_DESTINATION.SETTINGS_PROVIDER,
     BACK_DESTINATION.HOME,
+    BACK_DESTINATION.ATHKAR,
   ])("leaves the top of $route to its sky", async ({ route, href }) => {
     await renderApp(href);
 
     expect(edgeOf(route)).toEqual(OPEN);
   });
 
-  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.ATHKAR])(
+  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.QADA])(
     "pads the top of $route in the app's background",
     async ({ route, href }) => {
       await renderApp(href);
@@ -131,7 +137,7 @@ describe("screen top edge", () => {
     }
   );
 
-  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.ATHKAR])(
+  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.QADA])(
     "tells $route its top is padded",
     async ({ href }) => {
       await renderApp(href);
