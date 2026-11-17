@@ -7,6 +7,7 @@ import {
   LookPreview,
 } from "@/components/athkar/looks/LookPreview";
 import { HORIZON_ARC_PART } from "@/components/athkar/looks/horizon/HorizonArc";
+import { SUBHA_STRING_PART } from "@/components/athkar/looks/subha/SubhaString";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
@@ -64,6 +65,16 @@ describe("LookPreview", () => {
     expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(0);
   });
 
+  it("leaves the page sky its sun for a look that draws none", async () => {
+    await renderWithTheme(
+      <SkyBackground>
+        <LookPreview look={ATHKAR_LOOK.SUBHA} />
+      </SkyBackground>
+    );
+    expect(screen.getByTestId(SUBHA_STRING_PART.STRING, DRAWN)).toBeOnTheScreen();
+    expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(1);
+  });
+
   it("is a picture: nothing in it is read or pressed", async () => {
     await renderWithTheme(<LookPreview look={TEST_LOOK_ID} />);
     expect(screen.queryByTestId(TEST_LOOK_PART.READER)).toBeNull();
@@ -83,6 +94,12 @@ describe("LookPicture", () => {
     expect(screen.getAllByTestId(SKY_PART.CANVAS, DRAWN)).toHaveLength(1);
     expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(0);
     expect(screen.getAllByTestId(HORIZON_ARC_PART.SUN, DRAWN)).toHaveLength(1);
+  });
+
+  it("draws the Subha look under the sky's own sun", async () => {
+    await renderWithTheme(<LookPicture look={ATHKAR_LOOK.SUBHA} />);
+    expect(screen.getAllByTestId(SKY_PART.CANVAS, DRAWN)).toHaveLength(1);
+    expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(1);
   });
 
   it("scales a reader of the design's size into a frame of the same shape", async () => {

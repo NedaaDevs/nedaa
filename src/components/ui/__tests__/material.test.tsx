@@ -3,7 +3,7 @@ import { Platform, StyleSheet, type ViewInstance } from "react-native";
 import { screen } from "@testing-library/react-native";
 import { getTokenValue, Theme } from "tamagui";
 
-import { MATERIAL, Material, materialTintId } from "@/components/ui/material";
+import { MATERIAL, Material, materialTintId, type MaterialName } from "@/components/ui/material";
 import { chooseMaterialSurface, MATERIAL_SURFACE } from "@/components/ui/material/surface";
 import { BLUR_INTENSITY } from "@/constants/Blur";
 import { ELEVATION } from "@/constants/Elevation";
@@ -97,6 +97,13 @@ const THEMES = [
   [AppMode.DARK, NEDAA_DARK],
 ] as const;
 
+/** The palette colour each material tints with. */
+const TINT = {
+  [MATERIAL.FLOAT]: "surfaceFloat",
+  [MATERIAL.SHEET_HEADER]: "surfaceFloat",
+  [MATERIAL.GLASS]: "surfaceGlass",
+} as const satisfies Record<MaterialName, keyof typeof NEDAA_LIGHT>;
+
 const PAINT_CASES = Object.values(MATERIAL).flatMap((material) =>
   THEMES.flatMap(([mode, palette]) =>
     DEVICES.map((device) => ({ material, mode, palette, device }))
@@ -118,7 +125,8 @@ describe("Material paint order", () => {
       setPlatform(device.platform, device.version);
       mockReduceTransparency = device.reduceTransparency;
       const blurs = chooseMaterialSurface(device) === MATERIAL_SURFACE.BLUR;
-      const tint = blurs ? palette.surfaceFloat.hex : opaque(palette.surfaceFloat.hex);
+      const { hex } = palette[TINT[material]];
+      const tint = blurs ? hex : opaque(hex);
 
       await renderWithTheme(
         <Theme name={mode}>
