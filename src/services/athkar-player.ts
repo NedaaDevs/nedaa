@@ -359,8 +359,14 @@ class AthkarPlayer {
     }
 
     this.setPlayerState(PLAYER_STATE.LOADING);
-    await this.buildQueue(athkarList, manifest, selectedReciterId, currentType);
-    await this.jumpTo(athkarId);
+    try {
+      await this.buildQueue(athkarList, manifest, selectedReciterId, currentType);
+      await this.jumpTo(athkarId);
+    } catch (error) {
+      // A failed start leaves no queue and no loading dhikr, so the next can run.
+      log.w("Player", `startAndJumpTo failed: ${error instanceof Error ? error.message : error}`);
+      await this.teardown();
+    }
   }
 
   // ─── Advancement (app-driven) ──────────────────────────────────────

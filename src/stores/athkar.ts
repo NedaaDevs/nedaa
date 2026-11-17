@@ -18,7 +18,7 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { dateIntToString, getTodayInt } from "@/utils/athkar";
-import { nextOpenIndex, toCounts, toSessionItems } from "@/utils/athkarSession";
+import { audioOwnsCount, nextOpenIndex, toCounts, toSessionItems } from "@/utils/athkarSession";
 import { createDebouncedQueue } from "@/utils/debounce";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -708,8 +708,8 @@ export const useAthkarStore = create<AthkarStore>()(
           if (deferToNewDay(get, set, () => get().incrementCountBy(athkarId, by))) return;
           const state = get();
 
-          // Audio guard: block batched taps on the currently-playing thikr.
-          if (state.playerState === "playing" && state.currentAthkarId === athkarId) return;
+          // Audio that counts this dhikr closes the hand's count.
+          if (audioOwnsCount(state, athkarId)) return;
           if (state.advancePending) return;
 
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);

@@ -126,6 +126,14 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
     []
   );
 
+  // Audio that takes the count mid-touch ends the hold: no ring, no landing.
+  useEffect(() => {
+    if (holdRoom > 0) return;
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    hold.set(withTiming(0, drain));
+  }, [holdRoom, hold]);
+
   const landHold = () => {
     const moved = shownIndex.current !== beganOn.current;
     mode.current = moved ? FOCUS_MODE.DEAD : FOCUS_MODE.HELD;
@@ -238,5 +246,14 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
     },
   });
 
-  return { gesture, offset, side, down, hold, arrive, holding, undoArmed: armed };
+  return {
+    gesture,
+    offset,
+    side,
+    down,
+    hold,
+    arrive,
+    holding: holding && holdRoom > 0,
+    undoArmed: armed,
+  };
 };

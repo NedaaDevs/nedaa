@@ -14,6 +14,7 @@ import type { AthkarSession } from "@/hooks/useAthkarSession";
 import { FOCUS_GESTURE_ID } from "@/hooks/useFocusGesture";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
+import { useAthkarStore } from "@/stores/athkar";
 import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { positionMarks, type SessionItem } from "@/utils/athkarSession";
@@ -49,12 +50,13 @@ const items = (): SessionItem[] =>
     itemsPerRound: 1,
   }));
 
-type Options = { count?: number; place?: number; audioOwnsCount?: boolean };
+type Options = { count?: number; place?: number; audioOwnsCount?: boolean; text?: string };
 
 const sessionOf = ({
   count = 4,
   place = PLACE,
   audioOwnsCount = false,
+  text,
 }: Options = {}): AthkarSession => {
   const list = items();
   const counts = { [list[place].id]: count };
@@ -65,7 +67,7 @@ const sessionOf = ({
     index: place,
     current: {
       item: list[place],
-      textKey: textOf(place),
+      textKey: text ?? textOf(place),
       count,
       target: TARGET,
       done: count >= TARGET,
@@ -166,6 +168,30 @@ describe("ClassicFocus", () => {
     expect(surface().props.accessibilityLabel).toContain(counted);
   });
 
+  describe("a dhikr with a translation", () => {
+    const ARABIC = "سبحان الله";
+    const LINES = ["Glory be to God", "said in the morning"];
+    const text = [...LINES, ARABIC].join("\n");
+    const showTranslation = (show: boolean) =>
+      useAthkarStore.setState((s) => ({ settings: { ...s.settings, showTranslation: show } }));
+
+    it("names the Arabic and every line of the translation it shows", async () => {
+      showTranslation(true);
+      await renderFocus({ text });
+      const label = surface().props.accessibilityLabel as string;
+      expect(label).toContain(ARABIC);
+      for (const line of LINES) expect(label).toContain(line);
+    });
+
+    it("names the Arabic alone with translations off", async () => {
+      showTranslation(false);
+      await renderFocus({ text });
+      const label = surface().props.accessibilityLabel as string;
+      expect(label).toContain(ARABIC);
+      expect(label).not.toContain(LINES[0]);
+    });
+  });
+
   it("gives a screen reader every gesture as an action", async () => {
     const { props } = await renderFocus();
     await run(A11Y_ACTION.ACTIVATE);
@@ -206,6 +232,16 @@ describe("ClassicFocus", () => {
     // A disabled element hides its actions from a screen reader.
     expect(surface()).not.toBeDisabled();
     expect(surface().props.accessibilityHint).toBeUndefined();
+  });
+
+  it("counts nothing by an action while audio counts", async () => {
+    const { props } = await renderFocus({ audioOwnsCount: true });
+    await run(A11Y_ACTION.ACTIVATE);
+    await run(FOCUS_ACTION.ADD_MANY);
+    await run(FOCUS_ACTION.UNDO);
+    expect(props.session.add).not.toHaveBeenCalled();
+    expect(props.session.addMany).not.toHaveBeenCalled();
+    expect(props.session.undo).not.toHaveBeenCalled();
   });
 
   it("hints at the tap while a tap can count", async () => {
@@ -332,6 +368,13 @@ describe("ClassicFocus", () => {
     expect(screen.getByText(last, hidden)).toBeOnTheScreen();
     await wait(FOCUS_TIMING.EDGE_MESSAGE_MS);
     expect(screen.queryByText(last, hidden)).toBeNull();
+  });
+
+  it("drops the line when the place moves", async () => {
+    const { touch, view } = await renderFocus({ place: TOTAL - 1 });
+    await dragSide(touch, -300);
+    await view.rerender(<ClassicFocus {...propsOf({ place: TOTAL - 2 })} />);
+    expect(screen.queryByText(t("athkar.session.lastThikr"), hidden)).toBeNull();
   });
 
   it("keeps the line for its full time after a second try", async () => {

@@ -40,6 +40,7 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 import { useAthkarStore } from "@/stores/athkar";
 import type { Athkar } from "@/types/athkar";
+import { PLAYER_STATE } from "@/types/athkar-audio";
 /* eslint-enable import/first */
 
 const dhikr = (order: number, count: number): Athkar => ({
@@ -93,6 +94,9 @@ beforeEach(() => {
     lastMorningIndex: 0,
     lastEveningIndex: 0,
     advancePending: false,
+    playerState: PLAYER_STATE.IDLE,
+    currentAthkarId: null,
+    loadingAthkarId: null,
     settings: { autoMoveToNext: true, showStreak: true, showTranslation: true },
     currentProgress: list.map((a) => ({
       athkarId: a.id,
@@ -135,6 +139,18 @@ describe("the pause before the next dhikr", () => {
   test("a tap during the pause does not count", () => {
     tap(first);
     tap(second);
+    state().incrementCountBy(second.id, 2);
+    expect(countOf(second)).toBe(0);
+  });
+
+  test("hold-to-add does not count a dhikr whose audio is starting", () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, loadingAthkarId: second.id });
+    state().incrementCountBy(second.id, 2);
+    expect(countOf(second)).toBe(0);
+  });
+
+  test("hold-to-add does not count the dhikr audio waits on", () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, currentAthkarId: second.id });
     state().incrementCountBy(second.id, 2);
     expect(countOf(second)).toBe(0);
   });
