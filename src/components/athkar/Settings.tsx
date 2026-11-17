@@ -15,6 +15,7 @@ import { Icon } from "@/components/ui/icon";
 import { HoldToConfirm } from "@/components/ui/hold-to-confirm";
 import { Volume2, ChevronRight, RotateCcw } from "lucide-react-native";
 
+import { LookRow } from "@/components/athkar/looks/LookRow";
 import TimePicker from "@/components/TimePicker";
 
 // Store
@@ -120,6 +121,8 @@ const Settings = () => {
   return (
     <>
       <VStack padding="$4" gap="$4">
+        <LookRow />
+
         {/* Notification Settings Section */}
         <VStack gap="$3">
           {/* Morning Athkar Notification */}

@@ -89,4 +89,12 @@ describe("the stored Athkar look", () => {
 
     expect(settings().look).toBeNull();
   });
+
+  it("stores a chosen look", () => {
+    useAthkarStore.setState({ settings: DEFAULTS });
+
+    useAthkarStore.getState().setLook(ATHKAR_LOOK.CLASSIC);
+
+    expect(settings()).toEqual({ ...DEFAULTS, look: ATHKAR_LOOK.CLASSIC });
+  });
 });

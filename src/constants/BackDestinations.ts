@@ -83,6 +83,12 @@ export const BACK_DESTINATION = {
     href: "/settings/athkar-audio",
     title: "settings.athkarAudio.title",
   },
+  SETTINGS_ATHKAR_LOOK: {
+    route: "settings/athkar-look",
+    href: "/settings/athkar-look",
+    title: "athkar.look.title",
+    sky: true,
+  },
   SETTINGS_LOCATION: {
     route: "settings/location",
     href: "/settings/location",

@@ -27,6 +27,9 @@ jest.mock("@/components/athkar/useAthkarScreenshotSeed", () => ({
   useAthkarLandingScreenshotSeed: () => null,
 }));
 jest.mock("@/hooks/useInitializeAthkar", () => ({ useInitializeAthkar: () => {} }));
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+// The chooser reads the real store; its own suite covers it.
+jest.mock("@/hooks/useAthkarLookChooser", () => ({ useAthkarLookChooser: () => null }));
 jest.mock("@/hooks/useTabBarInset", () => ({ useTabBarInset: () => 0 }));
 jest.mock("@/services/athkar-player", () => ({ athkarPlayer: { stop: jest.fn() } }));
 jest.mock("@/components/athkar/session/AthkarSessionScreen", () => ({

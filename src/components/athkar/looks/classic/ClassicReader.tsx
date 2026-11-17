@@ -41,6 +41,7 @@ export const ClassicReader = ({
   onOpenList,
   onOpenFocus,
   onStartAudio,
+  trying = false,
 }: AthkarLookProps) => {
   const { t, i18n } = useTranslation();
   const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
@@ -171,38 +172,42 @@ export const ClassicReader = ({
         </HStack>
       </VStack>
 
-      <Box marginTop="$3">
-        <ListRow
-          testID={CLASSIC_READER_PART.FOCUS}
-          title={t("athkar.session.focus.title")}
-          status={t("athkar.session.focus.description")}
-          wrapStatus
-          onPress={onOpenFocus}
-        />
-      </Box>
+      {trying ? null : (
+        <>
+          <Box marginTop="$3">
+            <ListRow
+              testID={CLASSIC_READER_PART.FOCUS}
+              title={t("athkar.session.focus.title")}
+              status={t("athkar.session.focus.description")}
+              wrapStatus
+              onPress={onOpenFocus}
+            />
+          </Box>
 
-      <HStack
-        testID={CLASSIC_READER_PART.NEXT}
-        minHeight="$8"
-        alignItems="center"
-        gap="$2"
-        marginTop="$1"
-        paddingHorizontal="$4">
-        {session.next ? (
-          <>
-            <Text size="md" fontWeight="600" color="$muted">
-              {t("athkar.focus.next")}
-            </Text>
-            <Text size="md" fontWeight="500" color="$muted" flex={1} isTruncated>
-              {athkarLine(t(session.next.textKey), i18n.language, showTranslation)}
-            </Text>
-          </>
-        ) : (
-          <Text size="md" fontWeight="500" color="$muted">
-            {t("athkar.session.lastThikr")}
-          </Text>
-        )}
-      </HStack>
+          <HStack
+            testID={CLASSIC_READER_PART.NEXT}
+            minHeight="$8"
+            alignItems="center"
+            gap="$2"
+            marginTop="$1"
+            paddingHorizontal="$4">
+            {session.next ? (
+              <>
+                <Text size="md" fontWeight="600" color="$muted">
+                  {t("athkar.focus.next")}
+                </Text>
+                <Text size="md" fontWeight="500" color="$muted" flex={1} isTruncated>
+                  {athkarLine(t(session.next.textKey), i18n.language, showTranslation)}
+                </Text>
+              </>
+            ) : (
+              <Text size="md" fontWeight="500" color="$muted">
+                {t("athkar.session.lastThikr")}
+              </Text>
+            )}
+          </HStack>
+        </>
+      )}
 
       <SpokenStatus message={said} />
     </VStack>
