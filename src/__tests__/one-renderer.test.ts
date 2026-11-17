@@ -191,6 +191,14 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<SkySwatch\b/,
     home: "components/ui/sky-preview/index.tsx",
   },
+  // Every look of the Athkar reader shows the same counts and the same place.
+  {
+    concept: "a session's counts and place",
+    shows: /\bcurrentProgress\b|\bcurrentAthkarIndex\b|\bAthkarLookProps\b|\buseAthkarSession\b/,
+    within: /^components\/athkar\/(looks|session)\//,
+    drawsWith: /\buseAthkarSession\(|\bAthkarLookProps\b/,
+    home: "hooks/useAthkarSession.ts",
+  },
   // Today and the style previews draw Today's head, bowl or row, alike.
   {
     concept: "Today's head in its style",

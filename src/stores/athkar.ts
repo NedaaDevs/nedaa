@@ -8,6 +8,7 @@ import { PLAYER_STATE } from "@/types/athkar-audio";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ADVANCE_PAUSE_MS } from "@/constants/AthkarSession";
 
 // Services
 import { AthkarDB } from "@/services/athkar-db";
@@ -17,6 +18,7 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { dateIntToString, getTodayInt } from "@/utils/athkar";
+import { nextOpenIndex, toCounts, toSessionItems } from "@/utils/athkarSession";
 import { createDebouncedQueue } from "@/utils/debounce";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -36,8 +38,8 @@ const syncWidgetSnapshot = () => {
 
 // Debounced DB update queue - keeps existing pattern for DB lock prevention
 const debouncedDBUpdate = createDebouncedQueue(
-  async (dateInt: number, thikrId: string, count: number) => {
-    await AthkarDB.updateAthkarCount(dateInt, thikrId, count);
+  async (dateInt: number, thikrId: string, count: number, target: number) => {
+    await AthkarDB.updateAthkarCount(dateInt, thikrId, count, target);
   },
   300 // 300ms delay
 );
@@ -87,6 +89,109 @@ const debouncedSessionReset = createDebouncedQueue(
   300 // 300ms delay
 );
 
+type SessionType = Exclude<AthkarType, "all">;
+
+const listOf = (state: AthkarState, type: SessionType) =>
+  type === ATHKAR_TYPE.MORNING ? state.morningAthkarList : state.eveningAthkarList;
+
+/** A place in a period's list, kept as that period's last place too. */
+const placeAt = (type: SessionType, index: number): Partial<AthkarState> => ({
+  currentAthkarIndex: index,
+  ...(type === ATHKAR_TYPE.MORNING ? { lastMorningIndex: index } : { lastEveningIndex: index }),
+});
+
+// The one pending move to the next dhikr. Every action that changes the place clears it.
+let advanceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const clearAdvanceTimer = () => {
+  if (advanceTimer === null) return;
+  clearTimeout(advanceTimer);
+  advanceTimer = null;
+};
+
+const today = () => getTodayInt(locationStore.getState().locationDetails.timezone);
+
+/** Queues a count write under the day the counts in memory belong to. */
+const queueCountWrite = (state: AthkarState, athkarId: string) => {
+  const item = state.currentProgress.find((p) => p.athkarId === athkarId);
+  if (!item) return;
+  debouncedDBUpdate.add(
+    athkarId,
+    state.progressDay ?? today(),
+    athkarId,
+    item.currentCount,
+    item.totalCount
+  );
+};
+
+type Get = () => AthkarStore;
+type Set = (partial: Partial<AthkarState>) => void;
+
+/** Holds the finished dhikr for the pause, then opens the next unfinished one. */
+const startAdvance = (get: Get, set: Set, athkarId: string) => {
+  const state = get();
+  if (!state.settings.autoMoveToNext) return;
+  const type = state.currentType;
+  const from = listOf(state, type).findIndex((a) => a.id === athkarId);
+  if (from === -1) return;
+
+  clearAdvanceTimer();
+  set({ advancePending: true });
+  advanceTimer = setTimeout(() => {
+    advanceTimer = null;
+    const now = get();
+    const next = nextOpenIndex(
+      toSessionItems(listOf(now, type)),
+      toCounts(now.currentProgress),
+      from
+    );
+    set({ advancePending: false, ...(next === null ? {} : placeAt(type, next)) });
+  }, ADVANCE_PAUSE_MS);
+};
+
+// One load of the new day serves every caller that arrives while it runs.
+let dayLoad: Promise<void> | null = null;
+
+/**
+ * Null when the counts in memory are today's or none are loaded. Otherwise the old
+ * day's pending writes land and the new day loads; a failed load leaves no day loaded.
+ */
+const loadNewDay = (get: Get, set: Set): Promise<void> | null => {
+  const { progressDay } = get();
+  if (progressDay === null || progressDay === today()) return null;
+
+  dayLoad ??= (async () => {
+    clearAdvanceTimer();
+    set({ advancePending: false });
+    await get().initializeTodayData();
+  })()
+    .catch((error: unknown) => {
+      log.e(
+        "Store",
+        "the new day did not load",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      set({ currentProgress: [], progressDay: null });
+    })
+    .finally(() => {
+      dayLoad = null;
+    });
+  return dayLoad;
+};
+
+/**
+ * True when the counts in memory belong to another day: `count` runs once the new
+ * day has loaded, and is dropped when the load fails.
+ */
+const deferToNewDay = (get: Get, set: Set, count: () => void) => {
+  const load = loadNewDay(get, set);
+  if (load === null) return false;
+  void load.then(() => {
+    if (get().progressDay === today()) count();
+  });
+  return true;
+};
+
 export const useAthkarStore = create<AthkarStore>()(
   devtools(
     persist(
@@ -104,6 +209,8 @@ export const useAthkarStore = create<AthkarStore>()(
         },
         focusMode: false,
         currentAthkarIndex: 0,
+        advancePending: false,
+        progressDay: null,
         currentType: ATHKAR_TYPE.MORNING,
         todayCompleted: {
           morning: false,
@@ -240,9 +347,17 @@ export const useAthkarStore = create<AthkarStore>()(
           const todayInt = getTodayInt(tz);
 
           try {
-            // Get morning and evening items from DB
-            const morningItems = await AthkarDB.getSessionItems(todayInt, "morning");
-            const eveningItems = await AthkarDB.getSessionItems(todayInt, "evening");
+            // A count waiting to be written is not in the rows: write, then read, and
+            // again while counts arrive during the read.
+            // No read follows the last check, so no count can arrive unseen before the set.
+            let morningItems, eveningItems, morningCompleted, eveningCompleted;
+            do {
+              await debouncedDBUpdate.flush();
+              morningItems = await AthkarDB.getSessionItems(todayInt, "morning");
+              eveningItems = await AthkarDB.getSessionItems(todayInt, "evening");
+              morningCompleted = await AthkarDB.isSessionCompleted(todayInt, "morning");
+              eveningCompleted = await AthkarDB.isSessionCompleted(todayInt, "evening");
+            } while (debouncedDBUpdate.hasPending());
 
             // Convert DB items to store format
             const currentProgress = [
@@ -278,12 +393,15 @@ export const useAthkarStore = create<AthkarStore>()(
               }
             });
 
-            // Check completion status
-            const morningCompleted = await AthkarDB.isSessionCompleted(todayInt, "morning");
-            const eveningCompleted = await AthkarDB.isSessionCompleted(todayInt, "evening");
-
+            // Another day's place means nothing on this one.
+            const { progressDay } = get();
+            const newDay = progressDay !== null && progressDay !== todayInt;
             set({
+              ...(newDay
+                ? { currentAthkarIndex: 0, lastMorningIndex: 0, lastEveningIndex: 0 }
+                : {}),
               currentProgress,
+              progressDay: todayInt,
               todayCompleted: {
                 morning: morningCompleted,
                 evening: eveningCompleted,
@@ -299,6 +417,7 @@ export const useAthkarStore = create<AthkarStore>()(
             // Start with empty progress if loading fails
             set({
               currentProgress: [],
+              progressDay: null,
               todayCompleted: { morning: false, evening: false },
             });
           }
@@ -353,8 +472,25 @@ export const useAthkarStore = create<AthkarStore>()(
 
         setMorningAthkarList: (list) => set({ morningAthkarList: list }),
         setEveningAthkarList: (list) => set({ eveningAthkarList: list }),
-        setCurrentType: (type) => set({ currentType: type }),
-        setCurrentAthkarIndex: (index: number) => set({ currentAthkarIndex: index }),
+        setCurrentType: (type) => {
+          clearAdvanceTimer();
+          set({ currentType: type, advancePending: false });
+        },
+        setCurrentAthkarIndex: (index: number) => {
+          clearAdvanceTimer();
+          set({ currentAthkarIndex: index, advancePending: false });
+        },
+
+        jumpToIndex: (index) => {
+          const state = get();
+          const inRange =
+            Number.isInteger(index) &&
+            index >= 0 &&
+            index < listOf(state, state.currentType).length;
+          if (!inRange) return;
+          clearAdvanceTimer();
+          set({ ...placeAt(state.currentType, index), advancePending: false });
+        },
 
         // Audio state actions (sole writer: player singleton)
         setPlayerState: (playerState) =>
@@ -409,16 +545,9 @@ export const useAthkarStore = create<AthkarStore>()(
           });
 
           if (previousAthkarId) {
-            const tz = locationStore.getState().locationDetails.timezone;
-            const todayInt = getTodayInt(tz);
             const updatedItem = get().currentProgress.find((p) => p.athkarId === previousAthkarId);
             if (updatedItem) {
-              debouncedDBUpdate.add(
-                previousAthkarId,
-                todayInt,
-                previousAthkarId,
-                updatedItem.currentCount
-              );
+              queueCountWrite(get(), previousAthkarId);
               if (updatedItem.completed) {
                 setTimeout(async () => {
                   await get().checkAndUpdateSessionCompletion(previousAthkarId);
@@ -483,55 +612,27 @@ export const useAthkarStore = create<AthkarStore>()(
           return type === ATHKAR_TYPE.MORNING ? state.lastMorningIndex : state.lastEveningIndex;
         },
 
-        moveToNext: () =>
+        moveToNext: () => {
+          clearAdvanceTimer();
           set((state) => {
-            const currentList =
-              state.currentType === ATHKAR_TYPE.MORNING
-                ? state.morningAthkarList
-                : state.eveningAthkarList;
+            const { length } = listOf(state, state.currentType);
+            const index = state.currentAthkarIndex + 1 >= length ? 0 : state.currentAthkarIndex + 1;
+            return { ...placeAt(state.currentType, index), advancePending: false };
+          });
+        },
 
-            const newIndex =
-              state.currentAthkarIndex + 1 >= currentList.length
-                ? 0 // Here we go again
-                : state.currentAthkarIndex + 1;
-
-            // Update both current index and session-specific last index
-            const updates: Partial<AthkarState> = { currentAthkarIndex: newIndex };
-
-            if (state.currentType === ATHKAR_TYPE.MORNING) {
-              updates.lastMorningIndex = newIndex;
-            } else {
-              updates.lastEveningIndex = newIndex;
-            }
-
-            return updates;
-          }),
-
-        moveToPrevious: () =>
+        moveToPrevious: () => {
+          clearAdvanceTimer();
           set((state) => {
-            const currentList =
-              state.currentType === ATHKAR_TYPE.MORNING
-                ? state.morningAthkarList
-                : state.eveningAthkarList;
-
-            const newIndex =
-              state.currentAthkarIndex - 1 < 0
-                ? currentList.length - 1 // Wrap around to end
-                : state.currentAthkarIndex - 1;
-
-            // Update both current index and session-specific last index
-            const updates: Partial<AthkarState> = { currentAthkarIndex: newIndex };
-
-            if (state.currentType === ATHKAR_TYPE.MORNING) {
-              updates.lastMorningIndex = newIndex;
-            } else {
-              updates.lastEveningIndex = newIndex;
-            }
-
-            return updates;
-          }),
+            const { length } = listOf(state, state.currentType);
+            const index =
+              state.currentAthkarIndex - 1 < 0 ? length - 1 : state.currentAthkarIndex - 1;
+            return { ...placeAt(state.currentType, index), advancePending: false };
+          });
+        },
 
         incrementCount: (athkarId, skipAutoMove) => {
+          if (deferToNewDay(get, set, () => get().incrementCount(athkarId, skipAutoMove))) return;
           const state = get();
 
           // Audio guard: block manual UI taps on the thikr currently being played.
@@ -543,6 +644,9 @@ export const useAthkarStore = create<AthkarStore>()(
           )
             return;
 
+          // The finished dhikr is still on screen; a tap now belongs to no dhikr.
+          if (!skipAutoMove && state.advancePending) return;
+
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
           if (!progressItem) {
@@ -552,9 +656,6 @@ export const useAthkarStore = create<AthkarStore>()(
             );
             return;
           }
-
-          const tz = locationStore.getState().locationDetails.timezone;
-          const todayInt = getTodayInt(tz);
 
           // Update in memory
           set((state) => {
@@ -588,18 +689,10 @@ export const useAthkarStore = create<AthkarStore>()(
           const updatedItem = updatedState.currentProgress.find((p) => p.athkarId === athkarId);
 
           if (updatedItem) {
-            // Queue DB update (debounced)
-            debouncedDBUpdate.add(athkarId, todayInt, athkarId, updatedItem.currentCount);
+            queueCountWrite(updatedState, athkarId);
 
-            // Handle auto-move in focus mode (skipped when audio player drives navigation)
-            if (
-              !skipAutoMove &&
-              state.focusMode &&
-              updatedItem.completed &&
-              state.settings.autoMoveToNext
-            ) {
-              requestAnimationFrame(() => get().moveToNext());
-            }
+            // The audio player moves the place itself.
+            if (!skipAutoMove && updatedItem.completed) startAdvance(get, set, athkarId);
 
             // Check if session just completed
             if (updatedItem.completed) {
@@ -611,17 +704,16 @@ export const useAthkarStore = create<AthkarStore>()(
         },
 
         incrementCountBy: (athkarId, by) => {
+          if (deferToNewDay(get, set, () => get().incrementCountBy(athkarId, by))) return;
           const state = get();
 
           // Audio guard: block batched taps on the currently-playing thikr.
           if (state.playerState === "playing" && state.currentAthkarId === athkarId) return;
+          if (state.advancePending) return;
 
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
           if (!progressItem || progressItem.completed) return;
           if (by <= 0) return;
-
-          const tz = locationStore.getState().locationDetails.timezone;
-          const todayInt = getTodayInt(tz);
 
           // Clamp so we never overshoot the remaining count.
           const newCount = Math.min(progressItem.currentCount + by, progressItem.totalCount);
@@ -644,11 +736,11 @@ export const useAthkarStore = create<AthkarStore>()(
             get().updateLastIndex(state.currentType, tappedIndex);
           }
 
-          // Single debounced DB write with the final count.
-          debouncedDBUpdate.add(athkarId, todayInt, athkarId, newCount);
+          queueCountWrite(get(), athkarId);
 
           // Fire completion side-effects only once if we just finished.
           if (newCount >= progressItem.totalCount) {
+            startAdvance(get, set, athkarId);
             setTimeout(async () => {
               await get().checkAndUpdateSessionCompletion(athkarId);
             }, 400);
@@ -656,13 +748,13 @@ export const useAthkarStore = create<AthkarStore>()(
         },
 
         decrementCount: (athkarId) => {
+          if (deferToNewDay(get, set, () => get().decrementCount(athkarId))) return;
           const state = get();
           const progressItem = state.currentProgress.find((p) => p.athkarId === athkarId);
 
           if (!progressItem) return;
 
-          const tz = locationStore.getState().locationDetails.timezone;
-          const todayInt = getTodayInt(tz);
+          clearAdvanceTimer();
 
           // Update in memory
           set((state) => {
@@ -678,26 +770,25 @@ export const useAthkarStore = create<AthkarStore>()(
               return p;
             });
 
-            return { currentProgress: updatedProgress };
+            return { currentProgress: updatedProgress, advancePending: false };
           });
 
           // Get the updated progress item
           const updatedState = get();
           const updatedItem = updatedState.currentProgress.find((p) => p.athkarId === athkarId);
 
-          if (updatedItem) {
-            // Queue DB update (debounced)
-            debouncedDBUpdate.add(athkarId, todayInt, athkarId, updatedItem.currentCount);
-          }
+          if (updatedItem) queueCountWrite(updatedState, athkarId);
         },
 
         // Initialize session - switch between morning/evening
         initializeSession: async (type) => {
           await get().initializeTodayData(); // Ensure today is initialized
           const optimalIndex = get().findOptimalAthkarIndex(type);
+          clearAdvanceTimer();
           set({
             currentType: type,
             currentAthkarIndex: 0,
+            advancePending: false,
             focusMode: false,
           });
 
@@ -740,12 +831,11 @@ export const useAthkarStore = create<AthkarStore>()(
           const todayInt = getTodayInt(tz);
           const type = get().currentType;
           const session = type === ATHKAR_TYPE.MORNING ? ATHKAR_TYPE.MORNING : ATHKAR_TYPE.EVENING;
-          const eIndex = get().lastEveningIndex;
-          const mIndex = get().lastMorningIndex;
+          clearAdvanceTimer();
           // Reset in memory immediately for better UX
           set((state) => ({
-            lastEveningIndex: type === ATHKAR_TYPE.EVENING ? 0 : eIndex,
-            lastMorningIndex: type === ATHKAR_TYPE.EVENING ? 0 : mIndex,
+            ...placeAt(session, 0),
+            advancePending: false,
             currentProgress: state.currentProgress.map((p) => {
               if (p.athkarId.includes(`-${type}`)) {
                 return {
@@ -808,6 +898,16 @@ export const useAthkarStore = create<AthkarStore>()(
           })),
 
         toggleShortVersion: () => set((state) => ({ shortVersion: !state.shortVersion })),
+
+        syncDay: async () => {
+          await loadNewDay(get, set);
+        },
+
+        flushCounts: async () => {
+          if (!debouncedDBUpdate.hasPending()) return;
+          await debouncedDBUpdate.flush();
+          syncWidgetSnapshot();
+        },
 
         cleanUpOldData: async () => {
           // Flush all pending DB operations before cleanup

@@ -47,6 +47,7 @@ import {
   BottomSheetScrollView,
   useBottomSheetModal,
   type BottomSheetBackdropProps,
+  type BottomSheetScrollViewMethods,
 } from "@gorhom/bottom-sheet";
 import { BlurTargetView } from "expo-blur";
 import { X } from "lucide-react-native";
@@ -112,6 +113,9 @@ const OpenContext = createContext(false);
 
 /** For content that speaks: whether its sheet stays up; false outside one. */
 const useActionsheetOpen = () => use(OpenContext);
+
+/** Whether the sheet has reached a detent; false while it first rises. */
+const SettledContext = createContext(false);
 
 type BlurTarget = RefObject<ViewInstance | null>;
 
@@ -384,7 +388,9 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       backgroundStyle={{ backgroundColor: theme.raised.val, boxShadow: shadow }}>
       <TitleContext value={title}>
         <BlurTargetContext value={blurTarget}>
-          <OpenContext value={isOpen && !closing}>{children}</OpenContext>
+          <SettledContext value={shown}>
+            <OpenContext value={isOpen && !closing}>{children}</OpenContext>
+          </SettledContext>
         </BlurTargetContext>
       </TitleContext>
     </BottomSheetModal>
@@ -405,10 +411,22 @@ type ActionsheetContentProps = {
   children?: React.ReactNode;
   /** Lets the content draw its own insets, for a full-bleed list or media. */
   unpadded?: boolean;
+  /** How far down the content opens, in points, for a list that opens at a row of its own. */
+  openAt?: number;
 };
 
-const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpadded }) => {
+const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpadded, openAt }) => {
   const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
+  const settled = use(SettledContext);
+  const scroller = useRef<BottomSheetScrollViewMethods>(null);
+  const scrollDown = useEffectEvent((y: number) =>
+    scroller.current?.scrollTo({ y, animated: !reduced })
+  );
+  // gorhom snaps a rising sheet's scroll view back to its top, so the move waits for the detent.
+  useEffect(() => {
+    if (settled && openAt !== undefined) scrollDown(openAt);
+  }, [settled, openAt]);
   // Android blurs only this view's pixels under the header.
   const blurTarget = use(BlurTargetContext);
   // The last control sits a step above the home indicator, never on it.
@@ -421,7 +439,7 @@ const ActionsheetContent: React.FC<ActionsheetContentProps> = ({ children, unpad
   // scroll view; ActionsheetScrollView below is a passthrough.
   return (
     // A tap on a row lands while the keyboard is up, not only closing it.
-    <BottomSheetScrollView keyboardShouldPersistTaps="handled">
+    <BottomSheetScrollView ref={scroller} keyboardShouldPersistTaps="handled">
       <BlurTargetView
         ref={blurTarget}
         testID={ACTIONSHEET_PART.BODY}
