@@ -49,8 +49,9 @@ jobs:
         with:
           bun-version: 1.4.4
 
+      # GHSA-fc5q-39xc-vjpf (picomatch) has no patched release; remove the ignore when one ships.
       - name: Audit app lockfile
-        run: bun audit --audit-level=high
+        run: bun audit --audit-level=high --ignore=GHSA-fc5q-39xc-vjpf
 
       - name: Audit screenshot tool lockfile
         run: bun audit --audit-level=high --cwd scripts/screenshots
