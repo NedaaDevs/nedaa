@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
-import { CLASSIC_LOOK } from "@/components/athkar/looks/classic/look";
 import { SessionDone } from "@/components/athkar/session/SessionDone";
 import { SessionListSheet } from "@/components/athkar/session/SessionListSheet";
 import { Box } from "@/components/ui/box";
@@ -13,6 +12,7 @@ import { VStack } from "@/components/ui/vstack";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { ATHKAR_FOCUS_HREF, SESSION_STATUS } from "@/constants/AthkarSession";
 import { useAthkarDayLoad } from "@/hooks/useAthkarDayLoad";
+import { useAthkarLook } from "@/hooks/useAthkarLook";
 import { useAthkarSession, useSessionOpening } from "@/hooks/useAthkarSession";
 import { useStartAthkarAudio } from "@/hooks/useStartAthkarAudio";
 import { useAthkarStore } from "@/stores/athkar";
@@ -50,6 +50,7 @@ export const AthkarSessionScreen = () => {
   const { status, current } = session;
   const day = useAthkarDayLoad();
   const audio = useStartAthkarAudio();
+  const look = useAthkarLook();
 
   const type = useAthkarStore((s) => s.currentType);
   const [listOpen, setListOpen] = useState(false);
@@ -67,7 +68,7 @@ export const AthkarSessionScreen = () => {
     }
     if (status === SESSION_STATUS.READY) {
       return (
-        <CLASSIC_LOOK.Reader
+        <look.Reader
           session={session}
           onOpenList={() => setListOpen(true)}
           onOpenFocus={() => router.push(ATHKAR_FOCUS_HREF)}

@@ -50,6 +50,9 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 jest.mock("react-native-safe-area-context", () =>
   jest.requireActual("@/test-helpers/safeAreaMock")
 );
+jest.mock("@/components/athkar/looks/registry", () =>
+  jest.requireActual("@/test-helpers/athkarLooks").registryWithTestLook()
+);
 jest.mock("@/components/athkar/AudioOnboarding", () => {
   const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
   return {
@@ -74,6 +77,7 @@ import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
+import { TEST_LOOK_ID, TEST_LOOK_PART } from "@/test-helpers/athkarLooks";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { Athkar } from "@/types/athkar";
 import { PLAYER_STATE } from "@/types/athkar-audio";
@@ -148,6 +152,19 @@ beforeEach(() => {
 });
 
 describe("AthkarFocusScreen", () => {
+  describe("the stored look", () => {
+    const store = (look: typeof TEST_LOOK_ID | null) =>
+      useAthkarStore.setState((state) => ({ settings: { ...state.settings, look } }));
+    afterEach(() => store(null));
+
+    it("draws the look a person chose", async () => {
+      store(TEST_LOOK_ID);
+      await renderWithTheme(<AthkarFocusScreen />);
+
+      expect(screen.getByTestId(TEST_LOOK_PART.FOCUS)).toBeOnTheScreen();
+    });
+  });
+
   it("shows the current dhikr with one close control and one audio control", async () => {
     await renderWithTheme(<AthkarFocusScreen />);
 

@@ -97,7 +97,7 @@ beforeEach(() => {
     playerState: PLAYER_STATE.IDLE,
     currentAthkarId: null,
     loadingAthkarId: null,
-    settings: { autoMoveToNext: true, showStreak: true, showTranslation: true },
+    settings: { autoMoveToNext: true, showStreak: true, showTranslation: true, look: null },
     currentProgress: list.map((a) => ({
       athkarId: a.id,
       currentCount: 0,
@@ -185,7 +185,7 @@ describe("the pause before the next dhikr", () => {
 
   test("with auto-advance off the index stays", () => {
     useAthkarStore.setState({
-      settings: { autoMoveToNext: false, showStreak: true, showTranslation: true },
+      settings: { autoMoveToNext: false, showStreak: true, showTranslation: true, look: null },
     });
     tap(first);
     expect(state().advancePending).toBe(false);

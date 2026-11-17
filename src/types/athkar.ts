@@ -1,4 +1,5 @@
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import type { AthkarLookId } from "@/constants/AthkarLook";
 import type { PlayerState } from "@/types/athkar-audio";
 
 export type AthkarType = (typeof ATHKAR_TYPE)[keyof typeof ATHKAR_TYPE];
@@ -59,6 +60,8 @@ export type AthkarState = {
     autoMoveToNext: boolean;
     showStreak: boolean;
     showTranslation: boolean;
+    /** The look a person chose for the reader; null until they choose. */
+    look: AthkarLookId | null;
   };
 
   // Audio playback state (merged from athkar-audio store for atomic updates)
