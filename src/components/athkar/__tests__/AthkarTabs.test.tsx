@@ -1,7 +1,8 @@
-import { screen, userEvent } from "@testing-library/react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
 
 import AthkarTabs, { TAB_LABEL_MIN_SCALE } from "@/components/athkar/AthkarTabs";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { PLAYER_STATE } from "@/types/athkar-audio";
@@ -9,11 +10,12 @@ import { PLAYER_STATE } from "@/types/athkar-audio";
 type Period = typeof ATHKAR_TYPE.MORNING | typeof ATHKAR_TYPE.EVENING;
 
 const mockStore = {
+  currentType: ATHKAR_TYPE.MORNING as Period,
   setCurrentType: jest.fn(),
   validateDailyStreak: jest.fn(),
   playerState: PLAYER_STATE.IDLE,
 };
-// The real store opens its database; the tabs read only these three.
+// The real store opens its database; the tabs read only these four.
 jest.mock("@/stores/athkar", () => ({
   useAthkarStore: (select: (state: typeof mockStore) => unknown = (state) => state) =>
     select(mockStore),
@@ -51,7 +53,9 @@ describe("AthkarTabs", () => {
     jest.clearAllMocks();
     mockPeriod = ATHKAR_TYPE.MORNING;
     mockSeedPeriod = null;
+    mockStore.currentType = ATHKAR_TYPE.MORNING;
   });
+  afterEach(() => act(() => i18n.changeLanguage(AppLocale.EN)));
 
   it("opens on the current period and checks the streak once", async () => {
     mockPeriod = ATHKAR_TYPE.EVENING;
@@ -117,6 +121,17 @@ describe("AthkarTabs", () => {
     expect(screen.getByText(MY_ATHKAR)).toBeOnTheScreen();
     expect(screen.queryByText(SESSION)).toBeNull();
     expect(tab("athkar.myAthkar").props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it("shows the session's period when a language without My Athkar takes its tab away", async () => {
+    mockStore.currentType = ATHKAR_TYPE.EVENING;
+    await renderWithTheme(<AthkarTabs />);
+    await userEvent.press(tab("athkar.myAthkar"));
+    await act(() => i18n.changeLanguage(AppLocale.MS));
+
+    expect(screen.getByText(SESSION)).toBeOnTheScreen();
+    expect(screen.queryByText(MY_ATHKAR)).toBeNull();
+    expect(tab("athkar.evening").props.accessibilityState).toMatchObject({ selected: true });
   });
 
   it("moves the session to the pressed period", async () => {
