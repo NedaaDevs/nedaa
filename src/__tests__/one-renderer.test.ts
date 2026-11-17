@@ -191,14 +191,24 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<SkySwatch\b/,
     home: "components/ui/sky-preview/index.tsx",
   },
-  // Every look of the Athkar reader shows the same counts and the same place.
+  // Every look of the Athkar reader shows the same counts and the same place:
+  // it takes the session, and reads no count or index from the store itself.
   {
     concept: "a session's counts and place",
     shows:
       /\bcurrentProgress\b|\bcurrentAthkarIndex\b|\bAthkar(Look|Focus)Props\b|\buseAthkarSession\b/,
     within: /^components\/athkar\/(looks|session)\//,
-    drawsWith: /\buseAthkarSession\(|\bAthkar(Look|Focus)Props\b/,
+    drawsWith:
+      /^(?![\s\S]*\b(currentProgress|currentAthkarIndex)\b)[\s\S]*(\buseAthkarSession\(|\bAthkar(Look|Focus)Props\b)/,
     home: "hooks/useAthkarSession.ts",
+  },
+  // The reader and Focus wear the look a person chose, never one by name.
+  {
+    concept: "the Athkar reader's look",
+    shows: /\/looks\/\w+\/look"|<\w+\.(Reader|Focus)\b/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\buseAthkarLook\(|\bATHKAR_LOOKS\[/,
+    home: "components/athkar/looks/registry.ts",
   },
   // The Classic reader and its Focus stage draw the place with the same marks.
   {

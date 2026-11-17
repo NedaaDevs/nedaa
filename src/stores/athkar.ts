@@ -8,6 +8,7 @@ import { PLAYER_STATE } from "@/types/athkar-audio";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { isAthkarLookId } from "@/constants/AthkarLook";
 import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 
 // Services
@@ -221,6 +222,7 @@ export const useAthkarStore = create<AthkarStore>()(
           autoMoveToNext: true,
           showStreak: true,
           showTranslation: true,
+          look: null,
         },
         shortVersion: false,
         focusHintSeen: false,
@@ -927,6 +929,13 @@ export const useAthkarStore = create<AthkarStore>()(
           shortVersion: state.shortVersion,
           focusHintSeen: state.focusHintSeen,
         }),
+        // A saved record replaces `settings` whole: keys it lacks keep their defaults.
+        merge: (persisted, current) => {
+          const saved = (persisted ?? {}) as Partial<AthkarStore>;
+          const settings = { ...current.settings, ...saved.settings };
+          const look = isAthkarLookId(settings.look) ? settings.look : null;
+          return { ...current, ...saved, settings: { ...settings, look } };
+        },
         onRehydrateStorage: () => (state) => {
           // Initialize DB and load data after rehydration
           state?.initializeStore();

@@ -5,7 +5,6 @@ import { X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
-import { CLASSIC_LOOK } from "@/components/athkar/looks/classic/look";
 import { FocusAudioButton } from "@/components/athkar/session/FocusAudioButton";
 import { FocusControl } from "@/components/athkar/session/FocusControl";
 import { SessionDone } from "@/components/athkar/session/SessionDone";
@@ -16,6 +15,7 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { type StepDirection } from "@/constants/AthkarFocus";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
 import { useAthkarDayLoad } from "@/hooks/useAthkarDayLoad";
+import { useAthkarLook } from "@/hooks/useAthkarLook";
 import { useAthkarSession } from "@/hooks/useAthkarSession";
 import { useStartAthkarAudio } from "@/hooks/useStartAthkarAudio";
 import { athkarPlayer } from "@/services/athkar-player";
@@ -46,6 +46,7 @@ export const AthkarFocusScreen = () => {
   const { status, current } = session;
   const day = useAthkarDayLoad();
   const audio = useStartAthkarAudio();
+  const look = useAthkarLook();
 
   const type = useAthkarStore((s) => s.currentType);
   const playerState = useAthkarStore((s) => s.playerState);
@@ -89,7 +90,7 @@ export const AthkarFocusScreen = () => {
     if (status === SESSION_STATUS.READY && current) {
       const { id } = current.item;
       return (
-        <CLASSIC_LOOK.Focus
+        <look.Focus
           session={session}
           period={period}
           hintSeen={hintSeen}
