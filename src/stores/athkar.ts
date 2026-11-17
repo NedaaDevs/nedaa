@@ -8,7 +8,7 @@ import { PLAYER_STATE } from "@/types/athkar-audio";
 
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { ADVANCE_PAUSE_MS } from "@/constants/AthkarSession";
+import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 
 // Services
 import { AthkarDB } from "@/services/athkar-db";
@@ -39,10 +39,15 @@ const syncWidgetSnapshot = () => {
 // Debounced DB update queue - keeps existing pattern for DB lock prevention
 const debouncedDBUpdate = createDebouncedQueue(
   async (dateInt: number, thikrId: string, count: number, target: number) => {
-    await AthkarDB.updateAthkarCount(dateInt, thikrId, count, target);
+    const written = await AthkarDB.updateAthkarCount(dateInt, thikrId, count, target);
+    if (!written) throw new Error(`count of ${thikrId} not written`);
   },
-  300 // 300ms delay
+  COUNT_WRITE_DELAY_MS,
+  { retainFailed: true }
 );
+
+// Moves with every queued count write; a reload reads again when it moved.
+let countRevision = 0;
 
 // Debounced session completion check
 const debouncedSessionCheck = createDebouncedQueue(
@@ -115,6 +120,7 @@ const today = () => getTodayInt(locationStore.getState().locationDetails.timezon
 const queueCountWrite = (state: AthkarState, athkarId: string) => {
   const item = state.currentProgress.find((p) => p.athkarId === athkarId);
   if (!item) return;
+  countRevision += 1;
   debouncedDBUpdate.add(
     athkarId,
     state.progressDay ?? today(),
@@ -347,33 +353,34 @@ export const useAthkarStore = create<AthkarStore>()(
           const todayInt = getTodayInt(tz);
 
           try {
-            // A count waiting to be written is not in the rows: write, then read, and
-            // again while counts arrive during the read.
-            // No read follows the last check, so no count can arrive unseen before the set.
-            let morningItems, eveningItems, morningCompleted, eveningCompleted;
+            // A count queued during the reads is not in the rows: write and read again.
+            let revision, morningItems, eveningItems, morningCompleted, eveningCompleted;
             do {
+              revision = countRevision;
               await debouncedDBUpdate.flush();
               morningItems = await AthkarDB.getSessionItems(todayInt, "morning");
               eveningItems = await AthkarDB.getSessionItems(todayInt, "evening");
               morningCompleted = await AthkarDB.isSessionCompleted(todayInt, "morning");
               eveningCompleted = await AthkarDB.isSessionCompleted(todayInt, "evening");
-            } while (debouncedDBUpdate.hasPending());
+            } while (revision !== countRevision);
 
-            // Convert DB items to store format
-            const currentProgress = [
-              ...morningItems.map((item) => ({
+            // A count the DB did not take is newer than its row.
+            const unwritten = new Map(
+              debouncedDBUpdate
+                .pending()
+                .filter(([date]) => date === todayInt)
+                .map(([, id, count]) => [id, count])
+            );
+
+            const currentProgress = [...morningItems, ...eveningItems].map((item) => {
+              const currentCount = unwritten.get(item.thikr_id) ?? item.current_count;
+              return {
                 athkarId: item.thikr_id,
-                currentCount: item.current_count,
+                currentCount,
                 totalCount: item.total_count,
-                completed: item.current_count >= item.total_count,
-              })),
-              ...eveningItems.map((item) => ({
-                athkarId: item.thikr_id,
-                currentCount: item.current_count,
-                totalCount: item.total_count,
-                completed: item.current_count >= item.total_count,
-              })),
-            ];
+                completed: currentCount >= item.total_count,
+              };
+            });
 
             const completedCount = currentProgress.filter((p) => p.completed).length;
             if (completedCount === currentProgress.length && currentProgress.length > 0) {
