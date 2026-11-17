@@ -6,7 +6,7 @@ import { SESSION_STATUS, type SessionStatus } from "@/constants/AthkarSession";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useAthkarStore } from "@/stores/athkar";
 import {
-  audioRuns,
+  audioOwnsCount,
   nextOpenIndex,
   positionMarks,
   textKeyAt,
@@ -78,6 +78,7 @@ export const useAthkarSession = (): AthkarSession => {
   const advancePending = useAthkarStore((s) => s.advancePending);
   const playerState = useAthkarStore((s) => s.playerState);
   const playingId = useAthkarStore((s) => s.currentAthkarId);
+  const loadingId = useAthkarStore((s) => s.loadingAthkarId);
   const incrementCount = useAthkarStore((s) => s.incrementCount);
   const incrementCountBy = useAthkarStore((s) => s.incrementCountBy);
   const decrementCount = useAthkarStore((s) => s.decrementCount);
@@ -126,7 +127,10 @@ export const useAthkarSession = (): AthkarSession => {
       count,
       target: item.target,
       done: count >= item.target,
-      audioOwnsCount: audioRuns(playerState) && playingId === item.id,
+      audioOwnsCount: audioOwnsCount(
+        { playerState, currentAthkarId: playingId, loadingAthkarId: loadingId },
+        item.id
+      ),
     },
     next: nextIndex === null ? null : { textKey: textKeyAt(items[nextIndex], counts) },
     marks: positionMarks(items, counts, index),

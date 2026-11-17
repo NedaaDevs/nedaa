@@ -214,6 +214,18 @@ describe("useAthkarSession", () => {
     expect(result.current.current?.audioOwnsCount).toBe(true);
   });
 
+  test("audio that is starting on this dhikr owns its count", async () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, loadingAthkarId: first.id });
+    const { result } = await renderSession();
+    expect(result.current.current?.audioOwnsCount).toBe(true);
+  });
+
+  test("a start that never ran leaves the count to the hand", async () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.IDLE, loadingAthkarId: first.id });
+    const { result } = await renderSession();
+    expect(result.current.current?.audioOwnsCount).toBe(false);
+  });
+
   test("audio on another dhikr leaves this count to the hand", async () => {
     useAthkarStore.setState({ playerState: PLAYER_STATE.PLAYING, currentAthkarId: last.id });
     const { result } = await renderSession();

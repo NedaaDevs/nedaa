@@ -308,6 +308,20 @@ describe("useFocusGesture", () => {
     expect(on.onTap).not.toHaveBeenCalled();
   });
 
+  test("a hold does not land after audio takes the count", async () => {
+    const { touch, rerender } = await mount();
+    await act(() => touch.begin(STILL));
+    await wait(FOCUS_GESTURE.HOLD_DELAY_MS);
+    expect(latest.holding).toBe(true);
+    await rerender(<Probe canTap={false} canUndo={false} holdRoom={0} />);
+    expect(latest.holding).toBe(false);
+    await wait(FOCUS_GESTURE.HOLD_BUILD_MS);
+    expect(on.onHold).not.toHaveBeenCalled();
+    expect(firedHaptics()).toEqual([]);
+    await act(() => touch.fail(STILL));
+    expect(on.onTap).not.toHaveBeenCalled();
+  });
+
   test("the row rests on the current dhikr, mirrored right to left", async () => {
     await mount({ index: 2 });
     expect(latest.offset.get()).toBe(-2 * WIDTH);

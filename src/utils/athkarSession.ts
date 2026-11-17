@@ -48,6 +48,18 @@ export const textKeyAt = (item: SessionItem, counts: Counts) =>
 export const audioRuns = (state: PlayerState): boolean =>
   state === PLAYER_STATE.PLAYING || state === PLAYER_STATE.LOADING;
 
+/** Audio counts this dhikr: it plays it, waits on it, or is starting on it. */
+export const audioOwnsCount = (
+  audio: {
+    playerState: PlayerState;
+    currentAthkarId: string | null;
+    loadingAthkarId: string | null;
+  },
+  id: string
+): boolean =>
+  (audioRuns(audio.playerState) && audio.currentAthkarId === id) ||
+  (audio.playerState === PLAYER_STATE.LOADING && audio.loadingAthkarId === id);
+
 /** The first unfinished item after `from`, wrapping; null when no other item is open. */
 export const nextOpenIndex = (
   items: readonly SessionItem[],
