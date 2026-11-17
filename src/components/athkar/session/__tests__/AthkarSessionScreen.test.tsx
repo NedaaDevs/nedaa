@@ -1,4 +1,5 @@
 import { screen, userEvent, waitFor } from "@testing-library/react-native";
+import { FadeIn } from "react-native-reanimated";
 
 const mockPush = jest.fn();
 const mockStartAndJumpTo = jest.fn(async (_id: string) => {});
@@ -39,6 +40,8 @@ jest.mock("@/utils/appLogger", () => ({
 }));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+let mockReduced = false;
+jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: () => mockReduced }));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("react-native-safe-area-context", () =>
   jest.requireActual("@/test-helpers/safeAreaMock")
@@ -61,6 +64,7 @@ import {
 } from "@/components/athkar/session/AthkarSessionScreen";
 import { SESSION_LIST_PART } from "@/components/athkar/session/SessionListSheet";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { ATHKAR_FOCUS_HREF } from "@/constants/AthkarSession";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -72,6 +76,7 @@ import { renderWithTheme } from "@/test-helpers/theme";
 import type { Athkar } from "@/types/athkar";
 import { PLAYER_STATE } from "@/types/athkar-audio";
 import { getTodayInt } from "@/utils/athkar";
+import { SAMPLE_SESSION } from "@/utils/athkarSampleSession";
 /* eslint-enable import/first */
 
 const ONBOARDING = "audio-onboarding";
@@ -142,6 +147,82 @@ describe("AthkarSessionScreen", () => {
       await renderWithTheme(<AthkarSessionScreen />);
 
       expect(screen.getByTestId(TEST_LOOK_PART.READER)).toBeOnTheScreen();
+    });
+  });
+
+  describe("a look tried on", () => {
+    const store = (look: typeof TEST_LOOK_ID | null) =>
+      useAthkarStore.setState((state) => ({ settings: { ...state.settings, look } }));
+    afterEach(() => store(null));
+
+    it("draws the tried look in place of the stored one, as a try", async () => {
+      await renderWithTheme(<AthkarSessionScreen trying={TEST_LOOK_ID} />);
+
+      expect(screen.getByTestId(TEST_LOOK_PART.TRYING)).toBeOnTheScreen();
+      expect(ring()).toBeNull();
+    });
+
+    it("counts in the session, and the count stays when the look changes", async () => {
+      const view = await renderWithTheme(<AthkarSessionScreen trying={TEST_LOOK_ID} />);
+      await userEvent.press(screen.getByTestId(TEST_LOOK_PART.READER));
+      expect(screen.getByTestId(TEST_LOOK_PART.COUNT)).toHaveTextContent("1");
+
+      await view.rerender(<AthkarSessionScreen trying={ATHKAR_LOOK.CLASSIC} />);
+      expect(ring()).toHaveAccessibilityValue({
+        text: t("a11y.athkar.cardProgress", { current: "1", total: "3" }),
+      });
+    });
+
+    it("keeps the reader in place when the tried look becomes the stored one", async () => {
+      const view = await renderWithTheme(<AthkarSessionScreen trying={TEST_LOOK_ID} />);
+      const reader = screen.getByTestId(TEST_LOOK_PART.READER);
+
+      store(TEST_LOOK_ID);
+      await view.rerender(<AthkarSessionScreen />);
+      expect(screen.getByTestId(TEST_LOOK_PART.READER)).toBe(reader);
+      expect(screen.queryByTestId(TEST_LOOK_PART.TRYING)).toBeNull();
+    });
+
+    describe("the switch between looks", () => {
+      const stage = () => screen.getByTestId(TEST_LOOK_PART.READER).parent;
+      const switchToTestLook = async () => {
+        const view = await renderWithTheme(<AthkarSessionScreen trying={ATHKAR_LOOK.CLASSIC} />);
+        await view.rerender(<AthkarSessionScreen trying={TEST_LOOK_ID} />);
+      };
+      afterEach(() => {
+        mockReduced = false;
+      });
+
+      it("draws the look a screen opens in at once", async () => {
+        await renderWithTheme(<AthkarSessionScreen trying={TEST_LOOK_ID} />);
+
+        expect(stage()?.props.entering).toBeUndefined();
+      });
+
+      it("fades in a look switched to", async () => {
+        await switchToTestLook();
+
+        expect(stage()?.props.entering).toBe(FadeIn);
+      });
+
+      it("draws a look switched to at once under Reduce Motion", async () => {
+        mockReduced = true;
+        await switchToTestLook();
+
+        expect(stage()?.props.entering).toBeUndefined();
+      });
+    });
+
+    it("shows the look over a sample when the session is finished", async () => {
+      seed({ counts: Object.fromEntries(list.map((a) => [a.id, a.count])) });
+      await renderWithTheme(<AthkarSessionScreen trying={TEST_LOOK_ID} />);
+
+      expect(screen.getByTestId(TEST_LOOK_PART.COUNT, hidden)).toHaveTextContent(
+        `${SAMPLE_SESSION.current?.count}`
+      );
+      expect(
+        screen.queryByText(t("athkar.session.done", { type: t("athkar.morning") }))
+      ).toBeNull();
     });
   });
 

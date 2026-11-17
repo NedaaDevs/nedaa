@@ -31,6 +31,9 @@ jest.mock("@/components/athkar/useAthkarScreenshotSeed", () => ({
   useAthkarLandingScreenshotSeed: () => mockSeedPeriod,
 }));
 jest.mock("@/hooks/useInitializeAthkar", () => ({ useInitializeAthkar: () => {} }));
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+// The chooser reads the real store; its own suite covers it.
+jest.mock("@/hooks/useAthkarLookChooser", () => ({ useAthkarLookChooser: () => null }));
 jest.mock("@/hooks/useTabBarInset", () => ({ useTabBarInset: () => 0 }));
 jest.mock("@/services/athkar-player", () => ({ athkarPlayer: { stop: jest.fn() } }));
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
@@ -132,6 +135,23 @@ describe("AthkarTabs", () => {
     expect(screen.getByText(SESSION)).toBeOnTheScreen();
     expect(screen.queryByText(MY_ATHKAR)).toBeNull();
     expect(tab("athkar.evening").props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it("follows a period another screen gave the session", async () => {
+    const { rerender } = await renderWithTheme(<AthkarTabs />);
+    mockStore.currentType = ATHKAR_TYPE.EVENING;
+    await rerender(<AthkarTabs />);
+
+    expect(tab("athkar.evening").props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it("keeps My Athkar open when another screen moves the session's period", async () => {
+    const { rerender } = await renderWithTheme(<AthkarTabs />);
+    await userEvent.press(tab("athkar.myAthkar"));
+    mockStore.currentType = ATHKAR_TYPE.EVENING;
+    await rerender(<AthkarTabs />);
+
+    expect(tab("athkar.myAthkar").props.accessibilityState).toMatchObject({ selected: true });
   });
 
   it("moves the session to the pressed period", async () => {

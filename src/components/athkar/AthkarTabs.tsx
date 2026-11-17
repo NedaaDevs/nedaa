@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
 import type { ParseKeys } from "i18next";
 
+import { LookDock } from "@/components/athkar/looks/LookDock";
 import MyAthkarList from "@/components/athkar/MyAthkarList";
 import { AthkarSessionScreen } from "@/components/athkar/session/AthkarSessionScreen";
 import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
@@ -13,7 +14,9 @@ import { Pressable } from "@/components/ui/pressable";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { ATHKAR_TYPE, MY_ATHKAR_LOCALES, MY_ATHKAR_TAB } from "@/constants/Athkar";
+import type { ChooserMode } from "@/constants/AthkarLookChooser";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
+import { useAthkarLookChooser } from "@/hooks/useAthkarLookChooser";
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { athkarPlayer } from "@/services/athkar-player";
@@ -75,7 +78,12 @@ const Tab = ({ label, name, selected, onPress }: TabProps) => {
   );
 };
 
-const AthkarTabs = () => {
+type AthkarTabsProps = {
+  /** Opens the look chooser in this mode; a first visit opens it unasked. */
+  chooser?: ChooserMode;
+};
+
+const AthkarTabs = ({ chooser: chooserMode }: AthkarTabsProps) => {
   const { t, i18n } = useTranslation();
   const tabBarInset = useTabBarInset();
 
@@ -84,15 +92,26 @@ const AthkarTabs = () => {
   const validateDailyStreak = useAthkarStore((s) => s.validateDailyStreak);
   const playerState = useAthkarStore((s) => s.playerState);
 
-  const tabs = MY_ATHKAR_LOCALES.includes(i18n.language) ? ALL_TABS : PERIOD_TABS;
-  const [activeTab, setActiveTab] = useState<TabId>(() => getCurrentAthkarPeriod());
-  // A tab the language took away gives way to the session's period.
-  if (!tabs.includes(activeTab)) setActiveTab(currentType);
-
-  useInitializeAthkar();
-
   // A screenshot run seeds morning progress and names the period to open on.
   const screenshotPeriod = useAthkarLandingScreenshotSeed();
+  const chooser = useAthkarLookChooser({ mode: chooserMode, held: screenshotPeriod !== null });
+
+  // A look is tried on a session, so the chooser keeps to the periods.
+  const tabs = MY_ATHKAR_LOCALES.includes(i18n.language) && !chooser ? ALL_TABS : PERIOD_TABS;
+  // A chooser asked for opens over a session that is on its period already.
+  const [activeTab, setActiveTab] = useState<TabId>(() =>
+    chooserMode ? currentType : getCurrentAthkarPeriod()
+  );
+  // A tab the language took away gives way to the session's period.
+  if (!tabs.includes(activeTab)) setActiveTab(currentType);
+  // Another screen can move the session's period; a period tab follows it.
+  const [followed, setFollowed] = useState(currentType);
+  if (followed !== currentType) {
+    setFollowed(currentType);
+    if (activeTab !== MY_ATHKAR_TAB) setActiveTab(currentType);
+  }
+
+  useInitializeAthkar();
 
   const openTab = useEffectEvent(() => {
     if (activeTab !== MY_ATHKAR_TAB) setCurrentType(activeTab);
@@ -151,11 +170,12 @@ const AthkarTabs = () => {
         </ScrollView>
       ) : (
         <SkyOccluder style={{ flex: 1 }}>
-          <Box flex={1} paddingHorizontal="$4" paddingBottom={tabBarInset}>
-            <AthkarSessionScreen />
+          <Box flex={1} paddingHorizontal="$4" paddingBottom={chooser ? "$3" : tabBarInset}>
+            <AthkarSessionScreen trying={chooser?.look} />
           </Box>
         </SkyOccluder>
       )}
+      {chooser ? <LookDock chooser={chooser} /> : null}
     </Box>
   );
 };

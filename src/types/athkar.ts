@@ -111,6 +111,7 @@ export type AthkarActions = {
   incrementCountBy: (athkarId: string, by: number) => void;
   decrementCount: (athkarId: string) => void;
   markFocusHintSeen: () => void;
+  setLook: (look: AthkarLookId) => void;
   findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => number;
   moveToNext: () => void;
   moveToPrevious: () => void;

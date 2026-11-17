@@ -895,6 +895,7 @@ export const useAthkarStore = create<AthkarStore>()(
 
         toggleShortVersion: () => set((state) => ({ shortVersion: !state.shortVersion })),
         markFocusHintSeen: () => set({ focusHintSeen: true }),
+        setLook: (look) => set((state) => ({ settings: { ...state.settings, look } })),
 
         syncDay: async () => {
           await loadNewDay(get, set);
