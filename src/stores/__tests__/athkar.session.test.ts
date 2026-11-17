@@ -37,7 +37,7 @@ jest.mock("@/utils/appLogger", () => ({
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { ADVANCE_PAUSE_MS } from "@/constants/AthkarSession";
+import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 import { useAthkarStore } from "@/stores/athkar";
 import type { Athkar } from "@/types/athkar";
 /* eslint-enable import/first */
@@ -384,6 +384,48 @@ describe("reloading the day's counts", () => {
     });
     await state().loadTodayProgress();
     expect(countOf(second)).toBe(1);
+  });
+
+  test("a count written while the reload reads is kept", async () => {
+    const read = mockSessionItems.getMockImplementation();
+    mockSessionItems.mockImplementationOnce(async (date, session) => {
+      const rows = (await read?.(date, session)) ?? [];
+      tap(second);
+      await jest.advanceTimersByTimeAsync(COUNT_WRITE_DELAY_MS);
+      return rows;
+    });
+    await state().loadTodayProgress();
+    expect(countOf(second)).toBe(1);
+  });
+
+  test("a reload waits for a write already under way", async () => {
+    const write = mockWriteCount.getMockImplementation();
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mockWriteCount.mockImplementationOnce(async (...args) => {
+      await held;
+      return (await write?.(...args)) ?? true;
+    });
+    tap(second);
+    tap(third);
+    await jest.advanceTimersByTimeAsync(COUNT_WRITE_DELAY_MS);
+    const reload = state().loadTodayProgress();
+    release();
+    await reload;
+    expect(countOf(third)).toBe(1);
+  });
+
+  test("a count the DB did not take stays, and the next write sends it", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    mockWriteCount.mockResolvedValueOnce(false);
+    tap(second);
+    await state().loadTodayProgress();
+    expect(countOf(second)).toBe(1);
+
+    await state().flushCounts();
+    expect(mockWriteCount).toHaveBeenLastCalledWith(TODAY, second.id, 1, second.count);
   });
 });
 

@@ -15,3 +15,6 @@ export type SessionStatus = (typeof SESSION_STATUS)[keyof typeof SESSION_STATUS]
 
 /** The Focus screen's route. */
 export const ATHKAR_FOCUS_HREF = "/athkar-focus";
+
+/** Count writes wait this long for taps to settle. */
+export const COUNT_WRITE_DELAY_MS = 300;
