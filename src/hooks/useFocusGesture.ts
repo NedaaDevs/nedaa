@@ -127,6 +127,7 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
   );
 
   // Audio that takes the count mid-touch ends the hold: no ring, no landing.
+  if (holding && holdRoom <= 0) setHolding(false);
   useEffect(() => {
     if (holdRoom > 0) return;
     if (holdTimer.current) clearTimeout(holdTimer.current);
@@ -253,7 +254,7 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
     down,
     hold,
     arrive,
-    holding: holding && holdRoom > 0,
+    holding,
     undoArmed: armed,
   };
 };

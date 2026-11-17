@@ -636,14 +636,8 @@ export const useAthkarStore = create<AthkarStore>()(
           if (deferToNewDay(get, set, () => get().incrementCount(athkarId, skipAutoMove))) return;
           const state = get();
 
-          // Audio guard: block manual UI taps on the thikr currently being played.
-          // Player calls pass skipAutoMove=true to bypass this guard.
-          if (
-            !skipAutoMove &&
-            state.playerState === "playing" &&
-            state.currentAthkarId === athkarId
-          )
-            return;
+          // Audio owns this dhikr's count; the player's own counts pass skipAutoMove.
+          if (!skipAutoMove && audioOwnsCount(state, athkarId)) return;
 
           // The finished dhikr is still on screen; a tap now belongs to no dhikr.
           if (!skipAutoMove && state.advancePending) return;
