@@ -63,6 +63,7 @@ import {
   AthkarSessionScreen,
 } from "@/components/athkar/session/AthkarSessionScreen";
 import { SESSION_LIST_PART } from "@/components/athkar/session/SessionListSheet";
+import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { ATHKAR_FOCUS_HREF } from "@/constants/AthkarSession";
@@ -147,6 +148,26 @@ describe("AthkarSessionScreen", () => {
       await renderWithTheme(<AthkarSessionScreen />);
 
       expect(screen.getByTestId(TEST_LOOK_PART.READER)).toBeOnTheScreen();
+    });
+  });
+
+  describe("the page sky's sun and moon", () => {
+    const bodies = () => screen.queryAllByTestId(SKY_PART.BODIES, hidden);
+    const renderUnderSky = (look: typeof ATHKAR_LOOK.CLASSIC | typeof ATHKAR_LOOK.HORIZON) =>
+      renderWithTheme(
+        <SkyBackground>
+          <AthkarSessionScreen trying={look} />
+        </SkyBackground>
+      );
+
+    it("stay under a look that draws none", async () => {
+      await renderUnderSky(ATHKAR_LOOK.CLASSIC);
+      expect(bodies()).toHaveLength(1);
+    });
+
+    it("leave for a look that draws its own sun", async () => {
+      await renderUnderSky(ATHKAR_LOOK.HORIZON);
+      expect(bodies()).toHaveLength(0);
     });
   });
 

@@ -7,6 +7,7 @@ import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
 import { ClassicPosition } from "@/components/athkar/looks/classic/ClassicPosition";
 import { CountRing } from "@/components/athkar/looks/classic/CountRing";
 import type { AthkarLookProps } from "@/components/athkar/looks/types";
+import { NextDhikr } from "@/components/athkar/session/NextDhikr";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -18,14 +19,9 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
-import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { DURATION_MS } from "@/constants/Motion";
-import { useChangeOnly } from "@/hooks/useChangeOnly";
-import { useHaptic } from "@/hooks/useHaptic";
-import { useCountText, useRatioText } from "@/hooks/useRatioText";
+import { useAthkarReader } from "@/hooks/useAthkarReader";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { useAthkarStore } from "@/stores/athkar";
-import { athkarLine } from "@/utils/athkarText";
 
 /** Test ids for the reader's parts. */
 export const CLASSIC_READER_PART = {
@@ -43,46 +39,14 @@ export const ClassicReader = ({
   onStartAudio,
   trying = false,
 }: AthkarLookProps) => {
-  const { t, i18n } = useTranslation();
-  const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
-  const countText = useCountText();
-  const ratioText = useRatioText();
+  const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
-  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const lift = useElevationShadow(ELEVATION_LEVEL.E2);
-
-  const { current, index, items } = session;
-  const count = current?.count ?? 0;
-  const target = current?.target ?? 0;
-  const figures = ratioText((index ?? 0) + 1, items.length);
-  const ratio = ratioText(count, target);
-  // Spoken as words; a reader says the slash of the drawn figures as a symbol.
-  const place = t("athkar.audio.thikrProgress", {
-    current: countText((index ?? 0) + 1),
-    total: countText(items.length),
-  });
-  const counted = t("a11y.athkar.cardProgress", {
-    current: countText(count),
-    total: countText(target),
-  });
-  const said = useChangeOnly(count === 0 ? place : counted);
-
-  if (!current) return null;
+  const reader = useAthkarReader(session);
+  if (!reader) return null;
+  const { current, count, target } = reader;
 
   const addCount = t("a11y.athkar.addCount");
-  const audioCounts = t("athkar.session.audioCounts");
-  const hint = current.audioOwnsCount
-    ? audioCounts
-    : current.done
-      ? t("athkar.session.thikrDone")
-      : t("athkar.focus.tapToIncrement");
-
-  const add = () => {
-    void hapticSelection();
-    if (count + 1 === target) void hapticSuccess();
-    session.add();
-  };
 
   return (
     <VStack flex={1}>
@@ -102,9 +66,9 @@ export const ClassicReader = ({
         <HStack width="100%" minHeight="$target" alignItems="center" gap="$2">
           <ClassicPosition
             marks={session.marks}
-            figures={figures}
-            fraction={target > 0 ? count / target : 0}
-            accessibilityLabel={place}
+            figures={reader.figures}
+            fraction={reader.fraction}
+            accessibilityLabel={reader.placeLine}
             accessibilityHint={t("a11y.athkar.sessionListHint")}
             onPress={onOpenList}
           />
@@ -143,23 +107,23 @@ export const ClassicReader = ({
         <CountRing
           count={count}
           target={target}
-          countText={countText(count)}
-          targetText={countText(target)}
-          valueText={counted}
+          countText={reader.countText}
+          targetText={reader.targetText}
+          valueText={reader.counted}
           disabled={current.audioOwnsCount}
           held={session.advancePending}
-          hint={hint}
+          hint={reader.hint}
           accessibilityLabel={
             current.audioOwnsCount
-              ? t("a11y.join", { first: addCount, second: audioCounts })
+              ? t("a11y.join", { first: addCount, second: reader.hint })
               : addCount
           }
-          onPress={add}
+          onPress={reader.add}
         />
 
         <HStack width="100%" minHeight="$target" alignItems="center" justifyContent="space-between">
           <Text size="label" fontWeight="500" color="$muted" numeric>
-            {ratio}
+            {reader.ratio}
           </Text>
           <Button
             action="primary"
@@ -184,32 +148,17 @@ export const ClassicReader = ({
             />
           </Box>
 
-          <HStack
+          <NextDhikr
             testID={CLASSIC_READER_PART.NEXT}
+            next={session.next}
+            color="$muted"
             minHeight="$8"
-            alignItems="center"
-            gap="$2"
             marginTop="$1"
-            paddingHorizontal="$4">
-            {session.next ? (
-              <>
-                <Text size="md" fontWeight="600" color="$muted">
-                  {t("athkar.focus.next")}
-                </Text>
-                <Text size="md" fontWeight="500" color="$muted" flex={1} isTruncated>
-                  {athkarLine(t(session.next.textKey), i18n.language, showTranslation)}
-                </Text>
-              </>
-            ) : (
-              <Text size="md" fontWeight="500" color="$muted">
-                {t("athkar.session.lastThikr")}
-              </Text>
-            )}
-          </HStack>
+          />
         </>
       )}
 
-      <SpokenStatus message={said} />
+      <SpokenStatus message={reader.said} />
     </VStack>
   );
 };
