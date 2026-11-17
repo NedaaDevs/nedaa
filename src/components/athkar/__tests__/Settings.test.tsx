@@ -1,12 +1,15 @@
-import { screen, userEvent, within } from "@testing-library/react-native";
+import { Alert } from "react-native";
+import { fireEvent, screen, userEvent, within } from "@testing-library/react-native";
 
 import Settings from "@/components/athkar/Settings";
+import { HOLD } from "@/components/ui/hold-to-confirm";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
+import type { AthkarState } from "@/types/athkar";
 
 const mockReminders = {
   morningNotification: { enabled: true, hour: 6, minute: 0 },
@@ -20,12 +23,19 @@ jest.mock("react-native-safe-area-context", () =>
 );
 // The real stores open SQLite and reach the notification scheduler.
 jest.mock("@/stores/notification", () => ({ useNotificationStore: () => mockReminders }));
+const mockResetProgress = jest.fn(async () => {});
+const mockPeriod: { current: AthkarState["currentType"] } = { current: ATHKAR_TYPE.MORNING };
 jest.mock("@/stores/athkar", () => ({
   useAthkarStore: () => ({
     settings: { showStreak: false, showTranslation: false },
     shortVersion: false,
+    currentType: mockPeriod.current,
+    resetProgress: () => mockResetProgress(),
   }),
 }));
+// The fill is reanimated, which cannot load under jest; it is drawing only.
+jest.mock("@/components/ui/hold-to-confirm/Fill", () => ({ Fill: () => null }));
+jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 
 const t = i18n.t.bind(i18n);
 
@@ -94,5 +104,78 @@ describe("Athkar settings reminder time", () => {
     await userEvent.press(timeButton(spoken));
 
     expect(screen.getByRole("header", { name: title })).toBeTruthy();
+  });
+});
+
+describe("Athkar settings switches", () => {
+  // Nothing on the Athkar screens draws a streak.
+  it("offers no streak switch", async () => {
+    await renderWithTheme(<Settings />);
+
+    expect(screen.queryByText(t("settings.athkar.showStreak.title"))).toBeNull();
+    expect(
+      screen.queryByRole("switch", { name: t("settings.athkar.showStreak.title") })
+    ).toBeNull();
+  });
+});
+
+describe("Athkar settings reset", () => {
+  const reset = () => screen.getByRole("button", { name: t("common.resetDailyProgress") });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const hold = (ms: number) =>
+    userEvent.setup({ advanceTimers: jest.advanceTimersByTime }).longPress(reset(), {
+      duration: ms,
+    });
+
+  it.each([
+    [ATHKAR_TYPE.MORNING, "athkar.session.resetMessage.morning"],
+    [ATHKAR_TYPE.EVENING, "athkar.session.resetMessage.evening"],
+  ] as const)(
+    "names the %s counts a reset returns to zero, beside the control",
+    async (period, key) => {
+      mockPeriod.current = period;
+      await renderWithTheme(<Settings />);
+
+      expect(screen.getByText(t(key))).toBeOnTheScreen();
+      mockPeriod.current = ATHKAR_TYPE.MORNING;
+    }
+  );
+
+  it("resets the session after a full hold", async () => {
+    await renderWithTheme(<Settings />);
+    await hold(HOLD.DEFAULT_MS + HOLD.TICK_MS / 10);
+
+    expect(mockResetProgress).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the counts when the hold ends early", async () => {
+    await renderWithTheme(<Settings />);
+    await hold(HOLD.DEFAULT_MS - HOLD.TICK_MS);
+
+    expect(mockResetProgress).not.toHaveBeenCalled();
+  });
+
+  it("asks a screen reader's person before it resets", async () => {
+    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    await renderWithTheme(<Settings />);
+    fireEvent(reset(), "accessibilityTap");
+
+    expect(alert).toHaveBeenCalledWith(
+      t("common.resetDailyProgress"),
+      t("athkar.session.resetMessage.morning"),
+      expect.any(Array)
+    );
+    expect(mockResetProgress).not.toHaveBeenCalled();
+    // The hold instruction is for a finger; the dialog replaces it.
+    expect(screen.queryByText(t("a11y.athkar.holdToResetHint"))).toBeNull();
+    expect(
+      screen.getByText(t("a11y.athkar.holdToResetHint"), { includeHiddenElements: true })
+    ).toBeOnTheScreen();
   });
 });

@@ -127,6 +127,15 @@ export const dismissConfigs = jest.fn<void, [object | undefined]>();
 const presented: (() => void)[] = [];
 const closeTop = () => presented.at(-1)?.();
 
+/** While set, a presented sheet stays below its detent until `settleSheet`, as a rising one does. */
+let rising = false;
+export const holdSheetsRising = (held: boolean) => {
+  rising = held;
+};
+
+/** Rests the newest sheet on its first detent. */
+export const settleSheet = () => modalProps.mock.lastCall?.[0].onChange?.(0);
+
 /** gorhom's animated index once a sheet rests on its first detent. */
 const SETTLED_INDEX = { value: 0 };
 
@@ -182,7 +191,7 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
   useEffect(() => {
     if (!mounted) return;
     presented.push(close);
-    latest.current.onChange?.(0);
+    if (!rising) latest.current.onChange?.(0);
     return () => {
       presented.splice(presented.indexOf(close), 1);
     };

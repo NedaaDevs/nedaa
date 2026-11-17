@@ -537,32 +537,29 @@ const getSessionItems = (
   session: "morning" | "evening"
 ): Promise<AthkarDailyItem[]> => sdb.run((db) => getSessionItemsWith(db, dateInt, session));
 
-// Update a single athkar item count
+// Writes one dhikr's count for a day. A day with no row for it gets one; a stored target stays.
 const updateAthkarCount = (
   dateInt: number,
   thikrId: string,
-  currentCount: number
+  currentCount: number,
+  totalCount: number
 ): Promise<boolean> =>
   sdb.run(async (db) => {
     try {
       const tz = locationStore.getState().locationDetails.timezone;
       const now = timeZonedNow(tz).toISOString();
 
-      const result = await db.runAsync(
-        `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
-         SET current_count = ?, updated_at = ?
-         WHERE date = ? AND thikr_id = ?;`,
-        [currentCount, now, dateInt, thikrId]
+      await db.runAsync(
+        `INSERT INTO ${ATHKAR_DAILY_ITEMS_TABLE}
+           (date, thikr_id, current_count, total_count, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(date, thikr_id) DO UPDATE SET
+           current_count = excluded.current_count,
+           updated_at = excluded.updated_at;`,
+        [dateInt, thikrId, currentCount, totalCount, now, now]
       );
 
-      if (result.changes === 0) {
-        log.w(
-          "DB",
-          `updateAthkarCount: 0 rows changed for thikrId=${thikrId} date=${dateInt} count=${currentCount} — row may not exist`
-        );
-      }
-
-      return result.changes > 0;
+      return true;
     } catch (error) {
       log.e(
         "DB",

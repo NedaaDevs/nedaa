@@ -9,7 +9,8 @@ import { splitAthkarText } from "@/utils/athkarText";
 
 type Props = {
   textKey: string;
-  size?: "sm" | "md" | "lg" | "xl" | "2xl";
+  size?: "sm" | "md" | "lg" | "xl" | "headline" | "2xl";
+  fontWeight?: ComponentProps<typeof Text>["fontWeight"];
   textAlign?: "left" | "center" | "right";
   color?: ComponentProps<typeof Text>["color"];
 };
@@ -19,6 +20,7 @@ const ARABIC_LINE_HEIGHT: Record<string, number> = {
   md: 26,
   lg: 30,
   xl: 34,
+  headline: 44,
   "2xl": 40,
 };
 
@@ -27,6 +29,7 @@ const AthkarTextDisplay: FC<Props> = ({
   size = "xl",
   textAlign = "center",
   color = "$typography",
+  fontWeight,
 }) => {
   const { t, i18n } = useTranslation();
   const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
@@ -41,6 +44,7 @@ const AthkarTextDisplay: FC<Props> = ({
         size={size}
         textAlign={textAlign}
         color={color}
+        fontWeight={fontWeight}
         style={{ lineHeight: ARABIC_LINE_HEIGHT[size] ?? 34, writingDirection: "rtl" }}>
         {arabic}
       </Text>

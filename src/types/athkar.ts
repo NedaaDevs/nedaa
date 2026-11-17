@@ -42,6 +42,10 @@ export type AthkarState = {
   streak: Streak;
   focusMode: boolean;
   currentAthkarIndex: number;
+  /** A finished dhikr is held on screen before the next one opens. Taps do not count. */
+  advancePending: boolean;
+  /** The day the counts in memory belong to; null before the first load. */
+  progressDay: number | null;
   lastMorningIndex: number;
   lastEveningIndex: number;
   currentType: Exclude<AthkarType, "all">;
@@ -107,6 +111,8 @@ export type AthkarActions = {
   moveToNext: () => void;
   moveToPrevious: () => void;
   setCurrentAthkarIndex: (index: number) => void;
+  /** Moves to a dhikr of the current period. An index outside the list changes nothing. */
+  jumpToIndex: (index: number) => void;
   setCurrentType: (type: Exclude<AthkarType, "all">) => void;
   toggleAutoMove: () => void;
   toggleShowStreak: () => void;
@@ -118,6 +124,10 @@ export type AthkarActions = {
   // Asynchronous
   initializeStore: () => Promise<void>;
   initializeTodayData: () => Promise<void>;
+  /** Loads the new day's counts when the day has changed since the last load. */
+  syncDay: () => Promise<void>;
+  /** Writes the pending counts at once, for when the app or the screen goes away. */
+  flushCounts: () => Promise<void>;
   updateAthkarLists: (morningList: Athkar[], eveningList: Athkar[]) => Promise<void>;
   initializeSession: (type: Exclude<AthkarType, "all">) => Promise<void>;
   loadTodayProgress: () => Promise<void>;
