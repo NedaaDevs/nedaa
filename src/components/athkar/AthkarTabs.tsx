@@ -1,83 +1,106 @@
-import { useState, useEffect, useCallback, useEffectEvent } from "react";
+import { useState, useEffect, useEffectEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import type { ParseKeys } from "i18next";
 
-// Components
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { HStack } from "@/components/ui/hstack";
-import { Pressable } from "@/components/ui/pressable";
-import { Fab, FabIcon } from "@/components/ui/fab";
-import { Icon } from "@/components/ui/icon";
-
-import AthkarList from "@/components/athkar/AthkarList";
 import MyAthkarList from "@/components/athkar/MyAthkarList";
-import AudioOnboarding from "@/components/athkar/AudioOnboarding";
-
-// Stores
-import { useAthkarStore } from "@/stores/athkar";
-
-// Hooks
+import { AthkarSessionScreen } from "@/components/athkar/session/AthkarSessionScreen";
+import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
+import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
+import { Pressable } from "@/components/ui/pressable";
+import { SkyOccluder } from "@/components/ui/sky-background";
+import { Text } from "@/components/ui/text";
+import { ATHKAR_TYPE, MY_ATHKAR_TAB } from "@/constants/Athkar";
+import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
-import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
-
-// Constants
-import { ATHKAR_TYPE } from "@/constants/Athkar";
-
-// Services
 import { athkarPlayer } from "@/services/athkar-player";
-
-// Icons
-import { Sun, Moon, Focus, BookOpen } from "lucide-react-native";
-
-// Types
-import { AthkarType } from "@/types/athkar";
-
-// Utils
+import { useAthkarStore } from "@/stores/athkar";
+import { PLAYER_STATE } from "@/types/athkar-audio";
 import { getCurrentAthkarPeriod } from "@/utils/athkar";
 
 const MY_ATHKAR_SUPPORTED_LANGUAGES = ["ar", "en"];
 
+type Period = typeof ATHKAR_TYPE.MORNING | typeof ATHKAR_TYPE.EVENING;
+type TabId = Period | typeof MY_ATHKAR_TAB;
+
+// `label` is drawn and stays on one line; `name` is spoken in full.
+const TAB_TITLE = {
+  [ATHKAR_TYPE.MORNING]: { label: "athkar.tab.morning", name: "athkar.morning" },
+  [ATHKAR_TYPE.EVENING]: { label: "athkar.tab.evening", name: "athkar.evening" },
+  [MY_ATHKAR_TAB]: { label: "athkar.myAthkar", name: "athkar.myAthkar" },
+} as const satisfies Record<TabId, { label: ParseKeys; name: ParseKeys }>;
+
+const PERIOD_TABS: readonly TabId[] = [ATHKAR_TYPE.MORNING, ATHKAR_TYPE.EVENING];
+const ALL_TABS: readonly TabId[] = [...PERIOD_TABS, MY_ATHKAR_TAB];
+
+// A label holds one line: a label too wide for its tab shrinks to this share of its size.
+export const TAB_LABEL_MIN_SCALE = 0.8;
+
+type TabProps = { label: string; name: string; selected: boolean; onPress: () => void };
+
+const Tab = ({ label, name, selected, onPress }: TabProps) => {
+  const lift = useElevationShadow(ELEVATION_LEVEL.E1);
+  return (
+    <Pressable
+      role="tab"
+      accessibilityLabel={name}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      flexGrow={1}
+      flexBasis={0}
+      minHeight="$target"
+      paddingHorizontal="$2"
+      alignItems="center"
+      justifyContent="center"
+      borderRadius="$pill"
+      backgroundColor={selected ? "$raised" : "transparent"}
+      style={selected ? { boxShadow: lift } : undefined}>
+      {selected ? <HighlightEdge radius="$pill" /> : null}
+      <Text
+        size="label"
+        fontWeight={selected ? "600" : "500"}
+        color={selected ? "$fg" : "$muted"}
+        textAlign="center"
+        // Android shrinks a label only inside a fixed width.
+        alignSelf="stretch"
+        // The tab pads the label; no end room on top of it.
+        glyph
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={TAB_LABEL_MIN_SCALE}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+};
+
 const AthkarTabs = () => {
   const { t, i18n } = useTranslation();
-  const router = useRouter();
   const tabBarInset = useTabBarInset();
 
   const setCurrentType = useAthkarStore((s) => s.setCurrentType);
   const validateDailyStreak = useAthkarStore((s) => s.validateDailyStreak);
   const playerState = useAthkarStore((s) => s.playerState);
 
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const showMyAthkarTab = MY_ATHKAR_SUPPORTED_LANGUAGES.includes(i18n.language);
+  const tabs = MY_ATHKAR_SUPPORTED_LANGUAGES.includes(i18n.language) ? ALL_TABS : PERIOD_TABS;
+  const [activeTab, setActiveTab] = useState<TabId>(() => getCurrentAthkarPeriod());
 
-  type activeTabType = Exclude<AthkarType, "all"> | "my-athkar";
-
-  const [activeTab, setActiveTab] = useState<activeTabType>(() => {
-    return getCurrentAthkarPeriod();
-  });
-
-  // Initialize athkar data
   useInitializeAthkar();
 
-  // Screenshot mode: seeds morning progress + streak and forces the period.
-  // Returns null outside screenshot mode so production behavior is unchanged.
+  // A screenshot run seeds morning progress and names the period to open on.
   const screenshotPeriod = useAthkarLandingScreenshotSeed();
 
-  // Check for daily reset and validate streak on mount
   const openTab = useEffectEvent(() => {
-    if (activeTab !== "my-athkar") {
-      setCurrentType(activeTab);
-    }
-    validateDailyStreak();
+    if (activeTab !== MY_ATHKAR_TAB) setCurrentType(activeTab);
+    void validateDailyStreak();
   });
   useEffect(() => {
     openTab();
   }, []);
 
-  // Force the seeded period (e.g. Morning) for the screenshot capture. Only a
-  // screenshot-capture build seeds one; elsewhere it stays null.
   const [seeded, setSeeded] = useState<typeof screenshotPeriod>(null);
   if (screenshotPeriod !== seeded) {
     setSeeded(screenshotPeriod);
@@ -87,163 +110,51 @@ const AthkarTabs = () => {
     if (screenshotPeriod) setCurrentType(screenshotPeriod);
   }, [screenshotPeriod, setCurrentType]);
 
-  const handleRequestOnboarding = useCallback(() => {
-    setShowOnboarding(true);
-  }, []);
+  const select = (tab: TabId) => {
+    // Audio belongs to the tab it started on.
+    if (tab !== activeTab && playerState !== PLAYER_STATE.IDLE) void athkarPlayer.stop();
+    setActiveTab(tab);
+    if (tab !== MY_ATHKAR_TAB) setCurrentType(tab);
+  };
 
   return (
     <Box flex={1}>
-      {/* Tab Header */}
-      <Box backgroundColor="$background">
+      <SkyOccluder>
         <HStack
-          justifyContent="center"
-          alignItems="center"
-          paddingVertical="$2"
-          paddingHorizontal="$3"
-          gap="$2">
-          {/* Morning Tab */}
-          <Pressable
-            onPress={() => {
-              if (activeTab !== ATHKAR_TYPE.MORNING && playerState !== "idle") {
-                athkarPlayer.stop();
-              }
-              setActiveTab(ATHKAR_TYPE.MORNING);
-              setCurrentType(ATHKAR_TYPE.MORNING);
-            }}
-            role="tab"
-            accessibilityLabel={t("athkar.morning")}
-            accessibilityState={{ selected: activeTab === ATHKAR_TYPE.MORNING }}
-            flex={1}
-            minHeight={44}
-            paddingVertical="$3"
-            paddingHorizontal="$4"
-            borderRadius={999}
-            alignItems="center"
-            justifyContent="center"
-            backgroundColor={
-              activeTab === ATHKAR_TYPE.MORNING ? "$primary" : "$backgroundSecondary"
-            }>
-            <HStack gap="$2" alignItems="center">
-              <Icon
-                as={Sun}
-                size="md"
-                color={
-                  activeTab === ATHKAR_TYPE.MORNING ? "$typographyContrast" : "$typographySecondary"
-                }
-              />
-              <Text
-                fontWeight="500"
-                color={
-                  activeTab === ATHKAR_TYPE.MORNING ? "$typographyContrast" : "$typographySecondary"
-                }>
-                {t("athkar.morning")}
-              </Text>
-            </HStack>
-          </Pressable>
-
-          {/* Evening Tab */}
-          <Pressable
-            onPress={() => {
-              if (activeTab !== ATHKAR_TYPE.EVENING && playerState !== "idle") {
-                athkarPlayer.stop();
-              }
-              setActiveTab(ATHKAR_TYPE.EVENING);
-              setCurrentType(ATHKAR_TYPE.EVENING);
-            }}
-            role="tab"
-            accessibilityLabel={t("athkar.evening")}
-            accessibilityState={{ selected: activeTab === ATHKAR_TYPE.EVENING }}
-            flex={1}
-            minHeight={44}
-            paddingVertical="$3"
-            paddingHorizontal="$4"
-            borderRadius={999}
-            alignItems="center"
-            justifyContent="center"
-            backgroundColor={
-              activeTab === ATHKAR_TYPE.EVENING ? "$primary" : "$backgroundSecondary"
-            }>
-            <HStack gap="$2" alignItems="center">
-              <Icon
-                as={Moon}
-                size="md"
-                color={
-                  activeTab === ATHKAR_TYPE.EVENING ? "$typographyContrast" : "$typographySecondary"
-                }
-              />
-              <Text
-                fontWeight="500"
-                color={
-                  activeTab === ATHKAR_TYPE.EVENING ? "$typographyContrast" : "$typographySecondary"
-                }>
-                {t("athkar.evening")}
-              </Text>
-            </HStack>
-          </Pressable>
-
-          {/* My Athkar Tab — only for ar/en */}
-          {showMyAthkarTab && (
-            <Pressable
-              onPress={() => {
-                if (activeTab !== "my-athkar" && playerState !== "idle") {
-                  athkarPlayer.stop();
-                }
-                setActiveTab("my-athkar");
-              }}
-              role="tab"
-              accessibilityLabel={t("athkar.myAthkar")}
-              accessibilityState={{ selected: activeTab === "my-athkar" }}
-              flex={1}
-              minHeight={44}
-              paddingVertical="$3"
-              paddingHorizontal="$4"
-              borderRadius={999}
-              alignItems="center"
-              justifyContent="center"
-              backgroundColor={activeTab === "my-athkar" ? "$primary" : "$backgroundSecondary"}>
-              <HStack gap="$2" alignItems="center">
-                <Icon
-                  as={BookOpen}
-                  size="md"
-                  color={activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"}
-                />
-                <Text
-                  fontWeight="500"
-                  color={
-                    activeTab === "my-athkar" ? "$typographyContrast" : "$typographySecondary"
-                  }>
-                  {t("athkar.myAthkar")}
-                </Text>
-              </HStack>
-            </Pressable>
-          )}
+          role="tablist"
+          marginTop="$2"
+          marginHorizontal="$4"
+          gap="$0.5"
+          padding="$0.5"
+          borderRadius="$pill"
+          backgroundColor="$pressed">
+          {tabs.map((tab) => (
+            <Tab
+              key={tab}
+              label={t(TAB_TITLE[tab].label)}
+              name={t(TAB_TITLE[tab].name)}
+              selected={activeTab === tab}
+              onPress={() => select(tab)}
+            />
+          ))}
         </HStack>
-      </Box>
+      </SkyOccluder>
 
-      {/* Content Area */}
-      <ScrollView
-        style={{ flex: 1, backgroundColor: "transparent" }}
-        contentContainerStyle={{ paddingBottom: tabBarInset }}>
-        <Box padding="$4">
-          {activeTab === "my-athkar" ? (
+      {activeTab === MY_ATHKAR_TAB ? (
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "transparent" }}
+          contentContainerStyle={{ paddingBottom: tabBarInset }}>
+          <Box padding="$4">
             <MyAthkarList />
-          ) : (
-            <AthkarList type={activeTab} onRequestOnboarding={handleRequestOnboarding} />
-          )}
-        </Box>
-      </ScrollView>
-
-      {activeTab !== "my-athkar" && (
-        <Fab
-          onPress={() => router.push("/athkar-focus")}
-          size="lg"
-          marginBottom={tabBarInset}
-          accessibilityLabel={t("athkar.enterFocusMode")}>
-          <FabIcon as={Focus} />
-        </Fab>
+          </Box>
+        </ScrollView>
+      ) : (
+        <SkyOccluder style={{ flex: 1 }}>
+          <Box flex={1} paddingHorizontal="$4" paddingBottom={tabBarInset}>
+            <AthkarSessionScreen />
+          </Box>
+        </SkyOccluder>
       )}
-
-      <AudioOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </Box>
   );
 };

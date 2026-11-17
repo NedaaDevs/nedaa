@@ -14,3 +14,9 @@ export const splitAthkarText = (
 
   return { arabic: text, translation: null };
 };
+
+/** The one line that names a dhikr: its translation where translations show, else its Arabic. */
+export const athkarLine = (text: string, locale: string, showTranslation: boolean): string => {
+  const { arabic, translation } = splitAthkarText(text, locale);
+  return showTranslation && translation ? translation.split("\n")[0] : arabic;
+};

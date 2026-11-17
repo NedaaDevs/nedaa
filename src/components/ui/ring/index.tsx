@@ -5,6 +5,7 @@ import { useThemeColor } from "@/components/ui/theme-color";
 const SIZE_PRESETS = {
   sm: { size: 28, strokeWidth: 3 },
   md: { size: 48, strokeWidth: 5 },
+  lg: { size: 120, strokeWidth: 5 },
 } as const;
 
 type RingSize = keyof typeof SIZE_PRESETS;
@@ -57,5 +58,8 @@ export const Ring = ({ progress, size = "md", color = "$accentPrimary" }: Props)
     </Svg>
   );
 };
+
+/** The diameter of a ring size, for a parent that sizes itself to the ring. */
+export const ringDiameter = (size: RingSize) => SIZE_PRESETS[size].size;
 
 export type { RingSize };
