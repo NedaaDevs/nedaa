@@ -121,13 +121,9 @@ const queueCountWrite = (state: AthkarState, athkarId: string) => {
   const item = state.currentProgress.find((p) => p.athkarId === athkarId);
   if (!item) return;
   countRevision += 1;
-  debouncedDBUpdate.add(
-    athkarId,
-    state.progressDay ?? today(),
-    athkarId,
-    item.currentCount,
-    item.totalCount
-  );
+  const day = state.progressDay ?? today();
+  // Keyed by day too: a count replaces only its own day's.
+  debouncedDBUpdate.add(`${day}:${athkarId}`, day, athkarId, item.currentCount, item.totalCount);
 };
 
 type Get = () => AthkarStore;
