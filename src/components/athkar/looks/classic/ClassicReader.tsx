@@ -126,14 +126,15 @@ export const ClassicReader = ({
           </Pressable>
         </HStack>
 
+        {/* Keyed so each dhikr opens at the top of its text. */}
         <ScrollView
+          key={current.textKey}
           testID={CLASSIC_READER_PART.TEXT_SCROLL}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
           <Box minHeight="$20" justifyContent="center" paddingVertical="$2">
             <Animated.View
-              key={current.textKey}
               entering={reduceMotion ? undefined : FadeInDown.duration(DURATION_MS.GENTLE)}>
               <AthkarTextDisplay
                 textKey={current.textKey}

@@ -12,7 +12,7 @@ import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge
 import { Pressable } from "@/components/ui/pressable";
 import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
-import { ATHKAR_TYPE, MY_ATHKAR_TAB } from "@/constants/Athkar";
+import { ATHKAR_TYPE, MY_ATHKAR_LOCALES, MY_ATHKAR_TAB } from "@/constants/Athkar";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
@@ -20,8 +20,6 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { useAthkarStore } from "@/stores/athkar";
 import { PLAYER_STATE } from "@/types/athkar-audio";
 import { getCurrentAthkarPeriod } from "@/utils/athkar";
-
-const MY_ATHKAR_SUPPORTED_LANGUAGES = ["ar", "en"];
 
 type Period = typeof ATHKAR_TYPE.MORNING | typeof ATHKAR_TYPE.EVENING;
 type TabId = Period | typeof MY_ATHKAR_TAB;
@@ -81,12 +79,15 @@ const AthkarTabs = () => {
   const { t, i18n } = useTranslation();
   const tabBarInset = useTabBarInset();
 
+  const currentType = useAthkarStore((s) => s.currentType);
   const setCurrentType = useAthkarStore((s) => s.setCurrentType);
   const validateDailyStreak = useAthkarStore((s) => s.validateDailyStreak);
   const playerState = useAthkarStore((s) => s.playerState);
 
-  const tabs = MY_ATHKAR_SUPPORTED_LANGUAGES.includes(i18n.language) ? ALL_TABS : PERIOD_TABS;
+  const tabs = MY_ATHKAR_LOCALES.includes(i18n.language) ? ALL_TABS : PERIOD_TABS;
   const [activeTab, setActiveTab] = useState<TabId>(() => getCurrentAthkarPeriod());
+  // A tab the language took away gives way to the session's period.
+  if (!tabs.includes(activeTab)) setActiveTab(currentType);
 
   useInitializeAthkar();
 
