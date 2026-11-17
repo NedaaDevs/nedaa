@@ -258,6 +258,18 @@ describe("ClassicReader", () => {
     expect(mockHaptics[HAPTIC_FEEDBACK.SUCCESS]).toHaveBeenCalledTimes(1);
   });
 
+  it("opens each dhikr at the top of its text", async () => {
+    const props = propsOf();
+    const view = await renderWithTheme(<ClassicReader {...props} />);
+    const scroller = screen.getByTestId(CLASSIC_READER_PART.TEXT_SCROLL);
+    await view.rerender(<ClassicReader {...props} session={sessionOf({ count: 1 })} />);
+    expect(screen.getByTestId(CLASSIC_READER_PART.TEXT_SCROLL)).toBe(scroller);
+
+    // A new scroller starts at the top; a kept one holds the last dhikr's offset.
+    await view.rerender(<ClassicReader {...props} session={sessionOf({ textKey: textOf(0) })} />);
+    expect(screen.getByTestId(CLASSIC_READER_PART.TEXT_SCROLL)).not.toBe(scroller);
+  });
+
   // A live region speaks on Android only; VoiceOver hears it said.
   it("says the count on iOS as it changes, and nothing on opening", async () => {
     Platform.OS = PlatformType.IOS;
