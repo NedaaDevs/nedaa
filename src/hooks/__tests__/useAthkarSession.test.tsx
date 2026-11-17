@@ -31,8 +31,9 @@ jest.mock("@/utils/appLogger", () => ({
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
 import { APP_STATE } from "@/constants/AppState";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { STEP } from "@/constants/AthkarFocus";
 import { ADVANCE_PAUSE_MS, MARK_STATE, SESSION_STATUS } from "@/constants/AthkarSession";
-import { useAthkarSession } from "@/hooks/useAthkarSession";
+import { useAthkarSession, useSessionOpening } from "@/hooks/useAthkarSession";
 import { useAthkarStore } from "@/stores/athkar";
 import type { Athkar } from "@/types/athkar";
 import { PLAYER_STATE } from "@/types/athkar-audio";
@@ -80,6 +81,13 @@ const seed = (counts: Record<string, number> = {}) =>
     })),
   });
 
+/** The session as the reader holds it: opened, then read. */
+const renderSession = () =>
+  renderHook(() => {
+    useSessionOpening();
+    return useAthkarSession();
+  });
+
 const ALL_DONE = { [first.id]: 1, [quls.id]: 9, [last.id]: 1 };
 
 beforeEach(() => {
@@ -103,7 +111,7 @@ afterEach(() => {
 
 describe("useAthkarSession", () => {
   test("a loaded session shows the current dhikr and its count", async () => {
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.status).toBe(SESSION_STATUS.READY);
     expect(result.current.index).toBe(0);
     expect(result.current.current).toMatchObject({
@@ -118,7 +126,7 @@ describe("useAthkarSession", () => {
   });
 
   test("a count, then the pause, opens the next dhikr", async () => {
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     await act(() => result.current.add());
     expect(result.current.advancePending).toBe(true);
     expect(result.current.current).toMatchObject({ count: 1, done: true });
@@ -131,14 +139,14 @@ describe("useAthkarSession", () => {
   test("undo lowers the current count", async () => {
     seed({ [quls.id]: 2 });
     useAthkarStore.setState({ currentAthkarIndex: 1, lastMorningIndex: 1 });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     await act(() => result.current.undo());
     expect(result.current.current?.count).toBe(1);
   });
 
   test("a group shows the text its count has reached", async () => {
     seed({ [first.id]: 1, [quls.id]: 4 });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.index).toBe(1);
     expect(result.current.current?.textKey).toBe(QULS[1]);
   });
@@ -146,20 +154,27 @@ describe("useAthkarSession", () => {
   test("it opens on the first unfinished dhikr from the last place", async () => {
     seed({ [first.id]: 1 });
     useAthkarStore.setState({ lastMorningIndex: 0 });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.index).toBe(1);
+  });
+
+  test("a second reader of the session keeps the place it finds", async () => {
+    seed({ [first.id]: 1 });
+    const { result } = await renderHook(() => useAthkarSession());
+    expect(result.current.index).toBe(0);
+    expect(result.current.current?.done).toBe(true);
   });
 
   test("the last open dhikr has no next", async () => {
     seed({ [first.id]: 1, [quls.id]: 9 });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.index).toBe(2);
     expect(result.current.next).toBeNull();
   });
 
   test("a finished session has no place and no current mark", async () => {
     seed(ALL_DONE);
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.status).toBe(SESSION_STATUS.DONE);
     expect(result.current.index).toBeNull();
     expect(result.current.current).toBeNull();
@@ -172,7 +187,7 @@ describe("useAthkarSession", () => {
 
   test("the last count holds the dhikr for the pause before the session reads done", async () => {
     seed({ [first.id]: 1, [quls.id]: 9 });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     await act(() => result.current.add());
     expect(result.current.status).toBe(SESSION_STATUS.READY);
     expect(result.current.current?.done).toBe(true);
@@ -182,25 +197,37 @@ describe("useAthkarSession", () => {
 
   test("a session with no list or no loaded counts is loading", async () => {
     useAthkarStore.setState({ progressDay: null, currentProgress: [] });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.status).toBe(SESSION_STATUS.LOADING);
     expect(result.current.current).toBeNull();
   });
 
   test("audio that plays this dhikr owns its count", async () => {
     useAthkarStore.setState({ playerState: PLAYER_STATE.PLAYING, currentAthkarId: first.id });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     expect(result.current.current?.audioOwnsCount).toBe(true);
   });
 
+  test("audio keeps the count through its pause between two dhikr", async () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, currentAthkarId: first.id });
+    const { result } = await renderSession();
+    expect(result.current.current?.audioOwnsCount).toBe(true);
+  });
+
+  test("audio on another dhikr leaves this count to the hand", async () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.PLAYING, currentAthkarId: last.id });
+    const { result } = await renderSession();
+    expect(result.current.current?.audioOwnsCount).toBe(false);
+  });
+
   test("a jump moves the place", async () => {
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     await act(() => result.current.jumpTo(2));
     expect(result.current.index).toBe(2);
   });
 
   test("leaving the app writes the pending count", async () => {
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderSession();
     await act(() => emit(APP_STATE.INACTIVE));
     await act(() => emit(APP_STATE.ACTIVE));
     await act(() => result.current.add());
@@ -212,7 +239,7 @@ describe("useAthkarSession", () => {
   test("returning to the app brings the store to the day", async () => {
     const syncDay = jest.fn(async () => {});
     useAthkarStore.setState({ syncDay });
-    await renderHook(() => useAthkarSession());
+    await renderSession();
     expect(syncDay).not.toHaveBeenCalled();
     await act(() => emit(APP_STATE.INACTIVE));
     expect(syncDay).not.toHaveBeenCalled();
@@ -221,9 +248,65 @@ describe("useAthkarSession", () => {
   });
 
   test("leaving the screen writes the pending count", async () => {
-    const { result, unmount } = await renderHook(() => useAthkarSession());
+    const { result, unmount } = await renderSession();
     await act(() => result.current.add());
     await unmount();
     expect(mockWriteCount).toHaveBeenCalledTimes(1);
+  });
+
+  test("a step moves one dhikr and stops at the ends", async () => {
+    const { result } = await renderSession();
+    expect(result.current.canStep).toEqual({ previous: false, next: true });
+    await act(() => result.current.step(STEP.PREVIOUS));
+    expect(result.current.index).toBe(0);
+    await act(() => result.current.step(STEP.NEXT));
+    await act(() => result.current.step(STEP.NEXT));
+    expect(result.current.index).toBe(2);
+    expect(result.current.canStep).toEqual({ previous: true, next: false });
+    await act(() => result.current.step(STEP.NEXT));
+    expect(result.current.index).toBe(2);
+  });
+
+  test("a step opens a finished dhikr at its full count", async () => {
+    seed({ [first.id]: 1 });
+    useAthkarStore.setState({ currentAthkarIndex: 1, lastMorningIndex: 1 });
+    const { result } = await renderSession();
+    await act(() => result.current.step(STEP.PREVIOUS));
+    expect(result.current.index).toBe(0);
+    expect(result.current.current).toMatchObject({ count: 1, done: true });
+  });
+
+  test("a step during the pause keeps the place it chose", async () => {
+    seed({ [quls.id]: 8 });
+    useAthkarStore.setState({ currentAthkarIndex: 1, lastMorningIndex: 1 });
+    const { result } = await renderSession();
+    await act(() => result.current.add());
+    expect(result.current.advancePending).toBe(true);
+    await act(() => result.current.step(STEP.PREVIOUS));
+    expect(result.current.advancePending).toBe(false);
+    await act(() => jest.advanceTimersByTime(ADVANCE_PAUSE_MS));
+    expect(result.current.index).toBe(0);
+  });
+
+  test("adding many stops at the target and starts the pause", async () => {
+    seed({ [quls.id]: 6 });
+    useAthkarStore.setState({ currentAthkarIndex: 1, lastMorningIndex: 1 });
+    const { result } = await renderSession();
+    await act(() => result.current.addMany(10));
+    expect(result.current.current).toMatchObject({ count: 9, done: true });
+    expect(result.current.advancePending).toBe(true);
+  });
+
+  test("adding many leaves a dhikr the audio is counting", async () => {
+    seed();
+    useAthkarStore.setState({
+      currentAthkarIndex: 1,
+      lastMorningIndex: 1,
+      playerState: PLAYER_STATE.PLAYING,
+      currentAthkarId: quls.id,
+    });
+    const { result } = await renderSession();
+    await act(() => result.current.addMany(5));
+    expect(result.current.current?.count).toBe(0);
   });
 });

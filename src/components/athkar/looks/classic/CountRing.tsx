@@ -1,7 +1,8 @@
 import { StyleSheet, View } from "react-native";
 
+import { CountFigure } from "@/components/athkar/looks/classic/CountFigure";
 import { Box } from "@/components/ui/box";
-import { DigitSizer, digitsOf, type DigitTextProps } from "@/components/ui/digit-reserve";
+import { type DigitTextProps } from "@/components/ui/digit-reserve";
 import { Pressable } from "@/components/ui/pressable";
 import { Ring, ringDiameter } from "@/components/ui/ring";
 import { Text } from "@/components/ui/text";
@@ -65,18 +66,12 @@ export const CountRing = ({
           <Ring progress={target > 0 ? count / target : 0} size={SIZE} color="$accent" />
         </View>
         <Box alignItems="center">
-          {/* As wide as the target, so the number holds its place as it grows. */}
-          <View style={styles.reserve}>
-            {[...targetText].map((character, place) => (
-              <DigitSizer
-                key={place}
-                testID={COUNT_RING_PART.DIGIT_SIZER}
-                digits={digitsOf(character) ?? character}
-                textProps={NUMBER}
-              />
-            ))}
-          </View>
-          <Text {...NUMBER}>{countText}</Text>
+          <CountFigure
+            countText={countText}
+            targetText={targetText}
+            textProps={NUMBER}
+            digitTestID={COUNT_RING_PART.DIGIT_SIZER}
+          />
         </Box>
       </Pressable>
       <Text size="helper" fontWeight="500" color="$muted" textAlign="center">
@@ -85,7 +80,3 @@ export const CountRing = ({
     </VStack>
   );
 };
-
-const styles = StyleSheet.create({
-  reserve: { flexDirection: "row" },
-});

@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import type { StepDirection } from "@/constants/AthkarFocus";
 import { SESSION_STATUS, type SessionStatus } from "@/constants/AthkarSession";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useAthkarStore } from "@/stores/athkar";
-import { PLAYER_STATE } from "@/types/athkar-audio";
 import {
+  audioRuns,
   nextOpenIndex,
   positionMarks,
-  textIndexAt,
+  textKeyAt,
   toCounts,
   toSessionItems,
   type Counts,
@@ -29,7 +30,7 @@ export type AthkarSession = {
     count: number;
     target: number;
     done: boolean;
-    /** Audio plays this dhikr and counts it; taps do not. */
+    /** Audio is on this dhikr and counts it; taps do not. */
     audioOwnsCount: boolean;
   } | null;
   /** The dhikr the session opens after this one; null on the last open one. */
@@ -37,13 +38,34 @@ export type AthkarSession = {
   marks: readonly PositionMark[];
   canUndo: boolean;
   advancePending: boolean;
+  /** Whether the session has a dhikr on each side of the place. */
+  canStep: { previous: boolean; next: boolean };
   add: () => void;
+  /** Adds up to `by`, stopping at the target. */
+  addMany: (by: number) => void;
   undo: () => void;
   jumpTo: (index: number) => void;
+  /** Moves one dhikr in session order, finished ones included. */
+  step: (by: StepDirection) => void;
 };
 
-const textKeyAt = (item: SessionItem, counts: Counts) =>
-  item.textKeys[textIndexAt(item, counts[item.id] ?? 0)];
+const useHasSession = () =>
+  useAthkarStore((s) => {
+    const list = s.currentType === ATHKAR_TYPE.MORNING ? s.morningAthkarList : s.eveningAthkarList;
+    return s.progressDay !== null && list.length > 0;
+  });
+
+/** Opens the period on its first unfinished dhikr, from the last place. */
+export const useSessionOpening = () => {
+  const type = useAthkarStore((s) => s.currentType);
+  const jumpToIndex = useAthkarStore((s) => s.jumpToIndex);
+  const findOptimalAthkarIndex = useAthkarStore((s) => s.findOptimalAthkarIndex);
+  const hasSession = useHasSession();
+
+  useEffect(() => {
+    if (hasSession) jumpToIndex(findOptimalAthkarIndex(type));
+  }, [hasSession, type, jumpToIndex, findOptimalAthkarIndex]);
+};
 
 /** The period's session: the place, the counts and the three things a person does. */
 export const useAthkarSession = (): AthkarSession => {
@@ -54,23 +76,17 @@ export const useAthkarSession = (): AthkarSession => {
   const progress = useAthkarStore((s) => s.currentProgress);
   const storedIndex = useAthkarStore((s) => s.currentAthkarIndex);
   const advancePending = useAthkarStore((s) => s.advancePending);
-  const loaded = useAthkarStore((s) => s.progressDay !== null);
   const playerState = useAthkarStore((s) => s.playerState);
   const playingId = useAthkarStore((s) => s.currentAthkarId);
   const incrementCount = useAthkarStore((s) => s.incrementCount);
+  const incrementCountBy = useAthkarStore((s) => s.incrementCountBy);
   const decrementCount = useAthkarStore((s) => s.decrementCount);
   const jumpToIndex = useAthkarStore((s) => s.jumpToIndex);
-  const findOptimalAthkarIndex = useAthkarStore((s) => s.findOptimalAthkarIndex);
   const flushCounts = useAthkarStore((s) => s.flushCounts);
   const syncDay = useAthkarStore((s) => s.syncDay);
 
   const { isActive, becameActiveAt } = useAppVisibility();
-  const hasSession = loaded && list.length > 0;
-
-  // A period opens on its first unfinished dhikr, from where the person last was.
-  useEffect(() => {
-    if (hasSession) jumpToIndex(findOptimalAthkarIndex(type));
-  }, [hasSession, type, jumpToIndex, findOptimalAthkarIndex]);
+  const hasSession = useHasSession();
 
   // The count write waits for taps to settle; the app may not get that long.
   useEffect(() => {
@@ -110,14 +126,21 @@ export const useAthkarSession = (): AthkarSession => {
       count,
       target: item.target,
       done: count >= item.target,
-      audioOwnsCount: playerState === PLAYER_STATE.PLAYING && playingId === item.id,
+      audioOwnsCount: audioRuns(playerState) && playingId === item.id,
     },
     next: nextIndex === null ? null : { textKey: textKeyAt(items[nextIndex], counts) },
     marks: positionMarks(items, counts, index),
     canUndo: count > 0,
     advancePending,
+    canStep: {
+      previous: index !== null && index > 0,
+      next: index !== null && index < items.length - 1,
+    },
     add: () => item && incrementCount(item.id),
+    addMany: (by) => item && incrementCountBy(item.id, by),
     undo: () => item && decrementCount(item.id),
     jumpTo: jumpToIndex,
+    // The store refuses an index outside the session.
+    step: (by) => index !== null && jumpToIndex(index + by),
   };
 };
