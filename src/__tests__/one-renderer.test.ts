@@ -194,10 +194,27 @@ const ONE_RENDERER: readonly Rule[] = [
   // Every look of the Athkar reader shows the same counts and the same place.
   {
     concept: "a session's counts and place",
-    shows: /\bcurrentProgress\b|\bcurrentAthkarIndex\b|\bAthkarLookProps\b|\buseAthkarSession\b/,
+    shows:
+      /\bcurrentProgress\b|\bcurrentAthkarIndex\b|\bAthkar(Look|Focus)Props\b|\buseAthkarSession\b/,
     within: /^components\/athkar\/(looks|session)\//,
-    drawsWith: /\buseAthkarSession\(|\bAthkarLookProps\b/,
+    drawsWith: /\buseAthkarSession\(|\bAthkar(Look|Focus)Props\b/,
     home: "hooks/useAthkarSession.ts",
+  },
+  // The Classic reader and its Focus stage draw the place with the same marks.
+  {
+    concept: "the Classic look's session position",
+    shows: /\bsession\.marks\b/,
+    within: /^components\/athkar\/looks\/classic\//,
+    drawsWith: /<ClassicPosition(Marks)?\b/,
+    home: "components/athkar/looks/classic/ClassicPosition.tsx",
+  },
+  // The reader and Focus end a session on the same card.
+  {
+    concept: "a session's ending",
+    shows: /athkar\.session\.done\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<SessionDone\b/,
+    home: "components/athkar/session/SessionDone.tsx",
   },
   // Today and the style previews draw Today's head, bowl or row, alike.
   {
@@ -286,6 +303,14 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /^(app|components)\/.*\.tsx$/,
     drawsWith: /<CityChangeOffer\b/,
     home: "components/location/CityChangeOffer.tsx",
+  },
+  // The reader's ring and the Focus orbit hold the count at the target's width.
+  {
+    concept: "a dhikr's count, held at its target's width",
+    shows: /\bDigitSizer\b|<CountFigure\b/,
+    within: /^components\/athkar\//,
+    drawsWith: /<CountFigure\b/,
+    home: "components/athkar/looks/classic/CountFigure.tsx",
   },
   // The offer and Today's zone note say a clock difference in the same words.
   {

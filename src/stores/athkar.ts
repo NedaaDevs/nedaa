@@ -209,7 +209,6 @@ export const useAthkarStore = create<AthkarStore>()(
           isPaused: false,
           toleranceDays: 0,
         },
-        focusMode: false,
         currentAthkarIndex: 0,
         advancePending: false,
         progressDay: null,
@@ -224,6 +223,7 @@ export const useAthkarStore = create<AthkarStore>()(
           showTranslation: true,
         },
         shortVersion: false,
+        focusHintSeen: false,
         lastMorningIndex: 0,
         lastEveningIndex: 0,
 
@@ -571,8 +571,6 @@ export const useAthkarStore = create<AthkarStore>()(
             groupProgress: null,
           }),
 
-        toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
-
         // Find the optimal starting index for focus mode
         findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => {
           const state = get();
@@ -792,7 +790,6 @@ export const useAthkarStore = create<AthkarStore>()(
             currentType: type,
             currentAthkarIndex: 0,
             advancePending: false,
-            focusMode: false,
           });
 
           get().updateLastIndex(type, optimalIndex);
@@ -901,6 +898,7 @@ export const useAthkarStore = create<AthkarStore>()(
           })),
 
         toggleShortVersion: () => set((state) => ({ shortVersion: !state.shortVersion })),
+        markFocusHintSeen: () => set({ focusHintSeen: true }),
 
         syncDay: async () => {
           await loadNewDay(get, set);
@@ -933,6 +931,7 @@ export const useAthkarStore = create<AthkarStore>()(
           todayCompleted: state.todayCompleted,
           settings: state.settings,
           shortVersion: state.shortVersion,
+          focusHintSeen: state.focusHintSeen,
         }),
         onRehydrateStorage: () => (state) => {
           // Initialize DB and load data after rehydration

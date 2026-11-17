@@ -40,7 +40,6 @@ export type AthkarState = {
   eveningAthkarList: Athkar[];
   currentProgress: AthkarProgress[];
   streak: Streak;
-  focusMode: boolean;
   currentAthkarIndex: number;
   /** A finished dhikr is held on screen before the next one opens. Taps do not count. */
   advancePending: boolean;
@@ -50,6 +49,8 @@ export type AthkarState = {
   lastEveningIndex: number;
   currentType: Exclude<AthkarType, "all">;
   shortVersion: boolean;
+  /** The Focus gesture marks have been shown and touched away. */
+  focusHintSeen: boolean;
   todayCompleted: {
     morning: boolean;
     evening: boolean;
@@ -106,7 +107,7 @@ export type AthkarActions = {
   incrementCount: (athkarId: string, skipAutoMove?: boolean) => void;
   incrementCountBy: (athkarId: string, by: number) => void;
   decrementCount: (athkarId: string) => void;
-  toggleFocusMode: () => void;
+  markFocusHintSeen: () => void;
   findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => number;
   moveToNext: () => void;
   moveToPrevious: () => void;

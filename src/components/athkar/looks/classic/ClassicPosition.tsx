@@ -75,37 +75,19 @@ const Mark = ({ mark, fraction, windowed }: MarkProps) => {
   );
 };
 
-type Props = {
+type MarksProps = {
   marks: readonly PositionMark[];
   /** The place and the total as written figures, such as "9 / 18". */
   figures: string;
   /** How far the current dhikr's count is, 0 to 1. */
   fraction: number;
-  accessibilityLabel: string;
-  accessibilityHint: string;
-  onPress: () => void;
 };
 
-/** Where the person is in the session: one mark per dhikr and the figures. Opens the list. */
-export const ClassicPosition = ({
-  marks,
-  figures,
-  fraction,
-  accessibilityLabel,
-  accessibilityHint,
-  onPress,
-}: Props) => {
+/** Where the person is in the session: one mark per dhikr and the figures. */
+export const ClassicPositionMarks = ({ marks, figures, fraction }: MarksProps) => {
   const windowed = marks.some((mark) => mark.size === MARK_SIZE.FINE);
   return (
-    <Pressable
-      flex={1}
-      flexDirection="row"
-      alignItems="center"
-      gap="$3"
-      borderRadius="$control"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityHint={accessibilityHint}
-      onPress={onPress}>
+    <HStack flex={1} alignItems="center" gap="$3">
       <HStack flex={1} alignItems="center" gap={MARK_GAP}>
         {marks.map((mark) => (
           <Mark key={mark.id} mark={mark} fraction={fraction} windowed={windowed} />
@@ -114,6 +96,31 @@ export const ClassicPosition = ({
       <Text size="md" fontWeight="500" color="$muted" numeric>
         {figures}
       </Text>
-    </Pressable>
+    </HStack>
   );
 };
+
+type Props = MarksProps & {
+  accessibilityLabel: string;
+  accessibilityHint: string;
+  onPress: () => void;
+};
+
+/** The session position as a control: it opens the session's list. */
+export const ClassicPosition = ({
+  accessibilityLabel,
+  accessibilityHint,
+  onPress,
+  ...marks
+}: Props) => (
+  <Pressable
+    flex={1}
+    flexDirection="row"
+    alignItems="center"
+    borderRadius="$control"
+    accessibilityLabel={accessibilityLabel}
+    accessibilityHint={accessibilityHint}
+    onPress={onPress}>
+    <ClassicPositionMarks {...marks} />
+  </Pressable>
+);

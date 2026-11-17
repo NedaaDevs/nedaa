@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -21,6 +20,7 @@ import { VStack } from "@/components/ui/vstack";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { DURATION_MS } from "@/constants/Motion";
+import { useChangeOnly } from "@/hooks/useChangeOnly";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCountText, useRatioText } from "@/hooks/useRatioText";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -34,13 +34,6 @@ export const CLASSIC_READER_PART = {
   NEXT: "classic-reader-next",
   FOCUS: "classic-reader-focus",
 } as const;
-
-/** Says each change after the first; focus reads what mounts. */
-const useChangeOnly = (message: string): string | null => {
-  const [opening, setOpening] = useState<string | null>(message);
-  if (opening !== null && opening !== message) setOpening(null);
-  return opening === null ? message : null;
-};
 
 /** The Classic look of a session in progress: one dhikr and its count. */
 export const ClassicReader = ({

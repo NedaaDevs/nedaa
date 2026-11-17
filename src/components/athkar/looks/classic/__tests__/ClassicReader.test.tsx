@@ -83,9 +83,12 @@ const sessionOf = ({
     marks: positionMarks(list, counts, PLACE),
     canUndo: count > 0,
     advancePending,
+    canStep: { previous: true, next: !last },
     add: jest.fn(),
+    addMany: jest.fn(),
     undo: jest.fn(),
     jumpTo: jest.fn(),
+    step: jest.fn(),
   };
 };
 
