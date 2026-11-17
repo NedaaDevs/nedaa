@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
+import type { ParseKeys } from "i18next";
 
 import type { StepDirection } from "@/constants/AthkarFocus";
 import type { AthkarSession } from "@/hooks/useAthkarSession";
@@ -9,6 +10,8 @@ export type AthkarLookProps = {
   onOpenList: () => void;
   onOpenFocus: () => void;
   onStartAudio: () => void;
+  /** The look is being tried on: the dhikr and its count alone. */
+  trying?: boolean;
 };
 
 /** What every look's Focus stage is given: one dhikr, its count, gestures. */
@@ -28,6 +31,8 @@ export type AthkarFocusProps = {
 
 /** A look: the reader, and the same session's Focus stage. */
 export type AthkarLook = {
+  /** Locale key of the look's name. */
+  name: ParseKeys;
   Reader: ComponentType<AthkarLookProps>;
   Focus: ComponentType<AthkarFocusProps>;
 };

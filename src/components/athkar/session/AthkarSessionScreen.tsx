@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
+import Animated, { Easing, FadeIn } from "react-native-reanimated";
 
 import AudioOnboarding from "@/components/athkar/AudioOnboarding";
+import { LookPreview } from "@/components/athkar/looks/LookPreview";
+import { ATHKAR_LOOKS } from "@/components/athkar/looks/registry";
 import { SessionDone } from "@/components/athkar/session/SessionDone";
 import { SessionListSheet } from "@/components/athkar/session/SessionListSheet";
 import { Box } from "@/components/ui/box";
@@ -10,10 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatePanel } from "@/components/ui/state-panel";
 import { VStack } from "@/components/ui/vstack";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import type { AthkarLookId } from "@/constants/AthkarLook";
 import { ATHKAR_FOCUS_HREF, SESSION_STATUS } from "@/constants/AthkarSession";
+import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
 import { useAthkarDayLoad } from "@/hooks/useAthkarDayLoad";
-import { useAthkarLook } from "@/hooks/useAthkarLook";
+import { useAthkarLookId } from "@/hooks/useAthkarLook";
 import { useAthkarSession, useSessionOpening } from "@/hooks/useAthkarSession";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useStartAthkarAudio } from "@/hooks/useStartAthkarAudio";
 import { useAthkarStore } from "@/stores/athkar";
 
@@ -41,8 +48,15 @@ const Loading = ({ label }: { label: string }) => (
   </VStack>
 );
 
+const LOOK_FADE = FadeIn.duration(DURATION_MS.GENTLE).easing(Easing.bezier(...SHEET_CURVE));
+
+type AthkarSessionScreenProps = {
+  /** A look being tried on, drawn in place of the stored one. */
+  trying?: AthkarLookId;
+};
+
 /** The morning or evening session: its states, its list and its ways out. */
-export const AthkarSessionScreen = () => {
+export const AthkarSessionScreen = ({ trying }: AthkarSessionScreenProps) => {
   const { t } = useTranslation();
   const router = useRouter();
   useSessionOpening();
@@ -50,7 +64,17 @@ export const AthkarSessionScreen = () => {
   const { status, current } = session;
   const day = useAthkarDayLoad();
   const audio = useStartAthkarAudio();
-  const look = useAthkarLook();
+  const reduceMotion = useReducedMotion();
+  const storedLook = useAthkarLookId();
+  const lookId = trying ?? storedLook;
+  const look = ATHKAR_LOOKS[lookId];
+  // The look a screen opens in is there at once; one switched to fades in.
+  const [shown, setShown] = useState(lookId);
+  const [switched, setSwitched] = useState(false);
+  if (lookId !== shown) {
+    setShown(lookId);
+    setSwitched(true);
+  }
 
   const type = useAthkarStore((s) => s.currentType);
   const [listOpen, setListOpen] = useState(false);
@@ -61,6 +85,8 @@ export const AthkarSessionScreen = () => {
   const period = t(type === ATHKAR_TYPE.MORNING ? "athkar.morning" : "athkar.evening");
 
   const body = () => {
+    // A finished session has no count to try a look on.
+    if (status === SESSION_STATUS.DONE && trying) return <LookPreview look={trying} />;
     if (status === SESSION_STATUS.DONE) {
       return (
         <SessionDone message={t("athkar.session.done", { type: period })} announce={wasReady} />
@@ -73,6 +99,7 @@ export const AthkarSessionScreen = () => {
           onOpenList={() => setListOpen(true)}
           onOpenFocus={() => router.push(ATHKAR_FOCUS_HREF)}
           onStartAudio={() => current && audio.start(current.item.id)}
+          trying={trying !== undefined}
         />
       );
     }
@@ -92,7 +119,12 @@ export const AthkarSessionScreen = () => {
 
   return (
     <VStack flex={1}>
-      {body()}
+      <Animated.View
+        key={lookId}
+        style={styles.look}
+        entering={switched && !reduceMotion ? LOOK_FADE : undefined}>
+        {body()}
+      </Animated.View>
       <SessionListSheet
         open={listOpen && status === SESSION_STATUS.READY}
         title={period}
@@ -106,3 +138,5 @@ export const AthkarSessionScreen = () => {
     </VStack>
   );
 };
+
+const styles = StyleSheet.create({ look: { flex: 1 } });

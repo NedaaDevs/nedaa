@@ -1,10 +1,6 @@
-import { useSyncExternalStore } from "react";
-
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 import { useNotificationStore } from "@/stores/notification";
 
 /** True once the persisted notification settings have loaded from storage. */
 export const useNotificationSettingsHydrated = (): boolean =>
-  useSyncExternalStore(
-    (onChange) => useNotificationStore.persist.onFinishHydration(onChange),
-    () => useNotificationStore.persist.hasHydrated()
-  );
+  usePersistHydrated(useNotificationStore.persist);

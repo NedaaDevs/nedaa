@@ -269,6 +269,21 @@ describe("tabs layout", () => {
     });
   });
 
+  it("hides the pill while a screen covers it, and keeps the frame", async () => {
+    await renderTabs();
+    expect(screen.getByTestId(TAB_BAR_TRACK)).toBeOnTheScreen();
+
+    let lift = () => {};
+    await act(() => {
+      lift = useTabBarFrameStore.getState().cover();
+    });
+    expect(screen.queryByTestId(TAB_BAR_TRACK)).toBeNull();
+    expect(screen.getByTestId(TAB_BAR_PART.FRAME)).toBeOnTheScreen();
+
+    await act(() => lift());
+    expect(screen.getByTestId(TAB_BAR_TRACK)).toBeOnTheScreen();
+  });
+
   it("gives a light selection tap when the tab changes, none on the open tab", async () => {
     await renderTabs();
     clearHaptics();

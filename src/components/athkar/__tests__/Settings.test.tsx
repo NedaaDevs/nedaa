@@ -36,6 +36,12 @@ jest.mock("@/stores/athkar", () => ({
 // The fill is reanimated, which cannot load under jest; it is drawing only.
 jest.mock("@/components/ui/hold-to-confirm/Fill", () => ({ Fill: () => null }));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
+// The row reads the store through a selector and draws a look; it has its own suite.
+const mockLookRow = "look-row";
+jest.mock("@/components/athkar/looks/LookRow", () => {
+  const { View } = jest.requireActual("react-native");
+  return { LookRow: () => <View testID={mockLookRow} /> };
+});
 
 const t = i18n.t.bind(i18n);
 
@@ -43,6 +49,18 @@ const timeButton = (spoken: string) =>
   screen.getByRole("button", {
     name: t("a11y.join", { first: t("settings.athkar.notifications.time"), second: spoken }),
   });
+
+describe("Athkar settings look", () => {
+  it("puts the look row above the reminders", async () => {
+    await renderWithTheme(<Settings />);
+
+    expect(screen.getByTestId(mockLookRow)).toBeOnTheScreen();
+    const drawn = JSON.stringify(screen.toJSON());
+    const reminder = drawn.indexOf(t("settings.athkar.notifications.morning.title"));
+    expect(reminder).toBeGreaterThan(-1);
+    expect(drawn.indexOf(mockLookRow)).toBeLessThan(reminder);
+  });
+});
 
 describe("Athkar settings reminder time", () => {
   beforeEach(() => {
