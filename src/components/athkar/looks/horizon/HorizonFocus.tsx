@@ -7,25 +7,18 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { CountFigure } from "@/components/athkar/looks/classic/CountFigure";
 import { HorizonArc } from "@/components/athkar/looks/horizon/HorizonArc";
 import { HorizonOrb } from "@/components/athkar/looks/horizon/HorizonOrb";
 import { useHorizonInk } from "@/components/athkar/looks/horizon/ink";
 import type { AthkarFocusProps } from "@/components/athkar/looks/types";
+import { FocusCount } from "@/components/athkar/session/FocusCount";
 import { FocusGestureMarks, FocusSideMarks } from "@/components/athkar/session/FocusHint";
-import {
-  FocusPager,
-  FocusPlace,
-  FocusSurface,
-  useCountDrag,
-} from "@/components/athkar/session/FocusStage";
+import { FocusPager, FocusPlace, FocusSurface } from "@/components/athkar/session/FocusStage";
 import { Box } from "@/components/ui/box";
-import { type DigitTextProps } from "@/components/ui/digit-reserve";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
-import { FOCUS_MOTION } from "@/constants/AthkarFocus";
 import {
   HORIZON_ARC_KIND,
   HORIZON_BLOOM,
@@ -41,14 +34,6 @@ export const HORIZON_FOCUS_PART = {
   BLOOM: "horizon-focus-bloom",
   DIGIT_SIZER: "horizon-focus-digit-sizer",
 } as const;
-
-const NUMBER: DigitTextProps = {
-  fontSize: 56,
-  lineHeight: 64,
-  fontWeight: "600",
-  color: "$fg",
-  numeric: true,
-};
 
 const BLOOM_RADIUS = HORIZON_BLOOM.SIZE / 2;
 
@@ -94,38 +79,6 @@ const Bloom = ({ stage }: { stage: FocusStage }) => {
   );
 };
 
-/** The count in figures: what a release would change, the number, its target. */
-const Count = ({ stage }: { stage: FocusStage }) => {
-  const { gesture } = stage;
-  const moved = useCountDrag({
-    side: gesture.side,
-    down: gesture.down,
-    canUndo: stage.canUndo,
-    reduceMotion: stage.reduceMotion,
-  });
-  return (
-    <Animated.View style={[styles.count, moved]}>
-      <Box minHeight="$6" justifyContent="flex-end">
-        {stage.change !== null && (
-          <Text size="label" fontWeight="600" color="$mutedSky" numeric>
-            {stage.change}
-          </Text>
-        )}
-      </Box>
-      <CountFigure
-        countText={stage.countText}
-        targetText={stage.targetText}
-        textProps={NUMBER}
-        opacity={gesture.undoArmed ? FOCUS_MOTION.ARMED_OPACITY : 1}
-        digitTestID={HORIZON_FOCUS_PART.DIGIT_SIZER}
-      />
-      <Text size="label" fontWeight="500" color="$mutedSky" numeric>
-        {stage.targetLine}
-      </Text>
-    </Animated.View>
-  );
-};
-
 /** The Horizon look of Focus: the count is a sun that fills, on the open sky. */
 export const HorizonFocus = ({ period, close, audio, ...rules }: AthkarFocusProps) => {
   const stage = useFocusStage(rules);
@@ -168,7 +121,7 @@ export const HorizonFocus = ({ period, close, audio, ...rules }: AthkarFocusProp
         <FocusPager stage={stage} />
 
         <VStack alignItems="center" paddingHorizontal="$5" paddingBottom="$8">
-          <Count stage={stage} />
+          <FocusCount stage={stage} digitTestID={HORIZON_FOCUS_PART.DIGIT_SIZER} />
           <Box minHeight="$6" marginTop="$3" justifyContent="center">
             {stage.statusLine !== null ? (
               <Text size="md" fontWeight="500" color="$mutedSky" textAlign="center">
@@ -194,7 +147,6 @@ const styles = StyleSheet.create({
   },
   arc: { position: "absolute", top: -HORIZON_ORB.ARC_GAP, left: -HORIZON_ORB.ARC_GAP },
   figures: { position: "absolute", top: 0, start: 20 },
-  count: { alignItems: "center" },
   bloomFrame: { ...StyleSheet.absoluteFill, direction: "ltr" },
   bloom: {
     position: "absolute",

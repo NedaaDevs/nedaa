@@ -15,6 +15,7 @@ import { useReduceTransparency } from "@/hooks/useReduceTransparency";
 export const MATERIAL = {
   FLOAT: "float",
   SHEET_HEADER: "sheetHeader",
+  GLASS: "glass",
 } as const;
 
 export type MaterialName = (typeof MATERIAL)[keyof typeof MATERIAL];
@@ -42,6 +43,12 @@ const MATERIAL_SPEC = {
     blur: "SHEET",
     corners: CORNERS.TOP,
     elevation: ELEVATION_LEVEL.E0,
+  },
+  [MATERIAL.GLASS]: {
+    color: "$surfaceGlass",
+    blur: "FLOAT",
+    corners: CORNERS.ALL,
+    elevation: ELEVATION_LEVEL.E2,
   },
 } as const satisfies Record<MaterialName, MaterialSpec>;
 
