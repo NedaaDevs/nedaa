@@ -34,7 +34,7 @@ import { useCountText, useRatioText } from "@/hooks/useRatioText";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useAthkarStore } from "@/stores/athkar";
 import { textKeyAt } from "@/utils/athkarSession";
-import { athkarLine } from "@/utils/athkarText";
+import { splitAthkarText } from "@/utils/athkarText";
 import { holdAmount, slotX } from "@/utils/focusGesture";
 
 /** Test ids for the Focus stage's parts. */
@@ -94,16 +94,18 @@ export const ClassicFocus = ({
   // The hint is drawn on a first visit only, and goes at the first touch.
   const [hinting] = useState(!hintSeen);
   const [touched, setTouched] = useState(false);
-  const [edge, setEdge] = useState<{ by: StepDirection } | null>(null);
+  const [edgeTry, setEdgeTry] = useState<{ by: StepDirection; place: number } | null>(null);
+  // The line belongs to the place it was tried on.
+  const edge = edgeTry?.place === place ? edgeTry : null;
   const [tall, setTall] = useState<Readonly<Record<string, boolean>>>({});
   const [textZone, setTextZone] = useState<Zone | null>(null);
   const placeShown = useShownAfterChange(place, FOCUS_TIMING.POSITION_MS);
 
   useEffect(() => {
-    if (!edge) return;
-    const timer = setTimeout(() => setEdge(null), FOCUS_TIMING.EDGE_MESSAGE_MS);
+    if (!edgeTry) return;
+    const timer = setTimeout(() => setEdgeTry(null), FOCUS_TIMING.EDGE_MESSAGE_MS);
     return () => clearTimeout(timer);
-  }, [edge]);
+  }, [edgeTry]);
 
   const touch = () => {
     if (touched) return;
@@ -127,7 +129,7 @@ export const ClassicFocus = ({
     onTap: session.add,
     onStep,
     // A new object each time, so a second try restarts the line's time.
-    onEdge: (by) => setEdge({ by }),
+    onEdge: (by) => setEdgeTry({ by, place }),
     onUndo: session.undo,
     onHold: session.addMany,
   });
@@ -181,10 +183,14 @@ export const ClassicFocus = ({
       ? signedCount("−", countText(1))
       : null;
 
-  const spokenText = athkarLine(t(current.textKey), i18n.language, showTranslation);
-  const label = [spokenText, counted, ...(locked ? [audioCounts] : [])].reduce((first, second) =>
-    t("a11y.join", { first, second })
-  );
+  // The label says what the text draws: the Arabic, then a shown translation.
+  const { arabic, translation } = splitAthkarText(t(current.textKey), i18n.language);
+  const label = [
+    arabic,
+    ...(showTranslation && translation ? [translation] : []),
+    counted,
+    ...(locked ? [audioCounts] : []),
+  ].reduce((first, second) => t("a11y.join", { first, second }));
   const actions = [
     ...(canTap ? [{ name: A11Y_ACTION.ACTIVATE }] : []),
     // One repeat left is what activating adds.
@@ -200,10 +206,14 @@ export const ClassicFocus = ({
       : []),
   ];
   const act = ({ nativeEvent: { actionName } }: AccessibilityActionEvent) => {
-    if (actionName === A11Y_ACTION.ACTIVATE) session.add();
-    else if (actionName === FOCUS_ACTION.ADD_MANY) session.addMany(room);
-    else if (actionName === FOCUS_ACTION.UNDO) session.undo();
-    else if (actionName === FOCUS_ACTION.NEXT) onStep(STEP.NEXT);
+    // An action can arrive after audio took the count and its entry went.
+    if (actionName === A11Y_ACTION.ACTIVATE) {
+      if (canTap) session.add();
+    } else if (actionName === FOCUS_ACTION.ADD_MANY) {
+      if (room > 0) session.addMany(room);
+    } else if (actionName === FOCUS_ACTION.UNDO) {
+      if (canUndo) session.undo();
+    } else if (actionName === FOCUS_ACTION.NEXT) onStep(STEP.NEXT);
     else if (actionName === FOCUS_ACTION.PREVIOUS) onStep(STEP.PREVIOUS);
   };
 
@@ -335,6 +345,8 @@ const FocusText = ({ textKey, here, scrolls, alongside, onTall }: FocusTextProps
   };
   return (
     <ScrollView
+      // A group's next text opens at its top.
+      key={textKey}
       simultaneousWith={alongside}
       testID={here ? CLASSIC_FOCUS_PART.TEXT_SCROLL : undefined}
       scrollEnabled={scrolls}
