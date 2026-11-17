@@ -93,7 +93,6 @@ beforeEach(() => {
     lastMorningIndex: 0,
     lastEveningIndex: 0,
     advancePending: false,
-    focusMode: false,
     settings: { autoMoveToNext: true, showStreak: true, showTranslation: true },
     currentProgress: list.map((a) => ({
       athkarId: a.id,
@@ -499,5 +498,16 @@ describe("the day changes with no tap", () => {
     await state().syncDay();
     expect(state().currentAthkarIndex).toBe(0);
     expect(state().lastMorningIndex).toBe(0);
+  });
+});
+
+describe("the Focus hint", () => {
+  test("is seen once marked, and the mark is stored", () => {
+    useAthkarStore.setState({ focusHintSeen: false });
+    const stored = () =>
+      useAthkarStore.persist.getOptions().partialize?.(useAthkarStore.getState());
+    expect(stored()).toMatchObject({ focusHintSeen: false });
+    useAthkarStore.getState().markFocusHintSeen();
+    expect(stored()).toMatchObject({ focusHintSeen: true });
   });
 });

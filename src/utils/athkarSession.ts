@@ -6,6 +6,7 @@ import {
   type MarkState,
 } from "@/constants/AthkarSession";
 import type { Athkar, AthkarProgress } from "@/types/athkar";
+import { PLAYER_STATE, type PlayerState } from "@/types/athkar-audio";
 
 /** One dhikr of a session. A group holds several texts that take turns under one count. */
 export type SessionItem = {
@@ -38,6 +39,14 @@ const isDone = (counts: Counts, item: SessionItem) => countOf(counts, item) >= i
 /** Which text a count shows. A finished group stays on its last text. */
 export const textIndexAt = (item: SessionItem, count: number) =>
   Math.min(count, item.target - 1) % item.itemsPerRound;
+
+/** Locale key of the text an item's count has reached. */
+export const textKeyAt = (item: SessionItem, counts: Counts) =>
+  item.textKeys[textIndexAt(item, countOf(counts, item))];
+
+/** Audio that plays, or waits between two dhikr. */
+export const audioRuns = (state: PlayerState): boolean =>
+  state === PLAYER_STATE.PLAYING || state === PLAYER_STATE.LOADING;
 
 /** The first unfinished item after `from`, wrapping; null when no other item is open. */
 export const nextOpenIndex = (
