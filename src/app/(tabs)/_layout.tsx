@@ -61,6 +61,7 @@ const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
   // bar knows how much room to leave.
   const reportHeight = useContext(BottomTabBarHeightCallbackContext);
   const setFrameHeight = useTabBarFrameStore((state) => state.setHeight);
+  const covered = useTabBarFrameStore((state) => state.covers > 0);
   const focused = state.routes[state.index].name;
   // Quran is full screen, so the mini player pads the bottom inset.
   const tabBarHidden = focused === OpeningTab.QURAN;
@@ -79,7 +80,7 @@ const AppTabBar = ({ state, tabs, readerActive }: AppTabBarProps) => {
         : { position: "absolute", start: 0, end: 0, bottom: 0 })}>
       {!(readerActive && tabBarHidden) && <QuranMiniPlayer padBottomInset={tabBarHidden} />}
       <MiniPlayerBar />
-      {!tabBarHidden && (
+      {!tabBarHidden && !covered && (
         <TabBar
           selectedIndex={tabs.findIndex((tab) => tab.name === focused)}
           count={tabs.length}

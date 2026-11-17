@@ -99,9 +99,9 @@ const propsOf = (options?: SessionOptions): AthkarLookProps => ({
   onStartAudio: jest.fn(),
 });
 
-const renderReader = async (options?: SessionOptions) => {
+const renderReader = async (options?: SessionOptions, trying?: boolean) => {
   const props = propsOf(options);
-  await renderWithTheme(<ClassicReader {...props} />);
+  await renderWithTheme(<ClassicReader {...props} trying={trying} />);
   return props;
 };
 
@@ -239,6 +239,14 @@ describe("ClassicReader", () => {
     const next = within(screen.getByTestId(CLASSIC_READER_PART.NEXT));
     expect(next.getByText(i18n.t("athkar.session.lastThikr"))).toBeOnTheScreen();
     expect(next.queryByText(i18n.t("athkar.focus.next"))).toBeNull();
+  });
+
+  it("keeps the dhikr and its count alone while the look is tried on", async () => {
+    const { session } = await renderReader(undefined, true);
+    expect(screen.queryByTestId(CLASSIC_READER_PART.FOCUS)).toBeNull();
+    expect(screen.queryByTestId(CLASSIC_READER_PART.NEXT)).toBeNull();
+    await userEvent.press(ring());
+    expect(session.add).toHaveBeenCalledTimes(1);
   });
 
   it("writes and speaks no percent", async () => {

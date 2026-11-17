@@ -1,5 +1,4 @@
-import { useSyncExternalStore } from "react";
-
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 import { usePreferencesStore } from "@/stores/preferences";
 
 /**
@@ -8,7 +7,4 @@ import { usePreferencesStore } from "@/stores/preferences";
  * defaults (text size, offer flags) wait on this.
  */
 export const usePreferencesHydrated = (): boolean =>
-  useSyncExternalStore(
-    (onChange) => usePreferencesStore.persist.onFinishHydration(onChange),
-    () => usePreferencesStore.persist.hasHydrated()
-  );
+  usePersistHydrated(usePreferencesStore.persist);

@@ -82,3 +82,7 @@ export const FadeInDown = {
   duration: () => FadeInDown,
   delay: () => FadeInDown,
 };
+export const FadeIn = {
+  duration: () => FadeIn,
+  easing: () => FadeIn,
+};
