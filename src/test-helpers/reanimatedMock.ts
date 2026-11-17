@@ -23,7 +23,11 @@ export const useSharedValue = <T>(initial: T) => {
   }));
   return box;
 };
+/** Gesture Handler asks this of each config value; the box above is one. */
+export const isSharedValue = (value: unknown): boolean =>
+  typeof value === "object" && value !== null && "get" in value && "set" in value;
 export const useAnimatedStyle = <T>(style: () => T) => style();
+export const useAnimatedProps = <T>(props: () => T) => props();
 /** Runs `react` once a render changes what `prepare` returns. */
 export const useAnimatedReaction = <T>(
   prepare: () => T,
