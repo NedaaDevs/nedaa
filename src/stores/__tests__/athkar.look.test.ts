@@ -36,11 +36,11 @@ const DEFAULTS = useAthkarStore.getState().settings;
 
 const settings = () => useAthkarStore.getState().settings;
 
-/** Loads the store from a saved record holding these settings, and any other fields. */
-const rehydrate = async (saved: object | undefined, rest: object = {}) => {
+/** Loads the store, holding `held`, from a saved record with these settings and other fields. */
+const rehydrate = async (saved: object | undefined, rest: object = {}, held = DEFAULTS) => {
   const state = saved === undefined ? rest : { ...rest, settings: saved };
   mockSaved = JSON.stringify({ state, version: 0 });
-  useAthkarStore.setState({ settings: DEFAULTS });
+  useAthkarStore.setState({ settings: held });
   await useAthkarStore.persist.rehydrate();
 };
 
@@ -69,6 +69,13 @@ describe("the stored Athkar look", () => {
     await rehydrate({ showStreak: true }, { focusHintSeen: true, shortVersion: true });
 
     expect(useAthkarStore.getState()).toMatchObject({ focusHintSeen: true, shortVersion: true });
+  });
+
+  it("takes the look from the record alone, whatever look the store holds", async () => {
+    const held = { ...DEFAULTS, look: ATHKAR_LOOK.CLASSIC };
+    await rehydrate({ showStreak: true }, {}, held);
+
+    expect(settings().look).toBeNull();
   });
 
   it("keeps a saved look", async () => {
