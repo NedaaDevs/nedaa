@@ -72,7 +72,7 @@ const seed = (counts: Record<string, number> = {}) =>
     progressDay: getTodayInt("Asia/Riyadh"),
     playerState: PLAYER_STATE.IDLE,
     currentAthkarId: null,
-    settings: { autoMoveToNext: true, showStreak: true, showTranslation: true },
+    settings: { autoMoveToNext: true, showStreak: true, showTranslation: true, look: null },
     currentProgress: list.map((a) => ({
       athkarId: a.id,
       currentCount: counts[a.id] ?? 0,
