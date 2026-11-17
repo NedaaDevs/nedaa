@@ -241,6 +241,41 @@ describe("ClassicReader", () => {
     expect(next.queryByText(i18n.t("athkar.focus.next"))).toBeNull();
   });
 
+  describe("what it says", () => {
+    // React Native's jest setup holds this as one mock for the whole file.
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
+    const counted = (count: number) =>
+      i18n.t("a11y.athkar.cardProgress", { current: `${count}`, total: `${TARGET}` });
+    const said = () => announce.mock.calls.map(([line]) => line);
+
+    beforeEach(() => announce.mockClear());
+    afterEach(() => announce.mockClear());
+
+    it("says each new count", async () => {
+      const view = await renderWithTheme(<ClassicReader {...propsOf({ count: 1 })} />);
+      await view.rerender(<ClassicReader {...propsOf({ count: 2 })} />);
+      expect(said()).toEqual([counted(2)]);
+    });
+
+    it("leaves a count audio made unsaid, and once audio stops", async () => {
+      const view = await renderWithTheme(
+        <ClassicReader {...propsOf({ count: 1, audioOwnsCount: true })} />
+      );
+      await view.rerender(<ClassicReader {...propsOf({ count: 2, audioOwnsCount: true })} />);
+      await view.rerender(<ClassicReader {...propsOf({ count: 2 })} />);
+      expect(said()).toEqual([]);
+    });
+
+    it("says the place a dhikr opens at while audio counts", async () => {
+      const view = await renderWithTheme(
+        <ClassicReader {...propsOf({ count: 2, audioOwnsCount: true })} />
+      );
+      await view.rerender(<ClassicReader {...propsOf({ count: 0, audioOwnsCount: true })} />);
+      expect(said()).toHaveLength(1);
+      expect(said()[0]).not.toBe(counted(0));
+    });
+  });
+
   it("keeps the dhikr and its count alone while the look is tried on", async () => {
     const { session } = await renderReader(undefined, true);
     expect(screen.queryByTestId(CLASSIC_READER_PART.FOCUS)).toBeNull();

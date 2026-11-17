@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { X } from "lucide-react-native";
@@ -10,6 +10,7 @@ import { FocusControl } from "@/components/athkar/session/FocusControl";
 import { SessionDone } from "@/components/athkar/session/SessionDone";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
+import { ClaimSkyBodies } from "@/components/ui/sky-background/bodies";
 import { StatePanel } from "@/components/ui/state-panel";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { type StepDirection } from "@/constants/AthkarFocus";
@@ -131,10 +132,15 @@ export const AthkarFocusScreen = () => {
     );
   };
 
+  const Ground = look.FocusGround ?? Fragment;
   return (
-    <Box flex={1} backgroundColor="$background" paddingBottom={insets.bottom}>
-      {body()}
-      <AudioOnboarding isOpen={audio.onboardingOpen} onClose={audio.closeOnboarding} />
-    </Box>
+    <Ground>
+      {/* Focus draws its own count; the sky's sun and moon stay out. */}
+      <ClaimSkyBodies />
+      <Box flex={1} paddingTop={insets.top} paddingBottom={insets.bottom}>
+        {body()}
+        <AudioOnboarding isOpen={audio.onboardingOpen} onClose={audio.closeOnboarding} />
+      </Box>
+    </Ground>
   );
 };

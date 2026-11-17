@@ -1,4 +1,5 @@
-import { Pressable, Text } from "react-native";
+import type { ReactNode } from "react";
+import { Pressable, Text, View } from "react-native";
 import type { ParseKeys } from "i18next";
 
 import type {
@@ -15,6 +16,7 @@ export const TEST_LOOK_PART = {
   READER: "test-look-reader",
   COUNT: "test-look-count",
   FOCUS: "test-look-focus",
+  GROUND: "test-look-ground",
   TRYING: "test-look-trying",
 } as const;
 
@@ -35,7 +37,17 @@ const Focus = ({ close }: AthkarFocusProps) => (
   </>
 );
 
-export const TEST_LOOK: AthkarLook = { name: TEST_LOOK_NAME, Reader, Focus };
+const FocusGround = ({ children }: { children: ReactNode }) => (
+  <View testID={TEST_LOOK_PART.GROUND}>{children}</View>
+);
+
+export const TEST_LOOK: AthkarLook = {
+  name: TEST_LOOK_NAME,
+  Reader,
+  drawsSun: false,
+  Focus,
+  FocusGround,
+};
 
 /** The registry with the test look beside the real ones, for `jest.mock`. */
 export const registryWithTestLook = () => {

@@ -6,6 +6,7 @@ import {
   LookPicture,
   LookPreview,
 } from "@/components/athkar/looks/LookPreview";
+import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
 import i18n from "@/localization/i18n";
@@ -46,11 +47,20 @@ describe("LookPreview", () => {
     );
   });
 
-  it("draws the Classic look", async () => {
+  it("draws the Classic look, which needs no sky", async () => {
     await renderWithTheme(<LookPreview look={ATHKAR_LOOK.CLASSIC} />);
     expect(
       screen.getAllByText(new RegExp(`${SAMPLE_SESSION.current?.count}`), DRAWN)[0]
     ).toBeOnTheScreen();
+  });
+
+  it("takes the page sky's sun for a look that draws its own", async () => {
+    await renderWithTheme(
+      <SkyBackground>
+        <LookPreview look={ATHKAR_LOOK.HORIZON} />
+      </SkyBackground>
+    );
+    expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(0);
   });
 
   it("is a picture: nothing in it is read or pressed", async () => {
@@ -61,6 +71,18 @@ describe("LookPreview", () => {
 });
 
 describe("LookPicture", () => {
+  it("draws the look on a sky of its own", async () => {
+    await renderWithTheme(<LookPicture look={ATHKAR_LOOK.CLASSIC} />);
+    expect(screen.getAllByTestId(SKY_PART.CANVAS, DRAWN)).toHaveLength(1);
+    expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(1);
+  });
+
+  it("draws the Horizon look with one sun, the look's", async () => {
+    await renderWithTheme(<LookPicture look={ATHKAR_LOOK.HORIZON} />);
+    expect(screen.getAllByTestId(SKY_PART.CANVAS, DRAWN)).toHaveLength(1);
+    expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(0);
+  });
+
   it("scales a reader of the design's size into a frame of the same shape", async () => {
     await renderWithTheme(<LookPicture look={TEST_LOOK_ID} />);
     const { WIDTH, HEIGHT, SCALE } = LOOK_PICTURE;

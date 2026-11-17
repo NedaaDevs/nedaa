@@ -2,7 +2,8 @@ import { AccessibilityInfo, Text } from "react-native";
 import { act, fireEvent, screen, within } from "@testing-library/react-native";
 import { createGestureController } from "react-native-gesture-handler/jest-utils";
 
-import { CLASSIC_FOCUS_PART, ClassicFocus } from "@/components/athkar/looks/classic/ClassicFocus";
+import { ClassicFocus } from "@/components/athkar/looks/classic/ClassicFocus";
+import { FOCUS_STAGE_PART } from "@/components/athkar/session/FocusStage";
 import { POSITION_PART } from "@/components/athkar/looks/classic/ClassicPosition";
 import type { AthkarFocusProps } from "@/components/athkar/looks/types";
 import { FOCUS_HINT_PART, signedCount } from "@/components/athkar/session/FocusHint";
@@ -104,7 +105,7 @@ const renderFocus = async (options?: Options, over?: Partial<AthkarFocusProps>) 
   return { props, view, touch: createGestureController(FOCUS_GESTURE_ID) };
 };
 
-const surface = () => screen.getByTestId(CLASSIC_FOCUS_PART.SURFACE);
+const surface = () => screen.getByTestId(FOCUS_STAGE_PART.SURFACE);
 const actionNames = () =>
   (surface().props.accessibilityActions as { name: string }[]).map((action) => action.name);
 const run = (actionName: string) =>
@@ -273,7 +274,7 @@ describe("ClassicFocus", () => {
     mockReduced = true;
     const { touch } = await renderFocus();
     const at = { ...STILL, translationX: -80 };
-    const row = () => screen.getByTestId(CLASSIC_FOCUS_PART.ROW, hidden);
+    const row = () => screen.getByTestId(FOCUS_STAGE_PART.ROW, hidden);
     const rest = row().props.style[1].transform;
     await act(() => touch.begin(STILL));
     await act(() => touch.activate(at));
@@ -355,7 +356,7 @@ describe("ClassicFocus", () => {
 
   it("shows the place when the dhikr changes, then lets it go", async () => {
     const { view } = await renderFocus();
-    const place = () => screen.getByTestId(CLASSIC_FOCUS_PART.PLACE, hidden);
+    const place = () => screen.getByTestId(FOCUS_STAGE_PART.PLACE, hidden);
     expect(place()).toHaveStyle({ opacity: 0 });
     await view.rerender(<ClassicFocus {...propsOf({ place: PLACE + 1 })} />);
     expect(place()).toHaveStyle({ opacity: 1 });
@@ -399,7 +400,7 @@ describe("ClassicFocus", () => {
   it("shows the place with the line", async () => {
     const { touch } = await renderFocus({ place: TOTAL - 1 });
     await dragSide(touch, -300);
-    expect(screen.getByTestId(CLASSIC_FOCUS_PART.PLACE, hidden)).toHaveStyle({ opacity: 1 });
+    expect(screen.getByTestId(FOCUS_STAGE_PART.PLACE, hidden)).toHaveStyle({ opacity: 1 });
   });
 
   it("says the first dhikr is the first", async () => {
@@ -432,13 +433,13 @@ describe("ClassicFocus", () => {
   it("leaves long text whole, in a view that scrolls", async () => {
     await renderFocus();
     expect(screen.getByText(textOf(PLACE), hidden).props.numberOfLines).toBeUndefined();
-    expect(screen.getByTestId(CLASSIC_FOCUS_PART.TEXT_SCROLL, hidden)).toBeOnTheScreen();
+    expect(screen.getByTestId(FOCUS_STAGE_PART.TEXT_SCROLL, hidden)).toBeOnTheScreen();
   });
   describe("long text", () => {
     const SPACE = 400;
     const layout = (height: number) => ({ nativeEvent: { layout: { y: 0, height } } });
-    const scroll = () => screen.getByTestId(CLASSIC_FOCUS_PART.TEXT_SCROLL, hidden);
-    const text = () => screen.getByTestId(CLASSIC_FOCUS_PART.TEXT, hidden);
+    const scroll = () => screen.getByTestId(FOCUS_STAGE_PART.TEXT_SCROLL, hidden);
+    const text = () => screen.getByTestId(FOCUS_STAGE_PART.TEXT, hidden);
     const measure = async (first: () => void, second: () => void) => {
       await act(first);
       await act(second);
