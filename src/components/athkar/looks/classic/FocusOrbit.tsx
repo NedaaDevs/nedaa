@@ -1,12 +1,9 @@
 import { StyleSheet } from "react-native";
-import Animated, {
-  useAnimatedProps,
-  useAnimatedStyle,
-  type SharedValue,
-} from "react-native-reanimated";
+import Animated, { useAnimatedProps, type SharedValue } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
 import { CountFigure } from "@/components/athkar/looks/classic/CountFigure";
+import { useCountDrag } from "@/components/athkar/session/FocusStage";
 import { Box } from "@/components/ui/box";
 import { type DigitTextProps } from "@/components/ui/digit-reserve";
 import { HighlightEdge, useElevationShadow } from "@/components/ui/material/edge";
@@ -80,12 +77,7 @@ export const FocusOrbit = ({
   const track = useThemeColor("$track");
   const accent = useThemeColor("$accent");
   const fraction = target > 0 ? Math.min(count / target, 1) : 0;
-  const sink = canUndo ? FOCUS_MOTION.SINK : FOCUS_MOTION.SINK_EMPTY;
-
-  const moved = useAnimatedStyle(() => ({
-    opacity: 1 - Math.min(Math.abs(side.get()) / FOCUS_MOTION.COUNT_FADE, 1),
-    transform: [{ translateY: reduceMotion ? 0 : Math.min(down.get() * sink.SHARE, sink.MAX) }],
-  }));
+  const moved = useCountDrag({ side, down, canUndo, reduceMotion });
   const holdRing = useAnimatedProps(() => ({
     strokeDashoffset: HOLD_LENGTH * (1 - hold.get()),
   }));

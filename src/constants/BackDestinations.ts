@@ -17,6 +17,12 @@ export const BACK_DESTINATION = {
   TOOLS: { route: "(tabs)/tools", href: "/(tabs)/tools", title: "tools.title", sky: true },
   SETTINGS: { route: "(tabs)/settings", href: "/settings", title: "settings.title", sky: true },
   ATHKAR: { route: "(tabs)/athkar", href: "/athkar", title: "athkar.title", sky: true },
+  ATHKAR_FOCUS: {
+    route: "athkar-focus",
+    href: "/athkar-focus",
+    title: "athkar.session.focus.title",
+    sky: true,
+  },
   QADA: { route: "(tabs)/qada", href: "/qada", title: "qada.title" },
   QURAN: { route: "(tabs)/quran", href: "/quran", title: "a11y.tab.quran" },
   SETTINGS_PROVIDER: {

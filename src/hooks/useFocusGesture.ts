@@ -54,6 +54,8 @@ export type FocusGesture = {
   hold: SharedValue<number>;
   /** 0 to 1 as a dhikr that did not slide in arrives. */
   arrive: SharedValue<number>;
+  /** Where the last touch landed, in the surface's own space. */
+  point: SharedValue<{ x: number; y: number }>;
   holding: boolean;
   undoArmed: boolean;
 };
@@ -80,6 +82,7 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
   const down = useSharedValue(0);
   const hold = useSharedValue(0);
   const arrive = useSharedValue(1);
+  const point = useSharedValue({ x: 0, y: 0 });
   const [holding, setHolding] = useState(false);
   const [armed, setArmed] = useState(false);
 
@@ -161,7 +164,8 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
     testID: FOCUS_GESTURE_ID,
     runOnJS: true,
     minDistance: FOCUS_GESTURE.SLOP,
-    onBegin: ({ y }) => {
+    onBegin: ({ x, y }) => {
+      point.set({ x, y });
       mode.current = FOCUS_MODE.PENDING;
       moved.current = AT_REST;
       beganOn.current = index;
@@ -254,6 +258,7 @@ export const useFocusGesture = (options: FocusGestureOptions): FocusGesture => {
     down,
     hold,
     arrive,
+    point,
     holding,
     undoArmed: armed,
   };

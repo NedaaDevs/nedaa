@@ -10,6 +10,7 @@ import { ATHKAR_LOOKS } from "@/components/athkar/looks/registry";
 import { SessionDone } from "@/components/athkar/session/SessionDone";
 import { SessionListSheet } from "@/components/athkar/session/SessionListSheet";
 import { Box } from "@/components/ui/box";
+import { ClaimSkyBodies } from "@/components/ui/sky-background/bodies";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatePanel } from "@/components/ui/state-panel";
 import { VStack } from "@/components/ui/vstack";
@@ -94,13 +95,16 @@ export const AthkarSessionScreen = ({ trying }: AthkarSessionScreenProps) => {
     }
     if (status === SESSION_STATUS.READY) {
       return (
-        <look.Reader
-          session={session}
-          onOpenList={() => setListOpen(true)}
-          onOpenFocus={() => router.push(ATHKAR_FOCUS_HREF)}
-          onStartAudio={() => current && audio.start(current.item.id)}
-          trying={trying !== undefined}
-        />
+        <>
+          {look.drawsSun ? <ClaimSkyBodies /> : null}
+          <look.Reader
+            session={session}
+            onOpenList={() => setListOpen(true)}
+            onOpenFocus={() => router.push(ATHKAR_FOCUS_HREF)}
+            onStartAudio={() => current && audio.start(current.item.id)}
+            trying={trying !== undefined}
+          />
+        </>
       );
     }
     if (day.settled) {

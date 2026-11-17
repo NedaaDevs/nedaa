@@ -29,10 +29,14 @@ export type AthkarFocusProps = {
   audio: ReactNode;
 };
 
-/** A look: the reader, and the same session's Focus stage. */
+/** A look: the reader and the same session's Focus stage. */
 export type AthkarLook = {
   /** Locale key of the look's name. */
   name: ParseKeys;
   Reader: ComponentType<AthkarLookProps>;
+  /** The reader draws a sun, so the page sky under it shows none. */
+  drawsSun: boolean;
   Focus: ComponentType<AthkarFocusProps>;
+  /** What Focus sits on in every state; without one, the route's sky. */
+  FocusGround?: ComponentType<{ children: ReactNode }>;
 };

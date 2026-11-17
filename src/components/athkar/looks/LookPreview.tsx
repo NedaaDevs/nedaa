@@ -1,5 +1,7 @@
 import { ATHKAR_LOOKS } from "@/components/athkar/looks/registry";
 import { Box } from "@/components/ui/box";
+import { SkyBackground } from "@/components/ui/sky-background";
+import { ClaimSkyBodies } from "@/components/ui/sky-background/bodies";
 import { useElevationShadow } from "@/components/ui/material/edge";
 import type { AthkarLookId } from "@/constants/AthkarLook";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
@@ -19,7 +21,7 @@ type LookPreviewProps = { look: AthkarLookId };
 
 /** A look's reader over the sample session: seen, never read or pressed. */
 export const LookPreview = ({ look }: LookPreviewProps) => {
-  const { Reader } = ATHKAR_LOOKS[look];
+  const { Reader, drawsSun } = ATHKAR_LOOKS[look];
   return (
     <Box
       testID={LOOK_PREVIEW_PART.ROOT}
@@ -27,6 +29,7 @@ export const LookPreview = ({ look }: LookPreviewProps) => {
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
+      {drawsSun ? <ClaimSkyBodies /> : null}
       <Reader
         session={SAMPLE_SESSION}
         onOpenList={still}
@@ -60,7 +63,9 @@ export const LookPicture = ({ look }: LookPreviewProps) => {
         width={WIDTH}
         height={HEIGHT}
         style={{ transform: [{ scale: SCALE }] }}>
-        <LookPreview look={look} />
+        <SkyBackground paused>
+          <LookPreview look={look} />
+        </SkyBackground>
       </Box>
     </Box>
   );

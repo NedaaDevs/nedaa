@@ -506,6 +506,7 @@
   "athkar.look.choose": "Choose the Athkar look",
   "athkar.look.current": "Your current look: {{name}}",
   "athkar.look.name.classic": "Classic",
+  "athkar.look.name.horizon": "Horizon",
   "athkar.look.title": "Athkar look",
   "athkar.look.use": "Use this look",
   "athkar.morning": "Morning Athkar",

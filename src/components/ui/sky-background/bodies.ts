@@ -32,3 +32,9 @@ export const useClaimSkyBodies = (active: boolean) => {
   // A layout effect, so a view mounted with the sky claims before its paint.
   useLayoutEffect(() => (active ? claim() : undefined), [active, claim]);
 };
+
+/** Mounted, it holds the page sky's sun and moon. */
+export const ClaimSkyBodies = () => {
+  useClaimSkyBodies(true);
+  return null;
+};

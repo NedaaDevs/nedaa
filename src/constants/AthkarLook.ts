@@ -1,5 +1,5 @@
 /** The looks the Athkar reader can wear. */
-export const ATHKAR_LOOK = { CLASSIC: "classic" } as const;
+export const ATHKAR_LOOK = { CLASSIC: "classic", HORIZON: "horizon" } as const;
 
 export type AthkarLookId = (typeof ATHKAR_LOOK)[keyof typeof ATHKAR_LOOK];
 
