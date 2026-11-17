@@ -932,9 +932,14 @@ export const useAthkarStore = create<AthkarStore>()(
         // A saved record replaces `settings` whole: keys it lacks keep their defaults.
         merge: (persisted, current) => {
           const saved = (persisted ?? {}) as Partial<AthkarStore>;
-          const settings = { ...current.settings, ...saved.settings };
-          const look = isAthkarLookId(settings.look) ? settings.look : null;
-          return { ...current, ...saved, settings: { ...settings, look } };
+          // The look comes from the record alone: one it lacks is not chosen.
+          const savedLook = saved.settings?.look;
+          const look = isAthkarLookId(savedLook) ? savedLook : null;
+          return {
+            ...current,
+            ...saved,
+            settings: { ...current.settings, ...saved.settings, look },
+          };
         },
         onRehydrateStorage: () => (state) => {
           // Initialize DB and load data after rehydration
