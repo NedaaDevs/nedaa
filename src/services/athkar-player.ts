@@ -207,11 +207,17 @@ class AthkarPlayer {
       await PlayerQueue.deletePlaylist(this.playlistId).catch(() => {});
     }
     const pid = await PlayerQueue.createPlaylist(`athkar-${sessionType}`);
-    await PlayerQueue.addTracksToPlaylist(pid, tracks);
-    await PlayerQueue.loadPlaylist(pid);
-    // Loop the current file; we advance to the next step explicitly once its
-    // repeats are counted. The player never auto-advances on its own.
-    await TrackPlayer.setRepeatMode("track");
+    try {
+      await PlayerQueue.addTracksToPlaylist(pid, tracks);
+      await PlayerQueue.loadPlaylist(pid);
+      // Loop the current file; we advance to the next step explicitly once its
+      // repeats are counted. The player never auto-advances on its own.
+      await TrackPlayer.setRepeatMode("track");
+    } catch (error) {
+      // A playlist that never loaded has no owner to delete it later.
+      await PlayerQueue.deletePlaylist(pid).catch(() => {});
+      throw error;
+    }
     await this.syncRate();
     this.playlistId = pid;
 
@@ -299,15 +305,16 @@ class AthkarPlayer {
     }
   }
 
-  async jumpTo(athkarId: string): Promise<void> {
-    if (!this.playlistId) return;
+  /** Plays the dhikr from its current count; false when no track started. */
+  async jumpTo(athkarId: string): Promise<boolean> {
+    if (!this.playlistId) return false;
     const stepIdxs: number[] = [];
     for (let i = 0; i < this.plan.length; i++) {
       if (this.plan[i].athkarId === athkarId) stepIdxs.push(i);
     }
     if (stepIdxs.length === 0) {
       log.w("Player", `jumpTo: athkarId ${athkarId} not found in plan`);
-      return;
+      return false;
     }
 
     // Resume at the recitation matching the current count.
@@ -331,7 +338,7 @@ class AthkarPlayer {
       "Player",
       `Start: ${athkarId} @ step ${target}, repeat ${resumeRepeat}/${this.plan[target].repeatTarget}`
     );
-    await this.playStep(target, true, null);
+    return this.playStep(target, true, null);
   }
 
   async startAndJumpTo(athkarId: string): Promise<void> {
@@ -361,29 +368,32 @@ class AthkarPlayer {
     this.setPlayerState(PLAYER_STATE.LOADING);
     try {
       await this.buildQueue(athkarList, manifest, selectedReciterId, currentType);
-      await this.jumpTo(athkarId);
+      if (await this.jumpTo(athkarId)) return;
+      log.w("Player", "startAndJumpTo: no track started");
     } catch (error) {
-      // A failed start leaves no queue and no loading dhikr, so the next can run.
       log.w("Player", `startAndJumpTo failed: ${error instanceof Error ? error.message : error}`);
-      await this.teardown();
     }
+    // A failed start leaves no queue and no loading dhikr, so the next can run.
+    await this.teardown();
   }
 
   // ─── Advancement (app-driven) ──────────────────────────────────────
 
   // Position the player on a step and play it. `athkarChanged` drives whether the
   // UI does a full athkar transition; `completedAthkarId` marks the prior athkar
-  // done (for the completion animation) on a natural advance.
+  // done (for the completion animation) on a natural advance. Resolves false
+  // when the player rejects the track.
   private async playStep(
     index: number,
     athkarChanged: boolean,
     completedAthkarId: string | null
-  ): Promise<void> {
+  ): Promise<boolean> {
     const step = this.plan[index];
-    if (!step) return;
+    if (!step) return false;
     this.stepIndex = index;
     this.lastPosition = 0;
     this.advancing = true;
+    let started = true;
     try {
       // Select then start: a lone command right after loadPlaylist is dropped
       // before the track is ready, so issue both.
@@ -391,10 +401,12 @@ class AthkarPlayer {
       await TrackPlayer.play();
     } catch (error) {
       log.w("Player", `playStep(${index}) failed: ${(error as Error)?.message}`);
+      started = false;
     } finally {
       this.advancing = false;
     }
     this.syncUI(step, athkarChanged, completedAthkarId);
+    return started;
   }
 
   // Manual navigation (next/previous, lock screen): reposition without counting.

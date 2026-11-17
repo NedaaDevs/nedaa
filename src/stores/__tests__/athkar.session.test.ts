@@ -143,6 +143,18 @@ describe("the pause before the next dhikr", () => {
     expect(countOf(second)).toBe(0);
   });
 
+  test("a tap does not count a dhikr whose audio is starting", () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, loadingAthkarId: second.id });
+    tap(second);
+    expect(countOf(second)).toBe(0);
+  });
+
+  test("a tap does not count the dhikr audio waits on", () => {
+    useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, currentAthkarId: second.id });
+    tap(second);
+    expect(countOf(second)).toBe(0);
+  });
+
   test("hold-to-add does not count a dhikr whose audio is starting", () => {
     useAthkarStore.setState({ playerState: PLAYER_STATE.LOADING, loadingAthkarId: second.id });
     state().incrementCountBy(second.id, 2);
