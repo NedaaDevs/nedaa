@@ -67,7 +67,8 @@ reviews:
         - Comments describe the present code and its reason in one short clause.
     - path: "src/components/**/*.tsx"
       instructions: |
-        - Radius uses the five intents only: `$chip`, `$control`, `$card`, `$sheet`, `$pill`.
+        - Radius uses the six intents only: `$chip`, `$control`, `$card`, `$sheet`, `$hero`,
+          `$pill`.
           Space and size use tokens, not raw numbers. Colour comes from theme keys.
         - A value shown on two surfaces is drawn by one component; flag a second renderer.
         - Interactive elements need accessibilityRole, an accessibilityLabel from `t("a11y.*")`,
