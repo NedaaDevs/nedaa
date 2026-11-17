@@ -42,11 +42,12 @@ const STILL = { translationX: 0, translationY: 0, velocityX: 0, velocityY: 0, y:
 /** A text key no locale holds, so it draws as written. */
 const textOf = (i: number) => `dhikr ${i + 1}`;
 
-const items = (): SessionItem[] =>
+/** The session's items; `text` replaces the text of the one at `place`. */
+const items = (place: number, text?: string): SessionItem[] =>
   Array.from({ length: TOTAL }, (_, i) => ({
     id: `${i}`,
     target: TARGET,
-    textKeys: [textOf(i)],
+    textKeys: [i === place && text ? text : textOf(i)],
     itemsPerRound: 1,
   }));
 
@@ -58,7 +59,7 @@ const sessionOf = ({
   audioOwnsCount = false,
   text,
 }: Options = {}): AthkarSession => {
-  const list = items();
+  const list = items(place, text);
   const counts = { [list[place].id]: count };
   return {
     status: SESSION_STATUS.READY,
@@ -175,20 +176,26 @@ describe("ClassicFocus", () => {
     const showTranslation = (show: boolean) =>
       useAthkarStore.setState((s) => ({ settings: { ...s.settings, showTranslation: show } }));
 
-    it("names the Arabic and every line of the translation it shows", async () => {
+    it("shows and names the Arabic and every line of its translation", async () => {
       showTranslation(true);
       await renderFocus({ text });
       const label = surface().props.accessibilityLabel as string;
       expect(label).toContain(ARABIC);
-      for (const line of LINES) expect(label).toContain(line);
+      expect(screen.getByText(ARABIC, hidden)).toBeOnTheScreen();
+      for (const line of LINES) {
+        expect(label).toContain(line);
+        expect(screen.getByText(line, { ...hidden, exact: false })).toBeOnTheScreen();
+      }
     });
 
-    it("names the Arabic alone with translations off", async () => {
+    it("shows and names the Arabic alone with translations off", async () => {
       showTranslation(false);
       await renderFocus({ text });
       const label = surface().props.accessibilityLabel as string;
       expect(label).toContain(ARABIC);
       expect(label).not.toContain(LINES[0]);
+      expect(screen.getByText(ARABIC, hidden)).toBeOnTheScreen();
+      expect(screen.queryByText(LINES[0], { ...hidden, exact: false })).toBeNull();
     });
   });
 
