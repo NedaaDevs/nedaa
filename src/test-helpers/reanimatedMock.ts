@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { createElement, useEffect, useRef, useState, type ComponentType } from "react";
 import { View } from "react-native";
 
 /** Reanimated without the worklets runtime jest lacks; Views keep the props. */
 const Animated = {
   View,
   // Gesture Handler wraps its detector's child through this at import.
-  createAnimatedComponent: <T>(component: T) => component,
+  // Animated props land as plain ones, so a test reads what the view is given.
+  createAnimatedComponent:
+    <P extends object>(component: ComponentType<P>) =>
+    ({ animatedProps, ...props }: P & { animatedProps?: Partial<P> }) =>
+      createElement(component, { ...(props as P), ...animatedProps }),
 };
 
 export default Animated;

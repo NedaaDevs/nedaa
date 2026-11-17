@@ -218,6 +218,22 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<ClassicPosition(Marks)?\b/,
     home: "components/athkar/looks/classic/ClassicPosition.tsx",
   },
+  // The Horizon reader and its Focus stage draw the place on the same arc.
+  {
+    concept: "the Horizon look's session position",
+    shows: /\bsession\.marks\b/,
+    within: /^components\/athkar\/looks\/horizon\//,
+    drawsWith: /<HorizonArc\b/,
+    home: "components/athkar/looks/horizon/HorizonArc.tsx",
+  },
+  // Each look's reader names the next dhikr on the same line.
+  {
+    concept: "the dhikr that opens next",
+    shows: /athkar\.focus\.next\b|\bathkarLine\(|\bsession\.next\b/,
+    within: /^components\/athkar\/looks\//,
+    drawsWith: /<NextDhikr\b/,
+    home: "components/athkar/session/NextDhikr.tsx",
+  },
   // The reader and Focus end a session on the same card.
   {
     concept: "a session's ending",
