@@ -442,6 +442,24 @@ describe("the day changes with no tap", () => {
     expect(countOf(second)).toBe(0);
   });
 
+  test("a count the old day could not write is sent beside the new day's", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    tap(second);
+    mockWriteCount.mockResolvedValueOnce(false);
+    goToDay(TOMORROW);
+    await state().syncDay();
+    mockWriteCount.mockClear();
+
+    tap(second);
+    await state().flushCounts();
+    expect(mockWriteCount.mock.calls).toEqual(
+      expect.arrayContaining([
+        [TODAY, second.id, 1, second.count],
+        [TOMORROW, second.id, 1, second.count],
+      ])
+    );
+  });
+
   test("the same day reads and writes nothing", async () => {
     tap(second);
     await state().syncDay();
