@@ -1,5 +1,5 @@
 /** How long a finished dhikr stays up before the next one opens. */
-export const ADVANCE_PAUSE_MS = 1000;
+export const ADVANCE_PAUSE_MS = 600;
 
 /** Up to FULL_MAX marks all draw full size; past it, WINDOW marks do, BEFORE of them ahead of the place. */
 export const POSITION = { FULL_MAX: 12, WINDOW: 7, BEFORE: 3 } as const;
