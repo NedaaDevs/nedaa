@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -60,8 +60,11 @@ const Bloom = ({ stage }: { stage: FocusStage }) => {
   const spread = useSharedValue(1);
   // Where the counted tap landed; a later touch moves `point` alone.
   const at = useSharedValue({ x: 0, y: 0 });
+  // Taps counted before this mount draw nothing.
+  const drawn = useRef(taps);
   useEffect(() => {
-    if (taps === 0) return;
+    if (taps === drawn.current) return;
+    drawn.current = taps;
     at.set(point.get());
     spread.set(0);
     spread.set(

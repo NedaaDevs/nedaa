@@ -100,7 +100,8 @@ export const useFocusStage = ({
   const target = current?.target ?? 0;
   // Audio that owns the count closes the tap, the hold and the undo.
   const locked = current?.audioOwnsCount ?? false;
-  const canTap = !locked;
+  // A tap counts only where a repeat is left and no move is waiting.
+  const canTap = !locked && !(current?.done ?? true) && !session.advancePending;
   const canUndo = !locked && session.canUndo;
   const room = locked ? 0 : holdAmount(count, target);
 
@@ -167,7 +168,8 @@ export const useFocusStage = ({
       ? null
       : t(edge.by === STEP.NEXT ? "athkar.session.lastThikr" : "athkar.focus.firstThikr");
   // A new place says where it is; a count by hand says the count.
-  const arrival = count === 0 ? placeLine : t("a11y.join", { first: placeLine, second: counted });
+  const arrival =
+    count === 0 || locked ? placeLine : t("a11y.join", { first: placeLine, second: counted });
   const [said, setSaid] = useState<Said>({ place, count, line: arrival });
   if (said.place !== place) setSaid({ place, count, line: arrival });
   // A count the audio makes stays unsaid; the recitation is playing.
@@ -244,7 +246,7 @@ export const useFocusStage = ({
       setTall((now) => (now[textKey] === isTall ? now : { ...now, [textKey]: isTall })),
     onTextZone: setTextZone,
     label,
-    hint: canTap && !current.done ? t("athkar.focus.tapToIncrement") : undefined,
+    hint: canTap ? t("athkar.focus.tapToIncrement") : undefined,
     actions,
     act,
     spoken: { change: changed, edge: edgeLine },

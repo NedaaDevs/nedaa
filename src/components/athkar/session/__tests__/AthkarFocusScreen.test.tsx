@@ -69,6 +69,7 @@ import {
 } from "@/components/athkar/session/AthkarFocusScreen";
 import { SESSION_DONE_ID } from "@/components/athkar/session/SessionDone";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
+import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { FOCUS_ACTION } from "@/constants/AthkarFocus";
@@ -161,17 +162,20 @@ beforeEach(() => {
 });
 
 describe("AthkarFocusScreen", () => {
-  it("leaves the sky no sun or moon, whatever the look", async () => {
-    useAthkarStore.setState((state) => ({ settings: { ...state.settings, look: TEST_LOOK_ID } }));
-    try {
-      await renderFocus();
-      const drawn = { includeHiddenElements: true };
-      expect(screen.getAllByTestId(SKY_PART.CANVAS, drawn)).toHaveLength(1);
-      expect(screen.queryAllByTestId(SKY_PART.BODIES, drawn)).toHaveLength(0);
-    } finally {
-      useAthkarStore.setState((state) => ({ settings: { ...state.settings, look: null } }));
+  it.each([ATHKAR_LOOK.CLASSIC, ATHKAR_LOOK.HORIZON, TEST_LOOK_ID])(
+    "leaves the sky no sun or moon in the %s look",
+    async (look) => {
+      useAthkarStore.setState((state) => ({ settings: { ...state.settings, look } }));
+      try {
+        await renderFocus();
+        const drawn = { includeHiddenElements: true };
+        expect(screen.getAllByTestId(SKY_PART.CANVAS, drawn)).toHaveLength(1);
+        expect(screen.queryAllByTestId(SKY_PART.BODIES, drawn)).toHaveLength(0);
+      } finally {
+        useAthkarStore.setState((state) => ({ settings: { ...state.settings, look: null } }));
+      }
     }
-  });
+  );
 
   describe("the stored look", () => {
     const store = (look: typeof TEST_LOOK_ID | null) =>
