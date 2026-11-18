@@ -11,7 +11,10 @@ import { useRTL } from "@/contexts/RTLContext";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Test ids for the parts a test reaches. */
-export const SWIPE_TO_REMOVE_PART = { REMOVE: "swipe-to-remove-button" } as const;
+export const SWIPE_TO_REMOVE_PART = {
+  REMOVE: "swipe-to-remove-button",
+  PAN: "swipe-to-remove-pan",
+} as const;
 
 /** Travel before a drag counts as a swipe, and past which a release opens it. */
 const DRAG_START = 10;
@@ -49,13 +52,18 @@ export const SwipeToRemove = ({ label, rowLabel, hint, onRemove, children }: Pro
   };
 
   const pan = Gesture.Pan()
+    .withTestId(SWIPE_TO_REMOVE_PART.PAN)
     .activeOffsetX([-DRAG_START, DRAG_START])
+    // A vertical move first hands the touch to the scrolling page.
+    .failOffsetY([-DRAG_START, DRAG_START])
     .onUpdate(({ translationX }) => {
       const travel = (rest.get() + translationX) * sign.get();
       shift.set(Math.min(width.get(), Math.max(0, travel)) * sign.get());
     })
-    .onEnd(() => {
-      moveTo(Math.abs(shift.get()) > OPEN_PAST ? width.get() * sign.get() : 0);
+    // A cancelled drag returns the row to where it rested.
+    .onEnd((_, success) => {
+      if (!success) moveTo(rest.get());
+      else moveTo(Math.abs(shift.get()) > OPEN_PAST ? width.get() * sign.get() : 0);
     });
 
   const slid = useAnimatedStyle(() => ({ transform: [{ translateX: shift.get() }] }));

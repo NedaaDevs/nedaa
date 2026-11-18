@@ -4,7 +4,7 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 
 // Services
 import { QadaDB } from "@/services/qada-db";
-import { QADA_ENTRY_STATUS } from "@/constants/Qada";
+import { QADA_ENTRY_STATUS, QADA_ENTRY_TYPE } from "@/constants/Qada";
 
 // Utils
 import { mapSnakeToCamel } from "@/utils/caseConversion";
@@ -84,6 +84,8 @@ export type QadaState = {
   pendingEntries: QadaHistory[];
   /** Writes that changed the data this session; a reader holding a result checks it. */
   writes: number;
+  /** Whether a read of the batches has settled this session; they are not persisted. */
+  loaded: boolean;
   isLoading: boolean;
   hasError: boolean;
   errorMessage: string;
@@ -136,6 +138,7 @@ export const useQadaStore = create<QadaState>()(
         history: [],
         pendingEntries: [],
         writes: 0,
+        loaded: false,
         isLoading: false,
         hasError: false,
         errorMessage: "",
@@ -199,7 +202,7 @@ export const useQadaStore = create<QadaState>()(
 
             // Load pending entries
             const pendingEntries = await QadaDB.getPendingEntries();
-            set({ pendingEntries });
+            set({ pendingEntries, loaded: true });
 
             // Sync notifications after loading data
             await syncQadaNotifications();
@@ -212,6 +215,7 @@ export const useQadaStore = create<QadaState>()(
               hasError: true,
               errorMessage: error instanceof Error ? error.message : "Failed to load Qada data",
               isLoading: false,
+              loaded: true,
             });
           }
         },
@@ -544,8 +548,8 @@ export const useQadaStore = create<QadaState>()(
             return {
               id: index + 1,
               count,
-              type: "added",
-              status: "pending",
+              type: QADA_ENTRY_TYPE.ADDED,
+              status: QADA_ENTRY_STATUS.PENDING,
               notes: null,
               created_at: createdAt,
               updated_at: createdAt,
@@ -558,6 +562,7 @@ export const useQadaStore = create<QadaState>()(
             totalOriginal,
             pendingEntries,
             history: pendingEntries,
+            loaded: true,
             isLoading: false,
             hasError: false,
             errorMessage: "",

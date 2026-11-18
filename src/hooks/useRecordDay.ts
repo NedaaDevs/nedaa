@@ -10,7 +10,6 @@ type RecordedDay = { completionId: number; batch: QadaHistory; writes: number };
 
 /** Records one day off the oldest open batch, and undoes the last one recorded. */
 export const useRecordDay = () => {
-  const pendingEntries = useQadaStore((s) => s.pendingEntries);
   const completeEntry = useQadaStore((s) => s.completeEntry);
   const restoreDay = useQadaStore((s) => s.restoreDay);
   const writes = useQadaStore((s) => s.writes);
@@ -21,11 +20,15 @@ export const useRecordDay = () => {
 
   const record = () =>
     run(async () => {
-      const batch = oldestOpenBatch(pendingEntries);
+      // Read at run time, not render, so a late tap sees the last write's batches.
+      const before = useQadaStore.getState();
+      const batch = oldestOpenBatch(before.pendingEntries);
       if (!batch) return;
       const completionId = await completeEntry(batch.id);
       if (completionId === null) return;
       const state = useQadaStore.getState();
+      // Only the record's own write may land; any other may have moved the day.
+      if (state.writes > before.writes + 1) return;
       setRecorded({
         completionId,
         batch: state.history.find(({ id }) => id === batch.id) ?? batch,
@@ -40,8 +43,11 @@ export const useRecordDay = () => {
   const undo = () =>
     run(async () => {
       if (!last) return;
+      const newest = await QadaDB.getNewestCompletionId();
+      // The recorded day still exists, so null is a failed read; Undo stays.
+      if (newest === null) return;
       // Ids grow with each insert, so a newer id means a newer day.
-      if ((await QadaDB.getNewestCompletionId()) !== last.completionId) {
+      if (newest !== last.completionId) {
         setRecorded(null);
         return;
       }

@@ -21,6 +21,8 @@ import { useQadaStore } from "@/stores/qada";
 
 /** Notes past this length are cut. */
 const NOTE_MAX_LENGTH = 200;
+/** The bare field draws no box, so it sets its own 44pt touch target. */
+const NOTE_MIN_HEIGHT = 44;
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -102,6 +104,7 @@ export const AddBatchSheet = ({ open, onClose }: Props) => {
               <Box paddingHorizontal="$3.5" paddingVertical="$stack">
                 <SheetInput
                   autoFocus
+                  style={{ minHeight: NOTE_MIN_HEIGHT }}
                   value={note}
                   onChangeText={setNote}
                   maxLength={NOTE_MAX_LENGTH}
