@@ -213,15 +213,15 @@ const addMissedFasts = (count: number, notes?: string): Promise<boolean> =>
         return false;
       }
 
-      const newTotalMissed = currentData.total_missed + count;
-      await updateQadaFastWith(db, newTotalMissed, currentData.total_completed);
-
-      // Add to history
       const now = new Date().toISOString();
-      await db.runAsync(
-        `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
-        [count, QADA_ENTRY_TYPE.ADDED, QADA_ENTRY_STATUS.PENDING, notes || null, now, now]
-      );
+      // Totals and batch commit together, so a retry never adds twice.
+      await db.withTransactionAsync(async () => {
+        await updateQadaFastWith(db, currentData.total_missed + count, currentData.total_completed);
+        await db.runAsync(
+          `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
+          [count, QADA_ENTRY_TYPE.ADDED, QADA_ENTRY_STATUS.PENDING, notes || null, now, now]
+        );
+      });
 
       return true;
     } catch (error) {
@@ -333,47 +333,40 @@ const completeOneDayFromEntry = (id: number): Promise<number | null> =>
         [id]
       );
 
-      if (!entry) {
-        console.error("[Qada DB] Entry not found for ID:", id);
+      // A stale tap on a closed or empty batch records nothing.
+      if (
+        !entry ||
+        entry.type !== QADA_ENTRY_TYPE.ADDED ||
+        entry.status !== QADA_ENTRY_STATUS.PENDING ||
+        entry.count < 1
+      ) {
+        console.error("[Qada DB] No open day on entry ID:", id);
         return null;
       }
 
-      console.log("[Qada DB] Completing one day from entry ID:", id, "current count:", entry.count);
-
-      if (entry.count > 1) {
-        // Reduce count by 1 and keep entry pending
-        const newCount = entry.count - 1;
-        await db.runAsync(
-          `UPDATE ${QADA_HISTORY_TABLE} SET count = ?, updated_at = ? WHERE id = ?;`,
-          [newCount, now, id]
-        );
-        console.log("[Qada DB] Reduced entry count to:", newCount);
-      } else {
-        // Mark single-count entry as completed
-        await db.runAsync(
-          `UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`,
-          [QADA_ENTRY_STATUS.COMPLETED, now, id]
-        );
-        console.log("[Qada DB] Marked single-count entry as completed");
-      }
-
-      // Update totals: increment completed, decrement missed
-      const currentData = await getQadaFastWith(db);
-      if (!currentData) {
+      const totals = await getQadaFastWith(db);
+      if (!totals) {
         console.error("[Qada DB] No Qada data found");
         return null;
       }
 
-      const newTotalCompleted = currentData.total_completed + 1;
-      const newTotalMissed = currentData.total_missed - 1;
-      await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
-      const completionId = await recordCompletionWith(db, 1, now);
-      console.log(
-        "[Qada DB] Updated totals - completed:",
-        newTotalCompleted,
-        "missed:",
-        newTotalMissed
-      );
+      // The batch, the totals and the ledger row commit together or not at all.
+      let completionId: number | null = null;
+      await db.withTransactionAsync(async () => {
+        if (entry.count > 1) {
+          await db.runAsync(
+            `UPDATE ${QADA_HISTORY_TABLE} SET count = ?, updated_at = ? WHERE id = ?;`,
+            [entry.count - 1, now, id]
+          );
+        } else {
+          await db.runAsync(
+            `UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`,
+            [QADA_ENTRY_STATUS.COMPLETED, now, id]
+          );
+        }
+        await updateQadaFastWith(db, totals.total_missed - 1, totals.total_completed + 1);
+        completionId = await recordCompletionWith(db, 1, now);
+      });
 
       return completionId;
     } catch (error) {
@@ -496,7 +489,8 @@ const getPendingEntries = (): Promise<QadaHistory[]> =>
   });
 
 /**
- * Recorded days, newest first: the completion ledger.
+ * Recorded days, newest first: the completion ledger. Rejects when the read
+ * fails, so a caller can tell a failure from an empty ledger.
  */
 const getCompletions = (limit?: number): Promise<QadaHistory[]> =>
   sharedDb.run(async (db) => {
@@ -506,7 +500,7 @@ const getCompletions = (limit?: number): Promise<QadaHistory[]> =>
       return (await db.getAllAsync<QadaHistory>(query, params)) || [];
     } catch (error) {
       log.e("DB", "getCompletions failed", error instanceof Error ? error : undefined);
-      return [];
+      throw error;
     }
   });
 

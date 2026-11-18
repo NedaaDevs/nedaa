@@ -2,7 +2,7 @@
 // the screens must bind to the mock below, not to its empty one.
 import QadaHome from "@/app/(tabs)/qada";
 import QadaBatches from "@/app/qada-batches";
-import { AccessibilityInfo, Text } from "react-native";
+import { AccessibilityInfo, StyleSheet, Text } from "react-native";
 import { usePathname } from "expo-router";
 import { act, fireEvent, render, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen } from "expo-router/testing-library";
@@ -12,12 +12,14 @@ import { AddBatchSheet } from "@/components/Qada/AddBatchSheet";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { QADA_ENTRY_STATUS, QADA_ENTRY_TYPE } from "@/constants/Qada";
+import { TOAST_KIND } from "@/constants/Toast";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { QadaDB, type QadaHistory } from "@/services/qada-db";
 import { useAppStore } from "@/stores/app";
 import { useQadaStore } from "@/stores/qada";
-import { controlProblems } from "@/test-helpers/controls";
+import { useToastStore } from "@/stores/toast";
+import { MIN_TARGET, controlProblems } from "@/test-helpers/controls";
 import { ThemeProvider } from "@/test-helpers/theme";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
@@ -43,6 +45,8 @@ jest.mock("@/services/qada-db", () => {
 });
 
 const t = i18n.t.bind(i18n);
+/** A spoken name that opens with this text, whatever follows it. */
+const opensWith = (text: string) => new RegExp(`^${text}`);
 const DAY_MS = 86_400_000;
 const isoDaysAgo = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
 
@@ -78,6 +82,7 @@ const seed = (history: QadaHistory[], totals: { missed: number; completed: numbe
     history,
     pendingEntries: pending,
     writes: 0,
+    loaded: true,
     totalMissed: totals.missed,
     totalCompleted: totals.completed,
     totalOriginal: totals.missed + totals.completed,
@@ -209,6 +214,83 @@ describe("Qada home", () => {
     expect(undoButton()).toBeNull();
   });
 
+  it("keeps the undo when the newest day cannot be read", async () => {
+    jest.mocked(QadaDB.getNewestCompletionId).mockResolvedValueOnce(null);
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderHome();
+    await userEvent.press(recordButton());
+
+    await userEvent.press(undoButton()!);
+
+    expect(restoreDay).not.toHaveBeenCalled();
+    expect(undoButton()).toBeTruthy();
+
+    await userEvent.press(undoButton()!);
+
+    expect(restoreDay).toHaveBeenCalledWith(RECORDED_ID);
+  });
+
+  it("offers no undo when another write lands while the day records", async () => {
+    let finish = (_id: number | null) => {};
+    completeEntry.mockImplementationOnce(
+      () => new Promise<number | null>((resolve) => (finish = resolve))
+    );
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderHome();
+
+    await userEvent.press(recordButton());
+    // The record's own write, and one more from elsewhere.
+    await act(() => useQadaStore.setState((state) => ({ writes: state.writes + 2 })));
+    await act(async () => finish(RECORDED_ID));
+
+    expect(undoButton()).toBeNull();
+  });
+
+  it("says what undo does to the day", async () => {
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderHome();
+
+    await userEvent.press(recordButton());
+
+    expect(undoButton()!.props.accessibilityHint).toBe(t("a11y.qada.returnDaysHint", { count: 1 }));
+  });
+
+  it("reads the batches itself, and offers neither setup nor the days until they land", async () => {
+    const loadData = jest.fn().mockResolvedValue(undefined);
+    useQadaStore.setState({
+      history: [],
+      pendingEntries: [],
+      loaded: false,
+      loadData,
+      totalMissed: 5,
+      totalCompleted: 0,
+      totalOriginal: 5,
+      completeEntry,
+      writes: 0,
+    });
+    await renderHome();
+
+    expect(loadData).toHaveBeenCalledTimes(1);
+
+    expect(screen.queryByText(t("qada.home.emptyTitle"))).toBeNull();
+    expect(screen.queryByRole("button", { name: t("qada.home.addBatch") })).toBeNull();
+    expect(screen.queryByRole("button", { name: t("qada.home.record") })).toBeNull();
+
+    await act(() =>
+      useQadaStore.setState({ history: [OLDER], pendingEntries: [OLDER], loaded: true })
+    );
+
+    expect(
+      screen.getByLabelText(
+        t("a11y.join", {
+          first: t("qada.home.remainingLabel"),
+          second: t("qada.days", { count: 5 }),
+        })
+      )
+    ).toBeTruthy();
+    expect(recordButton()).toBeTruthy();
+  });
+
   it("offers no undo when nothing was recorded", async () => {
     completeEntry.mockResolvedValueOnce(null);
     seed([NEWER, OLDER], { missed: 5, completed: 2 });
@@ -228,6 +310,7 @@ describe("Qada home", () => {
       totalOriginal: 3,
       completeEntry,
       writes: 0,
+      loaded: true,
     });
     await renderHome();
 
@@ -259,7 +342,7 @@ describe("Qada home", () => {
     seed([NEWER, OLDER], { missed: 5, completed: 2 });
     await renderHome();
 
-    await userEvent.press(screen.getByRole("button", { name: /^Your open batches/ }));
+    await userEvent.press(screen.getByRole("button", { name: opensWith(t("qada.home.batches")) }));
 
     expect(screen.getByTestId("pathname")).toHaveTextContent(
       BACK_DESTINATION.QADA_BATCHES.href as string
@@ -287,8 +370,10 @@ describe("Qada home", () => {
     expect(
       screen.getByRole("button", { name: t("qada.days", { count: 3 }) }).props.accessibilityState
     ).toMatchObject({ selected: true });
-    await userEvent.press(screen.getByRole("button", { name: /^Add a note/ }));
-    await userEvent.type(screen.getByLabelText(t("qada.notes")), "Travel");
+    await userEvent.press(screen.getByRole("button", { name: opensWith(t("qada.addBatch.note")) }));
+    const note = screen.getByLabelText(t("qada.notes"));
+    expect(StyleSheet.flatten(note.props.style).minHeight).toBeGreaterThanOrEqual(MIN_TARGET);
+    await userEvent.type(note, "Travel");
     await userEvent.press(screen.getByRole("button", { name: t("qada.addBatch.submit") }));
 
     expect(addMissed).toHaveBeenCalledWith(3, "Travel");
@@ -325,7 +410,7 @@ describe("Qada home", () => {
 
     expect(screen.getByText(t("qada.home.doneTitle"))).toBeTruthy();
     expect(screen.getByText(t("qada.home.completedOf", { count: 2, completed: 2 }))).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^Batches and history/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: opensWith(t("qada.batches.title")) })).toBeTruthy();
     expect(screen.getByRole("button", { name: t("qada.home.addBatch") })).toBeTruthy();
     expect(screen.queryByRole("button", { name: t("qada.home.record") })).toBeNull();
   });
@@ -335,24 +420,77 @@ describe("Qada batches", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useAppStore.setState({ locale: AppLocale.EN });
+    useToastStore.setState({ toast: null });
     jest.mocked(QadaDB.getCompletions).mockResolvedValue([COMPLETION]);
   });
 
   const removeHint = (count: number) => t("a11y.qada.returnDaysHint", { count });
+  const saveFailed = { kind: TOAST_KIND.ERROR, message: t("qada.saveFailed") };
+
+  it("says a batch action was not saved", async () => {
+    completeEntry.mockResolvedValueOnce(null);
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderBatches();
+
+    await userEvent.press(screen.getAllByRole("button", { name: opensWith(OLDER.notes!) })[0]);
+    await userEvent.press(screen.getByRole("button", { name: t("common.complete") }));
+
+    expect(useToastStore.getState().toast).toMatchObject(saveFailed);
+  });
+
+  it("says nothing failed when a batch action saves", async () => {
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderBatches();
+
+    await userEvent.press(screen.getAllByRole("button", { name: opensWith(OLDER.notes!) })[0]);
+    await userEvent.press(screen.getByRole("button", { name: t("common.complete") }));
+
+    expect(useToastStore.getState().toast).toBeNull();
+  });
+
+  it("says a recorded day could not be returned", async () => {
+    restoreDay.mockResolvedValueOnce(false);
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderBatches();
+
+    const day = await screen.findByHintText(removeHint(COMPLETION.count));
+    await act(() =>
+      fireEvent(day, "accessibilityAction", { nativeEvent: { actionName: A11Y_ACTION.REMOVE } })
+    );
+
+    expect(useToastStore.getState().toast).toMatchObject(saveFailed);
+  });
+
+  it("tells a failed history read from an empty one, and reads again on retry", async () => {
+    jest.mocked(QadaDB.getCompletions).mockRejectedValueOnce(new Error("read failed"));
+    seed([OLDER], { missed: 3, completed: 0 });
+    await renderBatches();
+
+    expect(await screen.findByText(t("qada.history.loadFailed.title"))).toBeTruthy();
+    expect(screen.queryByText(t("qada.noHistory"))).toBeNull();
+    expect(controlProblems()).toEqual([]);
+
+    await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
+
+    expect(await screen.findByHintText(removeHint(COMPLETION.count))).toBeTruthy();
+    expect(screen.queryByText(t("qada.history.loadFailed.title"))).toBeNull();
+  });
 
   it("lists every batch, oldest first, and opens an open one's actions", async () => {
     seed([DONE, NEWER, OLDER], { missed: 5, completed: 2 });
     await renderBatches();
 
-    const open = screen.getAllByRole("button", { name: /Ramadan 1446|Separate days/ });
-    expect(open.map((button) => button.props.accessibilityLabel.split(",")[0])).toEqual([
-      OLDER.notes,
-      t("qada.batch.unnamed"),
+    const open = screen.getAllByRole("button", {
+      name: new RegExp(`^(${OLDER.notes}|${t("qada.batch.unnamed")})`),
+    });
+    expect(open.map((button) => button.props.accessibilityLabel)).toEqual([
+      expect.stringMatching(opensWith(OLDER.notes!)),
+      expect.stringMatching(opensWith(t("qada.batch.unnamed"))),
     ]);
     expect(open[0].props.accessibilityHint).toBe(t("a11y.qada.batchActionsHint"));
     expect(screen.queryByRole("button", { name: new RegExp(DONE.notes!) })).toBeNull();
     expect(screen.queryByRole("header", { name: DONE.notes! })).toBeNull();
-    expect(screen.getByLabelText(new RegExp(`^${DONE.notes}, `))).toBeTruthy();
+    expect(screen.getByLabelText(opensWith(DONE.notes!))).toBeTruthy();
 
     await userEvent.press(open[0]);
 
@@ -378,6 +516,21 @@ describe("Qada batches", () => {
     jest.mocked(QadaDB.getCompletions).mockResolvedValue([]);
     seed([OLDER], { missed: 3, completed: 0 });
     await renderBatches();
+
+    expect(await screen.findByText(t("qada.noHistory"))).toBeTruthy();
+  });
+
+  it("says nothing about the history until it is read", async () => {
+    let finish = (_rows: QadaHistory[]) => {};
+    jest
+      .mocked(QadaDB.getCompletions)
+      .mockImplementationOnce(() => new Promise<QadaHistory[]>((resolve) => (finish = resolve)));
+    seed([OLDER], { missed: 3, completed: 0 });
+    await renderBatches();
+
+    expect(screen.queryByText(t("qada.noHistory"))).toBeNull();
+
+    await act(async () => finish([]));
 
     expect(await screen.findByText(t("qada.noHistory"))).toBeTruthy();
   });
