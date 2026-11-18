@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { ViewInstance } from "react-native";
 import { useRouter } from "expo-router";
 import { BookOpen, PenLine, Plus, Search } from "lucide-react-native";
 
@@ -10,6 +11,7 @@ import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
 import { Pill } from "@/components/ui/pill";
 import { Section } from "@/components/ui/section";
+import { StatePanel } from "@/components/ui/state-panel";
 import { Text } from "@/components/ui/text";
 import { TextAction } from "@/components/ui/text-action";
 import { VStack } from "@/components/ui/vstack";
@@ -32,7 +34,9 @@ const MyAthkarList = ({ onOpen }: Props) => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const ratioText = useRatioText();
-  const { isMyAthkarInit, isCustomInit } = useInitializeAthkarStores();
+  const { isMyAthkarInit, isCustomInit, myAthkarFailed, customFailed, retry } =
+    useInitializeAthkarStores();
+  const searchRow = useRef<ViewInstance>(null);
 
   const hisnItems = useMyAthkarStore((s) => s.items);
   const hisnProgress = useMyAthkarStore((s) => s.progress);
@@ -49,7 +53,8 @@ const MyAthkarList = ({ onOpen }: Props) => {
     [hisnItems, hisnDisplayData]
   );
 
-  if (!isMyAthkarInit || !isCustomInit) {
+  const failed = myAthkarFailed || customFailed;
+  if ((!isMyAthkarInit && !myAthkarFailed) || (!isCustomInit && !customFailed)) {
     return (
       <Text size="label" color="$muted">
         {t("athkar.loading.initializing")}
@@ -58,6 +63,7 @@ const MyAthkarList = ({ onOpen }: Props) => {
   }
 
   const groupCount = hisnGroups.length + customGroups.length;
+  const opens = (name: string) => ({ title: name, hint: t("a11y.opens", { name }) });
   const today = (done: number, total: number) => ({
     status: ratioText(done, total),
     spokenStatus: t("a11y.customAthkar.cardProgress", { current: done, total }),
@@ -83,10 +89,11 @@ const MyAthkarList = ({ onOpen }: Props) => {
       </HStack>
 
       <ListRow
+        ref={searchRow}
         variant={LIST_ROW_VARIANT.CARD}
         icon={Search}
         tile
-        title={t("athkar.library.searchHisn")}
+        {...opens(t("athkar.library.searchHisn"))}
         status={t("athkar.library.searchHisnHint")}
         onPress={() => setSearching(true)}
       />
@@ -101,11 +108,19 @@ const MyAthkarList = ({ onOpen }: Props) => {
             </Text>
           ) : undefined
         }>
-        {groupCount === 0 ? (
+        {failed ? (
+          <StatePanel
+            title={t("athkar.library.loadFailed.title")}
+            body={t("athkar.library.loadFailed.body")}
+            action={{ label: t("common.retry"), onPress: () => void retry() }}
+          />
+        ) : null}
+        {groupCount === 0 && !failed ? (
           <Text size="label" color="$muted">
             {t("athkar.library.empty")}
           </Text>
-        ) : (
+        ) : null}
+        {groupCount > 0 ? (
           <ListGroup>
             {hisnGroups.map((group) => {
               const done = group.items.filter(
@@ -117,7 +132,7 @@ const MyAthkarList = ({ onOpen }: Props) => {
                   variant={LIST_ROW_VARIANT.GROUPED}
                   icon={BookOpen}
                   tile
-                  title={i18n.language === AppLocale.AR ? group.titleAr : group.titleEn}
+                  {...opens(i18n.language === AppLocale.AR ? group.titleAr : group.titleEn)}
                   {...today(done, group.items.length)}
                   onPress={() =>
                     onOpen({ kind: SESSION_SOURCE.HISN, categoryId: group.categoryId })
@@ -138,7 +153,7 @@ const MyAthkarList = ({ onOpen }: Props) => {
                   variant={LIST_ROW_VARIANT.GROUPED}
                   icon={PenLine}
                   tile
-                  title={group.title}
+                  {...opens(group.title)}
                   {...today(done, ids.size)}
                   value={t("athkar.library.custom")}
                   onPress={() => onOpen({ kind: SESSION_SOURCE.CUSTOM, groupId: group.id })}
@@ -146,7 +161,7 @@ const MyAthkarList = ({ onOpen }: Props) => {
               );
             })}
           </ListGroup>
-        )}
+        ) : null}
       </Section>
 
       <HStack justifyContent="center">
@@ -157,7 +172,11 @@ const MyAthkarList = ({ onOpen }: Props) => {
         />
       </HStack>
 
-      <AthkarSearchSheet isOpen={searching} onClose={() => setSearching(false)} />
+      <AthkarSearchSheet
+        isOpen={searching}
+        onClose={() => setSearching(false)}
+        finalFocusRef={searchRow}
+      />
     </VStack>
   );
 };

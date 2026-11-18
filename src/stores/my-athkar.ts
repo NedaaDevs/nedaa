@@ -34,9 +34,12 @@ type MyAthkarState = {
   /** The day the counts in memory belong to; null before the first load. */
   progressDay: number | null;
   isInitialized: boolean;
+  /** The last read failed, so what is in memory may be missing or out of date. */
+  loadFailed: boolean;
 };
 
 type MyAthkarActions = {
+  /** Loads everything once, or again after a failed read; a failure sets loadFailed. */
   initialize: () => Promise<void>;
   loadItems: () => Promise<void>;
   loadDisplayData: () => Promise<void>;
@@ -53,6 +56,7 @@ type MyAthkarActions = {
     sourceCategoryId: number,
     repeatCount: number
   ) => Promise<boolean>;
+  /** Whether rows were written; a failed reload after them sets loadFailed. */
   batchAddItems: (
     items: { sourceAthkarId: number; sourceCategoryId: number; repeatCount: number }[]
   ) => Promise<boolean>;
@@ -79,6 +83,17 @@ const debouncedDailyUpdate = createDebouncedQueue(
 );
 
 const today = () => getTodayInt(locationStore.getState().locationDetails.timezone);
+
+const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
+
+/** Writes the day's missing rows; throws when they are not written, so the load reports it. */
+const writeDailyRows = async (day: number, items: readonly MyAthkarItem[]) => {
+  const written = await AthkarDB.initializeMyAthkarDaily(
+    day,
+    items.map((i) => ({ id: i.id, userCount: i.userCount }))
+  );
+  if (!written) throw new Error("My Athkar daily rows were not written");
+};
 
 // One load of the new day serves every caller that arrives while it runs.
 let dayLoad: Promise<void> | null = null;
@@ -125,59 +140,63 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
       progress: [],
       progressDay: null,
       isInitialized: false,
+      loadFailed: false,
 
       initialize: async () => {
-        if (get().isInitialized) return;
-        // Fetch all data first, then set state once to avoid multiple re-renders
-        const rows = await AthkarDB.getMyAthkar();
-        const items: MyAthkarItem[] = rows.map((r) => ({
-          id: r.id,
-          sourceAthkarId: r.source_athkar_id,
-          sourceCategoryId: r.source_category_id,
-          userCount: r.user_count,
-          sortOrder: r.sort_order,
-        }));
+        if (get().isInitialized && !get().loadFailed) return;
+        set({ loadFailed: false });
+        try {
+          // Fetch all data first, then set state once to avoid multiple re-renders
+          const rows = await AthkarDB.getMyAthkar();
+          const items: MyAthkarItem[] = rows.map((r) => ({
+            id: r.id,
+            sourceAthkarId: r.source_athkar_id,
+            sourceCategoryId: r.source_category_id,
+            userCount: r.user_count,
+            sortOrder: r.sort_order,
+          }));
 
-        // Load display data
-        let displayData = new Map<number, DisplayEntry>();
-        if (items.length > 0) {
-          const sourceIds = items.map((i) => i.sourceAthkarId);
-          const [athkarRows, categoryMap] = await Promise.all([
-            HisnMuslimDB.getAthkarByIds(sourceIds),
-            HisnMuslimDB.getCategoryForAthkar(sourceIds),
-          ]);
+          // Load display data
+          let displayData = new Map<number, DisplayEntry>();
+          if (items.length > 0) {
+            const sourceIds = items.map((i) => i.sourceAthkarId);
+            const [athkarRows, categoryMap] = await Promise.all([
+              HisnMuslimDB.getAthkarByIds(sourceIds),
+              HisnMuslimDB.getCategoryForAthkar(sourceIds),
+            ]);
 
-          for (const a of athkarRows) {
-            const cat = categoryMap.get(a.id);
-            displayData.set(a.id, {
-              ...a,
-              categoryTitleAr: cat?.titleAr ?? "",
-              categoryTitleEn: cat?.titleEn ?? "",
-            });
+            for (const a of athkarRows) {
+              const cat = categoryMap.get(a.id);
+              displayData.set(a.id, {
+                ...a,
+                categoryTitleAr: cat?.titleAr ?? "",
+                categoryTitleEn: cat?.titleEn ?? "",
+              });
+            }
+
+            // Initialize daily progress in DB
+            const tz = locationStore.getState().locationDetails.timezone;
+            const todayInt = getTodayInt(tz);
+            await writeDailyRows(todayInt, items);
           }
 
-          // Initialize daily progress in DB
+          // Load daily progress
           const tz = locationStore.getState().locationDetails.timezone;
           const todayInt = getTodayInt(tz);
-          await AthkarDB.initializeMyAthkarDaily(
-            todayInt,
-            items.map((i) => ({ id: i.id, userCount: i.userCount }))
-          );
+          const progressRows = await AthkarDB.getMyAthkarDailyProgress(todayInt);
+          const progress: MyAthkarProgress[] = progressRows.map((r) => ({
+            myAthkarId: r.my_athkar_id,
+            currentCount: r.current_count,
+            totalCount: r.total_count,
+            completed: r.current_count >= r.total_count,
+          }));
+
+          // Single state update
+          set({ items, displayData, progress, progressDay: todayInt, isInitialized: true });
+        } catch (error) {
+          log.e("Store", "My Athkar did not load", asError(error));
+          set({ loadFailed: true });
         }
-
-        // Load daily progress
-        const tz = locationStore.getState().locationDetails.timezone;
-        const todayInt = getTodayInt(tz);
-        const progressRows = await AthkarDB.getMyAthkarDailyProgress(todayInt);
-        const progress: MyAthkarProgress[] = progressRows.map((r) => ({
-          myAthkarId: r.my_athkar_id,
-          currentCount: r.current_count,
-          totalCount: r.total_count,
-          completed: r.current_count >= r.total_count,
-        }));
-
-        // Single state update
-        set({ items, displayData, progress, progressDay: todayInt, isInitialized: true });
       },
 
       loadItems: async () => {
@@ -226,10 +245,7 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
         const tz = locationStore.getState().locationDetails.timezone;
         const todayInt = getTodayInt(tz);
 
-        await AthkarDB.initializeMyAthkarDaily(
-          todayInt,
-          items.map((i) => ({ id: i.id, userCount: i.userCount }))
-        );
+        await writeDailyRows(todayInt, items);
       },
 
       loadDailyProgress: async () => {
@@ -259,13 +275,7 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
           await get().initializeDailyProgress();
           await get().loadDailyProgress();
         })()
-          .catch((error: unknown) =>
-            log.e(
-              "Store",
-              "the new day did not load",
-              error instanceof Error ? error : new Error(String(error))
-            )
-          )
+          .catch((error: unknown) => log.e("Store", "the new day did not load", asError(error)))
           .finally(() => {
             dayLoad = null;
           });
@@ -295,10 +305,16 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
         );
         if (ids.length === 0) return false;
 
-        await get().loadItems();
-        await get().loadDisplayData();
-        await get().initializeDailyProgress();
-        await get().loadDailyProgress();
+        try {
+          await get().loadItems();
+          await get().loadDisplayData();
+          await get().initializeDailyProgress();
+          await get().loadDailyProgress();
+          set({ loadFailed: false, isInitialized: true });
+        } catch (error) {
+          log.e("Store", "My Athkar did not reload", asError(error));
+          set({ loadFailed: true });
+        }
         return true;
       },
 
