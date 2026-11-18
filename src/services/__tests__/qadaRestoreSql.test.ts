@@ -121,6 +121,22 @@ describe("QadaDB completions on SQLite", () => {
     expect(rows[0].id).toBeGreaterThan(rows[1].id);
   });
 
+  it("lists the day recorded last first when the clock has moved back", async () => {
+    await QadaDB.addMissedFasts(3);
+    const [batch] = await batches();
+    const first = await QadaDB.completeOneDayFromEntry(batch.id);
+    const clock = jest
+      .spyOn(Date.prototype, "toISOString")
+      .mockReturnValue("2020-01-01T00:00:00.000Z");
+    const second = await QadaDB.completeOneDayFromEntry(batch.id);
+    clock.mockRestore();
+
+    const rows = await QadaDB.getCompletions();
+
+    expect(rows.map(({ id }) => id)).toEqual([second, first]);
+    await expect(QadaDB.getCompletions(1)).resolves.toMatchObject([{ id: second }]);
+  });
+
   it("gives an undone day back to the batch it came off", async () => {
     await QadaDB.addMissedFasts(3);
     const [batch] = await batches();

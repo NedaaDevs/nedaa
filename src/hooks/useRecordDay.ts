@@ -8,8 +8,11 @@ import { oldestOpenBatch } from "@/utils/qadaDays";
 /** A recorded day: its ledger row, its batch as the day left it, and the store's writes then. */
 type RecordedDay = { completionId: number; batch: QadaHistory; writes: number };
 
-/** Records one day off the oldest open batch, and undoes the last one recorded. */
-export const useRecordDay = () => {
+/**
+ * Records one day off the oldest open batch, and undoes the last one recorded.
+ * `onFailed` runs when either write does not save.
+ */
+export const useRecordDay = (onFailed: () => void) => {
   const completeEntry = useQadaStore((s) => s.completeEntry);
   const restoreDay = useQadaStore((s) => s.restoreDay);
   const writes = useQadaStore((s) => s.writes);
@@ -25,7 +28,7 @@ export const useRecordDay = () => {
       const batch = oldestOpenBatch(before.pendingEntries);
       if (!batch) return;
       const completionId = await completeEntry(batch.id);
-      if (completionId === null) return;
+      if (completionId === null) return onFailed();
       const state = useQadaStore.getState();
       // Only the record's own write may land; any other may have moved the day.
       if (state.writes > before.writes + 1) return;
@@ -45,13 +48,13 @@ export const useRecordDay = () => {
       if (!last) return;
       const newest = await QadaDB.getNewestCompletionId();
       // The recorded day still exists, so null is a failed read; Undo stays.
-      if (newest === null) return;
+      if (newest === null) return onFailed();
       // Ids grow with each insert, so a newer id means a newer day.
       if (newest !== last.completionId) {
         setRecorded(null);
         return;
       }
-      if (!(await restoreDay(last.completionId))) return;
+      if (!(await restoreDay(last.completionId))) return onFailed();
       setRecorded(null);
       setReturnedAt(useQadaStore.getState().writes);
     });
