@@ -65,7 +65,7 @@ import {
 import { SESSION_LIST_PART } from "@/components/athkar/session/SessionListSheet";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
-import { ATHKAR_LOOK } from "@/constants/AthkarLook";
+import { ATHKAR_LOOK, type AthkarLookId } from "@/constants/AthkarLook";
 import { ATHKAR_FOCUS_HREF } from "@/constants/AthkarSession";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
@@ -153,7 +153,7 @@ describe("AthkarSessionScreen", () => {
 
   describe("the page sky's sun and moon", () => {
     const bodies = () => screen.queryAllByTestId(SKY_PART.BODIES, hidden);
-    const renderUnderSky = (look: typeof ATHKAR_LOOK.CLASSIC | typeof ATHKAR_LOOK.HORIZON) =>
+    const renderUnderSky = (look: AthkarLookId) =>
       renderWithTheme(
         <SkyBackground>
           <AthkarSessionScreen trying={look} />

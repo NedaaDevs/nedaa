@@ -133,6 +133,8 @@ export const FocusPager = ({ stage }: StageProps) => {
                 { transform: [{ translateX: slotX(at, width, isRTL) }] },
               ]}>
               <FocusText
+                // A group's next text opens at its top, with its own measures.
+                key={textKey}
                 textKey={textKey}
                 here={by === 0}
                 scrolls={tall[textKey] ?? false}
@@ -173,8 +175,6 @@ const FocusText = ({ textKey, here, scrolls, alongside, onTall }: FocusTextProps
   };
   return (
     <ScrollView
-      // A group's next text opens at its top.
-      key={textKey}
       simultaneousWith={alongside}
       testID={here ? FOCUS_STAGE_PART.TEXT_SCROLL : undefined}
       scrollEnabled={scrolls}
