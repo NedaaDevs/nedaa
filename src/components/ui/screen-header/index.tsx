@@ -26,7 +26,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
  * `true` pops the stack. `fallback` pops, or opens that screen when nothing is
  * behind. `to` always opens it, because a tab screen pops to the first tab.
  */
-type ScreenHeaderBack = true | { fallback: BackDestination } | { to: BackDestination };
+type RoutedBack = true | { fallback: BackDestination } | { to: BackDestination };
+
+/** A back the screen handles itself, to a place named by `name`, already translated. */
+type ScreenHeaderOwnBack = { onPress: () => void; name: string };
+
+type ScreenHeaderBack = RoutedBack | ScreenHeaderOwnBack;
+
+const isOwnBack = (back: ScreenHeaderBack): back is ScreenHeaderOwnBack =>
+  back !== true && "onPress" in back;
 
 type ScreenHeaderAction = {
   icon: ComponentProps<typeof Icon>["as"];
@@ -53,7 +61,7 @@ type BackPlan =
   { pop: true; destination?: BackDestination } | { pop: false; destination: BackDestination };
 
 const planBack = (
-  back: ScreenHeaderBack | undefined,
+  back: RoutedBack | undefined,
   behind: string | undefined
 ): BackPlan | undefined => {
   if (!back) return undefined;
@@ -69,16 +77,19 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
   const { isRTL } = useRTL();
   const behind = useBackDestination();
   const gutter = use(ScreenGutterContext);
-  const plan = planBack(back, behind);
+  const own = back !== undefined && isOwnBack(back) ? back : undefined;
+  const plan = back !== undefined && !isOwnBack(back) ? planBack(back, behind) : undefined;
+  const hasBack = Boolean(plan ?? own);
 
   // Back points to the start edge.
   const Chevron = isRTL ? ChevronRight : ChevronLeft;
-  const destinationName = plan?.destination ? t(plan.destination.title) : undefined;
+  const destinationName = own?.name ?? (plan?.destination ? t(plan.destination.title) : undefined);
   const backLabel = destinationName
     ? t("a11y.backTo", { screen: destinationName })
     : t("a11y.back");
 
   const handleBack = () => {
+    if (own) return own.onPress();
     if (!plan) return;
     if (plan.pop) router.back();
     else router.navigate(plan.destination.href);
@@ -98,7 +109,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
     return (
       <HStack alignItems="center" paddingHorizontal="$stack" paddingVertical="$tight">
         <Box width="$target">
-          {plan && (
+          {hasBack && (
             <Pressable
               onPress={handleBack}
               accessibilityLabel={backLabel}
@@ -125,9 +136,9 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
 
   return (
     <VStack gap="$0.5" paddingHorizontal={gutter} paddingTop="$1" paddingBottom="$3.5">
-      {(plan || action) && (
+      {(hasBack || action) && (
         <HStack alignItems="center">
-          {plan && (
+          {hasBack && (
             <Pressable
               onPress={handleBack}
               accessibilityLabel={backLabel}

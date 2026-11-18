@@ -18,8 +18,9 @@ import { useAppStore } from "@/stores/app";
 import { useAthkarStore } from "@/stores/athkar";
 import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
-import { positionMarks, type SessionItem } from "@/utils/athkarSession";
+import { positionMarks, textAt, type SessionItem } from "@/utils/athkarSession";
 import { LTR_ISOLATE } from "@/utils/digits";
+import { keyText } from "@/utils/athkarText";
 
 let mockReduced = false;
 
@@ -43,25 +44,32 @@ const STILL = { translationX: 0, translationY: 0, velocityX: 0, velocityY: 0, y:
 /** A text key no locale holds, so it draws as written. */
 const textOf = (i: number) => `dhikr ${i + 1}`;
 
-/** The session's items; `text` replaces the text of the one at `place`. */
-const items = (place: number, text?: string): SessionItem[] =>
-  Array.from({ length: TOTAL }, (_, i) => ({
-    id: `${i}`,
-    target: TARGET,
-    textKeys: [i === place && text ? text : textOf(i)],
-    itemsPerRound: 1,
-  }));
+/** Two texts that take turns under one count. */
+const GROUP = ["first", "second"];
 
-type Options = { count?: number; place?: number; audioOwnsCount?: boolean; text?: string };
+/** The session's items; `texts` replaces the texts of the one at `place`. */
+const items = (place: number, texts?: readonly string[]): SessionItem[] =>
+  Array.from({ length: TOTAL }, (_, i) => {
+    const own = i === place && texts ? texts : [textOf(i)];
+    return { id: `${i}`, target: TARGET, texts: own.map(keyText), itemsPerRound: own.length };
+  });
+
+type Options = {
+  count?: number;
+  place?: number;
+  audioOwnsCount?: boolean;
+  texts?: readonly string[];
+};
 
 const sessionOf = ({
   count = 4,
   place = PLACE,
   audioOwnsCount = false,
-  text,
+  texts,
 }: Options = {}): AthkarSession => {
-  const list = items(place, text);
+  const list = items(place, texts);
   const counts = { [list[place].id]: count };
+  const shown = textAt(list[place], counts);
   return {
     status: SESSION_STATUS.READY,
     items: list,
@@ -69,13 +77,14 @@ const sessionOf = ({
     index: place,
     current: {
       item: list[place],
-      textKey: text ?? textOf(place),
+      textId: shown.id,
+      text: shown.text,
       count,
       target: TARGET,
       done: count >= TARGET,
       audioOwnsCount,
     },
-    next: place < TOTAL - 1 ? { textKey: textOf(place + 1) } : null,
+    next: place < TOTAL - 1 ? { text: keyText(textOf(place + 1)) } : null,
     marks: positionMarks(list, counts, place),
     canUndo: count > 0,
     advancePending: false,
@@ -179,7 +188,7 @@ describe("ClassicFocus", () => {
 
     it("shows and names the Arabic and every line of its translation", async () => {
       showTranslation(true);
-      await renderFocus({ text });
+      await renderFocus({ texts: [text] });
       const label = surface().props.accessibilityLabel as string;
       expect(label).toContain(ARABIC);
       expect(screen.getByText(ARABIC, hidden)).toBeOnTheScreen();
@@ -191,7 +200,7 @@ describe("ClassicFocus", () => {
 
     it("shows and names the Arabic alone with translations off", async () => {
       showTranslation(false);
-      await renderFocus({ text });
+      await renderFocus({ texts: [text] });
       const label = surface().props.accessibilityLabel as string;
       expect(label).toContain(ARABIC);
       expect(label).not.toContain(LINES[0]);
@@ -515,16 +524,16 @@ describe("ClassicFocus", () => {
     });
 
     test("a group's next text takes no measure from the text before it", async () => {
-      const { view } = await renderFocus({ text: "first" });
+      const { view } = await renderFocus({ texts: GROUP, count: 0 });
       await measure(space, lines(SPACE * 2));
-      await view.rerender(<ClassicFocus {...propsOf({ text: "second" })} />);
+      await view.rerender(<ClassicFocus {...propsOf({ texts: GROUP, count: 1 })} />);
       expect(scroll().props.scrollEnabled).toBe(false);
     });
 
     test("a new text waits for its own lines, not the last text's", async () => {
-      const { view } = await renderFocus({ text: "first" });
+      const { view } = await renderFocus({ texts: GROUP, count: 0 });
       await measure(space, lines(SPACE * 2));
-      await view.rerender(<ClassicFocus {...propsOf({ text: "second" })} />);
+      await view.rerender(<ClassicFocus {...propsOf({ texts: GROUP, count: 1 })} />);
       await act(space);
       expect(scroll().props.scrollEnabled).toBe(false);
     });

@@ -5,6 +5,7 @@ import { NextDhikr } from "@/components/athkar/session/NextDhikr";
 import i18n from "@/localization/i18n";
 import { useAthkarStore } from "@/stores/athkar";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { keyText } from "@/utils/athkarText";
 
 // The store's logger starts a flush timer that outlives the suite.
 jest.mock("@/utils/appLogger", () => ({
@@ -13,7 +14,7 @@ jest.mock("@/utils/appLogger", () => ({
 
 const ARABIC = "سبحان الله";
 const TRANSLATION = "Glory be to Allah";
-const NEXT = { textKey: `${TRANSLATION}\n${ARABIC}` };
+const NEXT = { text: keyText(`${TRANSLATION}\n${ARABIC}`) };
 
 const showTranslation = (show: boolean) =>
   useAthkarStore.setState((s) => ({ settings: { ...s.settings, showTranslation: show } }));

@@ -6,6 +6,7 @@ import type { ParseKeys } from "i18next";
 import { LookDock } from "@/components/athkar/looks/LookDock";
 import MyAthkarList from "@/components/athkar/MyAthkarList";
 import { AthkarSessionScreen } from "@/components/athkar/session/AthkarSessionScreen";
+import { CollectionSessionScreen } from "@/components/athkar/session/CollectionSessionScreen";
 import { useAthkarLandingScreenshotSeed } from "@/components/athkar/useAthkarScreenshotSeed";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -15,8 +16,10 @@ import { SkyOccluder } from "@/components/ui/sky-background";
 import { Text } from "@/components/ui/text";
 import { ATHKAR_TYPE, MY_ATHKAR_LOCALES, MY_ATHKAR_TAB } from "@/constants/Athkar";
 import type { ChooserMode } from "@/constants/AthkarLookChooser";
+import type { CollectionSource } from "@/constants/AthkarSession";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { useAthkarLookChooser } from "@/hooks/useAthkarLookChooser";
+import { useCollectionTitle } from "@/hooks/useCollectionTitle";
 import { useInitializeAthkar } from "@/hooks/useInitializeAthkar";
 import { useTabBarInset } from "@/hooks/useTabBarInset";
 import { athkarPlayer } from "@/services/athkar-player";
@@ -111,6 +114,11 @@ const AthkarTabs = ({ chooser: chooserMode }: AthkarTabsProps) => {
     if (activeTab !== MY_ATHKAR_TAB) setActiveTab(currentType);
   }
 
+  // The collection open in My Athkar; one renamed shows its new name, one gone closes.
+  const [collection, setCollection] = useState<CollectionSource | null>(null);
+  const collectionTitle = useCollectionTitle(collection);
+  if (collection && collectionTitle === null) setCollection(null);
+
   useInitializeAthkar();
 
   const openTab = useEffectEvent(() => {
@@ -137,6 +145,40 @@ const AthkarTabs = ({ chooser: chooserMode }: AthkarTabsProps) => {
     if (tab !== MY_ATHKAR_TAB) setCurrentType(tab);
   };
 
+  const page = () => {
+    if (activeTab !== MY_ATHKAR_TAB) {
+      return (
+        <SkyOccluder style={{ flex: 1 }}>
+          <Box flex={1} paddingHorizontal="$4" paddingBottom={chooser ? "$3" : tabBarInset}>
+            <AthkarSessionScreen trying={chooser?.look} />
+          </Box>
+        </SkyOccluder>
+      );
+    }
+    if (collection && collectionTitle !== null) {
+      return (
+        <SkyOccluder style={{ flex: 1 }}>
+          <Box flex={1} paddingBottom={tabBarInset}>
+            <CollectionSessionScreen
+              source={collection}
+              title={collectionTitle}
+              onBack={() => setCollection(null)}
+            />
+          </Box>
+        </SkyOccluder>
+      );
+    }
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: "transparent" }}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}>
+        <Box padding="$4">
+          <MyAthkarList onOpen={setCollection} />
+        </Box>
+      </ScrollView>
+    );
+  };
+
   return (
     <Box flex={1}>
       <SkyOccluder>
@@ -160,21 +202,7 @@ const AthkarTabs = ({ chooser: chooserMode }: AthkarTabsProps) => {
         </HStack>
       </SkyOccluder>
 
-      {activeTab === MY_ATHKAR_TAB ? (
-        <ScrollView
-          style={{ flex: 1, backgroundColor: "transparent" }}
-          contentContainerStyle={{ paddingBottom: tabBarInset }}>
-          <Box padding="$4">
-            <MyAthkarList />
-          </Box>
-        </ScrollView>
-      ) : (
-        <SkyOccluder style={{ flex: 1 }}>
-          <Box flex={1} paddingHorizontal="$4" paddingBottom={chooser ? "$3" : tabBarInset}>
-            <AthkarSessionScreen trying={chooser?.look} />
-          </Box>
-        </SkyOccluder>
-      )}
+      {page()}
       {chooser ? <LookDock chooser={chooser} /> : null}
     </Box>
   );

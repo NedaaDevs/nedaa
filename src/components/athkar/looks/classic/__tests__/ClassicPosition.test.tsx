@@ -5,12 +5,13 @@ import { ClassicPosition, POSITION_PART } from "@/components/athkar/looks/classi
 import { MARK_SIZE, MARK_STATE } from "@/constants/AthkarSession";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { positionMarks, type SessionItem } from "@/utils/athkarSession";
+import { keyText } from "@/utils/athkarText";
 
 const items = (count: number): SessionItem[] =>
   Array.from({ length: count }, (_, i) => ({
     id: `${i}`,
     target: 1,
-    textKeys: ["text"],
+    texts: [keyText("text")],
     itemsPerRound: 1,
   }));
 

@@ -1,21 +1,17 @@
 import { useEffect } from "react";
 
-import { ATHKAR_TYPE } from "@/constants/Athkar";
 import type { StepDirection } from "@/constants/AthkarFocus";
 import { SESSION_STATUS, type SessionStatus } from "@/constants/AthkarSession";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
-import { useAthkarStore } from "@/stores/athkar";
 import {
-  audioOwnsCount,
   nextOpenIndex,
   positionMarks,
-  textKeyAt,
-  toCounts,
-  toSessionItems,
+  textAt,
   type Counts,
   type PositionMark,
   type SessionItem,
 } from "@/utils/athkarSession";
+import type { DhikrText } from "@/utils/athkarText";
 
 export type AthkarSession = {
   status: SessionStatus;
@@ -25,8 +21,9 @@ export type AthkarSession = {
   index: number | null;
   current: {
     item: SessionItem;
-    /** Locale key of the text the count has reached. */
-    textKey: string;
+    /** Names the text the count has reached; a group's next text has another. */
+    textId: string;
+    text: DhikrText;
     count: number;
     target: number;
     done: boolean;
@@ -34,7 +31,7 @@ export type AthkarSession = {
     audioOwnsCount: boolean;
   } | null;
   /** The dhikr the session opens after this one; null on the last open one. */
-  next: { textKey: string } | null;
+  next: { text: DhikrText } | null;
   marks: readonly PositionMark[];
   canUndo: boolean;
   advancePending: boolean;
@@ -49,90 +46,72 @@ export type AthkarSession = {
   step: (by: StepDirection) => void;
 };
 
-const useHasSession = () =>
-  useAthkarStore((s) => {
-    const list = s.currentType === ATHKAR_TYPE.MORNING ? s.morningAthkarList : s.eveningAthkarList;
-    return s.progressDay !== null && list.length > 0;
-  });
-
-/** Opens the period on its first unfinished dhikr, from the last place. */
-export const useSessionOpening = () => {
-  const type = useAthkarStore((s) => s.currentType);
-  const jumpToIndex = useAthkarStore((s) => s.jumpToIndex);
-  const findOptimalAthkarIndex = useAthkarStore((s) => s.findOptimalAthkarIndex);
-  const hasSession = useHasSession();
-
-  useEffect(() => {
-    if (hasSession) jumpToIndex(findOptimalAthkarIndex(type));
-  }, [hasSession, type, jumpToIndex, findOptimalAthkarIndex]);
+/** What the engine reads a session through: one source's dhikr, counts, place and actions. */
+export type SessionPort = {
+  /** The source's dhikr and the day's counts are in memory. */
+  ready: boolean;
+  items: readonly SessionItem[];
+  counts: Counts;
+  index: number;
+  advancePending: boolean;
+  /** Audio counts this dhikr; taps do not. */
+  audioOwnsCount: (id: string) => boolean;
+  add: (id: string) => void;
+  addMany: (id: string, by: number) => void;
+  undo: (id: string) => void;
+  /** An index outside the session changes nothing. */
+  jumpTo: (index: number) => void;
+  flush: () => Promise<void>;
+  syncDay: () => Promise<void>;
 };
 
-/** The period's session: the place, the counts and the three things a person does. */
-export const useAthkarSession = (): AthkarSession => {
-  const type = useAthkarStore((s) => s.currentType);
-  const list = useAthkarStore((s) =>
-    type === ATHKAR_TYPE.MORNING ? s.morningAthkarList : s.eveningAthkarList
-  );
-  const progress = useAthkarStore((s) => s.currentProgress);
-  const storedIndex = useAthkarStore((s) => s.currentAthkarIndex);
-  const advancePending = useAthkarStore((s) => s.advancePending);
-  const playerState = useAthkarStore((s) => s.playerState);
-  const playingId = useAthkarStore((s) => s.currentAthkarId);
-  const loadingId = useAthkarStore((s) => s.loadingAthkarId);
-  const incrementCount = useAthkarStore((s) => s.incrementCount);
-  const incrementCountBy = useAthkarStore((s) => s.incrementCountBy);
-  const decrementCount = useAthkarStore((s) => s.decrementCount);
-  const jumpToIndex = useAthkarStore((s) => s.jumpToIndex);
-  const flushCounts = useAthkarStore((s) => s.flushCounts);
-  const syncDay = useAthkarStore((s) => s.syncDay);
-
+/** A session over one source: the place, the counts and the three things a person does. */
+export const useAthkarSession = (port: SessionPort): AthkarSession => {
+  const { items, counts, advancePending, flush, syncDay } = port;
   const { isActive, becameActiveAt } = useAppVisibility();
-  const hasSession = useHasSession();
 
   // The count write waits for taps to settle; the app may not get that long.
   useEffect(() => {
-    if (!isActive) void flushCounts();
-  }, [isActive, flushCounts]);
-  useEffect(() => () => void flushCounts(), [flushCounts]);
+    if (!isActive) void flush();
+  }, [isActive, flush]);
+  useEffect(() => () => void flush(), [flush]);
 
   // The day may have changed while the app was away.
   useEffect(() => {
     if (becameActiveAt) void syncDay();
   }, [becameActiveAt, syncDay]);
 
-  const items = toSessionItems(list);
-  const counts = toCounts(progress);
   const allDone = items.every((item) => (counts[item.id] ?? 0) >= item.target);
 
-  const status = !hasSession
+  const status = !port.ready
     ? SESSION_STATUS.LOADING
     : allDone && !advancePending
       ? SESSION_STATUS.DONE
       : SESSION_STATUS.READY;
 
   const index =
-    status === SESSION_STATUS.READY ? (storedIndex < items.length ? storedIndex : 0) : null;
+    status === SESSION_STATUS.READY ? (port.index < items.length ? port.index : 0) : null;
   const item = index === null ? null : items[index];
   const count = item ? Math.min(counts[item.id] ?? 0, item.target) : 0;
   const nextIndex = index === null ? null : nextOpenIndex(items, counts, index);
+  const shown = item && textAt(item, counts);
 
   return {
     status,
     items,
     counts,
     index,
-    current: item && {
-      item,
-      textKey: textKeyAt(item, counts),
-      count,
-      target: item.target,
-      done: count >= item.target,
-      audioOwnsCount: audioOwnsCount(
-        { playerState, currentAthkarId: playingId, loadingAthkarId: loadingId },
-        item.id
-      ),
-    },
-    next: nextIndex === null ? null : { textKey: textKeyAt(items[nextIndex], counts) },
+    current: item &&
+      shown && {
+        item,
+        textId: shown.id,
+        text: shown.text,
+        count,
+        target: item.target,
+        done: count >= item.target,
+        audioOwnsCount: port.audioOwnsCount(item.id),
+      },
+    next: nextIndex === null ? null : { text: textAt(items[nextIndex], counts).text },
     marks: positionMarks(items, counts, index),
     canUndo: count > 0,
     advancePending,
@@ -140,11 +119,10 @@ export const useAthkarSession = (): AthkarSession => {
       previous: index !== null && index > 0,
       next: index !== null && index < items.length - 1,
     },
-    add: () => item && incrementCount(item.id),
-    addMany: (by) => item && incrementCountBy(item.id, by),
-    undo: () => item && decrementCount(item.id),
-    jumpTo: jumpToIndex,
-    // The store refuses an index outside the session.
-    step: (by) => index !== null && jumpToIndex(index + by),
+    add: () => item && port.add(item.id),
+    addMany: (by) => item && port.addMany(item.id, by),
+    undo: () => item && port.undo(item.id),
+    jumpTo: port.jumpTo,
+    step: (by) => index !== null && port.jumpTo(index + by),
   };
 };

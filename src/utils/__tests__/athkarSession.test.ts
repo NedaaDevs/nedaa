@@ -1,22 +1,30 @@
-import { MARK_SIZE, MARK_STATE } from "@/constants/AthkarSession";
+import { ADVANCE_PAUSE_MS, MARK_SIZE, MARK_STATE } from "@/constants/AthkarSession";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import type { Athkar } from "@/types/athkar";
 import {
+  createAdvance,
   nextOpenIndex,
   positionMarks,
+  textAt,
   textIndexAt,
   toCounts,
   toSessionItems,
   type SessionItem,
 } from "@/utils/athkarSession";
+import { keyText } from "@/utils/athkarText";
 
 const plain = (id: string, target: number): SessionItem => ({
   id,
   target,
-  textKeys: ["t"],
+  texts: [keyText("t")],
   itemsPerRound: 1,
 });
-const quls: SessionItem = { id: "2", target: 9, textKeys: ["a", "b", "c"], itemsPerRound: 3 };
+const quls: SessionItem = {
+  id: "2",
+  target: 9,
+  texts: ["a", "b", "c"].map(keyText),
+  itemsPerRound: 3,
+};
 const many = (length: number) => Array.from({ length }, (_, i) => plain(String(i), 1));
 
 describe("toSessionItems", () => {
@@ -32,7 +40,7 @@ describe("toSessionItems", () => {
 
   test("a plain dhikr has one text and rounds of one", () => {
     expect(toSessionItems([dhikr({})])).toEqual([
-      { id: "1-morning", target: 3, textKeys: ["text.key"], itemsPerRound: 1 },
+      { id: "1-morning", target: 3, texts: [keyText("text.key")], itemsPerRound: 1 },
     ]);
   });
 
@@ -40,7 +48,7 @@ describe("toSessionItems", () => {
     const group = { texts: ["a", "b", "c"], audioIds: ["x", "y", "z"], itemsPerRound: 3 };
     expect(toSessionItems([dhikr({ count: 9, group })])[0]).toMatchObject({
       target: 9,
-      textKeys: ["a", "b", "c"],
+      texts: ["a", "b", "c"].map(keyText),
       itemsPerRound: 3,
     });
   });
@@ -49,6 +57,16 @@ describe("toSessionItems", () => {
 test("toCounts keys each count by its dhikr", () => {
   expect(toCounts([{ athkarId: "a", currentCount: 2, totalCount: 3, completed: false }])).toEqual({
     a: 2,
+  });
+});
+
+describe("textAt", () => {
+  test("names the text a count has reached by its dhikr and its turn", () => {
+    expect(textAt(quls, { "2": 4 })).toEqual({ id: "2:1", text: keyText("b") });
+  });
+
+  test("two dhikr with the same words keep their own names", () => {
+    expect(textAt(plain("a", 3), {}).id).not.toBe(textAt(plain("b", 3), {}).id);
   });
 });
 
@@ -118,5 +136,38 @@ describe("positionMarks", () => {
 
   test("a long finished session keeps its first seven marks full", () => {
     expect(fullAt(18, null)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+});
+
+describe("createAdvance", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  test("the move waits for the pause, then happens once", () => {
+    const move = jest.fn();
+    createAdvance().start(move);
+    jest.advanceTimersByTime(ADVANCE_PAUSE_MS - 1);
+    expect(move).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    expect(move).toHaveBeenCalledTimes(1);
+  });
+
+  test("a cancelled move never happens", () => {
+    const move = jest.fn();
+    const advance = createAdvance();
+    advance.start(move);
+    advance.cancel();
+    jest.advanceTimersByTime(ADVANCE_PAUSE_MS);
+    expect(move).not.toHaveBeenCalled();
+  });
+
+  test("a second start replaces the first", () => {
+    const [first, second] = [jest.fn(), jest.fn()];
+    const advance = createAdvance();
+    advance.start(first);
+    advance.start(second);
+    jest.advanceTimersByTime(ADVANCE_PAUSE_MS);
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
   });
 });

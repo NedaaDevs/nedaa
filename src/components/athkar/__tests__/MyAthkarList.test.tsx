@@ -2,6 +2,7 @@ import { act, screen, userEvent } from "@testing-library/react-native";
 
 import MyAthkarList from "@/components/athkar/MyAthkarList";
 import { CUSTOM_ATHKAR_HREF } from "@/constants/Athkar";
+import { SESSION_SOURCE } from "@/constants/AthkarSession";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -27,6 +28,7 @@ jest.mock("@/services/hisn-muslim-db", () => ({
   },
 }));
 const mockPush = jest.fn();
+const mockOpen = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 
 const t = i18n.t.bind(i18n);
@@ -71,6 +73,7 @@ const seedCustom = () =>
 
 beforeEach(() => {
   mockPush.mockClear();
+  mockOpen.mockClear();
   useMyAthkarStore.setState({ items: [], displayData: new Map(), progress: [] });
   useCustomAthkarStore.setState({ groups: [], items: [], progress: [] });
 });
@@ -81,7 +84,7 @@ afterEach(async () => {
 
 describe("MyAthkarList", () => {
   it("says where saved athkar appear while there are none", async () => {
-    await renderWithTheme(<MyAthkarList />);
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />);
 
     expect(screen.getByText(t("athkar.library.empty"))).toBeOnTheScreen();
     expect(screen.queryByText(t("athkar.library.groups", { count: 0 }))).toBeNull();
@@ -90,7 +93,7 @@ describe("MyAthkarList", () => {
   it("lists each saved group with what is done today", async () => {
     seedHisn();
     seedCustom();
-    await renderWithTheme(<MyAthkarList />);
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />);
 
     expect(screen.getByText(t("athkar.library.groups", { count: 2 }))).toBeOnTheScreen();
     expect(
@@ -112,14 +115,14 @@ describe("MyAthkarList", () => {
     await act(() => i18n.changeLanguage(AppLocale.AR));
     seedHisn();
     seedCustom();
-    await renderWithTheme(<MyAthkarList />, { isRTL: true });
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />, { isRTL: true });
 
     expect(screen.getByText("مجموعتان")).toBeOnTheScreen();
   });
 
   it("opens Hisn al-Muslim search from its row", async () => {
     const user = userEvent.setup();
-    await renderWithTheme(<MyAthkarList />);
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />);
 
     await user.press(
       screen.getByRole("button", { name: new RegExp(t("athkar.library.searchHisn")) })
@@ -130,43 +133,31 @@ describe("MyAthkarList", () => {
 
   it("starts a custom group in the editor", async () => {
     const user = userEvent.setup();
-    await renderWithTheme(<MyAthkarList />);
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />);
 
     await user.press(screen.getByRole("button", { name: t("athkar.library.createGroup") }));
 
     expect(mockPush).toHaveBeenCalledWith(CUSTOM_ATHKAR_HREF.NEW);
   });
 
-  it("shows an open group's current name", async () => {
+  it.each([
+    { name: SLEEP.titleEn, source: { kind: SESSION_SOURCE.HISN, categoryId: SLEEP.id } },
+    { name: "After prayer", source: { kind: SESSION_SOURCE.CUSTOM, groupId: 3 } },
+  ])("opens $name as a session", async ({ name, source }) => {
     const user = userEvent.setup();
+    seedHisn();
     seedCustom();
-    await renderWithTheme(<MyAthkarList />);
-    await user.press(screen.getByRole("button", { name: /After prayer/ }));
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />);
 
-    await act(() =>
-      useCustomAthkarStore.setState({ groups: [{ id: 3, title: "Evening walk", sortOrder: 0 }] })
-    );
+    await user.press(screen.getByRole("button", { name: new RegExp(name) }));
 
-    expect(screen.getByText("Evening walk")).toBeOnTheScreen();
-    expect(screen.queryByText("After prayer")).toBeNull();
-  });
-
-  it("returns to the list when the open group is deleted", async () => {
-    const user = userEvent.setup();
-    seedCustom();
-    await renderWithTheme(<MyAthkarList />);
-    await user.press(screen.getByRole("button", { name: /After prayer/ }));
-
-    await act(() => useCustomAthkarStore.setState({ groups: [], items: [], progress: [] }));
-
-    expect(screen.getByText(t("athkar.library.empty"))).toBeOnTheScreen();
-    expect(screen.queryByText("After prayer")).toBeNull();
+    expect(mockOpen).toHaveBeenCalledWith(source);
   });
 
   it("names every control and gives it a full target", async () => {
     seedHisn();
     seedCustom();
-    await renderWithTheme(<MyAthkarList />);
+    await renderWithTheme(<MyAthkarList onOpen={mockOpen} />);
 
     expect(controlProblems()).toEqual([]);
   });
