@@ -38,6 +38,13 @@ export const SYSTEM_MONO_FAMILY: GenericFamily = "monospace";
 export const isArabicScript = (locale: AppLocale): boolean =>
   FONT_MAPPINGS[locale] === ARABIC_FACES;
 
+/** Tamagui's font languages; `ARABIC` selects the `_ar` fonts. */
+export const FONT_LANGUAGE = { DEFAULT: "default", ARABIC: "ar" } as const;
+export type FontLanguageName = (typeof FONT_LANGUAGE)[keyof typeof FONT_LANGUAGE];
+
+export const fontLanguageOf = (locale: AppLocale): FontLanguageName =>
+  isArabicScript(locale) ? FONT_LANGUAGE.ARABIC : FONT_LANGUAGE.DEFAULT;
+
 /** A face set as the theme's map from numeric weight to face. */
 export const faceMapOf = (faces: FaceSet) => ({
   400: { normal: faces.regular },

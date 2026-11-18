@@ -87,6 +87,31 @@ describe("Stepper", () => {
       expect(shown()).toBe(MAX);
     });
 
+    it("counts on past any bound when it has no maximum", async () => {
+      const onChange = jest.fn();
+      await render(
+        <ThemeProvider>
+          <Stepper
+            value={MAX}
+            onChange={onChange}
+            min={MIN}
+            accessibilityLabel={LABEL}
+            valueText={`${MAX} days`}>
+            <Text>{MAX}</Text>
+          </Stepper>
+        </ThemeProvider>
+      );
+
+      await act(() =>
+        fireEvent(adjustable(), "accessibilityAction", {
+          nativeEvent: { actionName: A11Y_ACTION.INCREMENT },
+        })
+      );
+
+      expect(onChange).toHaveBeenCalledWith(MAX + 1);
+      expect(adjustable()).toHaveAccessibilityValue({ min: MIN, now: MAX, text: `${MAX} days` });
+    });
+
     it("reports disabled", async () => {
       await render(<Harness start={5} disabled />);
 
