@@ -67,8 +67,12 @@ const today = () => getTodayInt(locationStore.getState().locationDetails.timezon
 
 const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
 
+// Committed writes so far; a load that began before the latest holds rows from before it.
+let writes = 0;
+
 /** Reads everything again after a write; a failed read sets loadFailed. */
 const reloadAfterWrite = async () => {
+  writes += 1;
   const store = useCustomAthkarStore.getState();
   try {
     await store.loadGroups();
@@ -105,6 +109,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
       initialize: async () => {
         if (get().isInitialized && !get().loadFailed) return;
         set({ loadFailed: false });
+        const writesBefore = writes;
         try {
           const [groupRows, itemRows] = await Promise.all([
             AthkarDB.getCustomAthkarGroups(),
@@ -144,6 +149,8 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
             completed: r.current_count >= r.total_count,
           }));
 
+          // The reload after a later write owns the state.
+          if (writes !== writesBefore) return;
           set({ groups, items, progress, progressDay: todayInt, isInitialized: true });
         } catch (error) {
           log.e("Store", "the custom groups did not load", asError(error));

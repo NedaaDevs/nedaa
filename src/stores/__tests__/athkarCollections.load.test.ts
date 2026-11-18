@@ -175,6 +175,27 @@ describe("custom group writes", () => {
     expect(custom().groups).toHaveLength(1);
   });
 
+  it("keeps a deleted group out when a load that began before the delete lands after it", async () => {
+    let land = () => {};
+    db.getCustomAthkarDailyProgress.mockReturnValueOnce(
+      new Promise((resolve) => {
+        land = () => resolve([]);
+      })
+    );
+    useCustomAthkarStore.setState({ loadFailed: true });
+    const load = custom().initialize();
+    await jest.advanceTimersByTimeAsync(0);
+
+    db.deleteCustomAthkarGroup.mockResolvedValue(true);
+    db.getCustomAthkarGroups.mockResolvedValue([]);
+    db.getCustomAthkarItems.mockResolvedValue([]);
+    await custom().deleteGroup(GROUP_ROW.id);
+    land();
+    await load;
+
+    expect(custom().groups).toEqual([]);
+  });
+
   it("says a delete succeeded once the group is gone", async () => {
     db.deleteCustomAthkarGroup.mockResolvedValue(true);
     db.getCustomAthkarGroups.mockResolvedValue([]);
