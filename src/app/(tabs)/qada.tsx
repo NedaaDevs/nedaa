@@ -49,6 +49,7 @@ const Qada = () => {
   const total = useQadaStore((s) => s.totalOriginal);
   const history = useQadaStore((s) => s.history);
   const pendingEntries = useQadaStore((s) => s.pendingEntries);
+  const loaded = useQadaStore((s) => s.loaded);
   const seedScreenshotState = useQadaStore((s) => s.seedScreenshotState);
   const locale = useAppStore((s) => s.locale);
   const { last, returned, record, undo } = useRecordDay();
@@ -60,7 +61,10 @@ const Qada = () => {
   // The store is empty in screenshot mode, so the seed draws a populated home.
   const screenshotSeed = useScreenshotSeed("qada");
   useEffect(() => {
-    if (screenshotSeed) seedScreenshotState(screenshotSeed);
+    if (screenshotSeed) return seedScreenshotState(screenshotSeed);
+    // Launch setup reads the batches after its network work, or not at all if it fails.
+    const store = useQadaStore.getState();
+    if (!store.loaded) void store.loadData();
   }, [screenshotSeed, seedScreenshotState]);
 
   const hasBatches =
@@ -105,7 +109,8 @@ const Qada = () => {
 
         <ScreenContent flex={1} paddingTop="$4" paddingBottom="$5" gap="$section">
           <SkyOccluder>
-            {!hasBatches ? (
+            {/* The batches are not persisted; before they load, no state is known. */}
+            {!loaded ? null : !hasBatches ? (
               <Text size="heading" fontWeight="600" typography="display" color="$fg">
                 {t("qada.home.emptyTitle")}
               </Text>
@@ -184,7 +189,7 @@ const Qada = () => {
                     <Button
                       variant="link"
                       accessibilityLabel={t("athkar.session.undo")}
-                      accessibilityHint={t("a11y.qada.undoDayHint")}
+                      accessibilityHint={t("a11y.qada.returnDaysHint", { count: 1 })}
                       onPress={onUndo}>
                       <Button.Text>{t("athkar.session.undo")}</Button.Text>
                     </Button>
@@ -201,7 +206,7 @@ const Qada = () => {
                     : null
               }
             />
-            {hasBatches && !done ? (
+            {!loaded ? null : hasBatches && !done ? (
               <Button
                 ref={recordButton}
                 size="lg"

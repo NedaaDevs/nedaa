@@ -1,4 +1,6 @@
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { State } from "react-native-gesture-handler";
+import { fireGestureHandler, getByGestureTestId } from "react-native-gesture-handler/jest-utils";
 import { act, fireEvent, render, screen, userEvent } from "@testing-library/react-native";
 
 import { SWIPE_TO_REMOVE_PART, SwipeToRemove } from "@/components/ui/swipe-to-remove";
@@ -10,6 +12,8 @@ jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/re
 const ROW = "3 Safar";
 const LABEL = "Remove";
 const HINT = "Counts the day as remaining again";
+/** The remove control's width, the farthest the row slides. */
+const CONTROL_WIDTH = 80;
 
 const renderRow = async () => {
   const onRemove = jest.fn();
@@ -58,5 +62,51 @@ describe("SwipeToRemove", () => {
     await renderRow();
 
     expect(screen.queryByTestId(SWIPE_TO_REMOVE_PART.REMOVE)).toBeNull();
+  });
+
+  describe("the swipe", () => {
+    const rowShift = () => {
+      const { transform } = StyleSheet.flatten(screen.getByLabelText(ROW).props.style);
+      return transform?.[0]?.translateX;
+    };
+
+    const drag = async (translationX: number, last: State = State.END) => {
+      await renderRow();
+      await act(() =>
+        fireEvent(
+          screen.getByTestId(SWIPE_TO_REMOVE_PART.REMOVE, { includeHiddenElements: true }),
+          "layout",
+          { nativeEvent: { layout: { width: CONTROL_WIDTH } } }
+        )
+      );
+      await act(() =>
+        fireGestureHandler(getByGestureTestId(SWIPE_TO_REMOVE_PART.PAN), [
+          { state: State.BEGAN, translationX: 0 },
+          { state: State.ACTIVE, translationX: 0 },
+          { state: State.ACTIVE, translationX },
+          { state: last, translationX },
+        ])
+      );
+    };
+
+    it("opens on the control when released past the threshold", async () => {
+      await drag(-60);
+      expect(rowShift()).toBe(-CONTROL_WIDTH);
+    });
+
+    it("settles back when released short of the threshold", async () => {
+      await drag(-20);
+      expect(rowShift()).toBe(0);
+    });
+
+    it("stays shut when dragged toward its end edge", async () => {
+      await drag(60);
+      expect(rowShift()).toBe(0);
+    });
+
+    it("settles back when the system cancels the drag", async () => {
+      await drag(-60, State.CANCELLED);
+      expect(rowShift()).toBe(0);
+    });
   });
 });
