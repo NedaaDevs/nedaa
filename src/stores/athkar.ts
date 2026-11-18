@@ -9,7 +9,7 @@ import { PLAYER_STATE } from "@/types/athkar-audio";
 // Constants
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { isAthkarLookId } from "@/constants/AthkarLook";
-import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
+import { COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 
 // Services
 import { AthkarDB } from "@/services/athkar-db";
@@ -19,7 +19,13 @@ import locationStore from "@/stores/location";
 
 // Utils
 import { dateIntToString, getTodayInt } from "@/utils/athkar";
-import { audioOwnsCount, nextOpenIndex, toCounts, toSessionItems } from "@/utils/athkarSession";
+import {
+  audioOwnsCount,
+  createAdvance,
+  nextOpenIndex,
+  toCounts,
+  toSessionItems,
+} from "@/utils/athkarSession";
 import { createDebouncedQueue } from "@/utils/debounce";
 import { AppLogger } from "@/utils/appLogger";
 
@@ -106,14 +112,8 @@ const placeAt = (type: SessionType, index: number): Partial<AthkarState> => ({
   ...(type === ATHKAR_TYPE.MORNING ? { lastMorningIndex: index } : { lastEveningIndex: index }),
 });
 
-// The one pending move to the next dhikr. Every action that changes the place clears it.
-let advanceTimer: ReturnType<typeof setTimeout> | null = null;
-
-const clearAdvanceTimer = () => {
-  if (advanceTimer === null) return;
-  clearTimeout(advanceTimer);
-  advanceTimer = null;
-};
+// Every action that changes the place cancels it.
+const advance = createAdvance();
 
 const today = () => getTodayInt(locationStore.getState().locationDetails.timezone);
 
@@ -138,10 +138,8 @@ const startAdvance = (get: Get, set: Set, athkarId: string) => {
   const from = listOf(state, type).findIndex((a) => a.id === athkarId);
   if (from === -1) return;
 
-  clearAdvanceTimer();
   set({ advancePending: true });
-  advanceTimer = setTimeout(() => {
-    advanceTimer = null;
+  advance.start(() => {
     const now = get();
     const next = nextOpenIndex(
       toSessionItems(listOf(now, type)),
@@ -149,7 +147,7 @@ const startAdvance = (get: Get, set: Set, athkarId: string) => {
       from
     );
     set({ advancePending: false, ...(next === null ? {} : placeAt(type, next)) });
-  }, ADVANCE_PAUSE_MS);
+  });
 };
 
 // One load of the new day serves every caller that arrives while it runs.
@@ -164,7 +162,7 @@ const loadNewDay = (get: Get, set: Set): Promise<void> | null => {
   if (progressDay === null || progressDay === today()) return null;
 
   dayLoad ??= (async () => {
-    clearAdvanceTimer();
+    advance.cancel();
     set({ advancePending: false });
     await get().initializeTodayData();
   })()
@@ -478,11 +476,11 @@ export const useAthkarStore = create<AthkarStore>()(
         setMorningAthkarList: (list) => set({ morningAthkarList: list }),
         setEveningAthkarList: (list) => set({ eveningAthkarList: list }),
         setCurrentType: (type) => {
-          clearAdvanceTimer();
+          advance.cancel();
           set({ currentType: type, advancePending: false });
         },
         setCurrentAthkarIndex: (index: number) => {
-          clearAdvanceTimer();
+          advance.cancel();
           set({ currentAthkarIndex: index, advancePending: false });
         },
 
@@ -493,7 +491,7 @@ export const useAthkarStore = create<AthkarStore>()(
             index >= 0 &&
             index < listOf(state, state.currentType).length;
           if (!inRange) return;
-          clearAdvanceTimer();
+          advance.cancel();
           set({ ...placeAt(state.currentType, index), advancePending: false });
         },
 
@@ -616,7 +614,7 @@ export const useAthkarStore = create<AthkarStore>()(
         },
 
         moveToNext: () => {
-          clearAdvanceTimer();
+          advance.cancel();
           set((state) => {
             const { length } = listOf(state, state.currentType);
             const index = state.currentAthkarIndex + 1 >= length ? 0 : state.currentAthkarIndex + 1;
@@ -625,7 +623,7 @@ export const useAthkarStore = create<AthkarStore>()(
         },
 
         moveToPrevious: () => {
-          clearAdvanceTimer();
+          advance.cancel();
           set((state) => {
             const { length } = listOf(state, state.currentType);
             const index =
@@ -751,7 +749,7 @@ export const useAthkarStore = create<AthkarStore>()(
 
           if (!progressItem) return;
 
-          clearAdvanceTimer();
+          advance.cancel();
 
           // Update in memory
           set((state) => {
@@ -781,7 +779,7 @@ export const useAthkarStore = create<AthkarStore>()(
         initializeSession: async (type) => {
           await get().initializeTodayData(); // Ensure today is initialized
           const optimalIndex = get().findOptimalAthkarIndex(type);
-          clearAdvanceTimer();
+          advance.cancel();
           set({
             currentType: type,
             currentAthkarIndex: 0,
@@ -827,7 +825,7 @@ export const useAthkarStore = create<AthkarStore>()(
           const todayInt = getTodayInt(tz);
           const type = get().currentType;
           const session = type === ATHKAR_TYPE.MORNING ? ATHKAR_TYPE.MORNING : ATHKAR_TYPE.EVENING;
-          clearAdvanceTimer();
+          advance.cancel();
           // Reset in memory immediately for better UX
           set((state) => ({
             ...placeAt(session, 0),

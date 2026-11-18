@@ -17,6 +17,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { positionMarks, type SessionItem } from "@/utils/athkarSession";
 import { LTR_ISOLATE } from "@/utils/digits";
+import { keyText } from "@/utils/athkarText";
 
 const mockHaptics: Partial<Record<HapticFeedback, jest.Mock>> = {};
 
@@ -41,7 +42,7 @@ const items = (): SessionItem[] =>
   Array.from({ length: TOTAL }, (_, i) => ({
     id: `${i}`,
     target: TARGET,
-    textKeys: [textOf(i)],
+    texts: [keyText(textOf(i))],
     itemsPerRound: 1,
   }));
 
@@ -75,13 +76,14 @@ const sessionOf = ({
     index: place,
     current: {
       item: list[place],
-      textKey,
+      textId: textKey,
+      text: keyText(textKey),
       count,
       target: TARGET,
       done: count >= TARGET,
       audioOwnsCount,
     },
-    next: last ? null : { textKey: nextKey },
+    next: last ? null : { text: keyText(nextKey) },
     marks: positionMarks(list, counts, place),
     canUndo: count > 0,
     advancePending,

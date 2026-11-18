@@ -10,7 +10,7 @@ import { HORIZON_ARC_PART } from "@/components/athkar/looks/horizon/HorizonArc";
 import { SUBHA_STRING_PART } from "@/components/athkar/looks/subha/SubhaString";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_LOOK } from "@/constants/AthkarLook";
-import { SESSION_STATUS } from "@/constants/AthkarSession";
+import { DHIKR_TEXT, SESSION_STATUS } from "@/constants/AthkarSession";
 import i18n from "@/localization/i18n";
 import { TEST_LOOK_ID, TEST_LOOK_PART } from "@/test-helpers/athkarLooks";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -35,7 +35,8 @@ describe("the sample session", () => {
     expect(status).toBe(SESSION_STATUS.READY);
     expect(current?.count).toBeGreaterThan(0);
     expect(current?.count).toBeLessThan(current?.target ?? 0);
-    expect(i18n.exists(current?.textKey ?? "")).toBe(true);
+    const text = current?.text;
+    expect(text?.kind === DHIKR_TEXT.KEY && i18n.exists(text.key)).toBe(true);
     expect(next).not.toBeNull();
   });
 });

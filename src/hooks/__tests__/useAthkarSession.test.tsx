@@ -33,11 +33,13 @@ import { APP_STATE } from "@/constants/AppState";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { STEP } from "@/constants/AthkarFocus";
 import { ADVANCE_PAUSE_MS, MARK_STATE, SESSION_STATUS } from "@/constants/AthkarSession";
-import { useAthkarSession, useSessionOpening } from "@/hooks/useAthkarSession";
+import { useAthkarSession } from "@/hooks/useAthkarSession";
+import { useDailyPort, useSessionOpening } from "@/hooks/useAthkarSessionPort";
 import { useAthkarStore } from "@/stores/athkar";
 import type { Athkar } from "@/types/athkar";
 import { PLAYER_STATE } from "@/types/athkar-audio";
 import { getTodayInt } from "@/utils/athkar";
+import { keyText } from "@/utils/athkarText";
 /* eslint-enable import/first */
 
 const dhikr = (order: number, count: number, extra: Partial<Athkar> = {}): Athkar => ({
@@ -85,7 +87,7 @@ const seed = (counts: Record<string, number> = {}) =>
 const renderSession = () =>
   renderHook(() => {
     useSessionOpening();
-    return useAthkarSession();
+    return useAthkarSession(useDailyPort());
   });
 
 const ALL_DONE = { [first.id]: 1, [quls.id]: 9, [last.id]: 1 };
@@ -115,13 +117,14 @@ describe("useAthkarSession", () => {
     expect(result.current.status).toBe(SESSION_STATUS.READY);
     expect(result.current.index).toBe(0);
     expect(result.current.current).toMatchObject({
-      textKey: first.text,
+      textId: `${first.id}:0`,
+      text: keyText(first.text),
       count: 0,
       target: 1,
       done: false,
       audioOwnsCount: false,
     });
-    expect(result.current.next).toEqual({ textKey: QULS[0] });
+    expect(result.current.next).toEqual({ text: keyText(QULS[0]) });
     expect(result.current.canUndo).toBe(false);
   });
 
@@ -148,7 +151,7 @@ describe("useAthkarSession", () => {
     seed({ [first.id]: 1, [quls.id]: 4 });
     const { result } = await renderSession();
     expect(result.current.index).toBe(1);
-    expect(result.current.current?.textKey).toBe(QULS[1]);
+    expect(result.current.current?.text).toEqual(keyText(QULS[1]));
   });
 
   test("it opens on the first unfinished dhikr from the last place", async () => {
@@ -160,7 +163,7 @@ describe("useAthkarSession", () => {
 
   test("a second reader of the session keeps the place it finds", async () => {
     seed({ [first.id]: 1 });
-    const { result } = await renderHook(() => useAthkarSession());
+    const { result } = await renderHook(() => useAthkarSession(useDailyPort()));
     expect(result.current.index).toBe(0);
     expect(result.current.current?.done).toBe(true);
   });

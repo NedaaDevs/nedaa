@@ -22,3 +22,6 @@ export const CUSTOM_ATHKAR_HREF = { NEW: "/custom-athkar/new" } as const satisfi
 
 /** The fewest repeats a custom dhikr takes; there is no upper bound. */
 export const CUSTOM_DHIKR_REPEATS = { MIN: 1 } as const;
+
+/** Where a custom group is edited. */
+export const customAthkarEditHref = (groupId: number): Href => `/custom-athkar/${groupId}`;

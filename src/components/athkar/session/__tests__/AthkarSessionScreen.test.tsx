@@ -58,11 +58,9 @@ jest.mock("@/components/athkar/AudioOnboarding", () => {
 });
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
-import {
-  ATHKAR_SESSION_SCREEN_PART,
-  AthkarSessionScreen,
-} from "@/components/athkar/session/AthkarSessionScreen";
+import { AthkarSessionScreen } from "@/components/athkar/session/AthkarSessionScreen";
 import { SESSION_LIST_PART } from "@/components/athkar/session/SessionListSheet";
+import { SESSION_READER_PART } from "@/components/athkar/session/SessionReader";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { ATHKAR_LOOK, type AthkarLookId } from "@/constants/AthkarLook";
@@ -261,7 +259,7 @@ describe("AthkarSessionScreen", () => {
     seed({ loaded: false });
     await renderWithTheme(<AthkarSessionScreen />);
 
-    expect(screen.getByTestId(ATHKAR_SESSION_SCREEN_PART.LOADING)).toBeOnTheScreen();
+    expect(screen.getByTestId(SESSION_READER_PART.LOADING)).toBeOnTheScreen();
     expect(ring()).toBeNull();
   });
 

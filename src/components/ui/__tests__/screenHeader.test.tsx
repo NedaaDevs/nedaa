@@ -194,6 +194,32 @@ describe("ScreenHeader", () => {
     });
   });
 
+  describe("back the screen handles", () => {
+    const PLACE = "My Athkar";
+    const backToPlace = () => i18n.t("a11y.backTo", { screen: PLACE });
+
+    it.each(["stacked", "bar"] as const)("names its place in the %s header", async (variant) => {
+      const onPress = jest.fn();
+      await renderApp(
+        <ScreenHeader title={TITLE} variant={variant} back={{ onPress, name: PLACE }} />,
+        BACK_DESTINATION.SETTINGS_ALARM.href
+      );
+
+      expect(screen.getByRole("button", { name: backToPlace() })).toBeOnTheScreen();
+    });
+
+    it("calls the screen and leaves the route alone", async () => {
+      const onPress = jest.fn();
+      await renderApp(<ScreenHeader title={TITLE} back={{ onPress, name: PLACE }} />);
+      await go(BACK_DESTINATION.SETTINGS_ALARM.href);
+
+      await press(backToPlace());
+
+      expect(onPress).toHaveBeenCalledTimes(1);
+      expect(pathname()).toHaveTextContent(BACK_DESTINATION.SETTINGS_ALARM.href);
+    });
+  });
+
   describe("back in nested stacks", () => {
     it("names the tab a new stack opened over", async () => {
       await renderApp(<ScreenHeader title={TITLE} back />);
