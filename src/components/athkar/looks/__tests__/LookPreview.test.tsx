@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react-native";
+import { screen, within } from "@testing-library/react-native";
 
 import {
   LOOK_PICTURE,
@@ -111,11 +111,12 @@ describe("LookPicture", () => {
       height: HEIGHT * SCALE,
       overflow: "hidden",
     });
-    expect(screen.getByTestId(LOOK_PREVIEW_PART.STAGE, DRAWN)).toHaveStyle({
+    const stage = screen.getByTestId(LOOK_PREVIEW_PART.STAGE, DRAWN);
+    expect(stage).toHaveStyle({
       width: WIDTH,
       height: HEIGHT,
       transform: [{ scale: SCALE }],
     });
-    expect(screen.getByTestId(TEST_LOOK_PART.READER, DRAWN)).toBeOnTheScreen();
+    expect(within(stage).getByTestId(TEST_LOOK_PART.READER, DRAWN)).toBeOnTheScreen();
   });
 });

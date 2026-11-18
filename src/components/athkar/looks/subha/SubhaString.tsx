@@ -21,7 +21,14 @@ import {
   type SubhaStringKind,
 } from "@/constants/AthkarSubha";
 import { useRTL } from "@/contexts/RTLContext";
-import { beadMove, beadPoint, beadsAcross, beadsOn, stringPath } from "@/utils/subhaBeads";
+import {
+  beadHeight,
+  beadMove,
+  beadPoint,
+  beadsAcross,
+  beadsOn,
+  stringPath,
+} from "@/utils/subhaBeads";
 
 /** Test ids for the string's parts. */
 export const SUBHA_STRING_PART = {
@@ -47,14 +54,13 @@ type BeadProps = {
 const opacityOf = (index: number, across: number) =>
   index < across ? 1 : SUBHA_BEADS.WAITING_OPACITY;
 
-/** One bead: it slides to its place on the string and lights once counted. */
+/** One bead: it slides along the string to its place and lights once counted. */
 const Bead = ({ index, count, target, drawing, rtl, reduceMotion }: BeadProps) => {
   const ink = useSubhaInk();
   const beads = beadsOn(target);
   const across = beadsAcross(count, target);
   const at = beadPoint(index, across, beads, drawing, rtl);
   const x = useSharedValue(at.x);
-  const y = useSharedValue(at.y);
   const opacity = useSharedValue(opacityOf(index, across));
   const last = useRef<number | null>(null);
   useEffect(() => {
@@ -66,30 +72,26 @@ const Bead = ({ index, count, target, drawing, rtl, reduceMotion }: BeadProps) =
     switch (move) {
       case BEAD_MOVE.PLACE:
         x.set(point.x);
-        y.set(point.y);
         opacity.set(lit);
         return;
       case BEAD_MOVE.SWEEP:
         x.set(withSequence(withTiming(full.x, travel), withTiming(point.x, travel)));
-        y.set(withSequence(withTiming(full.y, travel), withTiming(point.y, travel)));
         opacity.set(withSequence(withTiming(1, fade), withTiming(lit, fade)));
         return;
       case BEAD_MOVE.UNWIND:
         x.set(withSequence(withTiming(full.x, jump), withTiming(point.x, travel)));
-        y.set(withSequence(withTiming(full.y, jump), withTiming(point.y, travel)));
         opacity.set(withSequence(withTiming(1, jump), withTiming(lit, fade)));
         return;
       case BEAD_MOVE.SLIDE:
         x.set(withTiming(point.x, travel));
-        y.set(withTiming(point.y, travel));
         opacity.set(withTiming(lit, fade));
         return;
     }
-  }, [index, count, target, across, beads, drawing, rtl, reduceMotion, x, y, opacity]);
+  }, [index, count, target, across, beads, drawing, rtl, reduceMotion, x, opacity]);
 
   const style = useAnimatedStyle(() => ({
     opacity: opacity.get(),
-    transform: [{ translateX: x.get() }, { translateY: y.get() }],
+    transform: [{ translateX: x.get() }, { translateY: beadHeight(x.get(), drawing) }],
   }));
   return (
     <Animated.View

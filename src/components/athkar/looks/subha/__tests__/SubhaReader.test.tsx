@@ -73,10 +73,13 @@ describe("SubhaReader", () => {
     expect(within(front).getByTestId(SUBHA_READER_PART.TEXT)).toBeOnTheScreen();
   });
 
-  it("starts each dhikr on a fresh string", async () => {
+  it("keeps a dhikr's string through its count and starts the next on a fresh one", async () => {
     const { props, view } = await renderReader();
     const string = () => screen.getByTestId(SUBHA_STRING_PART.STRING, hidden);
     const first = string();
+    const counted = sessionWith({ count: sample.count + 1 });
+    await view.rerender(<SubhaReader {...props} session={counted} />);
+    expect(string()).toBe(first);
     const item = { ...sample.item, id: "another-dhikr" };
     await view.rerender(<SubhaReader {...props} session={sessionWith({ item })} />);
     expect(string()).not.toBe(first);
