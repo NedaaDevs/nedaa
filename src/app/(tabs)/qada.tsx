@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { Check, Settings } from "lucide-react-native";
 
 import { AddBatchSheet } from "@/components/Qada/AddBatchSheet";
+import { MessageToast } from "@/components/feedback/MessageToast";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
@@ -15,6 +16,7 @@ import { SpokenStatus } from "@/components/ui/live-region";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { StatePanel } from "@/components/ui/state-panel";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -50,9 +52,14 @@ const Qada = () => {
   const history = useQadaStore((s) => s.history);
   const pendingEntries = useQadaStore((s) => s.pendingEntries);
   const loaded = useQadaStore((s) => s.loaded);
+  // An error after the batches loaded belongs to a later write, not to the read.
+  const loadFailed = useQadaStore((s) => !s.loaded && s.hasError);
+  const loadData = useQadaStore((s) => s.loadData);
   const seedScreenshotState = useQadaStore((s) => s.seedScreenshotState);
   const locale = useAppStore((s) => s.locale);
-  const { last, returned, record, undo } = useRecordDay();
+  const { last, returned, record, undo } = useRecordDay(() =>
+    MessageToast.showError(t("qada.saveFailed"))
+  );
   const recordButton = useRef<ViewInstance>(null);
   const [adding, setAdding] = useState(false);
   const selection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
@@ -110,7 +117,13 @@ const Qada = () => {
         <ScreenContent flex={1} paddingTop="$4" paddingBottom="$5" gap="$section">
           <SkyOccluder>
             {/* The batches are not persisted; before they load, no state is known. */}
-            {!loaded ? null : !hasBatches ? (
+            {loadFailed ? (
+              <StatePanel
+                title={t("qada.home.loadFailed.title")}
+                body={t("qada.home.loadFailed.body")}
+                action={{ label: t("common.retry"), onPress: () => void loadData() }}
+              />
+            ) : !loaded ? null : !hasBatches ? (
               <Text size="heading" fontWeight="600" typography="display" color="$fg">
                 {t("qada.home.emptyTitle")}
               </Text>

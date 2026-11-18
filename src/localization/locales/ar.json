@@ -1668,6 +1668,8 @@
   "qada.home.completedOf_zero": "لم تُضف أيامًا بعد",
   "qada.home.doneTitle": "لا توجد أيام متبقية.",
   "qada.home.emptyTitle": "أضف ما فاتك",
+  "qada.home.loadFailed.body": "يُرجى إعادة المحاولة بعد قليل.",
+  "qada.home.loadFailed.title": "تعذّر تحميل أيام القضاء",
   "qada.home.record": "سجّل يوم قضاء اليوم",
   "qada.home.remainingLabel": "المتبقي من صيام القضاء",
   "qada.home.remainingUnit_few": "أيام",

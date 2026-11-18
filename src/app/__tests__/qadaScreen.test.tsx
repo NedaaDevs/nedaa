@@ -124,6 +124,8 @@ describe("Qada home", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useAppStore.setState({ locale: AppLocale.EN });
+    useToastStore.setState({ toast: null });
+    useQadaStore.setState({ hasError: false });
     jest.mocked(QadaDB.getCompletions).mockResolvedValue([COMPLETION]);
     jest.mocked(QadaDB.getNewestCompletionId).mockResolvedValue(RECORDED_ID);
   });
@@ -291,7 +293,7 @@ describe("Qada home", () => {
     expect(recordButton()).toBeTruthy();
   });
 
-  it("offers no undo when nothing was recorded", async () => {
+  it("offers no undo and says so when the day was not recorded", async () => {
     completeEntry.mockResolvedValueOnce(null);
     seed([NEWER, OLDER], { missed: 5, completed: 2 });
     await renderHome();
@@ -299,6 +301,46 @@ describe("Qada home", () => {
     await userEvent.press(recordButton());
 
     expect(undoButton()).toBeNull();
+    expect(useToastStore.getState().toast).toMatchObject({
+      kind: TOAST_KIND.ERROR,
+      message: t("qada.saveFailed"),
+    });
+  });
+
+  it("says an undo was not saved and keeps Undo", async () => {
+    restoreDay.mockResolvedValueOnce(false);
+    seed([NEWER, OLDER], { missed: 5, completed: 2 });
+    await renderHome();
+    await userEvent.press(recordButton());
+
+    await userEvent.press(undoButton()!);
+
+    expect(undoButton()).toBeTruthy();
+    expect(useToastStore.getState().toast).toMatchObject({
+      kind: TOAST_KIND.ERROR,
+      message: t("qada.saveFailed"),
+    });
+  });
+
+  it("offers a retry, not setup, when the batches fail to load", async () => {
+    const loadData = jest.fn().mockResolvedValue(undefined);
+    useQadaStore.setState({
+      history: [],
+      pendingEntries: [],
+      loaded: false,
+      hasError: true,
+      loadData,
+      writes: 0,
+    });
+    await renderHome();
+
+    expect(screen.getByText(t("qada.home.loadFailed.title"))).toBeTruthy();
+    expect(screen.queryByText(t("qada.home.emptyTitle"))).toBeNull();
+    expect(screen.queryByRole("button", { name: t("qada.home.addBatch") })).toBeNull();
+
+    await userEvent.press(screen.getByRole("button", { name: t("common.retry") }));
+
+    expect(loadData).toHaveBeenCalledTimes(2);
   });
 
   it("counts open batches that the history does not hold", async () => {
