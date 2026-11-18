@@ -1,403 +1,314 @@
-import { FC, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Check } from "lucide-react-native";
 
-// Components
-import { SheetInput } from "@/components/ui/sheet-input";
+import { MessageToast } from "@/components/feedback";
 import {
   Actionsheet,
-  ActionsheetBackdrop,
+  ActionsheetCloseButton,
   ActionsheetContent,
-  ActionsheetDragIndicator,
-  ActionsheetDragIndicatorWrapper,
-  ActionsheetScrollView,
+  ActionsheetTitle,
 } from "@/components/ui/actionsheet";
 import { Box } from "@/components/ui/box";
-import { Card } from "@/components/ui/card";
-import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
-import { VStack } from "@/components/ui/vstack";
-import { Pressable } from "@/components/ui/pressable";
-import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-
-// Icons
-import { Search, ChevronRight, ChevronLeft, Square, SquareCheck, Plus } from "lucide-react-native";
-
-// Services
-import { HisnMuslimDB } from "@/services/hisn-muslim-db";
-
-// Stores
-import { useMyAthkarStore } from "@/stores/my-athkar";
-
-// Hooks
-import { useHaptic } from "@/hooks/useHaptic";
+import { ListGroup } from "@/components/ui/list-group";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { Pressable } from "@/components/ui/pressable";
+import { SearchField } from "@/components/ui/search-field";
+import { Section } from "@/components/ui/section";
+import { StickyActionBar } from "@/components/ui/sticky-action-bar";
+import { Text } from "@/components/ui/text";
+import { Face } from "@/components/ui/text/face";
+import { TextAction } from "@/components/ui/text-action";
+import { VStack } from "@/components/ui/vstack";
+import { FONT_LANGUAGE } from "@/constants/Fonts";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { SECTION_KIND } from "@/constants/Section";
+import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
+import { AppLocale } from "@/enums/app";
+import { useHaptic } from "@/hooks/useHaptic";
+import { useSingleFlight } from "@/hooks/useSingleFlight";
+import { HisnMuslimDB } from "@/services/hisn-muslim-db";
+import { useMyAthkarStore } from "@/stores/my-athkar";
+import type { HisnAthkar, HisnCategory } from "@/types/hisnMuslim";
+import { cutPreview } from "@/utils/previewText";
 
-// Types
-import type { HisnCategory, HisnSearchResult, HisnAthkar } from "@/types/hisnMuslim";
-
-type ViewMode = "categories" | "search" | "category-detail";
+/** Typing settles this long before the search runs. */
+const SEARCH_DELAY_MS = 300;
+const CHECK_SIZE = 23;
+/** A dhikr's preview in a list: enough to tell it apart. */
+const PREVIEW_LINES = 2;
+/** Vowelled Arabic cut short of two lines at a word, so the clamp never ellipsizes it. */
+const ARABIC_PREVIEW_CHARS = 60;
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-const AthkarSearchSheet: FC<Props> = ({ isOpen, onClose: closeSheet }) => {
-  const { t, i18n } = useTranslation();
-  const { batchAddItems, removeItem, isSourceAdded, getItemBySourceId } = useMyAthkarStore();
-  // Subscribed, so the checkmarks follow the collection; isSourceAdded is a stable
-  // reference and reads through it would not recompute during render.
-  const myAthkarItems = useMyAthkarStore((state) => state.items);
-  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
-  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+type DhikrChoiceProps = {
+  text: string;
+  /** The text is the Arabic original, set in its own face and direction. */
+  arabic: boolean;
+  meta: string;
+  checked: boolean;
+  /** Already in My Athkar: drawn checked, not choosable. */
+  added: boolean;
+  onPress: () => void;
+};
 
-  const [viewMode, setViewMode] = useState<ViewMode>("categories");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<HisnSearchResult[]>([]);
-  const [categories, setCategories] = useState<HisnCategory[]>([]);
-  const [categoryAthkar, setCategoryAthkar] = useState<HisnAthkar[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<HisnCategory | null>(null);
-  const [selectedItems, setSelectedItems] = useState<Map<number, HisnAthkar | HisnSearchResult>>(
-    new Map()
+/** One dhikr to choose: its text, how often it is said and where it is from. */
+const DhikrChoice = ({ text, arabic, meta, checked, added, onPress }: DhikrChoiceProps) => {
+  const { t } = useTranslation();
+  const named = t("a11y.join", { first: text, second: meta });
+  const body = (
+    <Text
+      size="md"
+      fontWeight="600"
+      color="$fg"
+      typography={arabic ? "vowelled" : undefined}
+      numberOfLines={PREVIEW_LINES}
+      style={arabic ? { writingDirection: "rtl" } : undefined}>
+      {arabic ? cutPreview(text, ARABIC_PREVIEW_CHARS) : text}
+    </Text>
   );
-  const [isAdding, setIsAdding] = useState(false);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isArabic = i18n.language === "ar";
-  const isRTL = i18n.dir() === "rtl";
+  return (
+    <Pressable
+      onPress={added ? undefined : onPress}
+      disabled={added}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled: added }}
+      accessibilityLabel={
+        added ? t("a11y.join", { first: named, second: t("athkar.myAthkar.alreadyAdded") }) : named
+      }
+      flexDirection="row"
+      alignItems="flex-start"
+      gap="$stack"
+      minHeight="$target"
+      paddingHorizontal="$3.5"
+      paddingVertical="$stack"
+      pressStyle={{ backgroundColor: "$pressed", opacity: 1 }}>
+      <Box
+        width={CHECK_SIZE}
+        height={CHECK_SIZE}
+        marginTop="$0.5"
+        borderRadius="$chip"
+        borderWidth={1.5}
+        borderColor={checked ? "$accent" : "$muted"}
+        backgroundColor={checked ? "$accent" : "transparent"}
+        opacity={added ? 0.5 : 1}
+        alignItems="center"
+        justifyContent="center">
+        {checked ? <Icon as={Check} size={14} color="$bg" strokeWidth={2.4} /> : null}
+      </Box>
+      <VStack flex={1} gap="$tight">
+        {arabic ? <Face language={FONT_LANGUAGE.ARABIC}>{body}</Face> : body}
+        <Text size="helper" color="$muted">
+          {added
+            ? t("a11y.join", { first: meta, second: t("athkar.myAthkar.alreadyAdded") })
+            : meta}
+        </Text>
+      </VStack>
+    </Pressable>
+  );
+};
+
+/** Hisn al-Muslim by topic or by search, to add chosen athkar to My Athkar. */
+const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
+  const { t, i18n } = useTranslation();
+  const items = useMyAthkarStore((s) => s.items);
+  const batchAddItems = useMyAthkarStore((s) => s.batchAddItems);
+  const success = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const selection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<HisnAthkar[] | null>(null);
+  const [topics, setTopics] = useState<HisnCategory[]>([]);
+  const [topic, setTopic] = useState<HisnCategory | null>(null);
+  const [topicAthkar, setTopicAthkar] = useState<HisnAthkar[]>([]);
+  const [chosen, setChosen] = useState<ReadonlyMap<number, HisnAthkar>>(new Map());
+  const [adding, setAdding] = useState(false);
+  const [footerHeight, setFooterHeight] = useState(0);
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const request = useRef(0);
+
+  const arabicUi = i18n.language === AppLocale.AR;
+  const topicTitle = (titles: Pick<HisnCategory, "titleAr" | "titleEn">) =>
+    arabicUi ? titles.titleAr : titles.titleEn;
+  const topicNames = useMemo(() => new Map(topics.map((c) => [c.id, c])), [topics]);
+  const added = useMemo(() => new Set(items.map((item) => item.sourceAthkarId)), [items]);
 
   useEffect(() => {
-    if (isOpen && categories.length === 0) {
-      HisnMuslimDB.getCategories().then(setCategories);
-    }
-  }, [isOpen, categories.length]);
+    if (isOpen && topics.length === 0) void HisnMuslimDB.getCategories().then(setTopics);
+  }, [isOpen, topics.length]);
 
-  // Closing resets the sheet in the same call, so the next open starts fresh even
-  // when the parent keeps it mounted and only flips isOpen later.
-  const onClose = useCallback(() => {
-    setViewMode("categories");
-    setSearchQuery("");
-    setSearchResults([]);
-    setSelectedCategory(null);
-    setSelectedItems(new Map());
-    closeSheet();
-  }, [closeSheet]);
+  useEffect(() => () => clearTimeout(pending.current ?? undefined), []);
 
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
+  // Closing resets the sheet in the same call, so the next opening starts fresh
+  // even when the parent keeps it mounted.
+  /** Clears a waiting search and orphans one already reading the database. */
+  const cancelSearch = () => {
+    clearTimeout(pending.current ?? undefined);
+    request.current += 1;
+  };
 
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+  const close = () => {
+    cancelSearch();
+    setQuery("");
+    setResults(null);
+    setTopic(null);
+    setChosen(new Map());
+    onClose();
+  };
 
-    if (!query.trim()) {
-      setSearchResults([]);
-      setViewMode("categories");
+  const search = (next: string) => {
+    setQuery(next);
+    cancelSearch();
+    const trimmed = next.trim();
+    if (!trimmed) {
+      setResults(null);
       return;
     }
+    const ticket = request.current;
+    pending.current = setTimeout(async () => {
+      const found = await HisnMuslimDB.search(trimmed);
+      // A later keystroke, a cleared field or a close owns the list now.
+      if (request.current === ticket) setResults(found);
+    }, SEARCH_DELAY_MS);
+  };
 
-    setViewMode("search");
-    searchTimeoutRef.current = setTimeout(async () => {
-      const results = await HisnMuslimDB.search(query);
-      setSearchResults(results);
-    }, 300);
-  }, []);
+  const openTopic = async (next: HisnCategory) => {
+    setTopic(next);
+    setTopicAthkar([]);
+    setTopicAthkar(await HisnMuslimDB.getCategoryAthkar(next.id));
+  };
 
-  const handleCategoryPress = useCallback(async (category: HisnCategory) => {
-    setSelectedCategory(category);
-    setViewMode("category-detail");
-    const athkar = await HisnMuslimDB.getCategoryAthkar(category.id);
-    setCategoryAthkar(athkar);
-  }, []);
+  const toggle = (item: HisnAthkar) => {
+    void selection();
+    setChosen((prev) => {
+      const next = new Map(prev);
+      if (!next.delete(item.id)) next.set(item.id, item);
+      return next;
+    });
+  };
 
-  const handleToggleSelect = useCallback(
-    (item: HisnAthkar | HisnSearchResult) => {
-      if (isSourceAdded(item.id)) {
-        // Already added — toggle remove immediately
-        hapticSelection();
-        const existing = getItemBySourceId(item.id);
-        if (existing) {
-          removeItem(existing.id);
-        }
+  // A second tap while the write runs would add every dhikr twice.
+  const run = useSingleFlight();
+  const add = () =>
+    run(async () => {
+      const picked = [...chosen.values()];
+      setAdding(true);
+      const ok = await batchAddItems(
+        picked.map((item) => ({
+          sourceAthkarId: item.id,
+          sourceCategoryId: item.categoryId,
+          repeatCount: item.repeatCount,
+        }))
+      );
+      setAdding(false);
+      if (!ok) {
+        MessageToast.showError(t("athkar.library.addFailed"));
         return;
       }
+      void success();
+      MessageToast.showSuccess(t("athkar.library.added", { count: picked.length }));
+      close();
+    });
 
-      hapticSelection();
-      setSelectedItems((prev) => {
-        const next = new Map(prev);
-        if (next.has(item.id)) {
-          next.delete(item.id);
-        } else {
-          next.set(item.id, item);
-        }
-        return next;
-      });
-    },
-    [isSourceAdded, getItemBySourceId, removeItem, hapticSelection]
-  );
-
-  const handleBatchAdd = useCallback(async () => {
-    if (selectedItems.size === 0) return;
-    setIsAdding(true);
-
-    const items = Array.from(selectedItems.values()).map((item) => ({
-      sourceAthkarId: item.id,
-      sourceCategoryId: item.categoryId,
-      repeatCount: item.repeatCount,
-    }));
-
-    const success = await batchAddItems(items);
-    if (success) {
-      hapticSuccess();
-      setSelectedItems(new Map());
-    }
-
-    setIsAdding(false);
-  }, [selectedItems, batchAddItems, hapticSuccess]);
-
-  // Group search results by category
-  const groupedSearchResults = useMemo(() => {
-    const groups = new Map<
-      number,
-      { titleAr: string; titleEn: string; items: HisnSearchResult[] }
-    >();
-
-    for (const item of searchResults) {
-      let group = groups.get(item.categoryId);
-      if (!group) {
-        group = {
-          titleAr: item.categoryTitleAr,
-          titleEn: item.categoryTitleEn,
-          items: [],
-        };
-        groups.set(item.categoryId, group);
-      }
-      group.items.push(item);
-    }
-
-    return Array.from(groups.values());
-  }, [searchResults]);
-
-  const addedSourceIds = useMemo(
-    () => new Set(myAthkarItems.map((item) => item.sourceAthkarId)),
-    [myAthkarItems]
-  );
-
-  const BackIcon = isRTL ? ChevronRight : ChevronLeft;
-
-  const renderAthkarCheckItem = (item: HisnAthkar | HisnSearchResult) => {
-    const isAdded = addedSourceIds.has(item.id);
-    const isSelected = selectedItems.has(item.id);
-    const checked = isAdded || isSelected;
-
+  /** A search result names its topic; a topic's own list does not repeat it. */
+  const choiceFor = (item: HisnAthkar, withTopic: boolean) => {
+    const translated = !arabicUi && item.translation !== "";
+    const source = withTopic ? topicNames.get(item.categoryId) : undefined;
+    const repeats = t("athkar.library.repeats", { count: item.repeatCount });
+    const isAdded = added.has(item.id);
     return (
-      <Pressable
+      <DhikrChoice
         key={item.id}
-        onPress={() => handleToggleSelect(item)}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked }}
-        accessibilityLabel={item.arabicText.substring(0, 60)}>
-        <HStack
-          padding="$3"
-          borderRadius="$4"
-          backgroundColor={
-            isAdded ? "$backgroundSuccess" : isSelected ? "$backgroundInfo" : "$backgroundSecondary"
-          }
-          borderWidth={checked ? 1 : 0}
-          borderColor={isAdded ? "$success" : isSelected ? "$info" : "transparent"}
-          alignItems="flex-start"
-          gap="$3"
-          marginBottom="$2">
-          {/* Checkbox */}
-          <Box paddingTop="$1">
-            <Icon
-              as={checked ? SquareCheck : Square}
-              size="md"
-              color={isAdded ? "$success" : isSelected ? "$info" : "$typographySecondary"}
-            />
-          </Box>
-
-          {/* Content — language aware */}
-          <VStack flex={1} gap="$1">
-            {isArabic ? (
-              <Text
-                size="md"
-                style={{ writingDirection: "rtl", lineHeight: 30 }}
-                textAlign="left"
-                color="$typography">
-                {item.arabicText}
-              </Text>
-            ) : (
-              <>
-                {item.translation !== "" ? (
-                  <Text size="md" color="$typography">
-                    {item.translation}
-                  </Text>
-                ) : (
-                  <Text
-                    size="md"
-                    style={{ writingDirection: "rtl", lineHeight: 30 }}
-                    textAlign="left"
-                    color="$typography">
-                    {item.arabicText}
-                  </Text>
-                )}
-              </>
-            )}
-            <Text size="xs" color="$typographySecondary">
-              {t("athkar.myAthkar.repeatCount")}: {item.repeatCount}
-            </Text>
-          </VStack>
-        </HStack>
-      </Pressable>
+        text={translated ? item.translation : item.arabicText}
+        arabic={!translated}
+        meta={source ? `${repeats} · ${topicTitle(source)}` : repeats}
+        checked={isAdded || chosen.has(item.id)}
+        added={isAdded}
+        onPress={() => toggle(item)}
+      />
     );
   };
 
-  return (
-    <Actionsheet isOpen={isOpen} onClose={onClose} snapPoints={[85]}>
-      <ActionsheetBackdrop />
-      <ActionsheetContent>
-        <ActionsheetDragIndicatorWrapper>
-          <ActionsheetDragIndicator />
-        </ActionsheetDragIndicatorWrapper>
-
-        <VStack gap="$3" padding="$4" width="100%">
-          {/* Search Input */}
-          <Card
-            gap="$2"
-            alignItems="center"
-            flexDirection="row"
-            paddingHorizontal="$3"
-            paddingVertical="$0"
-            height={44}>
-            <Icon as={Search} size="sm" color="$typographySecondary" />
-            <SheetInput
-              placeholder={t("athkar.myAthkar.search")}
-              value={searchQuery}
-              onChangeText={handleSearch}
-              autoCapitalize="none"
-              accessibilityLabel={t("athkar.myAthkar.search")}
+  const body = () => {
+    if (results !== null) {
+      return results.length === 0 ? (
+        <Text size="label" color="$muted" textAlign="center" paddingVertical="$section">
+          {t("athkar.myAthkar.noResults")}
+        </Text>
+      ) : (
+        <Section title={t("athkar.myAthkar.searchResults")} kind={SECTION_KIND.LABEL}>
+          <ListGroup>{results.map((item) => choiceFor(item, true))}</ListGroup>
+        </Section>
+      );
+    }
+    if (query.trim()) return null;
+    if (topic) {
+      return (
+        <Section
+          title={topicTitle(topic)}
+          kind={SECTION_KIND.LABEL}
+          accessory={
+            <TextAction label={t("athkar.library.allTopics")} onPress={() => setTopic(null)} />
+          }>
+          <ListGroup>{topicAthkar.map((item) => choiceFor(item, false))}</ListGroup>
+        </Section>
+      );
+    }
+    return (
+      <Section title={t("athkar.library.browse")} kind={SECTION_KIND.LABEL}>
+        <ListGroup>
+          {topics.map((item) => (
+            <ListRow
+              key={item.id}
+              variant={LIST_ROW_VARIANT.GROUPED}
+              title={topicTitle(item)}
+              onPress={() => void openTopic(item)}
             />
-          </Card>
+          ))}
+        </ListGroup>
+      </Section>
+    );
+  };
 
-          {/* Back to categories */}
-          {viewMode === "category-detail" && selectedCategory && (
-            <Pressable
-              onPress={() => setViewMode("categories")}
-              accessibilityRole="button"
-              accessibilityLabel="Back to categories">
-              <HStack gap="$1" alignItems="center">
-                <Icon as={BackIcon} size="sm" color="$primary" />
-                <Text size="sm" color="$primary" fontWeight="600">
-                  {t("athkar.myAthkar.categories")}
-                </Text>
-              </HStack>
-            </Pressable>
-          )}
+  const footer =
+    chosen.size > 0 ? (
+      // The sheet's own surface, so rows never show through the bar.
+      <Box backgroundColor="$raised" onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}>
+        <StickyActionBar
+          state={adding ? STICKY_ACTION_STATE.BUSY : STICKY_ACTION_STATE.READY}
+          label={t("athkar.library.addSelected", { count: chosen.size })}
+          busyStatus={t("athkar.library.adding")}
+          onPress={() => void add()}
+        />
+      </Box>
+    ) : undefined;
+
+  return (
+    <Actionsheet isOpen={isOpen} onClose={close} snapPoints={[85]} footer={footer}>
+      <ActionsheetContent>
+        <VStack gap="$group" paddingBottom={footer ? footerHeight : 0}>
+          <HStack alignItems="center" justifyContent="space-between" gap="$stack">
+            <ActionsheetTitle>
+              <Text size="lg" bold typography="title" color="$fg">
+                {t("athkar.library.searchHisn")}
+              </Text>
+            </ActionsheetTitle>
+            <ActionsheetCloseButton onPress={close} />
+          </HStack>
+          <SearchField
+            value={query}
+            onChangeText={search}
+            placeholder={t("athkar.myAthkar.search")}
+          />
+          {body()}
         </VStack>
-
-        <ActionsheetScrollView>
-          <VStack
-            gap="$2"
-            paddingHorizontal="$4"
-            paddingBottom={selectedItems.size > 0 ? "$20" : "$6"}>
-            {/* Categories View */}
-            {viewMode === "categories" &&
-              categories.map((cat) => (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => handleCategoryPress(cat)}
-                  accessibilityRole="button"
-                  accessibilityLabel={isArabic ? cat.titleAr : cat.titleEn}>
-                  <Card
-                    flexDirection="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    marginBottom="$2">
-                    <Text
-                      size="md"
-                      fontWeight="500"
-                      color="$typography"
-                      flex={1}
-                      numberOfLines={2}
-                      textAlign="left">
-                      {isArabic ? cat.titleAr : cat.titleEn}
-                    </Text>
-                    <Icon
-                      as={isRTL ? ChevronLeft : ChevronRight}
-                      size="sm"
-                      color="$typographySecondary"
-                    />
-                  </Card>
-                </Pressable>
-              ))}
-
-            {/* Search Results — grouped by category */}
-            {viewMode === "search" && (
-              <>
-                {searchResults.length === 0 && searchQuery.trim() !== "" && (
-                  <Text
-                    size="md"
-                    color="$typographySecondary"
-                    textAlign="center"
-                    paddingVertical="$6">
-                    {t("athkar.myAthkar.noResults")}
-                  </Text>
-                )}
-                {groupedSearchResults.map((group) => (
-                  <VStack key={group.titleAr} gap="$2" marginBottom="$3">
-                    <Text size="sm" fontWeight="600" color="$typographySecondary" textAlign="left">
-                      {isArabic ? group.titleAr : group.titleEn}
-                    </Text>
-                    {group.items.map((item) => renderAthkarCheckItem(item))}
-                  </VStack>
-                ))}
-              </>
-            )}
-
-            {/* Category Detail — individual athkar with checkboxes */}
-            {viewMode === "category-detail" && selectedCategory && (
-              <>
-                <Text
-                  size="lg"
-                  fontWeight="600"
-                  color="$typography"
-                  marginBottom="$2"
-                  textAlign="left">
-                  {isArabic ? selectedCategory.titleAr : selectedCategory.titleEn}
-                </Text>
-                {categoryAthkar.map((item) => renderAthkarCheckItem(item))}
-              </>
-            )}
-          </VStack>
-        </ActionsheetScrollView>
-
-        {/* Batch Add Button */}
-        {selectedItems.size > 0 && (
-          <Card
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            paddingBottom="$6"
-            borderRadius={0}
-            borderTopWidth={1}
-            borderTopColor="$outline">
-            <Button
-              size="lg"
-              onPress={handleBatchAdd}
-              disabled={isAdding}
-              opacity={isAdding ? 0.6 : 1}
-              accessibilityRole="button"
-              accessibilityLabel={t("athkar.myAthkar.add")}>
-              <Button.Icon as={Plus} />
-              <Button.Text>
-                {t("athkar.myAthkar.add")} ({selectedItems.size})
-              </Button.Text>
-            </Button>
-          </Card>
-        )}
       </ActionsheetContent>
     </Actionsheet>
   );

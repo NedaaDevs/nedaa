@@ -60,6 +60,9 @@ export const ROLE_RATIO = {
   titleLoose: 1.4,
   helper: 1.5,
   body: 1.6,
+  /** Fully vowelled Arabic, where shadda and a haraka stack above the ascent:
+   * 1.8 or looser once rounded, at 10pt and up. */
+  vowelled: 1.85,
 } as const;
 
 export type TextRole = keyof typeof ROLE_RATIO;
