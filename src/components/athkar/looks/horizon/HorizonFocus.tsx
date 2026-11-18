@@ -14,6 +14,7 @@ import type { AthkarFocusProps } from "@/components/athkar/looks/types";
 import { FocusCount } from "@/components/athkar/session/FocusCount";
 import { FocusGestureMarks, FocusSideMarks } from "@/components/athkar/session/FocusHint";
 import { FocusPager, FocusPlace, FocusSurface } from "@/components/athkar/session/FocusStage";
+import { SessionFigures } from "@/components/athkar/session/SessionFigures";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -98,9 +99,7 @@ export const HorizonFocus = ({ period, close, audio, ...rules }: AthkarFocusProp
       <FocusSurface stage={stage}>
         {!stage.reduceMotion && <Bloom stage={stage} />}
         <FocusPlace stage={stage} testID={HORIZON_FOCUS_PART.FIGURES} style={styles.figures}>
-          <Text size="label" fontWeight="500" color="$mutedSky" numeric>
-            {stage.figures}
-          </Text>
+          <SessionFigures figures={stage.figures} />
         </FocusPlace>
         <View style={styles.orb}>
           <FocusPlace stage={stage} style={styles.arc}>

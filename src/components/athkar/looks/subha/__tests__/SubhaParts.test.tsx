@@ -11,6 +11,7 @@ import { MARK_SIZE, MARK_STATE } from "@/constants/AthkarSession";
 import { SUBHA_BEADS, SUBHA_SLAB, SUBHA_STRING, SUBHA_STRING_KIND } from "@/constants/AthkarSubha";
 import { AppLocale } from "@/enums/app";
 import { useAppStore } from "@/stores/app";
+import { BLUR_MOCK_ID } from "@/test-helpers/blurMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { PositionMark } from "@/utils/athkarSession";
 import { beadPoint } from "@/utils/subhaBeads";
@@ -119,7 +120,7 @@ describe("SubhaString", () => {
         .map(([value]) => value);
       expect(jumps).toEqual(expect.arrayContaining(full));
       const ends = beads().map(xOf);
-      expect(ends.filter((x, i) => x !== full[i])).toHaveLength(1);
+      expect(ends.flatMap((x, i) => (x !== full[i] ? [i] : []))).toEqual([SUBHA_BEADS.ROUND - 1]);
       await view.unmount();
     }
   });
@@ -212,7 +213,10 @@ describe("SubhaStack", () => {
     for (const slab of screen.getAllByTestId(SUBHA_SLAB_PART.BEHIND, hidden)) {
       expect(flat(slab).opacity ?? 1).toBe(1);
       expect(within(slab).queryAllByTestId(materialTintId(), hidden)).toHaveLength(0);
+      expect(within(slab).queryAllByTestId(BLUR_MOCK_ID, hidden)).toHaveLength(0);
     }
+    const front = screen.getByTestId(SUBHA_SLAB_PART.FRONT);
+    expect(within(front).getAllByTestId(BLUR_MOCK_ID, hidden).length).toBeGreaterThan(0);
   });
 
   it("draws one solid slab when transparency is reduced", async () => {

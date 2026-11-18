@@ -7,10 +7,10 @@ import { HorizonArc } from "@/components/athkar/looks/horizon/HorizonArc";
 import type { AthkarLookProps } from "@/components/athkar/looks/types";
 import { ReaderCount } from "@/components/athkar/session/ReaderCount";
 import { ReaderFoot } from "@/components/athkar/session/ReaderFoot";
+import { SessionFigures } from "@/components/athkar/session/SessionFigures";
 import { Box } from "@/components/ui/box";
 import { SpokenStatus } from "@/components/ui/live-region";
 import { Pressable } from "@/components/ui/pressable";
-import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HORIZON_ARC, HORIZON_ARC_KIND, HORIZON_PRESS_SCALE } from "@/constants/AthkarHorizon";
 import { DURATION_MS } from "@/constants/Motion";
@@ -91,9 +91,7 @@ export const HorizonReader = ({
           fraction={reader.fraction}
         />
         <Box position="absolute" bottom={0} pointerEvents="none">
-          <Text size="label" fontWeight="500" color="$mutedSky" numeric>
-            {reader.figures}
-          </Text>
+          <SessionFigures figures={reader.figures} />
         </Box>
       </Pressable>
 
