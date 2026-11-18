@@ -120,10 +120,12 @@ describe("SubhaFocus", () => {
     expect(props.session.add).toHaveBeenCalledTimes(1);
   });
 
-  it("starts each dhikr on a fresh string", async () => {
-    const { props, view } = await renderFocus(TARGET);
+  it("keeps a dhikr's string through its count and starts the next on a fresh one", async () => {
+    const { props, view } = await renderFocus(TARGET - 1);
     const string = () => screen.getByTestId(SUBHA_STRING_PART.STRING, hidden);
     const first = string();
+    await view.rerender(<SubhaFocus {...props} session={sessionAt(TARGET)} />);
+    expect(string()).toBe(first);
     const item = { ...sample.item, id: "another-dhikr" };
     const moved = sessionAt(0);
     await view.rerender(
