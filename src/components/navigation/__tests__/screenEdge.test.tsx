@@ -57,6 +57,7 @@ const TAB_STAND_INS = [
   BACK_DESTINATION.ATHKAR,
   BACK_DESTINATION.QADA,
   BACK_DESTINATION.QURAN,
+  BACK_DESTINATION.COMPASS,
 ];
 const tabName = (route: string) => route.slice(`${TAB_GROUP}/`.length);
 
@@ -113,20 +114,22 @@ describe("screen top edge", () => {
     BACK_DESTINATION.SETTINGS_PROVIDER,
     BACK_DESTINATION.HOME,
     BACK_DESTINATION.ATHKAR,
+    BACK_DESTINATION.QADA,
   ])("leaves the top of $route to its sky", async ({ route, href }) => {
     await renderApp(href);
 
     expect(edgeOf(route)).toEqual(OPEN);
   });
 
-  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.QADA])(
-    "pads the top of $route in the app's background",
-    async ({ route, href }) => {
-      await renderApp(href);
+  it.each([
+    BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS,
+    BACK_DESTINATION.QURAN,
+    BACK_DESTINATION.COMPASS,
+  ])("pads the top of $route in the app's background", async ({ route, href }) => {
+    await renderApp(href);
 
-      expect(edgeOf(route)).toEqual(padded(APP_BACKGROUND));
-    }
-  );
+    expect(edgeOf(route)).toEqual(padded(APP_BACKGROUND));
+  });
 
   it.each([BACK_DESTINATION.SETTINGS_ABOUT, BACK_DESTINATION.HOME])(
     "tells $route the height of the status bar it draws under",
@@ -137,14 +140,15 @@ describe("screen top edge", () => {
     }
   );
 
-  it.each([BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS, BACK_DESTINATION.QADA])(
-    "tells $route its top is padded",
-    async ({ href }) => {
-      await renderApp(href);
+  it.each([
+    BACK_DESTINATION.SETTINGS_ACKNOWLEDGEMENTS,
+    BACK_DESTINATION.QURAN,
+    BACK_DESTINATION.COMPASS,
+  ])("tells $route its top is padded", async ({ href }) => {
+    await renderApp(href);
 
-      expect(screen.getByTestId(UNDER_STATUS_BAR)).toHaveTextContent(String(null));
-    }
-  );
+    expect(screen.getByTestId(UNDER_STATUS_BAR)).toHaveTextContent(String(null));
+  });
 
   // The tabs pad each tab, whatever Today draws.
   it("wraps no edge around the tabs", async () => {

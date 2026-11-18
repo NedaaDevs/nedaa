@@ -122,6 +122,9 @@ type Props = BaseProps &
         testID?: string;
         /** The status explains the row, so it wraps at every text size. */
         wrapStatus?: boolean;
+        /** A short count or state at the end edge, read after the status. */
+        value?: string;
+        item?: never;
       }
     | {
         onPress?: never;
@@ -131,6 +134,9 @@ type Props = BaseProps &
         ref?: never;
         testID?: never;
         wrapStatus?: never;
+        value?: never;
+        /** One of a list's items: read once as title and status, heading nothing. */
+        item?: boolean;
       }
   );
 
@@ -152,6 +158,8 @@ export const ListRow = ({
   ref,
   testID,
   wrapStatus = false,
+  value,
+  item = false,
 }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
@@ -171,11 +179,21 @@ export const ListRow = ({
 
   if (!onPress) {
     return (
-      <HStack alignItems="flex-start" gap="$3" {...style.frame} style={lift}>
+      <HStack
+        alignItems="flex-start"
+        gap="$3"
+        {...style.frame}
+        style={lift}
+        accessible={item}
+        accessibilityLabel={
+          item && status
+            ? t("a11y.join", { first: title, second: spokenStatus ?? status })
+            : undefined
+        }>
         {edge}
         {leading}
         <VStack flex={1}>
-          <Text {...style.title} color="$fg" accessibilityRole="header">
+          <Text {...style.title} color="$fg" accessibilityRole={item ? undefined : "header"}>
             {title}
           </Text>
           {status ? (
@@ -197,7 +215,9 @@ export const ListRow = ({
       accessibilityRole={linkLabel ? "link" : undefined}
       accessibilityLabel={
         linkLabel ??
-        (status ? t("a11y.join", { first: title, second: spokenStatus ?? status }) : title)
+        [spokenStatus ?? status, value]
+          .filter((part): part is string => Boolean(part))
+          .reduce<string>((first, second) => t("a11y.join", { first, second }), title)
       }
       accessibilityHint={hint}
       flexDirection="row"
@@ -222,6 +242,11 @@ export const ListRow = ({
           </Text>
         ) : null}
       </VStack>
+      {value ? (
+        <Text size="label" fontWeight="500" color="$muted" numeric numberOfLines={1}>
+          {value}
+        </Text>
+      ) : null}
       <Box testID={LIST_ROW_PART.CHEVRON} opacity={style.chevronOpacity}>
         <Icon
           as={linkLabel ? ExternalLink : isRTL ? ChevronLeft : ChevronRight}

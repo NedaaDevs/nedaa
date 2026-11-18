@@ -468,6 +468,27 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<DaySimulator\b/,
     home: "components/today/DaySimulator.tsx",
   },
+  // The Qada home, its batches and the batch sheet name a batch the same way.
+  {
+    concept: "a Qada batch's name, date added and days left",
+    shows: /\buseBatchText\b|\bqada\.batch\.(unnamed|done|addedOn|addedToday)\b/,
+    drawsWith: /\buseBatchText\(/,
+    home: "hooks/useBatchText.ts",
+    fails: { path: "components/qada/Fixture.tsx", text: 't("qada.batch.unnamed")' },
+  },
+  // A batch's date added and a recorded day read as the same Hijri day. Keyed on
+  // the row's stamp, so formatting it any other way still counts as showing it.
+  {
+    concept: "a Qada row's day",
+    shows: /\.created_at\b|\bdayLabelOf\(/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\buseQadaDayText\(/,
+    home: "hooks/useQadaDayText.ts",
+    fails: {
+      path: "components/qada/Fixture.tsx",
+      text: "new Date(day.created_at).toLocaleDateString()",
+    },
+  },
   // A file that plays a sound sample draws SoundPreview. The four files
   // `within` leaves out draw their own control through useSoundPreview.
   {
