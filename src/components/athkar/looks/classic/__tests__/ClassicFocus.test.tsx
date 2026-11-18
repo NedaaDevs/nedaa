@@ -330,6 +330,15 @@ describe("ClassicFocus", () => {
       expect(said()).toEqual([]);
     });
 
+    it("says a count made by hand after one audio made", async () => {
+      const { view } = await renderFocus({ count: 4 });
+      await show(view, { count: 5 });
+      await show(view, { count: 6, audioOwnsCount: true });
+      await show(view, { count: 6 });
+      await show(view, { count: 5 });
+      expect(said()).toEqual([counted(5), counted(5)]);
+    });
+
     it("does not say the count again when the edge line goes", async () => {
       const { view, touch } = await renderFocus({ place: TOTAL - 1, count: 4 });
       await show(view, { place: TOTAL - 1, count: 5 });
@@ -382,6 +391,14 @@ describe("ClassicFocus", () => {
     const { touch, view } = await renderFocus({ place: TOTAL - 1 });
     await dragSide(touch, -300);
     await view.rerender(<ClassicFocus {...propsOf({ place: TOTAL - 2 })} />);
+    expect(screen.queryByText(t("athkar.session.lastThikr"), hidden)).toBeNull();
+  });
+
+  it("leaves the line dropped when the place comes back", async () => {
+    const { touch, view } = await renderFocus({ place: TOTAL - 1 });
+    await dragSide(touch, -300);
+    await view.rerender(<ClassicFocus {...propsOf({ place: TOTAL - 2 })} />);
+    await view.rerender(<ClassicFocus {...propsOf({ place: TOTAL - 1 })} />);
     expect(screen.queryByText(t("athkar.session.lastThikr"), hidden)).toBeNull();
   });
 
@@ -478,6 +495,31 @@ describe("ClassicFocus", () => {
       await renderFocus();
       await measure(space, lines(SPACE));
       expect(scroll().props.scrollEnabled).toBe(false);
+    });
+
+    test("a group's next text takes no measure from the text before it", async () => {
+      const { view } = await renderFocus({ text: "first" });
+      await measure(space, lines(SPACE * 2));
+      await view.rerender(<ClassicFocus {...propsOf({ text: "second" })} />);
+      expect(scroll().props.scrollEnabled).toBe(false);
+    });
+
+    test("a drag down on text not yet measured undoes nothing", async () => {
+      const { props, touch } = await renderFocus();
+      const pager = screen.getByTestId(FOCUS_STAGE_PART.PAGER, hidden);
+      await act(() => fireEvent(pager, "layout", layout(SPACE)));
+      const at = { ...STILL, translationY: FOCUS_GESTURE.UNDO_AT + 6 };
+      const dragDown = async () => {
+        await act(() => touch.begin(STILL));
+        await act(() => touch.activate(at));
+        await act(() => touch.update(at));
+        await act(() => touch.end(at));
+      };
+      await dragDown();
+      expect(props.session.undo).not.toHaveBeenCalled();
+      await measure(space, lines(SPACE / 2));
+      await dragDown();
+      expect(props.session.undo).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1,9 +1,11 @@
 import { AccessibilityInfo } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 
+import type { getCurrentAthkarPeriod } from "@/utils/athkar";
+
 const mockBack = jest.fn();
 const mockNavigate = jest.fn();
-let mockSeedPeriod: "morning" | "evening" | null = null;
+let mockSeedPeriod: ReturnType<typeof getCurrentAthkarPeriod> | null = null;
 let mockFocused = true;
 let mockBehind: string | undefined;
 
@@ -62,7 +64,7 @@ jest.mock("@/hooks/useInitializeAthkar", () => ({ useInitializeAthkar: () => {} 
 jest.mock("@/hooks/useTabBarInset", () => ({ useTabBarInset: () => 0 }));
 jest.mock("@/utils/athkar", () => ({
   ...jest.requireActual("@/utils/athkar"),
-  getCurrentAthkarPeriod: () => "morning",
+  getCurrentAthkarPeriod: () => jest.requireActual("@/constants/Athkar").ATHKAR_TYPE.MORNING,
 }));
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
@@ -181,12 +183,15 @@ describe("the look chooser on a first visit", () => {
 
   it("waits for the stored choice to load", async () => {
     const hold = holdHydration(useAthkarStore);
-    await renderWithTheme(<AthkarTabs />);
-    expect(dockTitle()).toBeNull();
+    try {
+      await renderWithTheme(<AthkarTabs />);
+      expect(dockTitle()).toBeNull();
 
-    await act(() => hold.land());
-    expect(dockTitle()).toBeOnTheScreen();
-    hold.restore();
+      await act(() => hold.land());
+      expect(dockTitle()).toBeOnTheScreen();
+    } finally {
+      hold.restore();
+    }
   });
 
   it("stays away once a look is chosen", async () => {

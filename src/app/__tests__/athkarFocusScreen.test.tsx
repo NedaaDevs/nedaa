@@ -8,7 +8,18 @@ const mockSeed = jest.fn(() => false);
 
 jest.mock("@/components/athkar/session/AthkarFocusScreen", () => {
   const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
-  return { AthkarFocusScreen: () => <Text>athkar-focus-screen</Text> };
+  // The real screen claims the sky, which throws with no sky above it.
+  const { ClaimSkyBodies } = jest.requireActual<
+    typeof import("@/components/ui/sky-background/bodies")
+  >("@/components/ui/sky-background/bodies");
+  return {
+    AthkarFocusScreen: () => (
+      <>
+        <ClaimSkyBodies />
+        <Text>athkar-focus-screen</Text>
+      </>
+    ),
+  };
 });
 jest.mock("expo-router", () => ({ useIsFocused: () => true }));
 jest.mock("@/components/athkar/useAthkarScreenshotSeed", () => ({
