@@ -132,6 +132,18 @@ describe("HorizonFocus", () => {
     expect(transform[1].translateY).toBe(300 - HORIZON_BLOOM.SIZE / 2);
   });
 
+  it("keeps the light where its tap landed under a later touch", async () => {
+    const { touch } = await renderFocus();
+    const still = { translationX: 0, translationY: 0, velocityX: 0, velocityY: 0 };
+    await act(() => touch.begin({ ...still, x: 120, y: 300 }));
+    await act(() => jest.advanceTimersByTime(50));
+    await act(() => touch.fail({ ...still, x: 120, y: 300 }));
+    await act(() => touch.begin({ ...still, x: 40, y: 60 }));
+    const { transform } = flat(HORIZON_FOCUS_PART.BLOOM);
+    expect(transform[0].translateX).toBe(120 - HORIZON_BLOOM.SIZE / 2);
+    expect(transform[1].translateY).toBe(300 - HORIZON_BLOOM.SIZE / 2);
+  });
+
   it("opens each dhikr on a new sun, so a lower count is no undo", async () => {
     const { props, view } = await renderFocus(TARGET);
     const ring = () => screen.getByTestId(HORIZON_ORB_PART.RING, hidden);

@@ -91,8 +91,8 @@ export const HORIZON_ORB = {
       [BRIGHTNESS.LIGHT]: { blur: 44, spread: 8, alpha: 0.4 },
       [BRIGHTNESS.DARK]: { blur: 44, spread: 8, alpha: 0.3 },
     },
-    /** The share of a hold by which the halo is whole. */
-    FULL_AT: 1 / 6,
+    /** The halo eases in over this share of a hold, then grows with it. */
+    EASE_UNTIL: 1 / 6,
   },
   /** The sliver an undo sheds: a ring that grows off the disc and fades. */
   SHED: {

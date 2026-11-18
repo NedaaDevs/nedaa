@@ -56,9 +56,11 @@ describe("Athkar settings look", () => {
 
     expect(screen.getByTestId(mockLookRow)).toBeOnTheScreen();
     const drawn = JSON.stringify(screen.toJSON());
-    const reminder = drawn.indexOf(t("settings.athkar.notifications.morning.title"));
-    expect(reminder).toBeGreaterThan(-1);
-    expect(drawn.indexOf(mockLookRow)).toBeLessThan(reminder);
+    const row = drawn.indexOf(mockLookRow);
+    for (const period of [ATHKAR_TYPE.MORNING, ATHKAR_TYPE.EVENING]) {
+      const reminder = drawn.indexOf(t(`settings.athkar.notifications.${period}.title`));
+      expect(reminder).toBeGreaterThan(row);
+    }
   });
 });
 

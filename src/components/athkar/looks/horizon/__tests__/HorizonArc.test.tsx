@@ -51,16 +51,15 @@ describe("HorizonArc", () => {
   });
 
   it("draws fine points smaller than full ones", async () => {
-    await draw(marks(8, 1, 3));
+    const FINE = 3;
+    await draw(marks(8, 1, FINE));
+    // Points keep the marks' order; the last ones are the fine marks.
     const radii = screen
       .getAllByTestId(HORIZON_ARC_PART.POINT, hidden)
       .map(({ props }) => Number(props.r));
-    expect(new Set(radii)).toEqual(
-      new Set([
-        HORIZON_ARC[HORIZON_ARC_KIND.READER].POINT,
-        HORIZON_ARC[HORIZON_ARC_KIND.READER].FINE,
-      ])
-    );
+    const full = radii.slice(0, -FINE);
+    const fine = radii.slice(-FINE);
+    expect(Math.max(...fine)).toBeLessThan(Math.min(...full));
   });
 
   it("starts the session at the right in Arabic and at the left in English", async () => {

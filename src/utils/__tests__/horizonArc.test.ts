@@ -2,6 +2,7 @@ import { HORIZON_FOCUS_PATH } from "@/constants/AthkarHorizon";
 import { MARK_SIZE, MARK_STATE } from "@/constants/AthkarSession";
 import type { PositionMark } from "@/utils/athkarSession";
 import {
+  MARK_ROOM,
   ARC_SPAN,
   circleArc,
   litShare,
@@ -93,9 +94,14 @@ describe("markShares", () => {
     expect(shares[2]).toBeCloseTo(ARC_SPAN.END - width / 6);
   });
 
-  it("gives a fine mark a quarter of a full mark's room", () => {
+  it("gives each mark the room of its size", () => {
     const shares = markShares([mark(0), mark(1, MARK_SIZE.FINE), mark(2, MARK_SIZE.FINE)]);
-    expect(shares[1] - shares[0]).toBeGreaterThan((shares[2] - shares[1]) * 2);
+    const { [MARK_SIZE.FULL]: full, [MARK_SIZE.FINE]: fine } = MARK_ROOM;
+    expect(fine).toBeLessThan(full / 2);
+    // Centre to centre: half of each mark's room.
+    expect((shares[1] - shares[0]) / (shares[2] - shares[1])).toBeCloseTo(
+      (full + fine) / (2 * fine)
+    );
     expect(shares[2]).toBeLessThan(ARC_SPAN.END);
   });
 
