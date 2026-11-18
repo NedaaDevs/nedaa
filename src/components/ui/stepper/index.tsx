@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useState, type ReactNode, type Ref } from "react";
 import { type AccessibilityActionEvent, type ViewInstance } from "react-native";
 import { Minus, Plus } from "lucide-react-native";
+import { getTokenValue } from "tamagui";
 
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -13,6 +14,10 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 /** Repeat delays while held: slow at first, faster once the hold is clearly deliberate. */
 export const REPEAT = { SLOW_MS: 200, FAST_MS: 100, SLOW_STEPS: 5 } as const;
+
+/** The width the two buttons and the gaps beside the value take, for a caller sizing the row. */
+export const stepperButtonsWidth = () =>
+  2 * (getTokenValue("$target", "size") + getTokenValue("$tight", "space"));
 
 /** Test ids for the two buttons, which the screen reader does not see. */
 export const STEPPER_PART = {

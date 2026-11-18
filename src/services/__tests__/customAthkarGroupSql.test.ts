@@ -184,6 +184,20 @@ describe("AthkarDB.updateCustomAthkarGroup on SQLite", () => {
     expect(await totalOf(first.id)).toBe(3);
   });
 
+  it("stores no count above the target, whenever the write lands", async () => {
+    const { groupId, rows, drafts } = await seedGroup("late tap");
+    await AthkarDB.updateCustomAthkarGroup(
+      groupId,
+      "late tap",
+      [{ ...drafts[0], userCount: 3 }, ...drafts.slice(1)],
+      DAY
+    );
+
+    await AthkarDB.updateCustomAthkarDailyCount(DAY, rows[0].id, 5);
+
+    expect((await storedRows(groupId))[0].count).toBe(3);
+  });
+
   it("changes nothing and says so when a statement fails", async () => {
     const { groupId, rows, drafts } = await seedGroup("fault");
     mockFault = FAULT.INSERT_ITEM;

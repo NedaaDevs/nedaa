@@ -16,7 +16,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
-import { Stepper } from "@/components/ui/stepper";
+import { Stepper, stepperButtonsWidth } from "@/components/ui/stepper";
 import { StickyActionBar } from "@/components/ui/sticky-action-bar";
 import { Text } from "@/components/ui/text";
 import { Face } from "@/components/ui/text/face";
@@ -42,8 +42,6 @@ export const CUSTOM_EDITOR_PART = { STEPPER: "custom-athkar-stepper" } as const;
 
 /** Three Arabic line boxes and the field's inset; a longer dhikr grows the field. */
 const DHIKR_MIN_HEIGHT = "$24";
-/** The stepper's two 44pt buttons and the gaps beside its count. */
-const STEPPER_BUTTONS = 96;
 /** Room for a four-digit count, in ems of the count's font. */
 const COUNT_EMS = 2.75;
 const COUNT_SIZE = "lg";
@@ -106,7 +104,7 @@ export const CustomAthkarEditor = ({
   const navigation = useNavigation();
   const countText = useCountText();
   const stepperMinWidth =
-    STEPPER_BUTTONS + COUNT_EMS * tokenLine(useTextScale(), COUNT_SIZE).fontSize;
+    stepperButtonsWidth() + COUNT_EMS * tokenLine(useTextScale(), COUNT_SIZE).fontSize;
   const success = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
   const [name, setName] = useState(savedName);
