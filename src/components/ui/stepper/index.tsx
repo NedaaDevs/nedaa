@@ -27,7 +27,8 @@ type Props = {
   value: number;
   onChange: (next: number) => void;
   min: number;
-  max: number;
+  /** No upper bound when unset. */
+  max?: number;
   /** Names the value for the screen reader. */
   accessibilityLabel: string;
   /** The value as a screen reader should say it, e.g. "5 days". */
@@ -56,7 +57,7 @@ export const Stepper = ({
 
   // Returns where it landed, so a hold counts on from there without waiting for a render.
   const advance = (from: number, direction: Direction) => {
-    const next = Math.min(max, Math.max(min, from + direction));
+    const next = Math.min(max ?? Infinity, Math.max(min, from + direction));
     if (next !== from) onChange(next);
     return next;
   };

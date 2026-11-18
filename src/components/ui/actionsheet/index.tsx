@@ -6,8 +6,10 @@ import React, {
   useEffect,
   useEffectEvent,
   useMemo,
+  useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type PropsWithChildren,
   type ReactNode,
   type RefObject,
@@ -43,10 +45,12 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 import {
+  BottomSheetFooter,
   BottomSheetModal,
   BottomSheetScrollView,
   useBottomSheetModal,
   type BottomSheetBackdropProps,
+  type BottomSheetFooterProps,
   type BottomSheetScrollViewMethods,
 } from "@gorhom/bottom-sheet";
 import { BlurTargetView } from "expo-blur";
@@ -209,8 +213,36 @@ type ActionsheetProps = {
   finalFocusRef?: RefObject<HostInstance | null>;
   /** Gets screen-reader focus once the sheet is up; the title when unset or empty. */
   initialFocusRef?: RefObject<HostInstance | null>;
+  /** Pinned to the sheet's bottom edge while the content scrolls behind it. */
+  footer?: ReactNode;
   children?: React.ReactNode;
 };
+
+/** Holds the footer outside the component type gorhom mounts, so new content never remounts it. */
+type FooterSlot = {
+  get: () => ReactNode;
+  set: (next: ReactNode) => void;
+  subscribe: (listener: () => void) => () => void;
+};
+
+const createFooterSlot = (initial: ReactNode): FooterSlot => {
+  let content = initial;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => content,
+    set: (next) => {
+      content = next;
+      listeners.forEach((listener) => listener());
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+};
+
+const FooterContent = ({ slot }: { slot: FooterSlot }) =>
+  useSyncExternalStore(slot.subscribe, slot.get);
 
 const Actionsheet: React.FC<ActionsheetProps> = ({
   isOpen = false,
@@ -219,6 +251,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
   fitContent = false,
   finalFocusRef,
   initialFocusRef,
+  footer,
   children,
 }) => {
   const theme = useTheme();
@@ -367,6 +400,17 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
     [scrim, dismissOnCurve]
   );
 
+  const [footerSlot] = useState(() => createFooterSlot(footer));
+  useLayoutEffect(() => footerSlot.set(footer), [footerSlot, footer]);
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) => (
+      <BottomSheetFooter {...props}>
+        <FooterContent slot={footerSlot} />
+      </BottomSheetFooter>
+    ),
+    [footerSlot]
+  );
+
   return (
     <BottomSheetModal
       ref={ref}
@@ -383,6 +427,7 @@ const Actionsheet: React.FC<ActionsheetProps> = ({
       {...UNGROUPED_CONTENT}
       containerComponent={renderLayer}
       backdropComponent={renderBackdrop}
+      footerComponent={footer ? renderFooter : undefined}
       handleComponent={renderHandle}
       backgroundComponent={SheetBackground}
       backgroundStyle={{ backgroundColor: theme.raised.val, boxShadow: shadow }}>

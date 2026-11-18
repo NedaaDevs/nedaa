@@ -1,7 +1,6 @@
 import { createContext, use, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react-native";
-import { FontLanguage } from "tamagui";
 
 import { Box } from "@/components/ui/box";
 import { Card } from "@/components/ui/card";
@@ -13,7 +12,8 @@ import { Pill } from "@/components/ui/pill";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { isArabicScript } from "@/constants/Fonts";
+import { fontLanguageOf } from "@/constants/Fonts";
+import { Face } from "@/components/ui/text/face";
 import type { AppLocale } from "@/enums/app";
 
 /** Test ids for the row's parts. */
@@ -68,15 +68,8 @@ const ChoiceCheck = ({ selected, dimmed }: { selected: boolean; dimmed: boolean 
 const VariantContext = createContext<ChoiceRowVariant>(LIST_ROW_VARIANT.CARD);
 
 /** Sets its text in the face of the given locale's script, if one is given. */
-const SubtitleFace = ({ locale, children }: { locale?: AppLocale; children: ReactNode }) => {
-  if (!locale) return children;
-  const face = isArabicScript(locale) ? "ar" : "default";
-  return (
-    <FontLanguage body={face} heading={face}>
-      {children}
-    </FontLanguage>
-  );
-};
+const SubtitleFace = ({ locale, children }: { locale?: AppLocale; children: ReactNode }) =>
+  locale ? <Face language={fontLanguageOf(locale)}>{children}</Face> : children;
 
 type Props = {
   title: string;
