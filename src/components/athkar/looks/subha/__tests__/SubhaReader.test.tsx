@@ -46,8 +46,8 @@ const renderReader = async (over: Partial<AthkarLookProps> = {}) => {
     onStartAudio: jest.fn(),
     ...over,
   };
-  await renderWithTheme(<SubhaReader {...props} />);
-  return { props, user: userEvent.setup() };
+  const view = await renderWithTheme(<SubhaReader {...props} />);
+  return { props, view, user: userEvent.setup() };
 };
 
 beforeAll(() => {
@@ -71,6 +71,15 @@ describe("SubhaReader", () => {
     const front = screen.getByTestId(SUBHA_SLAB_PART.FRONT);
     expect(within(front).getByTestId(SUBHA_STRING_PART.STRING, hidden)).toBeOnTheScreen();
     expect(within(front).getByTestId(SUBHA_READER_PART.TEXT)).toBeOnTheScreen();
+  });
+
+  it("starts each dhikr on a fresh string", async () => {
+    const { props, view } = await renderReader();
+    const string = () => screen.getByTestId(SUBHA_STRING_PART.STRING, hidden);
+    const first = string();
+    const item = { ...sample.item, id: "another-dhikr" };
+    await view.rerender(<SubhaReader {...props} session={sessionWith({ item })} />);
+    expect(string()).not.toBe(first);
   });
 
   it("stacks a slab behind for each dhikr still to come, up to two", async () => {

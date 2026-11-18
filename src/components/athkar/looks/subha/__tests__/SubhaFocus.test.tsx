@@ -89,6 +89,8 @@ describe("SubhaFocus", () => {
 
   it("places the screen's two controls outside the gesture surface", async () => {
     await renderFocus();
+    expect(screen.getByText(CLOSE)).toBeOnTheScreen();
+    expect(screen.getByText(AUDIO)).toBeOnTheScreen();
     expect(within(surface()).queryByText(CLOSE)).toBeNull();
     expect(within(surface()).queryByText(AUDIO)).toBeNull();
   });

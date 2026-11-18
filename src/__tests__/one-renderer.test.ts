@@ -15,14 +15,16 @@ const sources = (dir: string): string[] =>
 // each row names what marks a file showing it, the renderer it must use, and
 // the renderer's own file, which defines it rather than draws with it.
 // `within` limits a row to the files it matches, such as the .tsx that draw.
+type Source = { path: string; text: string };
+
 type Rule = {
   concept: string;
   shows: RegExp;
   drawsWith: RegExp;
   home?: string;
   within?: RegExp;
-  /** A source that shows the value without its renderer. */
-  fails?: string;
+  /** A source the row covers that shows the value without its renderer. */
+  fails?: Source;
 };
 
 const ONE_RENDERER: readonly Rule[] = [
@@ -209,7 +211,10 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith:
       /^(?![\s\S]*\b(currentProgress|currentAthkarIndex)\b)[\s\S]*(\buseAthkarSession\(|\bAthkar(Look|Focus)Props\b)/,
     home: "hooks/useAthkarSession.ts",
-    fails: "({ session }: AthkarLookProps) => useAthkarStore((s) => s.currentProgress)",
+    fails: {
+      path: "components/athkar/looks/fixture/FixtureReader.tsx",
+      text: "({ session }: AthkarLookProps) => useAthkarStore((s) => s.currentProgress)",
+    },
   },
   // The reader and Focus wear the look a person chose, never one by name.
   {
@@ -242,7 +247,10 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /^components\/athkar\/looks\/subha\//,
     drawsWith: /<SubhaKnots\b/,
     home: "components/athkar/looks/subha/SubhaKnots.tsx",
-    fails: "<SessionMarks marks={session.marks} />",
+    fails: {
+      path: "components/athkar/looks/subha/Fixture.tsx",
+      text: "<SessionMarks marks={session.marks} />",
+    },
   },
   // The Subha reader and its Focus stage count on the same string of beads.
   {
@@ -251,7 +259,10 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /^components\/athkar\/looks\/subha\//,
     drawsWith: /<SubhaString\b/,
     home: "components/athkar/looks/subha/SubhaString.tsx",
-    fails: "const lit = beadsAcross(count, target);",
+    fails: {
+      path: "components/athkar/looks/subha/Fixture.tsx",
+      text: "const lit = beadsAcross(count, target);",
+    },
   },
   // The Subha reader and its Focus stage mark each round with the same dots.
   {
@@ -260,7 +271,10 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /^components\/athkar\/looks\/subha\//,
     drawsWith: /<SubhaTens\b/,
     home: "components/athkar/looks/subha/SubhaTens.tsx",
-    fails: "const { dots, lit } = tensOf(count, target);",
+    fails: {
+      path: "components/athkar/looks/subha/Fixture.tsx",
+      text: "const { dots, lit } = tensOf(count, target);",
+    },
   },
   // Every look's Focus stage writes the count, its change and target alike.
   {
@@ -269,7 +283,22 @@ const ONE_RENDERER: readonly Rule[] = [
     within: /^components\/athkar\/looks\/(?!classic\/)/,
     drawsWith: /<FocusCount\b/,
     home: "components/athkar/session/FocusCount.tsx",
-    fails: "<Text>{stage.targetLine}</Text>",
+    fails: {
+      path: "components/athkar/looks/fixture/FixtureFocus.tsx",
+      text: "<Text>{stage.targetLine}</Text>",
+    },
+  },
+  // The Horizon and Subha readers and Focus stages write the place alike.
+  {
+    concept: "a session's place in figures",
+    shows: /\b(reader|stage)\.figures\b|<SessionFigures\b/,
+    within: /^components\/athkar\/looks\/(?!classic\/)/,
+    drawsWith: /<SessionFigures\b/,
+    home: "components/athkar/session/SessionFigures.tsx",
+    fails: {
+      path: "components/athkar/looks/fixture/FixtureReader.tsx",
+      text: "<Text>{reader.figures}</Text>",
+    },
   },
   // The Horizon and Subha readers write the count and undo on one line.
   {
@@ -277,7 +306,10 @@ const ONE_RENDERER: readonly Rule[] = [
     shows: /athkar\.session\.undo\b|athkar\.focus\.ofTarget\b|<ReaderCount\b/,
     within: /^components\/athkar\/looks\/(?!classic\/)/,
     drawsWith: /<ReaderCount\b/,
-    fails: '<Button.Text>{t("athkar.session.undo")}</Button.Text>',
+    fails: {
+      path: "components/athkar/looks/fixture/FixtureReader.tsx",
+      text: '<Button.Text>{t("athkar.session.undo")}</Button.Text>',
+    },
   },
   // The Horizon and Subha readers end on the same Focus and audio controls.
   {
@@ -285,7 +317,10 @@ const ONE_RENDERER: readonly Rule[] = [
     shows: /athkar\.session\.focus\.title\b|a11y\.athkar\.startAudioSession\b|<ReaderFoot\b/,
     within: /^components\/athkar\/looks\/(?!classic\/)/,
     drawsWith: /<ReaderFoot\b/,
-    fails: '<Text>{t("athkar.session.focus.title")}</Text>',
+    fails: {
+      path: "components/athkar/looks/fixture/FixtureReader.tsx",
+      text: '<Text>{t("athkar.session.focus.title")}</Text>',
+    },
   },
   // Each look's reader names the next dhikr on the same line.
   {
@@ -446,27 +481,37 @@ const ONE_RENDERER: readonly Rule[] = [
   },
 ];
 
-const FILES = sources(SRC).map((path) => ({
+const FILES: readonly Source[] = sources(SRC).map((path) => ({
   path: relative(SRC, path),
   text: readFileSync(path, "utf8"),
 }));
 
-describe.each(ONE_RENDERER)("$concept", ({ shows, drawsWith, home, within, fails }) => {
-  const showing = FILES.filter(
-    ({ path, text }) => path !== home && (within?.test(path) ?? true) && shows.test(text)
-  );
+/** The files a rule covers that show its value without its renderer. */
+const unrendered = ({ shows, drawsWith, home, within }: Rule, files: readonly Source[]) =>
+  files
+    .filter(
+      ({ path, text }) =>
+        path !== home && (within?.test(path) ?? true) && shows.test(text) && !drawsWith.test(text)
+    )
+    .map(({ path }) => path);
+
+describe.each(ONE_RENDERER)("$concept", (rule) => {
+  const { shows, home, within, fails } = rule;
 
   it("is shown somewhere, so this rule still guards something", () => {
+    const showing = FILES.filter(
+      ({ path, text }) => path !== home && (within?.test(path) ?? true) && shows.test(text)
+    );
     expect(showing.length).toBeGreaterThan(0);
   });
 
   if (fails !== undefined) {
     it("catches a source that shows it without its renderer", () => {
-      expect(shows.test(fails) && !drawsWith.test(fails)).toBe(true);
+      expect(unrendered(rule, [fails])).toEqual([fails.path]);
     });
   }
 
   it("is drawn by its one renderer wherever it is shown", () => {
-    expect(showing.filter(({ text }) => !drawsWith.test(text)).map(({ path }) => path)).toEqual([]);
+    expect(unrendered(rule, FILES)).toEqual([]);
   });
 });

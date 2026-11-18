@@ -7,6 +7,7 @@ import type { AthkarFocusProps } from "@/components/athkar/looks/types";
 import { FocusCount } from "@/components/athkar/session/FocusCount";
 import { FocusGestureMarks, FocusSideMarks } from "@/components/athkar/session/FocusHint";
 import { FocusPager, FocusPlace, FocusSurface } from "@/components/athkar/session/FocusStage";
+import { SessionFigures } from "@/components/athkar/session/SessionFigures";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -39,9 +40,7 @@ export const SubhaFocus = ({ period, close, audio, ...rules }: AthkarFocusProps)
         <FocusPlace stage={stage} testID={SUBHA_FOCUS_PART.PLACE} style={styles.place}>
           <VStack gap="$1" alignItems="center">
             <SubhaKnots marks={session.marks} />
-            <Text size="label" fontWeight="500" color="$mutedSky" numeric>
-              {stage.figures}
-            </Text>
+            <SessionFigures figures={stage.figures} />
           </VStack>
         </FocusPlace>
         <Box minHeight="$6" marginTop="$10" paddingHorizontal="$5">
