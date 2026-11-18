@@ -84,7 +84,7 @@ export type QadaState = {
   pendingEntries: QadaHistory[];
   /** Writes that changed the data this session; a reader holding a result checks it. */
   writes: number;
-  /** Whether a read of the batches has settled this session; they are not persisted. */
+  /** Whether the batches have been read this session; they are not persisted. */
   loaded: boolean;
   isLoading: boolean;
   hasError: boolean;
@@ -215,7 +215,6 @@ export const useQadaStore = create<QadaState>()(
               hasError: true,
               errorMessage: error instanceof Error ? error.message : "Failed to load Qada data",
               isLoading: false,
-              loaded: true,
             });
           }
         },

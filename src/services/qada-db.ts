@@ -214,7 +214,7 @@ const addMissedFasts = (count: number, notes?: string): Promise<boolean> =>
       }
 
       const now = new Date().toISOString();
-      // Totals and batch commit together, so a retry never adds twice.
+      // Totals and batch commit in one transaction, so a failed call leaves no partial write.
       await db.withTransactionAsync(async () => {
         await updateQadaFastWith(db, currentData.total_missed + count, currentData.total_completed);
         await db.runAsync(
@@ -495,7 +495,7 @@ const getPendingEntries = (): Promise<QadaHistory[]> =>
 const getCompletions = (limit?: number): Promise<QadaHistory[]> =>
   sharedDb.run(async (db) => {
     try {
-      const query = `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? ORDER BY created_at DESC, id DESC${limit ? " LIMIT ?" : ""};`;
+      const query = `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? ORDER BY id DESC${limit ? " LIMIT ?" : ""};`;
       const params = limit ? [QADA_ENTRY_TYPE.COMPLETED, limit] : [QADA_ENTRY_TYPE.COMPLETED];
       return (await db.getAllAsync<QadaHistory>(query, params)) || [];
     } catch (error) {

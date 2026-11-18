@@ -1399,6 +1399,8 @@
   "qada.home.completedOf_other": "{{completed}} of {{count}} days completed",
   "qada.home.doneTitle": "No days remaining.",
   "qada.home.emptyTitle": "Add what you missed",
+  "qada.home.loadFailed.body": "Try again in a moment.",
+  "qada.home.loadFailed.title": "Your qada days couldn't be loaded",
   "qada.home.record": "Record a qada day today",
   "qada.home.remainingLabel": "Qada days remaining",
   "qada.home.remainingUnit_one": "day",
