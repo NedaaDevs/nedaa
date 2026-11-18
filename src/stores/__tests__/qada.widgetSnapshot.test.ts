@@ -125,6 +125,19 @@ describe("qada store writes", () => {
     expect(writes()).toBe(before);
   });
 
+  test("a failed load is not a settled one", async () => {
+    useQadaStore.setState({ loaded: false });
+    jest.mocked(QadaDB.initialize).mockRejectedValueOnce(new Error("no database"));
+
+    await useQadaStore.getState().loadData();
+
+    expect(useQadaStore.getState()).toMatchObject({ loaded: false, hasError: true });
+
+    await useQadaStore.getState().loadData();
+
+    expect(useQadaStore.getState()).toMatchObject({ loaded: true, hasError: false });
+  });
+
   test("loading is not a write", async () => {
     const before = writes();
     await useQadaStore.getState().loadData();
