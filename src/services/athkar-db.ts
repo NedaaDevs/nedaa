@@ -1381,7 +1381,7 @@ const updateMyAthkarDailyCount = (
 
       const result = await db.runAsync(
         `UPDATE ${MY_ATHKAR_DAILY_TABLE}
-         SET current_count = ?, updated_at = ?
+         SET current_count = MIN(?, total_count), updated_at = ?
          WHERE date = ? AND my_athkar_id = ?`,
         [currentCount, now, dateInt, myAthkarId]
       );
@@ -1642,7 +1642,7 @@ export const AthkarDB = {
       const now = new Date().toISOString();
       await db.runAsync(
         `UPDATE ${CUSTOM_ATHKAR_DAILY_TABLE}
-         SET current_count = ?, updated_at = ?
+         SET current_count = MIN(?, total_count), updated_at = ?
          WHERE date = ? AND custom_item_id = ?`,
         [currentCount, now, dateInt, customItemId]
       );
