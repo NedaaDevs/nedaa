@@ -30,8 +30,8 @@ export type AthkarReader = {
   add: () => void;
 };
 
-/** The line last drawn at a place, and what was said for it. */
-type Heard = { place: number; line: string; said: string | null };
+/** The place and count last drawn, and what was said for them. */
+type Heard = { place: number; count: number; said: string | null };
 
 /** The reader's rules every look shares; null while the session has no dhikr. */
 export const useAthkarReader = (session: AthkarSession): AthkarReader | null => {
@@ -54,12 +54,12 @@ export const useAthkarReader = (session: AthkarSession): AthkarReader | null => 
     current: countText(count),
     total: countText(target),
   });
-  const line = count === 0 ? placeLine : counted;
+  const [heard, setHeard] = useState<Heard>({ place, count, said: placeLine });
+  if (heard.place !== place) setHeard({ place, count, said: placeLine });
   // A count the audio makes stays unsaid; the recitation is playing.
-  const unsaid = count > 0 && current?.audioOwnsCount;
-  const [heard, setHeard] = useState<Heard>({ place, line, said: line });
-  if (heard.place !== place) setHeard({ place, line, said: placeLine });
-  else if (heard.line !== line) setHeard({ place, line, said: unsaid ? null : line });
+  else if (heard.count !== count) {
+    setHeard({ place, count, said: current?.audioOwnsCount ? null : counted });
+  }
   const said = useChangeOnly(heard.said);
 
   if (!current) return null;

@@ -214,6 +214,16 @@ describe("ClassicFocus", () => {
     expect(props.onStep).toHaveBeenLastCalledWith(STEP.PREVIOUS);
   });
 
+  it("counts no tap on a finished dhikr", async () => {
+    const { props, touch } = await renderFocus({ count: TARGET });
+    await act(() => touch.begin(STILL));
+    await act(() => jest.advanceTimersByTime(50));
+    await act(() => touch.fail(STILL));
+    await run(A11Y_ACTION.ACTIVATE);
+    expect(props.session.add).not.toHaveBeenCalled();
+    expect(actionNames()).not.toContain(A11Y_ACTION.ACTIVATE);
+  });
+
   it("labels the add-many action with what it adds", async () => {
     await renderFocus({ count: TARGET - 3 });
     const actions = surface().props.accessibilityActions as { name: string; label?: string }[];
@@ -330,6 +340,12 @@ describe("ClassicFocus", () => {
       expect(said()).toEqual([]);
     });
 
+    it("says the place alone of a dhikr the audio counts", async () => {
+      const { view } = await renderFocus({ count: 0 });
+      await show(view, { place: PLACE + 1, count: 2, audioOwnsCount: true });
+      expect(said()).toEqual([placeLine(PLACE + 1)]);
+    });
+
     it("says a count made by hand after one audio made", async () => {
       const { view } = await renderFocus({ count: 4 });
       await show(view, { count: 5 });
@@ -397,6 +413,7 @@ describe("ClassicFocus", () => {
   it("leaves the line dropped when the place comes back", async () => {
     const { touch, view } = await renderFocus({ place: TOTAL - 1 });
     await dragSide(touch, -300);
+    expect(screen.getByText(t("athkar.session.lastThikr"), hidden)).toBeOnTheScreen();
     await view.rerender(<ClassicFocus {...propsOf({ place: TOTAL - 2 })} />);
     await view.rerender(<ClassicFocus {...propsOf({ place: TOTAL - 1 })} />);
     expect(screen.queryByText(t("athkar.session.lastThikr"), hidden)).toBeNull();
@@ -501,6 +518,14 @@ describe("ClassicFocus", () => {
       const { view } = await renderFocus({ text: "first" });
       await measure(space, lines(SPACE * 2));
       await view.rerender(<ClassicFocus {...propsOf({ text: "second" })} />);
+      expect(scroll().props.scrollEnabled).toBe(false);
+    });
+
+    test("a new text waits for its own lines, not the last text's", async () => {
+      const { view } = await renderFocus({ text: "first" });
+      await measure(space, lines(SPACE * 2));
+      await view.rerender(<ClassicFocus {...propsOf({ text: "second" })} />);
+      await act(space);
       expect(scroll().props.scrollEnabled).toBe(false);
     });
 
