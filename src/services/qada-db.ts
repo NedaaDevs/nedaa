@@ -1,6 +1,9 @@
 import { z } from "zod";
 import type { SQLiteDatabase } from "expo-sqlite";
 
+// Constants
+import { QADA_ENTRY_STATUS, QADA_ENTRY_TYPE, type QadaEntryStatus } from "@/constants/Qada";
+
 // Utils
 import { sharedDb } from "@/services/db";
 
@@ -27,8 +30,8 @@ const QadaFastSchema = z.object({
 const QadaHistorySchema = z.object({
   id: z.number(),
   count: z.number(),
-  type: z.enum(["completed", "added", "removed"]),
-  status: z.enum(["pending", "completed", "deleted"]),
+  type: z.enum(QADA_ENTRY_TYPE),
+  status: z.enum(QADA_ENTRY_STATUS),
   notes: z.string().optional().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
@@ -60,15 +63,17 @@ export type QadaSettings = z.infer<typeof QadaSettingsSchema>;
 // Completing days mutates the original `added` entry — a partial completion only
 // decrements its count — so the entry itself never records when the days were made up.
 // This ledger row is that record, and it is what "completed today" is counted from.
+// Returns the row's id.
 const recordCompletionWith = async (
   db: SQLiteDatabase,
   days: number,
   now: string
-): Promise<void> => {
-  await db.runAsync(
+): Promise<number> => {
+  const { lastInsertRowId } = await db.runAsync(
     `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
-    [days, "completed", "completed", null, now, now]
+    [days, QADA_ENTRY_TYPE.COMPLETED, QADA_ENTRY_STATUS.COMPLETED, null, now, now]
   );
+  return lastInsertRowId;
 };
 
 const getQadaFastWith = async (db: SQLiteDatabase): Promise<QadaFast | null> => {
@@ -215,7 +220,7 @@ const addMissedFasts = (count: number, notes?: string): Promise<boolean> =>
       const now = new Date().toISOString();
       await db.runAsync(
         `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
-        [count, "added", "pending", notes || null, now, now]
+        [count, QADA_ENTRY_TYPE.ADDED, QADA_ENTRY_STATUS.PENDING, notes || null, now, now]
       );
 
       return true;
@@ -234,12 +239,12 @@ const getHistory = (limit?: number): Promise<QadaHistory[]> =>
       // Completion ledger rows are bookkeeping, not entries the user created, so the
       // visible history lists only what they added.
       const query = limit
-        ? `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = 'added' ORDER BY created_at DESC LIMIT ?;`
-        : `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = 'added' ORDER BY created_at DESC;`;
+        ? `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? ORDER BY created_at DESC LIMIT ?;`
+        : `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? ORDER BY created_at DESC;`;
 
       const results = limit
-        ? await db.getAllAsync<QadaHistory>(query, [limit])
-        : await db.getAllAsync<QadaHistory>(query);
+        ? await db.getAllAsync<QadaHistory>(query, [QADA_ENTRY_TYPE.ADDED, limit])
+        : await db.getAllAsync<QadaHistory>(query, [QADA_ENTRY_TYPE.ADDED]);
 
       return results || [];
     } catch (error) {
@@ -315,9 +320,9 @@ const updateSettings = (
   });
 
 /**
- * Complete one day from an entry
+ * Complete one day from an entry; resolves to the recorded day's ledger id, or null.
  */
-const completeOneDayFromEntry = (id: number): Promise<boolean> =>
+const completeOneDayFromEntry = (id: number): Promise<number | null> =>
   sharedDb.run(async (db) => {
     try {
       const now = new Date().toISOString();
@@ -330,7 +335,7 @@ const completeOneDayFromEntry = (id: number): Promise<boolean> =>
 
       if (!entry) {
         console.error("[Qada DB] Entry not found for ID:", id);
-        return false;
+        return null;
       }
 
       console.log("[Qada DB] Completing one day from entry ID:", id, "current count:", entry.count);
@@ -347,7 +352,7 @@ const completeOneDayFromEntry = (id: number): Promise<boolean> =>
         // Mark single-count entry as completed
         await db.runAsync(
           `UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`,
-          ["completed", now, id]
+          [QADA_ENTRY_STATUS.COMPLETED, now, id]
         );
         console.log("[Qada DB] Marked single-count entry as completed");
       }
@@ -356,13 +361,13 @@ const completeOneDayFromEntry = (id: number): Promise<boolean> =>
       const currentData = await getQadaFastWith(db);
       if (!currentData) {
         console.error("[Qada DB] No Qada data found");
-        return false;
+        return null;
       }
 
       const newTotalCompleted = currentData.total_completed + 1;
       const newTotalMissed = currentData.total_missed - 1;
       await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
-      await recordCompletionWith(db, 1, now);
+      const completionId = await recordCompletionWith(db, 1, now);
       console.log(
         "[Qada DB] Updated totals - completed:",
         newTotalCompleted,
@@ -370,20 +375,17 @@ const completeOneDayFromEntry = (id: number): Promise<boolean> =>
         newTotalMissed
       );
 
-      return true;
+      return completionId;
     } catch (error) {
       console.error("[Qada DB] Error completing one day from entry:", error);
-      return false;
+      return null;
     }
   });
 
 /**
  * Update entry status (for swipe actions)
  */
-const updateEntryStatus = (
-  id: number,
-  status: "pending" | "completed" | "deleted"
-): Promise<boolean> =>
+const updateEntryStatus = (id: number, status: QadaEntryStatus): Promise<boolean> =>
   sharedDb.run(async (db) => {
     try {
       const now = new Date().toISOString();
@@ -422,7 +424,11 @@ const updateEntryStatus = (
       }
 
       // If marking a pending entry as completed
-      if (entry.status === "pending" && status === "completed" && entry.type === "added") {
+      if (
+        entry.status === QADA_ENTRY_STATUS.PENDING &&
+        status === QADA_ENTRY_STATUS.COMPLETED &&
+        entry.type === QADA_ENTRY_TYPE.ADDED
+      ) {
         const newTotalCompleted = currentData.total_completed + entry.count;
         const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
         await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
@@ -442,7 +448,11 @@ const updateEntryStatus = (
       }
 
       // If marking a pending entry as deleted
-      if (entry.status === "pending" && status === "deleted" && entry.type === "added") {
+      if (
+        entry.status === QADA_ENTRY_STATUS.PENDING &&
+        status === QADA_ENTRY_STATUS.DELETED &&
+        entry.type === QADA_ENTRY_TYPE.ADDED
+      ) {
         // Only subtract remaining days from missed - keep completed days as historical record
         const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
 
@@ -475,12 +485,116 @@ const getPendingEntries = (): Promise<QadaHistory[]> =>
   sharedDb.run(async (db) => {
     try {
       const results = await db.getAllAsync<QadaHistory>(
-        `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE status = 'pending' ORDER BY created_at DESC;`
+        `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE status = ? ORDER BY created_at DESC;`,
+        [QADA_ENTRY_STATUS.PENDING]
       );
       return results || [];
     } catch (error) {
       log.e("DB", "getPendingEntries failed", error instanceof Error ? error : undefined);
       return [];
+    }
+  });
+
+/**
+ * Recorded days, newest first: the completion ledger.
+ */
+const getCompletions = (limit?: number): Promise<QadaHistory[]> =>
+  sharedDb.run(async (db) => {
+    try {
+      const query = `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? ORDER BY created_at DESC, id DESC${limit ? " LIMIT ?" : ""};`;
+      const params = limit ? [QADA_ENTRY_TYPE.COMPLETED, limit] : [QADA_ENTRY_TYPE.COMPLETED];
+      return (await db.getAllAsync<QadaHistory>(query, params)) || [];
+    } catch (error) {
+      log.e("DB", "getCompletions failed", error instanceof Error ? error : undefined);
+      return [];
+    }
+  });
+
+// The ledger row names no batch, so the days go to the oldest open batch, else
+// back into the batch finished last, else into a new batch.
+const returnDaysWith = async (db: SQLiteDatabase, days: number, now: string): Promise<void> => {
+  const open = await db.getFirstAsync<QadaHistory>(
+    `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? AND status = ? ORDER BY created_at ASC, id ASC LIMIT 1;`,
+    [QADA_ENTRY_TYPE.ADDED, QADA_ENTRY_STATUS.PENDING]
+  );
+  if (open) {
+    await db.runAsync(`UPDATE ${QADA_HISTORY_TABLE} SET count = ?, updated_at = ? WHERE id = ?;`, [
+      open.count + days,
+      now,
+      open.id,
+    ]);
+    return;
+  }
+  const finished = await db.getFirstAsync<QadaHistory>(
+    `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE type = ? AND status = ? ORDER BY updated_at DESC, id DESC LIMIT 1;`,
+    [QADA_ENTRY_TYPE.ADDED, QADA_ENTRY_STATUS.COMPLETED]
+  );
+  if (finished) {
+    await db.runAsync(
+      `UPDATE ${QADA_HISTORY_TABLE} SET count = ?, status = ?, updated_at = ? WHERE id = ?;`,
+      [days, QADA_ENTRY_STATUS.PENDING, now, finished.id]
+    );
+    return;
+  }
+  await db.runAsync(
+    `INSERT INTO ${QADA_HISTORY_TABLE} (count, type, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?);`,
+    [days, QADA_ENTRY_TYPE.ADDED, QADA_ENTRY_STATUS.PENDING, null, now, now]
+  );
+};
+
+/**
+ * The id of the day recorded last; ids grow with each insert, unlike the device clock.
+ */
+const getNewestCompletionId = (): Promise<number | null> =>
+  sharedDb.run(async (db) => {
+    try {
+      const row = await db.getFirstAsync<{ id: number }>(
+        `SELECT id FROM ${QADA_HISTORY_TABLE} WHERE type = ? ORDER BY id DESC LIMIT 1;`,
+        [QADA_ENTRY_TYPE.COMPLETED]
+      );
+      return row?.id ?? null;
+    } catch (error) {
+      log.e("DB", "getNewestCompletionId failed", error instanceof Error ? error : undefined);
+      return null;
+    }
+  });
+
+/** Thrown inside the restore transaction to roll it back. */
+class RestoreMissed extends Error {}
+
+/**
+ * Unrecords a day: drops its ledger row and owes its days again, all or nothing.
+ */
+const restoreCompletion = (completionId: number): Promise<boolean> =>
+  sharedDb.run(async (db) => {
+    try {
+      const row = await db.getFirstAsync<QadaHistory>(
+        `SELECT * FROM ${QADA_HISTORY_TABLE} WHERE id = ? AND type = ?;`,
+        [completionId, QADA_ENTRY_TYPE.COMPLETED]
+      );
+      const totals = await getQadaFastWith(db);
+      if (!row || !totals) return false;
+
+      const now = new Date().toISOString();
+      await db.withTransactionAsync(async () => {
+        const { changes } = await db.runAsync(
+          `DELETE FROM ${QADA_HISTORY_TABLE} WHERE id = ? AND type = ?;`,
+          [completionId, QADA_ENTRY_TYPE.COMPLETED]
+        );
+        if (changes !== 1) throw new RestoreMissed();
+        await returnDaysWith(db, row.count, now);
+        await updateQadaFastWith(
+          db,
+          totals.total_missed + row.count,
+          Math.max(0, totals.total_completed - row.count)
+        );
+      });
+      return true;
+    } catch (error) {
+      if (!(error instanceof RestoreMissed)) {
+        log.e("DB", "restoreCompletion failed", error instanceof Error ? error : undefined);
+      }
+      return false;
     }
   });
 
@@ -532,8 +646,8 @@ export const getCompletedCountBetweenWith = async (
 ): Promise<number> => {
   const row = await db.getFirstAsync<{ total: number | null }>(
     `SELECT COALESCE(SUM(count), 0) AS total FROM ${QADA_HISTORY_TABLE}
-     WHERE type = 'completed' AND updated_at >= ? AND updated_at < ?;`,
-    [startIso, endIso]
+     WHERE type = ? AND updated_at >= ? AND updated_at < ?;`,
+    [QADA_ENTRY_TYPE.COMPLETED, startIso, endIso]
   );
   return row?.total ?? 0;
 };
@@ -550,6 +664,9 @@ export const QadaDB = {
   getPendingEntries,
   updateEntryStatus,
   completeOneDayFromEntry,
+  getNewestCompletionId,
+  getCompletions,
+  restoreCompletion,
   getSettings,
   updateSettings,
   resetAll,

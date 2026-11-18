@@ -118,6 +118,38 @@ describe("ListRow", () => {
     });
   });
 
+  // A count or state at the end edge is read after the name and status.
+  it("draws a value at its end and reads it last", async () => {
+    await renderWithTheme(
+      <ListRow
+        variant={LIST_ROW_VARIANT.GROUPED}
+        title="Batch"
+        status="Added today"
+        value="3 days"
+        onPress={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Batch, Added today, 3 days" })).toBeTruthy();
+    expect(screen.getByText("3 days")).toBeTruthy();
+  });
+
+  // An item in a list reads once, as its name and status, and heads nothing.
+  it("reads a static item as one element, not a heading", async () => {
+    await renderWithTheme(
+      <ListRow variant={LIST_ROW_VARIANT.GROUPED} title="Travel" status="Done" item />
+    );
+
+    expect(screen.queryByRole("header", { name: "Travel" })).toBeNull();
+    expect(screen.getByLabelText("Travel, Done")).toBeTruthy();
+  });
+
+  it("heads its text as a static statement", async () => {
+    await renderWithTheme(<ListRow title="About" status="Version 3" />);
+
+    expect(screen.getByRole("header", { name: "About" })).toBeTruthy();
+  });
+
   // Inside a panel the panel draws the edge; a second border would nest cards.
   it("lies flat with no icon as a plain row", async () => {
     await renderWithTheme(
