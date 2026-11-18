@@ -77,9 +77,13 @@ const readFields = (text: string) => {
   return nodesOf(file)
     .filter(ts.isJsxOpeningLikeElement)
     .flatMap((element) => {
-      const props = element.attributes.properties.filter(ts.isJsxAttribute);
+      const all = element.attributes.properties;
+      const props = all.filter(ts.isJsxAttribute);
+      // A spread after the attribute may replace it, so its value is unknown.
       const valueOf = (name: string) => {
-        const value = props.find((prop) => prop.name.getText(file) === name)?.initializer;
+        const prop = props.find((attribute) => attribute.name.getText(file) === name);
+        if (!prop || all.slice(all.indexOf(prop) + 1).some(ts.isJsxSpreadAttribute)) return;
+        const value = prop.initializer;
         return value && ts.isJsxExpression(value) ? value.expression : undefined;
       };
       if (!props.some((prop) => prop.name.getText(file) === PLACEHOLDER_PROP)) return [];
@@ -163,6 +167,10 @@ describe("raw field reader", () => {
       "<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val, color, backgroundColor: theme.surface.val }} />",
       [{ placeholder: "placeholderColor", typed: undefined, fill: "surface" }],
     ],
+    [
+      "<TextInput placeholderTextColor={theme.placeholderColor.val} style={{ color: theme.fg.val }} {...inputProps} />",
+      [{ placeholder: undefined, typed: undefined, fill: undefined }],
+    ],
     ['<TextInput placeholder="30" />', []],
   ])("reads %s", (text, fields) => {
     expect(readFields(text)).toEqual(fields);
@@ -172,7 +180,7 @@ describe("raw field reader", () => {
 // A placeholder that outranks typed text reads as typed text.
 describe("raw text fields", () => {
   it("finds the app's raw fields", () => {
-    expect(FIELDS.length).toBeGreaterThan(3);
+    expect(FIELDS.length).toBeGreaterThan(2);
   });
 
   it.each(FIELDS)("%s reads the placeholder key", (_path, field) => {

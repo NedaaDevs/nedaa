@@ -11,12 +11,13 @@ export const A11Y_FLAG_EVENT = {
 
 export type A11yFlagEvent = (typeof A11Y_FLAG_EVENT)[keyof typeof A11Y_FLAG_EVENT];
 
-/** Standard accessibility action names React Native reports. */
+/** Accessibility action names: React Native's standard ones and the custom ones a view lists. */
 export const A11Y_ACTION = {
   ACTIVATE: "activate",
   INCREMENT: "increment",
   DECREMENT: "decrement",
   DISMISS: "dismiss",
+  REMOVE: "remove",
 } as const;
 
 // TalkBack adjusts only through listed actions. VoiceOver adjusts without them,
