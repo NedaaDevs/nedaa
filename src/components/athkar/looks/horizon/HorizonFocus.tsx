@@ -58,18 +58,21 @@ const Bloom = ({ stage }: { stage: FocusStage }) => {
   const { taps, gesture } = stage;
   const { point } = gesture;
   const spread = useSharedValue(1);
+  // Where the counted tap landed; a later touch moves `point` alone.
+  const at = useSharedValue({ x: 0, y: 0 });
   useEffect(() => {
     if (taps === 0) return;
+    at.set(point.get());
     spread.set(0);
     spread.set(
       withTiming(1, { duration: HORIZON_MOTION.BLOOM_MS, easing: Easing.out(Easing.cubic) })
     );
-  }, [taps, spread]);
+  }, [taps, spread, at, point]);
   const style = useAnimatedStyle(() => ({
     opacity: HORIZON_BLOOM.OPACITY * (1 - spread.get()),
     transform: [
-      { translateX: point.get().x - BLOOM_RADIUS },
-      { translateY: point.get().y - BLOOM_RADIUS },
+      { translateX: at.get().x - BLOOM_RADIUS },
+      { translateY: at.get().y - BLOOM_RADIUS },
       { scale: HORIZON_BLOOM.FROM_SCALE + (1 - HORIZON_BLOOM.FROM_SCALE) * spread.get() },
     ],
   }));

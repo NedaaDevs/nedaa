@@ -91,10 +91,11 @@ describe("the stored Athkar look", () => {
   });
 
   it("stores a chosen look", () => {
-    useAthkarStore.setState({ settings: DEFAULTS });
+    const before = { ...DEFAULTS, showTranslation: !DEFAULTS.showTranslation };
+    useAthkarStore.setState({ settings: before });
 
     useAthkarStore.getState().setLook(ATHKAR_LOOK.CLASSIC);
 
-    expect(settings()).toEqual({ ...DEFAULTS, look: ATHKAR_LOOK.CLASSIC });
+    expect(settings()).toEqual({ ...before, look: ATHKAR_LOOK.CLASSIC });
   });
 });

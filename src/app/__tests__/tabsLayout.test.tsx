@@ -277,10 +277,12 @@ describe("tabs layout", () => {
     await act(() => {
       lift = useTabBarFrameStore.getState().cover();
     });
-    expect(screen.queryByTestId(TAB_BAR_TRACK)).toBeNull();
-    expect(screen.getByTestId(TAB_BAR_PART.FRAME)).toBeOnTheScreen();
-
-    await act(() => lift());
+    try {
+      expect(screen.queryByTestId(TAB_BAR_TRACK)).toBeNull();
+      expect(screen.getByTestId(TAB_BAR_PART.FRAME)).toBeOnTheScreen();
+    } finally {
+      await act(() => lift());
+    }
     expect(screen.getByTestId(TAB_BAR_TRACK)).toBeOnTheScreen();
   });
 

@@ -60,9 +60,9 @@ export type FocusStage = {
   change: string | null;
   /** The line that replaces the hint; null draws none. */
   statusLine: string | null;
-  /** Each dhikr's text is taller than its space, by item id. */
+  /** Each measured text is taller than its space, by text key. */
   tall: Readonly<Record<string, boolean>>;
-  onTall: (id: string, tall: boolean) => void;
+  onTall: (textKey: string, tall: boolean) => void;
   /** Where the text sits, in the surface's y. */
   onTextZone: (zone: Zone) => void;
   /** The surface as a screen reader meets it. */
@@ -75,6 +75,9 @@ export type FocusStage = {
 };
 
 type Options = Pick<AthkarFocusProps, "session" | "hintSeen" | "onHintSeen" | "onStep">;
+
+/** The place and count last drawn, and what was said for them. */
+type Said = { place: number; count: number; line: string | null };
 
 /** The Focus stage every look draws: one touch surface, one dhikr, its count. */
 export const useFocusStage = ({
@@ -106,7 +109,8 @@ export const useFocusStage = ({
   const [touched, setTouched] = useState(false);
   const [taps, setTaps] = useState(0);
   const [edgeTry, setEdgeTry] = useState<{ by: StepDirection; place: number } | null>(null);
-  // The line belongs to the place it was tried on.
+  // The line belongs to the place it was tried on, and goes with it.
+  if (edgeTry && edgeTry.place !== place) setEdgeTry(null);
   const edge = edgeTry?.place === place ? edgeTry : null;
   const [tall, setTall] = useState<Readonly<Record<string, boolean>>>({});
   const [textZone, setTextZone] = useState<Zone | null>(null);
@@ -124,7 +128,8 @@ export const useFocusStage = ({
     if (hinting) onHintSeen();
   };
 
-  const scrolls = current ? (tall[current.item.id] ?? false) : false;
+  // Text not yet measured holds its zone: a drag down there is no undo.
+  const fits = current ? tall[current.textKey] === false : true;
   const gesture = useFocusGesture({
     index: place,
     width,
@@ -135,7 +140,7 @@ export const useFocusStage = ({
     canTap,
     canUndo,
     holdRoom: room,
-    scrollZone: scrolls ? textZone : null,
+    scrollZone: fits ? null : textZone,
     onTouch: touch,
     onTap: () => {
       setTaps((n) => n + 1);
@@ -163,9 +168,10 @@ export const useFocusStage = ({
       : t(edge.by === STEP.NEXT ? "athkar.session.lastThikr" : "athkar.focus.firstThikr");
   // A new place says where it is; a count by hand says the count.
   const arrival = count === 0 ? placeLine : t("a11y.join", { first: placeLine, second: counted });
-  const [said, setSaid] = useState({ place, count, line: arrival });
+  const [said, setSaid] = useState<Said>({ place, count, line: arrival });
   if (said.place !== place) setSaid({ place, count, line: arrival });
-  else if (said.count !== count) setSaid({ place, count, line: locked ? said.line : counted });
+  // A count the audio makes stays unsaid; the recitation is playing.
+  else if (said.count !== count) setSaid({ place, count, line: locked ? null : counted });
   const changed = useChangeOnly(said.line);
 
   if (!current) return null;
@@ -234,8 +240,8 @@ export const useFocusStage = ({
     change,
     statusLine,
     tall,
-    onTall: (id, isTall) =>
-      setTall((now) => ((now[id] ?? false) === isTall ? now : { ...now, [id]: isTall })),
+    onTall: (textKey, isTall) =>
+      setTall((now) => (now[textKey] === isTall ? now : { ...now, [textKey]: isTall })),
     onTextZone: setTextZone,
     label,
     hint: canTap && !current.done ? t("athkar.focus.tapToIncrement") : undefined,

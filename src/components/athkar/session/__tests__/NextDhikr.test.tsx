@@ -6,6 +6,11 @@ import i18n from "@/localization/i18n";
 import { useAthkarStore } from "@/stores/athkar";
 import { renderWithTheme } from "@/test-helpers/theme";
 
+// The store's logger starts a flush timer that outlives the suite.
+jest.mock("@/utils/appLogger", () => ({
+  AppLogger: { create: () => ({ i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
+}));
+
 const ARABIC = "سبحان الله";
 const TRANSLATION = "Glory be to Allah";
 const NEXT = { textKey: `${TRANSLATION}\n${ARABIC}` };

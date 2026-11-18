@@ -21,6 +21,7 @@ import { slotX } from "@/utils/focusGesture";
 export const FOCUS_STAGE_PART = {
   SURFACE: "focus-stage-surface",
   PLACE: "focus-stage-place",
+  PAGER: "focus-stage-pager",
   ROW: "focus-stage-row",
   TEXT: "focus-stage-text",
   TEXT_SCROLL: "focus-stage-text-scroll",
@@ -113,6 +114,7 @@ export const FocusPager = ({ stage }: StageProps) => {
 
   return (
     <View
+      testID={FOCUS_STAGE_PART.PAGER}
       style={styles.pager}
       onLayout={({ nativeEvent: { layout } }) =>
         stage.onTextZone({ top: layout.y, bottom: layout.y + layout.height })
@@ -122,6 +124,7 @@ export const FocusPager = ({ stage }: StageProps) => {
           const at = place + by;
           const item = session.items[at];
           if (!item) return null;
+          const textKey = textKeyAt(item, session.counts);
           return (
             <View
               key={item.id}
@@ -130,11 +133,11 @@ export const FocusPager = ({ stage }: StageProps) => {
                 { transform: [{ translateX: slotX(at, width, isRTL) }] },
               ]}>
               <FocusText
-                textKey={textKeyAt(item, session.counts)}
+                textKey={textKey}
                 here={by === 0}
-                scrolls={tall[item.id] ?? false}
+                scrolls={tall[textKey] ?? false}
                 alongside={gesture.gesture}
-                onTall={(isTall) => stage.onTall(item.id, isTall)}
+                onTall={(isTall) => stage.onTall(textKey, isTall)}
               />
             </View>
           );

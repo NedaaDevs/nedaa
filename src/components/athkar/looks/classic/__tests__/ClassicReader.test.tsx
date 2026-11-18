@@ -48,6 +48,7 @@ const items = (): SessionItem[] =>
 const held = (text: string) => `${LTR_ISOLATE.OPEN}${text}${LTR_ISOLATE.CLOSE}`;
 
 type SessionOptions = {
+  place?: number;
   count?: number;
   textKey?: string;
   nextKey?: string;
@@ -57,22 +58,23 @@ type SessionOptions = {
 };
 
 const sessionOf = ({
+  place = PLACE,
   count = 1,
-  textKey = textOf(PLACE),
-  nextKey = textOf(PLACE + 1),
+  textKey = textOf(place),
+  nextKey = textOf(place + 1),
   last = false,
   advancePending = false,
   audioOwnsCount = false,
 }: SessionOptions = {}): AthkarSession => {
   const list = items();
-  const counts = { [list[PLACE].id]: count };
+  const counts = { [list[place].id]: count };
   return {
     status: SESSION_STATUS.READY,
     items: list,
     counts,
-    index: PLACE,
+    index: place,
     current: {
-      item: list[PLACE],
+      item: list[place],
       textKey,
       count,
       target: TARGET,
@@ -80,7 +82,7 @@ const sessionOf = ({
       audioOwnsCount,
     },
     next: last ? null : { textKey: nextKey },
-    marks: positionMarks(list, counts, PLACE),
+    marks: positionMarks(list, counts, place),
     canUndo: count > 0,
     advancePending,
     canStep: { previous: true, next: !last },
@@ -246,6 +248,8 @@ describe("ClassicReader", () => {
     const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
     const counted = (count: number) =>
       i18n.t("a11y.athkar.cardProgress", { current: `${count}`, total: `${TARGET}` });
+    const placed = (place: number) =>
+      i18n.t("athkar.audio.thikrProgress", { current: `${place + 1}`, total: `${TOTAL}` });
     const said = () => announce.mock.calls.map(([line]) => line);
 
     beforeEach(() => announce.mockClear());
@@ -270,9 +274,25 @@ describe("ClassicReader", () => {
       const view = await renderWithTheme(
         <ClassicReader {...propsOf({ count: 2, audioOwnsCount: true })} />
       );
-      await view.rerender(<ClassicReader {...propsOf({ count: 0, audioOwnsCount: true })} />);
-      expect(said()).toHaveLength(1);
-      expect(said()[0]).not.toBe(counted(0));
+      await view.rerender(
+        <ClassicReader {...propsOf({ place: PLACE + 1, count: 0, audioOwnsCount: true })} />
+      );
+      expect(said()).toEqual([placed(PLACE + 1)]);
+    });
+
+    it("says the place of a dhikr that opens at the count of the last", async () => {
+      const view = await renderWithTheme(<ClassicReader {...propsOf({ count: 1 })} />);
+      await view.rerender(<ClassicReader {...propsOf({ place: PLACE + 1, count: 1 })} />);
+      expect(said()).toEqual([placed(PLACE + 1)]);
+    });
+
+    it("says a count made by hand after one audio made", async () => {
+      const view = await renderWithTheme(<ClassicReader {...propsOf({ count: 1 })} />);
+      await view.rerender(<ClassicReader {...propsOf({ count: 2, audioOwnsCount: true })} />);
+      await view.rerender(<ClassicReader {...propsOf({ count: 2 })} />);
+      expect(said()).toEqual([]);
+      await view.rerender(<ClassicReader {...propsOf({ count: 1 })} />);
+      expect(said()).toEqual([counted(1)]);
     });
   });
 
@@ -280,6 +300,9 @@ describe("ClassicReader", () => {
     const { session } = await renderReader(undefined, true);
     expect(screen.queryByTestId(CLASSIC_READER_PART.FOCUS)).toBeNull();
     expect(screen.queryByTestId(CLASSIC_READER_PART.NEXT)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: i18n.t("a11y.athkar.startAudioSession") })
+    ).toBeNull();
     await userEvent.press(ring());
     expect(session.add).toHaveBeenCalledTimes(1);
   });

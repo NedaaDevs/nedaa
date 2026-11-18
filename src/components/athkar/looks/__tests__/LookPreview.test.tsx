@@ -6,6 +6,7 @@ import {
   LookPicture,
   LookPreview,
 } from "@/components/athkar/looks/LookPreview";
+import { HORIZON_ARC_PART } from "@/components/athkar/looks/horizon/HorizonArc";
 import { SKY_PART, SkyBackground } from "@/components/ui/sky-background";
 import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
@@ -81,6 +82,7 @@ describe("LookPicture", () => {
     await renderWithTheme(<LookPicture look={ATHKAR_LOOK.HORIZON} />);
     expect(screen.getAllByTestId(SKY_PART.CANVAS, DRAWN)).toHaveLength(1);
     expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(0);
+    expect(screen.getAllByTestId(HORIZON_ARC_PART.SUN, DRAWN)).toHaveLength(1);
   });
 
   it("scales a reader of the design's size into a frame of the same shape", async () => {
