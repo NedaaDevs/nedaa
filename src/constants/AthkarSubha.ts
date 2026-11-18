@@ -33,6 +33,19 @@ export const SUBHA_BEADS = {
   MID_STOP: 0.55,
 } as const;
 
+/** How the beads go from one count to the next. */
+export const BEAD_MOVE = {
+  /** Straight to their places: the first draw. */
+  PLACE: "place",
+  /** Each bead slides to its new place. */
+  SLIDE: "slide",
+  /** A move passed a round's end: the beads cross, then all return. */
+  SWEEP: "sweep",
+  /** Undo from a round's end: start from a full round, one bead slides back. */
+  UNWIND: "unwind",
+} as const;
+export type BeadMove = (typeof BEAD_MOVE)[keyof typeof BEAD_MOVE];
+
 type BeadInk = {
   readonly light: PaletteEntry;
   readonly mid: PaletteEntry;
