@@ -191,6 +191,39 @@ describe("QadaDB completions on SQLite", () => {
     ]);
   });
 
+  it("finishes no batch when its ledger row fails to write", async () => {
+    await QadaDB.addMissedFasts(4);
+    const [batch] = await batches();
+    mockFault = { match: new RegExp(`^INSERT INTO ${QADA_HISTORY_TABLE}`), kind: "throw" };
+
+    await expect(QadaDB.updateEntryStatus(batch.id, QADA_ENTRY_STATUS.COMPLETED)).resolves.toBe(
+      false
+    );
+
+    mockFault = null;
+    expect(await batches()).toEqual([
+      { id: batch.id, count: 4, status: QADA_ENTRY_STATUS.PENDING },
+    ]);
+    expect(await totals()).toEqual({ missed: 4, completed: 0 });
+    expect(await QadaDB.getCompletions()).toEqual([]);
+  });
+
+  it("removes no batch when the totals fail to write", async () => {
+    await QadaDB.addMissedFasts(4);
+    const [batch] = await batches();
+    mockFault = { match: new RegExp(`^UPDATE ${QADA_FASTS_TABLE}`), kind: "throw" };
+
+    await expect(QadaDB.updateEntryStatus(batch.id, QADA_ENTRY_STATUS.DELETED)).resolves.toBe(
+      false
+    );
+
+    mockFault = null;
+    expect(await batches()).toEqual([
+      { id: batch.id, count: 4, status: QADA_ENTRY_STATUS.PENDING },
+    ]);
+    expect(await totals()).toEqual({ missed: 4, completed: 0 });
+  });
+
   it("opens a batch for the day when every batch was removed", async () => {
     await QadaDB.addMissedFasts(2);
     const [batch] = await batches();
