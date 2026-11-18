@@ -7,6 +7,7 @@ import {
 } from "@/constants/AthkarSubha";
 import {
   beadGradient,
+  beadHeight,
   beadMove,
   beadPoint,
   beadsAcross,
@@ -124,6 +125,16 @@ describe("stringPath", () => {
             expect(y + box.BEAD / 2).toBeCloseTo(yAt(x + box.BEAD / 2));
           }
         }
+      }
+    }
+  );
+
+  it.each(Object.entries(SUBHA_STRING))(
+    "holds a bead on the %s string all the way across",
+    (_, box) => {
+      const yAt = curve(box);
+      for (let x = 0; x <= box.WIDTH - box.BEAD; x++) {
+        expect(beadHeight(x, box) + box.BEAD / 2).toBeCloseTo(yAt(x + box.BEAD / 2));
       }
     }
   );

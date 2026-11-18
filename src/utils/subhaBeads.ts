@@ -35,20 +35,27 @@ export const beadMove = (before: number | null, count: number, target: number): 
   return BEAD_MOVE.SLIDE;
 };
 
+/** How far the string hangs under a bead whose left edge is at `x`. */
+export const beadHeight = (x: number, { WIDTH, BEAD, SAG }: StringBox): number => {
+  "worklet";
+  const u = (x + BEAD / 2 - WIDTH / 2) / (WIDTH / 2);
+  return SAG * (1 - u * u);
+};
+
 /** A bead's x and y: waiting beads at the start, counted ones at the end. */
 export const beadPoint = (
   index: number,
   across: number,
   beads: number,
-  { WIDTH, BEAD, SAG }: StringBox,
+  box: StringBox,
   rtl: boolean
 ): { x: number; y: number } => {
+  const { WIDTH, BEAD } = box;
   const step = BEAD + GAP;
   // Drawn from the right; the left-to-right reading mirrors it.
   const fromRight = index < across ? index * step : WIDTH - BEAD - (beads - 1 - index) * step;
   const x = rtl ? fromRight : WIDTH - BEAD - fromRight;
-  const u = (x + BEAD / 2 - WIDTH / 2) / (WIDTH / 2);
-  return { x, y: SAG * (1 - u * u) };
+  return { x, y: beadHeight(x, box) };
 };
 
 /** The string through the beads' centres, as an SVG path. */
