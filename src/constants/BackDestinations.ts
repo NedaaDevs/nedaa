@@ -23,7 +23,13 @@ export const BACK_DESTINATION = {
     title: "athkar.session.focus.title",
     sky: true,
   },
-  QADA: { route: "(tabs)/qada", href: "/qada", title: "qada.title" },
+  QADA: { route: "(tabs)/qada", href: "/qada", title: "qada.home.title", sky: true },
+  QADA_BATCHES: {
+    route: "qada-batches",
+    href: "/qada-batches",
+    title: "qada.batches.title",
+    sky: true,
+  },
   QURAN: { route: "(tabs)/quran", href: "/quran", title: "a11y.tab.quran" },
   SETTINGS_PROVIDER: {
     route: "settings/advance/provider",
@@ -48,6 +54,11 @@ export const BACK_DESTINATION = {
     href: "/settings/theme",
     title: "settings.appearance",
     sky: true,
+  },
+  SETTINGS_QADA: {
+    route: "settings/qada",
+    href: "/settings/qada",
+    title: "qada.notificationSettings",
   },
   SETTINGS_WIDGETS: {
     route: "settings/widgets",

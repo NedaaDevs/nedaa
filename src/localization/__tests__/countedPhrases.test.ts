@@ -74,6 +74,19 @@ describe("counted phrases", () => {
       ["لا آيات بعد", "آية واحدة", "آيتان", "3 آيات", "11 آية", "100 آية"],
     ],
     ["quran.surah.ayahCount", ["لا آيات", "آية واحدة", "آيتان", "3 آيات", "11 آية", "100 آية"]],
+    // The hero draws the figure before each form but the dual, which stands alone.
+    ["qada.home.remainingUnit", ["يوم", "يوم", "يومان", "أيام", "يومًا", "يوم"]],
+    [
+      "a11y.qada.returnDaysHint",
+      [
+        "يلغي تسجيل هذا اليوم",
+        "يعيد هذا اليوم إلى المتبقي من صيام القضاء",
+        "يعيد هذين اليومين إلى المتبقي من صيام القضاء",
+        "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
+        "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
+        "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
+      ],
+    ],
   ])("says %s in Arabic with all six forms", (key, sentences) => {
     ARABIC_COUNTS.forEach((count, i) => expect(sayAr(key, count)).toBe(sentences[i]));
   });
@@ -90,6 +103,11 @@ describe("counted phrases", () => {
     ],
     ["quran.highlight.verseCount", "1 verse", "5 verses"],
     ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
+    [
+      "a11y.qada.returnDaysHint",
+      "Counts this day as remaining again",
+      "Counts these 5 days as remaining again",
+    ],
   ])("says %s in English", (key, one, five) => {
     expect(sayEn(key, 1)).toBe(one);
     expect(sayEn(key, 5)).toBe(five);
@@ -100,6 +118,24 @@ describe("counted phrases", () => {
     [AppLocale.UR, "5 حسبِ ضرورت ترتیبات"],
   ])("fills the count in %s", (lng, phrase) => {
     expect(i18n.t("notification.customSettings", { count: 5, lng })).toBe(phrase);
+  });
+
+  // The total picks the form; the completed count is only filled in.
+  it("inflects the completed-days line by its total", () => {
+    const line = (total: number) =>
+      i18n.t("qada.home.completedOf", { count: total, completed: 1, lng: AppLocale.AR });
+
+    expect(ARABIC_COUNTS.map(line)).toEqual([
+      "لم تُضف أيامًا بعد",
+      "أكملت 1 من أصل يوم واحد",
+      "أكملت 1 من أصل يومين",
+      "أكملت 1 من أصل 3 أيام",
+      "أكملت 1 من أصل 11 يومًا",
+      "أكملت 1 من أصل 100 يوم",
+    ]);
+    expect(i18n.t("qada.home.completedOf", { count: 5, completed: 2, lng: AppLocale.EN })).toBe(
+      "2 of 5 days completed"
+    );
   });
 
   it("gives a year of qada days the form 365 takes", () => {

@@ -1,3 +1,4 @@
+import { QADA_ENTRY_TYPE } from "@/constants/Qada";
 import { getCompletedCountBetweenWith } from "@/services/qada-db";
 
 import type { SQLiteDatabase } from "expo-sqlite";
@@ -12,8 +13,12 @@ describe("getCompletedCountBetweenWith", () => {
       getCompletedCountBetweenWith(db, "2026-09-05T21:00:00.000Z", "2026-09-06T21:00:00.000Z")
     ).resolves.toBe(3);
     const [sql, params] = (db.getFirstAsync as jest.Mock).mock.calls[0] as [string, unknown[]];
-    expect(sql).toMatch(/type = 'completed'/);
-    expect(params).toEqual(["2026-09-05T21:00:00.000Z", "2026-09-06T21:00:00.000Z"]);
+    expect(sql).toMatch(/type = \?/);
+    expect(params).toEqual([
+      QADA_ENTRY_TYPE.COMPLETED,
+      "2026-09-05T21:00:00.000Z",
+      "2026-09-06T21:00:00.000Z",
+    ]);
   });
 
   test("an empty window reads as zero", async () => {
