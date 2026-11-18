@@ -70,17 +70,12 @@ export const SubhaReader = ({
           onPress={locked ? undefined : reader.add}>
           {/* Keyed: a group's next text opens at its top. */}
           <ScrollView
-            key={current.textKey}
+            key={current.textId}
             testID={SUBHA_READER_PART.SCROLL}
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}>
-            <AthkarTextDisplay
-              textKey={current.textKey}
-              size="headline"
-              fontWeight="500"
-              color="$fg"
-            />
+            <AthkarTextDisplay text={current.text} size="headline" fontWeight="500" color="$fg" />
           </ScrollView>
           <VStack marginTop="$4" pointerEvents="none">
             {/* Keyed: a new dhikr starts on a fresh string. */}

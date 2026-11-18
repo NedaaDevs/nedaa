@@ -14,7 +14,8 @@ import { SpokenStatus } from "@/components/ui/live-region";
 import { FOCUS_MOTION, STEP } from "@/constants/AthkarFocus";
 import { DURATION_MS } from "@/constants/Motion";
 import type { FocusStage } from "@/hooks/useFocusStage";
-import { textKeyAt } from "@/utils/athkarSession";
+import { textAt } from "@/utils/athkarSession";
+import type { DhikrText } from "@/utils/athkarText";
 import { slotX } from "@/utils/focusGesture";
 
 /** Test ids for the parts every look's Focus stage shares. */
@@ -124,7 +125,7 @@ export const FocusPager = ({ stage }: StageProps) => {
           const at = place + by;
           const item = session.items[at];
           if (!item) return null;
-          const textKey = textKeyAt(item, session.counts);
+          const { id: textId, text } = textAt(item, session.counts);
           return (
             <View
               key={item.id}
@@ -134,12 +135,12 @@ export const FocusPager = ({ stage }: StageProps) => {
               ]}>
               <FocusText
                 // A group's next text opens at its top, with its own measures.
-                key={textKey}
-                textKey={textKey}
+                key={textId}
+                text={text}
                 here={by === 0}
-                scrolls={tall[textKey] ?? false}
+                scrolls={tall[textId] ?? false}
                 alongside={gesture.gesture}
-                onTall={(isTall) => stage.onTall(textKey, isTall)}
+                onTall={(isTall) => stage.onTall(textId, isTall)}
               />
             </View>
           );
@@ -150,7 +151,7 @@ export const FocusPager = ({ stage }: StageProps) => {
 };
 
 type FocusTextProps = {
-  textKey: string;
+  text: DhikrText;
   /** The current dhikr, not a neighbour. */
   here: boolean;
   /** Taller than its space, as `onTall` last reported. */
@@ -164,7 +165,7 @@ type FocusTextProps = {
 const overflows = (space: number, lines: number) => lines > space + 1;
 
 /** One dhikr, centred; it scrolls only when it is taller than its space. */
-const FocusText = ({ textKey, here, scrolls, alongside, onTall }: FocusTextProps) => {
+const FocusText = ({ text, here, scrolls, alongside, onTall }: FocusTextProps) => {
   // Both layouts can land in one batch; a ref holds the other's latest.
   const sizes = useRef({ space: 0, lines: 0 });
   const measured = (size: Partial<{ space: number; lines: number }>) => {
@@ -186,7 +187,7 @@ const FocusText = ({ textKey, here, scrolls, alongside, onTall }: FocusTextProps
         paddingHorizontal="$5"
         paddingVertical="$2"
         onLayout={({ nativeEvent }) => measured({ lines: nativeEvent.layout.height })}>
-        <AthkarTextDisplay textKey={textKey} size="heading" fontWeight="600" color="$fg" />
+        <AthkarTextDisplay text={text} size="heading" fontWeight="600" color="$fg" />
       </Box>
     </ScrollView>
   );

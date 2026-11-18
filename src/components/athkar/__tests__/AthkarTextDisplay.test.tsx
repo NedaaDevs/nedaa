@@ -7,6 +7,7 @@ import { TextSize } from "@/enums/app";
 import { TextScaleContext } from "@/hooks/useTextScale";
 import "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { keyText } from "@/utils/athkarText";
 
 jest.mock("@/utils/appLogger", () => ({
   AppLogger: { create: () => ({ i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
@@ -18,7 +19,7 @@ const TEXT = "dhikr text";
 const lineBoxAt = async (size: (typeof TextSize)[keyof typeof TextSize]) => {
   const view = await renderWithTheme(
     <TextScaleContext value={TEXT_SIZE_MULTIPLIERS[size]}>
-      <AthkarTextDisplay textKey={TEXT} size="heading" />
+      <AthkarTextDisplay text={keyText(TEXT)} size="heading" />
     </TextScaleContext>
   );
   const { fontSize, lineHeight } = StyleSheet.flatten(screen.getByText(TEXT).props.style);

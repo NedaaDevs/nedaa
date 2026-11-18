@@ -36,6 +36,10 @@ jest.mock("@/components/athkar/session/AthkarSessionScreen", () => ({
   AthkarSessionScreen: () => null,
 }));
 jest.mock("@/components/athkar/MyAthkarList", () => ({ __esModule: true, default: () => null }));
+jest.mock("@/components/athkar/session/CollectionSessionScreen", () => ({
+  CollectionSessionScreen: () => null,
+}));
+jest.mock("@/hooks/useCollectionTitle", () => ({ useCollectionTitle: () => null }));
 
 describe("AthkarTabs on Android", () => {
   // The tab pads its label; the text primitive's end room would take the

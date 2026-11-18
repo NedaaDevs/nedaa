@@ -4,8 +4,6 @@ import { useRouter } from "expo-router";
 import { BookOpen, PenLine, Plus, Search } from "lucide-react-native";
 
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
-import CustomAthkarDetail from "@/components/athkar/CustomAthkarDetail";
-import MyAthkarCategoryDetail from "@/components/athkar/MyAthkarCategoryDetail";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { ListGroup } from "@/components/ui/list-group";
@@ -16,6 +14,7 @@ import { Text } from "@/components/ui/text";
 import { TextAction } from "@/components/ui/text-action";
 import { VStack } from "@/components/ui/vstack";
 import { CUSTOM_ATHKAR_HREF } from "@/constants/Athkar";
+import { SESSION_SOURCE, type CollectionSource } from "@/constants/AthkarSession";
 import { SECTION_KIND } from "@/constants/Section";
 import { AppLocale } from "@/enums/app";
 import { useInitializeAthkarStores } from "@/hooks/useInitializeAthkarStores";
@@ -23,11 +22,13 @@ import { useRatioText } from "@/hooks/useRatioText";
 import { useCustomAthkarStore } from "@/stores/custom-athkar";
 import { groupMyAthkarByCategory, useMyAthkarStore } from "@/stores/my-athkar";
 
-/** An open group, by id, so a renamed group shows its new name and a deleted one closes. */
-type SelectedGroup = { type: "hisn"; categoryId: number } | { type: "custom"; id: number } | null;
+type Props = {
+  /** Opens a collection as a session. */
+  onOpen: (source: CollectionSource) => void;
+};
 
 /** My Athkar: Hisn al-Muslim search, the saved groups, a new group. */
-const MyAthkarList = () => {
+const MyAthkarList = ({ onOpen }: Props) => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const ratioText = useRatioText();
@@ -41,7 +42,6 @@ const MyAthkarList = () => {
   const customProgress = useCustomAthkarStore((s) => s.progress);
 
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<SelectedGroup>(null);
 
   // Grouping builds a fresh array, so it is memoized, not selected.
   const hisnGroups = useMemo(
@@ -55,30 +55,6 @@ const MyAthkarList = () => {
         {t("athkar.loading.initializing")}
       </Text>
     );
-  }
-
-  const openHisn =
-    selected?.type === "hisn"
-      ? hisnGroups.find((group) => group.categoryId === selected.categoryId)
-      : undefined;
-  const openCustom =
-    selected?.type === "custom"
-      ? customGroups.find((group) => group.id === selected.id)
-      : undefined;
-
-  if (openHisn) {
-    return (
-      <MyAthkarCategoryDetail
-        group={openHisn}
-        onBack={() => setSelected(null)}
-        onOpenSearch={() => setSearching(true)}
-        showSearch={searching}
-        onCloseSearch={() => setSearching(false)}
-      />
-    );
-  }
-  if (openCustom) {
-    return <CustomAthkarDetail group={openCustom} onBack={() => setSelected(null)} />;
   }
 
   const groupCount = hisnGroups.length + customGroups.length;
@@ -143,7 +119,9 @@ const MyAthkarList = () => {
                   tile
                   title={i18n.language === AppLocale.AR ? group.titleAr : group.titleEn}
                   {...today(done, group.items.length)}
-                  onPress={() => setSelected({ type: "hisn", categoryId: group.categoryId })}
+                  onPress={() =>
+                    onOpen({ kind: SESSION_SOURCE.HISN, categoryId: group.categoryId })
+                  }
                 />
               );
             })}
@@ -163,7 +141,7 @@ const MyAthkarList = () => {
                   title={group.title}
                   {...today(done, ids.size)}
                   value={t("athkar.library.custom")}
-                  onPress={() => setSelected({ type: "custom", id: group.id })}
+                  onPress={() => onOpen({ kind: SESSION_SOURCE.CUSTOM, groupId: group.id })}
                 />
               );
             })}

@@ -16,5 +16,22 @@ export type SessionStatus = (typeof SESSION_STATUS)[keyof typeof SESSION_STATUS]
 /** The Focus screen's route. */
 export const ATHKAR_FOCUS_HREF = "/athkar-focus";
 
+/** The search params that name the collection Focus opens; none is the daily session. */
+export const FOCUS_PARAM = { SOURCE: "source", ID: "id" } as const;
+
 /** Count writes wait this long for taps to settle. */
 export const COUNT_WRITE_DELAY_MS = 300;
+
+/** What a session is read over: a period of the day, a saved Hisn topic, a custom group. */
+export const SESSION_SOURCE = { DAILY: "daily", HISN: "hisn", CUSTOM: "custom" } as const;
+
+/** A group a person saved in My Athkar. */
+export type CollectionSource =
+  | { kind: typeof SESSION_SOURCE.HISN; categoryId: number }
+  | { kind: typeof SESSION_SOURCE.CUSTOM; groupId: number };
+
+/** The daily source reads the period the Athkar store is on. */
+export type SessionSource = { kind: typeof SESSION_SOURCE.DAILY } | CollectionSource;
+
+/** How a dhikr's words are held: a locale key, or the words themselves. */
+export const DHIKR_TEXT = { KEY: "key", RAW: "raw" } as const;

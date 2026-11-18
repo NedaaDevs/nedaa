@@ -50,11 +50,13 @@ export const ReaderFoot = ({ session, onOpenFocus, onStartAudio, nextTestID }: R
             {t("athkar.session.focus.title")}
           </Text>
         </Pressable>
-        <FocusControl
-          icon={Headphones}
-          accessibilityLabel={t("a11y.athkar.startAudioSession")}
-          onPress={onStartAudio}
-        />
+        {onStartAudio ? (
+          <FocusControl
+            icon={Headphones}
+            accessibilityLabel={t("a11y.athkar.startAudioSession")}
+            onPress={onStartAudio}
+          />
+        ) : null}
       </HStack>
     </>
   );

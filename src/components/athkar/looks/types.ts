@@ -9,7 +9,8 @@ export type AthkarLookProps = {
   session: AthkarSession;
   onOpenList: () => void;
   onOpenFocus: () => void;
-  onStartAudio: () => void;
+  /** Absent where the source has no audio session. */
+  onStartAudio?: () => void;
   /** The look is being tried on: the dhikr and its count alone. */
   trying?: boolean;
 };

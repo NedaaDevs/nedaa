@@ -99,7 +99,7 @@ describe("SubhaReader", () => {
     const view = await renderWithTheme(<SubhaReader session={sessionWith()} {...props} />);
     const before = screen.getByTestId(SUBHA_READER_PART.SCROLL);
     await view.rerender(
-      <SubhaReader session={sessionWith({ textKey: `${sample.textKey}-next` })} {...props} />
+      <SubhaReader session={sessionWith({ textId: `${sample.textId}-next` })} {...props} />
     );
     expect(screen.getByTestId(SUBHA_READER_PART.SCROLL)).not.toBe(before);
   });

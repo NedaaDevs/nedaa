@@ -2,7 +2,7 @@ import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { DEFAULT_ATHKAR_DATA } from "@/constants/AthkarData";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
 import type { AthkarSession } from "@/hooks/useAthkarSession";
-import { positionMarks, textKeyAt, toSessionItems } from "@/utils/athkarSession";
+import { positionMarks, textAt, toSessionItems } from "@/utils/athkarSession";
 
 /** A third of the way through the first long count of the morning. */
 const SAMPLE_SHARE = 1 / 3;
@@ -27,6 +27,7 @@ const sampleSession = (): AthkarSession => {
     items.slice(0, index + 1).map(({ id, target }, i) => [id, i === index ? count : target])
   );
   const after = items[index + 1];
+  const shown = textAt(item, counts);
   return {
     status: SESSION_STATUS.READY,
     items,
@@ -34,13 +35,14 @@ const sampleSession = (): AthkarSession => {
     index,
     current: {
       item,
-      textKey: textKeyAt(item, counts),
+      textId: shown.id,
+      text: shown.text,
       count,
       target: item.target,
       done: false,
       audioOwnsCount: false,
     },
-    next: after ? { textKey: textKeyAt(after, counts) } : null,
+    next: after ? { text: textAt(after, counts).text } : null,
     marks: positionMarks(items, counts, index),
     canUndo: true,
     advancePending: false,

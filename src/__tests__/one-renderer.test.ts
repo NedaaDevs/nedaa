@@ -209,7 +209,7 @@ const ONE_RENDERER: readonly Rule[] = [
       /\bcurrentProgress\b|\bcurrentAthkarIndex\b|\bAthkar(Look|Focus)Props\b|\buseAthkarSession\b/,
     within: /^components\/athkar\/(looks|session)\//,
     drawsWith:
-      /^(?![\s\S]*\b(currentProgress|currentAthkarIndex)\b)[\s\S]*(\buseAthkarSession\(|\bAthkar(Look|Focus)Props\b)/,
+      /^(?![\s\S]*\b(currentProgress|currentAthkarIndex)\b)[\s\S]*(\buseAthkarSession\(|\bAthkar(Look|Focus)Props\b|\bsession: AthkarSession\b)/,
     home: "hooks/useAthkarSession.ts",
     fails: {
       path: "components/athkar/looks/fixture/FixtureReader.tsx",
@@ -330,12 +330,50 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<NextDhikr\b/,
     home: "components/athkar/session/NextDhikr.tsx",
   },
+  // A dhikr is a locale key or a person's own words; one resolver reads both.
+  // Words drawn or spoken straight from `arabicText` skip it.
+  {
+    concept: "a dhikr's words",
+    shows: /\bDhikrText\b|\bsplitAthkarText\(|\{\s*[\w.]+\.arabicText\s*\}\s*<\//,
+    within: /^(components|hooks)\//,
+    drawsWith:
+      /^(?![\s\S]*(\b(splitAthkarText|resolveDhikrText)\(|\{\s*[\w.]+\.arabicText\s*\}\s*<\/|accessibilityLabel=\{[\w.]+\.arabicText\}))[\s\S]*(\buseDhikrText\(|\btext=\{|\btext: DhikrText\b)/,
+    home: "hooks/useDhikrText.ts",
+    fails: {
+      path: "components/athkar/Fixture.tsx",
+      text: "const words = splitAthkarText(t(item.text), locale)",
+    },
+  },
+  // Morning, evening, a saved topic and a custom group count through a port.
+  {
+    concept: "a collection's count",
+    shows: /\b(incrementCount(By)?|decrementCount)\b|\bcollectionSession\.\w+\(/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\bSessionPort\b/,
+    fails: {
+      path: "components/athkar/Fixture.tsx",
+      text: "const add = useMyAthkarStore((s) => s.incrementCount)",
+    },
+  },
+  // Every source holds a finished dhikr for the same pause before it moves.
+  {
+    concept: "the pause before the next dhikr",
+    shows: /\bADVANCE_PAUSE_MS\b|\bcreateAdvance\(/,
+    within: /^(?!constants\/)/,
+    drawsWith: /\bcreateAdvance\(/,
+    home: "utils/athkarSession.ts",
+    fails: {
+      path: "stores/fixture.ts",
+      text: "setTimeout(() => moveOn(), ADVANCE_PAUSE_MS)",
+    },
+  },
   // The reader and Focus end a session on the same card.
   {
     concept: "a session's ending",
-    shows: /athkar\.session\.done\b/,
+    shows: /athkar\.session\.(done|collectionDone)\b/,
     within: /^(app|components)\/.*\.tsx$/,
-    drawsWith: /<SessionDone\b/,
+    // A screen hands its line to the reader or to Focus, which draw the card.
+    drawsWith: /<SessionDone\b|\bdoneMessage=/,
     home: "components/athkar/session/SessionDone.tsx",
   },
   // Today and the style previews draw Today's head, bowl or row, alike.
