@@ -403,66 +403,67 @@ const updateEntryStatus = (id: number, status: QadaEntryStatus): Promise<boolean
         status
       );
 
-      // Update entry status
-      await db.runAsync(
-        `UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`,
-        [status, now, id]
-      );
-
-      // Update totals based on status change
       const currentData = await getQadaFastWith(db);
       if (!currentData) {
         console.error("[Qada DB] No Qada data found");
         return false;
       }
 
-      // If marking a pending entry as completed
-      if (
-        entry.status === QADA_ENTRY_STATUS.PENDING &&
-        status === QADA_ENTRY_STATUS.COMPLETED &&
-        entry.type === QADA_ENTRY_TYPE.ADDED
-      ) {
-        const newTotalCompleted = currentData.total_completed + entry.count;
-        const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
-        await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
-        await recordCompletionWith(db, entry.count, now);
-
-        console.log(
-          "[Qada DB] Completed entry ID:",
-          entry.id,
-          "- completed",
-          entry.count,
-          "days.",
-          "New total_missed:",
-          newTotalMissed,
-          "total_completed:",
-          newTotalCompleted
+      // The status, the totals and the ledger row commit together or not at all.
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          `UPDATE ${QADA_HISTORY_TABLE} SET status = ?, updated_at = ? WHERE id = ?;`,
+          [status, now, id]
         );
-      }
 
-      // If marking a pending entry as deleted
-      if (
-        entry.status === QADA_ENTRY_STATUS.PENDING &&
-        status === QADA_ENTRY_STATUS.DELETED &&
-        entry.type === QADA_ENTRY_TYPE.ADDED
-      ) {
-        // Only subtract remaining days from missed - keep completed days as historical record
-        const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
+        // If marking a pending entry as completed
+        if (
+          entry.status === QADA_ENTRY_STATUS.PENDING &&
+          status === QADA_ENTRY_STATUS.COMPLETED &&
+          entry.type === QADA_ENTRY_TYPE.ADDED
+        ) {
+          const newTotalCompleted = currentData.total_completed + entry.count;
+          const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
+          await updateQadaFastWith(db, newTotalMissed, newTotalCompleted);
+          await recordCompletionWith(db, entry.count, now);
 
-        await updateQadaFastWith(db, newTotalMissed, currentData.total_completed);
+          console.log(
+            "[Qada DB] Completed entry ID:",
+            entry.id,
+            "- completed",
+            entry.count,
+            "days.",
+            "New total_missed:",
+            newTotalMissed,
+            "total_completed:",
+            newTotalCompleted
+          );
+        }
 
-        console.log(
-          "[Qada DB] Deleted entry ID:",
-          entry.id,
-          "- removed",
-          entry.count,
-          "remaining days.",
-          "New total_missed:",
-          newTotalMissed,
-          "total_completed:",
-          currentData.total_completed
-        );
-      }
+        // If marking a pending entry as deleted
+        if (
+          entry.status === QADA_ENTRY_STATUS.PENDING &&
+          status === QADA_ENTRY_STATUS.DELETED &&
+          entry.type === QADA_ENTRY_TYPE.ADDED
+        ) {
+          // Only subtract remaining days from missed - keep completed days as historical record
+          const newTotalMissed = Math.max(0, currentData.total_missed - entry.count);
+
+          await updateQadaFastWith(db, newTotalMissed, currentData.total_completed);
+
+          console.log(
+            "[Qada DB] Deleted entry ID:",
+            entry.id,
+            "- removed",
+            entry.count,
+            "remaining days.",
+            "New total_missed:",
+            newTotalMissed,
+            "total_completed:",
+            currentData.total_completed
+          );
+        }
+      });
 
       return true;
     } catch (error) {
