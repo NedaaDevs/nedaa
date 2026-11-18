@@ -22,9 +22,12 @@ type CustomAthkarState = {
   /** The day the counts in memory belong to; null before the first load. */
   progressDay: number | null;
   isInitialized: boolean;
+  /** The last read failed, so what is in memory may be missing or out of date. */
+  loadFailed: boolean;
 };
 
 type CustomAthkarActions = {
+  /** Loads everything once, or again after a failed read; a failure sets loadFailed. */
   initialize: () => Promise<void>;
   loadGroups: () => Promise<void>;
   loadItems: () => Promise<void>;
@@ -36,9 +39,12 @@ type CustomAthkarActions = {
   syncDay: () => Promise<void>;
   /** Writes the counts still waiting for taps to settle. */
   flushCounts: () => Promise<void>;
+  /** The new group's id once written, or null; a failed reload after it sets loadFailed. */
   createGroup: (title: string, drafts: CustomAthkarItemDraft[]) => Promise<number | null>;
+  /** Whether the edit was written; a failed reload after it sets loadFailed. */
   updateGroup: (id: number, title: string, drafts: CustomAthkarItemDraft[]) => Promise<boolean>;
-  deleteGroup: (id: number) => Promise<void>;
+  /** Whether the group was deleted; a failed reload after it sets loadFailed. */
+  deleteGroup: (id: number) => Promise<boolean>;
   incrementCount: (customItemId: number) => void;
   incrementCountBy: (customItemId: number, by: number) => void;
   decrementCount: (customItemId: number) => void;
@@ -59,6 +65,23 @@ const debouncedDailyUpdate = createDebouncedQueue(
 
 const today = () => getTodayInt(locationStore.getState().locationDetails.timezone);
 
+const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
+
+/** Reads everything again after a write; a failed read sets loadFailed. */
+const reloadAfterWrite = async () => {
+  const store = useCustomAthkarStore.getState();
+  try {
+    await store.loadGroups();
+    await store.loadItems();
+    await store.initializeDailyProgress();
+    await store.loadDailyProgress();
+    useCustomAthkarStore.setState({ loadFailed: false, isInitialized: true });
+  } catch (error) {
+    log.e("Store", "the custom groups did not reload", asError(error));
+    useCustomAthkarStore.setState({ loadFailed: true });
+  }
+};
+
 // One load of the new day serves every caller that arrives while it runs.
 let dayLoad: Promise<void> | null = null;
 
@@ -77,48 +100,55 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
       progress: [],
       progressDay: null,
       isInitialized: false,
+      loadFailed: false,
 
       initialize: async () => {
-        if (get().isInitialized) return;
-        const [groupRows, itemRows] = await Promise.all([
-          AthkarDB.getCustomAthkarGroups(),
-          AthkarDB.getCustomAthkarItems(),
-        ]);
+        if (get().isInitialized && !get().loadFailed) return;
+        set({ loadFailed: false });
+        try {
+          const [groupRows, itemRows] = await Promise.all([
+            AthkarDB.getCustomAthkarGroups(),
+            AthkarDB.getCustomAthkarItems(),
+          ]);
 
-        const groups: CustomAthkarGroup[] = groupRows.map((r) => ({
-          id: r.id,
-          title: r.title,
-          sortOrder: r.sort_order,
-        }));
+          const groups: CustomAthkarGroup[] = groupRows.map((r) => ({
+            id: r.id,
+            title: r.title,
+            sortOrder: r.sort_order,
+          }));
 
-        const items: CustomAthkarItem[] = itemRows.map((r) => ({
-          id: r.id,
-          groupId: r.group_id,
-          arabicText: r.arabic_text,
-          userCount: r.user_count,
-          sortOrder: r.sort_order,
-        }));
+          const items: CustomAthkarItem[] = itemRows.map((r) => ({
+            id: r.id,
+            groupId: r.group_id,
+            arabicText: r.arabic_text,
+            userCount: r.user_count,
+            sortOrder: r.sort_order,
+          }));
 
-        if (items.length > 0) {
+          if (items.length > 0) {
+            const tz = locationStore.getState().locationDetails.timezone;
+            const todayInt = getTodayInt(tz);
+            await AthkarDB.initializeCustomAthkarDaily(
+              todayInt,
+              items.map((i) => ({ id: i.id, userCount: i.userCount }))
+            );
+          }
+
           const tz = locationStore.getState().locationDetails.timezone;
           const todayInt = getTodayInt(tz);
-          await AthkarDB.initializeCustomAthkarDaily(
-            todayInt,
-            items.map((i) => ({ id: i.id, userCount: i.userCount }))
-          );
+          const progressRows = await AthkarDB.getCustomAthkarDailyProgress(todayInt);
+          const progress: CustomAthkarProgress[] = progressRows.map((r) => ({
+            customItemId: r.custom_item_id,
+            currentCount: r.current_count,
+            totalCount: r.total_count,
+            completed: r.current_count >= r.total_count,
+          }));
+
+          set({ groups, items, progress, progressDay: todayInt, isInitialized: true });
+        } catch (error) {
+          log.e("Store", "the custom groups did not load", asError(error));
+          set({ loadFailed: true });
         }
-
-        const tz = locationStore.getState().locationDetails.timezone;
-        const todayInt = getTodayInt(tz);
-        const progressRows = await AthkarDB.getCustomAthkarDailyProgress(todayInt);
-        const progress: CustomAthkarProgress[] = progressRows.map((r) => ({
-          customItemId: r.custom_item_id,
-          currentCount: r.current_count,
-          totalCount: r.total_count,
-          completed: r.current_count >= r.total_count,
-        }));
-
-        set({ groups, items, progress, progressDay: todayInt, isInitialized: true });
       },
 
       loadGroups: async () => {
@@ -179,13 +209,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
           await get().initializeDailyProgress();
           await get().loadDailyProgress();
         })()
-          .catch((error: unknown) =>
-            log.e(
-              "Store",
-              "the new day did not load",
-              error instanceof Error ? error : new Error(String(error))
-            )
-          )
+          .catch((error: unknown) => log.e("Store", "the new day did not load", asError(error)))
           .finally(() => {
             dayLoad = null;
           });
@@ -197,28 +221,24 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
       createGroup: async (title, drafts) => {
         const groupId = await AthkarDB.createCustomAthkarGroup(title, drafts);
         if (groupId === null) return null;
-        await get().loadGroups();
-        await get().loadItems();
-        await get().initializeDailyProgress();
-        await get().loadDailyProgress();
+        await reloadAfterWrite();
         return groupId;
       },
 
       updateGroup: async (id, title, drafts) => {
-        const ok = await AthkarDB.updateCustomAthkarGroup(id, title, drafts);
+        // A waiting count lands first, so the edit caps it.
+        await debouncedDailyUpdate.flush();
+        const ok = await AthkarDB.updateCustomAthkarGroup(id, title, drafts, today());
         if (!ok) return false;
-        await get().loadGroups();
-        await get().loadItems();
-        await get().initializeDailyProgress();
-        await get().loadDailyProgress();
+        await reloadAfterWrite();
         return true;
       },
 
       deleteGroup: async (id) => {
-        await AthkarDB.deleteCustomAthkarGroup(id);
-        await get().loadGroups();
-        await get().loadItems();
-        await get().loadDailyProgress();
+        const ok = await AthkarDB.deleteCustomAthkarGroup(id);
+        if (!ok) return false;
+        await reloadAfterWrite();
+        return true;
       },
 
       incrementCount: (customItemId) => {

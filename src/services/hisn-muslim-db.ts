@@ -185,15 +185,17 @@ const getCategoryForAthkar = async (
   return map;
 };
 
+/** The FTS5 MATCH for a query: each word a quoted prefix, its quotes doubled. */
+export const hisnMatchQuery = (query: string) =>
+  stripTashkeel(query.trim())
+    .split(/\s+/)
+    .map((word) => `"${word.replace(/"/g, '""')}"*`)
+    .join(" ");
+
 const search = async (query: string): Promise<HisnSearchResult[]> => {
   if (!query.trim()) return [];
   const db = await openDatabase();
-
-  const stripped = stripTashkeel(query.trim());
-  const ftsQuery = stripped
-    .split(/\s+/)
-    .map((word) => `"${word}"*`)
-    .join(" ");
+  const ftsQuery = hisnMatchQuery(query);
 
   const rows = await db.getAllAsync<{
     id: number;

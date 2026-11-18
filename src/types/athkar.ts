@@ -169,6 +169,8 @@ export type CustomAthkarProgress = {
 };
 
 export type CustomAthkarItemDraft = {
+  /** The stored row this draft edits; absent for a new row. */
+  id?: number;
   arabicText: string;
   userCount: number;
 };
