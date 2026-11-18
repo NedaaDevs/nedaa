@@ -216,6 +216,44 @@ describe("QadaDB completions on SQLite", () => {
     expect(await totals()).toEqual({ missed: 2, completed: 1 });
   });
 
+  it("adds nothing when the batch row fails to write", async () => {
+    mockFault = { match: new RegExp(`^INSERT INTO ${QADA_HISTORY_TABLE}`), kind: "throw" };
+
+    await expect(QadaDB.addMissedFasts(3)).resolves.toBe(false);
+
+    mockFault = null;
+    expect(await totals()).toEqual({ missed: 0, completed: 0 });
+    await expect(QadaDB.addMissedFasts(3)).resolves.toBe(true);
+    expect(await totals()).toEqual({ missed: 3, completed: 0 });
+    expect((await batches()).map(({ count }) => count)).toEqual([3]);
+  });
+
+  it("records nothing off a batch with no day left", async () => {
+    await QadaDB.addMissedFasts(1);
+    const [batch] = await batches();
+    await QadaDB.completeOneDayFromEntry(batch.id);
+
+    await expect(QadaDB.completeOneDayFromEntry(batch.id)).resolves.toBeNull();
+
+    expect(await totals()).toEqual({ missed: 0, completed: 1 });
+    expect(await QadaDB.getCompletions()).toHaveLength(1);
+  });
+
+  it("records nothing when the day's ledger row fails to write", async () => {
+    await QadaDB.addMissedFasts(2);
+    const [batch] = await batches();
+    mockFault = { match: new RegExp(`^INSERT INTO ${QADA_HISTORY_TABLE}`), kind: "throw" };
+
+    await expect(QadaDB.completeOneDayFromEntry(batch.id)).resolves.toBeNull();
+
+    mockFault = null;
+    expect(await batches()).toEqual([
+      { id: batch.id, count: 2, status: QADA_ENTRY_STATUS.PENDING },
+    ]);
+    expect(await totals()).toEqual({ missed: 2, completed: 0 });
+    expect(await QadaDB.getCompletions()).toEqual([]);
+  });
+
   it("refuses a row that is not a recorded day", async () => {
     await QadaDB.addMissedFasts(2);
     const [batch] = await batches();

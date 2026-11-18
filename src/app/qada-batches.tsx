@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
 
+import { MessageToast } from "@/components/feedback/MessageToast";
 import { AddBatchSheet } from "@/components/Qada/AddBatchSheet";
 import { BatchActionsSheet } from "@/components/Qada/BatchActionsSheet";
 import { HStack } from "@/components/ui/hstack";
@@ -12,6 +13,7 @@ import { ScreenContent } from "@/components/ui/screen-content";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { Section } from "@/components/ui/section";
 import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { StatePanel } from "@/components/ui/state-panel";
 import { SwipeToRemove } from "@/components/ui/swipe-to-remove";
 import { Text } from "@/components/ui/text";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
@@ -33,7 +35,7 @@ const QadaBatches = () => {
   const dayText = useQadaDayText();
   const history = useQadaStore((s) => s.history);
   const restoreDay = useQadaStore((s) => s.restoreDay);
-  const completions = useQadaCompletions();
+  const { rows: completions, failed: historyFailed, retry: rereadHistory } = useQadaCompletions();
   const [acting, setActing] = useState<QadaHistory | null>(null);
   const [adding, setAdding] = useState(false);
   const light = useHaptic(HAPTIC_FEEDBACK.LIGHT);
@@ -41,6 +43,7 @@ const QadaBatches = () => {
   const batches = history.filter(({ status }) => status !== QADA_ENTRY_STATUS.DELETED).reverse();
   const unrecord = async (id: number) => {
     if (await restoreDay(id)) await light();
+    else MessageToast.showError(t("qada.saveFailed"));
   };
 
   return (
@@ -93,7 +96,13 @@ const QadaBatches = () => {
             </ListGroup>
 
             <Section title={t("qada.history.title")} kind={SECTION_KIND.LABEL}>
-              {completions.length === 0 ? (
+              {historyFailed ? (
+                <StatePanel
+                  title={t("qada.history.loadFailed.title")}
+                  body={t("qada.history.loadFailed.body")}
+                  action={{ label: t("common.retry"), onPress: rereadHistory }}
+                />
+              ) : completions === null ? null : completions.length === 0 ? (
                 <Text size="label" color="$mutedSky">
                   {t("qada.noHistory")}
                 </Text>

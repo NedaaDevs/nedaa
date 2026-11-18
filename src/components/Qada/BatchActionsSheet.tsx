@@ -7,6 +7,7 @@ import {
   ActionsheetContent,
   ActionsheetTitle,
 } from "@/components/ui/actionsheet";
+import { MessageToast } from "@/components/feedback/MessageToast";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -40,6 +41,7 @@ export const BatchActionsSheet = ({ batch, onClose }: Props) => {
       if (!batch) return;
       onClose();
       if (await write(batch.id)) await haptic();
+      else MessageToast.showError(t("qada.saveFailed"));
     };
 
   const all = shown ? `${t("common.all")} (${countText(shown.count)})` : "";
