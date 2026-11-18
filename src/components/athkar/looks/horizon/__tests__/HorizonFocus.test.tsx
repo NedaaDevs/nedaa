@@ -93,6 +93,7 @@ describe("HorizonFocus", () => {
   it("places the screen's two controls outside the gesture surface", async () => {
     await renderFocus();
     expect(screen.getByText(CLOSE)).toBeOnTheScreen();
+    expect(screen.getByText(AUDIO)).toBeOnTheScreen();
     expect(within(surface()).queryByText(CLOSE)).toBeNull();
     expect(within(surface()).queryByText(AUDIO)).toBeNull();
   });
@@ -130,6 +131,19 @@ describe("HorizonFocus", () => {
     const { transform } = flat(HORIZON_FOCUS_PART.BLOOM);
     expect(transform[0].translateX).toBe(120 - HORIZON_BLOOM.SIZE / 2);
     expect(transform[1].translateY).toBe(300 - HORIZON_BLOOM.SIZE / 2);
+  });
+
+  it("draws no light for a tap counted before motion came back", async () => {
+    mockReduced = true;
+    const { props, view, touch } = await renderFocus();
+    const at = { translationX: 0, translationY: 0, velocityX: 0, velocityY: 0, x: 120, y: 300 };
+    await act(() => touch.begin(at));
+    await act(() => jest.advanceTimersByTime(50));
+    await act(() => touch.fail(at));
+    mockReduced = false;
+    await view.rerender(<HorizonFocus {...props} />);
+    const { transform } = flat(HORIZON_FOCUS_PART.BLOOM);
+    expect(transform[0].translateX).toBe(-HORIZON_BLOOM.SIZE / 2);
   });
 
   it("keeps the light where its tap landed under a later touch", async () => {

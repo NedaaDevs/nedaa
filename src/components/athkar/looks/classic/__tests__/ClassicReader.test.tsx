@@ -286,6 +286,12 @@ describe("ClassicReader", () => {
       expect(said()).toEqual([placed(PLACE + 1)]);
     });
 
+    it("says a count undone to nothing, not the place", async () => {
+      const view = await renderWithTheme(<ClassicReader {...propsOf({ count: 1 })} />);
+      await view.rerender(<ClassicReader {...propsOf({ count: 0 })} />);
+      expect(said()).toEqual([counted(0)]);
+    });
+
     it("says a count made by hand after one audio made", async () => {
       const view = await renderWithTheme(<ClassicReader {...propsOf({ count: 1 })} />);
       await view.rerender(<ClassicReader {...propsOf({ count: 2, audioOwnsCount: true })} />);
