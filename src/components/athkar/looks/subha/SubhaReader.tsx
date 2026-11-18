@@ -9,9 +9,9 @@ import { SubhaTens } from "@/components/athkar/looks/subha/SubhaTens";
 import type { AthkarLookProps } from "@/components/athkar/looks/types";
 import { ReaderCount } from "@/components/athkar/session/ReaderCount";
 import { ReaderFoot } from "@/components/athkar/session/ReaderFoot";
+import { SessionFigures } from "@/components/athkar/session/SessionFigures";
 import { SpokenStatus } from "@/components/ui/live-region";
 import { Pressable } from "@/components/ui/pressable";
-import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { MARK_STATE } from "@/constants/AthkarSession";
 import { SUBHA_SLAB, SUBHA_STRING_KIND } from "@/constants/AthkarSubha";
@@ -56,15 +56,7 @@ export const SubhaReader = ({
         accessibilityHint={t("a11y.athkar.sessionListHint")}
         onPress={onOpenList}>
         <SubhaKnots marks={session.marks} />
-        <Text
-          size="label"
-          fontWeight="500"
-          color="$mutedSky"
-          textAlign="center"
-          numeric
-          pointerEvents="none">
-          {reader.figures}
-        </Text>
+        <SessionFigures figures={reader.figures} textAlign="center" pointerEvents="none" />
       </Pressable>
 
       <SubhaStack itemId={current.item.id} waiting={waiting} reduceMotion={reduceMotion}>
@@ -91,7 +83,9 @@ export const SubhaReader = ({
             />
           </ScrollView>
           <VStack marginTop="$4" pointerEvents="none">
+            {/* Keyed: a new dhikr starts on a fresh string. */}
             <SubhaString
+              key={current.item.id}
               kind={SUBHA_STRING_KIND.READER}
               count={reader.count}
               target={reader.target}

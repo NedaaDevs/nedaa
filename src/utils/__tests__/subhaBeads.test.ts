@@ -1,6 +1,11 @@
-import { SUBHA_BEADS, SUBHA_STRING, SUBHA_STRING_KIND } from "@/constants/AthkarSubha";
 import {
   BEAD_MOVE,
+  SUBHA_BEADS,
+  SUBHA_STRING,
+  SUBHA_STRING_KIND,
+  type SubhaStringKind,
+} from "@/constants/AthkarSubha";
+import {
   beadGradient,
   beadMove,
   beadPoint,
@@ -99,7 +104,7 @@ describe("beadPoint", () => {
 
 describe("stringPath", () => {
   // The path is "M x0 y0 Q cx cy x1 y1"; its x runs evenly from end to end.
-  const curve = (box: typeof FOCUS | typeof READER) => {
+  const curve = (box: (typeof SUBHA_STRING)[SubhaStringKind]) => {
     const [x0, y0, cx, cy, x1, y1] = (stringPath(box).match(/-?[\d.]+/g) ?? []).map(Number);
     return (x: number) => {
       const t = (x - x0) / (x1 - x0);
@@ -108,20 +113,20 @@ describe("stringPath", () => {
     };
   };
 
-  it.each([
-    ["reader", READER],
-    ["focus", FOCUS],
-  ])("threads every bead's centre on the %s string", (_, box) => {
-    const yAt = curve(box);
-    for (const rtl of [true, false]) {
-      for (let across = 0; across <= ROUND; across++) {
-        for (let index = 0; index < ROUND; index++) {
-          const { x, y } = beadPoint(index, across, ROUND, box, rtl);
-          expect(y + box.BEAD / 2).toBeCloseTo(yAt(x + box.BEAD / 2));
+  it.each(Object.entries(SUBHA_STRING))(
+    "threads every bead's centre on the %s string",
+    (_, box) => {
+      const yAt = curve(box);
+      for (const rtl of [true, false]) {
+        for (let across = 0; across <= ROUND; across++) {
+          for (let index = 0; index < ROUND; index++) {
+            const { x, y } = beadPoint(index, across, ROUND, box, rtl);
+            expect(y + box.BEAD / 2).toBeCloseTo(yAt(x + box.BEAD / 2));
+          }
         }
       }
     }
-  });
+  );
 });
 
 describe("beadMove", () => {
@@ -141,6 +146,17 @@ describe("beadMove", () => {
   it("sweeps the round when a repeat ends it", () => {
     expect(beadMove(9, 10, LONG)).toBe(BEAD_MOVE.SWEEP);
     expect(beadMove(19, 20, LONG)).toBe(BEAD_MOVE.SWEEP);
+  });
+
+  it("sweeps once when a move passes round ends below the target", () => {
+    expect(beadMove(4, 14, LONG)).toBe(BEAD_MOVE.SWEEP);
+    expect(beadMove(0, 10, LONG)).toBe(BEAD_MOVE.SWEEP);
+    expect(beadMove(4, 24, 100)).toBe(BEAD_MOVE.SWEEP);
+  });
+
+  it("slides a move that reaches the target, whatever rounds it passes", () => {
+    expect(beadMove(25, 33, LONG)).toBe(BEAD_MOVE.SLIDE);
+    expect(beadMove(4, 33, LONG)).toBe(BEAD_MOVE.SLIDE);
   });
 
   it("undoes a round's end by sliding one bead back from a full round", () => {

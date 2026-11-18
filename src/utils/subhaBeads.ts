@@ -1,4 +1,4 @@
-import { SUBHA_BEADS } from "@/constants/AthkarSubha";
+import { BEAD_MOVE, type BeadMove, SUBHA_BEADS } from "@/constants/AthkarSubha";
 
 const { ROUND, GAP, LIGHT_AT, MID_STOP } = SUBHA_BEADS;
 
@@ -22,26 +22,15 @@ export const tensOf = (count: number, target: number): { dots: number; lit: numb
   return { dots, lit: Math.min(Math.floor(count / ROUND), dots) };
 };
 
-/** How the beads go from one count to the next. */
-export const BEAD_MOVE = {
-  /** Straight to their places: the first draw. */
-  PLACE: "place",
-  /** Each bead slides to its new place. */
-  SLIDE: "slide",
-  /** A repeat ended a round: the last bead crosses, then all return. */
-  SWEEP: "sweep",
-  /** Undo from a round's end: start from a full round, one bead slides back. */
-  UNWIND: "unwind",
-} as const;
-export type BeadMove = (typeof BEAD_MOVE)[keyof typeof BEAD_MOVE];
-
 const atRoundEnd = (count: number, target: number) =>
   count > 0 && count < target && beadsAcross(count, target) === 0;
+
+const roundOf = (count: number) => Math.floor(count / ROUND);
 
 /** The move from the count `before` (null on the first draw) to `count`. */
 export const beadMove = (before: number | null, count: number, target: number): BeadMove => {
   if (before === null) return BEAD_MOVE.PLACE;
-  if (count > before && atRoundEnd(count, target)) return BEAD_MOVE.SWEEP;
+  if (count > before && count < target && roundOf(count) > roundOf(before)) return BEAD_MOVE.SWEEP;
   if (count < before && atRoundEnd(before, target)) return BEAD_MOVE.UNWIND;
   return BEAD_MOVE.SLIDE;
 };
@@ -74,6 +63,5 @@ export const beadGradient = (size: number, { light, mid, edge }: BeadColours): s
   const y = size * LIGHT_AT.Y;
   // To the farthest corner, as CSS sizes a circle.
   const reach = round1(Math.hypot(size - x, size - y));
-  // Two equal radii: RN's parser drops the token after a lone size.
   return `radial-gradient(${reach}px ${reach}px at ${round1(x)}px ${round1(y)}px, ${light} 0%, ${mid} ${MID_STOP * 100}%, ${edge} 100%)`;
 };

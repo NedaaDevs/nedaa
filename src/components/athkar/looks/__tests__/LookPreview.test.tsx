@@ -100,6 +100,7 @@ describe("LookPicture", () => {
     await renderWithTheme(<LookPicture look={ATHKAR_LOOK.SUBHA} />);
     expect(screen.getAllByTestId(SKY_PART.CANVAS, DRAWN)).toHaveLength(1);
     expect(screen.queryAllByTestId(SKY_PART.BODIES, DRAWN)).toHaveLength(1);
+    expect(screen.getByTestId(SUBHA_STRING_PART.STRING, DRAWN)).toBeOnTheScreen();
   });
 
   it("scales a reader of the design's size into a frame of the same shape", async () => {

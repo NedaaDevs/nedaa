@@ -14,20 +14,14 @@ import { useSubhaInk } from "@/components/athkar/looks/subha/ink";
 import { Box } from "@/components/ui/box";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import {
+  BEAD_MOVE,
   SUBHA_BEADS,
   SUBHA_MOTION,
   SUBHA_STRING,
   type SubhaStringKind,
 } from "@/constants/AthkarSubha";
 import { useRTL } from "@/contexts/RTLContext";
-import {
-  BEAD_MOVE,
-  beadMove,
-  beadPoint,
-  beadsAcross,
-  beadsOn,
-  stringPath,
-} from "@/utils/subhaBeads";
+import { beadMove, beadPoint, beadsAcross, beadsOn, stringPath } from "@/utils/subhaBeads";
 
 /** Test ids for the string's parts. */
 export const SUBHA_STRING_PART = {
