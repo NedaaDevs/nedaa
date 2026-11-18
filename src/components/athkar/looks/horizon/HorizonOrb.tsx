@@ -61,7 +61,7 @@ export const HorizonOrb = ({ fraction, hold, reduceMotion }: Props) => {
 
   const discStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(hold.get() / HALO.FULL_AT, 1) * hold.get(),
+    opacity: Math.min(hold.get() / HALO.EASE_UNTIL, 1) * hold.get(),
   }));
   const shedStyle = useAnimatedStyle(() => ({
     opacity: SHED.OPACITY * (1 - shed.get()),

@@ -72,16 +72,18 @@ export const ClassicReader = ({
             accessibilityHint={t("a11y.athkar.sessionListHint")}
             onPress={onOpenList}
           />
-          <Pressable
-            alignItems="center"
-            justifyContent="center"
-            marginEnd="$-2.5"
-            borderRadius="$pill"
-            pressStyle={{ backgroundColor: "$pressed" }}
-            accessibilityLabel={t("a11y.athkar.startAudioSession")}
-            onPress={onStartAudio}>
-            <Icon as={Headphones} size="lg" color="$muted" />
-          </Pressable>
+          {trying ? null : (
+            <Pressable
+              alignItems="center"
+              justifyContent="center"
+              marginEnd="$-2.5"
+              borderRadius="$pill"
+              pressStyle={{ backgroundColor: "$pressed" }}
+              accessibilityLabel={t("a11y.athkar.startAudioSession")}
+              onPress={onStartAudio}>
+              <Icon as={Headphones} size="lg" color="$muted" />
+            </Pressable>
+          )}
         </HStack>
 
         {/* Keyed so each dhikr opens at the top of its text. */}

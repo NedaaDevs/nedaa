@@ -163,11 +163,14 @@ beforeEach(() => {
 describe("AthkarFocusScreen", () => {
   it("leaves the sky no sun or moon, whatever the look", async () => {
     useAthkarStore.setState((state) => ({ settings: { ...state.settings, look: TEST_LOOK_ID } }));
-    await renderFocus();
-    const drawn = { includeHiddenElements: true };
-    expect(screen.getAllByTestId(SKY_PART.CANVAS, drawn)).toHaveLength(1);
-    expect(screen.queryAllByTestId(SKY_PART.BODIES, drawn)).toHaveLength(0);
-    useAthkarStore.setState((state) => ({ settings: { ...state.settings, look: null } }));
+    try {
+      await renderFocus();
+      const drawn = { includeHiddenElements: true };
+      expect(screen.getAllByTestId(SKY_PART.CANVAS, drawn)).toHaveLength(1);
+      expect(screen.queryAllByTestId(SKY_PART.BODIES, drawn)).toHaveLength(0);
+    } finally {
+      useAthkarStore.setState((state) => ({ settings: { ...state.settings, look: null } }));
+    }
   });
 
   describe("the stored look", () => {

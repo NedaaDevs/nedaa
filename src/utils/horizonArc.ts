@@ -16,7 +16,7 @@ export type ArcCurve = {
 export const ARC_SPAN = { START: 0.05, END: 0.95 } as const;
 
 /** The room a mark takes along the arc, against a full mark's. */
-const MARK_ROOM: Record<PositionMark["size"], number> = {
+export const MARK_ROOM: Record<PositionMark["size"], number> = {
   [MARK_SIZE.FULL]: 1,
   [MARK_SIZE.FINE]: 0.24,
 };
