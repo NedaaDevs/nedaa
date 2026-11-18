@@ -116,6 +116,8 @@ type Props = BaseProps &
         disabled?: boolean;
         /** The row's view, so a sheet it opens can hand focus back to it. */
         ref?: Ref<ViewInstance>;
+        /** The row's first layout, where a focus waits for its native view. */
+        onLayout?: () => void;
         /** Names a page outside the app; the row reads as a link and points outward. */
         linkLabel?: string;
         /** The row's test id, where a flow presses it. */
@@ -132,6 +134,7 @@ type Props = BaseProps &
         linkLabel?: never;
         disabled?: never;
         ref?: never;
+        onLayout?: never;
         testID?: never;
         wrapStatus?: never;
         value?: never;
@@ -156,6 +159,7 @@ export const ListRow = ({
   onPress,
   disabled,
   ref,
+  onLayout,
   testID,
   wrapStatus = false,
   value,
@@ -209,6 +213,7 @@ export const ListRow = ({
   return (
     <Pressable
       ref={ref}
+      onLayout={onLayout}
       testID={testID}
       onPress={onPress}
       disabled={disabled}

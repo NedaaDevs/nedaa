@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
+import type { HostInstance } from "react-native";
 import { Check } from "lucide-react-native";
 
 import { MessageToast } from "@/components/feedback";
@@ -14,9 +15,11 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { ListGroup } from "@/components/ui/list-group";
 import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { SpokenStatus } from "@/components/ui/live-region";
 import { Pressable } from "@/components/ui/pressable";
 import { SearchField } from "@/components/ui/search-field";
 import { Section } from "@/components/ui/section";
+import { StatePanel } from "@/components/ui/state-panel";
 import { StickyActionBar } from "@/components/ui/sticky-action-bar";
 import { Text } from "@/components/ui/text";
 import { Face } from "@/components/ui/text/face";
@@ -25,27 +28,37 @@ import { VStack } from "@/components/ui/vstack";
 import { FONT_LANGUAGE } from "@/constants/Fonts";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { SECTION_KIND } from "@/constants/Section";
+import { STATE_PANEL_VARIANT } from "@/constants/StatePanel";
 import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
 import { AppLocale } from "@/enums/app";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useLayoutFocus } from "@/hooks/useLayoutFocus";
 import { useSingleFlight } from "@/hooks/useSingleFlight";
 import { HisnMuslimDB } from "@/services/hisn-muslim-db";
 import { useMyAthkarStore } from "@/stores/my-athkar";
 import type { HisnAthkar, HisnCategory } from "@/types/hisnMuslim";
+import { AppLogger } from "@/utils/appLogger";
 import { cutPreview } from "@/utils/previewText";
+
+const log = AppLogger.create("athkar");
 
 /** Typing settles this long before the search runs. */
 const SEARCH_DELAY_MS = 300;
 const CHECK_SIZE = 23;
 /** A dhikr's preview in a list: enough to tell it apart. */
 const PREVIEW_LINES = 2;
-/** Vowelled Arabic cut short of two lines at a word, so the clamp never ellipsizes it. */
+/** Vowelled Arabic cut short of two lines at a word, so the clamp
+ * never ellipsizes it. */
 const ARABIC_PREVIEW_CHARS = 60;
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  /** The opener, which reader focus returns to once the sheet closes. */
+  finalFocusRef?: RefObject<HostInstance | null>;
 };
+
+const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
 
 type DhikrChoiceProps = {
   text: string;
@@ -115,24 +128,48 @@ const DhikrChoice = ({ text, arabic, meta, checked, added, onPress }: DhikrChoic
   );
 };
 
+/** A read of the library failed: says so on the sheet, with a retry. */
+const LoadFailed = ({ onRetry }: { onRetry: () => void }) => {
+  const { t } = useTranslation();
+  return (
+    <StatePanel
+      variant={STATE_PANEL_VARIANT.FLAT}
+      title={t("athkar.library.loadFailed.title")}
+      body={t("athkar.library.loadFailed.body")}
+      action={{ label: t("common.retry"), onPress: onRetry }}
+    />
+  );
+};
+
 /** Hisn al-Muslim by topic or by search, to add chosen athkar to My Athkar. */
-const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
+const AthkarSearchSheet = ({ isOpen, onClose, finalFocusRef }: Props) => {
   const { t, i18n } = useTranslation();
   const items = useMyAthkarStore((s) => s.items);
   const batchAddItems = useMyAthkarStore((s) => s.batchAddItems);
   const success = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const selection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const topicHeader = useLayoutFocus();
+  const { ref: topicRow, onLayout: onTopicRowLayout, focus: focusTopicRow } = useLayoutFocus();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HisnAthkar[] | null>(null);
+  // One per landed search, so a count equal to the last one is spoken again.
+  const [resultsTurn, setResultsTurn] = useState(0);
+  const [searchFailed, setSearchFailed] = useState(false);
   const [topics, setTopics] = useState<HisnCategory[]>([]);
+  const [topicsFailed, setTopicsFailed] = useState(false);
+  const [topicsAttempt, setTopicsAttempt] = useState(0);
   const [topic, setTopic] = useState<HisnCategory | null>(null);
   const [topicAthkar, setTopicAthkar] = useState<HisnAthkar[]>([]);
+  const [topicFailed, setTopicFailed] = useState(false);
+  /** The topic last left, whose row takes reader focus back. */
+  const [returnTo, setReturnTo] = useState<number | null>(null);
   const [chosen, setChosen] = useState<ReadonlyMap<number, HisnAthkar>>(new Map());
   const [adding, setAdding] = useState(false);
   const [footerHeight, setFooterHeight] = useState(0);
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   const request = useRef(0);
+  const topicRequest = useRef(0);
 
   const arabicUi = i18n.language === AppLocale.AR;
   const topicTitle = (titles: Pick<HisnCategory, "titleAr" | "titleEn">) =>
@@ -141,13 +178,26 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
   const added = useMemo(() => new Set(items.map((item) => item.sourceAthkarId)), [items]);
 
   useEffect(() => {
-    if (isOpen && topics.length === 0) void HisnMuslimDB.getCategories().then(setTopics);
-  }, [isOpen, topics.length]);
+    if (!isOpen || topics.length > 0) return;
+    let live = true;
+    HisnMuslimDB.getCategories().then(
+      (found) => {
+        if (live) setTopics(found);
+      },
+      (error: unknown) => {
+        log.e("Library", "the topics did not load", asError(error));
+        if (live) setTopicsFailed(true);
+      }
+    );
+    return () => {
+      live = false;
+    };
+  }, [isOpen, topics.length, topicsAttempt]);
 
   useEffect(() => () => clearTimeout(pending.current ?? undefined), []);
 
-  // Closing resets the sheet in the same call, so the next opening starts fresh
-  // even when the parent keeps it mounted.
+  // Closing resets the sheet in the same call, so the next opening starts
+  // fresh even when the parent keeps it mounted.
   /** Clears a waiting search and orphans one already reading the database. */
   const cancelSearch = () => {
     clearTimeout(pending.current ?? undefined);
@@ -156,9 +206,14 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
 
   const close = () => {
     cancelSearch();
+    topicRequest.current += 1;
     setQuery("");
     setResults(null);
+    setSearchFailed(false);
+    setTopicsFailed(false);
     setTopic(null);
+    setTopicFailed(false);
+    setReturnTo(null);
     setChosen(new Map());
     onClose();
   };
@@ -166,6 +221,7 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
   const search = (next: string) => {
     setQuery(next);
     cancelSearch();
+    setSearchFailed(false);
     const trimmed = next.trim();
     if (!trimmed) {
       setResults(null);
@@ -173,16 +229,53 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
     }
     const ticket = request.current;
     pending.current = setTimeout(async () => {
-      const found = await HisnMuslimDB.search(trimmed);
-      // A later keystroke, a cleared field or a close owns the list now.
-      if (request.current === ticket) setResults(found);
+      try {
+        const found = await HisnMuslimDB.search(trimmed);
+        // A later keystroke, a cleared field or a close owns the list now.
+        if (request.current !== ticket) return;
+        setResults(found);
+        setResultsTurn((turn) => turn + 1);
+      } catch (error) {
+        log.e("Library", "the search failed", asError(error));
+        if (request.current !== ticket) return;
+        setResults(null);
+        setSearchFailed(true);
+      }
     }, SEARCH_DELAY_MS);
   };
 
   const openTopic = async (next: HisnCategory) => {
+    topicRequest.current += 1;
+    const ticket = topicRequest.current;
     setTopic(next);
     setTopicAthkar([]);
-    setTopicAthkar(await HisnMuslimDB.getCategoryAthkar(next.id));
+    setTopicFailed(false);
+    try {
+      const found = await HisnMuslimDB.getCategoryAthkar(next.id);
+      // A later topic, "All topics" or a close owns the list now.
+      if (topicRequest.current === ticket) setTopicAthkar(found);
+    } catch (error) {
+      log.e("Library", "the topic did not load", asError(error));
+      if (topicRequest.current === ticket) setTopicFailed(true);
+    }
+  };
+
+  const chooseTopic = (next: HisnCategory) => {
+    topicHeader.focus();
+    void openTopic(next);
+  };
+
+  const leaveTopic = (left: HisnCategory) => {
+    topicRequest.current += 1;
+    setTopic(null);
+    setTopicFailed(false);
+    setReturnTo(left.id);
+    focusTopicRow();
+  };
+
+  const retryTopics = () => {
+    setTopicsFailed(false);
+    setTopicsAttempt((n) => n + 1);
   };
 
   const toggle = (item: HisnAthkar) => {
@@ -200,21 +293,27 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
     run(async () => {
       const picked = [...chosen.values()];
       setAdding(true);
-      const ok = await batchAddItems(
-        picked.map((item) => ({
-          sourceAthkarId: item.id,
-          sourceCategoryId: item.categoryId,
-          repeatCount: item.repeatCount,
-        }))
-      );
-      setAdding(false);
-      if (!ok) {
+      try {
+        const ok = await batchAddItems(
+          picked.map((item) => ({
+            sourceAthkarId: item.id,
+            sourceCategoryId: item.categoryId,
+            repeatCount: item.repeatCount,
+          }))
+        );
+        if (!ok) {
+          MessageToast.showError(t("athkar.library.addFailed"));
+          return;
+        }
+        void success();
+        MessageToast.showSuccess(t("athkar.library.added", { count: picked.length }));
+        close();
+      } catch (error) {
+        log.e("Library", "the athkar were not added", asError(error));
         MessageToast.showError(t("athkar.library.addFailed"));
-        return;
+      } finally {
+        setAdding(false);
       }
-      void success();
-      MessageToast.showSuccess(t("athkar.library.added", { count: picked.length }));
-      close();
     });
 
   /** A search result names its topic; a topic's own list does not repeat it. */
@@ -237,6 +336,7 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
   };
 
   const body = () => {
+    if (searchFailed) return <LoadFailed onRetry={() => search(query)} />;
     if (results !== null) {
       return results.length === 0 ? (
         <Text size="label" color="$muted" textAlign="center" paddingVertical="$section">
@@ -251,31 +351,54 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
     if (query.trim()) return null;
     if (topic) {
       return (
+        // Keyed: a new title reports the layout its focus waits for.
         <Section
+          key={topic.id}
           title={topicTitle(topic)}
           kind={SECTION_KIND.LABEL}
+          titleFocus={topicHeader}
           accessory={
-            <TextAction label={t("athkar.library.allTopics")} onPress={() => setTopic(null)} />
+            <TextAction label={t("athkar.library.allTopics")} onPress={() => leaveTopic(topic)} />
           }>
-          <ListGroup>{topicAthkar.map((item) => choiceFor(item, false))}</ListGroup>
+          {topicFailed ? (
+            <LoadFailed onRetry={() => void openTopic(topic)} />
+          ) : (
+            <ListGroup>{topicAthkar.map((item) => choiceFor(item, false))}</ListGroup>
+          )}
         </Section>
       );
     }
+    if (topicsFailed) return <LoadFailed onRetry={retryTopics} />;
     return (
       <Section title={t("athkar.library.browse")} kind={SECTION_KIND.LABEL}>
         <ListGroup>
-          {topics.map((item) => (
-            <ListRow
-              key={item.id}
-              variant={LIST_ROW_VARIANT.GROUPED}
-              title={topicTitle(item)}
-              onPress={() => void openTopic(item)}
-            />
-          ))}
+          {topics.map((item) => {
+            const title = topicTitle(item);
+            const returning = item.id === returnTo;
+            return (
+              <ListRow
+                key={item.id}
+                ref={returning ? topicRow : undefined}
+                onLayout={returning ? onTopicRowLayout : undefined}
+                variant={LIST_ROW_VARIANT.GROUPED}
+                title={title}
+                hint={t("a11y.opens", { name: title })}
+                onPress={() => chooseTopic(item)}
+              />
+            );
+          })}
         </ListGroup>
       </Section>
     );
   };
+
+  /** What a finished search found, said as it lands; a failure says itself. */
+  const found =
+    results === null
+      ? null
+      : results.length === 0
+        ? t("athkar.myAthkar.noResults")
+        : t("a11y.athkar.searchResults", { count: results.length });
 
   const footer =
     chosen.size > 0 ? (
@@ -291,7 +414,12 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
     ) : undefined;
 
   return (
-    <Actionsheet isOpen={isOpen} onClose={close} snapPoints={[85]} footer={footer}>
+    <Actionsheet
+      isOpen={isOpen}
+      onClose={close}
+      snapPoints={[85]}
+      footer={footer}
+      finalFocusRef={finalFocusRef}>
       <ActionsheetContent>
         <VStack gap="$group" paddingBottom={footer ? footerHeight : 0}>
           <HStack alignItems="center" justifyContent="space-between" gap="$stack">
@@ -308,6 +436,7 @@ const AthkarSearchSheet = ({ isOpen, onClose }: Props) => {
             placeholder={t("athkar.myAthkar.search")}
           />
           {body()}
+          <SpokenStatus key={resultsTurn} message={found} />
         </VStack>
       </ActionsheetContent>
     </Actionsheet>
