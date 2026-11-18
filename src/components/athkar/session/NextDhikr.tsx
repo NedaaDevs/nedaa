@@ -2,22 +2,22 @@ import { useTranslation } from "react-i18next";
 
 import { HStack, type HStackProps } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { useAthkarStore } from "@/stores/athkar";
-import { athkarLine } from "@/utils/athkarText";
+import { useDhikrText } from "@/hooks/useDhikrText";
+import type { DhikrText } from "@/utils/athkarText";
 
 /** Twice the text size: Arabic marks clear the line box. */
 const LINE_HEIGHT = 28;
 
 type NextDhikrProps = HStackProps & {
   /** Null on the last open dhikr. */
-  next: { textKey: string } | null;
+  next: { text: DhikrText } | null;
   color: React.ComponentProps<typeof Text>["color"];
 };
 
 /** One line: the dhikr that opens next, or that this one is the last. */
 export const NextDhikr = ({ next, color, ...row }: NextDhikrProps) => {
-  const { t, i18n } = useTranslation();
-  const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
+  const { t } = useTranslation();
+  const { line } = useDhikrText();
 
   return (
     <HStack alignItems="center" gap="$2" paddingHorizontal="$4" {...row}>
@@ -33,7 +33,7 @@ export const NextDhikr = ({ next, color, ...row }: NextDhikrProps) => {
             color={color}
             flexShrink={1}
             isTruncated>
-            {athkarLine(t(next.textKey), i18n.language, showTranslation)}
+            {line(next.text)}
           </Text>
         </>
       ) : (

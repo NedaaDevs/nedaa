@@ -1,4 +1,5 @@
 import {
+  ADVANCE_PAUSE_MS,
   MARK_SIZE,
   MARK_STATE,
   POSITION,
@@ -7,13 +8,13 @@ import {
 } from "@/constants/AthkarSession";
 import type { Athkar, AthkarProgress } from "@/types/athkar";
 import { PLAYER_STATE, type PlayerState } from "@/types/athkar-audio";
+import { keyText, type DhikrText } from "@/utils/athkarText";
 
 /** One dhikr of a session. A group holds several texts that take turns under one count. */
 export type SessionItem = {
   id: string;
   target: number;
-  /** Locale keys. */
-  textKeys: readonly string[];
+  texts: readonly DhikrText[];
   itemsPerRound: number;
 };
 
@@ -25,7 +26,7 @@ export const toSessionItems = (list: readonly Athkar[]): SessionItem[] =>
   list.map(({ id, count, text, group }) => ({
     id,
     target: count,
-    textKeys: group ? group.texts : [text],
+    texts: (group ? group.texts : [text]).map(keyText),
     itemsPerRound: group ? group.itemsPerRound : 1,
   }));
 
@@ -40,9 +41,11 @@ const isDone = (counts: Counts, item: SessionItem) => countOf(counts, item) >= i
 export const textIndexAt = (item: SessionItem, count: number) =>
   Math.min(count, item.target - 1) % item.itemsPerRound;
 
-/** Locale key of the text an item's count has reached. */
-export const textKeyAt = (item: SessionItem, counts: Counts) =>
-  item.textKeys[textIndexAt(item, countOf(counts, item))];
+/** The text an item's count has reached, named by its dhikr and its turn. */
+export const textAt = (item: SessionItem, counts: Counts): { id: string; text: DhikrText } => {
+  const turn = textIndexAt(item, countOf(counts, item));
+  return { id: `${item.id}:${turn}`, text: item.texts[turn] };
+};
 
 /** Audio that plays, or waits between two dhikr. */
 export const audioRuns = (state: PlayerState): boolean =>
@@ -94,4 +97,24 @@ export const positionMarks = (
     state: markState(item, counts, i === index),
     size: allFull || (i >= start && i < start + POSITION.WINDOW) ? MARK_SIZE.FULL : MARK_SIZE.FINE,
   }));
+};
+
+/** The one pending move to the next dhikr: it waits the pause, and a cancel drops it. */
+export const createAdvance = () => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const cancel = () => {
+    if (timer === null) return;
+    clearTimeout(timer);
+    timer = null;
+  };
+  return {
+    cancel,
+    start: (move: () => void) => {
+      cancel();
+      timer = setTimeout(() => {
+        timer = null;
+        move();
+      }, ADVANCE_PAUSE_MS);
+    },
+  };
 };

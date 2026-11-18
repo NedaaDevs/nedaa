@@ -2,6 +2,7 @@ import { act, screen, userEvent } from "@testing-library/react-native";
 
 import AthkarTabs, { TAB_LABEL_MIN_SCALE } from "@/components/athkar/AthkarTabs";
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { SESSION_SOURCE } from "@/constants/AthkarSession";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -41,13 +42,38 @@ jest.mock("@/components/athkar/session/AthkarSessionScreen", () => {
   const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
   return { AthkarSessionScreen: () => <Text>session-screen</Text> };
 });
+const mockGroup = { kind: SESSION_SOURCE.CUSTOM, groupId: 3 } as const;
+let mockTitle: string | null = "After prayer";
+jest.mock("@/hooks/useCollectionTitle", () => ({
+  useCollectionTitle: (source: unknown) => (source ? mockTitle : null),
+}));
 jest.mock("@/components/athkar/MyAthkarList", () => {
   const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
-  return { __esModule: true, default: () => <Text>my-athkar-list</Text> };
+  return {
+    __esModule: true,
+    default: ({ onOpen }: { onOpen: (source: typeof mockGroup) => void }) => (
+      <Text onPress={() => onOpen(mockGroup)}>my-athkar-list</Text>
+    ),
+  };
+});
+jest.mock("@/components/athkar/session/CollectionSessionScreen", () => {
+  const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
+  return {
+    CollectionSessionScreen: ({
+      source,
+      title,
+      onBack,
+    }: {
+      source: typeof mockGroup;
+      title: string;
+      onBack: () => void;
+    }) => <Text onPress={onBack}>{`reader ${source.kind} ${source.groupId} ${title}`}</Text>,
+  };
 });
 
 const SESSION = "session-screen";
 const MY_ATHKAR = "my-athkar-list";
+const READER = `reader ${mockGroup.kind} ${mockGroup.groupId} After prayer`;
 
 const tab = (key: string) => screen.getByRole("tab", { name: i18n.t(key) });
 
@@ -57,6 +83,7 @@ describe("AthkarTabs", () => {
     mockPeriod = ATHKAR_TYPE.MORNING;
     mockSeedPeriod = null;
     mockStore.currentType = ATHKAR_TYPE.MORNING;
+    mockTitle = "After prayer";
   });
   afterEach(() => act(() => i18n.changeLanguage(AppLocale.EN)));
 
@@ -124,6 +151,33 @@ describe("AthkarTabs", () => {
     expect(screen.getByText(MY_ATHKAR)).toBeOnTheScreen();
     expect(screen.queryByText(SESSION)).toBeNull();
     expect(tab("athkar.myAthkar").props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it("reads a collection in place of the list, and back returns to the list", async () => {
+    await renderWithTheme(<AthkarTabs />);
+    await userEvent.press(tab("athkar.myAthkar"));
+    await userEvent.press(screen.getByText(MY_ATHKAR));
+
+    const reader = screen.getByText(READER);
+    expect(screen.queryByText(MY_ATHKAR)).toBeNull();
+
+    await userEvent.press(reader);
+    expect(screen.getByText(MY_ATHKAR)).toBeOnTheScreen();
+  });
+
+  it("closes a collection that is gone, so it does not reopen when it comes back", async () => {
+    const { rerender } = await renderWithTheme(<AthkarTabs />);
+    await userEvent.press(tab("athkar.myAthkar"));
+    await userEvent.press(screen.getByText(MY_ATHKAR));
+
+    mockTitle = null;
+    await rerender(<AthkarTabs />);
+    expect(screen.getByText(MY_ATHKAR)).toBeOnTheScreen();
+
+    mockTitle = "After prayer";
+    await rerender(<AthkarTabs />);
+    expect(screen.getByText(MY_ATHKAR)).toBeOnTheScreen();
+    expect(screen.queryByText(READER)).toBeNull();
   });
 
   it("shows the session's period when a language without My Athkar takes its tab away", async () => {

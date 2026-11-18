@@ -9,11 +9,10 @@ import { FOCUS_ACTION, FOCUS_TIMING, STEP, type StepDirection } from "@/constant
 import { useRTL } from "@/contexts/RTLContext";
 import type { AthkarSession } from "@/hooks/useAthkarSession";
 import { useChangeOnly } from "@/hooks/useChangeOnly";
+import { useDhikrText } from "@/hooks/useDhikrText";
 import { useFocusGesture, type FocusGesture } from "@/hooks/useFocusGesture";
 import { useCountText, useRatioText } from "@/hooks/useRatioText";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { useAthkarStore } from "@/stores/athkar";
-import { splitAthkarText } from "@/utils/athkarText";
 import { holdAmount } from "@/utils/focusGesture";
 
 type Zone = { top: number; bottom: number };
@@ -62,7 +61,7 @@ export type FocusStage = {
   statusLine: string | null;
   /** Each measured text is taller than its space, by text key. */
   tall: Readonly<Record<string, boolean>>;
-  onTall: (textKey: string, tall: boolean) => void;
+  onTall: (textId: string, tall: boolean) => void;
   /** Where the text sits, in the surface's y. */
   onTextZone: (zone: Zone) => void;
   /** The surface as a screen reader meets it. */
@@ -86,13 +85,13 @@ export const useFocusStage = ({
   onHintSeen,
   onStep,
 }: Options): FocusStage | null => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { isRTL } = useRTL();
   const { width } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const countText = useCountText();
   const ratioText = useRatioText();
-  const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
+  const { words, showTranslation } = useDhikrText();
 
   const { current, index, items } = session;
   const place = index ?? 0;
@@ -130,7 +129,7 @@ export const useFocusStage = ({
   };
 
   // Text not yet measured holds its zone: a drag down there is no undo.
-  const fits = current ? tall[current.textKey] === false : true;
+  const fits = current ? tall[current.textId] === false : true;
   const gesture = useFocusGesture({
     index: place,
     width,
@@ -187,7 +186,7 @@ export const useFocusStage = ({
       : null;
 
   // The label says what the text draws: the Arabic, then a shown translation.
-  const { arabic, translation } = splitAthkarText(t(current.textKey), i18n.language);
+  const { arabic, translation } = words(current.text);
   const label = [
     arabic,
     ...(showTranslation && translation ? [translation] : []),
@@ -242,8 +241,8 @@ export const useFocusStage = ({
     change,
     statusLine,
     tall,
-    onTall: (textKey, isTall) =>
-      setTall((now) => (now[textKey] === isTall ? now : { ...now, [textKey]: isTall })),
+    onTall: (textId, isTall) =>
+      setTall((now) => (now[textId] === isTall ? now : { ...now, [textId]: isTall })),
     onTextZone: setTextZone,
     label,
     hint: canTap ? t("athkar.focus.tapToIncrement") : undefined,

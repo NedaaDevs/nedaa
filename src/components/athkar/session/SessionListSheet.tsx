@@ -16,9 +16,8 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { useCountText, useRatioText } from "@/hooks/useRatioText";
-import { useAthkarStore } from "@/stores/athkar";
+import { useDhikrText } from "@/hooks/useDhikrText";
 import { textIndexAt, type Counts, type SessionItem } from "@/utils/athkarSession";
-import { athkarLine } from "@/utils/athkarText";
 
 /** Test ids for the parts a test reaches. */
 export const SESSION_LIST_PART = { ROW: "session-list-row", CHECK: "session-list-check" } as const;
@@ -46,16 +45,12 @@ type RowProps = {
 };
 
 const Row = ({ item, count, place, current, onPress, onLayout }: RowProps) => {
-  const { t, i18n } = useTranslation();
-  const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
+  const { t } = useTranslation();
+  const { line } = useDhikrText();
   const countText = useCountText();
   const ratioText = useRatioText();
   const done = count >= item.target;
-  const text = athkarLine(
-    t(item.textKeys[textIndexAt(item, count)]),
-    i18n.language,
-    showTranslation
-  );
+  const text = line(item.texts[textIndexAt(item, count)]);
   const tag = t("athkar.session.current");
   const ratio = ratioText(count, item.target);
   // Spoken as words; a reader says the slash of the drawn ratio as a symbol.

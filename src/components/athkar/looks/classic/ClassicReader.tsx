@@ -72,7 +72,7 @@ export const ClassicReader = ({
             accessibilityHint={t("a11y.athkar.sessionListHint")}
             onPress={onOpenList}
           />
-          {trying ? null : (
+          {trying || !onStartAudio ? null : (
             <Pressable
               alignItems="center"
               justifyContent="center"
@@ -88,7 +88,7 @@ export const ClassicReader = ({
 
         {/* Keyed so each dhikr opens at the top of its text. */}
         <ScrollView
-          key={current.textKey}
+          key={current.textId}
           testID={CLASSIC_READER_PART.TEXT_SCROLL}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -96,12 +96,7 @@ export const ClassicReader = ({
           <Box minHeight="$20" justifyContent="center" paddingVertical="$2">
             <Animated.View
               entering={reduceMotion ? undefined : FadeInDown.duration(DURATION_MS.GENTLE)}>
-              <AthkarTextDisplay
-                textKey={current.textKey}
-                size="headline"
-                fontWeight="500"
-                color="$fg"
-              />
+              <AthkarTextDisplay text={current.text} size="headline" fontWeight="500" color="$fg" />
             </Animated.View>
           </Box>
         </ScrollView>

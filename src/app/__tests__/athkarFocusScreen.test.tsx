@@ -5,6 +5,8 @@ import { screen } from "@testing-library/react-native";
 
 const SCREEN = "athkar-focus-screen";
 const mockSeed = jest.fn(() => false);
+let mockParams: Record<string, string> = {};
+const mockSource = jest.fn();
 
 jest.mock("@/components/athkar/session/AthkarFocusScreen", () => {
   const { Text } = jest.requireActual<typeof import("react-native")>("react-native");
@@ -13,15 +15,19 @@ jest.mock("@/components/athkar/session/AthkarFocusScreen", () => {
     typeof import("@/components/ui/sky-background/bodies")
   >("@/components/ui/sky-background/bodies");
   return {
-    AthkarFocusScreen: () => (
+    AthkarFocusScreen: ({ source }: { source: unknown }) => (
       <>
+        {mockSource(source)}
         <ClaimSkyBodies />
         <Text>athkar-focus-screen</Text>
       </>
     ),
   };
 });
-jest.mock("expo-router", () => ({ useIsFocused: () => true }));
+jest.mock("expo-router", () => ({
+  useIsFocused: () => true,
+  useLocalSearchParams: () => mockParams,
+}));
 jest.mock("@/components/athkar/useAthkarScreenshotSeed", () => ({
   useAthkarFocusScreenshotSeed: () => mockSeed(),
 }));
@@ -29,10 +35,27 @@ jest.mock("@/components/athkar/useAthkarScreenshotSeed", () => ({
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
 import AthkarFocusRoute from "@/app/athkar-focus";
 import { SKY_PART } from "@/components/ui/sky-background";
+import { FOCUS_PARAM, SESSION_SOURCE } from "@/constants/AthkarSession";
 import { renderWithTheme } from "@/test-helpers/theme";
 /* eslint-enable import/first */
 
 describe("the athkar-focus route", () => {
+  beforeEach(() => {
+    mockParams = {};
+    mockSource.mockClear();
+  });
+
+  it("opens the daily session when no collection is named", async () => {
+    await renderWithTheme(<AthkarFocusRoute />);
+    expect(mockSource).toHaveBeenLastCalledWith({ kind: SESSION_SOURCE.DAILY });
+  });
+
+  it("opens the collection its params name", async () => {
+    mockParams = { [FOCUS_PARAM.SOURCE]: SESSION_SOURCE.CUSTOM, [FOCUS_PARAM.ID]: "3" };
+    await renderWithTheme(<AthkarFocusRoute />);
+    expect(mockSource).toHaveBeenLastCalledWith({ kind: SESSION_SOURCE.CUSTOM, groupId: 3 });
+  });
+
   it("draws the Focus screen and seeds it for screenshots", async () => {
     await renderWithTheme(<AthkarFocusRoute />);
     expect(screen.getByText(SCREEN)).toBeOnTheScreen();

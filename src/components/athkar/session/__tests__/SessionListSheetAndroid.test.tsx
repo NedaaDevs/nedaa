@@ -7,6 +7,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { SessionItem } from "@/utils/athkarSession";
+import { keyText } from "@/utils/athkarText";
 
 // The text primitive reads the platform once, at load; this file runs as Android.
 jest.mock("react-native", () => {
@@ -28,7 +29,7 @@ const hidden = { includeHiddenElements: true };
 const items: SessionItem[] = Array.from({ length: ROWS }, (_, i) => ({
   id: `${i}`,
   target: 1,
-  textKeys: [`dhikr ${i + 1}`],
+  texts: [keyText(`dhikr ${i + 1}`)],
   itemsPerRound: 1,
 }));
 

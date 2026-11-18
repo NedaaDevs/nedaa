@@ -4,7 +4,9 @@ import { devtools } from "zustand/middleware";
 import { AthkarDB } from "@/services/athkar-db";
 import locationStore from "@/stores/location";
 import { getTodayInt } from "@/utils/athkar";
+import { AppLogger } from "@/utils/appLogger";
 import { createDebouncedQueue } from "@/utils/debounce";
+import { COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 
 import type {
   CustomAthkarGroup,
@@ -17,6 +19,8 @@ type CustomAthkarState = {
   groups: CustomAthkarGroup[];
   items: CustomAthkarItem[];
   progress: CustomAthkarProgress[];
+  /** The day the counts in memory belong to; null before the first load. */
+  progressDay: number | null;
   isInitialized: boolean;
 };
 
@@ -26,6 +30,12 @@ type CustomAthkarActions = {
   loadItems: () => Promise<void>;
   initializeDailyProgress: () => Promise<void>;
   loadDailyProgress: () => Promise<void>;
+  /** The counts in memory belong to a day that has ended. */
+  isAnotherDay: () => boolean;
+  /** Loads the new day's counts when the ones in memory are another day's; a failed load keeps them. */
+  syncDay: () => Promise<void>;
+  /** Writes the counts still waiting for taps to settle. */
+  flushCounts: () => Promise<void>;
   createGroup: (title: string, drafts: CustomAthkarItemDraft[]) => Promise<number | null>;
   updateGroup: (id: number, title: string, drafts: CustomAthkarItemDraft[]) => Promise<boolean>;
   deleteGroup: (id: number) => Promise<void>;
@@ -38,12 +48,26 @@ type CustomAthkarActions = {
 
 type CustomAthkarStore = CustomAthkarState & CustomAthkarActions;
 
+const log = AppLogger.create("athkar");
+
 const debouncedDailyUpdate = createDebouncedQueue(
   async (dateInt: number, customItemId: number, currentCount: number) => {
     await AthkarDB.updateCustomAthkarDailyCount(dateInt, customItemId, currentCount);
   },
-  300
+  COUNT_WRITE_DELAY_MS
 );
+
+const today = () => getTodayInt(locationStore.getState().locationDetails.timezone);
+
+// One load of the new day serves every caller that arrives while it runs.
+let dayLoad: Promise<void> | null = null;
+
+/** Queues a count write under the day the counts in memory belong to. */
+const queueCountWrite = (progressDay: number | null, id: number, count: number) => {
+  const day = progressDay ?? today();
+  // Keyed by day too: a count replaces only its own day's.
+  debouncedDailyUpdate.add(`${day}:${id}`, day, id, count);
+};
 
 export const useCustomAthkarStore = create<CustomAthkarStore>()(
   devtools(
@@ -51,6 +75,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
       groups: [],
       items: [],
       progress: [],
+      progressDay: null,
       isInitialized: false,
 
       initialize: async () => {
@@ -93,7 +118,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
           completed: r.current_count >= r.total_count,
         }));
 
-        set({ groups, items, progress, isInitialized: true });
+        set({ groups, items, progress, progressDay: todayInt, isInitialized: true });
       },
 
       loadGroups: async () => {
@@ -139,8 +164,35 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
           totalCount: r.total_count,
           completed: r.current_count >= r.total_count,
         }));
-        set({ progress });
+        set({ progress, progressDay: todayInt });
       },
+
+      isAnotherDay: () => {
+        const { progressDay } = get();
+        return progressDay !== null && progressDay !== today();
+      },
+
+      syncDay: async () => {
+        if (!get().isAnotherDay()) return;
+        dayLoad ??= (async () => {
+          await debouncedDailyUpdate.flush();
+          await get().initializeDailyProgress();
+          await get().loadDailyProgress();
+        })()
+          .catch((error: unknown) =>
+            log.e(
+              "Store",
+              "the new day did not load",
+              error instanceof Error ? error : new Error(String(error))
+            )
+          )
+          .finally(() => {
+            dayLoad = null;
+          });
+        await dayLoad;
+      },
+
+      flushCounts: () => debouncedDailyUpdate.flush(),
 
       createGroup: async (title, drafts) => {
         const groupId = await AthkarDB.createCustomAthkarGroup(title, drafts);
@@ -181,9 +233,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
               : p
           ),
         }));
-        const tz = locationStore.getState().locationDetails.timezone;
-        const todayInt = getTodayInt(tz);
-        debouncedDailyUpdate.add(String(customItemId), todayInt, customItemId, newCount);
+        queueCountWrite(get().progressDay, customItemId, newCount);
       },
 
       incrementCountBy: (customItemId, by) => {
@@ -198,9 +248,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
               : p
           ),
         }));
-        const tz = locationStore.getState().locationDetails.timezone;
-        const todayInt = getTodayInt(tz);
-        debouncedDailyUpdate.add(String(customItemId), todayInt, customItemId, newCount);
+        queueCountWrite(get().progressDay, customItemId, newCount);
       },
 
       decrementCount: (customItemId) => {
@@ -213,9 +261,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
             p.customItemId === customItemId ? { ...p, currentCount: newCount, completed: false } : p
           ),
         }));
-        const tz = locationStore.getState().locationDetails.timezone;
-        const todayInt = getTodayInt(tz);
-        debouncedDailyUpdate.add(String(customItemId), todayInt, customItemId, newCount);
+        queueCountWrite(get().progressDay, customItemId, newCount);
       },
 
       getGroupItems: (groupId) => {

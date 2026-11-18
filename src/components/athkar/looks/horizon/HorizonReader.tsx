@@ -57,19 +57,14 @@ export const HorizonReader = ({
         onPress={locked ? undefined : reader.add}>
         {/* Keyed so each dhikr opens at the top of its text. */}
         <ScrollView
-          key={current.textKey}
+          key={current.textId}
           testID={HORIZON_READER_PART.TEXT_SCROLL}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
           <Animated.View
             entering={reduceMotion ? undefined : FadeInDown.duration(DURATION_MS.GENTLE)}>
-            <AthkarTextDisplay
-              textKey={current.textKey}
-              size="headline"
-              fontWeight="500"
-              color="$fg"
-            />
+            <AthkarTextDisplay text={current.text} size="headline" fontWeight="500" color="$fg" />
           </Animated.View>
         </ScrollView>
       </Pressable>

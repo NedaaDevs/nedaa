@@ -16,6 +16,7 @@ import { holdSheetsRising, settleSheet } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { Counts, SessionItem } from "@/utils/athkarSession";
 import { LTR_ISOLATE } from "@/utils/digits";
+import { keyText } from "@/utils/athkarText";
 
 const mockScrollTo = jest.fn();
 
@@ -59,7 +60,7 @@ const items = (count: number): SessionItem[] =>
   Array.from({ length: count }, (_, i) => ({
     id: `${i}`,
     target: TARGET,
-    textKeys: [textOf(i)],
+    texts: [keyText(textOf(i))],
     itemsPerRound: 1,
   }));
 
@@ -130,7 +131,7 @@ describe("SessionListSheet", () => {
     const both: SessionItem = {
       id: "both",
       target: TARGET,
-      textKeys: [`${TRANSLATION}\n${ARABIC}`],
+      texts: [keyText(`${TRANSLATION}\n${ARABIC}`)],
       itemsPerRound: 1,
     };
     const showTranslation = (show: boolean) =>
@@ -196,7 +197,7 @@ describe("SessionListSheet", () => {
     const group: SessionItem = {
       id: "group",
       target: 9,
-      textKeys: [textOf(0, 0), textOf(0, 1), textOf(0, 2)],
+      texts: [textOf(0, 0), textOf(0, 1), textOf(0, 2)].map(keyText),
       itemsPerRound: 3,
     };
     await renderSheet({ list: [group], counts: { group: 4 } });

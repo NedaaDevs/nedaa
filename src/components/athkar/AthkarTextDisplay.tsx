@@ -1,14 +1,13 @@
 import { FC, ComponentProps } from "react";
-import { useTranslation } from "react-i18next";
 
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 
-import { useAthkarStore } from "@/stores/athkar";
-import { splitAthkarText } from "@/utils/athkarText";
+import { useDhikrText } from "@/hooks/useDhikrText";
+import type { DhikrText } from "@/utils/athkarText";
 
 type Props = {
-  textKey: string;
+  text: DhikrText;
   size?: "sm" | "md" | "lg" | "xl" | "headline" | "2xl" | "heading";
   fontWeight?: ComponentProps<typeof Text>["fontWeight"];
   textAlign?: "left" | "center" | "right";
@@ -26,18 +25,14 @@ const ARABIC_LINE_HEIGHT: Record<string, number> = {
 };
 
 const AthkarTextDisplay: FC<Props> = ({
-  textKey,
+  text,
   size = "xl",
   textAlign = "center",
   color = "$typography",
   fontWeight,
 }) => {
-  const { t, i18n } = useTranslation();
-  const showTranslation = useAthkarStore((s) => s.settings.showTranslation);
-  const locale = i18n.language;
-
-  const rawText = t(textKey);
-  const { arabic, translation } = splitAthkarText(rawText, locale);
+  const { words, showTranslation } = useDhikrText();
+  const { arabic, translation } = words(text);
 
   return (
     <VStack gap="$3" alignItems={textAlign === "center" ? "center" : undefined}>
