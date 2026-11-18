@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { isQuranSegments, SAFE_EDGE } from "@/utils/safeArea";
 import * as SplashScreen from "expo-splash-screen";
 
-import { TamaguiProvider, FontLanguage, useThemeName } from "tamagui";
+import { TamaguiProvider, useThemeName } from "tamagui";
 import { useTheme } from "@/components/ui/theme-color";
 import tamaguiConfig from "../../tamagui.config";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -18,7 +18,8 @@ import { RTLProvider } from "@/contexts/RTLContext";
 import { AppMode } from "@/enums/app";
 
 import { TAB_GROUP } from "@/constants/BackDestinations";
-import { isArabicScript } from "@/constants/Fonts";
+import { fontLanguageOf } from "@/constants/Fonts";
+import { Face } from "@/components/ui/text/face";
 import { ONBOARDING_PATH } from "@/constants/Onboarding";
 import { useAppStore } from "@/stores/app";
 import { useQuranStore } from "@/stores/quran";
@@ -139,22 +140,19 @@ const AppTheme = ({
 }) => {
   const locale = useAppStore((state) => state.locale);
   const { phase, scheme, theme } = useRootAppearance(livePhase);
-  const arabicScript = isArabicScript(locale);
 
   return (
     <PhaseContext value={phase}>
       <LivePhaseContext value={phase}>
         <SchemeContext value={scheme}>
           <TamaguiProvider config={tamaguiConfig} defaultTheme={theme}>
-            <FontLanguage
-              body={arabicScript ? "ar" : "default"}
-              heading={arabicScript ? "ar" : "default"}>
+            <Face language={fontLanguageOf(locale)}>
               <RTLProvider>
                 <FontProvider>
                   <AppShell launchedByAlert={launchedByAlert} />
                 </FontProvider>
               </RTLProvider>
-            </FontLanguage>
+            </Face>
           </TamaguiProvider>
         </SchemeContext>
       </LivePhaseContext>

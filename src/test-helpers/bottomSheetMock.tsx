@@ -105,6 +105,7 @@ type ModalProps = PropsWithChildren<
     enableHandlePanningGesture?: boolean;
     backdropComponent?: ComponentType<BackdropProps>;
     containerComponent?: ComponentType<PropsWithChildren>;
+    footerComponent?: ComponentType<{ animatedFooterPosition: { value: number } }>;
   }
 >;
 
@@ -204,6 +205,7 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
   const Background =
     props.backgroundComponent === undefined ? DefaultBackground : props.backgroundComponent;
   const Handle = props.handleComponent === undefined ? BottomSheetHandle : props.handleComponent;
+  const Footer = props.footerComponent;
   return (
     <Container>
       {Backdrop ? <Backdrop animatedIndex={SETTLED_INDEX} style={StyleSheet.absoluteFill} /> : null}
@@ -223,6 +225,11 @@ export const BottomSheetModal = forwardRef<ModalMethods, ModalProps>((props, ref
         )}>
         <SheetContext value={IN_SHEET}>{props.children}</SheetContext>
       </View>
+      {Footer ? (
+        <SheetContext value={IN_SHEET}>
+          <Footer animatedFooterPosition={SETTLED_INDEX} />
+        </SheetContext>
+      ) : null}
       {/* gorhom lays the handle out after the content, so it draws on top. */}
       {Handle ? <Handle indicatorStyle={props.handleIndicatorStyle} /> : null}
     </Container>
@@ -302,6 +309,8 @@ export const gorhomStops = () => {
 };
 
 export const BottomSheetView = View;
+/** gorhom's footer, drawn after the content without its pinning. */
+export const BottomSheetFooter = ({ children }: PropsWithChildren) => <View>{children}</View>;
 /** Marked, so a test can tell it from a plain ScrollView. */
 export const BottomSheetScrollView = (props: ScrollViewProps) => (
   <ScrollView nativeID={SHEET_SCROLLER_ID} {...props} />

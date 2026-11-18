@@ -222,3 +222,11 @@ describe("sizeValuesOf", () => {
     expect(sizeValuesOf("unknown" as TextSizeName)).toBe(FONT_SIZES[SIZE_MAP.md]);
   });
 });
+
+describe("vowelled line box", () => {
+  const SIZES = [...new Set(Object.values(FONT_SIZES).map(({ fontSize }) => fontSize))];
+
+  test.each(SIZES)("clears 1.8 at %ipt once rounded", (fontSize) => {
+    expect(roleLineHeight("vowelled", fontSize)! / fontSize).toBeGreaterThanOrEqual(1.8);
+  });
+});
