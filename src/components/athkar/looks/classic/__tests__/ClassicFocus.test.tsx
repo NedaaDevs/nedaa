@@ -20,6 +20,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { positionMarks, textAt, type SessionItem } from "@/utils/athkarSession";
 import { LTR_ISOLATE } from "@/utils/digits";
+import { DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { keyText } from "@/utils/athkarText";
 
 let mockReduced = false;
@@ -51,7 +52,13 @@ const GROUP = ["first", "second"];
 const items = (place: number, texts?: readonly string[]): SessionItem[] =>
   Array.from({ length: TOTAL }, (_, i) => {
     const own = i === place && texts ? texts : [textOf(i)];
-    return { id: `${i}`, target: TARGET, texts: own.map(keyText), itemsPerRound: own.length };
+    return {
+      id: `${i}`,
+      target: TARGET,
+      texts: own.map(keyText),
+      itemsPerRound: own.length,
+      groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
+    };
   });
 
 type Options = {

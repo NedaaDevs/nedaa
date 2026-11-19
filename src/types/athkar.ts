@@ -1,4 +1,4 @@
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_TYPE, type AthkarGroupOrder } from "@/constants/Athkar";
 import type { AthkarLookId } from "@/constants/AthkarLook";
 import type { PlayerState } from "@/types/athkar-audio";
 
@@ -62,6 +62,8 @@ export type AthkarState = {
     showTranslation: boolean;
     /** The look a person chose for the reader; null until they choose. */
     look: AthkarLookId | null;
+    /** Which text each count of a grouped dhikr shows. */
+    groupOrder: AthkarGroupOrder;
   };
 
   // Audio playback state (merged from athkar-audio store for atomic updates)
@@ -76,6 +78,7 @@ export type AthkarState = {
   groupProgress: {
     groupIndex: number;
     itemsPerRound: number;
+    /** The shown text's turn of its turns, from 1; by round, the round. */
     round: number;
     totalRounds: number;
     count: number;
@@ -112,6 +115,7 @@ export type AthkarActions = {
   decrementCount: (athkarId: string) => void;
   markFocusHintSeen: () => void;
   setLook: (look: AthkarLookId) => void;
+  setGroupOrder: (groupOrder: AthkarGroupOrder) => void;
   findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => number;
   moveToNext: () => void;
   moveToPrevious: () => void;

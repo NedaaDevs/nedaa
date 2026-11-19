@@ -1,3 +1,4 @@
+import { DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { DHIKR_TEXT, SESSION_SOURCE, type CollectionSource } from "@/constants/AthkarSession";
 import type { CustomAthkarItem, CustomAthkarProgress } from "@/types/athkar";
 import type { HisnAthkar, MyAthkarItem, MyAthkarProgress } from "@/types/hisnMuslim";
@@ -25,6 +26,7 @@ const plainItem = (
   target: day.totalCount,
   texts: [{ kind: DHIKR_TEXT.RAW, arabic, translation }],
   itemsPerRound: 1,
+  groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
 });
 
 /** A saved topic's dhikr, in order; one with no text or no row for the day is left out. */

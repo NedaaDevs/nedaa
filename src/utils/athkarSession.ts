@@ -1,3 +1,4 @@
+import { ATHKAR_GROUP_ORDER, type AthkarGroupOrder } from "@/constants/Athkar";
 import {
   ADVANCE_PAUSE_MS,
   MARK_SIZE,
@@ -16,18 +17,24 @@ export type SessionItem = {
   target: number;
   texts: readonly DhikrText[];
   itemsPerRound: number;
+  /** Which text each count of a group shows; one text shows under either. */
+  groupOrder: AthkarGroupOrder;
 };
 
 export type Counts = Readonly<Record<string, number>>;
 
 export type PositionMark = { id: string; state: MarkState; size: MarkSize };
 
-export const toSessionItems = (list: readonly Athkar[]): SessionItem[] =>
+export const toSessionItems = (
+  list: readonly Athkar[],
+  groupOrder: AthkarGroupOrder
+): SessionItem[] =>
   list.map(({ id, count, text, group }) => ({
     id,
     target: count,
     texts: (group ? group.texts : [text]).map(keyText),
     itemsPerRound: group ? group.itemsPerRound : 1,
+    groupOrder,
   }));
 
 export const toCounts = (progress: readonly AthkarProgress[]): Counts =>
@@ -37,9 +44,39 @@ const countOf = (counts: Counts, item: SessionItem) => counts[item.id] ?? 0;
 
 const isDone = (counts: Counts, item: SessionItem) => countOf(counts, item) >= item.target;
 
+/** The counts a text shows; the first texts take the rounds' remainder. */
+const turnsOf = (item: SessionItem, index: number) =>
+  Math.ceil((item.target - index) / item.itemsPerRound);
+
+/** A count's text and its turn of that text's turns, from 1; a done group stays last. */
+const turnAt = (item: SessionItem, count: number) => {
+  const at = Math.max(0, Math.min(count, item.target - 1));
+  switch (item.groupOrder) {
+    case ATHKAR_GROUP_ORDER.BY_ROUND: {
+      const index = at % item.itemsPerRound;
+      return { index, turn: Math.floor(at / item.itemsPerRound) + 1, of: turnsOf(item, index) };
+    }
+    case ATHKAR_GROUP_ORDER.EACH_IN_FULL: {
+      // Each text keeps its count from by round, its repeats in one run.
+      let index = 0;
+      let start = 0;
+      while (index < item.itemsPerRound - 1 && at >= start + turnsOf(item, index)) {
+        start += turnsOf(item, index);
+        index += 1;
+      }
+      return { index, turn: at - start + 1, of: turnsOf(item, index) };
+    }
+  }
+};
+
 /** Which text a count shows. A finished group stays on its last text. */
-export const textIndexAt = (item: SessionItem, count: number) =>
-  Math.min(count, item.target - 1) % item.itemsPerRound;
+export const textIndexAt = (item: SessionItem, count: number) => turnAt(item, count).index;
+
+/** How far the text a count shows is into its own turns. */
+export const textTurnAt = (item: SessionItem, count: number): { turn: number; of: number } => {
+  const { turn, of } = turnAt(item, count);
+  return { turn, of };
+};
 
 /** The text an item's count has reached, named by its dhikr and its turn. */
 export const textAt = (item: SessionItem, counts: Counts): { id: string; text: DhikrText } => {
