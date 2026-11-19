@@ -15,6 +15,9 @@ const loadAthkarStores = () =>
     loading = null;
   }));
 
+// After a load already running, whose finished steps would miss a store that failed in it.
+const retryAthkarStores = () => (loading ? loading.then(loadAthkarStores) : loadAthkarStores());
+
 /** Loads both stores on mount; `retry` loads again any that failed. */
 export const useInitializeAthkarStores = () => {
   const isMyAthkarInit = useMyAthkarStore((s) => s.isInitialized);
@@ -26,5 +29,5 @@ export const useInitializeAthkarStores = () => {
     void loadAthkarStores();
   }, []);
 
-  return { isMyAthkarInit, isCustomInit, myAthkarFailed, customFailed, retry: loadAthkarStores };
+  return { isMyAthkarInit, isCustomInit, myAthkarFailed, customFailed, retry: retryAthkarStores };
 };

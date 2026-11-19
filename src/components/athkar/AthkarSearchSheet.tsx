@@ -25,18 +25,21 @@ import { Text } from "@/components/ui/text";
 import { Face } from "@/components/ui/text/face";
 import { TextAction } from "@/components/ui/text-action";
 import { VStack } from "@/components/ui/vstack";
+import { DHIKR_TEXT } from "@/constants/AthkarSession";
 import { FONT_LANGUAGE } from "@/constants/Fonts";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { SECTION_KIND } from "@/constants/Section";
 import { STATE_PANEL_VARIANT } from "@/constants/StatePanel";
 import { STICKY_ACTION_STATE } from "@/constants/StickyActionBar";
 import { AppLocale } from "@/enums/app";
+import { useDhikrText } from "@/hooks/useDhikrText";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLayoutFocus } from "@/hooks/useLayoutFocus";
 import { useSingleFlight } from "@/hooks/useSingleFlight";
 import { HisnMuslimDB } from "@/services/hisn-muslim-db";
 import { useMyAthkarStore } from "@/stores/my-athkar";
 import type { HisnAthkar, HisnCategory } from "@/types/hisnMuslim";
+import type { DhikrText } from "@/utils/athkarText";
 import { AppLogger } from "@/utils/appLogger";
 import { cutPreview } from "@/utils/previewText";
 
@@ -146,6 +149,7 @@ const AthkarSearchSheet = ({ isOpen, onClose, finalFocusRef }: Props) => {
   const { t, i18n } = useTranslation();
   const items = useMyAthkarStore((s) => s.items);
   const batchAddItems = useMyAthkarStore((s) => s.batchAddItems);
+  const { line, words, showTranslation } = useDhikrText();
   const success = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const selection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
   const topicHeader = useLayoutFocus();
@@ -318,14 +322,20 @@ const AthkarSearchSheet = ({ isOpen, onClose, finalFocusRef }: Props) => {
 
   /** A search result names its topic; a topic's own list does not repeat it. */
   const choiceFor = (item: HisnAthkar, withTopic: boolean) => {
-    const translated = !arabicUi && item.translation !== "";
+    const text: DhikrText = {
+      kind: DHIKR_TEXT.RAW,
+      arabic: item.arabicText,
+      translation: item.translation,
+    };
+    // Named as the session's list names it.
+    const translated = showTranslation && words(text).translation !== null;
     const source = withTopic ? topicNames.get(item.categoryId) : undefined;
     const repeats = t("athkar.library.repeats", { count: item.repeatCount });
     const isAdded = added.has(item.id);
     return (
       <DhikrChoice
         key={item.id}
-        text={translated ? item.translation : item.arabicText}
+        text={line(text)}
         arabic={!translated}
         meta={source ? `${repeats} · ${topicTitle(source)}` : repeats}
         checked={isAdded || chosen.has(item.id)}

@@ -18,7 +18,18 @@ let mockDay: Record<number, number> = {};
 let mockTexts: { id: number; arabicText: string }[] = [];
 let mockTopic = { titleAr: "", titleEn: "" };
 /** The custom group's items, as the table holds them. */
-let mockCustom: { id: number; target: number }[] = [];
+let mockCustom: { id: number; target: number; arabicText: string }[] = [];
+const mockGroup = { id: 3, title: "After prayer" };
+/** Each read of the tables throws while set. */
+let mockReadsFail = false;
+/** The remove's write lands while set. */
+let mockRemoveLands = true;
+/** The remove's write throws while set. */
+let mockRemoveThrows = false;
+const mockRead = <T,>(rows: () => T) => {
+  if (mockReadsFail) throw new Error("read failed");
+  return rows();
+};
 
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush, back: mockBack }) }));
 jest.mock("@/services/widgetSnapshot", () => ({ syncWidgetSnapshot: jest.fn(async () => {}) }));
@@ -28,24 +39,42 @@ jest.mock("@/services/athkar-db", () => ({
     initialize: jest.fn(async () => {}),
     updateMyAthkarDailyCount: jest.fn(async () => true),
     updateCustomAthkarDailyCount: jest.fn(async () => true),
-    getMyAthkar: async () => mockSaved,
+    getMyAthkar: async () => mockRead(() => mockSaved),
     removeFromMyAthkar: async (id: number) => {
-      mockSaved = mockSaved.filter((row) => row.id !== id);
+      if (mockRemoveThrows) throw new Error("write failed");
+      if (mockRemoveLands) mockSaved = mockSaved.filter((row) => row.id !== id);
+      return mockRemoveLands;
     },
     initializeMyAthkarDaily: jest.fn(async () => true),
     getMyAthkarDailyProgress: async () =>
-      mockSaved.map((row) => ({
-        my_athkar_id: row.id,
-        current_count: mockDay[row.id] ?? 0,
-        total_count: row.user_count,
-      })),
+      mockRead(() =>
+        mockSaved.map((row) => ({
+          my_athkar_id: row.id,
+          current_count: mockDay[row.id] ?? 0,
+          total_count: row.user_count,
+        }))
+      ),
+    getCustomAthkarGroups: async () =>
+      mockRead(() => [{ id: mockGroup.id, title: mockGroup.title, sort_order: 0 }]),
+    getCustomAthkarItems: async () =>
+      mockRead(() =>
+        mockCustom.map(({ id, target, arabicText }, i) => ({
+          id,
+          group_id: mockGroup.id,
+          arabic_text: arabicText,
+          user_count: target,
+          sort_order: i,
+        }))
+      ),
     initializeCustomAthkarDaily: jest.fn(async () => true),
     getCustomAthkarDailyProgress: async () =>
-      mockCustom.map(({ id, target }) => ({
-        custom_item_id: id,
-        current_count: mockDay[id] ?? 0,
-        total_count: target,
-      })),
+      mockRead(() =>
+        mockCustom.map(({ id, target }) => ({
+          custom_item_id: id,
+          current_count: mockDay[id] ?? 0,
+          total_count: target,
+        }))
+      ),
   },
 }));
 jest.mock("@/services/hisn-muslim-db", () => ({
@@ -71,9 +100,7 @@ jest.mock("@/utils/appLogger", () => ({
   AppLogger: { create: () => ({ i: jest.fn(), w: jest.fn(), e: jest.fn() }) },
 }));
 jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
-jest.mock("@/hooks/useInitializeAthkarStores", () => ({
-  useInitializeAthkarStores: () => ({ isMyAthkarInit: true, isCustomInit: true }),
-}));
+jest.mock("@/components/feedback", () => ({ MessageToast: { showError: jest.fn() } }));
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
 jest.mock("react-native-safe-area-context", () =>
@@ -95,6 +122,7 @@ import {
 } from "@/components/athkar/session/AthkarFocusScreen";
 import { COLLECTION_EDIT_PART } from "@/components/athkar/session/CollectionEditSheet";
 import { CollectionSessionScreen } from "@/components/athkar/session/CollectionSessionScreen";
+import { MessageToast } from "@/components/feedback";
 import { SESSION_DONE_ID } from "@/components/athkar/session/SessionDone";
 import { SkyBackground } from "@/components/ui/sky-background";
 import { customAthkarEditHref } from "@/constants/Athkar";
@@ -124,7 +152,7 @@ const TOPIC = { id: 7, titleAr: "أذكار النوم", titleEn: "Before sleep"
 const HISN: CollectionSource = { kind: SESSION_SOURCE.HISN, categoryId: TOPIC.id };
 const HISN_WORDS = ["باسمك اللهم أموت وأحيا", "اللهم قني عذابك", "سبحان الله وبحمده"];
 const CUSTOM_WORDS = ["أستغفر الله", "سبحان الله"];
-const GROUP = { id: 3, title: "After prayer" };
+const GROUP = mockGroup;
 const TARGET = 2;
 const ALL_DONE = HISN_WORDS.map(() => TARGET);
 const CUSTOM: CollectionSource = { kind: SESSION_SOURCE.CUSTOM, groupId: GROUP.id };
@@ -155,11 +183,16 @@ const seed = (counts: readonly number[] = [], day: number | null = null) => {
   }));
   mockTexts = texts;
   mockTopic = { titleAr: TOPIC.titleAr, titleEn: TOPIC.titleEn };
-  mockCustom = CUSTOM_WORDS.map((_, i) => ({ id: customId(i), target: TARGET }));
+  mockCustom = CUSTOM_WORDS.map((arabicText, i) => ({
+    id: customId(i),
+    target: TARGET,
+    arabicText,
+  }));
   mockDay = {};
 
   useMyAthkarStore.setState({
     isInitialized: true,
+    loadFailed: false,
     progressDay: day,
     items: mockSaved.map((row) => ({
       id: row.id,
@@ -183,6 +216,7 @@ const seed = (counts: readonly number[] = [], day: number | null = null) => {
   });
   useCustomAthkarStore.setState({
     isInitialized: true,
+    loadFailed: false,
     progressDay: day,
     groups: [{ id: GROUP.id, title: GROUP.title, sortOrder: 0 }],
     items: CUSTOM_WORDS.map((arabicText, i) => ({
@@ -202,9 +236,24 @@ const seed = (counts: readonly number[] = [], day: number | null = null) => {
 };
 
 const COLLECTIONS = [
-  { name: "a saved topic", source: HISN, title: TOPIC.titleEn, words: HISN_WORDS },
-  { name: "a custom group", source: CUSTOM, title: GROUP.title, words: CUSTOM_WORDS },
+  {
+    name: "a saved topic",
+    source: HISN,
+    title: TOPIC.titleEn,
+    words: HISN_WORDS,
+    unload: () => useMyAthkarStore.setState({ isInitialized: false }),
+  },
+  {
+    name: "a custom group",
+    source: CUSTOM,
+    title: GROUP.title,
+    words: CUSTOM_WORDS,
+    unload: () => useCustomAthkarStore.setState({ isInitialized: false }),
+  },
 ] as const;
+
+const loadError = () => screen.queryByText(t("athkar.session.loadError.title"));
+const retry = () => screen.getByRole("button", { name: t("common.retry") });
 
 const mockOnBack = jest.fn();
 const renderReader = (source: CollectionSource, title: string) =>
@@ -226,12 +275,15 @@ const useLook = (look: AthkarLookId) => useSettings({ look });
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockReadsFail = false;
+  mockRemoveLands = true;
+  mockRemoveThrows = false;
   useAthkarCollectionSession.setState({ places: {}, pending: null });
   useSettings({ look: DEFAULT_ATHKAR_LOOK, autoMoveToNext: true, showTranslation: true });
   seed();
 });
 
-describe.each(COLLECTIONS)("$name as a session", ({ source, title, words }) => {
+describe.each(COLLECTIONS)("$name as a session", ({ source, title, words, unload }) => {
   test.each(LOOKS)("the %s look reads its first dhikr under its name", async (look) => {
     useLook(look);
     await renderReader(source, title);
@@ -332,6 +384,50 @@ describe.each(COLLECTIONS)("$name as a session", ({ source, title, words }) => {
     await renderReader(source, title);
     expect(controlProblems()).toEqual([]);
   });
+
+  test("a load that fails says so, and Retry loads the collection", async () => {
+    const user = userEvent.setup();
+    mockReadsFail = true;
+    unload();
+    await renderReader(source, title);
+
+    await waitFor(() => expect(loadError()).toBeOnTheScreen());
+    mockReadsFail = false;
+    await user.press(retry());
+
+    await waitFor(() => expect(loadError()).toBeNull());
+    expect(screen.getAllByText(words[0]).length).toBeGreaterThan(0);
+  });
+
+  test("a new day that fails to load says so, not the last day's counts", async () => {
+    const user = userEvent.setup();
+    seed(ALL_DONE, PAST_DAY);
+    mockReadsFail = true;
+    await renderReader(source, title);
+
+    await waitFor(() => expect(loadError()).toBeOnTheScreen());
+    expect(screen.queryByTestId(SESSION_DONE_ID)).toBeNull();
+    mockReadsFail = false;
+    await user.press(retry());
+
+    await waitFor(() => expect(loadError()).toBeNull());
+    expect(screen.queryByTestId(SESSION_DONE_ID)).toBeNull();
+    expect(screen.getAllByText(words[0]).length).toBeGreaterThan(0);
+  });
+
+  test("Focus on a load that fails says so, and Retry loads the collection", async () => {
+    const user = userEvent.setup();
+    mockReadsFail = true;
+    unload();
+    await renderFocus(source);
+
+    await waitFor(() => expect(loadError()).toBeOnTheScreen());
+    mockReadsFail = false;
+    await user.press(retry());
+
+    await waitFor(() => expect(loadError()).toBeNull());
+    expect(screen.getAllByText(words[0]).length).toBeGreaterThan(0);
+  });
 });
 
 describe("a saved topic's edit sheet", () => {
@@ -382,6 +478,22 @@ describe("a saved topic's edit sheet", () => {
 
     await waitFor(() => expect(rows()).toHaveLength(HISN_WORDS.length - 1));
     expect(count()).toHaveTextContent("1");
+  });
+
+  test.each([
+    ["is not written", () => (mockRemoveLands = false)],
+    ["throws", () => (mockRemoveThrows = true)],
+  ])("a remove that %s says so and keeps the dhikr", async (_, fail) => {
+    fail();
+    const user = await openSheet();
+    await user.press(
+      screen.getByRole("button", { name: t("a11y.athkar.removeDhikr", { number: 2 }) })
+    );
+
+    await waitFor(() =>
+      expect(MessageToast.showError).toHaveBeenCalledWith(t("athkar.collection.removeFailed"))
+    );
+    expect(rows()).toHaveLength(HISN_WORDS.length);
   });
 
   test("a row opens the dhikr with how it is said and what it means", async () => {

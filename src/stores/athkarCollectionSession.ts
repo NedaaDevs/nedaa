@@ -78,7 +78,8 @@ const deferToNewDay = (source: CollectionSource, run: () => void) => {
   advance.cancel();
   setState({ pending: null });
   void store.syncDay().then(() => {
-    if (!countsOf(source).isAnotherDay()) run();
+    const loaded = countsOf(source);
+    if (!loaded.isAnotherDay() && !loaded.loadFailed) run();
   });
   return true;
 };

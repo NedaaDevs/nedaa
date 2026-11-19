@@ -35,7 +35,10 @@ type CustomAthkarActions = {
   loadDailyProgress: () => Promise<void>;
   /** The counts in memory belong to a day that has ended. */
   isAnotherDay: () => boolean;
-  /** Loads the new day's counts when the ones in memory are another day's; a failed load keeps them. */
+  /**
+   * Loads the new day's counts when the ones in memory are another day's;
+   * a failed load drops them and sets loadFailed.
+   */
   syncDay: () => Promise<void>;
   /** Writes the counts still waiting for taps to settle. */
   flushCounts: () => Promise<void>;
@@ -70,7 +73,7 @@ const asError = (error: unknown) => (error instanceof Error ? error : new Error(
 // Committed writes so far; a load that began before the latest holds rows from before it.
 let writes = 0;
 
-/** Reads everything again after a write; a failed read sets loadFailed. */
+/** Reads everything again after a write; a failed read leaves the store not loaded. */
 const reloadAfterWrite = async () => {
   writes += 1;
   const store = useCustomAthkarStore.getState();
@@ -82,7 +85,8 @@ const reloadAfterWrite = async () => {
     useCustomAthkarStore.setState({ loadFailed: false, isInitialized: true });
   } catch (error) {
     log.e("Store", "the custom groups did not reload", asError(error));
-    useCustomAthkarStore.setState({ loadFailed: true });
+    // Memory may hold part of the reload.
+    useCustomAthkarStore.setState({ loadFailed: true, isInitialized: false });
   }
 };
 
@@ -216,7 +220,11 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
           await get().initializeDailyProgress();
           await get().loadDailyProgress();
         })()
-          .catch((error: unknown) => log.e("Store", "the new day did not load", asError(error)))
+          .catch((error: unknown) => {
+            log.e("Store", "the new day did not load", asError(error));
+            // The old day's counts are not today's; a full load brings today's.
+            set({ progress: [], progressDay: null, isInitialized: false, loadFailed: true });
+          })
           .finally(() => {
             dayLoad = null;
           });

@@ -56,7 +56,12 @@ const COLLECTIONS = [
     name: "saved Hisn athkar",
     store: useMyAthkarStore,
     init: () => {
-      useMyAthkarStore.setState({ isInitialized: false, progress: [], progressDay: null });
+      useMyAthkarStore.setState({
+        isInitialized: false,
+        loadFailed: false,
+        progress: [],
+        progressDay: null,
+      });
       return useMyAthkarStore.getState().initialize();
     },
     seed: () => mockHisnDays.mockImplementation(async () => [HISN_ROW]),
@@ -69,7 +74,12 @@ const COLLECTIONS = [
     name: "custom athkar",
     store: useCustomAthkarStore,
     init: () => {
-      useCustomAthkarStore.setState({ isInitialized: false, progress: [], progressDay: null });
+      useCustomAthkarStore.setState({
+        isInitialized: false,
+        loadFailed: false,
+        progress: [],
+        progressDay: null,
+      });
       return useCustomAthkarStore.getState().initialize();
     },
     seed: () => mockCustomDays.mockImplementation(async () => [CUSTOM_ROW]),
@@ -134,14 +144,34 @@ describe.each(COLLECTIONS)("$name across days", ({ store, init, seed, writes, da
     expect(days).toHaveBeenCalledWith(TOMORROW);
   });
 
-  test("a new day that fails to load keeps the counts in memory", async () => {
+  test("a new day that fails to load writes the old day's counts, then drops them as failed", async () => {
+    state().incrementCount(ITEM);
+    goToDay(TOMORROW);
+    days.mockRejectedValueOnce(new Error("offline"));
+    await expect(state().syncDay()).resolves.toBeUndefined();
+    expect(writes).toHaveBeenCalledWith(TODAY, ITEM, 1);
+    expect(state()).toMatchObject({
+      isInitialized: false,
+      loadFailed: true,
+      progress: [],
+      progressDay: null,
+    });
+  });
+
+  test("a retry after a failed new day loads the new day", async () => {
     state().incrementCount(ITEM);
     goToDay(TOMORROW);
     days.mockRejectedValueOnce(new Error("offline"));
     await state().syncDay();
-    expect(state().progressDay).toBe(TODAY);
-    expect(state().isAnotherDay()).toBe(true);
-    expect(countOf()).toBe(1);
+
+    await state().initialize();
+    expect(days).toHaveBeenLastCalledWith(TOMORROW);
+    expect(state()).toMatchObject({
+      isInitialized: true,
+      loadFailed: false,
+      progressDay: TOMORROW,
+    });
+    expect(countOf()).toBe(0);
   });
 
   test("the same day loads nothing again", async () => {
