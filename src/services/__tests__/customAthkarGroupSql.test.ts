@@ -2,6 +2,7 @@ import {
   CUSTOM_ATHKAR_DAILY_TABLE,
   CUSTOM_ATHKAR_GROUPS_TABLE,
   CUSTOM_ATHKAR_ITEMS_TABLE,
+  MY_ATHKAR_DAILY_TABLE,
 } from "@/constants/DB";
 import { AthkarDB } from "@/services/athkar-db";
 
@@ -71,6 +72,7 @@ const FAULT = {
   INSERT_ITEM: new RegExp(`INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE}`),
   DELETE_GROUP: new RegExp(`DELETE FROM ${CUSTOM_ATHKAR_GROUPS_TABLE}`),
   DELETE_DAILY: new RegExp(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE}`),
+  DELETE_SAVED_DAILY: new RegExp(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE}`),
 } as const;
 
 const DRAFTS = [
@@ -251,4 +253,27 @@ describe("AthkarDB.deleteCustomAthkarGroup on SQLite", () => {
       expect(await storedRows(groupId)).toEqual(rows);
     }
   );
+});
+
+describe("removing a saved Hisn dhikr", () => {
+  const savedIds = async () => (await AthkarDB.getMyAthkar()).map((row) => row.id);
+
+  test("removes it", async () => {
+    const id = await AthkarDB.addToMyAthkar(10, 5, 3);
+    if (id === null) throw new Error("the dhikr was not saved");
+
+    await expect(AthkarDB.removeFromMyAthkar(id)).resolves.toBe(true);
+
+    expect(await savedIds()).not.toContain(id);
+  });
+
+  test("keeps it and says so when its counts are not deleted", async () => {
+    const id = await AthkarDB.addToMyAthkar(11, 5, 3);
+    if (id === null) throw new Error("the dhikr was not saved");
+    mockFault = FAULT.DELETE_SAVED_DAILY;
+
+    await expect(AthkarDB.removeFromMyAthkar(id)).resolves.toBe(false);
+
+    expect(await savedIds()).toContain(id);
+  });
 });
