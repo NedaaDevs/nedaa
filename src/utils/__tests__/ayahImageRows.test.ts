@@ -1,6 +1,6 @@
 import { IMAGE_SOURCE_WIDTH } from "@/constants/Quran";
 import type { GlyphBound } from "@/types/quran";
-import { AYAH_EDGE_PAD, type AyahRun, ayahImageRows, widestAyahWord } from "@/utils/ayahImageRows";
+import { AYAH_EDGE_PAD, type AyahRun, ayahImageRows } from "@/utils/ayahImageRows";
 
 const SURAH = 2;
 const AYAH = 8;
@@ -64,7 +64,7 @@ describe("ayahImageRows", () => {
     expect(row.map((run) => run.line)).toEqual([3, 4]);
   });
 
-  it("pads a run where no word of the ayah follows on its line", () => {
+  it("starts each run a margin before the ink and ends it a margin after", () => {
     const [[first, second]] = rowsFor(IMAGE_SOURCE_WIDTH * 2);
 
     expect(right(first)).toBe(356 + AYAH_EDGE_PAD);
@@ -123,23 +123,9 @@ describe("ayahImageRows", () => {
   });
 
   it("gives a word wider than the row a row of its own", () => {
-    const narrow = 150;
-    // One word a row: every width a lone word takes.
-    const wordWidths = new Set(rowsFor(1).map(widthOf));
-    const rows = rowsFor(narrow);
+    const rows = rowsFor(150);
 
-    expect(rows.some((row) => widthOf(row) > narrow)).toBe(true);
-    for (const row of rows) {
-      if (widthOf(row) > narrow) expect(wordWidths.has(widthOf(row))).toBe(true);
-    }
-  });
-
-  it("measures the widest word, not the widest line", () => {
-    const widest = widestAyahWord(BOUNDS, SURAH, AYAH);
-
-    expect(widest).toBe(248 + AYAH_EDGE_PAD);
-    // One word a row: the widest row is the widest word.
-    expect(Math.max(...rowsFor(1).map(widthOf))).toBe(widest);
-    expect(widestAyahWord(BOUNDS, SURAH, 99)).toBe(0);
+    expect(rows.flat().some((run) => run.width > 150)).toBe(true);
+    for (const row of rows) if (widthOf(row) > 150) expect(row).toHaveLength(1);
   });
 });
