@@ -47,10 +47,14 @@ type MyAthkarActions = {
   loadDailyProgress: () => Promise<void>;
   /** The counts in memory belong to a day that has ended. */
   isAnotherDay: () => boolean;
-  /** Loads the new day's counts when the ones in memory are another day's; a failed load keeps them. */
+  /**
+   * Loads the new day's counts when the ones in memory are another day's;
+   * a failed load drops them and sets loadFailed.
+   */
   syncDay: () => Promise<void>;
   /** Writes the counts still waiting for taps to settle. */
   flushCounts: () => Promise<void>;
+  /** Whether the row was written; a failed reload after it sets loadFailed. */
   addItem: (
     sourceAthkarId: number,
     sourceCategoryId: number,
@@ -60,7 +64,8 @@ type MyAthkarActions = {
   batchAddItems: (
     items: { sourceAthkarId: number; sourceCategoryId: number; repeatCount: number }[]
   ) => Promise<boolean>;
-  removeItem: (id: number) => Promise<void>;
+  /** Whether the row was removed; a failed reload after it sets loadFailed. */
+  removeItem: (id: number) => Promise<boolean>;
   updateUserCount: (id: number, userCount: number) => Promise<void>;
   getGroupedByCategory: () => MyAthkarCategoryGroup[];
   incrementCount: (myAthkarId: number) => void;
@@ -93,6 +98,22 @@ const writeDailyRows = async (day: number, items: readonly MyAthkarItem[]) => {
     items.map((i) => ({ id: i.id, userCount: i.userCount }))
   );
   if (!written) throw new Error("My Athkar daily rows were not written");
+};
+
+/** Reads everything again after a write; a failed read leaves the store not loaded. */
+const reloadAfterWrite = async () => {
+  const store = useMyAthkarStore.getState();
+  try {
+    await store.loadItems();
+    await store.loadDisplayData();
+    await store.initializeDailyProgress();
+    await store.loadDailyProgress();
+    useMyAthkarStore.setState({ loadFailed: false, isInitialized: true });
+  } catch (error) {
+    log.e("Store", "My Athkar did not reload", asError(error));
+    // Memory may hold part of the reload.
+    useMyAthkarStore.setState({ loadFailed: true, isInitialized: false });
+  }
 };
 
 // One load of the new day serves every caller that arrives while it runs.
@@ -275,7 +296,11 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
           await get().initializeDailyProgress();
           await get().loadDailyProgress();
         })()
-          .catch((error: unknown) => log.e("Store", "the new day did not load", asError(error)))
+          .catch((error: unknown) => {
+            log.e("Store", "the new day did not load", asError(error));
+            // The old day's counts are not today's; a full load brings today's.
+            set({ progress: [], progressDay: null, isInitialized: false, loadFailed: true });
+          })
           .finally(() => {
             dayLoad = null;
           });
@@ -287,11 +312,7 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
       addItem: async (sourceAthkarId, sourceCategoryId, repeatCount) => {
         const newId = await AthkarDB.addToMyAthkar(sourceAthkarId, sourceCategoryId, repeatCount);
         if (newId === null) return false;
-
-        await get().loadItems();
-        await get().loadDisplayData();
-        await get().initializeDailyProgress();
-        await get().loadDailyProgress();
+        await reloadAfterWrite();
         return true;
       },
 
@@ -304,25 +325,20 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
           }))
         );
         if (ids.length === 0) return false;
-
-        try {
-          await get().loadItems();
-          await get().loadDisplayData();
-          await get().initializeDailyProgress();
-          await get().loadDailyProgress();
-          set({ loadFailed: false, isInitialized: true });
-        } catch (error) {
-          log.e("Store", "My Athkar did not reload", asError(error));
-          set({ loadFailed: true });
-        }
+        await reloadAfterWrite();
         return true;
       },
 
       removeItem: async (id) => {
-        await AthkarDB.removeFromMyAthkar(id);
-        await get().loadItems();
-        await get().loadDisplayData();
-        await get().loadDailyProgress();
+        const removed = await AthkarDB.removeFromMyAthkar(id);
+        if (!removed) return false;
+        // Gone from memory at once, so a failed reload cannot list it.
+        set((state) => ({
+          items: state.items.filter((i) => i.id !== id),
+          progress: state.progress.filter((p) => p.myAthkarId !== id),
+        }));
+        await reloadAfterWrite();
+        return true;
       },
 
       updateUserCount: async (id, userCount) => {
