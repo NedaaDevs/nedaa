@@ -100,8 +100,12 @@ const writeDailyRows = async (day: number, items: readonly MyAthkarItem[]) => {
   if (!written) throw new Error("My Athkar daily rows were not written");
 };
 
+// Reloads begun so far; a day load that began before the latest is older than it.
+let reloads = 0;
+
 /** Reads everything again after a write; a failed read leaves the store not loaded. */
 const reloadAfterWrite = async () => {
+  reloads += 1;
   const store = useMyAthkarStore.getState();
   try {
     await store.loadItems();
@@ -291,6 +295,7 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
 
       syncDay: async () => {
         if (!get().isAnotherDay()) return;
+        const began = reloads;
         dayLoad ??= (async () => {
           await debouncedDailyUpdate.flush();
           await get().initializeDailyProgress();
@@ -298,6 +303,8 @@ export const useMyAthkarStore = create<MyAthkarStore>()(
         })()
           .catch((error: unknown) => {
             log.e("Store", "the new day did not load", asError(error));
+            // A reload after a write holds today's rows.
+            if (reloads !== began) return;
             // The old day's counts are not today's; a full load brings today's.
             set({ progress: [], progressDay: null, isInitialized: false, loadFailed: true });
           })

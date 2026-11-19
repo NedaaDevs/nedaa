@@ -215,6 +215,7 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
 
       syncDay: async () => {
         if (!get().isAnotherDay()) return;
+        const began = writes;
         dayLoad ??= (async () => {
           await debouncedDailyUpdate.flush();
           await get().initializeDailyProgress();
@@ -222,6 +223,8 @@ export const useCustomAthkarStore = create<CustomAthkarStore>()(
         })()
           .catch((error: unknown) => {
             log.e("Store", "the new day did not load", asError(error));
+            // A reload after a write holds today's rows.
+            if (writes !== began) return;
             // The old day's counts are not today's; a full load brings today's.
             set({ progress: [], progressDay: null, isInitialized: false, loadFailed: true });
           })
