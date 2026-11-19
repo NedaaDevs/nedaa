@@ -28,6 +28,7 @@ jest.mock("@/utils/appLogger", () => ({
 }));
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
+import { ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { ATHKAR_LOOK } from "@/constants/AthkarLook";
 import { useAthkarStore } from "@/stores/athkar";
 /* eslint-enable import/first */
@@ -55,6 +56,7 @@ describe("the stored Athkar look", () => {
       showStreak: true,
       showTranslation: false,
       look: null,
+      groupOrder: ATHKAR_GROUP_ORDER.BY_ROUND,
     });
   });
 

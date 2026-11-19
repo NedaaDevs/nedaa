@@ -5,6 +5,7 @@ import { ClassicPosition, POSITION_PART } from "@/components/athkar/looks/classi
 import { MARK_SIZE, MARK_STATE } from "@/constants/AthkarSession";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { positionMarks, type SessionItem } from "@/utils/athkarSession";
+import { DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { keyText } from "@/utils/athkarText";
 
 const items = (count: number): SessionItem[] =>
@@ -13,6 +14,7 @@ const items = (count: number): SessionItem[] =>
     target: 1,
     texts: [keyText("text")],
     itemsPerRound: 1,
+    groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
   }));
 
 const LABEL = "Dhikr 9 of 18";

@@ -7,7 +7,7 @@ import { Athkar, AthkarActions, AthkarState, AthkarType } from "@/types/athkar";
 import { PLAYER_STATE } from "@/types/athkar-audio";
 
 // Constants
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_TYPE, DEFAULT_ATHKAR_GROUP_ORDER, isAthkarGroupOrder } from "@/constants/Athkar";
 import { isAthkarLookId } from "@/constants/AthkarLook";
 import { COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 
@@ -142,7 +142,7 @@ const startAdvance = (get: Get, set: Set, athkarId: string) => {
   advance.start(() => {
     const now = get();
     const next = nextOpenIndex(
-      toSessionItems(listOf(now, type)),
+      toSessionItems(listOf(now, type), now.settings.groupOrder),
       toCounts(now.currentProgress),
       from
     );
@@ -221,6 +221,7 @@ export const useAthkarStore = create<AthkarStore>()(
           showStreak: true,
           showTranslation: true,
           look: null,
+          groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
         },
         shortVersion: false,
         focusHintSeen: false,
@@ -894,6 +895,8 @@ export const useAthkarStore = create<AthkarStore>()(
         toggleShortVersion: () => set((state) => ({ shortVersion: !state.shortVersion })),
         markFocusHintSeen: () => set({ focusHintSeen: true }),
         setLook: (look) => set((state) => ({ settings: { ...state.settings, look } })),
+        setGroupOrder: (groupOrder) =>
+          set((state) => ({ settings: { ...state.settings, groupOrder } })),
 
         syncDay: async () => {
           await loadNewDay(get, set);
@@ -934,10 +937,15 @@ export const useAthkarStore = create<AthkarStore>()(
           // The look comes from the record alone: one it lacks is not chosen.
           const savedLook = saved.settings?.look;
           const look = isAthkarLookId(savedLook) ? savedLook : null;
+          // So is the order: a record from before the setting reads by round.
+          const savedOrder = saved.settings?.groupOrder;
+          const groupOrder = isAthkarGroupOrder(savedOrder)
+            ? savedOrder
+            : DEFAULT_ATHKAR_GROUP_ORDER;
           return {
             ...current,
             ...saved,
-            settings: { ...current.settings, ...saved.settings, look },
+            settings: { ...current.settings, ...saved.settings, look, groupOrder },
           };
         },
         onRehydrateStorage: () => (state) => {
