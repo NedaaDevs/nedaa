@@ -49,7 +49,7 @@ jest.mock("@/utils/appLogger", () => ({
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
 import { APP_STATE } from "@/constants/AppState";
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_TYPE, DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { STEP } from "@/constants/AthkarFocus";
 import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS, SESSION_STATUS } from "@/constants/AthkarSession";
 import { useAthkarSession } from "@/hooks/useAthkarSession";
@@ -91,7 +91,13 @@ const seedSettings = (autoMoveToNext: boolean) =>
     playerState: PLAYER_STATE.IDLE,
     currentAthkarId: null,
     loadingAthkarId: null,
-    settings: { autoMoveToNext, showStreak: true, showTranslation: true, look: null },
+    settings: {
+      autoMoveToNext,
+      showStreak: true,
+      showTranslation: true,
+      look: null,
+      groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
+    },
   });
 
 const progressOf = (counts: readonly number[]) =>

@@ -30,7 +30,12 @@ jest.mock("@/utils/appLogger", () => ({
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
 import { APP_STATE } from "@/constants/AppState";
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import {
+  ATHKAR_GROUP_ORDER,
+  ATHKAR_TYPE,
+  DEFAULT_ATHKAR_GROUP_ORDER,
+  type AthkarGroupOrder,
+} from "@/constants/Athkar";
 import { STEP } from "@/constants/AthkarFocus";
 import { ADVANCE_PAUSE_MS, MARK_STATE, SESSION_STATUS } from "@/constants/AthkarSession";
 import { useAthkarSession } from "@/hooks/useAthkarSession";
@@ -74,7 +79,13 @@ const seed = (counts: Record<string, number> = {}) =>
     progressDay: getTodayInt("Asia/Riyadh"),
     playerState: PLAYER_STATE.IDLE,
     currentAthkarId: null,
-    settings: { autoMoveToNext: true, showStreak: true, showTranslation: true, look: null },
+    settings: {
+      autoMoveToNext: true,
+      showStreak: true,
+      showTranslation: true,
+      look: null,
+      groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
+    },
     currentProgress: list.map((a) => ({
       athkarId: a.id,
       currentCount: counts[a.id] ?? 0,
@@ -152,6 +163,42 @@ describe("useAthkarSession", () => {
     const { result } = await renderSession();
     expect(result.current.index).toBe(1);
     expect(result.current.current?.text).toEqual(keyText(QULS[1]));
+  });
+
+  const chooseOrder = (groupOrder: AthkarGroupOrder) =>
+    useAthkarStore.setState((s) => ({ settings: { ...s.settings, groupOrder } }));
+
+  // The Quls at counts 2, 3 and 4, under each order.
+  const SHOWN: Record<AthkarGroupOrder, string[]> = {
+    [ATHKAR_GROUP_ORDER.BY_ROUND]: [QULS[2], QULS[0], QULS[1]],
+    [ATHKAR_GROUP_ORDER.EACH_IN_FULL]: [QULS[0], QULS[1], QULS[1]],
+  };
+
+  test.each(Object.values(ATHKAR_GROUP_ORDER))(
+    "a group shows the text its count reaches, %s",
+    async (order) => {
+      const shown = [];
+      for (const count of [2, 3, 4]) {
+        seed({ [first.id]: 1, [quls.id]: count });
+        chooseOrder(order);
+        const { result, unmount } = await renderSession();
+        shown.push(result.current.current?.text);
+        await unmount();
+      }
+      expect(shown).toEqual(SHOWN[order].map(keyText));
+    }
+  );
+
+  test("a new order redraws the group's text at the same count", async () => {
+    seed({ [first.id]: 1, [quls.id]: 3 });
+    const { result } = await renderSession();
+    expect(result.current.current?.text).toEqual(keyText(QULS[0]));
+    await act(() => chooseOrder(ATHKAR_GROUP_ORDER.EACH_IN_FULL));
+    expect(result.current.current).toMatchObject({
+      textId: `${quls.id}:1`,
+      text: keyText(QULS[1]),
+      count: 3,
+    });
   });
 
   test("it opens on the first unfinished dhikr from the last place", async () => {

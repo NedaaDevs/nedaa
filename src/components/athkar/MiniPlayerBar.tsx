@@ -1,4 +1,5 @@
 import { FC, useEffect } from "react";
+import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
 
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -20,6 +21,7 @@ import { Play, Pause, X } from "lucide-react-native";
 import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
+import { ATHKAR_GROUP_ORDER, type AthkarGroupOrder } from "@/constants/Athkar";
 import { AUDIO_UI, DEFAULT_PLAYBACK_RATE, PLAYBACK_RATE_OPTIONS } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -27,6 +29,12 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const DISMISS_THRESHOLD = 60;
+
+/** How a group's turn reads: a round, or a repeat of the one text. */
+const GROUP_TURN = {
+  [ATHKAR_GROUP_ORDER.BY_ROUND]: "athkar.focus.round",
+  [ATHKAR_GROUP_ORDER.EACH_IN_FULL]: "athkar.audio.repeatCount",
+} as const satisfies Record<AthkarGroupOrder, ParseKeys>;
 
 const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
@@ -41,6 +49,7 @@ const MiniPlayerBar: FC = () => {
   const playerState = useAthkarStore((s) => s.playerState);
   const sessionProgress = useAthkarStore((s) => s.sessionProgress);
   const groupProgress = useAthkarStore((s) => s.groupProgress);
+  const groupOrder = useAthkarStore((s) => s.settings.groupOrder);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
@@ -170,7 +179,7 @@ const MiniPlayerBar: FC = () => {
                 </Text>
                 <Text size="xs" color="$typographySecondary">
                   {groupProgress
-                    ? t("athkar.focus.round", {
+                    ? t(GROUP_TURN[groupOrder], {
                         current: formatNumberToLocale(`${groupProgress.round}`),
                         total: formatNumberToLocale(`${groupProgress.totalRounds}`),
                       })

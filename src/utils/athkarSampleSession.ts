@@ -1,4 +1,4 @@
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_TYPE, DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { DEFAULT_ATHKAR_DATA } from "@/constants/AthkarData";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
 import type { AthkarSession } from "@/hooks/useAthkarSession";
@@ -16,7 +16,8 @@ const sampleSession = (): AthkarSession => {
   const items = toSessionItems(
     morning
       .filter((dhikr, i) => morning.findIndex(({ order }) => order === dhikr.order) === i)
-      .map((dhikr) => ({ ...dhikr, id: `${dhikr.order}` }))
+      .map((dhikr) => ({ ...dhikr, id: `${dhikr.order}` })),
+    DEFAULT_ATHKAR_GROUP_ORDER
   );
   const longest = Math.max(...items.map(({ target }) => target));
   const index = items.findIndex(({ target }) => target === longest);

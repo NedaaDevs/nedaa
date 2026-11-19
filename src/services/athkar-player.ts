@@ -13,15 +13,14 @@ import { resolveNowPlayingArtwork } from "@/utils/nowPlayingArtwork";
 import { PLAYER_STATE, type PlayerState, type ReciterManifest } from "@/types/athkar-audio";
 import type { Athkar, AthkarType } from "@/types/athkar";
 import i18n from "@/localization/i18n";
+import { textIndexAt, textTurnAt, toSessionItems } from "@/utils/athkarSession";
 
 type SessionType = Exclude<AthkarType, typeof ATHKAR_TYPE.ALL>;
 
 const log = AppLogger.create("athkar-audio");
 
-// One recitation of one audio file. The plan is the flat sequence of steps; a
-// non-group athkar is a single step whose file loops `repeatTarget` times, a
-// group athkar expands to one step per (round × audio). Repeats are NOT expanded
-// into separate queue entries — the count lives here, not in the native queue.
+// One file's recitation: a plain athkar loops it `repeatTarget` times;
+// a group has one step per count, playing the text that count shows.
 type Step = {
   athkarId: string;
   thikrId: string;
@@ -109,6 +108,12 @@ class AthkarPlayer {
       });
       await nitroSession.ensureStarted();
       this.initialized = true;
+      // A queue holds one group order; a new order ends it, so audio and text agree.
+      useAthkarStore.subscribe((now, before) => {
+        if (now.settings.groupOrder !== before.settings.groupOrder && this.playlistId) {
+          void this.stop();
+        }
+      });
       await this.syncRate();
       log.d("Player", "athkar player initialized");
     } catch (error) {
@@ -141,22 +146,23 @@ class AthkarPlayer {
 
     // Build the plan: one step per file, repeats kept as a count (not expanded).
     const plan: Step[] = [];
-    for (const athkar of athkarList) {
+    const groupOrder = this.athkarStore.settings.groupOrder;
+    const items = toSessionItems(athkarList, groupOrder);
+    for (const [i, athkar] of athkarList.entries()) {
       if (athkar.group) {
-        const rounds = Math.ceil(athkar.count / athkar.group.itemsPerRound);
-        for (let round = 0; round < rounds; round++) {
-          for (const audioId of athkar.group.audioIds) {
-            const file = manifest.files[audioId];
-            if (!file) continue;
-            const local = await audioDownloadManager.getLocalPath(reciterId, audioId);
-            plan.push({
-              athkarId: athkar.id,
-              thikrId: audioId,
-              url: local ?? file.url,
-              repeatTarget: 1,
-              isGroup: true,
-            });
-          }
+        // A step per count keeps step position equal to count; a partial group breaks that.
+        if (athkar.group.audioIds.some((id) => !manifest.files[id])) continue;
+        for (let count = 0; count < athkar.count; count++) {
+          const audioId = athkar.group.audioIds[textIndexAt(items[i], count)];
+          const file = manifest.files[audioId];
+          const local = await audioDownloadManager.getLocalPath(reciterId, audioId);
+          plan.push({
+            athkarId: athkar.id,
+            thikrId: audioId,
+            url: local ?? file.url,
+            repeatTarget: 1,
+            isGroup: true,
+          });
         }
         continue;
       }
@@ -220,6 +226,11 @@ class AthkarPlayer {
     }
     await this.syncRate();
     this.playlistId = pid;
+    // The order subscriber sees only a loaded queue; this covers a change during the load.
+    if (this.athkarStore.settings.groupOrder !== groupOrder) {
+      await this.stop();
+      return;
+    }
 
     const first = plan[0];
     this.athkarStore.setSessionProgress({ current: 1, total: this.uniqueAthkarIds.length });
@@ -616,7 +627,8 @@ class AthkarPlayer {
   // ─── Group Progress ──────────────────────────────────────────────
 
   private computeGroupProgress(athkarId: string, thikrId: string): void {
-    const { currentType, morningAthkarList, eveningAthkarList, currentProgress } = this.athkarStore;
+    const { currentType, morningAthkarList, eveningAthkarList, currentProgress, settings } =
+      this.athkarStore;
     const list = currentType === ATHKAR_TYPE.MORNING ? morningAthkarList : eveningAthkarList;
     const athkar = list.find((a) => a.id === athkarId);
 
@@ -631,14 +643,14 @@ class AthkarPlayer {
     const totalCount = progressItem?.totalCount ?? athkar.count;
 
     const groupIndex = group.audioIds.indexOf(thikrId);
-    const round = Math.floor(currentCount / group.itemsPerRound) + 1;
-    const totalRounds = Math.ceil(totalCount / group.itemsPerRound);
+    const [item] = toSessionItems([athkar], settings.groupOrder);
+    const { turn, of } = textTurnAt(item, currentCount);
 
     this.athkarStore.setGroupProgress({
       groupIndex: groupIndex !== -1 ? groupIndex : 0,
       itemsPerRound: group.itemsPerRound,
-      round,
-      totalRounds,
+      round: turn,
+      totalRounds: of,
       count: currentCount,
       totalCount,
     });

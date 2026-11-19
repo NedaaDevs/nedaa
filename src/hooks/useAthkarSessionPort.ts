@@ -53,6 +53,7 @@ export const useDailyPort = (): SessionPort => {
   const list = useAthkarStore((s) =>
     type === ATHKAR_TYPE.MORNING ? s.morningAthkarList : s.eveningAthkarList
   );
+  const groupOrder = useAthkarStore((s) => s.settings.groupOrder);
   const progress = useAthkarStore((s) => s.currentProgress);
   const index = useAthkarStore((s) => s.currentAthkarIndex);
   const advancePending = useAthkarStore((s) => s.advancePending);
@@ -68,7 +69,7 @@ export const useDailyPort = (): SessionPort => {
 
   return {
     ready: useHasDailySession(),
-    items: toSessionItems(list),
+    items: toSessionItems(list, groupOrder),
     counts: toCounts(progress),
     index,
     advancePending,

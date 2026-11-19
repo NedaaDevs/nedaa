@@ -17,6 +17,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { positionMarks, type SessionItem } from "@/utils/athkarSession";
 import { LTR_ISOLATE } from "@/utils/digits";
+import { DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { keyText } from "@/utils/athkarText";
 
 const mockHaptics: Partial<Record<HapticFeedback, jest.Mock>> = {};
@@ -44,6 +45,7 @@ const items = (): SessionItem[] =>
     target: TARGET,
     texts: [keyText(textOf(i))],
     itemsPerRound: 1,
+    groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
   }));
 
 const held = (text: string) => `${LTR_ISOLATE.OPEN}${text}${LTR_ISOLATE.CLOSE}`;
