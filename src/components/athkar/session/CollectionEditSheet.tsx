@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react-native";
 
 import AthkarTextDisplay from "@/components/athkar/AthkarTextDisplay";
+import { MessageToast } from "@/components/feedback";
 import {
   Actionsheet,
   ActionsheetCloseButton,
@@ -23,6 +24,9 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useCountText } from "@/hooks/useRatioText";
 import { useMyAthkarStore } from "@/stores/my-athkar";
 import type { HisnAthkar } from "@/types/hisnMuslim";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("athkar");
 
 /** Test ids for the parts a test reaches. */
 export const COLLECTION_EDIT_PART = {
@@ -108,6 +112,18 @@ export const CollectionEditSheet = ({ open, categoryId, onClose }: Props) => {
     onClose();
   };
 
+  const remove = async (id: number) => {
+    const removed = await removeItem(id).catch((error: unknown) => {
+      log.e(
+        "Library",
+        "the dhikr was not removed",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      return false;
+    });
+    if (!removed) MessageToast.showError(t("athkar.collection.removeFailed"));
+  };
+
   return (
     <Actionsheet isOpen={open} onClose={close} snapPoints={SNAP}>
       <ActionsheetContent>
@@ -171,7 +187,7 @@ export const CollectionEditSheet = ({ open, categoryId, onClose }: Props) => {
                     accessibilityLabel={t("a11y.athkar.removeDhikr", { number: countText(i + 1) })}
                     onPress={() => {
                       warn();
-                      void removeItem(id);
+                      void remove(id);
                     }}>
                     <Icon as={Trash2} size="md" color="$muted" />
                   </Pressable>

@@ -16,7 +16,7 @@ import type { AthkarLookId } from "@/constants/AthkarLook";
 import { SESSION_STATUS } from "@/constants/AthkarSession";
 import { DURATION_MS, SHEET_CURVE } from "@/constants/Motion";
 import { useAthkarLookId } from "@/hooks/useAthkarLook";
-import type { AthkarSession } from "@/hooks/useAthkarSession";
+import type { AthkarSession, SessionLoad } from "@/hooks/useAthkarSession";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Test ids for the reader's states. */
@@ -44,13 +44,6 @@ const Loading = ({ label }: { label: string }) => (
 );
 
 const LOOK_FADE = FadeIn.duration(DURATION_MS.GENTLE).easing(Easing.bezier(...SHEET_CURVE));
-
-/** A load that ended without a session, and the way to try it again. */
-export type SessionLoad = {
-  settled: boolean;
-  /** Absent where trying again cannot bring a session. */
-  retry?: () => void;
-};
 
 type SessionReaderProps = {
   session: AthkarSession;

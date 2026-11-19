@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { ATHKAR_TYPE } from "@/constants/Athkar";
 import { SESSION_SOURCE, type CollectionSource } from "@/constants/AthkarSession";
-import type { SessionPort } from "@/hooks/useAthkarSession";
+import type { SessionLoad, SessionPort } from "@/hooks/useAthkarSession";
 import { useInitializeAthkarStores } from "@/hooks/useInitializeAthkarStores";
 import { useAthkarStore } from "@/stores/athkar";
 import {
@@ -85,15 +85,28 @@ export const useDailyPort = (): SessionPort => {
 /** No audio session reads a collection, so none owns a count. */
 const noAudio = () => false;
 
-type CollectionDay = Pick<SessionPort, "ready" | "items" | "counts" | "flush" | "syncDay">;
+/** A collection's port, with its store's failed load and the retry. */
+export type CollectionPort = SessionPort & { load: SessionLoad };
+
+type CollectionDay = Pick<SessionPort, "items" | "counts" | "flush" | "syncDay"> & {
+  loaded: boolean;
+  failed: boolean;
+  retry: () => Promise<void>;
+};
 
 /** A collection's port: its own store's counts, and the place the collection store keeps. */
-const useCollectionPort = (source: CollectionSource, day: CollectionDay): SessionPort => {
+const useCollectionPort = (
+  source: CollectionSource,
+  { loaded, failed, retry, ...day }: CollectionDay
+): CollectionPort => {
   const key = collectionKey(source);
   const place = useAthkarCollectionSession((s) => s.places[key]);
   const advancePending = useAthkarCollectionSession((s) => s.pending === key);
   return {
     ...day,
+    // What a failed load left in memory may be missing or out of date.
+    ready: loaded && !failed,
+    load: { settled: failed, retry: () => void retry() },
     index: placeIndex(day.items, place),
     advancePending,
     audioOwnsCount: noAudio,
@@ -105,8 +118,8 @@ const useCollectionPort = (source: CollectionSource, day: CollectionDay): Sessio
 };
 
 /** A topic of Hisn al-Muslim a person saved. */
-export const useHisnPort = (categoryId: number): SessionPort => {
-  const { isMyAthkarInit } = useInitializeAthkarStores();
+export const useHisnPort = (categoryId: number): CollectionPort => {
+  const { isMyAthkarInit, myAthkarFailed, retry } = useInitializeAthkarStores();
   const items = useMyAthkarStore((s) => s.items);
   const displayData = useMyAthkarStore((s) => s.displayData);
   const progress = useMyAthkarStore((s) => s.progress);
@@ -116,7 +129,9 @@ export const useHisnPort = (categoryId: number): SessionPort => {
   return useCollectionPort(
     { kind: SESSION_SOURCE.HISN, categoryId },
     {
-      ready: isMyAthkarInit,
+      loaded: isMyAthkarInit,
+      failed: myAthkarFailed,
+      retry,
       ...hisnCollection({ items, displayData, progress }, categoryId),
       flush,
       syncDay,
@@ -125,8 +140,8 @@ export const useHisnPort = (categoryId: number): SessionPort => {
 };
 
 /** A group a person wrote. */
-export const useCustomPort = (groupId: number): SessionPort => {
-  const { isCustomInit } = useInitializeAthkarStores();
+export const useCustomPort = (groupId: number): CollectionPort => {
+  const { isCustomInit, customFailed, retry } = useInitializeAthkarStores();
   const items = useCustomAthkarStore((s) => s.items);
   const progress = useCustomAthkarStore((s) => s.progress);
   const flush = useCustomAthkarStore((s) => s.flushCounts);
@@ -134,6 +149,13 @@ export const useCustomPort = (groupId: number): SessionPort => {
 
   return useCollectionPort(
     { kind: SESSION_SOURCE.CUSTOM, groupId },
-    { ready: isCustomInit, ...customCollection({ items, progress }, groupId), flush, syncDay }
+    {
+      loaded: isCustomInit,
+      failed: customFailed,
+      retry,
+      ...customCollection({ items, progress }, groupId),
+      flush,
+      syncDay,
+    }
   );
 };

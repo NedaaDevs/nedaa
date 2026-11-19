@@ -65,6 +65,13 @@ export type SessionPort = {
   syncDay: () => Promise<void>;
 };
 
+/** A load that ended without a session, and the way to try it again. */
+export type SessionLoad = {
+  settled: boolean;
+  /** Absent where trying again cannot bring a session. */
+  retry?: () => void;
+};
+
 /** A session over one source: the place, the counts and the three things a person does. */
 export const useAthkarSession = (port: SessionPort): AthkarSession => {
   const { items, counts, advancePending, flush, syncDay } = port;

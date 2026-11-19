@@ -3,7 +3,9 @@ import { renderHook, waitFor } from "@testing-library/react-native";
 jest.mock("@/services/athkar-db", () => ({
   AthkarDB: {
     getMyAthkar: jest.fn(),
+    addToMyAthkar: jest.fn(),
     batchAddToMyAthkar: jest.fn(),
+    removeFromMyAthkar: jest.fn(),
     initializeMyAthkarDaily: jest.fn(async () => true),
     getMyAthkarDailyProgress: jest.fn(async () => []),
     getCustomAthkarGroups: jest.fn(),
@@ -102,7 +104,7 @@ describe("loading the saved collections", () => {
   });
 
   it("runs one load for two retries at once", async () => {
-    db.getMyAthkar.mockRejectedValue(READ_FAILED);
+    db.getMyAthkar.mockRejectedValueOnce(READ_FAILED);
     const { result } = await renderHook(() => useInitializeAthkarStores());
     await waitFor(() => expect(result.current.myAthkarFailed).toBe(true));
     db.getMyAthkar.mockClear();
@@ -110,6 +112,25 @@ describe("loading the saved collections", () => {
     await Promise.all([result.current.retry(), result.current.retry()]);
 
     expect(db.getMyAthkar).toHaveBeenCalledTimes(1);
+    expect(mine()).toMatchObject({ isInitialized: true, loadFailed: false });
+  });
+
+  it("loads a store that failed earlier in the load a retry arrives during", async () => {
+    let land = () => {};
+    db.getMyAthkar.mockRejectedValueOnce(READ_FAILED);
+    db.getCustomAthkarGroups.mockReturnValueOnce(
+      new Promise((resolve) => {
+        land = () => resolve([GROUP_ROW]);
+      })
+    );
+    const { result } = await renderHook(() => useInitializeAthkarStores());
+    await waitFor(() => expect(result.current.myAthkarFailed).toBe(true));
+
+    const retried = result.current.retry();
+    land();
+    await retried;
+
+    await waitFor(() => expect(result.current.isMyAthkarInit).toBe(true));
   });
 
   it("counts a full reload after a write as the load a failed start missed", async () => {
@@ -217,5 +238,41 @@ describe("adding to My Athkar", () => {
       mine().batchAddItems([{ sourceAthkarId: 11, sourceCategoryId: 5, repeatCount: 1 }])
     ).resolves.toBe(true);
     expect(mine().loadFailed).toBe(true);
+  });
+});
+
+describe("adding one dhikr to My Athkar", () => {
+  beforeEach(() => mine().initialize());
+
+  it("reports a committed row even when the reload after it fails", async () => {
+    db.addToMyAthkar.mockResolvedValue(2);
+    db.getMyAthkar.mockRejectedValueOnce(READ_FAILED);
+
+    await expect(mine().addItem(11, 5, 1)).resolves.toBe(true);
+    expect(mine().loadFailed).toBe(true);
+  });
+
+  it("says a write that failed", async () => {
+    db.addToMyAthkar.mockResolvedValue(null);
+    await expect(mine().addItem(11, 5, 1)).resolves.toBe(false);
+  });
+});
+
+describe("removing from My Athkar", () => {
+  beforeEach(() => mine().initialize());
+
+  it("reports a committed remove even when the reload after it fails", async () => {
+    db.removeFromMyAthkar.mockResolvedValue(true);
+    db.getMyAthkar.mockRejectedValueOnce(READ_FAILED);
+
+    await expect(mine().removeItem(HISN_ROW.id)).resolves.toBe(true);
+    expect(mine()).toMatchObject({ loadFailed: true, isInitialized: false, items: [] });
+  });
+
+  it("says a remove that failed and keeps the dhikr", async () => {
+    db.removeFromMyAthkar.mockResolvedValue(false);
+
+    await expect(mine().removeItem(HISN_ROW.id)).resolves.toBe(false);
+    expect(mine().items).toHaveLength(1);
   });
 });
