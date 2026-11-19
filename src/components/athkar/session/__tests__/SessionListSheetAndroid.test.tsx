@@ -7,6 +7,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { SessionItem } from "@/utils/athkarSession";
+import { DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { keyText } from "@/utils/athkarText";
 
 // The text primitive reads the platform once, at load; this file runs as Android.
@@ -31,6 +32,7 @@ const items: SessionItem[] = Array.from({ length: ROWS }, (_, i) => ({
   target: 1,
   texts: [keyText(`dhikr ${i + 1}`)],
   itemsPerRound: 1,
+  groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
 }));
 
 beforeAll(() => {

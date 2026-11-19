@@ -16,6 +16,7 @@ import { holdSheetsRising, settleSheet } from "@/test-helpers/bottomSheetMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { Counts, SessionItem } from "@/utils/athkarSession";
 import { LTR_ISOLATE } from "@/utils/digits";
+import { DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { keyText } from "@/utils/athkarText";
 
 const mockScrollTo = jest.fn();
@@ -62,6 +63,7 @@ const items = (count: number): SessionItem[] =>
     target: TARGET,
     texts: [keyText(textOf(i))],
     itemsPerRound: 1,
+    groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
   }));
 
 const held = (text: string) => `${LTR_ISOLATE.OPEN}${text}${LTR_ISOLATE.CLOSE}`;
@@ -133,6 +135,7 @@ describe("SessionListSheet", () => {
       target: TARGET,
       texts: [keyText(`${TRANSLATION}\n${ARABIC}`)],
       itemsPerRound: 1,
+      groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
     };
     const showTranslation = (show: boolean) =>
       useAthkarStore.setState((s) => ({ settings: { ...s.settings, showTranslation: show } }));
@@ -199,6 +202,7 @@ describe("SessionListSheet", () => {
       target: 9,
       texts: [textOf(0, 0), textOf(0, 1), textOf(0, 2)].map(keyText),
       itemsPerRound: 3,
+      groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
     };
     await renderSheet({ list: [group], counts: { group: 4 } });
     expect(within(rows()[0]).getByText(textOf(0, 1))).toBeOnTheScreen();

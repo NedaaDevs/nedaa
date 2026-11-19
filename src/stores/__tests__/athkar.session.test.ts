@@ -36,7 +36,7 @@ jest.mock("@/utils/appLogger", () => ({
 }));
 
 /* eslint-disable import/first -- imports must follow jest.mock hoisting */
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_TYPE, DEFAULT_ATHKAR_GROUP_ORDER } from "@/constants/Athkar";
 import { ADVANCE_PAUSE_MS, COUNT_WRITE_DELAY_MS } from "@/constants/AthkarSession";
 import { useAthkarStore } from "@/stores/athkar";
 import type { Athkar } from "@/types/athkar";
@@ -97,7 +97,13 @@ beforeEach(() => {
     playerState: PLAYER_STATE.IDLE,
     currentAthkarId: null,
     loadingAthkarId: null,
-    settings: { autoMoveToNext: true, showStreak: true, showTranslation: true, look: null },
+    settings: {
+      autoMoveToNext: true,
+      showStreak: true,
+      showTranslation: true,
+      look: null,
+      groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
+    },
     currentProgress: list.map((a) => ({
       athkarId: a.id,
       currentCount: 0,
@@ -185,7 +191,13 @@ describe("the pause before the next dhikr", () => {
 
   test("with auto-advance off the index stays", () => {
     useAthkarStore.setState({
-      settings: { autoMoveToNext: false, showStreak: true, showTranslation: true, look: null },
+      settings: {
+        autoMoveToNext: false,
+        showStreak: true,
+        showTranslation: true,
+        look: null,
+        groupOrder: DEFAULT_ATHKAR_GROUP_ORDER,
+      },
     });
     tap(first);
     expect(state().advancePending).toBe(false);

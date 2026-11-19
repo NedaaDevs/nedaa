@@ -3,7 +3,13 @@ import { fireEvent, screen, userEvent, within } from "@testing-library/react-nat
 
 import Settings from "@/components/athkar/Settings";
 import { HOLD } from "@/components/ui/hold-to-confirm";
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import {
+  ATHKAR_GROUP_ORDER,
+  ATHKAR_GROUP_ORDERS,
+  ATHKAR_TYPE,
+  DEFAULT_ATHKAR_GROUP_ORDER,
+  type AthkarGroupOrder,
+} from "@/constants/Athkar";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
@@ -25,14 +31,21 @@ jest.mock("react-native-safe-area-context", () =>
 jest.mock("@/stores/notification", () => ({ useNotificationStore: () => mockReminders }));
 const mockResetProgress = jest.fn(async () => {});
 const mockPeriod: { current: AthkarState["currentType"] } = { current: ATHKAR_TYPE.MORNING };
+const mockGroupOrder: { current: AthkarGroupOrder } = { current: DEFAULT_ATHKAR_GROUP_ORDER };
+const mockSetGroupOrder = jest.fn((order: AthkarGroupOrder) => {
+  mockGroupOrder.current = order;
+});
 jest.mock("@/stores/athkar", () => ({
   useAthkarStore: () => ({
-    settings: { showStreak: false, showTranslation: false },
+    settings: { showStreak: false, showTranslation: false, groupOrder: mockGroupOrder.current },
     shortVersion: false,
     currentType: mockPeriod.current,
     resetProgress: () => mockResetProgress(),
+    setGroupOrder: (order: AthkarGroupOrder) => mockSetGroupOrder(order),
   }),
 }));
+// The choice's sliding mark is reanimated, which cannot load under jest.
+jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 // The fill is reanimated, which cannot load under jest; it is drawing only.
 jest.mock("@/components/ui/hold-to-confirm/Fill", () => ({ Fill: () => null }));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
@@ -197,5 +210,37 @@ describe("Athkar settings reset", () => {
     expect(
       screen.getByText(t("a11y.athkar.holdToResetHint"), { includeHiddenElements: true })
     ).toBeOnTheScreen();
+  });
+});
+
+describe("Athkar settings group order", () => {
+  const group = () => screen.getByLabelText(t("settings.athkar.groupOrder.title"));
+  const chosen = () => within(group()).getByRole("radio", { selected: true });
+  const name = (order: AthkarGroupOrder) => t(`settings.athkar.groupOrder.options.${order}`);
+  const option = (order: AthkarGroupOrder) =>
+    within(group()).getByRole("radio", { name: name(order) });
+
+  beforeEach(() => {
+    mockGroupOrder.current = DEFAULT_ATHKAR_GROUP_ORDER;
+    mockSetGroupOrder.mockClear();
+  });
+
+  it("offers each order, with the one in use selected", async () => {
+    await renderWithTheme(<Settings />);
+
+    expect(group()).toHaveProp("accessibilityRole", "radiogroup");
+    expect(screen.getByText(t("settings.athkar.groupOrder.description"))).toBeOnTheScreen();
+    expect(ATHKAR_GROUP_ORDERS.map(option)).toHaveLength(ATHKAR_GROUP_ORDERS.length);
+    expect(chosen()).toHaveAccessibleName(name(DEFAULT_ATHKAR_GROUP_ORDER));
+  });
+
+  it("stores the order a person chooses", async () => {
+    const { rerender } = await renderWithTheme(<Settings />);
+
+    await userEvent.press(option(ATHKAR_GROUP_ORDER.EACH_IN_FULL));
+    expect(mockSetGroupOrder).toHaveBeenCalledWith(ATHKAR_GROUP_ORDER.EACH_IN_FULL);
+
+    await rerender(<Settings />);
+    expect(chosen()).toHaveAccessibleName(name(ATHKAR_GROUP_ORDER.EACH_IN_FULL));
   });
 });

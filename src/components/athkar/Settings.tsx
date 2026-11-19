@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
 import { Icon } from "@/components/ui/icon";
 import { HoldToConfirm } from "@/components/ui/hold-to-confirm";
+import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { Volume2, ChevronRight, RotateCcw } from "lucide-react-native";
 
 import { LookRow } from "@/components/athkar/looks/LookRow";
@@ -25,7 +26,7 @@ import { useNotificationStore } from "@/stores/notification";
 import { usePreferencesStore } from "@/stores/preferences";
 
 // Constants
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_GROUP_ORDERS, ATHKAR_TYPE } from "@/constants/Athkar";
 
 // Types
 import type { AthkarState } from "@/types/athkar";
@@ -53,6 +54,7 @@ const Settings = () => {
     currentType,
     toggleShowTranslation,
     toggleShortVersion,
+    setGroupOrder,
     resetProgress,
   } = useAthkarStore();
 
@@ -318,6 +320,27 @@ const Settings = () => {
                 accessibilityLabel={t("settings.athkar.shortVersion.title")}
               />
             </HStack>
+          </Card>
+
+          {/* Which text each count of a grouped dhikr shows */}
+          <Card>
+            <VStack gap="$3">
+              <VStack>
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.athkar.groupOrder.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
+                  {t("settings.athkar.groupOrder.description")}
+                </Text>
+              </VStack>
+              <SegmentedChoice
+                options={ATHKAR_GROUP_ORDERS}
+                value={settings.groupOrder}
+                onChange={setGroupOrder}
+                accessibilityLabel={t("settings.athkar.groupOrder.title")}
+                label={(order) => t(`settings.athkar.groupOrder.options.${order}`)}
+              />
+            </VStack>
           </Card>
         </VStack>
       </VStack>
