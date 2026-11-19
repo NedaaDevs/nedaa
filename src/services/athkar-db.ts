@@ -1302,8 +1302,10 @@ const batchAddToMyAthkar = (
 const removeFromMyAthkar = (id: number): Promise<boolean> =>
   sdb.run(async (db) => {
     try {
-      await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
-      await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
+        await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
+      });
       return true;
     } catch (error) {
       console.error("[Athkar-DB] Error removing from my athkar:", error);
