@@ -1,7 +1,7 @@
 import { Text } from "react-native";
 import { screen, waitFor } from "@testing-library/react-native";
 
-import AyahImage from "@/components/quran/AyahImage";
+import AyahImage, { AYAH_IMAGE_ROW } from "@/components/quran/AyahImage";
 import { AppDirection } from "@/enums/app";
 import { MushafVersion, QuranTheme } from "@/enums/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
@@ -32,6 +32,8 @@ const WORD: GlyphBound = {
   height: 200,
   isMarker: false,
 };
+/** The ayah's next word, at the start of the following line. */
+const NEXT_LINE_WORD: GlyphBound = { ...WORD, line: 4, position: 1, wordIndex: 2, x: 900 };
 const MAX_WIDTH = 320;
 const FALLBACK = "fallback";
 // The host type React Native renders an Image as.
@@ -80,6 +82,42 @@ describe("AyahImage", () => {
 
       // Yoga rounds a layout to whole points.
       expect(drawn.left).toBeCloseTo(Number(styleOf(image).left), 0);
+    }
+  );
+
+  // The ayah is one run: a line break in the Mushaf is not a break in the card.
+  it.each(PHONE_APP_PAIRS)(
+    "sets the ayah's next line to the left of its first on a $phone phone in a $app app",
+    async ({ phone, app }) => {
+      jest.mocked(QuranContentDB.getGlyphBounds).mockResolvedValue([WORD, NEXT_LINE_WORD]);
+      await renderWithTheme(
+        <AyahImage
+          version={MushafVersion.V1}
+          page={WORD.page}
+          surah={WORD.surahNumber}
+          ayah={WORD.ayahNumber}
+          quranTheme={QuranTheme.SEPIA}
+          maxWidth={MAX_WIDTH}
+          fallback={<Text>{FALLBACK}</Text>}
+        />,
+        { isRTL: app === AppDirection.RTL }
+      );
+      const [row, ...others] = await screen.findAllByTestId(AYAH_IMAGE_ROW);
+      expect(others).toEqual([]);
+      const windows = hostsOfType(row, HOST_IMAGE).map((image) => image.parent);
+
+      const [, first, next] = await layOutSpans(
+        {
+          style: onPhone(styleOf(row), phone),
+          children: windows.map((window) => {
+            if (!window) throw new Error("a line image sits in no crop");
+            return { style: onPhone(styleOf(window), phone) };
+          }),
+        },
+        app
+      );
+
+      expect(next.left + next.width).toBeCloseTo(first.left, 0);
     }
   );
 });
