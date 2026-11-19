@@ -9,12 +9,13 @@ import { Box } from "@/components/ui/box";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { customAthkarEditHref } from "@/constants/Athkar";
 import { SESSION_SOURCE, type CollectionSource } from "@/constants/AthkarSession";
-import { useAthkarSession, type SessionPort } from "@/hooks/useAthkarSession";
+import { useAthkarSession } from "@/hooks/useAthkarSession";
 import {
   useCustomOpening,
   useCustomPort,
   useHisnOpening,
   useHisnPort,
+  type CollectionPort,
 } from "@/hooks/useAthkarSessionPort";
 import { focusHref } from "@/utils/athkarSessionSource";
 
@@ -27,7 +28,7 @@ type Shared = {
 
 type ReaderProps = Shared & {
   source: CollectionSource;
-  port: SessionPort;
+  port: CollectionPort;
   onEdit: () => void;
 };
 
@@ -49,6 +50,7 @@ const CollectionReader = ({ source, port, title, onBack, onEdit }: ReaderProps) 
           session={session}
           title={title}
           doneMessage={t("athkar.session.collectionDone")}
+          load={port.load}
           onOpenFocus={() => router.push(focusHref(source))}
         />
       </Box>

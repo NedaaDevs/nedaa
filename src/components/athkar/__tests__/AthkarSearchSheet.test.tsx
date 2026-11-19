@@ -8,6 +8,7 @@ import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { HisnMuslimDB } from "@/services/hisn-muslim-db";
 import { useAppStore } from "@/stores/app";
+import { useAthkarStore } from "@/stores/athkar";
 import { useMyAthkarStore } from "@/stores/my-athkar";
 import { useBottomSheetModal } from "@/test-helpers/bottomSheetMock";
 import { controlProblems } from "@/test-helpers/controls";
@@ -76,6 +77,8 @@ const field = () => screen.getByPlaceholderText(t("athkar.myAthkar.search"));
 const failedPanel = () => screen.queryByText(t("athkar.library.loadFailed.title"));
 const retry = () => screen.getByRole("button", { name: t("common.retry") });
 const READ_FAILED = new Error("read failed");
+const showTranslation = (shown: boolean) =>
+  useAthkarStore.setState((s) => ({ settings: { ...s.settings, showTranslation: shown } }));
 
 // jest's View mock hands a ref its component, props included.
 const focusEvent = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
@@ -100,6 +103,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   jest.useRealTimers();
+  showTranslation(true);
   useAppStore.setState({ locale: AppLocale.EN });
   await act(() => i18n.changeLanguage(AppLocale.EN));
 });
@@ -186,6 +190,20 @@ describe("AthkarSearchSheet", () => {
     expect(HisnMuslimDB.search).toHaveBeenLastCalledWith("glory");
     expect(screen.getByText(TASBIH.translation)).toBeOnTheScreen();
     expect(screen.getAllByText(`${t("athkar.library.repeats", { count: 33 })} · ${SLEEP.titleEn}`));
+  });
+
+  it("shows and names the Arabic when translations are off", async () => {
+    showTranslation(false);
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await open();
+
+    await user.type(field(), "glory");
+    await settle();
+
+    expect(screen.getByText(TASBIH.arabicText)).toBeOnTheScreen();
+    expect(screen.queryByText(TASBIH.translation)).toBeNull();
+    const row = screen.getByRole("checkbox", { name: new RegExp(TASBIH.arabicText) });
+    expect(row.props.accessibilityLabel).not.toMatch(TASBIH.translation);
   });
 
   it("drops a search that lands after the field is cleared", async () => {

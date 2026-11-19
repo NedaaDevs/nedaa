@@ -8,7 +8,6 @@ import AudioOnboarding from "@/components/athkar/AudioOnboarding";
 import { FocusAudioButton } from "@/components/athkar/session/FocusAudioButton";
 import { FocusControl } from "@/components/athkar/session/FocusControl";
 import { SessionDone } from "@/components/athkar/session/SessionDone";
-import type { SessionLoad } from "@/components/athkar/session/SessionReader";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { ClaimSkyBodies } from "@/components/ui/sky-background/bodies";
@@ -23,8 +22,13 @@ import {
 } from "@/constants/AthkarSession";
 import { useAthkarDayLoad } from "@/hooks/useAthkarDayLoad";
 import { useAthkarLook } from "@/hooks/useAthkarLook";
-import { useAthkarSession, type AthkarSession, type SessionPort } from "@/hooks/useAthkarSession";
-import { useCustomPort, useDailyPort, useHisnPort } from "@/hooks/useAthkarSessionPort";
+import { useAthkarSession, type AthkarSession, type SessionLoad } from "@/hooks/useAthkarSession";
+import {
+  useCustomPort,
+  useDailyPort,
+  useHisnPort,
+  type CollectionPort,
+} from "@/hooks/useAthkarSessionPort";
 import { useCollectionTitle } from "@/hooks/useCollectionTitle";
 import { useStartAthkarAudio } from "@/hooks/useStartAthkarAudio";
 import { athkarPlayer } from "@/services/athkar-player";
@@ -196,16 +200,17 @@ const DailyFocus = () => {
 };
 
 /** Focus on a collection. One that is gone, once its store has loaded, cannot load. */
-const CollectionFocus = ({ source, port }: { source: CollectionSource; port: SessionPort }) => {
+const CollectionFocus = ({ source, port }: { source: CollectionSource; port: CollectionPort }) => {
   const { t } = useTranslation();
   const title = useCollectionTitle(source);
   const session = useAthkarSession({ ...port, ready: port.ready && title !== null });
+  const gone = port.ready && title === null;
   return (
     <FocusScreen
       session={session}
       title={title ?? ""}
       doneMessage={t("athkar.session.collectionDone")}
-      load={{ settled: port.ready && title === null }}
+      load={gone ? { settled: true } : port.load}
       onStep={session.step}
       audio={<Box testID={ATHKAR_FOCUS_SCREEN_PART.NO_AUDIO} width="$target" height="$target" />}
     />
