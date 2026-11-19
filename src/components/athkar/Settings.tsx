@@ -337,8 +337,9 @@ const Settings = () => {
                 options={ATHKAR_GROUP_ORDERS}
                 value={settings.groupOrder}
                 onChange={setGroupOrder}
-                accessibilityLabel={t("settings.athkar.groupOrder.title")}
+                accessibilityLabel={t("a11y.athkar.groupOrder.label")}
                 label={(order) => t(`settings.athkar.groupOrder.options.${order}`)}
+                spokenLabel={(order) => t(`a11y.athkar.groupOrder.options.${order}`)}
               />
             </VStack>
           </Card>

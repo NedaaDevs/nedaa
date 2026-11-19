@@ -214,9 +214,10 @@ describe("Athkar settings reset", () => {
 });
 
 describe("Athkar settings group order", () => {
-  const group = () => screen.getByLabelText(t("settings.athkar.groupOrder.title"));
+  const group = () => screen.getByLabelText(t("a11y.athkar.groupOrder.label"));
   const chosen = () => within(group()).getByRole("radio", { selected: true });
-  const name = (order: AthkarGroupOrder) => t(`settings.athkar.groupOrder.options.${order}`);
+  const name = (order: AthkarGroupOrder) => t(`a11y.athkar.groupOrder.options.${order}`);
+  const shown = (order: AthkarGroupOrder) => t(`settings.athkar.groupOrder.options.${order}`);
   const option = (order: AthkarGroupOrder) =>
     within(group()).getByRole("radio", { name: name(order) });
 
@@ -232,6 +233,14 @@ describe("Athkar settings group order", () => {
     expect(screen.getByText(t("settings.athkar.groupOrder.description"))).toBeOnTheScreen();
     expect(ATHKAR_GROUP_ORDERS.map(option)).toHaveLength(ATHKAR_GROUP_ORDERS.length);
     expect(chosen()).toHaveAccessibleName(name(DEFAULT_ATHKAR_GROUP_ORDER));
+  });
+
+  it.each(ATHKAR_GROUP_ORDERS)("speaks %s starting with the words it shows", async (order) => {
+    await renderWithTheme(<Settings />);
+
+    expect(within(option(order)).getByText(shown(order))).toBeOnTheScreen();
+    expect(name(order).startsWith(shown(order))).toBe(true);
+    expect(name(order)).not.toBe(shown(order));
   });
 
   it("stores the order a person chooses", async () => {
