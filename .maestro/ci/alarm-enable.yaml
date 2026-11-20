@@ -1,0 +1,64 @@
+appId: dev.nedaa.android
+---
+- openLink: "myapp://settings/alarm/fajr"
+- extendedWaitUntil:
+    visible:
+      id: "alarm-enable-switch"
+      checked: false
+    timeout: 30000
+- tapOn:
+    id: "alarm-enable-switch"
+# A failed schedule turns the switch back off, so it must stay on.
+- waitForAnimationToEnd:
+    timeout: 5000
+# At the default place the switch opens the city page; a city verifies it.
+- runFlow:
+    when:
+      visible:
+        id: "alarm-choose-city"
+    commands:
+      - tapOn:
+          id: "alarm-choose-city"
+      - extendedWaitUntil:
+          visible:
+            id: "location-choose-city"
+          timeout: 15000
+      - tapOn:
+          id: "location-choose-city"
+      - extendedWaitUntil:
+          visible:
+            id: "city-search-input"
+          timeout: 15000
+      - tapOn:
+          id: "city-search-input"
+      - inputText: "Riyadh"
+      - extendedWaitUntil:
+          visible:
+            id: "city-result"
+          timeout: 15000
+      - tapOn:
+          id: "city-result"
+          index: 0
+      # A pick closes the picker; Location shows the update until it lands.
+      - extendedWaitUntil:
+          notVisible:
+            id: "city-search-input"
+          timeout: 15000
+      - extendedWaitUntil:
+          visible:
+            id: "location-choose-city"
+          timeout: 60000
+      - openLink: "myapp://settings/alarm/fajr"
+      - extendedWaitUntil:
+          visible:
+            id: "alarm-enable-switch"
+            checked: false
+          timeout: 30000
+      - tapOn:
+          id: "alarm-enable-switch"
+      - waitForAnimationToEnd:
+          timeout: 5000
+- assertVisible:
+    id: "alarm-enable-switch"
+    checked: true
+- takeScreenshot: alarm-enabled

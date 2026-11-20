@@ -1,27 +1,58 @@
 import type { Ref } from "react";
-import type { TextInput } from "react-native";
-import { Input as TamaguiInput, type InputProps, type TamaguiElement } from "tamagui";
+import type { TextInputInstance } from "react-native";
+import { Input as TamaguiInput, type InputProps } from "tamagui";
 
+import { TEXT_WEIGHT } from "@/components/ui/text";
+import { resolveTextSizing, sizeValuesOf } from "@/components/ui/text/sizing";
 import { useRTL } from "@/contexts/RTLContext";
+import { useTextScale } from "@/hooks/useTextScale";
 
-// App-themed text input. Mirrors for RTL — text *and* placeholder align to the
-// start side (Arabic/Urdu read right-aligned) — and resolves text/placeholder/
-// border/background from theme tokens so it reads correctly in light and dark
-// without per-call styling. Callers can override any prop (e.g. a borderless
-// search field passes backgroundColor="transparent" borderWidth={0}).
-export const Input = ({ ref, ...props }: InputProps & { ref?: Ref<TextInput> }) => {
+/** Height, inset and Text size per size; md sits on the touch floor. */
+export const INPUT_SIZE = {
+  sm: { minHeight: "$9", paddingHorizontal: "$stack", text: "md" },
+  md: { minHeight: "$target", paddingHorizontal: "$group", text: "lg" },
+  lg: { minHeight: "$12", paddingHorizontal: "$group", text: "xl" },
+} as const;
+
+type InputSize = keyof typeof INPUT_SIZE;
+
+/** A single-line box grows with its line and drops Android's theme inset. */
+const SINGLE_LINE_BOX = { height: "auto", paddingVertical: "$0" } as const;
+
+type Props = Omit<InputProps, "size" | "allowFontScaling"> & {
+  ref?: Ref<TextInputInstance>;
+  size?: InputSize;
+  invalid?: boolean;
+};
+
+/** Themed input: text aligns to the start side and scales as Text does. */
+export const Input = ({ ref, size = "md", invalid, disabled, fontSize, ...props }: Props) => {
   const { isRTL } = useRTL();
+  const metrics = INPUT_SIZE[size];
+  const sized = resolveTextSizing(useTextScale(), fontSize, sizeValuesOf(metrics.text));
+
   return (
     <TamaguiInput
-      // Tamagui types the ref as TamaguiElement; the runtime instance is the RN
-      // TextInput, so we expose the TextInput type to callers (for .focus()).
-      ref={ref as Ref<TamaguiElement>}
+      ref={ref}
       textAlign={isRTL ? "right" : "left"}
-      color="$typography"
-      placeholderTextColor="$typographySecondary"
-      borderColor="$borderColor"
-      backgroundColor="$backgroundSecondary"
+      minHeight={metrics.minHeight}
+      paddingHorizontal={metrics.paddingHorizontal}
+      fontSize={sized.fontSize}
+      fontWeight={TEXT_WEIGHT}
+      borderRadius="$control"
+      color="$fg"
+      placeholderTextColor="$placeholderColor"
+      borderColor={invalid ? "$error" : "$borderColor"}
+      backgroundColor="$surface"
+      opacity={disabled ? 0.5 : 1}
+      disabled={disabled}
+      focusStyle={{ borderColor: invalid ? "$error" : "$primary" }}
+      accessibilityState={{ disabled: Boolean(disabled) }}
+      {...(props.multiline ? null : SINGLE_LINE_BOX)}
       {...props}
+      allowFontScaling={false}
     />
   );
 };
+
+export type { InputSize };

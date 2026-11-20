@@ -153,10 +153,10 @@ const AudioSettings: FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleDeletePack = (reciterId: string) => {
+  const handleDeletePack = (reciterId: string, name: string) => {
     Alert.alert(
       t("settings.athkarAudio.deleteConfirm.title"),
-      t("settings.athkarAudio.deleteConfirm.message"),
+      t("settings.athkarAudio.deleteConfirm.reciterMessage", { name }),
       [
         { text: t("common.cancel"), style: "cancel" },
         {
@@ -171,62 +171,88 @@ const AudioSettings: FC = () => {
     );
   };
 
-  const handleDownloadPack = async (reciterId: string) => {
-    const reciter = reciters.find((r) => r.id === reciterId);
-    if (!reciter) return;
-
-    setIsDownloading(true);
-    setFailedIds([]);
-    const manifest = await reciterRegistry.fetchManifest(reciterId);
-    if (!manifest) {
-      setIsDownloading(false);
-      return;
+  // One download or retry at a time; toast actions bypass the hidden buttons.
+  const busy = useRef(false);
+  const exclusively = async (run: () => Promise<void>) => {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      await run();
+    } finally {
+      busy.current = false;
     }
-
-    setCachedManifest(manifest);
-    const total = Object.keys(manifest.files).length;
-    setDownloadTotal(total);
-    setDownloadCompleted(0);
-
-    const result = await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
-      setDownloadCompleted(completed);
-    });
-
-    if (result.failed > 0) {
-      setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
-    }
-
-    setIsDownloading(false);
-    await refreshStorage();
   };
 
-  const handleRetryFailed = async () => {
-    if (!selectedReciterId || !cachedManifest || failedIds.length === 0) return;
+  const handleDownloadPack = (reciterId: string) =>
+    exclusively(async () => {
+      const reciter = reciters.find((r) => r.id === reciterId);
+      if (!reciter) return;
 
-    setIsRetrying(true);
-    setDownloadTotal(failedIds.length);
-    setDownloadCompleted(0);
-
-    const result = await audioDownloadManager.retryFailed(
-      selectedReciterId,
-      cachedManifest,
-      failedIds,
-      (completed) => {
-        setDownloadCompleted(completed);
-      }
-    );
-
-    if (result.failed > 0) {
-      setFailedIds(result.failedIds);
-      MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }));
-    } else {
+      setIsDownloading(true);
       setFailedIds([]);
-      MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
-    }
+      const manifest = await reciterRegistry.fetchManifest(reciterId);
+      if (!manifest) {
+        setIsDownloading(false);
+        return;
+      }
 
-    setIsRetrying(false);
-    await refreshStorage();
+      setCachedManifest(manifest);
+      const total = Object.keys(manifest.files).length;
+      setDownloadTotal(total);
+      setDownloadCompleted(0);
+
+      const result = await audioDownloadManager.downloadPack(reciterId, manifest, (completed) => {
+        setDownloadCompleted(completed);
+      });
+
+      if (result.failed > 0) {
+        setFailedIds(result.failedIds);
+        MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
+          action: {
+            label: t("athkar.audio.retry"),
+            onPress: () => retryFailed(reciterId, manifest, result.failedIds),
+          },
+        });
+      } else {
+        MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
+      }
+
+      setIsDownloading(false);
+      await refreshStorage();
+    });
+
+  // Takes its inputs, so a toast's action retries what failed, not what a
+  // stale render saw.
+  const retryFailed = (reciterId: string, manifest: ReciterManifest, ids: string[]) =>
+    exclusively(async () => {
+      setIsRetrying(true);
+      setDownloadTotal(ids.length);
+      setDownloadCompleted(0);
+
+      const result = await audioDownloadManager.retryFailed(reciterId, manifest, ids, (done) => {
+        setDownloadCompleted(done);
+      });
+
+      if (result.failed > 0) {
+        setFailedIds(result.failedIds);
+        MessageToast.showWarning(t("athkar.audio.downloadFailed", { count: result.failed }), {
+          action: {
+            label: t("athkar.audio.retry"),
+            onPress: () => retryFailed(reciterId, manifest, result.failedIds),
+          },
+        });
+      } else {
+        setFailedIds([]);
+        MessageToast.showSuccess(t("athkar.audio.downloadRetrySuccess"));
+      }
+
+      setIsRetrying(false);
+      await refreshStorage();
+    });
+
+  const handleRetryFailed = () => {
+    if (!selectedReciterId || !cachedManifest || failedIds.length === 0) return;
+    void retryFailed(selectedReciterId, cachedManifest, failedIds);
   };
 
   const modeOptions: { mode: PlaybackMode; labelKey: string; descKey: string }[] = [
@@ -258,49 +284,54 @@ const AudioSettings: FC = () => {
             <Text size="sm" fontWeight="600" color="$typographySecondary">
               {t("settings.athkarAudio.reciter")}
             </Text>
-            {reciters.map((reciter) => {
-              const isSelected = selectedReciterId === reciter.id;
-              const hasDownload = storageBreakdown.some((s) => s.reciterId === reciter.id);
-              return (
-                <VStack key={reciter.id} gap="$2">
-                  <ReciterCard
-                    reciter={reciter}
-                    selected={isSelected}
-                    downloaded={hasDownload}
-                    isDownloading={isSelected && isDownloading}
-                    onSelect={(id) => {
-                      if (isDownloading) return;
-                      stopSample();
-                      selectReciter(id);
-                      if (!hasDownload) {
-                        handleDownloadPack(id);
-                      }
-                    }}
-                    onPlaySample={(url) => playSample(reciter.id, url)}
-                    onStopSample={stopSample}
-                    isSamplePlaying={playingSampleId === reciter.id}
-                    sampleProgress={playingSampleId === reciter.id ? sampleProgress : undefined}
-                  />
-                  {isSelected && !hasDownload && isDownloading && (
-                    <DownloadProgress completed={downloadCompleted} total={downloadTotal} />
-                  )}
-                  {isSelected && isRetrying && (
-                    <DownloadProgress
-                      completed={downloadCompleted}
-                      total={downloadTotal}
-                      label={t("athkar.audio.retrying")}
+            <VStack
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t("settings.athkarAudio.reciter")}
+              gap="$3">
+              {reciters.map((reciter) => {
+                const isSelected = selectedReciterId === reciter.id;
+                const hasDownload = storageBreakdown.some((s) => s.reciterId === reciter.id);
+                return (
+                  <VStack key={reciter.id} gap="$2">
+                    <ReciterCard
+                      reciter={reciter}
+                      selected={isSelected}
+                      downloaded={hasDownload}
+                      isDownloading={isSelected && isDownloading}
+                      onSelect={(id) => {
+                        if (isDownloading) return;
+                        stopSample();
+                        selectReciter(id);
+                        if (!hasDownload) {
+                          handleDownloadPack(id);
+                        }
+                      }}
+                      onPlaySample={(url) => playSample(reciter.id, url)}
+                      onStopSample={stopSample}
+                      isSamplePlaying={playingSampleId === reciter.id}
+                      sampleProgress={playingSampleId === reciter.id ? sampleProgress : undefined}
                     />
-                  )}
-                  {isSelected && !isDownloading && !isRetrying && failedIds.length > 0 && (
-                    <Button size="sm" variant="outline" onPress={handleRetryFailed}>
-                      <Button.Text color="$primary">
-                        {t("athkar.audio.retry")} ({failedIds.length})
-                      </Button.Text>
-                    </Button>
-                  )}
-                </VStack>
-              );
-            })}
+                    {isSelected && !hasDownload && isDownloading && (
+                      <DownloadProgress completed={downloadCompleted} total={downloadTotal} />
+                    )}
+                    {isSelected && isRetrying && (
+                      <DownloadProgress
+                        completed={downloadCompleted}
+                        total={downloadTotal}
+                        retrying
+                      />
+                    )}
+                    {isSelected && !isDownloading && !isRetrying && failedIds.length > 0 && (
+                      <Button size="sm" variant="outline" onPress={handleRetryFailed}>
+                        <Button.Text color="$primary">
+                          {t("athkar.audio.retry")} ({failedIds.length})
+                        </Button.Text>
+                      </Button>
+                    )}
+                  </VStack>
+                );
+              })}
+            </VStack>
           </VStack>
 
           <Divider />
@@ -310,45 +341,53 @@ const AudioSettings: FC = () => {
             <Text size="sm" fontWeight="600" color="$typographySecondary">
               {t("settings.athkarAudio.playbackMode")}
             </Text>
-            {modeOptions.map((option) => (
-              <Pressable
-                key={option.mode}
-                onPress={() => setPlaybackMode(option.mode)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: playbackMode === option.mode }}
-                accessibilityLabel={t(option.labelKey)}>
-                <Box
-                  padding="$3"
-                  borderRadius="$6"
-                  backgroundColor={
-                    playbackMode === option.mode ? "$primary" : "$backgroundSecondary"
-                  }>
-                  <HStack alignItems="center" justifyContent="space-between">
-                    <VStack flex={1}>
-                      <Text
-                        fontWeight="500"
-                        color={
-                          playbackMode === option.mode ? "$typographyContrast" : "$typography"
-                        }>
-                        {t(option.labelKey)}
-                      </Text>
-                      <Text
-                        size="sm"
-                        color={
-                          playbackMode === option.mode
-                            ? "$typographyContrast"
-                            : "$typographySecondary"
-                        }>
-                        {t(option.descKey)}
-                      </Text>
-                    </VStack>
-                    {playbackMode === option.mode && (
-                      <Icon as={Check} size="md" color="$typographyContrast" />
-                    )}
-                  </HStack>
-                </Box>
-              </Pressable>
-            ))}
+            <VStack
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t("settings.athkarAudio.playbackMode")}
+              gap="$3">
+              {modeOptions.map((option) => (
+                <Pressable
+                  key={option.mode}
+                  onPress={() => setPlaybackMode(option.mode)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: playbackMode === option.mode }}
+                  accessibilityLabel={t("a11y.join", {
+                    first: t(option.labelKey),
+                    second: t(option.descKey),
+                  })}>
+                  <Box
+                    padding="$3"
+                    borderRadius="$6"
+                    backgroundColor={
+                      playbackMode === option.mode ? "$primary" : "$backgroundSecondary"
+                    }>
+                    <HStack alignItems="center" justifyContent="space-between">
+                      <VStack flex={1}>
+                        <Text
+                          fontWeight="500"
+                          color={
+                            playbackMode === option.mode ? "$typographyContrast" : "$typography"
+                          }>
+                          {t(option.labelKey)}
+                        </Text>
+                        <Text
+                          size="sm"
+                          color={
+                            playbackMode === option.mode
+                              ? "$typographyContrast"
+                              : "$typographySecondary"
+                          }>
+                          {t(option.descKey)}
+                        </Text>
+                      </VStack>
+                      {playbackMode === option.mode && (
+                        <Icon as={Check} size="md" color="$typographyContrast" />
+                      )}
+                    </HStack>
+                  </Box>
+                </Pressable>
+              ))}
+            </VStack>
           </VStack>
 
           <Divider />
@@ -393,24 +432,26 @@ const AudioSettings: FC = () => {
                 ) : (
                   storageBreakdown.map((item) => {
                     const reciter = reciters.find((r) => r.id === item.reciterId);
+                    const name = reciter
+                      ? reciterRegistry.getLocalizedName(reciter.name, i18n.language)
+                      : item.reciterId;
                     return (
                       <HStack
                         key={item.reciterId}
                         justifyContent="space-between"
                         alignItems="center">
-                        <Text color="$typography">
-                          {reciter
-                            ? reciterRegistry.getLocalizedName(reciter.name, i18n.language)
-                            : item.reciterId}
-                        </Text>
+                        <Text color="$typography">{name}</Text>
                         <HStack alignItems="center" gap="$2">
                           <Text size="sm" color="$typographySecondary">
                             {formatFileSize(item.size)}
                           </Text>
                           <Pressable
-                            onPress={() => handleDeletePack(item.reciterId)}
+                            onPress={() => handleDeletePack(item.reciterId, name)}
                             accessibilityRole="button"
-                            accessibilityLabel={t("common.delete")}
+                            accessibilityLabel={t("a11y.join", {
+                              first: t("common.delete"),
+                              second: name,
+                            })}
                             width={36}
                             height={36}
                             borderRadius={18}

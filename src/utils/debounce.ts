@@ -1,14 +1,18 @@
+type QueueOptions = {
+  /** A failed update stays queued for the next flush. */
+  retainFailed?: boolean;
+};
+
 export const createDebouncedQueue = <T extends (...args: any[]) => Promise<any>>(
   fn: T,
-  delay: number = 300
+  delay: number = 300,
+  { retainFailed = false }: QueueOptions = {}
 ) => {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let pendingUpdates: Map<string, Parameters<T>> = new Map();
+  let lastFlush: Promise<void> = Promise.resolve();
 
-  const flush = async () => {
-    if (pendingUpdates.size === 0) return;
-
-    // Process all pending updates
+  const drain = async () => {
     const updates = Array.from(pendingUpdates.entries());
     pendingUpdates.clear();
 
@@ -18,8 +22,16 @@ export const createDebouncedQueue = <T extends (...args: any[]) => Promise<any>>
         await fn(...args);
       } catch (error) {
         console.error(`Error processing update for ${key}:`, error);
+        // A newer update for the key replaces the failed one.
+        if (retainFailed && !pendingUpdates.has(key)) pendingUpdates.set(key, args);
       }
     }
+  };
+
+  // A flush starts when the one before it ends, so it resolves with every earlier update tried.
+  const flush = () => {
+    lastFlush = lastFlush.then(drain);
+    return lastFlush;
   };
 
   return {
@@ -34,6 +46,11 @@ export const createDebouncedQueue = <T extends (...args: any[]) => Promise<any>>
     },
 
     flush,
+
+    hasPending: () => pendingUpdates.size > 0,
+
+    /** The queued updates' arguments. */
+    pending: () => Array.from(pendingUpdates.values()),
 
     clear: () => {
       if (timeoutId) {

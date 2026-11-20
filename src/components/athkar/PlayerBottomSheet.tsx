@@ -1,13 +1,7 @@
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, Dimensions, StyleSheet } from "react-native";
-import Animated, {
-  Easing,
-  FadeIn,
-  FadeOut,
-  SlideInDown,
-  SlideOutDown,
-} from "react-native-reanimated";
+import { Dimensions, StyleSheet } from "react-native";
+import Animated, { Easing, FadeIn, SlideInDown, SlideOutDown } from "react-native-reanimated";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -23,7 +17,9 @@ import { athkarPlayer } from "@/services/athkar-player";
 import { useRTL } from "@/contexts/RTLContext";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { PLAYBACK_RATE_OPTIONS, DEFAULT_PLAYBACK_RATE } from "@/constants/AthkarAudio";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SHEET_HEIGHT = SCREEN_HEIGHT * 0.5;
@@ -38,10 +34,7 @@ const PlayerBottomSheet: FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const playerState = useAthkarStore((s) => s.playerState);
   const repeatProgress = useAthkarStore((s) => s.repeatProgress);
@@ -50,7 +43,7 @@ const PlayerBottomSheet: FC = () => {
   const position = useAthkarAudioStore((s) => s.position);
   const duration = useAthkarAudioStore((s) => s.duration);
   const playbackRate = useAthkarAudioStore((s) => s.playbackRate);
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const cycleRate = useCallback(() => {
     const idx = PLAYBACK_RATE_OPTIONS.indexOf(

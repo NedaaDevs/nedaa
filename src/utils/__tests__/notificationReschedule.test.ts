@@ -1,3 +1,4 @@
+import { TASK_RESULT } from "@/constants/BackgroundTask";
 import { shouldForceReschedule, summarizeSchedulingResult } from "@/utils/notificationReschedule";
 
 describe("shouldForceReschedule", () => {
@@ -20,7 +21,7 @@ describe("summarizeSchedulingResult", () => {
         scheduledCount: 0,
         skipReason: "permissionNotGranted",
       })
-    ).toEqual({ result: "skipped", details: "nothing scheduled: permissionNotGranted" });
+    ).toEqual({ result: TASK_RESULT.SKIPPED, details: "nothing scheduled: permissionNotGranted" });
 
     // notifications disabled reports success:true but is still a skip
     expect(
@@ -29,7 +30,7 @@ describe("summarizeSchedulingResult", () => {
         scheduledCount: 0,
         skipReason: "notificationsDisabled",
       })
-    ).toEqual({ result: "skipped", details: "nothing scheduled: notificationsDisabled" });
+    ).toEqual({ result: TASK_RESULT.SKIPPED, details: "nothing scheduled: notificationsDisabled" });
   });
 
   it("maps a failure to a failed entry with the error message", () => {
@@ -39,10 +40,10 @@ describe("summarizeSchedulingResult", () => {
         scheduledCount: 0,
         error: new Error("boom"),
       })
-    ).toEqual({ result: "failed", details: "boom" });
+    ).toEqual({ result: TASK_RESULT.FAILED, details: "boom" });
 
     expect(summarizeSchedulingResult({ success: false, scheduledCount: 0 })).toEqual({
-      result: "failed",
+      result: TASK_RESULT.FAILED,
       details: "unknown scheduling error",
     });
   });
@@ -54,7 +55,10 @@ describe("summarizeSchedulingResult", () => {
         scheduledCount: 42,
         lastScheduledAt: "2026-08-20T19:12:00.000Z",
       })
-    ).toEqual({ result: "success", details: "scheduled 42 through 2026-08-20T19:12:00.000Z" });
+    ).toEqual({
+      result: TASK_RESULT.SUCCESS,
+      details: "scheduled 42 through 2026-08-20T19:12:00.000Z",
+    });
 
     // a partial run stays a success but surfaces the failure count
     expect(
@@ -65,13 +69,13 @@ describe("summarizeSchedulingResult", () => {
         lastScheduledAt: "2026-08-20T19:12:00.000Z",
       })
     ).toEqual({
-      result: "success",
+      result: TASK_RESULT.SUCCESS,
       details: "scheduled 40 through 2026-08-20T19:12:00.000Z, 2 failed",
     });
 
     // a run with nothing in the future has no horizon
     expect(summarizeSchedulingResult({ success: true, scheduledCount: 0 })).toEqual({
-      result: "success",
+      result: TASK_RESULT.SUCCESS,
       details: "scheduled 0",
     });
   });

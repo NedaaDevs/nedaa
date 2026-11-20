@@ -1,7 +1,8 @@
 import React from "react";
 import { AccessibilityInfo } from "react-native";
-import renderer, { act } from "react-test-renderer";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   CompassLocationPermissionAccuracy,
   CompassLocationSource,
@@ -10,6 +11,7 @@ import {
 import { LocalPermissionStatus } from "@/enums/location";
 import type { CompassData } from "@/hooks/useCompass";
 import type { CompassLocationResult } from "@/hooks/useCompassLocation";
+import { HAPTIC } from "@/test-helpers/hapticMock";
 import type { CompassLocationFix } from "@/types/compass";
 import { calculateQiblaDirection } from "@/utils/compass";
 
@@ -21,11 +23,9 @@ const mockCompassIssueCard = jest.fn<null, [Record<string, unknown>]>(() => null
 const mockCompassDetailsSheet = jest.fn<null, [Record<string, unknown>]>(() => null);
 const mockUseCompass = jest.fn<CompassData, [unknown]>();
 const mockUseCompassLocation = jest.fn<CompassLocationResult, [unknown]>();
-const mockHapticSelection = jest.fn();
-const mockHapticLight = jest.fn();
-const mockHapticMedium = jest.fn();
 
-jest.mock("expo-router/react-navigation", () => ({
+jest.mock("expo-router", () => ({
+  ...jest.requireActual("expo-router"),
   useIsFocused: () => true,
 }));
 
@@ -36,15 +36,22 @@ jest.mock("lucide-react-native", () => ({
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, string>) => {
+    t: (key: string, options?: Record<string, unknown>) => {
+      // The dial label carries its options, so a test can read the count it was given.
+      if (key === "a11y.compass.dial") return JSON.stringify(options);
       if (key === "compass.accuracyDegrees") return `±${options?.degrees}°`;
       if (key === "compass.locationAccuracyMeters") return `±${options?.meters} m`;
       return key;
     },
   }),
+  // The screen reaches the i18n bootstrap through the font context.
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
-jest.mock("@/components/TopBar", () => () => null);
+// The font context reads the locale from the app store, which persists to SQLite.
+jest.mock("@/contexts/FontContext", () => ({ useFontFamily: () => "IBMPlexSansArabic-Regular" }));
+
+jest.mock("@/components/ui/screen-header", () => ({ ScreenHeader: () => null }));
 jest.mock("@/components/compass/CompassDial", () => ({
   CompassDial: (props: Record<string, unknown>) => mockCompassDial(props),
 }));
@@ -68,9 +75,10 @@ jest.mock("@/components/ui/hstack", () => ({
 }));
 jest.mock("@/components/ui/icon", () => ({ Icon: () => null }));
 jest.mock("@/components/ui/spinner", () => ({ Spinner: () => null }));
-jest.mock("@/components/ui/text", () => ({
-  Text: ({ children }: { children?: React.ReactNode }) => children ?? null,
-}));
+jest.mock("@/components/ui/text", () => {
+  const { Text } = jest.requireActual("react-native");
+  return { Text };
+});
 jest.mock("@/components/ui/vstack", () => ({
   VStack: ({ children }: { children?: React.ReactNode }) => children ?? null,
 }));
@@ -87,10 +95,7 @@ jest.mock("@/hooks/useCompassLocation", () => ({
 jest.mock("@/hooks/useDelayedFlag", () => ({
   useDelayedFlag: (value: boolean) => value,
 }));
-jest.mock("@/hooks/useHaptic", () => ({
-  useHaptic: (kind: string) =>
-    kind === "medium" ? mockHapticMedium : kind === "light" ? mockHapticLight : mockHapticSelection,
-}));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 jest.mock("@/screenshot-mode/useScreenshotSeed", () => ({
   useScreenshotSeed: () => null,
 }));
@@ -146,24 +151,11 @@ const locationResult = (overrides: Partial<CompassLocationResult> = {}): Compass
   ...overrides,
 });
 
-const renderScreen = async () => {
-  let tree!: renderer.ReactTestRenderer;
-  await act(async () => {
-    tree = renderer.create(<CompassScreen />);
-    await Promise.resolve();
-  });
-  return tree;
-};
+const renderScreen = () => render(<CompassScreen />);
 
-const hasText = (tree: renderer.ReactTestRenderer, text: string) =>
-  tree.root.findAll((node) => node.props.children === text).length > 0;
-
-const rotateTo = async (tree: renderer.ReactTestRenderer, heading: number) => {
+const rotateTo = async (heading: number) => {
   mockUseCompass.mockReturnValue({ ...reliableCompass, heading });
-  await act(async () => {
-    tree.update(<CompassScreen />);
-    await Promise.resolve();
-  });
+  await screen.rerender(<CompassScreen />);
 };
 
 describe("CompassScreen Qibla reliability", () => {
@@ -185,10 +177,8 @@ describe("CompassScreen Qibla reliability", () => {
   });
 
   it("renders the dial with a Qibla direction when location and true-north heading exist", async () => {
-    const tree = await renderScreen();
+    await renderScreen();
     const dialProps = mockCompassDial.mock.calls[0]?.[0];
-    const hasEnableLocation = hasText(tree, "compass.enableLocation");
-    act(() => tree.unmount());
 
     expect(mockCompassDial).toHaveBeenCalledTimes(1);
     expect(dialProps).toEqual(
@@ -196,7 +186,17 @@ describe("CompassScreen Qibla reliability", () => {
         qiblaDirection: expect.closeTo(calculateQiblaDirection(24.7136, 46.6753), 5),
       })
     );
-    expect(hasEnableLocation).toBe(false);
+    expect(screen.queryByText("compass.enableLocation")).not.toBeOnTheScreen();
+  });
+
+  // A numeric count lets each locale pick the plural form of "degree".
+  it("labels the dial with the heading as a count", async () => {
+    await renderScreen();
+    const dialProps = mockCompassDial.mock.calls[0]?.[0];
+
+    expect(JSON.parse(String(dialProps?.accessibilityLabel))).toEqual(
+      expect.objectContaining({ count: reliableCompass.heading })
+    );
   });
 
   it("falls back to a plain compass with an enable-location line when no fix exists", async () => {
@@ -208,13 +208,11 @@ describe("CompassScreen Qibla reliability", () => {
       northReference: CompassNorthReference.MAGNETIC,
     });
 
-    const tree = await renderScreen();
+    await renderScreen();
     const dialProps = mockCompassDial.mock.calls[0]?.[0];
-    const hasEnableLocation = hasText(tree, "compass.enableLocation");
-    act(() => tree.unmount());
 
     expect(dialProps).toEqual(expect.objectContaining({ qiblaDirection: null }));
-    expect(hasEnableLocation).toBe(true);
+    expect(screen.getByText("compass.enableLocation")).toBeOnTheScreen();
   });
 
   it("requests location when the enable line is pressed", async () => {
@@ -232,14 +230,8 @@ describe("CompassScreen Qibla reliability", () => {
       northReference: CompassNorthReference.MAGNETIC,
     });
 
-    const tree = await renderScreen();
-    const [enableLocationButton] = tree.root.findAllByProps({
-      accessibilityLabel: "a11y.compass.enableLocation",
-    });
-    await act(async () => {
-      enableLocationButton.props.onPress();
-    });
-    act(() => tree.unmount());
+    await renderScreen();
+    await fireEvent.press(screen.getByLabelText("a11y.compass.enableLocation"));
 
     expect(refresh).toHaveBeenCalled();
   });
@@ -250,10 +242,9 @@ describe("CompassScreen Qibla reliability", () => {
       accuracyDegrees: 60,
     });
 
-    const tree = await renderScreen();
+    await renderScreen();
     const overlayProps = mockCompassOverlay.mock.calls[0]?.[0];
     const dialProps = mockCompassDial.mock.calls[0]?.[0];
-    act(() => tree.unmount());
 
     expect(mockCompassIssueCard).not.toHaveBeenCalled();
     expect(overlayProps).toEqual(expect.objectContaining({ variant: "calibrate" }));
@@ -266,42 +257,39 @@ describe("CompassScreen Qibla reliability", () => {
       tiltDegrees: 40,
     });
 
-    const tree = await renderScreen();
+    await renderScreen();
     const overlayProps = mockCompassOverlay.mock.calls[0]?.[0];
-    act(() => tree.unmount());
 
     expect(overlayProps).toEqual(expect.objectContaining({ variant: "holdFlat" }));
   });
 
   it("ticks as the dial passes a detent while searching for the Qibla", async () => {
     mockUseCompass.mockReturnValue({ ...reliableCompass, heading: 200 });
-    const tree = await renderScreen();
+    await renderScreen();
 
     // 200° and 150° are both far from the ~244° Qibla, so the dial stays in the
     // searching zone and crossing the 45° detent boundary should tick.
-    await rotateTo(tree, 150);
-    act(() => tree.unmount());
+    await rotateTo(150);
 
-    expect(mockHapticSelection).toHaveBeenCalled();
-    expect(mockHapticLight).not.toHaveBeenCalled();
-    expect(mockHapticMedium).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).not.toHaveBeenCalled();
   });
 
   it("escalates with a light approach cue and a medium lock at the Qibla", async () => {
     const qibla = calculateQiblaDirection(24.7136, 46.6753);
     mockUseCompass.mockReturnValue({ ...reliableCompass, heading: 200 });
-    const tree = await renderScreen();
+    await renderScreen();
 
-    await rotateTo(tree, qibla - 6);
-    expect(mockHapticLight).toHaveBeenCalledTimes(1);
-    expect(mockHapticMedium).not.toHaveBeenCalled();
+    await rotateTo(qibla - 6);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).not.toHaveBeenCalled();
 
-    await rotateTo(tree, qibla);
-    act(() => tree.unmount());
+    await rotateTo(qibla);
 
-    expect(mockHapticMedium).toHaveBeenCalledTimes(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.MEDIUM]).toHaveBeenCalledTimes(1);
     // The approach and lock own the feel near the target; detents stay silent there.
-    expect(mockHapticSelection).not.toHaveBeenCalled();
+    expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).not.toHaveBeenCalled();
   });
 
   it("keeps a blocking card for a dead sensor", async () => {
@@ -311,9 +299,8 @@ describe("CompassScreen Qibla reliability", () => {
       error: "sensor_unavailable",
     });
 
-    const tree = await renderScreen();
+    await renderScreen();
     const issueProps = mockCompassIssueCard.mock.calls[0]?.[0];
-    act(() => tree.unmount());
 
     expect(mockCompassDial).not.toHaveBeenCalled();
     expect(issueProps).toEqual(
@@ -330,7 +317,7 @@ describe("CompassScreen Qibla reliability", () => {
       northReference: CompassNorthReference.MAGNETIC,
     });
 
-    const tree = await renderScreen();
+    await renderScreen();
     const issueProps = mockCompassIssueCard.mock.calls[0]?.[0];
 
     expect(mockCompassDial).not.toHaveBeenCalled();
@@ -341,11 +328,10 @@ describe("CompassScreen Qibla reliability", () => {
       })
     );
 
-    await act(async () => {
+    await act(() => {
       (issueProps?.onSecondaryAction as () => void)();
     });
     const dialProps = mockCompassDial.mock.calls[0]?.[0];
-    act(() => tree.unmount());
 
     // Choosing compass-only relaxes the true-north gate: the magnetic dial renders
     // with no Qibla direction rather than staying blocked.

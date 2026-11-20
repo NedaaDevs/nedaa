@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 
+import { ALARM_TIMING_MODE, ALARM_TYPE, timingForMode } from "@/constants/Alarm";
 import {
   AlarmType,
   AlarmTypeSettings,
@@ -30,17 +31,22 @@ interface AlarmSettingsActions {
   setVibration: (alarmType: AlarmType, config: VibrationConfig) => void;
   setSnooze: (alarmType: AlarmType, config: SnoozeConfig) => void;
   updateSettings: (alarmType: AlarmType, settings: Partial<AlarmTypeSettings>) => void;
-  resetToDefaults: (alarmType: AlarmType) => void;
   getSettings: (alarmType: AlarmType) => AlarmTypeSettings;
 }
 
 export type AlarmSettingsStore = AlarmSettingsState & AlarmSettingsActions;
 
+// Friday offers no at-prayer mode.
+const FRIDAY_DEFAULT_TIMING = timingForMode(
+  ALARM_TYPE.FRIDAY,
+  ALARM_TIMING_MODE.BEFORE_PRAYER_TIME
+);
+
 const defaultState: AlarmSettingsState = {
   fajr: { ...DEFAULT_ALARM_TYPE_SETTINGS },
   friday: {
     ...DEFAULT_ALARM_TYPE_SETTINGS,
-    timing: { mode: "beforePrayerTime", minutesBefore: 30 },
+    timing: FRIDAY_DEFAULT_TIMING,
   },
 };
 
@@ -105,12 +111,6 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
           }));
         },
 
-        resetToDefaults: (alarmType) => {
-          set(() => ({
-            [alarmType]: { ...DEFAULT_ALARM_TYPE_SETTINGS },
-          }));
-        },
-
         getSettings: (alarmType) => {
           return get()[alarmType];
         },
@@ -123,11 +123,14 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
           if (!persisted) return currentState;
 
           // Ensure timing field exists with defaults for old data
-          const fajrTiming = persisted.fajr?.timing ?? DEFAULT_TIMING_CONFIG;
-          const fridayTiming = persisted.friday?.timing ?? {
-            mode: "beforePrayerTime" as const,
-            minutesBefore: 30,
-          };
+          const savedFajrTiming = persisted.fajr?.timing ?? DEFAULT_TIMING_CONFIG;
+          // Zero minutes before rings at prayer time: Fajr's at-prayer mode.
+          const fajrTiming =
+            savedFajrTiming.mode === ALARM_TIMING_MODE.BEFORE_PRAYER_TIME &&
+            savedFajrTiming.minutesBefore <= 0
+              ? timingForMode(ALARM_TYPE.FAJR, ALARM_TIMING_MODE.AT_PRAYER_TIME)
+              : savedFajrTiming;
+          const fridayTiming = persisted.friday?.timing ?? FRIDAY_DEFAULT_TIMING;
 
           // Volumes saved before the floor existed can be zero, which rings silently.
           const liftVolume = (volume: number | undefined) =>

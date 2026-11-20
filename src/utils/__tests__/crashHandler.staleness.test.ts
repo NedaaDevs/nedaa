@@ -8,7 +8,7 @@ jest.mock("expo-file-system", () => {
     create() {
       content = content ?? "";
     }
-    write(data: string) {
+    writeSync(data: string) {
       content = data;
     }
     textSync() {

@@ -4,6 +4,7 @@ import { ar, enUS, ms } from "date-fns/locale";
 
 // Enums
 import { AppLocale } from "@/enums/app";
+import { screenshotNow } from "@/screenshot-mode/clock";
 
 export type { HijriDate } from "hijri-native";
 export * as HijriNative from "hijri-native";
@@ -13,6 +14,12 @@ type DateRange = {
   today: number;
   tomorrow: number;
 };
+
+/** The device time, or the pinned moment in a screenshot build. */
+const currentTime = (): Date => screenshotNow() ?? new Date();
+
+/** The device's own IANA zone, the one its wall clock shows. */
+export const deviceTimeZone = (): string => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /**
  * Converts a Unix timestamp (in seconds) to YYYYMMDD format
@@ -34,7 +41,7 @@ export const timestampToDateInt = (timestamp: number, timezone: string): number 
  * @see getTimezoneYear, getTimezoneMonth for timezone-aware display values
  */
 export const timeZonedNow = (tz: string): Date => {
-  return toZonedTime(new Date(), tz);
+  return toZonedTime(currentTime(), tz);
 };
 
 /**
@@ -43,7 +50,7 @@ export const timeZonedNow = (tz: string): Date => {
  * @returns Current year as number in the specified timezone
  */
 export const getTimezoneYear = (tz: string): number => {
-  const zonedDate = toZonedTime(new Date(), tz);
+  const zonedDate = toZonedTime(currentTime(), tz);
   return parseInt(format(zonedDate, "yyyy"));
 };
 
@@ -53,7 +60,7 @@ export const getTimezoneYear = (tz: string): number => {
  * @returns Current month as number (1-12) in the specified timezone
  */
 export const getTimezoneMonth = (tz: string): number => {
-  const zonedDate = toZonedTime(new Date(), tz);
+  const zonedDate = toZonedTime(currentTime(), tz);
   return parseInt(format(zonedDate, "MM"));
 };
 
@@ -76,7 +83,7 @@ export const dateToInt = (date: string | Date): number => {
  * Get three consecutive days (yesterday, today, tomorrow) as integers in YYYYMMDD format
  */
 export const getThreeDayDateRange = (timezone: string): DateRange => {
-  const now = toZonedTime(Date.now(), timezone);
+  const now = toZonedTime(currentTime(), timezone);
 
   return {
     yesterday: dateToInt(subDays(now, 1)),
@@ -110,7 +117,7 @@ export const getDateLocale = (locale: AppLocale) => {
  * @returns {boolean} - True if date is Friday in the given timezone
  */
 export const isFriday = (timezone: string): boolean => {
-  const zonedDate = toZonedTime(Date.now(), timezone);
+  const zonedDate = toZonedTime(currentTime(), timezone);
   return zonedDate.getDay() === 5; // 5 represents Friday (0 is Sunday, 1 is Monday, etc.)
 };
 
@@ -142,6 +149,15 @@ export const formatTime12Hour = (hour: number, minute: number) => {
  * @returns {string} - A date-fns format string
  */
 export const clockFormat = (use24HourTime: boolean): string => (use24HourTime ? "HH:mm" : "h:mm a");
+
+/**
+ * The mark a 12-hour clock time carries for this hour of the day, in the locale.
+ * @param {number} hour - Hour of the day, 0 to 23
+ * @param {AppLocale} locale - The active locale
+ * @returns {string} - For example "PM" or "م"
+ */
+export const clockPeriod = (hour: number, locale: AppLocale): string =>
+  format(new Date(2000, 0, 1, hour), "a", { locale: getDateLocale(locale) });
 
 /**
  * Clock time for a prayer or adhan in the user's chosen 12- or 24-hour format.

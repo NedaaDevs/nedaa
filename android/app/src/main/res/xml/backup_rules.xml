@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+  <exclude domain="file" path="SQLite/CityCheckStorage"/>
+  <exclude domain="file" path="SQLite/CityCheckStorage-wal"/>
+  <exclude domain="file" path="SQLite/CityCheckStorage-shm"/>
+  <exclude domain="file" path="SQLite/CityCheckStorage-journal"/>
+</full-backup-content>

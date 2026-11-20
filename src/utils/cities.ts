@@ -1,3 +1,4 @@
+import { COORDINATE_PROBLEM, type CoordinateProblem } from "@/constants/Cities";
 import {
   CITY_LANGS,
   type CityCountry,
@@ -94,7 +95,7 @@ const ARABIC_DECIMAL_SEPARATOR = "٫";
  * separator — as their ASCII equivalents, so a coordinate typed on an Arabic or Urdu
  * keyboard parses the same as one typed on a Latin keyboard.
  */
-const toAsciiNumerals = (text: string): string =>
+export const toAsciiNumerals = (text: string): string =>
   [...text]
     .map((character) => {
       if (character === ARABIC_DECIMAL_SEPARATOR) return ".";
@@ -122,13 +123,25 @@ const AXIS_LIMIT: Record<CoordinateAxisValue, number> = {
   [CoordinateAxis.LONGITUDE]: 180,
 };
 
-/** Decimal degrees, or null when the text is not a coordinate within the axis range. */
-export const parseCoordinate = (text: string, axis: CoordinateAxisValue): number | null => {
+/** A typed coordinate: its decimal degrees, or why it is not one yet. */
+export type CoordinateReading = { value: number } | { problem: CoordinateProblem };
+
+const WHOLE_NUMBER = /^[+-]?\d+(\.\d+)?$/;
+/** Empty, a sign alone, or digits ending in the decimal mark. */
+const PART_TYPED = /^[+-]?(\d+\.)?$/;
+
+/** Reads a coordinate field's text for one axis. */
+export const readCoordinate = (text: string, axis: CoordinateAxisValue): CoordinateReading => {
   const normalized = toAsciiNumerals(text).trim();
-  if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) return null;
-
-  const value = Number(normalized);
-  if (!Number.isFinite(value)) return null;
-
-  return Math.abs(value) <= AXIS_LIMIT[axis] ? value : null;
+  if (WHOLE_NUMBER.test(normalized)) {
+    const value = Number(normalized);
+    return Math.abs(value) <= AXIS_LIMIT[axis]
+      ? { value }
+      : { problem: COORDINATE_PROBLEM.OUT_OF_RANGE };
+  }
+  return {
+    problem: PART_TYPED.test(normalized)
+      ? COORDINATE_PROBLEM.INCOMPLETE
+      : COORDINATE_PROBLEM.NOT_A_NUMBER,
+  };
 };

@@ -250,6 +250,13 @@ public final class ExpoDiagnosticsModule: Module {
       self.inbox.ack(tokens)
     }
 
+    AsyncFunction("excludeFromBackup") { (path: String) throws in
+      var url = URL(fileURLWithPath: path)
+      var values = URLResourceValues()
+      values.isExcludedFromBackup = true
+      try url.setResourceValues(values)
+    }
+
     // Force a fatal out-of-bounds trap; MetricKit records an MXCrashDiagnostic next launch.
     Function("testNativeCrash") {
       let empty: [Int] = []

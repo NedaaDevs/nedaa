@@ -1,63 +1,38 @@
 import { useFonts } from "expo-font";
-import {
-  IBMPlexSansArabic_400Regular,
-  IBMPlexSansArabic_500Medium,
-  IBMPlexSansArabic_600SemiBold,
-  IBMPlexSansArabic_700Bold,
-} from "@expo-google-fonts/ibm-plex-sans-arabic";
-import {
-  Asap_400Regular,
-  Asap_500Medium,
-  Asap_600SemiBold,
-  Asap_700Bold,
-} from "@expo-google-fonts/asap";
+import { IBMPlexSansArabic_400Regular } from "@expo-google-fonts/ibm-plex-sans-arabic/400Regular";
+import { IBMPlexSansArabic_500Medium } from "@expo-google-fonts/ibm-plex-sans-arabic/500Medium";
+import { IBMPlexSansArabic_600SemiBold } from "@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold";
+import { IBMPlexSansArabic_700Bold } from "@expo-google-fonts/ibm-plex-sans-arabic/700Bold";
+import { IBMPlexSans_400Regular } from "@expo-google-fonts/ibm-plex-sans/400Regular";
+import { IBMPlexSans_500Medium } from "@expo-google-fonts/ibm-plex-sans/500Medium";
+import { IBMPlexSans_600SemiBold } from "@expo-google-fonts/ibm-plex-sans/600SemiBold";
+import { IBMPlexSans_700Bold } from "@expo-google-fonts/ibm-plex-sans/700Bold";
 
-// Font family constants
-export const FontFamily = {
-  IBM: "IBM",
-  Asap: "Asap",
+import { ARABIC_FACES, LATIN_FACES } from "@/constants/Fonts";
+
+/** Every font loaded before first paint, by the name a text style uses. */
+export const APP_FONTS = {
+  [ARABIC_FACES.regular]: IBMPlexSansArabic_400Regular,
+  [ARABIC_FACES.medium]: IBMPlexSansArabic_500Medium,
+  [ARABIC_FACES.semibold]: IBMPlexSansArabic_600SemiBold,
+  [ARABIC_FACES.bold]: IBMPlexSansArabic_700Bold,
+
+  [LATIN_FACES.regular]: IBMPlexSans_400Regular,
+  [LATIN_FACES.medium]: IBMPlexSans_500Medium,
+  [LATIN_FACES.semibold]: IBMPlexSans_600SemiBold,
+  [LATIN_FACES.bold]: IBMPlexSans_700Bold,
+
+  // Ornamental ayah/page markers + image-mushaf overlays (FD50 digit glyphs).
+  UthmanicHafs: require("@/../assets/fonts/UthmanicHafs_V22.ttf"),
+  // Quran text-reader body font: the flowing KFGQPC Hafs build (combining marks).
+  Hafs: require("@/../assets/fonts/KFGQPC-HafsUthmanic.otf"),
+  // Calligraphic surah-name ligatures, one font per mushaf version so the
+  // header script matches the page ("surahNNN[ surah-icon]" → vocalized name glyph).
+  "SurahNames-v1": require("@/../assets/fonts/SurahNames-v1.ttf"),
+  "SurahNames-v2": require("@/../assets/fonts/SurahNames-v2.ttf"),
+  "SurahNames-v4": require("@/../assets/fonts/SurahNames-v4.ttf"),
+  // Juz-name ligatures + ornaments ("juzNNN" → vocalized juz name glyph).
+  QuranCommon: require("@/../assets/fonts/QuranCommon.ttf"),
 };
 
-// IBMPlexSans font weights
-export const IBMPlexSansFonts = {
-  400: "IBMPlexSans-Regular",
-  500: "IBMPlexSans-Medium",
-  600: "IBMPlexSans-SemiBold",
-  700: "IBMPlexSans-Bold",
-};
-
-// Asap font weights
-export const AsapFonts = {
-  400: "Asap-Regular",
-  500: "Asap-Medium",
-  600: "Asap-SemiBold",
-  700: "Asap-Bold",
-};
-
-export const useLoadFonts = () => {
-  return useFonts({
-    // IBM Plex Sans Arabic fonts
-    "IBMPlexSans-Regular": IBMPlexSansArabic_400Regular,
-    "IBMPlexSans-Medium": IBMPlexSansArabic_500Medium,
-    "IBMPlexSans-SemiBold": IBMPlexSansArabic_600SemiBold,
-    "IBMPlexSans-Bold": IBMPlexSansArabic_700Bold,
-
-    // Asap fonts
-    "Asap-Regular": Asap_400Regular,
-    "Asap-Medium": Asap_500Medium,
-    "Asap-SemiBold": Asap_600SemiBold,
-    "Asap-Bold": Asap_700Bold,
-
-    // Ornamental ayah/page markers + image-mushaf overlays (FD50 digit glyphs).
-    UthmanicHafs: require("@/../assets/fonts/UthmanicHafs_V22.ttf"),
-    // Quran text-reader body font: the flowing KFGQPC Hafs build (combining marks).
-    Hafs: require("@/../assets/fonts/KFGQPC-HafsUthmanic.otf"),
-    // Calligraphic surah-name ligatures, one font per mushaf version so the
-    // header script matches the page ("surahNNN[ surah-icon]" → vocalized name glyph).
-    "SurahNames-v1": require("@/../assets/fonts/SurahNames-v1.ttf"),
-    "SurahNames-v2": require("@/../assets/fonts/SurahNames-v2.ttf"),
-    "SurahNames-v4": require("@/../assets/fonts/SurahNames-v4.ttf"),
-    // Juz-name ligatures + ornaments ("juzNNN" → vocalized juz name glyph).
-    QuranCommon: require("@/../assets/fonts/QuranCommon.ttf"),
-  });
-};
+export const useLoadFonts = () => useFonts(APP_FONTS);

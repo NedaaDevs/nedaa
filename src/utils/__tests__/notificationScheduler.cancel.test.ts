@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { cancelAllAthans } from "expo-alarm";
 
 import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { PRAYER_ID } from "@/constants/Prayer";
 import { PlatformType } from "@/enums/app";
 import { SchedulingSkipReason } from "@/enums/notifications";
 import type { NotificationSettings } from "@/types/notification";
@@ -33,11 +34,6 @@ jest.mock("@/stores/customSounds", () => ({
 jest.mock("@/stores/quranReminders", () => ({
   useQuranRemindersStore: { getState: () => ({ reminders: [] }) },
 }));
-// Number formatting reads the locale from the app store, which opens SQLite.
-jest.mock("@/stores/app", () => ({
-  __esModule: true,
-  default: { getState: () => ({ locale: "en" }) },
-}));
 // The sound helpers reach the athkar store, which opens SQLite.
 jest.mock("@/stores/athkar", () => ({ useAthkarStore: { getState: jest.fn() } }));
 jest.mock("@/utils/customSoundManager", () => ({
@@ -65,7 +61,7 @@ const SETTINGS: NotificationSettings = {
     preAthan: { enabled: false, sound: "tasbih", vibration: true, timing: 15 },
     qada: { enabled: false, sound: "tasbih", vibration: true },
   },
-  overrides: {},
+  overrides: { [PRAYER_ID.FAJR]: {} },
 };
 
 const ATHKAR = {

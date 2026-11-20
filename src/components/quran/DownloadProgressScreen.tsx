@@ -30,6 +30,7 @@ import ReportThisButton from "@/components/ReportThisButton";
 import { formatNumberToLocale } from "@/utils/number";
 import { useQuranStore } from "@/stores/quran";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   MushafVersion,
   QuranTheme,
@@ -81,7 +82,7 @@ const DownloadProgressScreen = ({
   const { isRTL } = useRTL();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const insets = useSafeAreaInsets();
-  const hapticSuccess = useHaptic("success");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const chrome = useQuranChromeColors();
   const reduceMotion = useReducedMotion();
 
@@ -139,13 +140,13 @@ const DownloadProgressScreen = ({
   const fill = useSharedValue(0);
 
   useEffect(() => {
-    fill.value = reduceMotion
-      ? fillTarget
-      : withTiming(fillTarget, { duration: 350, easing: Easing.linear });
+    fill.set(
+      reduceMotion ? fillTarget : withTiming(fillTarget, { duration: 350, easing: Easing.linear })
+    );
   }, [fillTarget, reduceMotion, fill]);
 
-  const clipStyle = useAnimatedStyle(() => ({ height: `${fill.value}%` }));
-  const opacityStyle = useAnimatedStyle(() => ({ opacity: fill.value / 100 }));
+  const clipStyle = useAnimatedStyle(() => ({ height: `${fill.get()}%` }));
+  const opacityStyle = useAnimatedStyle(() => ({ opacity: fill.get() / 100 }));
 
   useEffect(() => {
     if (isComplete) hapticSuccess();
@@ -201,7 +202,7 @@ const DownloadProgressScreen = ({
           style={{
             position: "absolute",
             top: insets.top + 12,
-            ...(isRTL ? { right: 16 } : { left: 16 }),
+            start: 16,
             zIndex: 10,
           }}>
           <BackIcon size={24} color={chrome.subtleText} />

@@ -81,6 +81,10 @@ class ExpoHmsLocationModule : Module() {
       getCurrentPosition(options, promise)
     }
 
+    AsyncFunction("getLastKnownPositionAsync") { promise: Promise ->
+      getLastKnownPosition(promise)
+    }
+
     AsyncFunction("startWatchingAsync") { watchId: Int, options: HmsLocationOptions, promise: Promise ->
       startWatching(watchId, options, promise)
     }
@@ -191,6 +195,27 @@ class ExpoHmsLocationModule : Module() {
       finishCurrentRequest(callback) {
         promise.reject(ERROR_REQUEST_FAILED, "Huawei Location Kit request failed: ${error.message}", error)
       }
+    }
+  }
+
+  // Resolves null for a missing fix or a failed read; the caller treats both as no fallback.
+  private fun getLastKnownPosition(promise: Promise) {
+    if (!hasForegroundPermission()) {
+      promise.resolve(null)
+      return
+    }
+    try {
+      locationProvider.lastLocation
+        .addOnSuccessListener { location: Location? ->
+          promise.resolve(location?.toResponse())
+        }
+        .addOnFailureListener { error ->
+          Log.w(TAG, "Huawei Location Kit last location failed", error)
+          promise.resolve(null)
+        }
+    } catch (error: Exception) {
+      Log.w(TAG, "Huawei Location Kit last location failed", error)
+      promise.resolve(null)
     }
   }
 

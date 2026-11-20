@@ -5,15 +5,18 @@ export enum AppLocale {
   MS = "ms",
 }
 
-export enum PlatformType {
-  IOS = "ios",
-  ANDROID = "android",
-}
+export const PlatformType = {
+  IOS: "ios",
+  ANDROID: "android",
+} as const;
+export type PlatformTypeValue = (typeof PlatformType)[keyof typeof PlatformType];
 
 export enum AppMode {
   SYSTEM = "system",
   LIGHT = "light",
   DARK = "dark",
+  /** Follows the prayer-day phases: light by day, dark from Maghrib. */
+  ADAPTIVE = "adaptive",
 }
 
 export enum AppDirection {
@@ -34,6 +37,13 @@ export const OpeningTab = {
 } as const;
 
 export type OpeningTabValue = (typeof OpeningTab)[keyof typeof OpeningTab];
+
+/** Tab routes the bar never shows; links and back controls reach them. */
+export const HiddenTab = {
+  COMPASS: "compass",
+  QADA: "qada",
+  SETTINGS: "settings",
+} as const;
 
 /** In-app text size preset. Values are storage keys — never rename persisted ones. */
 export const TextSize = {

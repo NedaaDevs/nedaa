@@ -13,14 +13,18 @@ export type UpcomingImportantDay = ImportantDayDef & NextOccurrence;
 // hijriDaysOffset shifts today the same way the Hijri converter shifts its
 // Gregorian→Hijri result, so both features always agree. All calendar math is
 // HijriNative (OS Umm al-Qura) — dates are estimates pending moon sighting.
+// Without `now`, the device clock's moment in `timezone`.
 export const nextHijriOccurrence = (args: {
   hijriMonth: number;
   hijriDay: number;
   timezone: string;
   hijriDaysOffset?: number;
+  now?: Date;
 }): NextOccurrence => {
-  const { hijriMonth, hijriDay, timezone, hijriDaysOffset = 0 } = args;
-  const rawToday = HijriNative.today(timezone);
+  const { hijriMonth, hijriDay, timezone, hijriDaysOffset = 0, now } = args;
+  const rawToday = now
+    ? HijriNative.fromTimestamp(Math.floor(now.getTime() / 1000), timezone)
+    : HijriNative.today(timezone);
   const today = hijriDaysOffset !== 0 ? HijriNative.addDays(rawToday, hijriDaysOffset) : rawToday;
 
   const passedThisYear =
@@ -39,17 +43,13 @@ export const nextHijriOccurrence = (args: {
   return { hijriYear, daysRemaining, expectedGregorian };
 };
 
-// Registry → occurrences, soonest first.
+// Soonest first; Array sort is stable, so a tie keeps registry order.
 export const upcomingImportantDays = (args: {
   timezone: string;
   hijriDaysOffset?: number;
+  now?: Date;
 }): UpcomingImportantDay[] =>
   IMPORTANT_DAYS.map((def) => ({
     ...def,
-    ...nextHijriOccurrence({
-      hijriMonth: def.hijriMonth,
-      hijriDay: def.hijriDay,
-      timezone: args.timezone,
-      hijriDaysOffset: args.hijriDaysOffset,
-    }),
+    ...nextHijriOccurrence({ ...args, hijriMonth: def.hijriMonth, hijriDay: def.hijriDay }),
   })).sort((a, b) => a.daysRemaining - b.daysRemaining);

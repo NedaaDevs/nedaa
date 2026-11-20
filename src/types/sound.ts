@@ -17,6 +17,18 @@ export type SoundOption = {
   isCustom?: boolean;
 };
 
+/** What the preview player accepts: a bundled asset module or a file URI. */
+export type PreviewSource = string | number;
+
+/** One sound a picker offers, stored as `value` and played from `previewSource`. */
+export type SoundChoice<K extends string> = {
+  value: K;
+  /** Display text, already translated. */
+  label: string;
+  /** Null when the sound has nothing to play, such as silent. */
+  previewSource: PreviewSource | null;
+};
+
 // Type-safe sound assets configuration
 export type SoundAssetsConfig = {
   readonly [K: string]: SoundAsset;

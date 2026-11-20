@@ -1,5 +1,6 @@
 import { addDays, format, subDays } from "date-fns";
 
+import { TIMES_FETCH } from "@/constants/PrayerTimes";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { syncWidgetSnapshot } from "@/services/widgetSnapshot";
 
@@ -25,23 +26,24 @@ jest.mock("@/stores/location", () => ({
   __esModule: true,
   default: {
     getState: () => ({
-      locationDetails: { timezone: "Asia/Riyadh" },
+      locationDetails: { timezone: "Asia/Riyadh", coords: { latitude: 24.7, longitude: 46.7 } },
       lastKnownCoords: null,
+      placeRevision: 0,
+      settlePlace: jest.fn(),
       setTimezone: mockSetTimezone,
     }),
   },
 }));
 jest.mock("@/stores/providerSettings", () => ({
   __esModule: true,
-  default: { getState: () => ({ currentProviderId: "aladhan" }) },
+  default: { getState: () => ({ currentProviderId: "aladhan", setInEffect: () => {} }) },
   useProviderSettingsStore: { getState: () => ({ currentProviderId: "aladhan" }) },
-}));
-jest.mock("@/stores/app", () => ({
-  useAppStore: { getState: () => ({ setLoadingState: jest.fn() }) },
 }));
 jest.mock("@/localization/i18n", () => ({ __esModule: true, default: { t: (k: string) => k } }));
 jest.mock("@/api/prayerTimes.api", () => ({ prayerTimesApi: {} }));
-jest.mock("@/adapters/providers", () => ({ getAdapterByProviderId: jest.fn() }));
+jest.mock("@/adapters/providers", () => ({
+  getAdapterByProviderId: () => ({ fromApplied: () => null }),
+}));
 jest.mock("@/utils/location", () => ({ checkLocationPermission: jest.fn() }));
 jest.mock("expo-sqlite/kv-store", () => ({
   __esModule: true,
@@ -51,8 +53,8 @@ jest.mock("expo-sqlite/kv-store", () => ({
     removeItem: async () => {},
   },
 }));
-jest.mock("../../../modules/expo-widget/src", () => ({ reloadPrayerWidgets: jest.fn() }));
-jest.mock("../../../modules/expo-widgets/src", () => ({ refreshAllWidgets: jest.fn() }));
+jest.mock("expo-widget", () => ({ reloadPrayerWidgets: jest.fn() }));
+jest.mock("expo-widgets", () => ({ refreshAllWidgets: jest.fn() }));
 jest.mock("@/utils/date", () => {
   const actual = jest.requireActual("@/utils/date");
   // The store reads the clock through `timeZonedNow`; a fixed instant keeps the
@@ -138,7 +140,9 @@ describe("prayer widget recovery", () => {
       .spyOn(usePrayerTimesStore.getState(), "getPrayerTimes")
       .mockResolvedValue(data as never);
     mockInsertPrayerTimes.mockResolvedValue({ success: true });
-    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes()).resolves.toBe(true);
+    await expect(usePrayerTimesStore.getState().getAndStorePrayerTimes()).resolves.toBe(
+      TIMES_FETCH.STORED
+    );
     expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
     expect(mockInsertPrayerTimes.mock.invocationCallOrder[0]).toBeLessThan(
       (syncWidgetSnapshot as jest.Mock).mock.invocationCallOrder[0]
@@ -151,7 +155,7 @@ describe("prayer widget recovery", () => {
     mockGetByDate.mockResolvedValue(null);
     const fetch = jest
       .spyOn(usePrayerTimesStore.getState(), "getAndStorePrayerTimes")
-      .mockResolvedValue(false);
+      .mockResolvedValue(TIMES_FETCH.FAILED);
     await expect(usePrayerTimesStore.getState().loadPrayerTimes()).rejects.toThrow();
     expect(syncWidgetSnapshot).toHaveBeenCalledTimes(1);
     fetch.mockRestore();

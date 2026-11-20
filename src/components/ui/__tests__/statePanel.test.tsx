@@ -1,0 +1,282 @@
+import { AccessibilityInfo, Platform, StyleSheet } from "react-native";
+import { act, screen, userEvent } from "@testing-library/react-native";
+
+import { CALLOUT_PART, CALLOUT_TONE, Callout, type CalloutTone } from "@/components/ui/callout";
+import { ICON_SIZES } from "@/components/ui/icon/sizing";
+import { STATE_PANEL_ICON_ID, STATE_PANEL_ROOT_ID, StatePanel } from "@/components/ui/state-panel";
+import { getTokenValue, Theme } from "tamagui";
+
+import { DEFAULT_FACES } from "@/constants/Fonts";
+import { NEDAA_DARK, NEDAA_LIGHT } from "@/constants/Palette";
+import { STATE_PANEL_KIND, STATE_PANEL_VARIANT } from "@/constants/StatePanel";
+import { AppLocale, PlatformType } from "@/enums/app";
+import i18n from "@/localization/i18n";
+import { renderWithTheme } from "@/test-helpers/theme";
+
+const PLATFORM = Platform.OS;
+const TITLE = "Couldn't load the times";
+const BODY = "Check your connection.";
+/** The panel's message, joined as the app's language joins two sentences. */
+const message = (first = TITLE, second = BODY) => i18n.t("a11y.sentences", { first, second });
+
+describe("StatePanel", () => {
+  const renderPanel = async (onAction = jest.fn()) => {
+    await renderWithTheme(
+      <StatePanel title={TITLE} body={BODY} action={{ label: "Retry", onPress: onAction }} />
+    );
+    return onAction;
+  };
+
+  // A state change is announced, and its message reads as one element.
+  it("announces its message politely, as one element", async () => {
+    await renderPanel();
+
+    expect(screen.getByLabelText(message()).props.accessibilityLiveRegion).toBe("polite");
+  });
+
+  describe("in Urdu", () => {
+    const URDU_FULL_STOP = "۔";
+
+    afterEach(async () => {
+      await act(() => i18n.changeLanguage(AppLocale.EN));
+    });
+
+    // A reader pauses where the app's language ends a sentence.
+    it("joins its title and body with the language's own full stop", async () => {
+      await act(() => i18n.changeLanguage(AppLocale.UR));
+      await renderPanel();
+
+      expect(screen.getByLabelText(message())).toBeOnTheScreen();
+      expect(message()).toContain(URDU_FULL_STOP);
+    });
+  });
+
+  it("keeps its action reachable on its own, and runs it", async () => {
+    const onAction = await renderPanel();
+
+    await userEvent.press(screen.getByRole("button", { name: "Retry" }));
+
+    expect(onAction).toHaveBeenCalled();
+  });
+
+  // A wait has nothing to act on; the message alone is announced.
+  it("offers no action while something loads", async () => {
+    await renderWithTheme(
+      <StatePanel kind={STATE_PANEL_KIND.LOADING} title="Loading" body="Getting things ready." />
+    );
+
+    const loading = screen.getByLabelText(message("Loading", "Getting things ready."));
+    expect(loading.props.accessibilityLiveRegion).toBe("polite");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it.each(Object.values(STATE_PANEL_KIND))("marks the %s kind with its own icon", async (kind) => {
+    await renderWithTheme(<StatePanel kind={kind} title="Title" body="Body." />);
+
+    expect(
+      screen.getByTestId(STATE_PANEL_ICON_ID[kind], { includeHiddenElements: true })
+    ).toBeTruthy();
+  });
+
+  // A card sets the state off by its fill; the flat variant sits on a sheet's own surface.
+  it.each([
+    [STATE_PANEL_VARIANT.CARD, true],
+    [STATE_PANEL_VARIANT.FLAT, false],
+  ])("draws a %s variant with a filled frame: %s", async (variant, framed) => {
+    await renderWithTheme(<StatePanel variant={variant} title="Title" body="Body." />);
+
+    const root = screen.getByTestId(STATE_PANEL_ROOT_ID);
+    expect(root).not.toHaveStyle({ borderTopWidth: 1 });
+    if (framed) expect(root).toHaveStyle({ backgroundColor: NEDAA_LIGHT.surfaceGlass.hex });
+    else expect(root).not.toHaveStyle({ backgroundColor: NEDAA_LIGHT.surfaceGlass.hex });
+  });
+
+  describe("speaking its message", () => {
+    afterEach(() => {
+      Platform.OS = PLATFORM;
+      jest.mocked(AccessibilityInfo.announceForAccessibility).mockClear();
+    });
+
+    // Android speaks the live region; iOS has none, so the panel says it.
+    it("says what failed on iOS as it appears", async () => {
+      Platform.OS = PlatformType.IOS;
+      await renderPanel();
+
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(message());
+    });
+
+    it("leaves Android to its live region", async () => {
+      Platform.OS = PlatformType.ANDROID;
+      await renderPanel();
+
+      expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe("Callout", () => {
+  it("reads its message and offers its action", async () => {
+    const onAction = jest.fn();
+    await renderWithTheme(
+      <Callout
+        body="Showing Makkah's times."
+        action={{ label: "Set location", hint: "Opens location settings", onPress: onAction }}
+      />
+    );
+
+    expect(screen.getByLabelText("Showing Makkah's times.").props.accessibilityLiveRegion).toBe(
+      "polite"
+    );
+    const button = screen.getByRole("button", { name: "Set location" });
+    expect(button.props.accessibilityHint).toBe("Opens location settings");
+
+    await userEvent.press(button);
+    expect(onAction).toHaveBeenCalled();
+  });
+
+  // An underline crosses Arabic dots and descenders; a chevron marks the action.
+  it.each([false, true])(
+    "marks its action with a chevron, not an underline (rtl: %s)",
+    async (isRTL) => {
+      await renderWithTheme(
+        <Callout
+          body="Showing Makkah's times."
+          action={{ label: "Set location", onPress: jest.fn() }}
+        />,
+        { isRTL }
+      );
+
+      expect(screen.getByText("Set location", { includeHiddenElements: true })).not.toHaveStyle({
+        textDecorationLine: "underline",
+      });
+      expect(
+        screen.getByTestId(isRTL ? CALLOUT_PART.CHEVRON_LEFT : CALLOUT_PART.CHEVRON_RIGHT, {
+          includeHiddenElements: true,
+        })
+      ).toBeTruthy();
+    }
+  );
+});
+
+describe("Callout tones", () => {
+  it("states a fact with no action, offering nothing to press", async () => {
+    await renderWithTheme(<Callout body="Showing Makkah's times." />);
+
+    expect(screen.getByLabelText("Showing Makkah's times.")).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("warns by default: the warn edge and the warning sign", async () => {
+    await renderWithTheme(<Callout body="Showing Makkah's times." />);
+
+    expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+      borderTopWidth: 1,
+      borderTopColor: NEDAA_LIGHT.warn.hex,
+    });
+    expect(
+      screen.getByTestId(CALLOUT_PART.ICON_WARN, { includeHiddenElements: true })
+    ).toBeTruthy();
+  });
+
+  // A tint, never a line, carries a calm tone: light blue, or navy in dark.
+  it.each([
+    ["light", NEDAA_LIGHT, false],
+    ["dark", NEDAA_DARK, true],
+  ] as const)(
+    "informs on the tile tint in %s, with no edge and the info sign in the ink",
+    async (_theme, palette, dark) => {
+      const callout = <Callout tone={CALLOUT_TONE.INFO} body="Found from a recent reading." />;
+      await renderWithTheme(dark ? <Theme name="dark">{callout}</Theme> : callout);
+
+      const frame = screen.getByTestId(CALLOUT_PART.FRAME);
+      expect(frame).toHaveStyle({ backgroundColor: palette.tile.hex });
+      expect(frame).not.toHaveStyle({ borderTopWidth: 1 });
+      const sign = screen.getByTestId(CALLOUT_PART.ICON_INFO, { includeHiddenElements: true });
+      const [glyph] = sign.queryAll((node) => node.type === "RNSVGSvgView");
+      expect(glyph).toHaveProp("stroke", palette.fg.hex);
+    }
+  );
+});
+
+describe("Callout's danger tone", () => {
+  // A failure keeps an edge and a tint of its own colour, and is written in it.
+  it.each([
+    ["light", NEDAA_LIGHT, false],
+    ["dark", NEDAA_DARK, true],
+  ] as const)(
+    "boxes a failure in %s: danger edge, tint and ink, a triangle",
+    async (_n, palette, dark) => {
+      const callout = <Callout tone={CALLOUT_TONE.DANGER} body="The download stopped." />;
+      await renderWithTheme(dark ? <Theme name="dark">{callout}</Theme> : callout);
+
+      expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+        borderTopWidth: 1,
+        borderTopColor: palette.dangerEdge.hex,
+        backgroundColor: palette.dangerTint.hex,
+        borderTopLeftRadius: getTokenValue("$control", "radius"),
+      });
+      expect(screen.getByText("The download stopped.")).toHaveStyle({
+        color: palette.danger.hex,
+        fontFamily: DEFAULT_FACES.semibold,
+      });
+      const sign = screen.getByTestId(CALLOUT_PART.ICON_DANGER, { includeHiddenElements: true });
+      const [glyph] = sign.queryAll((node) => node.type === "RNSVGSvgView");
+      expect(glyph).toHaveProp("stroke", palette.danger.hex);
+      expect(glyph).toHaveProp("width", ICON_SIZES.md);
+    }
+  );
+});
+
+/** Where each tone sets its sign beside a message of several lines. */
+const SIGN_ALIGN: Record<CalloutTone, "center" | "flex-start"> = {
+  [CALLOUT_TONE.WARN]: "flex-start",
+  [CALLOUT_TONE.INFO]: "flex-start",
+  [CALLOUT_TONE.PLACE]: "flex-start",
+  [CALLOUT_TONE.DANGER]: "center",
+};
+
+describe("Callout's sign", () => {
+  // A failure's triangle centres on its words; other signs top the first line.
+  it.each(Object.values(CALLOUT_TONE))("sits beside a %s message", async (tone) => {
+    await renderWithTheme(<Callout tone={tone} body="Showing Makkah's times." />);
+
+    expect(screen.getByLabelText("Showing Makkah's times.")).toHaveStyle({
+      alignItems: SIGN_ALIGN[tone],
+    });
+  });
+});
+
+describe("Callout's place tone", () => {
+  const fontOf = (text: string) =>
+    String(StyleSheet.flatten(screen.getByText(text).props.style).fontFamily);
+
+  it("names a found place on its own strong line, over its detail, by a pin", async () => {
+    await renderWithTheme(
+      <Callout tone={CALLOUT_TONE.PLACE} title="Nearest city: Makkah" body="2 km away" />
+    );
+
+    expect(screen.getByLabelText("Nearest city: Makkah, 2 km away")).toBeTruthy();
+    expect(fontOf("Nearest city: Makkah")).not.toBe(fontOf("2 km away"));
+    expect(screen.getByTestId(CALLOUT_PART.FRAME)).toHaveStyle({
+      backgroundColor: NEDAA_LIGHT.tile.hex,
+    });
+    expect(
+      screen.getByTestId(CALLOUT_PART.ICON_PLACE, { includeHiddenElements: true })
+    ).toBeTruthy();
+  });
+
+  // A note whose host says it at a settled moment is no live region.
+  it("is read aloud as it changes unless its host says it", async () => {
+    await renderWithTheme(
+      <>
+        <Callout body="Read as it changes." />
+        <Callout body="Said by its host." live={false} />
+      </>
+    );
+
+    expect(screen.getByLabelText("Read as it changes.").props.accessibilityLiveRegion).toBe(
+      "polite"
+    );
+    expect(screen.getByLabelText("Said by its host.").props.accessibilityLiveRegion).toBe("none");
+  });
+});

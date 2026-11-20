@@ -30,6 +30,9 @@ import {
 // Stores
 import locationStore from "@/stores/location";
 
+// Types
+import type { CustomAthkarItemDraft } from "@/types/athkar";
+
 const log = AppLogger.create("athkar-db");
 
 // Schemas
@@ -537,32 +540,29 @@ const getSessionItems = (
   session: "morning" | "evening"
 ): Promise<AthkarDailyItem[]> => sdb.run((db) => getSessionItemsWith(db, dateInt, session));
 
-// Update a single athkar item count
+// Writes one dhikr's count for a day. A day with no row for it gets one; a stored target stays.
 const updateAthkarCount = (
   dateInt: number,
   thikrId: string,
-  currentCount: number
+  currentCount: number,
+  totalCount: number
 ): Promise<boolean> =>
   sdb.run(async (db) => {
     try {
       const tz = locationStore.getState().locationDetails.timezone;
       const now = timeZonedNow(tz).toISOString();
 
-      const result = await db.runAsync(
-        `UPDATE ${ATHKAR_DAILY_ITEMS_TABLE}
-         SET current_count = ?, updated_at = ?
-         WHERE date = ? AND thikr_id = ?;`,
-        [currentCount, now, dateInt, thikrId]
+      await db.runAsync(
+        `INSERT INTO ${ATHKAR_DAILY_ITEMS_TABLE}
+           (date, thikr_id, current_count, total_count, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(date, thikr_id) DO UPDATE SET
+           current_count = excluded.current_count,
+           updated_at = excluded.updated_at;`,
+        [dateInt, thikrId, currentCount, totalCount, now, now]
       );
 
-      if (result.changes === 0) {
-        log.w(
-          "DB",
-          `updateAthkarCount: 0 rows changed for thikrId=${thikrId} date=${dateInt} count=${currentCount} — row may not exist`
-        );
-      }
-
-      return result.changes > 0;
+      return true;
     } catch (error) {
       log.e(
         "DB",
@@ -1302,8 +1302,10 @@ const batchAddToMyAthkar = (
 const removeFromMyAthkar = (id: number): Promise<boolean> =>
   sdb.run(async (db) => {
     try {
-      await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
-      await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(`DELETE FROM ${MY_ATHKAR_TABLE} WHERE id = ?`, [id]);
+        await db.runAsync(`DELETE FROM ${MY_ATHKAR_DAILY_TABLE} WHERE my_athkar_id = ?`, [id]);
+      });
       return true;
     } catch (error) {
       console.error("[Athkar-DB] Error removing from my athkar:", error);
@@ -1381,7 +1383,7 @@ const updateMyAthkarDailyCount = (
 
       const result = await db.runAsync(
         `UPDATE ${MY_ATHKAR_DAILY_TABLE}
-         SET current_count = ?, updated_at = ?
+         SET current_count = MIN(?, total_count), updated_at = ?
          WHERE date = ? AND my_athkar_id = ?`,
         [currentCount, now, dateInt, myAthkarId]
       );
@@ -1490,35 +1492,59 @@ export const AthkarDB = {
       }
     }),
 
+  /**
+   * Writes the group's name and rows in one transaction. A draft with an id
+   * updates that row, so its counts stay; rows left out lose their counts too.
+   * Today's target follows the row's, its count capped at it.
+   */
   updateCustomAthkarGroup: (
     groupId: number,
     title: string,
-    items: { arabicText: string; userCount: number }[]
+    items: CustomAthkarItemDraft[],
+    dateInt: number
   ): Promise<boolean> =>
     sdb.run(async (db) => {
       const now = new Date().toISOString();
       try {
         await db.withTransactionAsync(async () => {
-          await db.runAsync(`UPDATE ${CUSTOM_ATHKAR_GROUPS_TABLE} SET title = ? WHERE id = ?`, [
-            title,
-            groupId,
-          ]);
-          const oldItems = await db.getAllAsync<{ id: number }>(
+          const group = await db.runAsync(
+            `UPDATE ${CUSTOM_ATHKAR_GROUPS_TABLE} SET title = ? WHERE id = ?`,
+            [title, groupId]
+          );
+          if (group.changes === 0) throw new Error(`no custom group ${groupId}`);
+
+          const kept = new Set(items.map(({ id }) => id));
+          const stored = await db.getAllAsync<{ id: number }>(
             `SELECT id FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`,
             [groupId]
           );
-          for (const item of oldItems) {
+          for (const { id } of stored) {
+            if (kept.has(id)) continue;
             await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_DAILY_TABLE} WHERE custom_item_id = ?`, [
-              item.id,
+              id,
             ]);
+            await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE id = ?`, [id]);
           }
-          await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_ITEMS_TABLE} WHERE group_id = ?`, [
-            groupId,
-          ]);
-          for (let i = 0; i < items.length; i++) {
+
+          for (const [index, item] of items.entries()) {
+            const sortOrder = index + 1;
+            if (item.id === undefined) {
+              await db.runAsync(
+                `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
+                [groupId, item.arabicText, item.userCount, sortOrder, now]
+              );
+              continue;
+            }
+            const row = await db.runAsync(
+              `UPDATE ${CUSTOM_ATHKAR_ITEMS_TABLE} SET arabic_text = ?, user_count = ?, sort_order = ? WHERE id = ? AND group_id = ?`,
+              [item.arabicText, item.userCount, sortOrder, item.id, groupId]
+            );
+            if (row.changes === 0) throw new Error(`no row ${item.id} in custom group ${groupId}`);
             await db.runAsync(
-              `INSERT INTO ${CUSTOM_ATHKAR_ITEMS_TABLE} (group_id, arabic_text, user_count, sort_order, created_at) VALUES (?, ?, ?, ?, ?)`,
-              [groupId, items[i].arabicText, items[i].userCount, i + 1, now]
+              `UPDATE ${CUSTOM_ATHKAR_DAILY_TABLE}
+               SET total_count = ?, current_count = MIN(current_count, ?), updated_at = ?
+               WHERE date = ? AND custom_item_id = ?`,
+              [item.userCount, item.userCount, now, dateInt, item.id]
             );
           }
         });
@@ -1529,7 +1555,8 @@ export const AthkarDB = {
       }
     }),
 
-  deleteCustomAthkarGroup: (groupId: number): Promise<void> =>
+  /** Deletes the group with its rows and their counts; false when it failed. */
+  deleteCustomAthkarGroup: (groupId: number): Promise<boolean> =>
     sdb.run(async (db) => {
       try {
         await db.withTransactionAsync(async () => {
@@ -1547,8 +1574,10 @@ export const AthkarDB = {
           ]);
           await db.runAsync(`DELETE FROM ${CUSTOM_ATHKAR_GROUPS_TABLE} WHERE id = ?`, [groupId]);
         });
+        return true;
       } catch (error) {
         console.error("[Athkar-DB] deleteCustomAthkarGroup error:", error);
+        return false;
       }
     }),
 
@@ -1615,7 +1644,7 @@ export const AthkarDB = {
       const now = new Date().toISOString();
       await db.runAsync(
         `UPDATE ${CUSTOM_ATHKAR_DAILY_TABLE}
-         SET current_count = ?, updated_at = ?
+         SET current_count = MIN(?, total_count), updated_at = ?
          WHERE date = ? AND custom_item_id = ?`,
         [currentCount, now, dateInt, customItemId]
       );

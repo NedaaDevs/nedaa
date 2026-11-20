@@ -1,3 +1,4 @@
+import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useRouter } from "expo-router";
@@ -11,33 +12,69 @@ import { Text } from "@/components/ui/text";
 import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
 import { Icon } from "@/components/ui/icon";
-import { Volume2, ChevronRight } from "lucide-react-native";
+import { HoldToConfirm } from "@/components/ui/hold-to-confirm";
+import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import { Volume2, ChevronRight, RotateCcw } from "lucide-react-native";
 
+import { LookRow } from "@/components/athkar/looks/LookRow";
 import TimePicker from "@/components/TimePicker";
 
 // Store
+import { useAppStore } from "@/stores/app";
 import { useAthkarStore } from "@/stores/athkar";
 import { useNotificationStore } from "@/stores/notification";
+import { usePreferencesStore } from "@/stores/preferences";
 
 // Constants
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_GROUP_ORDERS, ATHKAR_TYPE } from "@/constants/Athkar";
+
+// Types
+import type { AthkarState } from "@/types/athkar";
 
 // Utils
-import { formatTime12Hour } from "@/utils/date";
+import { deviceTimeZone, formatTime12Hour } from "@/utils/date";
+import { spokenClockTime } from "@/utils/spokenClockTime";
 
 // Contexts
 import { useRTL } from "@/contexts/RTLContext";
+
+const RESET_MESSAGE = {
+  [ATHKAR_TYPE.MORNING]: "athkar.session.resetMessage.morning",
+  [ATHKAR_TYPE.EVENING]: "athkar.session.resetMessage.evening",
+} as const satisfies Record<AthkarState["currentType"], ParseKeys>;
 
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { isRTL } = useRTL();
   const isArabic = i18n.language === "ar";
-  const { settings, shortVersion, toggleShowStreak, toggleShowTranslation, toggleShortVersion } =
-    useAthkarStore();
+  const {
+    settings,
+    shortVersion,
+    currentType,
+    toggleShowTranslation,
+    toggleShortVersion,
+    setGroupOrder,
+    resetProgress,
+  } = useAthkarStore();
 
   const { morningNotification, eveningNotification, updateAthkarNotificationSetting } =
     useNotificationStore();
+  const locale = useAppStore((state) => state.locale);
+  const western = usePreferencesStore((state) => state.useWesternNumerals);
+
+  // A device-local time, so any day gives the same words. It is spoken on the
+  // 12-hour clock it is drawn in.
+  const timeLabel = (hour: number, minute: number) =>
+    t("a11y.join", {
+      first: t("settings.athkar.notifications.time"),
+      second: spokenClockTime(
+        new Date(2000, 0, 1, hour, minute),
+        deviceTimeZone(),
+        { locale, use24HourTime: false, western },
+        t
+      ),
+    });
 
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [activeTimeType, setActiveTimeType] = useState<"morning" | "evening" | null>(null);
@@ -86,6 +123,8 @@ const Settings = () => {
   return (
     <>
       <VStack padding="$4" gap="$4">
+        <LookRow />
+
         {/* Notification Settings Section */}
         <VStack gap="$3">
           {/* Morning Athkar Notification */}
@@ -108,14 +147,22 @@ const Settings = () => {
                 <VStack gap="$2" marginTop="$3">
                   <HStack alignItems="center" justifyContent="space-between">
                     <HStack alignItems="center" gap="$2">
-                      <Text size="sm" color="$typographySecondary">
+                      {/* The time button says this label. */}
+                      <Text
+                        size="sm"
+                        color="$typographySecondary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
                     <VStack>
                       <Pressable
                         onPress={() => openTimePicker("morning")}
-                        accessibilityLabel={t("settings.athkar.notifications.time")}
+                        accessibilityLabel={timeLabel(
+                          morningNotification.hour,
+                          morningNotification.minute || 0
+                        )}
                         borderRadius="$2"
                         paddingHorizontal="$4"
                         minHeight={44}
@@ -128,7 +175,13 @@ const Settings = () => {
                           )}
                         </Text>
                       </Pressable>
-                      <Text size="xs" textAlign="center" color="$primary">
+                      {/* The time button says the period. */}
+                      <Text
+                        size="xs"
+                        textAlign="center"
+                        color="$primary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.morning.time.note")}
                       </Text>
                     </VStack>
@@ -158,14 +211,22 @@ const Settings = () => {
                 <VStack gap="$2" marginTop="$3">
                   <HStack alignItems="center" justifyContent="space-between">
                     <HStack alignItems="center" gap="$2">
-                      <Text size="sm" color="$typographySecondary">
+                      {/* The time button says this label. */}
+                      <Text
+                        size="sm"
+                        color="$typographySecondary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.time")}
                       </Text>
                     </HStack>
                     <VStack>
                       <Pressable
                         onPress={() => openTimePicker("evening")}
-                        accessibilityLabel={t("settings.athkar.notifications.time")}
+                        accessibilityLabel={timeLabel(
+                          eveningNotification.hour,
+                          eveningNotification.minute || 0
+                        )}
                         borderRadius="$2"
                         paddingHorizontal="$4"
                         minHeight={44}
@@ -178,7 +239,13 @@ const Settings = () => {
                           )}
                         </Text>
                       </Pressable>
-                      <Text size="xs" textAlign="center" color="$primary">
+                      {/* The time button says the period. */}
+                      <Text
+                        size="xs"
+                        textAlign="center"
+                        color="$primary"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants">
                         {t("settings.athkar.notifications.evening.time.note")}
                       </Text>
                     </VStack>
@@ -210,25 +277,6 @@ const Settings = () => {
               />
             </HStack>
           </Box> */}
-
-          {/* Show streak Setting */}
-          <Card>
-            <HStack justifyContent="space-between" alignItems="center">
-              <VStack flex={1} marginEnd="$4">
-                <Text fontWeight="500" color="$typography">
-                  {t("settings.athkar.showStreak.title")}
-                </Text>
-                <Text size="sm" color="$typographySecondary" marginTop="$1">
-                  {t("settings.athkar.showStreak.description")}
-                </Text>
-              </VStack>
-              <Switch
-                value={settings.showStreak}
-                onValueChange={toggleShowStreak}
-                accessibilityLabel={t("settings.athkar.showStreak.title")}
-              />
-            </HStack>
-          </Card>
 
           {/* Show Translation Setting — only for non-Arabic locales */}
           {!isArabic && (
@@ -273,6 +321,28 @@ const Settings = () => {
               />
             </HStack>
           </Card>
+
+          {/* Which text each count of a grouped dhikr shows */}
+          <Card>
+            <VStack gap="$3">
+              <VStack>
+                <Text fontWeight="500" color="$typography">
+                  {t("settings.athkar.groupOrder.title")}
+                </Text>
+                <Text size="sm" color="$typographySecondary" marginTop="$1">
+                  {t("settings.athkar.groupOrder.description")}
+                </Text>
+              </VStack>
+              <SegmentedChoice
+                options={ATHKAR_GROUP_ORDERS}
+                value={settings.groupOrder}
+                onChange={setGroupOrder}
+                accessibilityLabel={t("a11y.athkar.groupOrder.label")}
+                label={(order) => t(`settings.athkar.groupOrder.options.${order}`)}
+                spokenLabel={(order) => t(`a11y.athkar.groupOrder.options.${order}`)}
+              />
+            </VStack>
+          </Card>
         </VStack>
       </VStack>
 
@@ -303,10 +373,43 @@ const Settings = () => {
             />
           </HStack>
         </Card.Pressable>
+
+        <Card>
+          <VStack gap="$3">
+            <Text size="sm" color="$typographySecondary">
+              {t(RESET_MESSAGE[currentType])}
+            </Text>
+            <HoldToConfirm
+              label={t("common.resetDailyProgress")}
+              icon={RotateCcw}
+              onConfirm={() => void resetProgress()}
+              screenReaderConfirm={{
+                title: t("common.resetDailyProgress"),
+                message: t(RESET_MESSAGE[currentType]),
+                confirmLabel: t("athkar.myAthkar.reset"),
+                cancelLabel: t("common.cancel"),
+              }}
+            />
+            {/* For a finger; a screen reader confirms in a dialog instead. */}
+            <Text
+              size="xs"
+              textAlign="center"
+              color="$typographySecondary"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants">
+              {t("a11y.athkar.holdToResetHint")}
+            </Text>
+          </VStack>
+        </Card>
       </VStack>
 
       <TimePicker
         isVisible={showTimePicker}
+        title={
+          activeTimeType === ATHKAR_TYPE.MORNING
+            ? t("settings.athkar.notifications.morning.title")
+            : t("settings.athkar.notifications.evening.title")
+        }
         currentHour={
           activeTimeType === "morning" ? morningNotification.hour : eveningNotification.hour
         }
@@ -316,7 +419,6 @@ const Settings = () => {
             : eveningNotification.minute || 0
         }
         use12HourFormat
-        hideTimeOption
         isPM={activeTimeType === "evening"}
         onTimeChange={handleTimeChange}
         onClose={() => {

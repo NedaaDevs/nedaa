@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
-import React, { act } from "react";
-import renderer from "react-test-renderer";
+import { act, renderHook } from "@testing-library/react-native";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmScreen } from "@/hooks/useAlarmScreen";
@@ -16,6 +15,8 @@ const mockSettings = {
   vibration: { enabled: false, pattern: "default" },
   challenge: undefined,
 };
+// Friday allows fewer snoozes, so the count shows whose settings were read.
+const mockFridaySettings = { ...mockSettings, snooze: { ...mockSettings.snooze, maxCount: 1 } };
 
 jest.mock("react-native", () => ({
   Platform: { OS: "ios" },
@@ -23,21 +24,28 @@ jest.mock("react-native", () => ({
   BackHandler: { addEventListener: jest.fn(() => ({ remove: jest.fn() })) },
 }));
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
-jest.mock("expo-alarm", () => ({
-  isAlarmSoundPlaying: () => false,
-  startAlarmSound: (name: string) => mockStartAlarmSound(name),
-  setAlarmVolume: jest.fn(),
-  stopAllAlarmEffects: jest.fn(),
-  restoreSystemVolume: jest.fn(),
-  stopAlarmSound: jest.fn(),
-}));
+// The alarm constants import icons; react-native is stubbed here, so stub them too.
+jest.mock("lucide-react-native", () => new Proxy({}, { get: () => () => null }));
+jest.mock("expo-alarm", () => {
+  const { CHALLENGE_TYPE, CHALLENGE_DIFFICULTY } = jest.requireActual("expo-alarm");
+  return {
+    CHALLENGE_TYPE,
+    CHALLENGE_DIFFICULTY,
+    isAlarmSoundPlaying: () => false,
+    startAlarmSound: (name: string) => mockStartAlarmSound(name),
+    setAlarmVolume: jest.fn(),
+    stopAllAlarmEffects: jest.fn(),
+    restoreSystemVolume: jest.fn(),
+    stopAlarmSound: jest.fn(),
+  };
+});
 jest.mock("@/stores/alarm", () => ({
   useAlarmStore: (select: (state: object) => unknown) =>
     select({ snoozeAlarm: mockSnoozeAlarm, scheduledAlarms: {} }),
 }));
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: (select: (state: object) => unknown) =>
-    select({ fajr: mockSettings, friday: mockSettings }),
+    select({ fajr: mockSettings, friday: mockFridaySettings }),
 }));
 jest.mock("@/utils/alarmScheduler", () => ({
   completeAndRescheduleAlarm: (id: string) => mockCompleteAndReschedule(id),
@@ -53,22 +61,11 @@ const ALARM_ID = "11111111-1111-4111-8111-111111111111";
 const SNOOZE_ID = "22222222-2222-4222-8222-222222222222";
 const IOS_DIR = path.join(__dirname, "../../../ios");
 
-const renders: ReturnType<typeof useAlarmScreen>[] = [];
-const latest = () => renders[renders.length - 1];
-const Probe = () => {
-  renders.push(useAlarmScreen(ALARM_ID, ScheduledAlarmType.FAJR));
-  return null;
-};
-
-const mount = async () => {
-  await act(async () => {
-    renderer.create(<Probe />);
-  });
-};
+const mount = (alarmType: string = ScheduledAlarmType.FAJR) =>
+  renderHook(() => useAlarmScreen(ALARM_ID, alarmType));
 
 beforeEach(() => {
   jest.clearAllMocks();
-  renders.length = 0;
 });
 
 describe("useAlarmScreen", () => {
@@ -85,13 +82,13 @@ describe("useAlarmScreen", () => {
       snoozeEndTime: new Date(Date.now() + 5 * 60_000),
       snoozeCount: 1,
     });
-    await mount();
+    const { result } = await mount();
 
     await act(async () => {
-      await latest().handleSnooze();
+      await result.current.handleSnooze();
     });
     await act(async () => {
-      await latest().handleChallengeComplete();
+      await result.current.handleChallengeComplete();
     });
 
     expect(mockCompleteAndReschedule).toHaveBeenCalledWith(SNOOZE_ID);
@@ -99,14 +96,24 @@ describe("useAlarmScreen", () => {
 
   it("rings again and stays unhandled when the snooze fails", async () => {
     mockSnoozeAlarm.mockResolvedValue(null);
-    await mount();
+    const { result } = await mount();
     mockStartAlarmSound.mockClear();
 
     await act(async () => {
-      await latest().handleSnooze();
+      await result.current.handleSnooze();
     });
 
     expect(mockStartAlarmSound).toHaveBeenCalled();
     expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [ScheduledAlarmType.FAJR, mockSettings],
+    [ScheduledAlarmType.JUMMAH, mockFridaySettings],
+    [ScheduledAlarmType.CUSTOM, mockSettings],
+  ])("reads the settings that a %s alarm rings with", async (alarmType, settings) => {
+    const { result } = await mount(alarmType);
+
+    expect(result.current.remainingSnoozes).toBe(settings.snooze.maxCount);
   });
 });

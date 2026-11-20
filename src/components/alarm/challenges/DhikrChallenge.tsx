@@ -1,7 +1,8 @@
 import { FC, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { TextInput, Keyboard } from "react-native";
-import { useTheme } from "tamagui";
+import { announceMiss } from "@/components/alarm/challenges/announceMiss";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
@@ -11,6 +12,7 @@ import { Box } from "@/components/ui/box";
 import { ChallengeDifficulty, DhikrPhrase } from "@/types/alarm";
 import { matchesDhikr, pickDhikrPhrase } from "@/utils/dhikrChallenge";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Wrong submissions before the phrase resets — lets a typo be fixed in place
 // instead of losing the attempt on every miss. Mirrored in the Android
@@ -30,8 +32,8 @@ let lastDhikrPhrase: DhikrPhrase | null = null;
 const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const hapticSuccess = useHaptic("success");
-  const hapticError = useHaptic("error");
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
+  const hapticError = useHaptic(HAPTIC_FEEDBACK.ERROR);
 
   const [phrase, setPhrase] = useState<DhikrPhrase>(() => {
     const picked = pickDhikrPhrase(difficulty, lastDhikrPhrase);
@@ -62,9 +64,16 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
         const picked = pickDhikrPhrase(difficulty, phrase);
         lastDhikrPhrase = picked;
         setPhrase(picked);
+        announceMiss(
+          t("a11y.alarm.newDhikr", {
+            arabic: picked.arabic,
+            transliteration: picked.transliteration,
+          })
+        );
       } else {
         // Keep the same phrase and typed text so a typo can be fixed in place.
         setStrikeCount(nextStrikes);
+        announceMiss(t("alarm.challenge.wrongAnswer"));
       }
 
       setTimeout(() => setIsWrong(false), 500);
@@ -78,6 +87,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
     onInteraction,
     hapticSuccess,
     hapticError,
+    t,
   ]);
 
   return (
@@ -93,10 +103,11 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
         borderWidth={2}
         borderColor={isWrong ? "$borderError" : "transparent"}
         width="100%"
+        accessible
         accessibilityLabel={t("a11y.alarm.dhikrPhrase", {
+          arabic: phrase.arabic,
           transliteration: phrase.transliteration,
-        })}
-        accessibilityLiveRegion="polite">
+        })}>
         <VStack gap="$2" alignItems="center">
           <Text
             size="4xl"
@@ -146,7 +157,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
       </Button>
 
       {isWrong && (
-        <Text color="$error" size="sm" accessibilityLiveRegion="assertive">
+        <Text color="$error" size="sm">
           {t("alarm.challenge.wrongAnswer")}
         </Text>
       )}

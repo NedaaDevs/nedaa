@@ -1,0 +1,228 @@
+import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
+import { LocateFixed, RefreshCw, Search } from "lucide-react-native";
+
+import { LocationUpdateProgress } from "@/components/LocationUpdateProgress";
+import { OpenSettingsButton } from "@/components/location/OpenSettingsButton";
+import { StandInNotice } from "@/components/location/StandInNotice";
+import { CALLOUT_TONE, Callout } from "@/components/ui/callout";
+import { ListGroup } from "@/components/ui/list-group";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { SegmentedChoice } from "@/components/ui/segmented-choice";
+import { E2E_ID } from "@/constants/E2E";
+import { LocationMode, type LocationModeValue } from "@/enums/location";
+import { useIosAnnouncement } from "@/hooks/useIosAnnouncement";
+import type { UpdateRun } from "@/stores/locationUpdate";
+
+const MODES = Object.values(LocationMode);
+
+/** The same words onboarding uses for the two ways to set a place. */
+const MODE_LABEL: Record<LocationModeValue, ParseKeys> = {
+  [LocationMode.DEVICE]: "onboarding.location.automatic",
+  [LocationMode.MANUAL]: "onboarding.location.city",
+};
+
+type ModeProps = {
+  mode: LocationModeValue;
+  /** Takes the mode picked; the choice ticks for it. */
+  onSwitch: (mode: LocationModeValue) => void;
+  /** A read or update runs; the place cannot change under it. */
+  busy: boolean;
+};
+
+/** The device or a city, one radio group; choosing a city opens the list. */
+const LocationModeChoice = ({ mode, onSwitch, busy }: ModeProps) => {
+  const { t } = useTranslation();
+  // Only an option that is not chosen leads anywhere.
+  const opensList = (option: LocationModeValue) =>
+    option === LocationMode.MANUAL && mode === LocationMode.DEVICE;
+
+  return (
+    <SegmentedChoice
+      options={MODES}
+      value={mode}
+      onChange={onSwitch}
+      accessibilityLabel={t("a11y.location.mode")}
+      label={(option) => t(MODE_LABEL[option])}
+      optionTestID={(option) => (opensList(option) ? E2E_ID.LOCATION_CHOOSE_CITY : undefined)}
+      optionHint={(option) =>
+        opensList(option) ? t("a11y.location.manual.chooseCityHint") : undefined
+      }
+      disabled={busy}
+    />
+  );
+};
+
+/** A city by hand, which needs no location access. */
+const ChooseCityRow = ({ onPress }: { onPress: () => void }) => {
+  const { t } = useTranslation();
+  return (
+    <ListRow
+      variant={LIST_ROW_VARIANT.GROUPED}
+      icon={Search}
+      tile
+      title={t("onboarding.location.chooseCity")}
+      status={t("onboarding.location.cityNote")}
+      wrapStatus
+      hint={t("a11y.location.manual.chooseCityHint")}
+      testID={E2E_ID.LOCATION_CHOOSE_CITY}
+      onPress={onPress}
+    />
+  );
+};
+
+type DeviceProps = {
+  /** Takes the mode the choice picks; the choice ticks for it. */
+  onSwitchMode: (mode: LocationModeValue) => void;
+  onRefresh: () => void;
+  /** The last update, drawn when a later step stopped it. */
+  run: UpdateRun | null;
+  /** A read or update runs; the place cannot change under it. */
+  busy: boolean;
+  onRetry: () => void;
+  /** When the device last found the place, if it ever did. */
+  lastFound: string | undefined;
+  /** The times are a verified place's, not the stand-in Makkah's. */
+  verified: boolean;
+  /** The place came from the device's cached fix. */
+  lastKnown: boolean;
+  /** The city-change offer waits for an answer; its Use is the refresh. */
+  offerUp: boolean;
+};
+
+export const DeviceBody = ({
+  onSwitchMode,
+  onRefresh,
+  run,
+  busy,
+  onRetry,
+  lastFound,
+  verified,
+  lastKnown,
+  offerUp,
+}: DeviceProps) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      <LocationModeChoice mode={LocationMode.DEVICE} onSwitch={onSwitchMode} busy={busy} />
+      {!verified ? (
+        <StandInNotice />
+      ) : lastKnown ? (
+        <Callout tone={CALLOUT_TONE.INFO} body={t("location.lastKnownNotice")} />
+      ) : null}
+      {offerUp ? null : (
+        <ListGroup>
+          <ListRow
+            variant={LIST_ROW_VARIANT.GROUPED}
+            icon={RefreshCw}
+            tile
+            title={t("location.device.refresh")}
+            status={lastFound}
+            hint={t("a11y.location.refreshHint")}
+            disabled={busy}
+            onPress={onRefresh}
+          />
+        </ListGroup>
+      )}
+      <LocationUpdateProgress run={run} onRetry={onRetry} />
+    </>
+  );
+};
+
+type ManualProps = {
+  /** Takes the mode the choice picks; the choice ticks for it. */
+  onSwitchMode: (mode: LocationModeValue) => void;
+  onChooseCity: () => void;
+  /** The last update, drawn when a later step stopped it. */
+  run: UpdateRun | null;
+  /** A read or update runs; the place cannot change under it. */
+  busy: boolean;
+  onRetry: () => void;
+  /** The system refused access when the device was chosen. */
+  refused: boolean;
+};
+
+export const ManualBody = ({
+  onSwitchMode,
+  onChooseCity,
+  run,
+  busy,
+  onRetry,
+  refused,
+}: ManualProps) => {
+  const { t } = useTranslation();
+  const refusedNotice = t("location.manual.deviceRefused");
+  // The notice answers a tap with no system prompt; VoiceOver hears it said.
+  useIosAnnouncement(refused ? refusedNotice : null);
+  return (
+    <>
+      <LocationModeChoice mode={LocationMode.MANUAL} onSwitch={onSwitchMode} busy={busy} />
+      {refused ? (
+        <>
+          <Callout tone={CALLOUT_TONE.INFO} body={refusedNotice} />
+          <OpenSettingsButton />
+        </>
+      ) : null}
+      <Callout tone={CALLOUT_TONE.INFO} body={t("location.manual.notice")} />
+      <ListGroup>
+        <ListRow
+          variant={LIST_ROW_VARIANT.GROUPED}
+          icon={Search}
+          tile
+          title={t("location.manual.change")}
+          hint={t("a11y.location.manual.chooseCityHint")}
+          testID={E2E_ID.LOCATION_CHOOSE_CITY}
+          disabled={busy}
+          onPress={onChooseCity}
+        />
+      </ListGroup>
+      <LocationUpdateProgress run={run} onRetry={onRetry} />
+    </>
+  );
+};
+
+type AskProps = { onChooseDevice: () => void; onChooseCity: () => void };
+
+/** No access yet: the system asks only once the device is chosen. */
+export const PermissionBody = ({ onChooseDevice, onChooseCity }: AskProps) => {
+  const { t } = useTranslation();
+  return (
+    <ListGroup>
+      <ListRow
+        variant={LIST_ROW_VARIANT.GROUPED}
+        icon={LocateFixed}
+        tile
+        title={t("onboarding.location.automatic")}
+        status={t("onboarding.location.automaticNote")}
+        wrapStatus
+        hint={t("a11y.location.askPermissionHint")}
+        onPress={onChooseDevice}
+      />
+      <ChooseCityRow onPress={onChooseCity} />
+    </ListGroup>
+  );
+};
+
+type DeniedProps = {
+  onChooseCity: () => void;
+  /** A saved place stands; without one the times are Makkah's. */
+  verified: boolean;
+};
+
+/** Access refused: only Settings gives it back; a city needs none. */
+export const DeniedBody = ({ onChooseCity, verified }: DeniedProps) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      {verified ? (
+        <Callout tone={CALLOUT_TONE.INFO} body={t("location.denied.notice")} />
+      ) : (
+        <StandInNotice />
+      )}
+      <OpenSettingsButton />
+      <ListGroup>
+        <ChooseCityRow onPress={onChooseCity} />
+      </ListGroup>
+    </>
+  );
+};
