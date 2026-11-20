@@ -135,7 +135,11 @@ describe("ayahImageRows", () => {
   });
 
   it("measures the widest word, not the widest line", () => {
-    expect(widestAyahWord(BOUNDS, SURAH, AYAH)).toBe(248 + AYAH_EDGE_PAD);
+    const widest = widestAyahWord(BOUNDS, SURAH, AYAH);
+
+    expect(widest).toBe(248 + AYAH_EDGE_PAD);
+    // One word a row: the widest row is the widest word.
+    expect(Math.max(...rowsFor(1).map(widthOf))).toBe(widest);
     expect(widestAyahWord(BOUNDS, SURAH, 99)).toBe(0);
   });
 });
