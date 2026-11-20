@@ -557,6 +557,11 @@ public class ExpoAlarmModule: Module {
             return true
         }
 
+        Function("stopAlarmVibration") { () -> Bool in
+            AlarmAudioManager.shared.stopContinuousVibration()
+            return true
+        }
+
         Function("stopAllAlarmEffects") { () -> Bool in
             AlarmAudioManager.shared.stopAll()
             AlarmObserver.endBackgroundTask()
