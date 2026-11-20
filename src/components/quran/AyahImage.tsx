@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Image, View } from "react-native";
 import { Paths } from "expo-file-system";
+import { getTokenValue } from "tamagui";
 
 import { DownloadStatus, MushafImageType, MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
@@ -32,7 +33,6 @@ interface AyahImageProps {
 const pad3 = (n: number) => String(n).padStart(3, "0");
 // A short ayah's line height; a word wider than the card scales down.
 const TARGET_LINE_HEIGHT = 46;
-const ROW_GAP = 4;
 export const AYAH_IMAGE_ROW = "ayah-image-row";
 
 // An ayah in the edition's own ink, its words cut from the line or page images
@@ -96,11 +96,11 @@ const AyahImage = ({
   const rowHeight = srcLineHeight * scale;
 
   return (
-    <View style={{ alignItems: "center", gap: ROW_GAP }}>
-      {rows.map((row, i) => (
+    <View style={{ alignItems: "center", gap: getTokenValue("$1", "space") }}>
+      {rows.map((row) => (
         // A row reads from the right in every app direction.
         <View
-          key={i}
+          key={`${row[0].line}:${row[0].x}`}
           testID={AYAH_IMAGE_ROW}
           style={{ flexDirection: "row-reverse", direction: "ltr" }}>
           {row.map((run) => (
