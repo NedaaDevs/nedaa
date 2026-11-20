@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Image, View } from "react-native";
 import { Paths } from "expo-file-system";
-import { getTokenValue } from "tamagui";
 
 import { DownloadStatus, MushafImageType, MushafVersion, QuranThemeType } from "@/enums/quran";
 import {
@@ -12,6 +11,7 @@ import {
   isColoredVersion,
   quranImageDirSegment,
 } from "@/constants/Quran";
+import { VStack } from "@/components/ui/vstack";
 import { useQuranStore } from "@/stores/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
@@ -96,7 +96,7 @@ const AyahImage = ({
   const rowHeight = srcLineHeight * scale;
 
   return (
-    <View style={{ alignItems: "center", gap: getTokenValue("$1", "space") }}>
+    <VStack alignItems="center" spacing="tight">
       {rows.map((row) => (
         // A row reads from the right in every app direction.
         <View
@@ -133,7 +133,7 @@ const AyahImage = ({
           ))}
         </View>
       ))}
-    </View>
+    </VStack>
   );
 };
 
