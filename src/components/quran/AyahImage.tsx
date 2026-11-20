@@ -15,7 +15,7 @@ import { useQuranStore } from "@/stores/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import type { GlyphBound } from "@/types/quran";
-import { ayahImageRows } from "@/utils/ayahImageRows";
+import { ayahImageRows, widestAyahWord } from "@/utils/ayahImageRows";
 
 interface AyahImageProps {
   version: MushafVersion;
@@ -80,11 +80,7 @@ const AyahImage = ({
     isPageMode && sourceHeight > 0 ? sourceHeight / LINES_PER_PAGE : IMAGE_SOURCE_LINE_HEIGHT;
 
   // Words wider than the card shrink to fit it; others keep the target height.
-  const words = useMemo(
-    () => ayahImageRows(bounds, surah, ayah, Number.POSITIVE_INFINITY).flat(),
-    [bounds, surah, ayah]
-  );
-  const widestWord = Math.max(0, ...words.map((word) => word.width));
+  const widestWord = useMemo(() => widestAyahWord(bounds, surah, ayah), [bounds, surah, ayah]);
   const scale = Math.min(maxWidth / widestWord, TARGET_LINE_HEIGHT / srcLineHeight);
   const rows = useMemo(
     () => ayahImageRows(bounds, surah, ayah, maxWidth / scale),
