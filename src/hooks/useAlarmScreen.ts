@@ -138,7 +138,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
   const handleGraceStart = useCallback(() => {
     if (dismissedRef.current) return;
+    // The alarm vibrates natively; cancel() reaches only a JS vibration.
     Vibration.cancel();
+    ExpoAlarm.stopAlarmVibration();
     ExpoAlarm.stopAlarmSound();
   }, []);
 
