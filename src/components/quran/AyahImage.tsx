@@ -15,6 +15,7 @@ import { useQuranStore } from "@/stores/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
 import type { GlyphBound } from "@/types/quran";
+import { ayahImageRows, widestAyahWord } from "@/utils/ayahImageRows";
 
 interface AyahImageProps {
   version: MushafVersion;
@@ -29,12 +30,12 @@ interface AyahImageProps {
 }
 
 const pad3 = (n: number) => String(n).padStart(3, "0");
-// Cap so a one-word ayah doesn't blow up; long ayahs scale down to fit width.
+// A short ayah's line height; a word wider than the card scales down.
 const TARGET_LINE_HEIGHT = 46;
+const ROW_GAP = 4;
 
-// Renders an ayah as it appears in the actual edition — each line cropped from
-// the edition's line/page images via glyph bounds — so a colour edition (V4
-// tajweed) keeps its ink in the action sheet instead of monochrome DB text.
+// An ayah in the edition's own ink, its words cut from the line or page images
+// by glyph bounds and flowed as one run across the card.
 const AyahImage = ({
   version,
   page,
@@ -74,64 +75,62 @@ const AyahImage = ({
     );
   }, [isPageMode, dirSegment, page]);
 
-  // One {line, minX, maxX} segment per line the ayah occupies.
-  const segments = useMemo(() => {
-    const lineMap = new Map<number, { minX: number; maxX: number }>();
-    for (const g of bounds) {
-      if (g.surahNumber !== surah || g.ayahNumber !== ayah) continue;
-      const existing = lineMap.get(g.line);
-      const right = g.x + g.width;
-      if (existing) {
-        existing.minX = Math.min(existing.minX, g.x);
-        existing.maxX = Math.max(existing.maxX, right);
-      } else {
-        lineMap.set(g.line, { minX: g.x, maxX: right });
-      }
-    }
-    return [...lineMap.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([line, { minX, maxX }]) => ({ line, minX, maxX }));
-  }, [bounds, surah, ayah]);
-
   const srcLineHeight =
     isPageMode && sourceHeight > 0 ? sourceHeight / LINES_PER_PAGE : IMAGE_SOURCE_LINE_HEIGHT;
 
-  // Not ready (glyphs still loading, or page dims pending in page mode) or the
-  // ayah has no glyphs here → show the text fallback.
-  if (segments.length === 0 || (isPageMode && sourceHeight === 0)) {
+  // Words wider than the card shrink to fit it; others keep the target height.
+  const widestWord = useMemo(() => widestAyahWord(bounds, surah, ayah), [bounds, surah, ayah]);
+  const scale = Math.min(maxWidth / widestWord, TARGET_LINE_HEIGHT / srcLineHeight);
+  const rows = useMemo(
+    () => ayahImageRows(bounds, surah, ayah, maxWidth / scale),
+    [bounds, surah, ayah, maxWidth, scale]
+  );
+
+  // Glyphs or the page's size still loading, or no glyphs for the ayah here.
+  if (rows.length === 0 || (isPageMode && sourceHeight === 0)) {
     return <>{fallback}</>;
   }
 
-  const widest = Math.max(...segments.map((s) => s.maxX - s.minX));
-  const scale = Math.min(maxWidth / widest, TARGET_LINE_HEIGHT / srcLineHeight);
   const imgWidth = IMAGE_SOURCE_WIDTH * scale;
+  const rowHeight = srcLineHeight * scale;
 
   return (
-    <View style={{ alignItems: "center", gap: 4 }}>
-      {segments.map((s) => {
-        const segWidth = (s.maxX - s.minX) * scale;
-        const segHeight = srcLineHeight * scale;
-        return (
-          <View key={s.line} style={{ width: segWidth, height: segHeight, overflow: "hidden" }}>
-            <Image
-              source={{
-                uri: isPageMode
-                  ? `${Paths.document.uri}quran/${dirSegment}/pages/${pad3(page)}.png`
-                  : `${Paths.document.uri}quran/${dirSegment}/lines/${pad3(page)}/${pad3(s.line)}.png`,
-              }}
-              fadeDuration={0}
-              tintColor={tintColor}
+    <View style={{ alignItems: "center", gap: ROW_GAP }}>
+      {rows.map((row) => (
+        // A row reads from the right in every app direction.
+        <View
+          key={`${row[0].line}:${row[0].x}`}
+          style={{ flexDirection: "row-reverse", direction: "ltr" }}>
+          {row.map((run) => (
+            <View
+              key={`${run.line}:${run.x}`}
+              // The offset counts from the image's left edge in every direction.
               style={{
-                position: "absolute",
-                width: imgWidth,
-                height: isPageMode ? sourceHeight * scale : segHeight,
-                left: -s.minX * scale,
-                top: isPageMode ? -(s.line - 1) * srcLineHeight * scale : 0,
-              }}
-            />
-          </View>
-        );
-      })}
+                width: run.width * scale,
+                height: rowHeight,
+                overflow: "hidden",
+                direction: "ltr",
+              }}>
+              <Image
+                source={{
+                  uri: isPageMode
+                    ? `${Paths.document.uri}quran/${dirSegment}/pages/${pad3(page)}.png`
+                    : `${Paths.document.uri}quran/${dirSegment}/lines/${pad3(page)}/${pad3(run.line)}.png`,
+                }}
+                fadeDuration={0}
+                tintColor={tintColor}
+                style={{
+                  position: "absolute",
+                  width: imgWidth,
+                  height: isPageMode ? sourceHeight * scale : rowHeight,
+                  left: -run.x * scale,
+                  top: isPageMode ? -(run.line - 1) * rowHeight : 0,
+                }}
+              />
+            </View>
+          ))}
+        </View>
+      ))}
     </View>
   );
 };
