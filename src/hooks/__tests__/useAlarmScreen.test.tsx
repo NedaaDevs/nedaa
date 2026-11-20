@@ -8,6 +8,8 @@ import { useAlarmScreen } from "@/hooks/useAlarmScreen";
 const mockStartAlarmSound = jest.fn((_name: string) => Promise.resolve(true));
 const mockCompleteAndReschedule = jest.fn((_id: string) => Promise.resolve());
 const mockSnoozeAlarm = jest.fn();
+const mockStopAlarmSound = jest.fn();
+const mockStopAlarmVibration = jest.fn();
 const mockSettings = {
   sound: "makkahAthan1",
   volume: 1,
@@ -36,7 +38,8 @@ jest.mock("expo-alarm", () => {
     setAlarmVolume: jest.fn(),
     stopAllAlarmEffects: jest.fn(),
     restoreSystemVolume: jest.fn(),
-    stopAlarmSound: jest.fn(),
+    stopAlarmSound: () => mockStopAlarmSound(),
+    stopAlarmVibration: () => mockStopAlarmVibration(),
   };
 });
 jest.mock("@/stores/alarm", () => ({
@@ -74,6 +77,15 @@ describe("useAlarmScreen", () => {
 
     const name = mockStartAlarmSound.mock.calls[0][0];
     expect(fs.existsSync(path.join(IOS_DIR, `${name}.caf`))).toBe(true);
+  });
+
+  it("silences the sound and the native vibration while a challenge is solved", async () => {
+    const { result } = await mount();
+
+    await act(async () => result.current.handleGraceStart());
+
+    expect(mockStopAlarmSound).toHaveBeenCalledTimes(1);
+    expect(mockStopAlarmVibration).toHaveBeenCalledTimes(1);
   });
 
   it("completes the snoozed alarm, not the one it replaced", async () => {
