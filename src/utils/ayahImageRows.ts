@@ -64,7 +64,11 @@ const toRuns = (row: readonly Word[]): AyahRun[] => {
   return runs;
 };
 
-/** The ayah as rows of line-image slices, each at most `rowWidth` wide. */
+/** The widest word of the ayah, in source pixels; 0 when it has none. */
+export const widestAyahWord = (bounds: readonly GlyphBound[], surah: number, ayah: number) =>
+  Math.max(0, ...wordsOf(bounds, surah, ayah).map((word) => word.width));
+
+/** The ayah as rows of line-image slices; only a lone word passes `rowWidth`. */
 export const ayahImageRows = (
   bounds: readonly GlyphBound[],
   surah: number,
@@ -74,11 +78,13 @@ export const ayahImageRows = (
   const words = wordsOf(bounds, surah, ayah);
   if (words.length === 0) return [];
 
-  // Evened out: the narrowest width that needs no extra row.
   const rowCount = fill(words, rowWidth).length;
   let low = Math.max(...words.map((word) => word.width));
+  if (low >= rowWidth) return fill(words, rowWidth).map(toRuns);
+
+  // Evened out: the narrowest width that needs no extra row.
   const total = words.reduce((sum, word) => sum + word.width, 0);
-  let high = Math.max(low, Math.min(rowWidth, total));
+  let high = Math.min(rowWidth, total);
   while (low < high) {
     const mid = Math.floor((low + high) / 2);
     if (fill(words, mid).length > rowCount) low = mid + 1;

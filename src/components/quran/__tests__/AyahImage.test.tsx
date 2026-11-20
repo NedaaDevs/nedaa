@@ -34,7 +34,16 @@ const WORD: GlyphBound = {
 };
 /** The ayah's next word, at the start of the following line. */
 const NEXT_LINE_WORD: GlyphBound = { ...WORD, line: 4, position: 1, wordIndex: 2, x: 900 };
+/** Seven words that fill one line side by side. */
+const FULL_LINE: GlyphBound[] = [0, 1, 2, 3, 4, 5, 6].map((i) => ({
+  ...WORD,
+  position: i + 1,
+  wordIndex: i + 1,
+  x: 1200 - i * 180,
+  width: 180,
+}));
 const MAX_WIDTH = 320;
+const NARROW_WIDTH = 240;
 const FALLBACK = "fallback";
 // The host type React Native renders an Image as.
 const HOST_IMAGE = "Image";
@@ -120,4 +129,30 @@ describe("AyahImage", () => {
       expect(next.left + next.width).toBeCloseTo(first.left, 0);
     }
   );
+
+  // The card's width limits a word, never a whole Mushaf line.
+  it("breaks a full line into rows on a narrow card", async () => {
+    jest.mocked(QuranContentDB.getGlyphBounds).mockResolvedValue(FULL_LINE);
+    await renderWithTheme(
+      <AyahImage
+        version={MushafVersion.V1}
+        page={WORD.page}
+        surah={WORD.surahNumber}
+        ayah={WORD.ayahNumber}
+        quranTheme={QuranTheme.SEPIA}
+        maxWidth={NARROW_WIDTH}
+        fallback={<Text>{FALLBACK}</Text>}
+      />
+    );
+
+    const rows = await screen.findAllByTestId(AYAH_IMAGE_ROW);
+
+    expect(rows.length).toBeGreaterThan(1);
+    for (const row of rows) {
+      const width = hostsOfType(row, HOST_IMAGE)
+        .map((image) => Number(styleOf(image.parent ?? row).width))
+        .reduce((sum, w) => sum + w, 0);
+      expect(width).toBeLessThanOrEqual(NARROW_WIDTH);
+    }
+  });
 });

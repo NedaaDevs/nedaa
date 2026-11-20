@@ -35,8 +35,8 @@ const PADDING = 26;
 
 // The shareable ayah card — the capture target for image sharing. Paper-themed,
 // the verse rendered either as its actual-edition Mushaf image or as Hafs text,
-// with the reference and an optional Nedaa logo. Multi-line ayahs render fully:
-// AyahImage stacks one strip per line; the text card wraps naturally. The verse
+// with the reference and an optional Nedaa logo. Long ayahs render fully:
+// AyahImage flows the words into rows; the text card wraps naturally. The verse
 // and reference use raw RN Text because the Quran/metadata faces are plain font
 // families, not Tamagui font tokens (same as AyahText/TextPage).
 const AyahShareCard = ({
