@@ -294,6 +294,12 @@ export const setAlarmCopy = (copy: Record<string, string>): boolean => {
   return NativeModule.setAlarmCopy(copy);
 };
 
+/** Stops the alarm's vibration and leaves its sound and volume alone. */
+export const stopAlarmVibration = (): boolean => {
+  if (!isAvailable) return false;
+  return NativeModule.stopAlarmVibration();
+};
+
 export const stopAllAlarmEffects = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.stopAllAlarmEffects();
@@ -683,6 +689,7 @@ export default {
   stopAlarmSound,
   isAlarmSoundPlaying,
   setAlarmCopy,
+  stopAlarmVibration,
   stopAllAlarmEffects,
   setAlarmVolume,
   getAlarmVolume,
