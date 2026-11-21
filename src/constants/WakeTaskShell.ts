@@ -1,4 +1,7 @@
+import { CHALLENGE_DIFFICULTY } from "expo-alarm";
+
 import { WAKE_TASK_ID, type WakeTaskId } from "@/constants/WakeTask";
+import type { ChallengeDifficulty } from "@/types/alarm";
 
 /** How long sound and vibration pause as a task opens or after a solve. */
 export const QUIET_TIME_SECONDS = { DEFAULT: 30, SCREEN_READER: 60 } as const;
@@ -52,6 +55,39 @@ export const WAKE_TASK_NAME_KEY = {
   [WAKE_TASK_ID.TAP]: "alarm.task.name.tap",
 } as const satisfies Record<WakeTaskId, string>;
 
+/** Each task's one-line description, as the picker shows it. */
+export const WAKE_TASK_ABOUT_KEY = {
+  [WAKE_TASK_ID.MATH]: "alarm.task.about.math",
+  [WAKE_TASK_ID.PATTERN]: "alarm.task.about.pattern",
+  [WAKE_TASK_ID.DHIKR]: "alarm.task.about.dhikr",
+  [WAKE_TASK_ID.PRAYERS]: "alarm.task.about.prayers",
+  [WAKE_TASK_ID.TAP]: "alarm.task.about.tap",
+} as const satisfies Record<WakeTaskId, string>;
+
+/** Each difficulty's name, as the picker offers it. */
+export const WAKE_TASK_DIFFICULTY_KEY = {
+  [CHALLENGE_DIFFICULTY.EASY]: "alarm.challenge.easy",
+  [CHALLENGE_DIFFICULTY.MEDIUM]: "alarm.challenge.medium",
+  [CHALLENGE_DIFFICULTY.HARD]: "alarm.challenge.hard",
+} as const satisfies Record<ChallengeDifficulty, string>;
+
+/** Test ids for the picker's parts. */
+export const TASK_PICKER_PART = {
+  MARK: "task-picker-mark",
+  STATUS: "task-picker-status",
+} as const;
+
+/** How the shell runs: for a ringing alarm, or as a silent trial. */
+export const TASK_SHELL_MODE = { ALARM: "alarm", TRIAL: "trial" } as const;
+
+/** The trial screen the picker opens; it is no alarm screen. */
+export const TASK_TRIAL_PATH = "/alarm-trial";
+
+export const TASK_TRIAL_PARAM = { ALARM_TYPE: "alarmType", TASK: "task" } as const;
+
+/** The trial's task param that runs the whole stack. */
+export const TASK_TRIAL_ALL = "all";
+
 /** Test ids for the shell's parts. */
 export const TASK_SHELL_PART = {
   QUIET_STATUS: "task-quiet-status",
@@ -61,4 +97,5 @@ export const TASK_SHELL_PART = {
   QUIET_FILL: "task-quiet-fill",
   PIP: "task-step-pip",
   HANDOVER: "task-handover",
+  TRIAL_STRIP: "task-trial-strip",
 } as const;

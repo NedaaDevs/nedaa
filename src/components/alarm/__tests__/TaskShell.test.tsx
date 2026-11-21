@@ -8,6 +8,7 @@ import {
   HANDOVER_MS,
   QUIET_ENDING_SECONDS,
   QUIET_TIME_SECONDS,
+  TASK_SHELL_MODE,
   TASK_SHELL_PART,
   WAY_OUT_SOUNDING_SECONDS,
 } from "@/constants/WakeTaskShell";
@@ -105,6 +106,16 @@ const setUp = async (
   const solve = (name: string) => user.press(screen.getByRole("button", { name: `solve ${name}` }));
   const back = () => user.press(screen.getByRole("button", { name: BACK }));
   return { ...callbacks, ...view, user, solve, back };
+};
+
+const setUpTrial = async (tasks: NonEmptyTasks) => {
+  const callbacks = { onComplete: jest.fn(), onBack: jest.fn() };
+  const view = await renderWithTheme(
+    <TaskShell mode={TASK_SHELL_MODE.TRIAL} tasks={tasks} {...callbacks} />
+  );
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  const solve = (name: string) => user.press(screen.getByRole("button", { name: `solve ${name}` }));
+  return { ...callbacks, ...view, user, solve };
 };
 
 const PLATFORM = Platform.OS;
@@ -470,6 +481,50 @@ describe("TaskShell", () => {
 
       expect(screen.getByText(t("alarm.task.taskOf", { task: 2, total: 2 }))).toBeVisible();
       expect(screen.getByRole("button", { name: "solve tap" })).toBeVisible();
+    });
+  });
+
+  describe("a trial", () => {
+    const LIST = t("alarm.task.trial.backToList");
+
+    it("says it is a trial with no sound and draws no quiet strip", async () => {
+      await setUpTrial([TAP]);
+
+      expect(screen.getByText(t("alarm.task.trial.tag"))).toBeVisible();
+      expect(screen.getByText(t("alarm.task.trial.help"))).toBeVisible();
+      expect(screen.queryByTestId(TASK_SHELL_PART.QUIET_STRIP)).toBeNull();
+      expect(screen.queryByText(PAUSED)).toBeNull();
+    });
+
+    it("offers no way to stop an alarm, however long it runs", async () => {
+      await setUpTrial([TAP]);
+
+      await advance((QUIET_TIME_SECONDS.DEFAULT + WAY_OUT_SOUNDING_SECONDS + 60) * SECOND);
+
+      expect(screen.queryByRole("button", { name: STOP })).toBeNull();
+      expect(screen.queryByText(t("alarm.task.wayOut"))).toBeNull();
+      expect(said()).toEqual([]);
+    });
+
+    it("leaves to the list in one tap at any point", async () => {
+      const { user, solve, onBack } = await setUpTrial([MATH_3, TAP]);
+      await solve("math");
+
+      await user.press(screen.getByRole("button", { name: LIST }));
+
+      expect(onBack).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("button", { name: BACK })).toBeNull();
+    });
+
+    it("runs the stack in order with its handover, then finishes", async () => {
+      const { solve, onComplete } = await setUpTrial([DHIKR_1, TAP]);
+
+      await solve("dhikr");
+      expect(screen.getByTestId(TASK_SHELL_PART.HANDOVER)).toBeVisible();
+      await advance(HANDOVER_HOLD_MS);
+      await solve("tap");
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });
 });

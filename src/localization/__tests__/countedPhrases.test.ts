@@ -120,6 +120,33 @@ describe("counted phrases", () => {
         "يعود الصوت بعد 100 ثانية",
       ],
     ],
+    [
+      "alarm.task.about.tap",
+      [
+        "النقر على الزر.",
+        "النقر على الزر مرة واحدة.",
+        "النقر على الزر مرتين.",
+        "النقر على الزر 3 مرات.",
+        "النقر على الزر 11 مرة.",
+        "النقر على الزر 100 مرة.",
+      ],
+    ],
+    ["alarm.task.count", ["بلا مهام", "مهمة واحدة", "مهمتان", "3 مهام", "11 مهمة", "100 مهمة"]],
+    [
+      "alarm.task.full",
+      [
+        "لا يمكن إضافة مهام",
+        "مهمة واحدة على الأكثر",
+        "مهمتان على الأكثر",
+        "3 مهام على الأكثر",
+        "11 مهمة على الأكثر",
+        "100 مهمة على الأكثر",
+      ],
+    ],
+    [
+      "a11y.alarm.task.steps",
+      ["بلا خطوات", "خطوة واحدة", "خطوتان", "3 خطوات", "11 خطوة", "100 خطوة"],
+    ],
   ])("says %s in Arabic with all six forms", (key, sentences) => {
     ARABIC_COUNTS.forEach((count, i) => expect(sayAr(key, count)).toBe(sentences[i]));
   });
@@ -162,6 +189,18 @@ describe("counted phrases", () => {
         "الصوت متوقف مؤقتًا، بقيت 100 ثانية",
       ],
     ],
+    [
+      "alarm.task.wayOutAfter",
+      { stop: "إيقاف المنبّه" },
+      [
+        'يظهر زر "إيقاف المنبّه" فورًا.',
+        'بعد دقيقة واحدة يظهر زر "إيقاف المنبّه".',
+        'بعد دقيقتين يظهر زر "إيقاف المنبّه".',
+        'بعد 3 دقائق يظهر زر "إيقاف المنبّه".',
+        'بعد 11 دقيقة يظهر زر "إيقاف المنبّه".',
+        'بعد 100 دقيقة يظهر زر "إيقاف المنبّه".',
+      ],
+    ],
   ])("says %s in Arabic with all six forms around its filler", (key, filler, sentences) => {
     ARABIC_COUNTS.forEach((count, i) =>
       expect(i18n.t(key, { ...filler, count, lng: AppLocale.AR })).toBe(sentences[i])
@@ -182,6 +221,10 @@ describe("counted phrases", () => {
     ["alarm.task.startCount", "Start wake-up task", "Start 5 wake-up tasks"],
     ["alarm.task.tapAsk", "Tap the large button once.", "Tap the large button 5 times."],
     ["alarm.task.quiet.ending", "Sound returns in 1 second", "Sound returns in 5 seconds"],
+    ["alarm.task.about.tap", "Tap a button once.", "Tap a button 5 times."],
+    ["alarm.task.count", "1 task", "5 tasks"],
+    ["alarm.task.full", "Up to 1 task", "Up to 5 tasks"],
+    ["a11y.alarm.task.steps", "1 step", "5 steps"],
     ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
     [
       "a11y.qada.returnDaysHint",

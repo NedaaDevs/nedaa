@@ -21,7 +21,7 @@ import { applyTimingOffset } from "@/utils/alarmTrigger";
 
 const INITIAL = useAlarmSettingsStore.getState();
 const PRAYER_AT = new Date(2026, 10, 8, 5, 0);
-const { HARD, MEDIUM } = CHALLENGE_DIFFICULTY;
+const { EASY, HARD, MEDIUM } = CHALLENGE_DIFFICULTY;
 const MATH_HARD_7: ChallengeConfig = { type: CHALLENGE_TYPE.MATH, difficulty: HARD, count: 7 };
 const MATH_HARD_MAX: WakeTask = {
   id: WAKE_TASK_ID.MATH,
@@ -30,6 +30,7 @@ const MATH_HARD_MAX: WakeTask = {
 };
 const PRAYERS: WakeTask = { id: WAKE_TASK_ID.PRAYERS };
 const PATTERN: WakeTask = { id: WAKE_TASK_ID.PATTERN, difficulty: MEDIUM, steps: 2 };
+const MATH_HARD_MAX_CHALLENGE: ChallengeConfig = { ...MATH_HARD_7, count: WAKE_TASK_MAX_STEPS };
 
 /** A saved blob as an older build wrote it, `tasks` absent. */
 const withoutTasks = ({ tasks: _tasks, ...rest }: AlarmTypeSettings) => rest;
@@ -88,7 +89,7 @@ describe("alarm settings store", () => {
       const loaded = await loadSavedSettings(alarmType, saved);
 
       expect(loaded.tasks).toEqual([MATH_HARD_MAX]);
-      expect(loaded.challenge).toEqual(MATH_HARD_7);
+      expect(loaded.challenge).toEqual(MATH_HARD_MAX_CHALLENGE);
     }
   );
 
@@ -115,7 +116,7 @@ describe("alarm settings store", () => {
       tasks: [PATTERN, PRAYERS],
     });
 
-    expect(loaded.challenge).toEqual(MATH_HARD_7);
+    expect(loaded.challenge).toEqual(MATH_HARD_MAX_CHALLENGE);
     expect(loaded.tasks).toEqual([MATH_HARD_MAX]);
   });
 
@@ -126,7 +127,7 @@ describe("alarm settings store", () => {
       challenge: { type: "puzzle", difficulty: HARD, count: 3 },
     });
 
-    expect(loaded.challenge).toEqual({ ...DEFAULT_CHALLENGE_CONFIG, difficulty: HARD, count: 3 });
+    expect(loaded.challenge).toEqual(DEFAULT_CHALLENGE_CONFIG);
     expect(loaded.tasks).toEqual([{ id: WAKE_TASK_ID.TAP }]);
   });
 
@@ -147,5 +148,84 @@ describe("alarm settings store", () => {
     const { tasks, challenge } = useAlarmSettingsStore.getState().friday;
     expect(tasks).toEqual([MATH_HARD_MAX]);
     expect(challenge).toEqual(MATH_HARD_7);
+  });
+
+  // Stacks the picker can write, each read back as it was saved.
+  it.each<[WakeTask[]]>([
+    [[]],
+    [[PATTERN]],
+    [[PRAYERS, MATH_HARD_MAX]],
+    [[{ id: WAKE_TASK_ID.DHIKR, steps: 2 }, { id: WAKE_TASK_ID.TAP }, PATTERN]],
+    [[PATTERN, MATH_HARD_MAX]],
+    [[PRAYERS]],
+  ])("reloads a saved stack %j as it was", async (stack) => {
+    useAlarmSettingsStore.getState().updateSettings(ALARM_TYPE.FAJR, { tasks: stack });
+    const saved = useAlarmSettingsStore.getState().fajr;
+    const [, written] = jest.mocked(Storage.setItem).mock.calls.at(-1) ?? [];
+    useAlarmSettingsStore.setState(INITIAL, true);
+
+    jest
+      .mocked(Storage.getItem)
+      .mockResolvedValueOnce(typeof written === "string" ? written : null);
+    await useAlarmSettingsStore.persist.rehydrate();
+
+    const { tasks, challenge } = useAlarmSettingsStore.getState().fajr;
+    expect(tasks).toEqual(stack);
+    expect(challenge).toEqual(saved.challenge);
+  });
+
+  // A 2.x triple stronger than a stack holds loads as the stack's own triple.
+  it.each([
+    {
+      saved: { type: CHALLENGE_TYPE.TAP, difficulty: HARD, count: 10 },
+      tasks: [{ id: WAKE_TASK_ID.TAP }],
+      challenge: DEFAULT_CHALLENGE_CONFIG,
+    },
+    {
+      saved: { type: CHALLENGE_TYPE.MATH, difficulty: HARD, count: 10 },
+      tasks: [MATH_HARD_MAX],
+      challenge: MATH_HARD_MAX_CHALLENGE,
+    },
+  ])(
+    "loads a 2.x $saved.type $saved.difficulty ×$saved.count as what the picker shows",
+    async ({ saved, tasks, challenge }) => {
+      const loaded = await loadRawSettings(ALARM_TYPE.FAJR, {
+        ...withoutTasks(INITIAL.fajr),
+        challenge: saved,
+      });
+
+      expect(loaded.tasks).toEqual(tasks);
+      expect(loaded.challenge).toEqual(challenge);
+    }
+  );
+
+  // Blobs as 2.x and the builds before the picker wrote them.
+  it.each([
+    {
+      saved: { challenge: { type: CHALLENGE_TYPE.DHIKR, difficulty: EASY, count: 3 } },
+      tasks: [{ id: WAKE_TASK_ID.DHIKR, steps: 3 }],
+    },
+    {
+      saved: { challenge: { type: CHALLENGE_TYPE.NONE, difficulty: EASY, count: 1 } },
+      tasks: [],
+    },
+    {
+      saved: {
+        challenge: { type: CHALLENGE_TYPE.MATH, difficulty: HARD, count: 3 },
+        tasks: [{ id: WAKE_TASK_ID.MATH, difficulty: HARD, steps: 3 }],
+      },
+      tasks: [{ id: WAKE_TASK_ID.MATH, difficulty: HARD, steps: 3 }],
+    },
+    {
+      saved: { challenge: { type: CHALLENGE_TYPE.NONE, difficulty: EASY, count: 1 }, tasks: [] },
+      tasks: [],
+    },
+  ])("loads a saved $saved.challenge.type alarm on the stack it held", async ({ saved, tasks }) => {
+    const loaded = await loadRawSettings(ALARM_TYPE.FAJR, {
+      ...withoutTasks(INITIAL.fajr),
+      ...saved,
+    });
+
+    expect(loaded.tasks).toEqual(tasks);
   });
 });

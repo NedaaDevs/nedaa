@@ -20,6 +20,7 @@ import {
 } from "@/types/alarm";
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
+import { legacyChallengeFromWakeTasks } from "@/utils/wakeTasks";
 
 jest.mock("expo-alarm", () => ({
   ...jest.requireActual("expo-alarm"),
@@ -52,7 +53,7 @@ const INITIAL = useAlarmSettingsStore.getState();
 // Golden bytes: a change here orphans every saved alarm setting.
 const PERSISTED_KEY = "alarm-settings-storage";
 const PERSISTED =
-  '{"state":{"fajr":{"enabled":true,"sound":"makkahAthan1","volume":0.5,"timing":{"mode":"atPrayerTime","minutesBefore":0},"challenge":{"type":"tap","difficulty":"easy","count":1},"tasks":[{"id":"tap"}],"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}},"friday":{"enabled":false,"sound":"beep","volume":1,"timing":{"mode":"beforePrayerTime","minutesBefore":30},"challenge":{"type":"tap","difficulty":"easy","count":1},"tasks":[{"id":"tap"}],"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}}},"version":0}';
+  '{"state":{"fajr":{"enabled":true,"sound":"makkahAthan1","volume":0.5,"timing":{"mode":"atPrayerTime","minutesBefore":0},"challenge":{"type":"tap","difficulty":"medium","count":1},"tasks":[{"id":"tap"}],"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}},"friday":{"enabled":false,"sound":"beep","volume":1,"timing":{"mode":"beforePrayerTime","minutesBefore":30},"challenge":{"type":"tap","difficulty":"medium","count":1},"tasks":[{"id":"tap"}],"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}}},"version":0}';
 
 const mount = (alarmType: AlarmType) => renderHook(() => useAlarmTypeSettings(alarmType));
 
@@ -147,7 +148,33 @@ describe("useAlarmTypeSettings", () => {
     expect(result.current.settings.challenge.type).toBe(ExpoAlarm.CHALLENGE_TYPE.MATH);
   });
 
-  // The picker offers counts and difficulties a stack cannot hold.
+  // Native takes the pair the store keeps; the mapping decides both.
+  it.each<WakeTask[]>([
+    [],
+    [{ id: WAKE_TASK_ID.PATTERN, difficulty: ExpoAlarm.CHALLENGE_DIFFICULTY.MEDIUM, steps: 2 }],
+    [{ id: WAKE_TASK_ID.PRAYERS }, { id: WAKE_TASK_ID.DHIKR, steps: 3 }],
+    [
+      { id: WAKE_TASK_ID.DHIKR, steps: 5 },
+      { id: WAKE_TASK_ID.TAP },
+      { id: WAKE_TASK_ID.MATH, difficulty: ExpoAlarm.CHALLENGE_DIFFICULTY.EASY, steps: 1 },
+    ],
+  ])("stores and sends the stack %j as the mapping writes it", async (...tasks) => {
+    onPlatform(PlatformType.ANDROID);
+    const expected = legacyChallengeFromWakeTasks(tasks);
+    const { result } = await mount(ALARM_TYPE.FAJR);
+
+    await act(async () => result.current.update({ tasks }));
+
+    expect(result.current.settings.tasks).toEqual(tasks);
+    expect(result.current.settings.challenge).toEqual(expected);
+    expect(setNative).toHaveBeenCalledWith(ScheduledAlarmType.FAJR, {
+      challengeType: expected.type,
+      challengeDifficulty: expected.difficulty,
+      challengeCount: expected.count,
+    });
+  });
+
+  // A challenge write, as the debug screen makes, keeps what a stack cannot.
   it.each([
     {
       type: ExpoAlarm.CHALLENGE_TYPE.TAP,

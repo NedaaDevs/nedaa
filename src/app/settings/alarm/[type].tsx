@@ -18,7 +18,8 @@ import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import {
   SoundPicker,
   VolumeSlider,
-  ChallengePicker,
+  TaskPicker,
+  type TaskTrialTarget,
   GentleWakeUpSettings,
   VibrationSettings,
   SnoozeSettings,
@@ -27,8 +28,14 @@ import {
 
 import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
 
-import { ALARM_PREVIEW_STATE, ALARM_TYPE, type AlarmPreviewState } from "@/constants/Alarm";
+import {
+  ALARM_PREVIEW_STATE,
+  ALARM_TYPE,
+  PREVIEW_ALARM_SECONDS,
+  type AlarmPreviewState,
+} from "@/constants/Alarm";
 import { E2E_ID } from "@/constants/E2E";
+import { TASK_TRIAL_PARAM, TASK_TRIAL_PATH } from "@/constants/WakeTaskShell";
 import { PlatformType } from "@/enums/app";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
@@ -49,15 +56,15 @@ const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
     <VStack gap="$3">
       <HStack alignItems="center" gap="$2">
         <Box
-          width={32}
-          height={32}
-          borderRadius="$4"
+          width="$8"
+          height="$8"
+          borderRadius="$chip"
           backgroundColor="$surfaceActive"
           alignItems="center"
           justifyContent="center">
           <Icon as={icon} size="md" color="$typography" />
         </Box>
-        <Text size="md" fontWeight="600" color="$typography">
+        <Text size="md" fontWeight="600" color="$typography" accessibilityRole="header">
           {title}
         </Text>
       </HStack>
@@ -77,7 +84,6 @@ const AlarmTypeSettingsScreen = () => {
   const { settings, update, setEnabled } = useAlarmTypeSettings(alarmType);
   const shownOn = useAlarmOn(alarmType);
 
-  const PREVIEW_ALARM_SECONDS = 30;
   const [previewState, setPreviewState] = useState<AlarmPreviewState>(ALARM_PREVIEW_STATE.IDLE);
   // Seconds left in the pending window, ticked down live for the button label.
   const [previewRemaining, setPreviewRemaining] = useState(PREVIEW_ALARM_SECONDS);
@@ -138,6 +144,19 @@ const AlarmTypeSettingsScreen = () => {
     }
     await setEnabled(enabled);
   };
+
+  const openTrial = (target: TaskTrialTarget) =>
+    router.push({
+      pathname: TASK_TRIAL_PATH,
+      params: { [TASK_TRIAL_PARAM.ALARM_TYPE]: alarmType, [TASK_TRIAL_PARAM.TASK]: target },
+    });
+
+  const previewText =
+    previewState === ALARM_PREVIEW_STATE.PENDING
+      ? t("alarm.settings.previewAlarmPending", { seconds: previewRemaining })
+      : previewState === ALARM_PREVIEW_STATE.FAILED
+        ? t("alarm.settings.previewAlarmFailed")
+        : null;
 
   const title =
     alarmType === ALARM_TYPE.FAJR ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
@@ -219,14 +238,11 @@ const AlarmTypeSettingsScreen = () => {
                 </SettingsSection>
               )}
 
-              {/* Challenge Settings */}
-              <SettingsSection title={t("alarm.settings.challenge")} icon={Brain}>
-                <Text size="sm" color="$typographySecondary" marginBottom="$2">
-                  {t("alarm.settings.challengeDescription")}
-                </Text>
-                <ChallengePicker
-                  value={settings.challenge}
-                  onChange={(challenge) => update({ challenge })}
+              <SettingsSection title={t("alarm.task.picker")} icon={Brain}>
+                <TaskPicker
+                  tasks={settings.tasks}
+                  onChange={(tasks) => update({ tasks })}
+                  onTry={openTrial}
                 />
               </SettingsSection>
 
@@ -250,7 +266,7 @@ const AlarmTypeSettingsScreen = () => {
                 </Text>
                 <Button
                   size="lg"
-                  minHeight={44}
+                  minHeight="$target"
                   action={previewState === ALARM_PREVIEW_STATE.FAILED ? "negative" : "primary"}
                   variant={previewState === ALARM_PREVIEW_STATE.IDLE ? "solid" : "outline"}
                   disabled={previewState === ALARM_PREVIEW_STATE.PENDING}
@@ -260,13 +276,7 @@ const AlarmTypeSettingsScreen = () => {
                     seconds: PREVIEW_ALARM_SECONDS,
                   })}
                   accessibilityState={{ disabled: previewState === ALARM_PREVIEW_STATE.PENDING }}>
-                  <Button.Text>
-                    {previewState === ALARM_PREVIEW_STATE.PENDING
-                      ? t("alarm.settings.previewAlarmPending", { seconds: previewRemaining })
-                      : previewState === ALARM_PREVIEW_STATE.FAILED
-                        ? t("alarm.settings.previewAlarmFailed")
-                        : t("alarm.settings.previewAlarm")}
-                  </Button.Text>
+                  <Button.Text>{previewText ?? t("alarm.settings.previewAlarm")}</Button.Text>
                 </Button>
               </SettingsSection>
             </>

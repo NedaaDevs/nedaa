@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Platform, View } from "react-native";
 import { useState, useEffect, useCallback } from "react";
@@ -47,6 +48,8 @@ import {
 
 import { BUNDLED_SOUNDS } from "@/constants/sounds";
 import { AlarmTypeSettings } from "@/types/alarm";
+import { formatNumberToLocale } from "@/utils/number";
+import { taskName } from "@/utils/taskRun";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
 import { useDebugModeStore } from "@/stores/debugMode";
@@ -58,8 +61,6 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useClockTime, type ClockTime } from "@/hooks/useClockTime";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { useVerifiedPlace } from "@/hooks/useVerifiedPlace";
-
-import { CHALLENGE_TYPE } from "expo-alarm";
 
 import {
   ALARM_PERMISSION,
@@ -255,18 +256,19 @@ const formatAlarmTime = (
   };
 };
 
-// One-line config digest: challenge type (+count) · sound name.
-const formatConfigSummary = (
-  settings: AlarmTypeSettings,
-  t: (key: string, options?: Record<string, string | number>) => string
-): string => {
-  const { challenge, sound } = settings;
-  const challengeLabel = t(`alarm.challenge.${challenge.type}`);
-  const countPart =
-    challenge.type !== CHALLENGE_TYPE.NONE && challenge.count > 1 ? ` ×${challenge.count}` : "";
+/** The alarm's wake-up tasks, by name or by count, then its sound. */
+const formatConfigSummary = (settings: AlarmTypeSettings, t: TFunction): string => {
+  const { tasks, sound } = settings;
+  const [first] = tasks;
+  const taskPart =
+    tasks.length > 1
+      ? t("alarm.task.count", { count: tasks.length })
+      : first
+        ? taskName(first, t)
+        : t("alarm.task.none");
   const asset = BUNDLED_SOUNDS[sound];
   const soundName = asset ? t(asset.label) : t("alarm.settings.systemSound");
-  return `${challengeLabel}${countPart} · ${soundName}`;
+  return formatNumberToLocale(`${taskPart} · ${soundName}`);
 };
 
 const AlarmSettings = () => {
@@ -460,13 +462,15 @@ const AlarmSettings = () => {
                 <Card.Pressable
                   accessibilityRole="button"
                   accessibilityLabel={[
-                    `${alarm.title}, ${onOff(alarm.enabled)}`,
                     alarm.configSummary,
                     alarm.firesAt?.spoken,
                     alarm.streak?.spoken,
                   ]
-                    .filter(Boolean)
-                    .join(". ")}
+                    .filter((part): part is string => Boolean(part))
+                    .reduce(
+                      (first, second) => t("a11y.sentences", { first, second }),
+                      t("a11y.join", { first: alarm.title, second: onOff(alarm.enabled) })
+                    )}
                   accessibilityHint={t("a11y.opens", { name: alarm.title })}
                   margin="$2"
                   onPress={() => router.push(alarmSettingsHref(alarm.type))}>
@@ -583,7 +587,12 @@ const AlarmSettings = () => {
                     RTLProvider's direction wrapper, so flex rows don't flip otherwise. */}
                 <View style={{ direction: isRTL ? "rtl" : "ltr", width: "100%" }}>
                   <VStack gap="$3" paddingVertical="$3">
-                    <Text size="lg" fontWeight="700" color="$typography" textAlign="center">
+                    <Text
+                      size="lg"
+                      fontWeight="700"
+                      color="$typography"
+                      textAlign="center"
+                      accessibilityRole="header">
                       {t("alarm.report.title")}
                     </Text>
 
