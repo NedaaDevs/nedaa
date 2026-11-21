@@ -4,6 +4,7 @@ import * as ExpoAlarm from "expo-alarm";
 
 import AlarmTriggeredScreen from "@/app/alarm";
 import { OTHER_TIMING, PRAYER_ID } from "@/constants/Prayer";
+import { EMERGENCY_QUIET_MS, EMERGENCY_QUIET_PART } from "@/constants/EmergencyQuiet";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { WAKE_TASK_ID } from "@/constants/WakeTask";
 import { AppLocale } from "@/enums/app";
@@ -11,6 +12,7 @@ import i18n from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { quietControl } from "@/test-helpers/quietControl";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
 import { deviceTimeZone } from "@/utils/date";
@@ -64,7 +66,14 @@ jest.mock("@/components/alarm/challenges", () => {
     );
   const { FIRST_POSITION } = jest.requireActual("@/utils/taskRun");
   const { startTaskClock } = jest.requireActual("@/utils/taskClock");
-  const saved = { clock: startTaskClock(0, 0), position: FIRST_POSITION };
+  const { WAY_OUT_SOUNDING_SECONDS } = jest.requireActual("@/constants/WakeTaskShell");
+  const saved = () => ({
+    clock: {
+      ...startTaskClock(0, 0),
+      soundingMs: mockRun.wayOut ? WAY_OUT_SOUNDING_SECONDS * 1000 : 0,
+    },
+    position: FIRST_POSITION,
+  });
   return {
     TaskStart: ({ onStart, onStop }: { onStart: () => void; onStop: () => void }) =>
       createElement(
@@ -78,19 +87,24 @@ jest.mock("@/components/alarm/challenges", () => {
         View,
         null,
         press(resume ? mockLabel.RESUMED : audible ? mockLabel.SOUNDING : mockLabel.SNOOZED, () =>
-          onBack(saved)
+          onBack(saved())
         ),
         press(mockLabel.SHELL_STOP, onStop)
       ),
   };
 });
+/** Whether the run Back leaves has shown its way out. */
+const mockRun = { wayOut: false };
+const QUIET_CONTROL = quietControl();
 const mockScreen = {
   handleChallengeComplete: jest.fn(),
   handleStop: jest.fn(),
   isSnoozed: false,
   snoozeEndTime: null as Date | null,
   snoozeTimeRemaining: 0,
+  canSnooze: false,
   tasks: [{ id: WAKE_TASK_ID.MATH, steps: 1 }],
+  emergency: QUIET_CONTROL,
 };
 jest.mock("@/hooks/useAlarmScreen", () => ({
   useAlarmScreen: () => ({
@@ -98,14 +112,15 @@ jest.mock("@/hooks/useAlarmScreen", () => ({
     isDismissed: false,
     snoozeEndTime: mockScreen.snoozeEndTime,
     snoozeTimeRemaining: mockScreen.snoozeTimeRemaining,
-    canSnooze: false,
-    remainingSnoozes: 0,
+    canSnooze: mockScreen.canSnooze,
+    remainingSnoozes: 1,
     tasks: mockScreen.tasks,
     handleChallengeComplete: mockScreen.handleChallengeComplete,
     handleStop: mockScreen.handleStop,
     handleSnooze: jest.fn(),
     handleQuietStart: jest.fn(),
     handleQuietEnd: jest.fn(),
+    emergency: mockScreen.emergency,
   }),
 }));
 
@@ -135,6 +150,9 @@ describe("AlarmTriggeredScreen", () => {
     mockScreen.isSnoozed = false;
     mockScreen.snoozeEndTime = null;
     mockScreen.snoozeTimeRemaining = 0;
+    mockScreen.canSnooze = false;
+    mockScreen.emergency = QUIET_CONTROL;
+    mockRun.wayOut = false;
     useAppStore.setState({ locale: AppLocale.AR });
     usePreferencesStore.setState({ use24HourTime: false, useWesternNumerals: false });
     usePrayerTimesStore.setState({ todayTimings: DAY, tomorrowTimings: null });
@@ -289,5 +307,63 @@ describe("AlarmTriggeredScreen", () => {
     await renderWithTheme(<AlarmTriggeredScreen />);
 
     expect(screen.getByText("١:٣٠")).toBeVisible();
+  });
+
+  describe("emergency quiet", () => {
+    // Read in the test, after the screen's language is set.
+    const quietName = () => i18n.t("alarm.quiet.button");
+
+    it("is offered under the task's start, and asks to confirm", async () => {
+      const user = userEvent.setup();
+      await renderWithTheme(<AlarmTriggeredScreen />);
+
+      await user.press(screen.getByRole("button", { name: quietName() }));
+
+      expect(QUIET_CONTROL.open).toHaveBeenCalledTimes(1);
+    });
+
+    it("covers snooze with its confirm", async () => {
+      mockScreen.canSnooze = true;
+      const { rerender } = await renderWithTheme(<AlarmTriggeredScreen />);
+      const snooze = () =>
+        screen.queryByRole("button", { name: i18n.t("a11y.alarm.snoozeButton", { count: 1 }) });
+      expect(snooze()).toBeVisible();
+
+      mockScreen.emergency = { ...QUIET_CONTROL, confirming: true };
+      await rerender(<AlarmTriggeredScreen />);
+
+      expect(screen.getByTestId(EMERGENCY_QUIET_PART.CONFIRM)).toBeVisible();
+      expect(snooze()).toBeNull();
+    });
+
+    it("gives snooze back once the way out takes the confirm away", async () => {
+      const user = userEvent.setup();
+      mockScreen.canSnooze = true;
+      mockScreen.emergency = { ...QUIET_CONTROL, confirming: true };
+      mockRun.wayOut = true;
+      await renderWithTheme(<AlarmTriggeredScreen />);
+
+      await user.press(screen.getByRole("button", { name: mockLabel.START }));
+      await user.press(screen.getByRole("button", { name: mockLabel.SOUNDING }));
+
+      expect(screen.queryByTestId(EMERGENCY_QUIET_PART.CONFIRM)).toBeNull();
+      expect(
+        screen.getByRole("button", { name: i18n.t("a11y.alarm.snoozeButton", { count: 1 }) })
+      ).toBeVisible();
+    });
+
+    it("keeps the task silent and shows the re-ring while it runs", async () => {
+      const user = userEvent.setup();
+      mockScreen.emergency = {
+        ...QUIET_CONTROL,
+        quietUntil: EVENING.getTime() + EMERGENCY_QUIET_MS,
+      };
+      await renderWithTheme(<AlarmTriggeredScreen />);
+      expect(screen.getByTestId(EMERGENCY_QUIET_PART.BANNER)).toBeVisible();
+
+      await user.press(screen.getByRole("button", { name: mockLabel.START }));
+
+      expect(screen.getByRole("button", { name: mockLabel.SNOOZED })).toBeVisible();
+    });
   });
 });

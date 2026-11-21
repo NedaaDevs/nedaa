@@ -282,9 +282,11 @@ export async function completeAndRescheduleAlarm(
 
   await alarmStore.completeAlarm(alarmId);
 
-  // The streak reads the outcome; a preview is not a morning.
+  // The streak reads the outcome; a preview is not a morning. Judged from the
+  // first ring, and an alarm ended before its trigger ends at its trigger.
   if (alarm?.alarmType === ScheduledAlarmType.FAJR && !alarm.isPreview) {
-    useAlarmStreakStore.getState().recordFajrOutcome(alarm.triggerTime, ending.outcome);
+    const rangAt = Math.min(alarm.firstTriggerTime ?? alarm.triggerTime, Date.now());
+    useAlarmStreakStore.getState().recordFajrOutcome(rangAt, ending.outcome);
   }
 
   // The alarm screen opens up to a minute early, so a challenge can be solved

@@ -1,3 +1,4 @@
+import type { updateLiveActivity } from "expo-alarm";
 import type { Href } from "expo-router";
 import { PRAYER_ID } from "@/constants/Prayer";
 import type { AlarmTimingChoices, AlarmType, TimingConfig, TimingMode } from "@/types/alarm";
@@ -7,6 +8,15 @@ export const ALARM_TYPE = {
   FAJR: PRAYER_ID.FAJR,
   FRIDAY: "friday",
 } as const;
+
+/** The lock-screen alarm activity's states; expo-alarm's union types them. */
+export const LIVE_ACTIVITY_STATE = {
+  COUNTDOWN: "countdown",
+  FIRING: "firing",
+  SNOOZED: "snoozed",
+} as const satisfies Record<string, Parameters<typeof updateLiveActivity>[1]>;
+
+export type LiveActivityState = (typeof LIVE_ACTIVITY_STATE)[keyof typeof LIVE_ACTIVITY_STATE];
 
 /** The routes of the ringing alarm and of its completion. */
 export const ALARM_SCREEN_PATH = { RING: "/alarm", COMPLETE: "/alarm-complete" } as const;

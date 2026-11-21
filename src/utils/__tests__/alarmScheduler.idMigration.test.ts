@@ -177,7 +177,9 @@ describe("2.x alarm id migration", () => {
       await completeAndRescheduleAlarm(rung.alarmId, SOLVED);
       await ensureAlarmsScheduled();
 
-      expect(mockRecordFajrOutcome.mock.calls).toEqual([[rung.triggerTime, ALARM_OUTCOME.SOLVED]]);
+      // An early solve ends the morning at the solve, inside the streak's hour.
+      const endedAt = Math.min(rung.triggerTime, Date.now());
+      expect(mockRecordFajrOutcome.mock.calls).toEqual([[endedAt, ALARM_OUTCOME.SOLVED]]);
       expect(stored()).toEqual([
         [idAt(FAJR, RIYADH[1]), RIYADH[1]],
         [idAt(FAJR, RIYADH[2]), RIYADH[2]],

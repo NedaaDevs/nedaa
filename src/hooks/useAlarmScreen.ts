@@ -5,16 +5,19 @@ import * as ExpoAlarm from "expo-alarm";
 
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { useEmergencyQuietStore } from "@/stores/emergencyQuiet";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { alarmLog } from "@/utils/alarmReport";
 import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_ALARM_TYPE_SETTINGS } from "@/types/alarm";
-import { ALARM_SCREEN_PATH, ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_SCREEN_PATH, ALARM_TYPE } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { PlatformType } from "@/enums/app";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import { AppLogger } from "@/utils/appLogger";
+import { quietEndsAt, runningQuietEnd } from "@/utils/emergencyQuiet";
+import { waitForHydration } from "@/utils/storeHydration";
 
 const log = AppLogger.create("alarm");
 
@@ -27,6 +30,25 @@ const startSound = async (sound: string, volume: number) => {
 const ensureSound = async (sound: string, volume: number) => {
   if (!ExpoAlarm.isAlarmSoundPlaying()) await startSound(sound, volume);
 };
+
+/** A ringing alarm's emergency quiet: what decides the offer, and its confirm. */
+export type EmergencyQuietControl = Readonly<{
+  hasTask: boolean;
+  preview: boolean;
+  snoozed: boolean;
+  /** This alarm, its snoozes included, has had its quiet. */
+  used: boolean;
+  /** When the running quiet rings the alarm again; null with none running. */
+  quietUntil: number | null;
+  confirming: boolean;
+  /** The confirm is quieting; "Quiet now" takes no second press. */
+  quieting: boolean;
+  /** The last confirm failed; the alarm still rings and nothing was counted. */
+  failed: boolean;
+  open: () => void;
+  back: () => void;
+  confirm: () => Promise<void>;
+}>;
 
 export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [isSnoozed, setIsSnoozed] = useState(false);
@@ -42,6 +64,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }
 
   const snoozeAlarm = useAlarmStore((state) => state.snoozeAlarm);
+  const quietAlarm = useAlarmStore((state) => state.quietAlarm);
   // Selected so the snooze count on screen follows the store.
   const alarm = useAlarmStore((state) => state.scheduledAlarms[activeAlarmId]);
 
@@ -50,9 +73,18 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     (isScheduledAlarmType(alarmType) && toSettingsAlarmType(alarmType)) || ALARM_TYPE.FAJR;
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
+  // The quiet lives in the record, so a relaunch finds it; this clock is read
+  // again when it ends.
+  const [quietClock, setQuietClock] = useState(() => Date.now());
+  const quietUntil = runningQuietEnd(alarm, quietClock);
+  const [confirming, setConfirming] = useState(false);
+  const [quieting, setQuieting] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const quiet = quietUntil !== null;
+
   const snoozeCount = alarm?.snoozeCount ?? 0;
   const maxSnoozes = alarmSettings.snooze.enabled ? alarmSettings.snooze.maxCount : 0;
-  const canSnooze = alarmSettings.snooze.enabled && snoozeCount < maxSnoozes;
+  const canSnooze = alarmSettings.snooze.enabled && snoozeCount < maxSnoozes && !quiet;
   const remainingSnoozes = Math.max(0, maxSnoozes - snoozeCount);
 
   const vibrationPattern = alarmSettings.vibration.enabled
@@ -68,11 +100,11 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
   // Android's alarm service plays the sound natively; iOS plays it from here.
   useEffect(() => {
-    if (Platform.OS !== PlatformType.IOS || isSnoozed || isDismissed) return;
+    if (Platform.OS !== PlatformType.IOS || isSnoozed || isDismissed || quiet) return;
     ensureSound(alarmSettings.sound, alarmSettings.volume).catch((error: unknown) =>
       log.w("Sound", `alarm sound did not start: ${String(error)}`)
     );
-  }, [isSnoozed, isDismissed, alarmSettings.sound, alarmSettings.volume]);
+  }, [isSnoozed, isDismissed, quiet, alarmSettings.sound, alarmSettings.volume]);
 
   useEffect(() => {
     if (Platform.OS !== PlatformType.ANDROID) return;
@@ -107,19 +139,31 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     return () => clearInterval(interval);
   }, [snoozeEndTime]);
 
+  // The re-ring alarm sounds natively at the same moment; this restores the screen.
   useEffect(() => {
-    if (isSnoozed || isDismissed || !vibrationPattern) {
+    if (quietUntil === null) return;
+    const id = setTimeout(() => setQuietClock(Date.now()), Math.max(0, quietUntil - Date.now()));
+    return () => clearTimeout(id);
+  }, [quietUntil]);
+
+  useEffect(() => {
+    if (isSnoozed || isDismissed || quiet || !vibrationPattern) {
       Vibration.cancel();
       return;
     }
     Vibration.vibrate([...vibrationPattern], true);
     return () => Vibration.cancel();
-  }, [isSnoozed, isDismissed, vibrationPattern]);
+  }, [isSnoozed, isDismissed, quiet, vibrationPattern]);
 
   const dismissedRef = useRef(false);
   // Bumped by each silencing, so a sound restart that lands after one yields.
   const quietGenRef = useRef(0);
   const ringCountRef = useRef(0);
+  // From the quiet's silence until the quiet shows, or until it fails.
+  const quietPendingRef = useRef(false);
+  useEffect(() => {
+    if (quiet) quietPendingRef.current = false;
+  }, [quiet]);
 
   /** Silences the alarm for good and records how it ended. */
   const endAlarm = useCallback(
@@ -189,9 +233,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }, []);
 
   const handleQuietEnd = useCallback(async () => {
-    if (dismissedRef.current || snoozingRef.current) return;
+    if (dismissedRef.current || quietPendingRef.current || snoozingRef.current || quiet) return;
     await ringAgain();
-  }, [ringAgain]);
+  }, [quiet, ringAgain]);
 
   const handleSnooze = useCallback(async () => {
     if (!canSnooze) return;
@@ -214,10 +258,65 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     }
     markAlarmHandled(activeAlarmId);
     setActiveAlarmId(result.snoozeId);
+    setConfirming(false);
     setIsSnoozed(true);
     setSnoozeEndTime(result.snoozeEndTime);
     setSnoozeTimeRemaining(snoozeDuration * 60);
   }, [activeAlarmId, canSnooze, alarmSettings.snooze.durationMinutes, snoozeAlarm, ringAgain]);
+
+  const confirmQuiet = useCallback(async () => {
+    if (quieting || dismissedRef.current) return;
+    setQuieting(true);
+    setFailed(false);
+    try {
+      const { persist } = useEmergencyQuietStore;
+      await waitForHydration(persist, { timeoutMs: ALARM_HYDRATION_TIMEOUT_MS });
+      const result = await quietAlarm(activeAlarmId, {
+        ringsAt: new Date(quietEndsAt(Date.now())),
+        recordUse: () => {
+          // An unread count could hand out a use already spent.
+          if (!persist.hasHydrated()) throw new Error("emergency quiet count not read");
+          useEmergencyQuietStore.getState().recordUse(Date.now());
+        },
+        silence: () => {
+          quietPendingRef.current = true;
+          quietGenRef.current += 1;
+          Vibration.cancel();
+        },
+      });
+      if (!result) {
+        quietPendingRef.current = false;
+        setFailed(true);
+        return;
+      }
+      markAlarmHandled(activeAlarmId);
+      setActiveAlarmId(result.quietId);
+      setConfirming(false);
+    } catch (error) {
+      log.w("Quiet", `emergency quiet failed: ${String(error)}`);
+      quietPendingRef.current = false;
+      setFailed(true);
+    } finally {
+      setQuieting(false);
+    }
+  }, [quieting, quietAlarm, activeAlarmId]);
+
+  const emergency: EmergencyQuietControl = {
+    hasTask: alarmSettings.tasks.length > 0,
+    preview: alarm?.isPreview === true,
+    snoozed: isSnoozed,
+    used: alarm?.quietUsed === true,
+    quietUntil,
+    confirming,
+    quieting,
+    failed,
+    open: () => {
+      setFailed(false);
+      setConfirming(true);
+    },
+    back: () => setConfirming(false),
+    confirm: confirmQuiet,
+  };
 
   return {
     isSnoozed,
@@ -232,5 +331,6 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     handleSnooze,
     handleQuietStart,
     handleQuietEnd,
+    emergency,
   };
 }

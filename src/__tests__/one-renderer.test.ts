@@ -580,6 +580,24 @@ const ONE_RENDERER: readonly Rule[] = [
       text: "screenReader ? QUIET_TIME_SECONDS.SCREEN_READER : QUIET_TIME_SECONDS.DEFAULT",
     },
   },
+  // The ringing screen and the task offer the emergency quiet alike.
+  {
+    concept: "the emergency quiet offer",
+    shows: /<EmergencyQuiet\b|\balarm\.quiet\.(button|noneLeft|confirm)\b|\bquietOfferFor\(/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<EmergencyQuiet\b/,
+    home: "components/alarm/challenges/EmergencyQuiet.tsx",
+    fails: { path: "components/alarm/Fixture.tsx", text: 't("alarm.quiet.button")' },
+  },
+  // Both show the running quiet and the time the alarm rings again alike.
+  {
+    concept: "the running emergency quiet",
+    shows: /<QuietBanner\b|\balarm\.quiet\.banner\b/,
+    within: /^(app|components)\/.*\.tsx$/,
+    drawsWith: /<QuietBanner\b/,
+    home: "components/alarm/challenges/QuietBanner.tsx",
+    fails: { path: "components/alarm/Fixture.tsx", text: 't("alarm.quiet.banner", { time })' },
+  },
 ];
 
 const FILES: readonly Source[] = sources(SRC).map((path) => ({
