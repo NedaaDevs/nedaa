@@ -43,16 +43,19 @@ const mockLabel = {
   SOUNDING: "task, sounding",
   SNOOZED: "task, snoozed",
   RESUMED: "task, resumed",
+  SHELL_STOP: "stop from task",
+  START_STOP: "stop, no task",
 } as const;
 type MockShellProps = {
   onBack: (saved: TaskRunSnapshot) => void;
+  onStop: () => void;
   audible: boolean;
   resume?: TaskRunSnapshot;
 };
 // Stand-ins whose press reaches the screen's wiring.
 jest.mock("@/components/alarm/challenges", () => {
   const { createElement } = jest.requireActual("react");
-  const { Pressable, Text } = jest.requireActual("react-native");
+  const { Pressable, Text, View } = jest.requireActual("react-native");
   const press = (label: string, onPress: () => void) =>
     createElement(
       Pressable,
@@ -63,14 +66,27 @@ jest.mock("@/components/alarm/challenges", () => {
   const { startTaskClock } = jest.requireActual("@/utils/taskClock");
   const saved = { clock: startTaskClock(0, 0), position: FIRST_POSITION };
   return {
-    TaskStart: ({ onStart }: { onStart: () => void }) => press(mockLabel.START, onStart),
-    TaskShell: ({ onBack, audible, resume }: MockShellProps) =>
-      press(resume ? mockLabel.RESUMED : audible ? mockLabel.SOUNDING : mockLabel.SNOOZED, () =>
-        onBack(saved)
+    TaskStart: ({ onStart, onStop }: { onStart: () => void; onStop: () => void }) =>
+      createElement(
+        View,
+        null,
+        press(mockLabel.START, onStart),
+        press(mockLabel.START_STOP, onStop)
+      ),
+    TaskShell: ({ onBack, onStop, audible, resume }: MockShellProps) =>
+      createElement(
+        View,
+        null,
+        press(resume ? mockLabel.RESUMED : audible ? mockLabel.SOUNDING : mockLabel.SNOOZED, () =>
+          onBack(saved)
+        ),
+        press(mockLabel.SHELL_STOP, onStop)
       ),
   };
 });
 const mockScreen = {
+  handleChallengeComplete: jest.fn(),
+  handleStop: jest.fn(),
   isSnoozed: false,
   snoozeEndTime: null as Date | null,
   snoozeTimeRemaining: 0,
@@ -85,7 +101,8 @@ jest.mock("@/hooks/useAlarmScreen", () => ({
     canSnooze: false,
     remainingSnoozes: 0,
     tasks: mockScreen.tasks,
-    handleChallengeComplete: jest.fn(),
+    handleChallengeComplete: mockScreen.handleChallengeComplete,
+    handleStop: mockScreen.handleStop,
     handleSnooze: jest.fn(),
     handleQuietStart: jest.fn(),
     handleQuietEnd: jest.fn(),
@@ -194,6 +211,32 @@ describe("AlarmTriggeredScreen", () => {
 
     await user.press(screen.getByRole("button", { name: mockLabel.SOUNDING }));
     expect(screen.getByRole("button", { name: mockLabel.START })).toBeVisible();
+  });
+
+  it("hands the task's stop to the screen's stop, not to its solve", async () => {
+    const user = userEvent.setup();
+    await renderWithTheme(<AlarmTriggeredScreen />);
+    mockScreen.handleStop.mockClear();
+    mockScreen.handleChallengeComplete.mockClear();
+
+    await user.press(screen.getByRole("button", { name: mockLabel.START }));
+    await user.press(screen.getByRole("button", { name: mockLabel.SHELL_STOP }));
+
+    expect(mockScreen.handleStop).toHaveBeenCalledTimes(1);
+    expect(mockScreen.handleChallengeComplete).not.toHaveBeenCalled();
+  });
+
+  // The ringing screen's stop shows only for an alarm with no task to solve.
+  it("ends an alarm with no task through the solve", async () => {
+    const user = userEvent.setup();
+    await renderWithTheme(<AlarmTriggeredScreen />);
+    mockScreen.handleStop.mockClear();
+    mockScreen.handleChallengeComplete.mockClear();
+
+    await user.press(screen.getByRole("button", { name: mockLabel.START_STOP }));
+
+    expect(mockScreen.handleChallengeComplete).toHaveBeenCalledTimes(1);
+    expect(mockScreen.handleStop).not.toHaveBeenCalled();
   });
 
   it("closes the task when a snooze starts, and opens it silent in the snooze", async () => {

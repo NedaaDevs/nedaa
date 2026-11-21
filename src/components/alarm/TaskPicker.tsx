@@ -19,8 +19,6 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
   WAKE_TASK_IDS,
   WAKE_TASK_MAX_STACK,
-  WAKE_TASK_MAX_STEPS,
-  WAKE_TASK_MIN_STEPS,
   WAKE_TASK_MOVE,
   WAKE_TASK_OPTIONS,
   type WakeTaskId,
@@ -158,7 +156,7 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
 
   const options = (task: WakeTask, index: number) => {
     const name = t(WAKE_TASK_NAME_KEY[task.id]);
-    const offered = WAKE_TASK_OPTIONS[task.id];
+    const { hasDifficulty, stepChoices } = WAKE_TASK_OPTIONS[task.id];
     const steps = stepsOf(task);
     return (
       <VStack gap="$stack" paddingStart="$9" paddingBottom="$stack">
@@ -185,7 +183,7 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
             </HStack>
           </HStack>
         ) : null}
-        {offered.hasDifficulty ? (
+        {hasDifficulty ? (
           <VStack gap="$inline">
             <Text size="sm" color="$muted">
               {t("alarm.challenge.difficulty")}
@@ -202,7 +200,7 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
             />
           </VStack>
         ) : null}
-        {offered.hasSteps ? (
+        {stepChoices ? (
           <VStack gap="$inline">
             <Text size="sm" color="$muted">
               {t("alarm.task.steps")}
@@ -210,8 +208,8 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
             <Stepper
               value={steps}
               onChange={(next) => change(task.id, { steps: next })}
-              min={WAKE_TASK_MIN_STEPS}
-              max={WAKE_TASK_MAX_STEPS}
+              min={stepChoices[0]}
+              max={stepChoices[stepChoices.length - 1]}
               accessibilityLabel={t("a11y.join", { first: name, second: t("alarm.task.steps") })}
               valueText={formatNumberToLocale(t("a11y.alarm.task.steps", { count: steps }))}>
               <Text size="lg" fontWeight="600" color="$fg" numeric>

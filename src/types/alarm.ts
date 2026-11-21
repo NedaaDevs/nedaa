@@ -3,9 +3,9 @@ import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 import { ALARM_TIMING_MODE, type ALARM_TYPE } from "@/constants/Alarm";
 import {
   DEFAULT_WAKE_TASKS,
+  type ChallengeCount,
   type WAKE_TASK_OPTIONS,
   type WakeTaskId,
-  type WakeTaskSteps,
 } from "@/constants/WakeTask";
 
 export type AlarmType = (typeof ALARM_TYPE)[keyof typeof ALARM_TYPE];
@@ -24,8 +24,6 @@ export type SnoozeDuration = 1 | 3 | 5 | 10;
 
 export type SnoozeMaxCount = 1 | 2 | 3;
 
-export type ChallengeCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-
 export interface ChallengeConfig {
   type: ChallengeType;
   difficulty: ChallengeDifficulty;
@@ -37,7 +35,9 @@ type WakeTaskFields<Id extends WakeTaskId> = {
 } & ((typeof WAKE_TASK_OPTIONS)[Id]["hasDifficulty"] extends true
   ? { difficulty: ChallengeDifficulty }
   : unknown) &
-  ((typeof WAKE_TASK_OPTIONS)[Id]["hasSteps"] extends true ? { steps: WakeTaskSteps } : unknown);
+  ((typeof WAKE_TASK_OPTIONS)[Id]["stepChoices"] extends readonly (infer Steps)[]
+    ? { steps: Steps }
+    : unknown);
 
 /** One board in a stack, carrying exactly the options that board offers. */
 export type WakeTask = { [Id in WakeTaskId]: WakeTaskFields<Id> }[WakeTaskId];
@@ -150,8 +150,6 @@ export const GENTLE_WAKEUP_DURATIONS: GentleWakeUpDuration[] = [1, 3, 5];
 export const SNOOZE_DURATIONS: SnoozeDuration[] = [1, 3, 5, 10];
 
 export const SNOOZE_MAX_COUNTS: SnoozeMaxCount[] = [1, 2, 3];
-
-export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export const CHALLENGE_TYPES: ChallengeType[] = Object.values(CHALLENGE_TYPE);
 

@@ -1,4 +1,4 @@
-import { ALARM_OUTCOME, type AlarmOutcome } from "expo-alarm";
+import type { AlarmOutcome } from "expo-alarm";
 import i18next from "@/localization/i18n";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { type ScheduledAlarm, useAlarmStore } from "@/stores/alarm";
@@ -268,23 +268,23 @@ export const schedulePreviewAlarm = async (
   return success ? id : null;
 };
 
-// `queued` is the native completion record from the Android overlay: its type
-// covers an alarm the store no longer holds, its outcome says whether it was solved.
+/** How an alarm ended; the overlay's record also has the type it rang as. */
+type AlarmEnding = { outcome: AlarmOutcome; alarmType?: ScheduledAlarmType };
+
+// `ending.alarmType` covers an overlay alarm missing from the store.
 export async function completeAndRescheduleAlarm(
   alarmId: string,
-  queued?: { alarmType: ScheduledAlarmType; outcome: AlarmOutcome }
+  ending: AlarmEnding
 ): Promise<void> {
   const alarmStore = useAlarmStore.getState();
   const alarm = alarmStore.scheduledAlarms[alarmId];
-  const alarmType = alarm?.alarmType ?? queued?.alarmType;
-  const solved = (queued?.outcome ?? ALARM_OUTCOME.SOLVED) === ALARM_OUTCOME.SOLVED;
+  const alarmType = alarm?.alarmType ?? ending.alarmType;
 
   await alarmStore.completeAlarm(alarmId);
 
-  // Waking for Fajr grows the streak; the store's freshness guard drops the
-  // stale-alarm auto-completion path so a skipped Fajr never counts.
-  if (alarm?.alarmType === ScheduledAlarmType.FAJR && !alarm.isPreview && solved) {
-    useAlarmStreakStore.getState().recordFajrSuccess(alarm.triggerTime);
+  // The streak reads the outcome; a preview is not a morning.
+  if (alarm?.alarmType === ScheduledAlarmType.FAJR && !alarm.isPreview) {
+    useAlarmStreakStore.getState().recordFajrOutcome(alarm.triggerTime, ending.outcome);
   }
 
   // The alarm screen opens up to a minute early, so a challenge can be solved

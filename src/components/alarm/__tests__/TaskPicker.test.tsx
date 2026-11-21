@@ -7,10 +7,10 @@ import TaskPicker, { type TaskTrialTarget } from "@/components/alarm/TaskPicker"
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { ALARM_TYPE } from "@/constants/Alarm";
 import {
+  CHALLENGE_COUNTS,
   WAKE_TASK_ID,
   WAKE_TASK_IDS,
   WAKE_TASK_MAX_STACK,
-  WAKE_TASK_MAX_STEPS,
   WAKE_TASK_MOVE,
   WAKE_TASK_STEP_CHOICES,
   type WakeTaskId,
@@ -59,6 +59,7 @@ const MATH: WakeTask = { id: WAKE_TASK_ID.MATH, difficulty: EASY, steps: 1 };
 const TAP: WakeTask = { id: WAKE_TASK_ID.TAP };
 const DHIKR: WakeTask = { id: WAKE_TASK_ID.DHIKR, steps: 1 };
 const PRAYERS: WakeTask = { id: WAKE_TASK_ID.PRAYERS };
+const SHARED_MAX_STEPS = WAKE_TASK_STEP_CHOICES[WAKE_TASK_STEP_CHOICES.length - 1];
 
 const nameOf = (id: (typeof WAKE_TASK_IDS)[number]) => t(WAKE_TASK_NAME_KEY[id]);
 const aboutOf = (id: (typeof WAKE_TASK_IDS)[number]) =>
@@ -224,8 +225,31 @@ describe("TaskPicker", () => {
     );
   });
 
+  it("counts Math steps past the shared most, up to its own", async () => {
+    const most = CHALLENGE_COUNTS[CHALLENGE_COUNTS.length - 1];
+    const { onChange } = await setUp([{ ...MATH, steps: SHARED_MAX_STEPS }]);
+    const steps = screen.getByRole("adjustable", {
+      name: t("a11y.join", { first: nameOf(WAKE_TASK_ID.MATH), second: t("alarm.task.steps") }),
+    });
+    const increment = () =>
+      act(() =>
+        fireEvent(steps, "accessibilityAction", {
+          nativeEvent: { actionName: A11Y_ACTION.INCREMENT },
+        })
+      );
+
+    for (let step = SHARED_MAX_STEPS; step < most; step += 1) await increment();
+
+    expect(onChange).toHaveBeenLastCalledWith([{ ...MATH, steps: most }]);
+    expect(steps).toHaveAccessibilityValue({ text: t("a11y.alarm.task.steps", { count: most }) });
+
+    onChange.mockClear();
+    await increment();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("counts a chosen task's steps, up to the most a board offers", async () => {
-    const almost = WAKE_TASK_STEP_CHOICES[WAKE_TASK_STEP_CHOICES.indexOf(WAKE_TASK_MAX_STEPS) - 1];
+    const almost = WAKE_TASK_STEP_CHOICES[WAKE_TASK_STEP_CHOICES.length - 2];
     const { onChange } = await setUp([{ ...DHIKR, steps: almost }]);
     const steps = screen.getByRole("adjustable", {
       name: t("a11y.join", { first: nameOf(WAKE_TASK_ID.DHIKR), second: t("alarm.task.steps") }),
@@ -236,7 +260,7 @@ describe("TaskPicker", () => {
         nativeEvent: { actionName: A11Y_ACTION.INCREMENT },
       })
     );
-    expect(onChange).toHaveBeenLastCalledWith([{ ...DHIKR, steps: WAKE_TASK_MAX_STEPS }]);
+    expect(onChange).toHaveBeenLastCalledWith([{ ...DHIKR, steps: SHARED_MAX_STEPS }]);
 
     onChange.mockClear();
     await act(() =>

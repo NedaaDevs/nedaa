@@ -11,6 +11,7 @@ import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_ALARM_TYPE_SETTINGS } from "@/types/alarm";
 import { ALARM_SCREEN_PATH, ALARM_TYPE } from "@/constants/Alarm";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { PlatformType } from "@/enums/app";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import { AppLogger } from "@/utils/appLogger";
@@ -61,7 +62,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   useEffect(() => {
     const handled = isAlarmHandled(activeAlarmId);
     if (handled && !isSnoozed && !snoozeEndTime) {
-      router.replace("/");
+      router.replace(BACK_DESTINATION.HOME.href);
     }
   }, [activeAlarmId, isSnoozed, snoozeEndTime]);
 
@@ -120,20 +121,34 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const quietGenRef = useRef(0);
   const ringCountRef = useRef(0);
 
+  /** Silences the alarm for good and records how it ended. */
+  const endAlarm = useCallback(
+    async (outcome: ExpoAlarm.AlarmOutcome) => {
+      dismissedRef.current = true;
+      quietGenRef.current += 1;
+      setIsDismissed(true);
+      Vibration.cancel();
+      ExpoAlarm.stopAllAlarmEffects();
+      ExpoAlarm.restoreSystemVolume();
+      markAlarmHandled(activeAlarmId);
+      await completeAndRescheduleAlarm(activeAlarmId, { outcome });
+    },
+    [activeAlarmId]
+  );
+
   const handleChallengeComplete = useCallback(async () => {
-    dismissedRef.current = true;
-    quietGenRef.current += 1;
-    setIsDismissed(true);
-    Vibration.cancel();
-    ExpoAlarm.stopAllAlarmEffects();
-    ExpoAlarm.restoreSystemVolume();
-    markAlarmHandled(activeAlarmId);
-    await completeAndRescheduleAlarm(activeAlarmId);
+    await endAlarm(ExpoAlarm.ALARM_OUTCOME.SOLVED);
     router.replace({
       pathname: ALARM_SCREEN_PATH.COMPLETE,
       params: { alarmType },
     });
-  }, [activeAlarmId, alarmType]);
+  }, [endAlarm, alarmType]);
+
+  // The completion screen greets a wake-up; a stop goes home.
+  const handleStop = useCallback(async () => {
+    await endAlarm(ExpoAlarm.ALARM_OUTCOME.STOPPED);
+    router.replace(BACK_DESTINATION.HOME.href);
+  }, [endAlarm]);
 
   const ringAgain = useCallback(async () => {
     const gen = quietGenRef.current;
@@ -213,6 +228,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     remainingSnoozes,
     tasks: alarmSettings.tasks,
     handleChallengeComplete,
+    handleStop,
     handleSnooze,
     handleQuietStart,
     handleQuietEnd,

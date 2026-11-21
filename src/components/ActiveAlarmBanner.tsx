@@ -8,6 +8,7 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Bell, ChevronRight } from "lucide-react-native";
+import { ALARM_OUTCOME } from "expo-alarm";
 
 import { useAlarmStore } from "@/stores/alarm";
 import { detectActiveAlarm, type ActiveAlarmInfo } from "@/utils/activeAlarmDetector";
@@ -44,13 +45,11 @@ export default function ActiveAlarmBanner() {
       navigateToAlarm(activeAlarm.alarmId, activeAlarm.alarmType, "banner-tap");
       return;
     }
-    // Android dismissal is the native overlay, not a JS screen. The banner is a
-    // recovery affordance for a challenge left pending (overlay permission missing,
-    // or dismissed from the notification): the alarm already rang, so a tap clears
-    // it (matching the "tap to dismiss" label) and reschedules a recurring alarm.
+    // Android: a way back to a task left pending (no overlay permission, say);
+    // a tap stops the alarm unsolved and reschedules it.
     markAlarmHandled(activeAlarm.alarmId);
     setActiveAlarm(null);
-    await completeAndRescheduleAlarm(activeAlarm.alarmId);
+    await completeAndRescheduleAlarm(activeAlarm.alarmId, { outcome: ALARM_OUTCOME.STOPPED });
   };
 
   return (

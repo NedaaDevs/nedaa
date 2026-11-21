@@ -52,6 +52,8 @@ type AlarmRun = {
   /** False while the alarm cannot sound, e.g. snoozed. */
   audible: boolean;
   onComplete: () => void;
+  /** The way out: the alarm stops with its task unfinished. */
+  onStop: () => void;
   onBack: (saved: TaskRunSnapshot) => void;
   onQuietStart: () => void;
   onQuietEnd: () => void;
@@ -170,14 +172,14 @@ const TaskShell = (props: Props) => {
     ? t("a11y.backTo", { screen: backName })
     : t("alarm.task.trial.backToList");
   const stop = t("alarm.task.stop");
-  const wayOut = alarm !== null && quiet.wayOut;
+  const onStop = alarm && quiet.wayOut ? alarm.onStop : null;
 
   return (
     <VStack flex={1} gap="$stack">
       <HStack alignItems="flex-start" justifyContent="space-between" gap="$stack">
         <BackLink onPress={handleBack} label={backLabel} name={backName} />
         {!handover && (taskLine || stepLine) && (
-          <VStack alignItems="flex-end" gap="$1.5">
+          <VStack flexShrink={1} alignItems="flex-end" gap="$1.5">
             {taskLine && (
               <Text size="md" fontWeight="600" color="$muted">
                 {taskLine}
@@ -189,7 +191,12 @@ const TaskShell = (props: Props) => {
               </Text>
             )}
             {stepLine && (
-              <HStack gap="$1.5" alignItems="center" {...HIDDEN_FROM_READER}>
+              <HStack
+                flexWrap="wrap"
+                justifyContent="flex-end"
+                gap="$1.5"
+                alignItems="center"
+                {...HIDDEN_FROM_READER}>
                 {Array.from({ length: steps }, (_, step) => (
                   <Box
                     key={step}
@@ -258,7 +265,7 @@ const TaskShell = (props: Props) => {
       </VStack>
 
       <VStack gap="$stack">
-        {wayOut && (
+        {onStop && (
           <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(TASK_ENTER_MS)}>
             <VStack gap="$2">
               <Text size="label" fontWeight="500" color="$muted" textAlign="center">
@@ -270,7 +277,7 @@ const TaskShell = (props: Props) => {
                 variant="outline"
                 borderWidth={2}
                 borderColor="$fg"
-                onPress={onComplete}
+                onPress={onStop}
                 accessibilityLabel={stop}>
                 <Button.Text size="xl" fontWeight="600" color="$fg">
                   {stop}
@@ -313,7 +320,7 @@ const TaskShell = (props: Props) => {
       <SpokenStatus testID={TASK_SHELL_PART.PROGRESS_STATUS} message={progressStatus} />
       <SpokenStatus
         testID={TASK_SHELL_PART.WAY_OUT_STATUS}
-        message={wayOut ? t("alarm.task.wayOut") : null}
+        message={onStop ? t("alarm.task.wayOut") : null}
       />
     </VStack>
   );
