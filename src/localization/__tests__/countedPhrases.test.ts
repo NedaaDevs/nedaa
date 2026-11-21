@@ -87,8 +87,85 @@ describe("counted phrases", () => {
         "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
       ],
     ],
+    [
+      "alarm.task.startCount",
+      [
+        "بدء مهام الاستيقاظ",
+        "بدء مهمة الاستيقاظ",
+        "بدء مهمتَي الاستيقاظ",
+        "بدء 3 مهام استيقاظ",
+        "بدء 11 مهمة استيقاظ",
+        "بدء 100 مهمة استيقاظ",
+      ],
+    ],
+    [
+      "a11y.alarm.task.tapsLeft",
+      [
+        "لم تبقَ نقرات",
+        "بقيت نقرة واحدة",
+        "بقيت نقرتان",
+        "بقيت 3 نقرات",
+        "بقيت 11 نقرة",
+        "بقيت 100 نقرة",
+      ],
+    ],
+    [
+      "alarm.task.quiet.ending",
+      [
+        "يعود الصوت الآن",
+        "يعود الصوت بعد ثانية واحدة",
+        "يعود الصوت بعد ثانيتين",
+        "يعود الصوت بعد 3 ثوانٍ",
+        "يعود الصوت بعد 11 ثانية",
+        "يعود الصوت بعد 100 ثانية",
+      ],
+    ],
   ])("says %s in Arabic with all six forms", (key, sentences) => {
     ARABIC_COUNTS.forEach((count, i) => expect(sayAr(key, count)).toBe(sentences[i]));
+  });
+
+  // The name or state is filled in; the count picks the form.
+  it.each([
+    [
+      "alarm.task.withSteps",
+      { name: "مسألة حسابية" },
+      [
+        "مسألة حسابية",
+        "مسألة حسابية · خطوة واحدة",
+        "مسألة حسابية · خطوتان",
+        "مسألة حسابية · 3 خطوات",
+        "مسألة حسابية · 11 خطوة",
+        "مسألة حسابية · 100 خطوة",
+      ],
+    ],
+    [
+      "a11y.alarm.task.withSteps",
+      { name: "مسألة حسابية" },
+      [
+        "مسألة حسابية",
+        "مسألة حسابية، خطوة واحدة",
+        "مسألة حسابية، خطوتان",
+        "مسألة حسابية، 3 خطوات",
+        "مسألة حسابية، 11 خطوة",
+        "مسألة حسابية، 100 خطوة",
+      ],
+    ],
+    [
+      "a11y.alarm.task.quietLeft",
+      { state: "الصوت متوقف مؤقتًا" },
+      [
+        "الصوت متوقف مؤقتًا، لم يبقَ وقت",
+        "الصوت متوقف مؤقتًا، بقيت ثانية واحدة",
+        "الصوت متوقف مؤقتًا، بقيت ثانيتان",
+        "الصوت متوقف مؤقتًا، بقيت 3 ثوانٍ",
+        "الصوت متوقف مؤقتًا، بقيت 11 ثانية",
+        "الصوت متوقف مؤقتًا، بقيت 100 ثانية",
+      ],
+    ],
+  ])("says %s in Arabic with all six forms around its filler", (key, filler, sentences) => {
+    ARABIC_COUNTS.forEach((count, i) =>
+      expect(i18n.t(key, { ...filler, count, lng: AppLocale.AR })).toBe(sentences[i])
+    );
   });
 
   it.each([
@@ -102,6 +179,9 @@ describe("counted phrases", () => {
       "You have 5 missed fasts to make up.",
     ],
     ["quran.highlight.verseCount", "1 verse", "5 verses"],
+    ["alarm.task.startCount", "Start wake-up task", "Start 5 wake-up tasks"],
+    ["a11y.alarm.task.tapsLeft", "1 tap left", "5 taps left"],
+    ["alarm.task.quiet.ending", "Sound returns in 1 second", "Sound returns in 5 seconds"],
     ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
     [
       "a11y.qada.returnDaysHint",

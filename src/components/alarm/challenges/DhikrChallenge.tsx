@@ -22,14 +22,13 @@ const STRIKE_THRESHOLD = 3;
 type Props = {
   difficulty: ChallengeDifficulty;
   onComplete: () => void;
-  onInteraction?: () => void;
 };
 
-// Remembered across the wrapper's per-round remounts (and mid-round strike
-// resets) so the next phrase avoids the one just shown.
+// Kept across the shell's remount of each step, and across strike resets,
+// so the next phrase avoids the one just shown.
 let lastDhikrPhrase: DhikrPhrase | null = null;
 
-const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
+const DhikrChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
@@ -46,7 +45,6 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
   const [strikeCount, setStrikeCount] = useState(0);
 
   const handleSubmit = useCallback(() => {
-    onInteraction?.();
     Keyboard.dismiss();
 
     if (matchesDhikr(userInput, phrase)) {
@@ -78,22 +76,12 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
 
       setTimeout(() => setIsWrong(false), 500);
     }
-  }, [
-    userInput,
-    phrase,
-    strikeCount,
-    difficulty,
-    onComplete,
-    onInteraction,
-    hapticSuccess,
-    hapticError,
-    t,
-  ]);
+  }, [userInput, phrase, strikeCount, difficulty, onComplete, hapticSuccess, hapticError, t]);
 
   return (
     <VStack gap="$4" alignItems="center" width="100%">
       <Text size="sm" color="$typographySecondary" marginBottom="$2">
-        {t("alarm.challenge.typeDhikr")}
+        {t("alarm.task.dhikrHint")}
       </Text>
 
       <Box
@@ -125,10 +113,7 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) =>
 
       <TextInput
         value={userInput}
-        onChangeText={(text) => {
-          onInteraction?.();
-          setUserInput(text);
-        }}
+        onChangeText={setUserInput}
         autoCapitalize="none"
         autoCorrect={false}
         spellCheck={false}

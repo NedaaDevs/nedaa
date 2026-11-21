@@ -41,6 +41,14 @@ describe("DhikrChallenge", () => {
   afterAll(() => i18n.changeLanguage(AppLocale.EN));
 
   // An Arabic voice reads Arabic script, which the challenge also accepts.
+  // One answer may lead to a next step, so the board does not claim it stops.
+  it("says how to type the phrase, not that it stops the alarm", async () => {
+    await renderWithTheme(<DhikrChallenge difficulty={DIFFICULTY} onComplete={jest.fn()} />);
+
+    expect(screen.getByText(t("alarm.task.dhikrHint"))).toBeVisible();
+    expect(screen.queryByText(t("alarm.challenge.typeDhikr"))).toBeNull();
+  });
+
   it("gives an Arabic screen reader the Arabic phrase", async () => {
     await i18n.changeLanguage(AppLocale.AR);
     await renderWithTheme(<DhikrChallenge difficulty={DIFFICULTY} onComplete={jest.fn()} />);

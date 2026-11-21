@@ -13,9 +13,9 @@ const t = i18n.t.bind(i18n);
 const DIFFICULTY = CHALLENGE_DIFFICULTY.EASY;
 const TAPS = CHALLENGE_DIFFICULTY_CONFIG.tap[DIFFICULTY].taps;
 
-const remaining = (count: number) => t("a11y.alarm.tapsRemaining", { count });
+const remaining = (count: number) => t("a11y.alarm.task.tapsLeft", { count });
 const said = () => jest.mocked(AccessibilityInfo.announceForAccessibility).mock.calls.flat();
-const tapButton = () => screen.getByRole("button", { name: t("alarm.challenge.tapToDismiss") });
+const tapButton = () => screen.getByRole("button", { name: t("alarm.task.tap") });
 
 // Jest runs as iOS, which has no live regions.
 describe("TapChallenge", () => {
@@ -39,5 +39,16 @@ describe("TapChallenge", () => {
 
     expect(onComplete).toHaveBeenCalledTimes(1);
     expect(said()).not.toContain(remaining(0));
+  });
+
+  it("shows no praise, and claims no stop, when the taps run out", async () => {
+    await renderWithTheme(<TapChallenge difficulty={DIFFICULTY} onComplete={jest.fn()} />);
+    const user = userEvent.setup();
+    expect(screen.queryByText(t("alarm.challenge.tapToDismiss"))).toBeNull();
+
+    for (let tap = 0; tap < TAPS; tap++) await user.press(tapButton());
+
+    expect(screen.queryByText(t("alarm.challenge.done"))).toBeNull();
+    expect(tapButton()).toBeVisible();
   });
 });
