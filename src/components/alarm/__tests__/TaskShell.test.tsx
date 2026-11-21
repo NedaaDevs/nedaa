@@ -42,6 +42,9 @@ jest.mock("@/components/alarm/challenges/TapBoard", () =>
 jest.mock("@/components/alarm/challenges/PrayersBoard", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("prayers")
 );
+jest.mock("@/components/alarm/challenges/PatternBoard", () =>
+  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("pattern")
+);
 
 const t = i18n.t.bind(i18n);
 const SECOND = 1000;
@@ -53,6 +56,11 @@ const MATH_3: WakeTask = { id: WAKE_TASK_ID.MATH, difficulty: CHALLENGE_DIFFICUL
 const DHIKR_1: WakeTask = { id: WAKE_TASK_ID.DHIKR, steps: 1 };
 const TAP: WakeTask = { id: WAKE_TASK_ID.TAP };
 const PRAYERS: WakeTask = { id: WAKE_TASK_ID.PRAYERS };
+const PATTERN_2: WakeTask = {
+  id: WAKE_TASK_ID.PATTERN,
+  difficulty: CHALLENGE_DIFFICULTY.EASY,
+  steps: 2,
+};
 
 const PAUSED = t("alarm.task.quiet.paused");
 const ENDING = t("alarm.task.quiet.ending", { count: QUIET_ENDING_SECONDS });
@@ -140,6 +148,18 @@ describe("TaskShell", () => {
       await solve("math");
 
       expect(said()).toContain(t("alarm.task.stepOf", { step: 2, total: 3 }));
+      expect(screen.queryByText(/opens:/)).toBeNull();
+    });
+
+    it("hands a new step's line to a board that says it, and does not say it too", async () => {
+      const step2 = t("alarm.task.stepOf", { step: 2, total: 2 });
+      const { solve } = await setUp([PATTERN_2]);
+      expect(screen.queryByText(/opens:/)).toBeNull();
+
+      await solve("pattern");
+
+      expect(screen.getByText(`pattern opens: ${step2}`)).toBeVisible();
+      expect(said()).not.toContain(step2);
     });
 
     it("draws one bar per step, the current one taller", async () => {

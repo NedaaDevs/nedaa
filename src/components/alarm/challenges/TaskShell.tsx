@@ -4,7 +4,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 
 import QuietStrip from "@/components/alarm/challenges/QuietStrip";
-import { TASK_BOARDS } from "@/components/alarm/challenges/taskBoards";
+import { TASK_BOARDS, type Board } from "@/components/alarm/challenges/taskBoards";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -120,7 +120,7 @@ const TaskShell = ({
   const handleBack = () => onBack({ clock: quiet.leave(), position: handover ?? position });
 
   const task = tasks[position.task];
-  const board = TASK_BOARDS[task.id];
+  const board: Board = TASK_BOARDS[task.id];
   const steps = stepsOf(task);
   const taskLine =
     tasks.length > 1
@@ -134,12 +134,13 @@ const TaskShell = ({
     handover && t("alarm.task.taskOf", { task: handover.task + 1, total: tasks.length });
   const handoverNext = nextTask && t("alarm.task.next", { name: taskName(nextTask, t) });
 
+  const opening = position.step > 0 ? stepLine : null;
   const progressStatus =
     handoverPosition && handoverNext
       ? t("a11y.alarm.task.handover", { position: handoverPosition, next: handoverNext })
-      : position.step > 0
-        ? stepLine
-        : null;
+      : board.saysOpening
+        ? null
+        : opening;
   const quietStatus = !audible
     ? null
     : quiet.phase === QUIET_PHASE.ENDING
@@ -231,7 +232,11 @@ const TaskShell = ({
             style={styles.board}
             entering={reduceMotion ? undefined : FadeInDown.duration(TASK_ENTER_MS)}
             exiting={reduceMotion ? undefined : FadeOut.duration(TASK_EXIT_MS)}>
-            <board.Component difficulty={difficultyOf(task)} onComplete={handleSolved} />
+            <board.Component
+              difficulty={difficultyOf(task)}
+              onComplete={handleSolved}
+              opening={board.saysOpening ? opening : null}
+            />
           </Animated.View>
         )}
       </VStack>

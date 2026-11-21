@@ -64,7 +64,7 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
     return () => clearTimeout(id);
   }, [wrong]);
 
-  // Reader focus follows a new question; the shell places it on the first.
+  // Reader focus follows each new question after the first.
   useEffect(() => {
     if (asked > 0) focusOn(sumRef.current);
   }, [asked]);

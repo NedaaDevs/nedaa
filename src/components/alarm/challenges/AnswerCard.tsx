@@ -36,8 +36,14 @@ type Placed = { state: typeof ANSWER_CARD_STATE.PLACED; mark: string };
 
 type Props = Shared & (Unmarked | Placed);
 
-/** The corner badge a wrong or placed card carries; drawn only. */
-const Mark = ({ tone, children }: { tone: "$danger" | "$accent"; children: ReactNode }) => (
+/** The corner badge a wrong or placed card or pad carries; drawn only. */
+export const CardMark = ({
+  tone,
+  children,
+}: {
+  tone: "$danger" | "$accent";
+  children: ReactNode;
+}) => (
   <Box
     testID={BOARD_PART.ANSWER_MARK}
     position="absolute"
@@ -112,16 +118,16 @@ const AnswerCard = (props: Props) => {
         </Text>
       )}
       {wrong && (
-        <Mark tone="$danger">
+        <CardMark tone="$danger">
           <Icon as={X} size="sm" color="$danger" />
-        </Mark>
+        </CardMark>
       )}
       {props.state === ANSWER_CARD_STATE.PLACED && (
-        <Mark tone="$accent">
+        <CardMark tone="$accent">
           <Text size="label" bold numeric color="$accentText">
             {props.mark}
           </Text>
-        </Mark>
+        </CardMark>
       )}
     </Pressable>
   );
