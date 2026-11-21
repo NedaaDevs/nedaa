@@ -1,8 +1,8 @@
 // First: expo-router's testing library re-mocks Reanimated as it loads, and the
 // screen must bind to the mock below, not to its empty one.
 import AlarmTypeSettingsScreen from "@/app/settings/alarm/[type]";
-import { Text } from "react-native";
-import { useLocalSearchParams, usePathname } from "expo-router";
+import { AccessibilityInfo, ScrollView, Text } from "react-native";
+import { router, Stack, useLocalSearchParams, usePathname } from "expo-router";
 import { act, fireEvent } from "@testing-library/react-native";
 import { renderRouter, screen, within } from "expo-router/testing-library";
 
@@ -13,11 +13,14 @@ import {
   PREVIEW_ALARM_SECONDS,
   type AlarmPermissionId,
 } from "@/constants/Alarm";
+import { ALARM_GUIDE_CARDS, ALARM_TASK_SECTION_TEST_ID } from "@/constants/AlarmGuide";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { E2E_ID } from "@/constants/E2E";
 import { WAKE_TASK_ID } from "@/constants/WakeTask";
 import { TASK_TRIAL_PARAM, TASK_TRIAL_PATH } from "@/constants/WakeTaskShell";
 import i18n from "@/localization/i18n";
 import { useAlarmStore } from "@/stores/alarm";
+import { useAlarmGuideStore } from "@/stores/alarmGuide";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { armFajr } from "@/test-helpers/armedAlarm";
@@ -28,6 +31,10 @@ import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermiss
 import { schedulePreviewAlarm } from "@/utils/alarmScheduler";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
+jest.mock("react-native-safe-area-context", () =>
+  jest.requireActual("@/test-helpers/safeAreaMock")
+);
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 // The alarm's own sections have their own tests; here they draw nothing.
 jest.mock("@/components/alarm", () => {
@@ -79,9 +86,11 @@ const TrialParams = () => {
   return <Text testID="trial">{JSON.stringify(params)}</Text>;
 };
 
+// A stack, as in the app, so a pushed screen covers this one instead of replacing it.
 const renderScreen = () =>
   renderRouter(
     {
+      _layout: () => <Stack screenOptions={{ headerShown: false }} />,
       [ALARM_SETTINGS_ROUTE]: () => <AlarmTypeSettingsScreen />,
       [BACK_DESTINATION.SETTINGS_ALARM.route]: () => <Pathname />,
       [TASK_TRIAL_PATH.slice(1)]: () => <TrialParams />,
@@ -136,6 +145,8 @@ beforeEach(() => {
   usePrayerTimesStore.setState({ usingDefaultLocation: false });
   useAlarmSettingsStore.setState(useAlarmSettingsStore.getInitialState());
   useAlarmStore.setState({ scheduledAlarms: {} });
+  // The guide opens by itself on a first visit; these suites are past it.
+  useAlarmGuideStore.setState({ hasSeenGuide: true });
 });
 
 describe("the alarm's own switch", () => {
@@ -266,5 +277,125 @@ describe("the alarm's sections", () => {
 
     const button = screen.getByRole("button", { name });
     expect(within(button).getByText(t("alarm.settings.previewAlarmFailed"))).toBeVisible();
+  });
+});
+
+describe("the alarm guide", () => {
+  const t = i18n.t.bind(i18n);
+  const total = ALARM_GUIDE_CARDS.length;
+  const firstCard = () =>
+    t("a11y.sentences", {
+      first: t("a11y.alarm.guide.place", { at: 1, total }),
+      second: t("alarm.guide.alarm.title"),
+    });
+  const guideHeading = () => screen.queryByRole("header", { name: firstCard() });
+  const press = async (name: string) =>
+    act(async () => fireEvent.press(await screen.findByRole("button", { name })));
+  const alarmOn = () =>
+    useAlarmSettingsStore.setState({
+      [ALARM_TYPE.FAJR]: { ...useAlarmSettingsStore.getState()[ALARM_TYPE.FAJR], enabled: true },
+    });
+
+  it("opens by itself on a first visit, at its first card", async () => {
+    useAlarmGuideStore.setState({ hasSeenGuide: false });
+    await renderScreen();
+
+    expect(await screen.findByRole("header", { name: firstCard() })).toBeOnTheScreen();
+  });
+
+  it("counts Skip as seen, so it does not open by itself again", async () => {
+    useAlarmGuideStore.setState({ hasSeenGuide: false });
+    await renderScreen();
+
+    await press(t("alarm.guide.skip"));
+
+    expect(guideHeading()).toBeNull();
+    expect(useAlarmGuideStore.getState().hasSeenGuide).toBe(true);
+  });
+
+  it("stays closed once seen", async () => {
+    await renderScreen();
+
+    expect(await screen.findByRole("button", { name: t("alarm.guide.row") })).toBeOnTheScreen();
+    expect(guideHeading()).toBeNull();
+  });
+
+  it("opens again from its row, at the first card, with the alarm off", async () => {
+    await renderScreen();
+
+    await press(t("alarm.guide.row"));
+    await press(t("alarm.guide.next"));
+    await press(t("alarm.guide.skip"));
+    await press(t("alarm.guide.row"));
+
+    expect(guideHeading()).toBeOnTheScreen();
+  });
+
+  it("names where its row leads", async () => {
+    await renderScreen();
+
+    expect(await screen.findByRole("button", { name: t("alarm.guide.row") })).toHaveProp(
+      "accessibilityHint",
+      t("a11y.alarm.guide.rowHint")
+    );
+  });
+
+  // The alarm screen and the trial are pushed over this one.
+  it("closes, as seen, when a screen opens over it", async () => {
+    useAlarmGuideStore.setState({ hasSeenGuide: false });
+    await renderScreen();
+    expect(await screen.findByRole("header", { name: firstCard() })).toBeOnTheScreen();
+
+    await act(async () => router.push(TASK_TRIAL_PATH));
+
+    expect(screen.queryByRole("header", { name: firstCard(), hidden: true })).toBeNull();
+    expect(useAlarmGuideStore.getState().hasSeenGuide).toBe(true);
+  });
+
+  it("closes from its last card onto the wake-up task section", async () => {
+    const SECTION_Y = 640;
+    const scrollTo = jest.spyOn(ScrollView.prototype, "scrollTo");
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    alarmOn();
+    armFajr();
+    await renderScreen();
+    await fireEvent(screen.getByTestId(ALARM_TASK_SECTION_TEST_ID), "layout", {
+      nativeEvent: { layout: { x: 0, y: SECTION_Y, width: 390, height: 400 } },
+    });
+
+    await press(t("alarm.guide.row"));
+    for (let card = 1; card < total; card += 1) await press(t("alarm.guide.next"));
+    focus.mockClear();
+    await press(t("alarm.guide.tryTask"));
+
+    expect(guideHeading()).toBeNull();
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ y: SECTION_Y }));
+    expect(screen.getByRole("header", { name: t("alarm.task.picker") })).toBeVisible();
+    // The mocked Text's instance, read by its props; a full diff would hang.
+    const [target, event] = focus.mock.lastCall ?? [];
+    const props: unknown = target ? Reflect.get(target, "props") : undefined;
+    expect(props).toMatchObject({ accessibilityRole: "header", children: t("alarm.task.picker") });
+    expect(event).toBe("focus");
+    scrollTo.mockRestore();
+    focus.mockRestore();
+  });
+
+  it("can be skipped by a flow that does not read it", async () => {
+    useAlarmGuideStore.setState({ hasSeenGuide: false });
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByTestId(E2E_ID.ALARM_GUIDE_SKIP));
+
+    expect(guideHeading()).toBeNull();
+  });
+
+  it("offers no task to try while the alarm is off", async () => {
+    await renderScreen();
+
+    await press(t("alarm.guide.row"));
+    for (let card = 1; card < total; card += 1) await press(t("alarm.guide.next"));
+
+    expect(screen.queryByRole("button", { name: t("alarm.guide.tryTask") })).toBeNull();
+    expect(screen.getByRole("button", { name: t("alarm.guide.done") })).toBeOnTheScreen();
   });
 });

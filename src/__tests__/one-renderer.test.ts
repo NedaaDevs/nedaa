@@ -556,6 +556,30 @@ const ONE_RENDERER: readonly Rule[] = [
       text: '<Box borderColor={state === ANSWER_CARD_STATE.WRONG ? "$danger" : "$fg"} />',
     },
   },
+  // The task picker and the alarm guide both say when the way out appears.
+  {
+    concept: "the way out's sentence",
+    shows: /\balarm\.task\.wayOutAfter\b|\bwayOutSentence\(/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\bwayOutSentence\(/,
+    home: "utils/taskClock.ts",
+    fails: {
+      path: "components/alarm/Fixture.tsx",
+      text: 't("alarm.task.wayOutAfter", { count: 2 })',
+    },
+  },
+  // The task shell runs the quiet time the alarm guide states.
+  {
+    concept: "a task's quiet time length",
+    shows: /\bQUIET_TIME_SECONDS\b|\bquietSecondsFor\(/,
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\bquietSecondsFor\(/,
+    home: "utils/taskClock.ts",
+    fails: {
+      path: "components/alarm/Fixture.tsx",
+      text: "screenReader ? QUIET_TIME_SECONDS.SCREEN_READER : QUIET_TIME_SECONDS.DEFAULT",
+    },
+  },
 ];
 
 const FILES: readonly Source[] = sources(SRC).map((path) => ({

@@ -1,13 +1,21 @@
+import type { TFunction } from "i18next";
+
 import {
   QUIET_BAR_STEP_SECONDS,
   QUIET_ENDING_SECONDS,
   QUIET_PHASE,
+  QUIET_TIME_SECONDS,
   TASK_CLOCK_MAX_GAIN_MS,
   WAY_OUT_SOUNDING_SECONDS,
   type QuietPhase,
 } from "@/constants/WakeTaskShell";
 
 const SECOND_MS = 1000;
+const SECONDS_PER_MINUTE = 60;
+
+/** Each quiet time's length; a screen reader gets the longer one. */
+export const quietSecondsFor = (screenReader: boolean): number =>
+  screenReader ? QUIET_TIME_SECONDS.SCREEN_READER : QUIET_TIME_SECONDS.DEFAULT;
 
 /** Quiet time and the sounding time counted so far, in epoch ms. */
 export type TaskClock = Readonly<{
@@ -79,3 +87,10 @@ export const quietFraction = (clock: TaskClock, now: number, stepped: boolean): 
 
 export const wayOutShown = (clock: TaskClock): boolean =>
   clock.soundingMs >= WAY_OUT_SOUNDING_SECONDS * SECOND_MS;
+
+/** When the way out appears, in minutes; callers localise its digits. */
+export const wayOutSentence = (t: TFunction): string =>
+  t("alarm.task.wayOutAfter", {
+    count: WAY_OUT_SOUNDING_SECONDS / SECONDS_PER_MINUTE,
+    stop: t("alarm.task.stop"),
+  });

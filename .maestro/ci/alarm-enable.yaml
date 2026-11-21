@@ -6,6 +6,20 @@ appId: dev.nedaa.android
       id: "alarm-enable-switch"
       checked: false
     timeout: 30000
+# A fresh install opens the alarm guide over the switch once.
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      visible:
+        id: "alarm-guide-skip"
+    commands:
+      - tapOn:
+          id: "alarm-guide-skip"
+      - extendedWaitUntil:
+          notVisible:
+            id: "alarm-guide-skip"
+          timeout: 15000
 - tapOn:
     id: "alarm-enable-switch"
 # A failed schedule turns the switch back off, so it must stay on.
@@ -54,6 +68,19 @@ appId: dev.nedaa.android
             id: "alarm-enable-switch"
             checked: false
           timeout: 30000
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - runFlow:
+          when:
+            visible:
+              id: "alarm-guide-skip"
+          commands:
+            - tapOn:
+                id: "alarm-guide-skip"
+            - extendedWaitUntil:
+                notVisible:
+                  id: "alarm-guide-skip"
+                timeout: 15000
       - tapOn:
           id: "alarm-enable-switch"
       - waitForAnimationToEnd:
