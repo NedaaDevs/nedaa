@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 import { getSnoozeQueue, clearSnoozeQueue } from "expo-alarm";
 import { ScheduledAlarmType } from "@/enums/alarm";
-import { ALARM_SCREEN_PATH } from "@/constants/Alarm";
+import { ALARM_SCREEN_PATH, LIVE_ACTIVITY_STATE } from "@/constants/Alarm";
 import { isAlarmLink, linkPath } from "@/utils/alarmLink";
 import { useAlarmStore } from "@/stores/alarm";
 import { completeAndRescheduleAlarm, waitForAlarmStores } from "@/utils/alarmScheduler";
@@ -109,6 +109,8 @@ async function processSnoozeQueue() {
     for (const item of queue) {
       // Mark original alarm as handled
       handledAlarmIds.set(item.originalAlarmId, Date.now());
+      // Read before the delete: the snooze is the same alarm.
+      const original = useAlarmStore.getState().scheduledAlarms[item.originalAlarmId];
 
       // Remove old alarm from store
       useAlarmStore.setState((state) => {
@@ -134,6 +136,11 @@ async function processSnoozeQueue() {
             triggerTime: item.snoozeEndTime,
             liveActivityId: null,
             snoozeCount: item.snoozeCount,
+            ...(original?.isPreview && { isPreview: true }),
+            ...(original?.quietUsed && { quietUsed: true }),
+            ...(original && {
+              firstTriggerTime: original.firstTriggerTime ?? original.triggerTime,
+            }),
           },
         },
       }));
@@ -145,7 +152,7 @@ async function processSnoozeQueue() {
         alarmType: item.alarmType as ScheduledAlarmType,
         title: item.title,
         triggerDate: new Date(item.snoozeEndTime),
-        state: "snoozed",
+        state: LIVE_ACTIVITY_STATE.SNOOZED,
       });
 
       processedIds.push(item.id);

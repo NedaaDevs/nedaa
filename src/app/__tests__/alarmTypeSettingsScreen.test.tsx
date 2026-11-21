@@ -55,6 +55,7 @@ jest.mock("@/components/alarm", () => {
     VibrationSettings: none,
     SnoozeSettings: none,
     TimingSettings: none,
+    EmergencyQuietSettings: none,
   };
 });
 const mockTryLabel = "try math";

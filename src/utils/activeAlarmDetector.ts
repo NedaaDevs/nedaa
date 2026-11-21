@@ -3,12 +3,13 @@ import type { ScheduledAlarm } from "@/stores/alarm";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { ALARM_DEFAULTS } from "@/constants/Alarm";
 import { alarmLog } from "@/utils/alarmReport";
+import { runningQuietEnd } from "@/utils/emergencyQuiet";
 
 export interface ActiveAlarmInfo {
   alarmId: string;
   alarmType: string;
   title: string;
-  source: "pending-challenge" | "past-due";
+  source: "pending-challenge" | "past-due" | "quiet";
 }
 
 async function autoCompleteStaleAlarm(alarmId: string): Promise<void> {
@@ -63,6 +64,22 @@ export async function detectActiveAlarm(
       "Detector",
       `getPendingChallenge failed after retries: ${(e as Error)?.message ?? e}`
     );
+  }
+
+  // A quiet's re-ring is the quieted alarm, its task still owed.
+  for (const alarm of Object.values(scheduledAlarms)) {
+    if (
+      runningQuietEnd(alarm, now) !== null &&
+      !completedIds.has(alarm.alarmId) &&
+      !handledIds?.has(alarm.alarmId)
+    ) {
+      return {
+        alarmId: alarm.alarmId,
+        alarmType: alarm.alarmType,
+        title: alarm.title,
+        source: "quiet",
+      };
+    }
   }
 
   // Check past-due alarms

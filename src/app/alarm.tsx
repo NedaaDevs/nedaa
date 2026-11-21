@@ -17,10 +17,13 @@ import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Clock } from "lucide-react-native";
 
-import { useAlarmScreen } from "@/hooks/useAlarmScreen";
+import { useAlarmScreen, type EmergencyQuietControl } from "@/hooks/useAlarmScreen";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
+import { useQuietOffer } from "@/hooks/useQuietOffer";
 import { TaskShell, TaskStart } from "@/components/alarm/challenges";
+import EmergencyQuiet from "@/components/alarm/challenges/EmergencyQuiet";
+import QuietBanner, { QuietStatus } from "@/components/alarm/challenges/QuietBanner";
 import type { WakeTask } from "@/types/alarm";
 import { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";
 import { PRESENTATION } from "@/constants/Navigation";
@@ -33,6 +36,7 @@ import { isScheduledAlarmType } from "@/utils/alarmTypes";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { formatTimeRemaining } from "@/utils/timeRemaining";
 import { formatNumberToLocale } from "@/utils/number";
+import { wayOutShown } from "@/utils/taskClock";
 import { isNonEmpty, type TaskRunSnapshot } from "@/utils/taskRun";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
@@ -76,7 +80,7 @@ export default function AlarmRoute() {
         const record = useAlarmStore.getState().scheduledAlarms[alarmId];
         const due = isAlarmDue({
           alarmId,
-          triggerTime: record?.triggerTime ?? null,
+          record,
           pendingAlarmId: pending?.alarmId ?? null,
           now: Date.now(),
         });
@@ -105,6 +109,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
     handleSnooze,
     handleQuietStart,
     handleQuietEnd,
+    emergency,
   } = useAlarmScreen(alarmId, alarmType);
   const insets = useSafeAreaInsets();
 
@@ -149,12 +154,13 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
                     tasks={tasks}
                     openedAt={run.openedAt}
                     resume={run.saved}
-                    audible={!run.snoozed}
+                    audible={!run.snoozed && emergency.quietUntil === null}
                     onComplete={handleChallengeComplete}
                     onStop={handleStop}
                     onBack={closeTask}
                     onQuietStart={handleQuietStart}
                     onQuietEnd={handleQuietEnd}
+                    emergency={emergency}
                   />
                 </VStack>
               </VStack>
@@ -172,12 +178,19 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
                 tasks={tasks}
                 canSnooze={canSnooze}
                 remainingSnoozes={remainingSnoozes}
+                emergency={emergency}
+                // A run Back left with the way out showing keeps the quiet hidden.
+                wayOut={run?.saved ? wayOutShown(run.saved.clock) : false}
                 onStart={openTask}
                 onStop={handleChallengeComplete}
                 onSnooze={handleSnooze}
               />
             )}
           </ScrollView>
+          <QuietStatus
+            quietUntil={emergency.quietUntil}
+            used={emergency.used && !emergency.snoozed}
+          />
         </Background>
       </Theme>
     </>
@@ -236,6 +249,8 @@ function ActiveAlarmView({
   tasks,
   canSnooze,
   remainingSnoozes,
+  emergency,
+  wayOut,
   onStart,
   onStop,
   onSnooze,
@@ -245,6 +260,8 @@ function ActiveAlarmView({
   tasks: readonly WakeTask[];
   canSnooze: boolean;
   remainingSnoozes: number;
+  emergency: EmergencyQuietControl;
+  wayOut: boolean;
   onStart: () => void;
   onStop: () => void;
   onSnooze: () => void;
@@ -253,6 +270,7 @@ function ActiveAlarmView({
   const insets = useSafeAreaInsets();
   const now = useMinuteClock();
   const clockTime = useClockTime();
+  const quietOffer = useQuietOffer(emergency, wayOut);
 
   const triggerTime = useAlarmStore((state) => state.getAlarm(alarmId)?.triggerTime);
   const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
@@ -340,9 +358,11 @@ function ActiveAlarmView({
       <VStack flex={1} minHeight="$6" />
 
       <VStack gap="$3" width="100%" maxWidth={420} alignSelf="center">
+        {emergency.quietUntil !== null && <QuietBanner until={emergency.quietUntil} />}
         <TaskStart tasks={tasks} onStart={onStart} onStop={onStop} />
 
-        {canSnooze && (
+        {/* The confirm stands in snooze's place. */}
+        {canSnooze && !quietOffer.confirmOpen && (
           <Button
             size="sm"
             action="default"
@@ -363,6 +383,8 @@ function ActiveAlarmView({
             </HStack>
           </Button>
         )}
+
+        <EmergencyQuiet control={emergency} offer={quietOffer} />
       </VStack>
     </VStack>
   );

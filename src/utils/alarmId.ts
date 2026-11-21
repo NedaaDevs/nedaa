@@ -42,3 +42,7 @@ export const getSnoozeKey = (alarmType: string, triggerDate: Date, snoozeCount: 
   const dateStr = triggerDate.toISOString().split("T")[0];
   return `${alarmType}_${dateStr}_snooze${snoozeCount}`;
 };
+
+// One key per re-ring instant; an emergency quiet's alarm is no occurrence.
+export const getQuietKey = (alarmType: string, ringsAt: Date): string =>
+  `${alarmType}_${ringsAt.toISOString()}_quiet`;

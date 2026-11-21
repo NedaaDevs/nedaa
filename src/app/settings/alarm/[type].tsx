@@ -25,6 +25,7 @@ import {
   VibrationSettings,
   SnoozeSettings,
   TimingSettings,
+  EmergencyQuietSettings,
 } from "@/components/alarm";
 import AlarmGuide from "@/components/alarm/AlarmGuide";
 
@@ -37,6 +38,7 @@ import {
   Sunrise,
   FlaskConical,
   HelpCircle,
+  VolumeX,
 } from "lucide-react-native";
 
 import {
@@ -310,6 +312,10 @@ const AlarmTypeSettingsScreen = () => {
               {/* Snooze Settings */}
               <SettingsSection title={t("alarm.settings.snooze")} icon={Clock}>
                 <SnoozeSettings value={settings.snooze} onChange={(snooze) => update({ snooze })} />
+              </SettingsSection>
+
+              <SettingsSection title={t("alarm.quiet.settings.title")} icon={VolumeX}>
+                <EmergencyQuietSettings />
               </SettingsSection>
 
               {/* Preview Alarm: end-to-end rehearsal using the saved per-type settings */}

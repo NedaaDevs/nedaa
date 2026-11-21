@@ -12,7 +12,9 @@ import {
   TASK_SHELL_PART,
   WAY_OUT_SOUNDING_SECONDS,
 } from "@/constants/WakeTaskShell";
+import { EMERGENCY_QUIET_MS, EMERGENCY_QUIET_PART } from "@/constants/EmergencyQuiet";
 import { AppLocale, PlatformType } from "@/enums/app";
+import type { EmergencyQuietControl } from "@/hooks/useAlarmScreen";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScreenReader } from "@/hooks/useScreenReader";
 import i18n from "@/localization/i18n";
@@ -20,6 +22,7 @@ import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { layOut } from "@/test-helpers/layout";
 import { styleOf, type HostElement } from "@/test-helpers/text";
+import { quietControl } from "@/test-helpers/quietControl";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { WakeTask } from "@/types/alarm";
 import type { NonEmptyTasks, TaskRunSnapshot } from "@/utils/taskRun";
@@ -85,7 +88,11 @@ const liveRegionOf = (element: HostElement): HostElement | null => {
 
 const setUp = async (
   tasks: NonEmptyTasks,
-  { audible = true, resume }: { audible?: boolean; resume?: TaskRunSnapshot } = {}
+  {
+    audible = true,
+    resume,
+    emergency,
+  }: { audible?: boolean; resume?: TaskRunSnapshot; emergency?: EmergencyQuietControl } = {}
 ) => {
   const callbacks = {
     onComplete: jest.fn(),
@@ -100,6 +107,7 @@ const setUp = async (
       openedAt={Date.now()}
       resume={resume}
       audible={audible}
+      emergency={emergency}
       {...callbacks}
     />
   );
@@ -442,6 +450,48 @@ describe("TaskShell", () => {
     });
   });
 
+  describe("emergency quiet", () => {
+    const QUIET = t("alarm.quiet.button");
+    const WAY_OUT_MS = WAY_OUT_SOUNDING_SECONDS * SECOND;
+
+    it("is offered under the board until the way out appears", async () => {
+      await setUp([TAP], { emergency: quietControl() });
+      expect(screen.getByRole("button", { name: QUIET })).toBeVisible();
+
+      await advance(QUIET_MS + WAY_OUT_MS + SECOND);
+
+      expect(screen.getByRole("button", { name: STOP })).toBeVisible();
+      expect(screen.queryByRole("button", { name: QUIET })).toBeNull();
+    });
+
+    it("takes the quiet strip's place while it is confirmed", async () => {
+      await setUp([TAP], { emergency: quietControl({ confirming: true }) });
+
+      expect(screen.getByTestId(EMERGENCY_QUIET_PART.CONFIRM)).toBeVisible();
+      expect(screen.queryByTestId(TASK_SHELL_PART.QUIET_STRIP)).toBeNull();
+    });
+
+    it("gives the quiet strip back once the way out takes the confirm away", async () => {
+      await setUp([TAP], { emergency: quietControl({ confirming: true }) });
+
+      await advance(QUIET_MS + WAY_OUT_MS + SECOND);
+
+      expect(screen.queryByTestId(EMERGENCY_QUIET_PART.CONFIRM)).toBeNull();
+      expect(screen.getByTestId(TASK_SHELL_PART.QUIET_STRIP)).toBeVisible();
+    });
+
+    it("shows when the alarm rings again while the quiet runs", async () => {
+      await setUp([TAP], {
+        audible: false,
+        emergency: quietControl({ quietUntil: Date.now() + EMERGENCY_QUIET_MS }),
+      });
+
+      expect(screen.getByTestId(EMERGENCY_QUIET_PART.BANNER)).toBeVisible();
+      expect(screen.queryByTestId(TASK_SHELL_PART.QUIET_STRIP)).toBeNull();
+      expect(screen.queryByRole("button", { name: QUIET })).toBeNull();
+    });
+  });
+
   describe("leaving and coming back", () => {
     it("resumes at the same step, sounding, with no new quiet time", async () => {
       const first = await setUp([MATH_3]);
@@ -509,6 +559,7 @@ describe("TaskShell", () => {
       expect(screen.getByText(t("alarm.task.trial.help"))).toBeVisible();
       expect(screen.queryByTestId(TASK_SHELL_PART.QUIET_STRIP)).toBeNull();
       expect(screen.queryByText(PAUSED)).toBeNull();
+      expect(screen.queryByText(t("alarm.quiet.button"))).toBeNull();
     });
 
     it("offers no way to stop an alarm, however long it runs", async () => {

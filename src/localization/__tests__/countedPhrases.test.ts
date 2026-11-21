@@ -48,6 +48,61 @@ describe("counted phrases", () => {
       ["لا أصوات", "صوت واحد", "صوتان", "3 أصوات", "11 صوتًا", "100 صوت"],
     ],
     [
+      "a11y.alarm.quiet.perMonth",
+      [
+        "لا مرات في الشهر",
+        "مرة واحدة في الشهر",
+        "مرتان في الشهر",
+        "3 مرات في الشهر",
+        "11 مرة في الشهر",
+        "100 مرة في الشهر",
+      ],
+    ],
+    [
+      "alarm.guide.wayOut.quiet",
+      [
+        "في الحالات الطارئة لا يمكن إيقاف الصوت.",
+        "في الحالات الطارئة يمكن إيقاف الصوت دقيقة واحدة، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت دقيقتين، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت 3 دقائق، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت 11 دقيقة، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت 100 دقيقة، وتبقى المهمة.",
+      ],
+    ],
+    [
+      "alarm.quiet.confirm.body",
+      [
+        "لا يتوقف الصوت، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت دقيقة واحدة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت دقيقتين، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت 3 دقائق، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت 11 دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت 100 دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+      ],
+    ],
+    [
+      "alarm.quiet.settings.help",
+      [
+        "لا يتوقف صوت المنبّه، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه دقيقة واحدة، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه دقيقتين، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه 3 دقائق، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه 11 دقيقة، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه 100 دقيقة، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+      ],
+    ],
+    [
+      "alarm.quiet.settings.left",
+      [
+        "لم يبقَ لك إسكات طارئ هذا الشهر.",
+        "بقيت لك مرة واحدة من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك مرتان من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك 3 مرات من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك 11 مرة من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك 100 مرة من الإسكات الطارئ هذا الشهر.",
+      ],
+    ],
+    [
       "notification.qada.ramadanIn",
       [
         "يبدأ رمضان اليوم.",
@@ -257,6 +312,27 @@ describe("counted phrases", () => {
       "An alarm can have up to 5 tasks, done one after another.",
     ],
     ["a11y.alarm.task.steps", "1 step", "5 steps"],
+    ["a11y.alarm.quiet.perMonth", "Once a month", "5 times a month"],
+    [
+      "alarm.guide.wayOut.quiet",
+      "In an emergency the sound can be turned off for one minute. The task stays.",
+      "In an emergency the sound can be turned off for 5 minutes. The task stays.",
+    ],
+    [
+      "alarm.quiet.confirm.body",
+      "The sound stops for 1 minute. The task stays, and finishing it ends the alarm.",
+      "The sound stops for 5 minutes. The task stays, and finishing it ends the alarm.",
+    ],
+    [
+      "alarm.quiet.settings.help",
+      "Turns the sound off for 1 minute while the task stays. All alarms share one count, which starts again on the first day of each month.",
+      "Turns the sound off for 5 minutes while the task stays. All alarms share one count, which starts again on the first day of each month.",
+    ],
+    [
+      "alarm.quiet.settings.left",
+      "1 emergency quiet left this month.",
+      "5 emergency quiets left this month.",
+    ],
     ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
     [
       "a11y.qada.returnDaysHint",

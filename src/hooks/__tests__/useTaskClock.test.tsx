@@ -123,6 +123,22 @@ describe("useTaskClock", () => {
     expect(onQuietEnd).not.toHaveBeenCalled();
   });
 
+  // The screen rings the alarm itself as an emergency quiet ends.
+  it("ends quiet time as the alarm can be heard again, with no callback", async () => {
+    const { result, rerender, onQuietStart, onQuietEnd } = await setUp();
+    await rerender({ audible: false });
+    await act(() => result.current.restartQuiet());
+    await advance(SECOND);
+    expect(result.current.phase).toBe(QUIET_PHASE.PAUSED);
+
+    await rerender({ audible: true });
+
+    expect(result.current.phase).toBe(QUIET_PHASE.SOUNDING);
+    await advance(QUIET_MS);
+    expect(onQuietStart).toHaveBeenCalledTimes(1);
+    expect(onQuietEnd).not.toHaveBeenCalled();
+  });
+
   it("makes no sound changes while the alarm cannot be heard", async () => {
     const { onQuietStart, onQuietEnding, onQuietEnd } = await setUp(false);
     await advance(QUIET_MS + SECOND);
