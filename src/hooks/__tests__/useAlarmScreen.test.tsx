@@ -7,13 +7,19 @@ import { router } from "expo-router";
 
 import { ALARM_SCREEN_PATH } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { EMERGENCY_QUIET_MS } from "@/constants/EmergencyQuiet";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmScreen } from "@/hooks/useAlarmScreen";
 import { DEFAULT_VIBRATION_CONFIG, VIBRATION_PATTERNS, VibrationPattern } from "@/types/alarm";
+import { DEFAULT_WAKE_TASKS } from "@/constants/WakeTask";
+import { generateDeterministicUUID, getQuietKey } from "@/utils/alarmId";
 
 const mockStartAlarmSound = jest.fn((_name: string) => Promise.resolve(true));
 const mockCompleteAndReschedule = jest.fn((_id: string, _ending: object) => Promise.resolve());
 const mockSnoozeAlarm = jest.fn();
+const mockQuietAlarm = jest.fn();
+const mockRecordUse = jest.fn();
+const mockAlarms: Record<string, object> = {};
 const mockStopAlarmSound = jest.fn();
 // Mirrors the native vibration across start, stop and stop-all; the screen
 // mounts while the alarm already vibrates.
@@ -31,6 +37,7 @@ const mockSettings = {
   snooze: { enabled: true, maxCount: 3, durationMinutes: 5 },
   vibration: { enabled: false, pattern: DEFAULT_VIBRATION_CONFIG.pattern },
   challenge: undefined,
+  tasks: DEFAULT_WAKE_TASKS,
 };
 // Friday allows fewer snoozes, so the count shows whose settings were read.
 const mockFridaySettings = { ...mockSettings, snooze: { ...mockSettings.snooze, maxCount: 1 } };
@@ -88,7 +95,17 @@ jest.mock("expo-alarm", () => {
 });
 jest.mock("@/stores/alarm", () => ({
   useAlarmStore: (select: (state: object) => unknown) =>
-    select({ snoozeAlarm: mockSnoozeAlarm, scheduledAlarms: {} }),
+    select({
+      snoozeAlarm: mockSnoozeAlarm,
+      quietAlarm: mockQuietAlarm,
+      scheduledAlarms: mockAlarms,
+    }),
+}));
+jest.mock("@/stores/emergencyQuiet", () => ({
+  useEmergencyQuietStore: {
+    getState: () => ({ recordUse: (now: number) => mockRecordUse(now) }),
+    persist: { hasHydrated: () => true, onFinishHydration: () => () => undefined },
+  },
 }));
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: (select: (state: object) => unknown) => select(mockStoreState),
@@ -120,13 +137,27 @@ const holdSoundStart = () => {
   return () => finish();
 };
 
-const mount = (alarmType: string = ScheduledAlarmType.FAJR) =>
-  renderHook(() => useAlarmScreen(ALARM_ID, alarmType));
+const mount = (alarmType: string = ScheduledAlarmType.FAJR, alarmId = ALARM_ID) =>
+  renderHook(() => useAlarmScreen(alarmId, alarmType));
+
+/** Stores a quiet's re-ring as quietAlarm does, and returns its id. */
+const storeReRing = (ringsAt: Date): string => {
+  const quietId = generateDeterministicUUID(getQuietKey(ScheduledAlarmType.FAJR, ringsAt));
+  mockAlarms[quietId] = {
+    alarmId: quietId,
+    alarmType: ScheduledAlarmType.FAJR,
+    triggerTime: ringsAt.getTime(),
+    snoozeCount: 0,
+    quietUsed: true,
+  };
+  return quietId;
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockStoreState = QUIET_STORE;
   mockNativeVibrating = true;
+  for (const id of Object.keys(mockAlarms)) delete mockAlarms[id];
 });
 
 describe("useAlarmScreen", () => {
@@ -448,5 +479,209 @@ describe("useAlarmScreen", () => {
     const { result } = await mount(alarmType);
 
     expect(result.current.remainingSnoozes).toBe(settings.snooze.maxCount);
+  });
+
+  describe("emergency quiet", () => {
+    beforeEach(() => {
+      jest.useFakeTimers({ now: new Date(2026, 10, 21, 5) });
+      mockStoreState = VIBRATING_STORE;
+      mockQuietAlarm.mockImplementation((_id: string, { ringsAt }: { ringsAt: Date }) =>
+        Promise.resolve({ quietId: storeReRing(ringsAt), ringsAt })
+      );
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    const quietNow = async () => {
+      const view = await mount();
+      await act(async () => view.result.current.emergency.open());
+      await act(async () => {
+        await view.result.current.emergency.confirm();
+      });
+      return view;
+    };
+
+    it("quiets for its length, then rings again at full sound", async () => {
+      const { result } = await quietNow();
+      const [alarmId, steps] = mockQuietAlarm.mock.calls[0];
+
+      expect(alarmId).toBe(ALARM_ID);
+      expect(steps.ringsAt.getTime() - Date.now()).toBe(EMERGENCY_QUIET_MS);
+      expect(result.current.emergency.quietUntil).toBe(steps.ringsAt.getTime());
+      expect(result.current.emergency.confirming).toBe(false);
+      expect(mockMarkAlarmHandled).toHaveBeenCalledWith(ALARM_ID);
+      mockStartAlarmSound.mockClear();
+      jest.mocked(Vibration.vibrate).mockClear();
+
+      await act(async () => jest.advanceTimersByTime(EMERGENCY_QUIET_MS - 1));
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+      expect(Vibration.vibrate).not.toHaveBeenCalled();
+
+      await act(async () => jest.advanceTimersByTime(1));
+      expect(result.current.emergency.quietUntil).toBeNull();
+      expect(mockStartAlarmSound).toHaveBeenCalledTimes(1);
+      expect(Vibration.vibrate).toHaveBeenCalled();
+    });
+
+    it("counts the use and silences the vibration through the store's steps", async () => {
+      await quietNow();
+      const [, steps] = mockQuietAlarm.mock.calls[0];
+      jest.mocked(Vibration.cancel).mockClear();
+
+      steps.recordUse();
+      steps.silence();
+
+      expect(mockRecordUse).toHaveBeenCalledWith(Date.now());
+      expect(Vibration.cancel).toHaveBeenCalled();
+    });
+
+    it("stays silent when a task's quiet time ends during the quiet", async () => {
+      const { result } = await quietNow();
+      mockStartAlarmSound.mockClear();
+
+      await act(async () => result.current.handleQuietEnd());
+
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+    });
+
+    it("offers no snooze during the quiet, and again after it", async () => {
+      const { result } = await quietNow();
+      expect(result.current.canSnooze).toBe(false);
+
+      await act(async () => jest.advanceTimersByTime(EMERGENCY_QUIET_MS));
+      expect(result.current.canSnooze).toBe(true);
+    });
+
+    it("ends the alarm for good when the task is solved during the quiet", async () => {
+      const { result } = await quietNow();
+      const [, { ringsAt }] = mockQuietAlarm.mock.calls[0];
+
+      await act(async () => {
+        await result.current.handleChallengeComplete();
+      });
+
+      expect(mockCompleteAndReschedule).toHaveBeenCalledWith(storeReRing(ringsAt), {
+        outcome: ExpoAlarm.ALARM_OUTCOME.SOLVED,
+      });
+    });
+
+    it("keeps ringing and keeps the confirm open when the quiet fails", async () => {
+      mockQuietAlarm.mockResolvedValueOnce(null);
+
+      const { result } = await quietNow();
+
+      expect(result.current.emergency.failed).toBe(true);
+      expect(result.current.emergency.confirming).toBe(true);
+      expect(result.current.emergency.quietUntil).toBeNull();
+      expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
+    });
+
+    it("clears a failure when the confirm opens again", async () => {
+      mockQuietAlarm.mockResolvedValueOnce(null);
+      const { result } = await quietNow();
+
+      await act(async () => result.current.emergency.back());
+      await act(async () => result.current.emergency.open());
+
+      expect(result.current.emergency.failed).toBe(false);
+    });
+
+    it("counts nothing on Back", async () => {
+      const { result } = await mount();
+
+      await act(async () => result.current.emergency.open());
+      await act(async () => result.current.emergency.back());
+
+      expect(result.current.emergency.confirming).toBe(false);
+      expect(mockQuietAlarm).not.toHaveBeenCalled();
+    });
+
+    it("restores a running quiet from its record after a relaunch", async () => {
+      const ringsAt = new Date(Date.now() + EMERGENCY_QUIET_MS / 2);
+      const quietId = storeReRing(ringsAt);
+
+      const { result } = await mount(ScheduledAlarmType.FAJR, quietId);
+
+      expect(result.current.emergency.quietUntil).toBe(ringsAt.getTime());
+      expect(result.current.emergency.used).toBe(true);
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+
+      await act(async () => jest.advanceTimersByTime(EMERGENCY_QUIET_MS / 2));
+      expect(result.current.emergency.quietUntil).toBeNull();
+      expect(mockStartAlarmSound).toHaveBeenCalledTimes(1);
+    });
+
+    it("rings at once for a re-ring whose quiet is over", async () => {
+      const quietId = storeReRing(new Date(Date.now() - 1));
+
+      const { result } = await mount(ScheduledAlarmType.FAJR, quietId);
+
+      expect(result.current.emergency.quietUntil).toBeNull();
+      expect(mockStartAlarmSound).toHaveBeenCalledTimes(1);
+    });
+
+    // The task clock can end its quiet time while the store silences.
+    it("stays silent when a task's quiet time ends between the silence and the quiet", async () => {
+      let finish: (quieted: boolean) => void = () => undefined;
+      mockQuietAlarm.mockImplementationOnce(
+        (_id: string, { ringsAt, silence }: { ringsAt: Date; silence: () => void }) => {
+          silence();
+          return new Promise((resolve) => {
+            finish = (quieted) =>
+              resolve(quieted ? { quietId: storeReRing(ringsAt), ringsAt } : null);
+          });
+        }
+      );
+      const { result } = await mount();
+      await act(async () => result.current.emergency.open());
+      let confirmed: Promise<void> = Promise.resolve();
+      await act(async () => {
+        confirmed = result.current.emergency.confirm();
+      });
+      mockStartAlarmSound.mockClear();
+
+      await act(async () => result.current.handleQuietEnd());
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+
+      await act(async () => {
+        finish(false);
+        await confirmed;
+      });
+      await act(async () => result.current.handleQuietEnd());
+      expect(mockStartAlarmSound).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes a confirm left open when the alarm snoozes", async () => {
+      mockSnoozeAlarm.mockResolvedValue({
+        snoozeId: SNOOZE_ID,
+        snoozeEndTime: new Date(Date.now() + 5 * 60_000),
+        snoozeCount: 1,
+      });
+      const { result } = await mount();
+      await act(async () => result.current.emergency.open());
+
+      await act(async () => {
+        await result.current.handleSnooze();
+      });
+
+      expect(result.current.emergency.confirming).toBe(false);
+    });
+
+    it("reads this alarm's quiet from its record", async () => {
+      mockAlarms[ALARM_ID] = { alarmId: ALARM_ID, snoozeCount: 0, quietUsed: true };
+
+      const { result } = await mount();
+
+      expect(result.current.emergency.used).toBe(true);
+    });
+
+    it("knows a settings preview", async () => {
+      mockAlarms[ALARM_ID] = { alarmId: ALARM_ID, snoozeCount: 0, isPreview: true };
+
+      const { result } = await mount();
+
+      expect(result.current.emergency.preview).toBe(true);
+    });
   });
 });

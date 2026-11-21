@@ -29,10 +29,14 @@ import {
   type AlarmGuideCardId,
 } from "@/constants/AlarmGuide";
 import { E2E_ID } from "@/constants/E2E";
+import { EMERGENCY_QUIET_ALLOWANCE, EMERGENCY_QUIET_MINUTES } from "@/constants/EmergencyQuiet";
 import { WAKE_TASK_MAX_STACK } from "@/constants/WakeTask";
 import { useRTL } from "@/contexts/RTLContext";
+import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { useScreenReader } from "@/hooks/useScreenReader";
+import { useEmergencyQuietStore } from "@/stores/emergencyQuiet";
 import { focusOn } from "@/utils/accessibilityFocus";
+import { chosenAllowance } from "@/utils/emergencyQuiet";
 import { formatNumberToLocale } from "@/utils/number";
 import { quietSecondsFor, wayOutSentence } from "@/utils/taskClock";
 
@@ -44,7 +48,12 @@ const CARD_ICON: Record<AlarmGuideCardId, LucideIcon> = {
 };
 
 /** A card's sentences, its numbers read from the alarm's own constants. */
-const bodyOf = (card: AlarmGuideCardId, t: TFunction, quietSeconds: number): string[] => {
+const bodyOf = (
+  card: AlarmGuideCardId,
+  t: TFunction,
+  quietSeconds: number,
+  emergencyQuiet: boolean
+): string[] => {
   switch (card) {
     case ALARM_GUIDE_CARD.ALARM:
       return [t("alarm.guide.alarm.body")];
@@ -56,7 +65,13 @@ const bodyOf = (card: AlarmGuideCardId, t: TFunction, quietSeconds: number): str
         t("alarm.guide.try.stack", { count: WAKE_TASK_MAX_STACK }),
       ];
     case ALARM_GUIDE_CARD.WAY_OUT:
-      return [wayOutSentence(t), t("alarm.guide.wayOut.sounding")];
+      return [
+        wayOutSentence(t),
+        t("alarm.guide.wayOut.sounding"),
+        ...(emergencyQuiet
+          ? [t("alarm.guide.wayOut.quiet", { count: EMERGENCY_QUIET_MINUTES })]
+          : []),
+      ];
     default: {
       const unhandled: never = card;
       throw new Error(`no alarm guide card ${String(unhandled)}`);
@@ -79,6 +94,10 @@ const AlarmGuide = ({ open, onClose, onTryTask, finalFocusRef }: Props) => {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
   const screenReader = useScreenReader();
+  const now = useMinuteClock().getTime();
+  const emergencyQuiet = useEmergencyQuietStore(
+    (state) => chosenAllowance(state.ledger, now) !== EMERGENCY_QUIET_ALLOWANCE.OFF
+  );
   const [index, setIndex] = useState(0);
   // Set by Next and Back, so focus moves only on a card change.
   const [moves, setMoves] = useState(0);
@@ -90,7 +109,9 @@ const AlarmGuide = ({ open, onClose, onTryTask, finalFocusRef }: Props) => {
 
   const card = ALARM_GUIDE_CARDS[index];
   const last = index === ALARM_GUIDE_CARDS.length - 1;
-  const lines = bodyOf(card, t, quietSecondsFor(screenReader)).map(formatNumberToLocale);
+  const lines = bodyOf(card, t, quietSecondsFor(screenReader), emergencyQuiet).map(
+    formatNumberToLocale
+  );
   const title = t(ALARM_GUIDE_TITLE_KEY[card]);
   const place = { at: index + 1, total: ALARM_GUIDE_CARDS.length };
   const BackArrow = isRTL ? ChevronRight : ChevronLeft;

@@ -82,6 +82,18 @@ export const useTaskClock = ({
     return () => clearInterval(id);
   }, []);
 
+  // The alarm sounds again as it becomes audible, so quiet time ends with it.
+  const heard = useRef(audible);
+  const hear = useEffectEvent(() => {
+    const now = Date.now();
+    commit({ clock: endQuiet(latest.current.clock, now, false), now });
+  });
+
+  useEffect(() => {
+    if (audible && !heard.current) hear();
+    heard.current = audible;
+  }, [audible]);
+
   /** A full quiet time from now; pauses the sound if it had returned. */
   const restartQuiet = () => {
     const before = latest.current;

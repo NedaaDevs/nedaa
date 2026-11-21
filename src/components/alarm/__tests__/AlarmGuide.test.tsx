@@ -3,13 +3,16 @@ import { AccessibilityInfo } from "react-native";
 
 import AlarmGuide from "@/components/alarm/AlarmGuide";
 import { ALARM_GUIDE_CARDS } from "@/constants/AlarmGuide";
+import { EMERGENCY_QUIET_ALLOWANCE } from "@/constants/EmergencyQuiet";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import ar from "@/localization/locales/ar.json";
 import en from "@/localization/locales/en.json";
 import { useAppStore } from "@/stores/app";
+import { useEmergencyQuietStore } from "@/stores/emergencyQuiet";
 import { usePreferencesStore } from "@/stores/preferences";
 import { renderWithTheme } from "@/test-helpers/theme";
+import { NEW_QUIET_LEDGER, setAllowance } from "@/utils/emergencyQuiet";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -22,6 +25,10 @@ jest.mock("@/constants/WakeTaskShell", () => ({
   ...jest.requireActual("@/constants/WakeTaskShell"),
   QUIET_TIME_SECONDS: { DEFAULT: 45, SCREEN_READER: 90 },
   WAY_OUT_SOUNDING_SECONDS: 180,
+}));
+jest.mock("@/constants/EmergencyQuiet", () => ({
+  ...jest.requireActual("@/constants/EmergencyQuiet"),
+  EMERGENCY_QUIET_MINUTES: 7,
 }));
 jest.mock("@/constants/WakeTask", () => ({
   ...jest.requireActual("@/constants/WakeTask"),
@@ -67,7 +74,10 @@ const toCard = async (user: ReturnType<typeof userEvent.setup>, at: number) => {
 
 beforeAll(() => usePreferencesStore.setState({ useWesternNumerals: true }));
 
-beforeEach(() => mockScreenReader.mockReturnValue(false));
+beforeEach(() => {
+  mockScreenReader.mockReturnValue(false);
+  useEmergencyQuietStore.setState({ ledger: NEW_QUIET_LEDGER });
+});
 
 describe("the alarm guide", () => {
   it("opens on the first card, with Skip and no Back", async () => {
@@ -193,6 +203,25 @@ describe("the guide's numbers", () => {
     await toCard(user, TOTAL);
 
     expect(screen.getByText('After 3 minutes, a "Stop alarm" button appears.')).toBeOnTheScreen();
+  });
+
+  it("offers the emergency quiet beside the way out", async () => {
+    const { user } = await renderGuide();
+    await toCard(user, TOTAL);
+
+    expect(
+      screen.getByText("In an emergency the sound can be turned off for 7 minutes. The task stays.")
+    ).toBeOnTheScreen();
+  });
+
+  it("leaves the emergency quiet out while it is off", async () => {
+    useEmergencyQuietStore.setState({
+      ledger: setAllowance(NEW_QUIET_LEDGER, EMERGENCY_QUIET_ALLOWANCE.OFF, Date.now()),
+    });
+    const { user } = await renderGuide();
+    await toCard(user, TOTAL);
+
+    expect(screen.queryByText(/In an emergency/)).toBeNull();
   });
 
   it.each([

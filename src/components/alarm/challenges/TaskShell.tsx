@@ -3,6 +3,8 @@ import { StyleSheet } from "react-native";
 import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 
+import EmergencyQuiet from "@/components/alarm/challenges/EmergencyQuiet";
+import QuietBanner from "@/components/alarm/challenges/QuietBanner";
 import QuietStrip from "@/components/alarm/challenges/QuietStrip";
 import { TASK_BOARDS, type Board } from "@/components/alarm/challenges/taskBoards";
 import { Box } from "@/components/ui/box";
@@ -24,7 +26,9 @@ import {
   TASK_SHELL_MODE,
   TASK_SHELL_PART,
 } from "@/constants/WakeTaskShell";
+import type { EmergencyQuietControl } from "@/hooks/useAlarmScreen";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useQuietOffer } from "@/hooks/useQuietOffer";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScreenReader } from "@/hooks/useScreenReader";
 import { useTaskClock } from "@/hooks/useTaskClock";
@@ -57,6 +61,7 @@ type AlarmRun = {
   onBack: (saved: TaskRunSnapshot) => void;
   onQuietStart: () => void;
   onQuietEnd: () => void;
+  emergency?: EmergencyQuietControl;
 };
 
 /** A silent run from the picker: no quiet time, no way out, no saved state. */
@@ -173,6 +178,10 @@ const TaskShell = (props: Props) => {
     : t("alarm.task.trial.backToList");
   const stop = t("alarm.task.stop");
   const onStop = alarm && quiet.wayOut ? alarm.onStop : null;
+  const emergency = alarm?.emergency;
+  const quietUntil = emergency?.quietUntil ?? null;
+  // The confirm stands in the strip's place; the way out takes it away.
+  const quietOffer = useQuietOffer(emergency, quiet.wayOut);
 
   return (
     <VStack flex={1} gap="$stack">
@@ -216,6 +225,8 @@ const TaskShell = (props: Props) => {
           </VStack>
         )}
       </HStack>
+
+      {quietUntil !== null && <QuietBanner until={quietUntil} />}
 
       {!handover && (
         <Text size="heading" bold color="$fg" accessibilityRole="header" marginTop="$2">
@@ -287,13 +298,16 @@ const TaskShell = (props: Props) => {
           </Animated.View>
         )}
         {alarm ? (
-          audible && (
-            <QuietStrip
-              phase={quiet.phase}
-              secondsLeft={quiet.secondsLeft}
-              fraction={quiet.fraction}
-            />
-          )
+          <>
+            {audible && !quietOffer.confirmOpen && (
+              <QuietStrip
+                phase={quiet.phase}
+                secondsLeft={quiet.secondsLeft}
+                fraction={quiet.fraction}
+              />
+            )}
+            {emergency && <EmergencyQuiet control={emergency} offer={quietOffer} />}
+          </>
         ) : (
           <HStack
             testID={TASK_SHELL_PART.TRIAL_STRIP}
