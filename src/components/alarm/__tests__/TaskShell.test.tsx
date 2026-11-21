@@ -30,13 +30,13 @@ jest.mock("@/hooks/useScreenReader", () => ({ useScreenReader: jest.fn(() => fal
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: jest.fn(() => false) }));
 
 // Each board solves at one press; the boards' own tests cover their play.
-jest.mock("@/components/alarm/challenges/MathChallenge", () =>
+jest.mock("@/components/alarm/challenges/MathBoard", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("math")
 );
 jest.mock("@/components/alarm/challenges/DhikrChallenge", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("dhikr")
 );
-jest.mock("@/components/alarm/challenges/TapChallenge", () =>
+jest.mock("@/components/alarm/challenges/TapBoard", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("tap")
 );
 
