@@ -16,6 +16,7 @@ import {
   TASK_TRIAL_ALL,
   TASK_TRIAL_PARAM,
   TASK_TRIAL_PATH,
+  TASK_TRIAL_REVIEWED,
   WAKE_TASK_ABOUT_KEY,
   WAKE_TASK_DIFFICULTY_KEY,
   WAKE_TASK_NAME_KEY,
@@ -36,6 +37,11 @@ import type { WakeTask } from "@/types/alarm";
 import { addWakeTask, wakeTaskFor } from "@/utils/wakeTasks";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
+// An alarm runs the boards of an unreviewed dhikr list.
+jest.mock("@/constants/DhikrTask", () => ({
+  ...jest.requireActual("@/constants/DhikrTask"),
+  DHIKR_TASK_REVIEWED: false,
+}));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
 // Every native call is logged, so a test can show a trial makes none.
 jest.mock("expo-alarm", () => jest.requireActual("@/test-helpers/expoAlarmLog").expoAlarmLogModule);
@@ -65,6 +71,9 @@ jest.mock("@/components/alarm/challenges/DhikrChallenge", () =>
   jest
     .requireActual("@/test-helpers/taskBoardMock")
     .mockBoard(jest.requireActual("@/constants/WakeTask").WAKE_TASK_ID.DHIKR)
+);
+jest.mock("@/components/alarm/challenges/DhikrBoard", () =>
+  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("dhikr word")
 );
 jest.mock("@/components/alarm/challenges/TapBoard", () =>
   jest
@@ -97,9 +106,11 @@ const saveStack = (tasks: WakeTask[]) =>
     [ALARM_TYPE.FAJR]: { ...useAlarmSettingsStore.getState()[ALARM_TYPE.FAJR], tasks },
   });
 
-const open = async (task: string) => {
+const open = async (task: string, boards?: string) => {
   mockParams[TASK_TRIAL_PARAM.ALARM_TYPE] = ALARM_TYPE.FAJR;
   mockParams[TASK_TRIAL_PARAM.TASK] = task;
+  if (boards) mockParams[TASK_TRIAL_PARAM.BOARDS] = boards;
+  else delete mockParams[TASK_TRIAL_PARAM.BOARDS];
   await renderWithTheme(<AlarmTrialRoute />);
   const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   const solve = (name: string) => user.press(screen.getByRole("button", { name: `solve ${name}` }));
@@ -223,6 +234,21 @@ describe("AlarmTrialRoute", () => {
     saveStack(stack);
     const { solve } = await open(task);
     await solve(task === TASK_TRIAL_ALL ? WAKE_TASK_ID.TAP : task);
+
+    expect(screen.getByRole("header", { name: DONE })).toBeVisible();
+    expect(screen.queryByRole("button", { name: USE })).toBeNull();
+    expect(screen.getByRole("button", { name: LIST })).toBeVisible();
+  });
+
+  it("runs the alarm's dhikr board unless the link asks for the reviewed one", async () => {
+    saveStack([TAP]);
+    await open(WAKE_TASK_ID.DHIKR);
+    expect(screen.getByRole("button", { name: "solve dhikr" })).toBeVisible();
+    await cleanup();
+
+    const { solve } = await open(WAKE_TASK_ID.DHIKR, TASK_TRIAL_REVIEWED);
+    expect(screen.queryByRole("button", { name: "solve dhikr" })).toBeNull();
+    await solve("dhikr word");
 
     expect(screen.getByRole("header", { name: DONE })).toBeVisible();
     expect(screen.queryByRole("button", { name: USE })).toBeNull();

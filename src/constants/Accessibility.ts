@@ -11,6 +11,9 @@ export const A11Y_FLAG_EVENT = {
 
 export type A11yFlagEvent = (typeof A11Y_FLAG_EVENT)[keyof typeof A11Y_FLAG_EVENT];
 
+/** The `AccessibilityInfo` event for an announcement said in full; iOS only. */
+export const ANNOUNCEMENT_FINISHED = "announcementFinished";
+
 /** Accessibility action names: React Native's standard ones and the custom ones a view lists. */
 export const A11Y_ACTION = {
   ACTIVATE: "activate",

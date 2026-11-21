@@ -4,6 +4,7 @@ import { act, fireEvent, screen, userEvent } from "@testing-library/react-native
 import * as ExpoAlarm from "expo-alarm";
 
 import TaskPicker, { type TaskTrialTarget } from "@/components/alarm/TaskPicker";
+import { TASK_BOARDS } from "@/components/alarm/challenges/taskBoards";
 import { A11Y_ACTION } from "@/constants/Accessibility";
 import { ALARM_TYPE } from "@/constants/Alarm";
 import {
@@ -16,7 +17,7 @@ import {
   type WakeTaskId,
 } from "@/constants/WakeTask";
 import { TAP_PRESSES } from "@/constants/WakeTaskBoards";
-import { TASK_TRIAL_ALL, WAKE_TASK_ABOUT_KEY, WAKE_TASK_NAME_KEY } from "@/constants/WakeTaskShell";
+import { TASK_TRIAL_ALL, WAKE_TASK_NAME_KEY } from "@/constants/WakeTaskShell";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { PlatformType } from "@/enums/app";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
@@ -63,7 +64,7 @@ const SHARED_MAX_STEPS = WAKE_TASK_STEP_CHOICES[WAKE_TASK_STEP_CHOICES.length - 
 
 const nameOf = (id: (typeof WAKE_TASK_IDS)[number]) => t(WAKE_TASK_NAME_KEY[id]);
 const aboutOf = (id: (typeof WAKE_TASK_IDS)[number]) =>
-  t(WAKE_TASK_ABOUT_KEY[id], { count: TAP_PRESSES });
+  t(TASK_BOARDS[id].aboutKey, { count: TAP_PRESSES });
 const rowName = (first: string, second: string) => t("a11y.sentences", { first, second });
 const NONE = rowName(t("alarm.task.none"), t("alarm.task.about.none"));
 

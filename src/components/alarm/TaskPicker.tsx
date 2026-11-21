@@ -3,6 +3,7 @@ import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, ChevronUp } from "lucide-react-native";
 
+import { TASK_BOARDS } from "@/components/alarm/challenges/taskBoards";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { Divider } from "@/components/ui/divider";
@@ -28,7 +29,6 @@ import { TAP_PRESSES } from "@/constants/WakeTaskBoards";
 import {
   TASK_PICKER_PART,
   TASK_TRIAL_ALL,
-  WAKE_TASK_ABOUT_KEY,
   WAKE_TASK_DIFFICULTY_KEY,
   WAKE_TASK_NAME_KEY,
 } from "@/constants/WakeTaskShell";
@@ -230,7 +230,7 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
     const name = t(WAKE_TASK_NAME_KEY[id]);
     const about = blocked
       ? t("alarm.task.full", { count: WAKE_TASK_MAX_STACK })
-      : t(WAKE_TASK_ABOUT_KEY[id], { count: TAP_PRESSES });
+      : t(TASK_BOARDS[id].aboutKey, { count: TAP_PRESSES });
     const shownAbout = formatNumberToLocale(about);
     return (
       <VStack key={id}>

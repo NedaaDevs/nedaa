@@ -1,6 +1,10 @@
 import type { TFunction } from "i18next";
 
-import { WAKE_TASK_DEFAULT_DIFFICULTY, WAKE_TASK_MIN_STEPS } from "@/constants/WakeTask";
+import {
+  WAKE_TASK_DEFAULT_DIFFICULTY,
+  WAKE_TASK_MIN_STEPS,
+  type WakeTaskId,
+} from "@/constants/WakeTask";
 import { TASK_RUN_NEXT, WAKE_TASK_NAME_KEY } from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty, WakeTask } from "@/types/alarm";
 import type { TaskClock } from "@/utils/taskClock";
@@ -15,8 +19,15 @@ export type TaskPosition = Readonly<{ task: number; step: number }>;
 
 export const FIRST_POSITION: TaskPosition = { task: 0, step: 0 };
 
+/** What each task's steps have drawn so far, so a later step draws anew. */
+export type TaskDraws = Readonly<Partial<Record<WakeTaskId, readonly number[]>>>;
+
 /** A left run, kept so reopening the task resumes it. */
-export type TaskRunSnapshot = Readonly<{ clock: TaskClock; position: TaskPosition }>;
+export type TaskRunSnapshot = Readonly<{
+  clock: TaskClock;
+  position: TaskPosition;
+  drawn: TaskDraws;
+}>;
 
 export type TaskRunAdvance =
   | { next: typeof TASK_RUN_NEXT.STEP | typeof TASK_RUN_NEXT.HANDOVER; position: TaskPosition }

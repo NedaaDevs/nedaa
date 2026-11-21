@@ -29,6 +29,11 @@ import type { NonEmptyTasks, TaskRunSnapshot } from "@/utils/taskRun";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 const mockHaptic = jest.fn();
+// An alarm runs the boards of an unreviewed dhikr list.
+jest.mock("@/constants/DhikrTask", () => ({
+  ...jest.requireActual("@/constants/DhikrTask"),
+  DHIKR_TASK_REVIEWED: false,
+}));
 jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => mockHaptic }));
 jest.mock("@/hooks/useScreenReader", () => ({ useScreenReader: jest.fn(() => false) }));
 jest.mock("@/hooks/useReducedMotion", () => ({ useReducedMotion: jest.fn(() => false) }));
@@ -39,6 +44,9 @@ jest.mock("@/components/alarm/challenges/MathBoard", () =>
 );
 jest.mock("@/components/alarm/challenges/DhikrChallenge", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("dhikr")
+);
+jest.mock("@/components/alarm/challenges/DhikrBoard", () =>
+  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("dhikr word")
 );
 jest.mock("@/components/alarm/challenges/TapBoard", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("tap")
@@ -115,17 +123,19 @@ const setUp = async (
   const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   const solve = (name: string) => user.press(screen.getByRole("button", { name: `solve ${name}` }));
   const back = () => user.press(screen.getByRole("button", { name: BACK }));
-  return { ...callbacks, ...view, user, solve, back };
+  const draw = (name: string) => user.press(screen.getByRole("button", { name: `draw ${name}` }));
+  return { ...callbacks, ...view, user, solve, back, draw };
 };
 
-const setUpTrial = async (tasks: NonEmptyTasks) => {
+const setUpTrial = async (tasks: NonEmptyTasks, { reviewed }: { reviewed?: boolean } = {}) => {
   const callbacks = { onComplete: jest.fn(), onBack: jest.fn() };
   const view = await renderWithTheme(
-    <TaskShell mode={TASK_SHELL_MODE.TRIAL} tasks={tasks} {...callbacks} />
+    <TaskShell mode={TASK_SHELL_MODE.TRIAL} tasks={tasks} reviewed={reviewed} {...callbacks} />
   );
   const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   const solve = (name: string) => user.press(screen.getByRole("button", { name: `solve ${name}` }));
-  return { ...callbacks, ...view, user, solve };
+  const draw = (name: string) => user.press(screen.getByRole("button", { name: `draw ${name}` }));
+  return { ...callbacks, ...view, user, solve, draw };
 };
 
 const PLATFORM = Platform.OS;
@@ -550,6 +560,24 @@ describe("TaskShell", () => {
 
       expect(screen.getByRole("button", { name: "solve dhikr" })).toBeVisible();
     });
+
+    it("hands a resumed step the rows drawn before Back", async () => {
+      const DHIKR_3: WakeTask = { id: WAKE_TASK_ID.DHIKR, steps: 3 };
+      const first = await setUp([DHIKR_3]);
+      await first.draw("dhikr");
+      await first.solve("dhikr");
+      await first.back();
+      const saved = first.onBack.mock.calls[0][0];
+      await first.unmount();
+
+      const { draw, solve } = await setUp([DHIKR_3], { resume: saved });
+      expect(screen.getByText("dhikr drew 0")).toBeVisible();
+      await draw("dhikr");
+      await solve("dhikr");
+
+      expect(screen.getByText(t("alarm.task.stepOf", { step: 3, total: 3 }))).toBeVisible();
+      expect(screen.getByText("dhikr drew 0,1")).toBeVisible();
+    });
   });
 
   describe("the last task solved", () => {
@@ -657,6 +685,48 @@ describe("TaskShell", () => {
       expect(onComplete).toHaveBeenCalledTimes(1);
       expect(screen.queryByText(SOLVED)).toBeNull();
       expect(screen.getByText(t("alarm.task.trial.tag"))).toBeVisible();
+    });
+  });
+
+  describe("a dhikr task", () => {
+    const DHIKR_2: WakeTask = { id: WAKE_TASK_ID.DHIKR, steps: 2 };
+
+    it("runs the gate's board in an alarm and an unflagged trial", async () => {
+      const first = await setUp([DHIKR_1]);
+      expect(screen.getByRole("button", { name: "solve dhikr" })).toBeVisible();
+      await first.unmount();
+
+      await setUpTrial([DHIKR_1]);
+      expect(screen.getByRole("button", { name: "solve dhikr" })).toBeVisible();
+    });
+
+    it("runs the reviewed board in a trial that asks for it", async () => {
+      await setUpTrial([DHIKR_1, TAP], { reviewed: true });
+
+      expect(screen.getByRole("button", { name: "solve dhikr word" })).toBeVisible();
+      expect(screen.queryByRole("button", { name: "solve dhikr" })).toBeNull();
+    });
+
+    it("hands each step the rows the run has shown", async () => {
+      const { solve, draw } = await setUpTrial([DHIKR_2, TAP], { reviewed: true });
+      expect(screen.queryByText(/drew/)).toBeNull();
+
+      await draw("dhikr word");
+      await draw("dhikr word");
+      await solve("dhikr word");
+
+      expect(screen.getByText(t("alarm.task.stepOf", { step: 2, total: 2 }))).toBeVisible();
+      expect(screen.getByText("dhikr word drew 0,1")).toBeVisible();
+    });
+
+    it("keeps one task's memory from another's board", async () => {
+      const { solve, draw } = await setUpTrial([DHIKR_1, TAP], { reviewed: true });
+      await draw("dhikr word");
+      await solve("dhikr word");
+      await advance(HANDOVER_HOLD_MS);
+
+      expect(screen.getByRole("button", { name: "solve tap" })).toBeVisible();
+      expect(screen.queryByText(/drew/)).toBeNull();
     });
   });
 });

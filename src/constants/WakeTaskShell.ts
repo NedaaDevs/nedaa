@@ -64,6 +64,9 @@ export const WAKE_TASK_ABOUT_KEY = {
   [WAKE_TASK_ID.TAP]: "alarm.task.about.tap",
 } as const satisfies Record<WakeTaskId, string>;
 
+/** The dhikr task's description once its reviewed board runs. */
+export const DHIKR_REVIEWED_ABOUT_KEY = "alarm.task.about.dhikrWord";
+
 /** Each difficulty's name, as the picker offers it. */
 export const WAKE_TASK_DIFFICULTY_KEY = {
   [CHALLENGE_DIFFICULTY.EASY]: "alarm.challenge.easy",
@@ -83,7 +86,14 @@ export const TASK_SHELL_MODE = { ALARM: "alarm", TRIAL: "trial" } as const;
 /** The trial screen the picker opens; it is no alarm screen. */
 export const TASK_TRIAL_PATH = "/alarm-trial";
 
-export const TASK_TRIAL_PARAM = { ALARM_TYPE: "alarmType", TASK: "task" } as const;
+export const TASK_TRIAL_PARAM = {
+  ALARM_TYPE: "alarmType",
+  TASK: "task",
+  BOARDS: "boards",
+} as const;
+
+/** The trial's boards param that runs every board as reviewed. */
+export const TASK_TRIAL_REVIEWED = "reviewed";
 
 /** The trial's task param that runs the whole stack. */
 export const TASK_TRIAL_ALL = "all";
