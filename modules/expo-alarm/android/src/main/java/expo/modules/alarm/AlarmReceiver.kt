@@ -12,14 +12,16 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_ALARM_TITLE = "alarm_title"
         const val EXTRA_SOUND_NAME = "sound_name"
         private const val OVERLAP_DELAY_MS = 60_000L
-        // Matches ALARM_DEFAULTS.STALE_ALARM_THRESHOLD_MS on the JS side.
-        private const val STALE_PENDING_MS = 2 * 60 * 60 * 1000L
     }
 
     private fun isStillOpen(db: AlarmDatabase, pending: AlarmDatabase.PendingChallengeRecord): Boolean {
-        val record = db.getAlarm(pending.alarmId) ?: return false
         val ageMs = System.currentTimeMillis() - (pending.timestamp * 1000).toLong()
-        return !record.completed && ageMs < STALE_PENDING_MS
+        return PendingChallengeRule.isOpen(
+            db.getAlarm(pending.alarmId)?.completed,
+            pending.alarmId,
+            AlarmService.ringingAlarmId,
+            ageMs
+        )
     }
 
     override fun onReceive(context: Context, intent: Intent) {

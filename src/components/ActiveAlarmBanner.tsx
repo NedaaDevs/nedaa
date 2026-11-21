@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AppState, Platform } from "react-native";
+import { AppState } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { HStack } from "@/components/ui/hstack";
@@ -8,12 +8,10 @@ import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Bell, ChevronRight } from "lucide-react-native";
-import { ALARM_OUTCOME } from "expo-alarm";
 
 import { useAlarmStore } from "@/stores/alarm";
 import { detectActiveAlarm, type ActiveAlarmInfo } from "@/utils/activeAlarmDetector";
-import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
-import { navigateToAlarm, markAlarmHandled } from "@/hooks/useAlarmDeepLink";
+import { openAlarmOnRequest } from "@/hooks/useAlarmDeepLink";
 
 export default function ActiveAlarmBanner() {
   const { t } = useTranslation();
@@ -39,17 +37,9 @@ export default function ActiveAlarmBanner() {
 
   if (!activeAlarm) return null;
 
-  const handlePress = async () => {
-    // iOS: the /alarm screen is the challenge UI, so navigate there.
-    if (Platform.OS !== "android") {
-      navigateToAlarm(activeAlarm.alarmId, activeAlarm.alarmType, "banner-tap");
-      return;
-    }
-    // Android: a way back to a task left pending (no overlay permission, say);
-    // a tap stops the alarm unsolved and reschedules it.
-    markAlarmHandled(activeAlarm.alarmId);
-    setActiveAlarm(null);
-    await completeAndRescheduleAlarm(activeAlarm.alarmId, { outcome: ALARM_OUTCOME.STOPPED });
+  // The alarm screen holds the task; a running overlay keeps it instead.
+  const handlePress = () => {
+    openAlarmOnRequest(activeAlarm.alarmId, activeAlarm.alarmType);
   };
 
   return (
@@ -61,7 +51,8 @@ export default function ActiveAlarmBanner() {
       backgroundColor="$error"
       padding="$4"
       accessibilityRole="button"
-      accessibilityLabel={t("alarm.banner.activeAlarm")}>
+      accessibilityLabel={t("a11y.alarm.banner.label", { title: activeAlarm.title })}
+      accessibilityHint={t("a11y.alarm.banner.hint")}>
       <HStack alignItems="center" justifyContent="space-between">
         <HStack gap="$3" alignItems="center" flex={1}>
           <Icon as={Bell} size="md" color="$typographyContrast" />
@@ -70,7 +61,7 @@ export default function ActiveAlarmBanner() {
               {t("alarm.banner.activeAlarm")}
             </Text>
             <Text size="sm" color="$typographyContrast" opacity={0.8}>
-              {t("alarm.banner.tapToDismiss", { title: activeAlarm.title })}
+              {t("alarm.banner.tapToOpen", { title: activeAlarm.title })}
             </Text>
           </VStack>
         </HStack>

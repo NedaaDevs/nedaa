@@ -115,6 +115,14 @@ export const alarmSettingsHref = (type: AlarmType): Href => ({
   params: { type },
 });
 
+/** Where the detector found a ringing alarm. */
+export const ACTIVE_ALARM_SOURCE = {
+  PENDING_CHALLENGE: "pending-challenge",
+  PAST_DUE: "past-due",
+  QUIET: "quiet",
+} as const;
+export type ActiveAlarmSource = (typeof ACTIVE_ALARM_SOURCE)[keyof typeof ACTIVE_ALARM_SOURCE];
+
 export const ALARM_DEFAULTS = {
   TAPS_REQUIRED: 5,
   SNOOZE_MINUTES: 5,

@@ -20,7 +20,7 @@ android {
     jvmTarget = '17'
   }
 
-  // Dhikr tables shared with the JS test.
+  // Dhikr, outcome and stale-rule tables shared with the JS tests.
   sourceSets {
     test {
       resources.srcDir '../fixtures'

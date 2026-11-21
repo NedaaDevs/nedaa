@@ -20,6 +20,7 @@ on:
       - "!.maestro/ci/baselines/**"
       - "android/**"
       - "modules/**/android/**"
+      - "modules/expo-alarm/fixtures/**"
       - "patches/**"
       - "package.json"
       - "bun.lock"
@@ -111,6 +112,11 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
+
+      # After the upload, so a red unit test still leaves the R8 check and APK.
+      - name: Run the alarm module's JVM tests
+        working-directory: android
+        run: ./gradlew :expo-alarm:testDebugUnitTest --build-cache --console=plain
 
   static-checks:
     name: Static checks (16 KB pages)

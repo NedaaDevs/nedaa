@@ -31,6 +31,7 @@ class ScheduleAlarmOptions : Record {
     @Field val dismissText: String = ""
     @Field val openText: String = ""
     @Field val countdown: Boolean = false
+    @Field val snoozeCount: Int = 0
 }
 
 class ExpoAlarmModule : Module() {
@@ -83,7 +84,9 @@ class ExpoAlarmModule : Module() {
                 val triggerMs = options.triggerTimestamp.toLong()
                 val soundName = if (options.sound.isNotEmpty()) options.sound else "beep"
 
-                val scheduled = scheduler.scheduleAlarm(options.id, triggerMs, options.alarmType, options.title, soundName)
+                val scheduled = scheduler.scheduleAlarm(
+                    options.id, triggerMs, options.alarmType, options.title, soundName, options.snoozeCount
+                )
                 promise.resolve(scheduled)
             } catch (e: Exception) {
                 promise.reject("SCHEDULE_ERROR", e.message, e)
@@ -120,6 +123,10 @@ class ExpoAlarmModule : Module() {
 
         Function("getScheduledAlarmIds") {
             db.getAllAlarmIds().toTypedArray()
+        }
+
+        AsyncFunction("getFutureAlarmIds") {
+            db.getFutureAlarmIds(System.currentTimeMillis()).toTypedArray()
         }
 
         // -- Database --
@@ -438,6 +445,18 @@ class ExpoAlarmModule : Module() {
                 }
             }
             true
+        }
+
+        Function("usesNativeOverlay") {
+            AlarmOverlayService.usesNativeOverlay(context)
+        }
+
+        Function("isOverlayShowing") {
+            AlarmOverlayService.isRunning
+        }
+
+        Function("getRingingAlarmId") {
+            AlarmService.ringingAlarmId
         }
 
         Function("canDrawOverlays") {
