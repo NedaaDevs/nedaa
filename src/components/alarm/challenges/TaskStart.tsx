@@ -1,3 +1,5 @@
+import type { Ref } from "react";
+import type { ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -13,10 +15,12 @@ type Props = {
   onStart: () => void;
   /** An alarm with no task stops at the press. */
   onStop: () => void;
+  /** The main button, so a screen can move the reader's focus to it. */
+  ref?: Ref<ViewInstance>;
 };
 
 /** The ringing screen's main button: it opens the task, or stops the alarm. */
-const TaskStart = ({ tasks, onStart, onStop }: Props) => {
+const TaskStart = ({ tasks, onStart, onStop, ref }: Props) => {
   const { t } = useTranslation();
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
@@ -24,6 +28,7 @@ const TaskStart = ({ tasks, onStart, onStop }: Props) => {
     const stop = t("alarm.task.stop");
     return (
       <Button
+        ref={ref}
         size="xl"
         width="100%"
         minHeight="$20"
@@ -43,6 +48,7 @@ const TaskStart = ({ tasks, onStart, onStop }: Props) => {
   return (
     <VStack gap="$stack" width="100%">
       <Button
+        ref={ref}
         size="xl"
         width="100%"
         minHeight="$20"
