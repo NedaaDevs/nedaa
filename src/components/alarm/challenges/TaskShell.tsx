@@ -22,6 +22,7 @@ import {
   TASK_ENTER_MS,
   TASK_EXIT_MS,
   TASK_RUN_NEXT,
+  TASK_SHELL_MODE,
   TASK_SHELL_PART,
 } from "@/constants/WakeTaskShell";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -41,7 +42,8 @@ import {
 
 const SECOND_MS = 1000;
 
-type Props = {
+type AlarmRun = {
+  mode?: typeof TASK_SHELL_MODE.ALARM;
   tasks: NonEmptyTasks;
   /** When the person opened the task, in epoch ms. */
   openedAt: number;
@@ -55,34 +57,43 @@ type Props = {
   onQuietEnd: () => void;
 };
 
-/** Runs the stack's boards in order, each its steps' times, in quiet time. */
-const TaskShell = ({
-  tasks,
-  openedAt,
-  resume,
-  audible,
-  onComplete,
-  onBack,
-  onQuietStart,
-  onQuietEnd,
-}: Props) => {
+/** A silent run from the picker: no quiet time, no way out, no saved state. */
+type TrialRun = {
+  mode: typeof TASK_SHELL_MODE.TRIAL;
+  tasks: NonEmptyTasks;
+  onComplete: () => void;
+  onBack: () => void;
+};
+
+type Props = AlarmRun | TrialRun;
+
+const noop = () => {};
+
+/** Runs the stack's boards in order, each its steps' times; an alarm's run
+ *  in quiet time, a trial's in silence. */
+const TaskShell = (props: Props) => {
+  const { tasks, onComplete } = props;
+  const alarm = props.mode === TASK_SHELL_MODE.TRIAL ? null : props;
+  const audible = alarm?.audible ?? false;
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const screenReader = useScreenReader();
   const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
   const quietSeconds = screenReader ? QUIET_TIME_SECONDS.SCREEN_READER : QUIET_TIME_SECONDS.DEFAULT;
+  // A trial's clock never sounds, so it shows no strip and earns no way out.
+  const [trialOpenedAt] = useState(Date.now);
   const quiet = useTaskClock({
-    openedAt,
-    resume: resume?.clock,
+    openedAt: alarm?.openedAt ?? trialOpenedAt,
+    resume: alarm?.resume?.clock,
     quietMs: quietSeconds * SECOND_MS,
     audible,
     stepped: reduceMotion,
-    onQuietStart,
+    onQuietStart: alarm?.onQuietStart ?? noop,
     onQuietEnding: hapticWarning,
-    onQuietEnd,
+    onQuietEnd: alarm?.onQuietEnd ?? noop,
   });
 
-  const [position, setPosition] = useState<TaskPosition>(resume?.position ?? FIRST_POSITION);
+  const [position, setPosition] = useState<TaskPosition>(alarm?.resume?.position ?? FIRST_POSITION);
   // Each board, a repeat of the same one included, mounts fresh.
   const [round, setRound] = useState(0);
   // The task the handover panel leads to; no board takes a tap meanwhile.
@@ -117,7 +128,10 @@ const TaskShell = ({
   };
 
   // A solved board's handover leads to the next task, so Back keeps that.
-  const handleBack = () => onBack({ clock: quiet.leave(), position: handover ?? position });
+  const handleBack = () => {
+    if (props.mode === TASK_SHELL_MODE.TRIAL) props.onBack();
+    else props.onBack({ clock: quiet.leave(), position: handover ?? position });
+  };
 
   const task = tasks[position.task];
   const board: Board = TASK_BOARDS[task.id];
@@ -149,17 +163,17 @@ const TaskShell = ({
         ? t("alarm.task.quiet.on")
         : null;
 
-  const backName = t("alarm.task.back");
+  const backName = alarm ? t("alarm.task.back") : t("alarm.task.trial.back");
+  const backLabel = alarm
+    ? t("a11y.backTo", { screen: backName })
+    : t("alarm.task.trial.backToList");
   const stop = t("alarm.task.stop");
+  const wayOut = alarm !== null && quiet.wayOut;
 
   return (
     <VStack flex={1} gap="$stack">
       <HStack alignItems="flex-start" justifyContent="space-between" gap="$stack">
-        <BackLink
-          onPress={handleBack}
-          label={t("a11y.backTo", { screen: backName })}
-          name={backName}
-        />
+        <BackLink onPress={handleBack} label={backLabel} name={backName} />
         {!handover && (taskLine || stepLine) && (
           <VStack alignItems="flex-end" gap="$1.5">
             {taskLine && (
@@ -242,7 +256,7 @@ const TaskShell = ({
       </VStack>
 
       <VStack gap="$stack">
-        {quiet.wayOut && (
+        {wayOut && (
           <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(TASK_ENTER_MS)}>
             <VStack gap="$2">
               <Text size="label" fontWeight="500" color="$muted" textAlign="center">
@@ -263,12 +277,33 @@ const TaskShell = ({
             </VStack>
           </Animated.View>
         )}
-        {audible && (
-          <QuietStrip
-            phase={quiet.phase}
-            secondsLeft={quiet.secondsLeft}
-            fraction={quiet.fraction}
-          />
+        {alarm ? (
+          audible && (
+            <QuietStrip
+              phase={quiet.phase}
+              secondsLeft={quiet.secondsLeft}
+              fraction={quiet.fraction}
+            />
+          )
+        ) : (
+          <HStack
+            testID={TASK_SHELL_PART.TRIAL_STRIP}
+            alignItems="center"
+            justifyContent="center"
+            flexWrap="wrap"
+            gap="$inline"
+            padding="$stack"
+            borderRadius="$card"
+            borderWidth={1.5}
+            borderStyle="dashed"
+            borderColor="$hairline">
+            <Text size="label" bold color="$fg">
+              {t("alarm.task.trial.tag")}
+            </Text>
+            <Text size="label" color="$muted">
+              {t("alarm.task.trial.help")}
+            </Text>
+          </HStack>
         )}
       </VStack>
 
@@ -276,7 +311,7 @@ const TaskShell = ({
       <SpokenStatus testID={TASK_SHELL_PART.PROGRESS_STATUS} message={progressStatus} />
       <SpokenStatus
         testID={TASK_SHELL_PART.WAY_OUT_STATUS}
-        message={quiet.wayOut ? t("alarm.task.wayOut") : null}
+        message={wayOut ? t("alarm.task.wayOut") : null}
       />
     </VStack>
   );

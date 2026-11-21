@@ -6,8 +6,10 @@ import {
   WAKE_TASK_ID,
   WAKE_TASK_IDS,
   WAKE_TASK_MAX_STACK,
+  WAKE_TASK_MOVE,
   WAKE_TASK_STEP_CHOICES,
   type WakeTaskId,
+  type WakeTaskMove,
 } from "@/constants/WakeTask";
 import {
   CHALLENGE_COUNTS,
@@ -58,6 +60,45 @@ const createWakeTask = (id: WakeTaskId, saved: Record<string, unknown> = {}): Wa
   }
 };
 
+/** Whether `id` fits the stack: not in it yet, and the stack not full. */
+export const canAddWakeTask = (tasks: readonly WakeTask[], id: WakeTaskId): boolean =>
+  tasks.length < WAKE_TASK_MAX_STACK && !tasks.some((task) => task.id === id);
+
+/** The stack with `id` last, on its default options, when it fits. */
+export const addWakeTask = (tasks: readonly WakeTask[], id: WakeTaskId): WakeTask[] =>
+  canAddWakeTask(tasks, id) ? [...tasks, createWakeTask(id)] : [...tasks];
+
+export const removeWakeTask = (tasks: readonly WakeTask[], id: WakeTaskId): WakeTask[] =>
+  tasks.filter((task) => task.id !== id);
+
+/** The stack with `id` one place toward `direction`, when it can move. */
+export const moveWakeTask = (
+  tasks: readonly WakeTask[],
+  id: WakeTaskId,
+  direction: WakeTaskMove
+): WakeTask[] => {
+  const from = tasks.findIndex((task) => task.id === id);
+  const to = direction === WAKE_TASK_MOVE.UP ? from - 1 : from + 1;
+  if (from < 0 || to < 0 || to >= tasks.length) return [...tasks];
+  const moved = [...tasks];
+  [moved[from], moved[to]] = [moved[to], moved[from]];
+  return moved;
+};
+
+export type WakeTaskOptionChange = { difficulty?: ChallengeDifficulty; steps?: number };
+
+/** The stack with `id`'s options changed, each kept to what its board offers. */
+export const changeWakeTask = (
+  tasks: readonly WakeTask[],
+  id: WakeTaskId,
+  change: WakeTaskOptionChange
+): WakeTask[] =>
+  tasks.map((task) => (task.id === id ? createWakeTask(id, { ...task, ...change }) : task));
+
+/** The stack's task for `id`, or one on the default options. */
+export const wakeTaskFor = (tasks: readonly WakeTask[], id: WakeTaskId): WakeTask =>
+  tasks.find((task) => task.id === id) ?? createWakeTask(id);
+
 /** A saved stack made valid: known boards, each once, at most the limit. */
 export const normalizeWakeTasks = (input: unknown): WakeTask[] => {
   if (!Array.isArray(input)) return [];
@@ -101,7 +142,7 @@ export const wakeTasksFromLegacyChallenge = (challenge: ChallengeConfig): WakeTa
 
 /** The challenge the native overlay runs for a stack: its first task. */
 export const legacyChallengeFromWakeTasks = (tasks: readonly WakeTask[]): ChallengeConfig => {
-  const plain = { difficulty: DEFAULT_CHALLENGE_CONFIG.difficulty, count: 1 } as const;
+  const plain = { difficulty: WAKE_TASK_DEFAULT_DIFFICULTY, count: 1 } as const;
   const [first] = tasks;
   if (!first) return { type: CHALLENGE_TYPE.NONE, ...plain };
   switch (first.id) {
@@ -113,7 +154,7 @@ export const legacyChallengeFromWakeTasks = (tasks: readonly WakeTask[]): Challe
     case WAKE_TASK_ID.PATTERN:
     case WAKE_TASK_ID.PRAYERS:
     case WAKE_TASK_ID.TAP:
-      return { type: CHALLENGE_TYPE.TAP, ...plain };
+      return DEFAULT_CHALLENGE_CONFIG;
     default: {
       const unhandled: never = first;
       throw new Error(`no challenge for wake task ${JSON.stringify(unhandled)}`);
@@ -139,18 +180,23 @@ export const syncWakeTaskFields = (
 const sameChallenge = (a: ChallengeConfig, b: ChallengeConfig): boolean =>
   a.type === b.type && a.difficulty === b.difficulty && a.count === b.count;
 
+/** The stack and the challenge it maps to, so shown and enforced agree. */
+const pairFor = (tasks: WakeTask[]): Pick<AlarmTypeSettings, "challenge" | "tasks"> => ({
+  challenge: legacyChallengeFromWakeTasks(tasks),
+  tasks,
+});
+
 /** Saved fields made valid; tasks the challenge contradicts are rebuilt. */
 export const readSavedWakeTaskFields = (
   saved: { challenge?: unknown; tasks?: unknown } | undefined
 ): Pick<AlarmTypeSettings, "challenge" | "tasks"> => {
-  const challenge = normalizeLegacyChallenge(saved?.challenge);
-  const derived = wakeTasksFromLegacyChallenge(challenge);
-  if (!Array.isArray(saved?.tasks)) return { challenge, tasks: derived };
+  const derived = wakeTasksFromLegacyChallenge(normalizeLegacyChallenge(saved?.challenge));
+  if (!Array.isArray(saved?.tasks)) return pairFor(derived);
   const tasks = normalizeWakeTasks(saved.tasks);
   // An older build edits the challenge and leaves the saved tasks behind.
   const agrees = sameChallenge(
     legacyChallengeFromWakeTasks(tasks),
     legacyChallengeFromWakeTasks(derived)
   );
-  return { challenge, tasks: agrees ? tasks : derived };
+  return pairFor(agrees ? tasks : derived);
 };

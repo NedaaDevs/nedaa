@@ -15,6 +15,8 @@ import {
 } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { E2E_ID } from "@/constants/E2E";
+import { WAKE_TASK_ID } from "@/constants/WakeTask";
+import { WAKE_TASK_NAME_KEY } from "@/constants/WakeTaskShell";
 import { AppLocale, PlatformType } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { useAlarmStore } from "@/stores/alarm";
@@ -31,6 +33,7 @@ import { ThemeProvider } from "@/test-helpers/theme";
 import { readAlarmPermissions, type AlarmPermission } from "@/utils/alarmPermissions";
 import { deviceTimeZone } from "@/utils/date";
 import { spokenClockTime } from "@/utils/spokenClockTime";
+import { wakeTaskFor } from "@/utils/wakeTasks";
 
 jest.mock("react-native-reanimated", () => jest.requireActual("@/test-helpers/reanimatedMock"));
 jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@/test-helpers/bottomSheetMock"));
@@ -89,7 +92,9 @@ const notNow = () => screen.queryByRole("button", { name: t("common.notNow") });
 const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** The list row that opens one alarm's page; its name starts with the title. */
 const alarmRow = (title: string) =>
-  screen.findByRole("button", { name: new RegExp(`^${literal(title)}, `) });
+  screen.findByRole("button", {
+    name: new RegExp(`^${literal(t("a11y.join", { first: title, second: "" }))}`),
+  });
 /** Now, `days` calendar days on; a clock change cannot move it a day. */
 const daysFromNow = (days: number) => {
   const at = new Date();
@@ -307,6 +312,25 @@ describe("Alarm settings list", () => {
         t("a11y.alarm.streak", { count: 3 }),
       ].join(". ")
     );
+  });
+
+  // The summary reads the task stack, which the legacy challenge cannot name.
+  it("sums up the wake-up tasks the alarm holds", async () => {
+    const settings = useAlarmSettingsStore.getState();
+    settings.setEnabled(ALARM_TYPE.FAJR, true);
+    settings.updateSettings(ALARM_TYPE.FAJR, { tasks: [wakeTaskFor([], WAKE_TASK_ID.PATTERN)] });
+    settings.updateSettings(ALARM_TYPE.FRIDAY, {
+      tasks: [{ id: WAKE_TASK_ID.TAP }, { id: WAKE_TASK_ID.PRAYERS }],
+    });
+    await renderScreen();
+
+    const fajr = await alarmRow(t("alarm.settings.fajrAlarm"));
+    const friday = await alarmRow(t("alarm.settings.fridayAlarm"));
+    const pattern = t(WAKE_TASK_NAME_KEY[WAKE_TASK_ID.PATTERN]);
+    expect(within(fajr).getByText(new RegExp(`^${literal(pattern)} · `))).toBeTruthy();
+    expect(
+      within(friday).getByText(new RegExp(`^${t("alarm.task.count", { count: 2 })} · `))
+    ).toBeTruthy();
   });
 
   // A screen reader says 🌅 as "sunrise", which is also a prayer time here.

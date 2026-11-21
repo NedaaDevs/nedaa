@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
 import {
@@ -9,9 +11,12 @@ import {
   WAKE_TASK_MAX_STACK,
   WAKE_TASK_MAX_STEPS,
   WAKE_TASK_MIN_STEPS,
+  WAKE_TASK_MOVE,
   WAKE_TASK_OPTIONS,
   type WakeTaskSteps,
 } from "@/constants/WakeTask";
+import { TAP_PRESSES } from "@/constants/WakeTaskBoards";
+import { REPO_ROOT } from "@/test-helpers/routeTree";
 import {
   CHALLENGE_COUNTS,
   CHALLENGE_DIFFICULTIES,
@@ -22,11 +27,17 @@ import {
   type WakeTask,
 } from "@/types/alarm";
 import {
+  addWakeTask,
+  canAddWakeTask,
+  changeWakeTask,
   legacyChallengeFromWakeTasks,
+  moveWakeTask,
   normalizeLegacyChallenge,
   normalizeWakeTasks,
   readSavedWakeTaskFields,
+  removeWakeTask,
   syncWakeTaskFields,
+  wakeTaskFor,
   wakeTasksFromLegacyChallenge,
 } from "@/utils/wakeTasks";
 
@@ -76,7 +87,7 @@ const LEGACY_TABLE: {
       {
         saved: legacy(CHALLENGE_TYPE.TAP, difficulty, count),
         tasks: [TAP],
-        written: legacy(CHALLENGE_TYPE.TAP, EASY, 1),
+        written: legacy(CHALLENGE_TYPE.TAP, MEDIUM, 1),
       },
       {
         saved: legacy(CHALLENGE_TYPE.MATH, difficulty, count),
@@ -101,6 +112,9 @@ describe("wake task shapes", () => {
     expect(wakeTasksFromLegacyChallenge(DEFAULT_CHALLENGE_CONFIG)).toEqual(DEFAULT_WAKE_TASKS);
     expect(DEFAULT_ALARM_TYPE_SETTINGS.tasks).toEqual(
       wakeTasksFromLegacyChallenge(DEFAULT_ALARM_TYPE_SETTINGS.challenge)
+    );
+    expect(DEFAULT_ALARM_TYPE_SETTINGS.challenge).toEqual(
+      legacyChallengeFromWakeTasks(DEFAULT_ALARM_TYPE_SETTINGS.tasks)
     );
   });
 
@@ -137,9 +151,27 @@ describe("legacyChallengeFromWakeTasks", () => {
   // The overlay has no Pattern or Prayers board yet.
   it.each([PATTERN_MEDIUM_3, PRAYERS])("writes a tap for a first $id task", (first) => {
     expect(legacyChallengeFromWakeTasks([first, MATH_HARD_2])).toEqual(
-      legacy(CHALLENGE_TYPE.TAP, EASY, 1)
+      legacyChallengeFromWakeTasks([TAP])
     );
   });
+
+  // The overlay asks TAPS_<difficulty> presses per count; the Tap board asks TAP_PRESSES.
+  it.each([TAP, PATTERN_MEDIUM_3, PRAYERS])(
+    "asks the overlay for as many presses as the Tap board for a first $id task",
+    (first) => {
+      const overlay = readFileSync(
+        join(
+          REPO_ROOT,
+          "modules/expo-alarm/android/src/main/java/expo/modules/alarm/AlarmOverlayService.kt"
+        ),
+        "utf8"
+      );
+      const { difficulty, count } = legacyChallengeFromWakeTasks([first]);
+      const perCount = overlay.match(new RegExp(`TAPS_${difficulty.toUpperCase()} = (\\d+)`))?.[1];
+
+      expect(Number(perCount) * count).toBe(TAP_PRESSES);
+    }
+  );
 
   // Every stack the overlay can run survives the trip through the old fields.
   it.each(LEGACY_TABLE)("reads back what it writes for $saved.type", ({ tasks }) => {
@@ -260,27 +292,40 @@ describe("readSavedWakeTaskFields", () => {
     steps: WAKE_TASK_MAX_STEPS,
   };
 
-  // Each saved pair must name one overlay challenge, the saved one.
-  it.each(LEGACY_TABLE)("pairs $saved.type $saved.difficulty ×$saved.count", ({ saved }) => {
-    const stale = [[], [TAP], [MATH_HARD_2], [DHIKR_4], [PATTERN_MEDIUM_3, PRAYERS], null];
+  // What the picker shows is what the overlay runs, from the first load.
+  it.each(LEGACY_TABLE)(
+    "pairs $saved.type $saved.difficulty ×$saved.count",
+    ({ saved, written }) => {
+      const stale = [[], [TAP], [MATH_HARD_2], [DHIKR_4], [PATTERN_MEDIUM_3, PRAYERS], null];
 
-    stale.forEach((tasks) => {
-      const read = readSavedWakeTaskFields({ challenge: saved, tasks });
+      stale.forEach((tasks) => {
+        const read = readSavedWakeTaskFields({ challenge: saved, tasks });
 
-      expect(read.challenge).toEqual(saved);
-      expect(legacyChallengeFromWakeTasks(read.tasks)).toEqual(
-        legacyChallengeFromWakeTasks(wakeTasksFromLegacyChallenge(saved))
-      );
-    });
-  });
+        expect(read.challenge).toEqual(legacyChallengeFromWakeTasks(read.tasks));
+        expect(read.challenge).toEqual(written);
+      });
+    }
+  );
 
   it("keeps a saved stack its challenge stands for", () => {
     const tasks = [MATH_HARD_MAX, PRAYERS, TAP];
 
     expect(readSavedWakeTaskFields({ challenge: MATH_HARD_7, tasks })).toEqual({
-      challenge: MATH_HARD_7,
+      challenge: legacyChallengeFromWakeTasks(tasks),
       tasks,
     });
+  });
+
+  // A pair this build wrote reads back unchanged.
+  it.each<[WakeTask[]]>([
+    [[PATTERN_MEDIUM_3, MATH_HARD_2]],
+    [[DHIKR_4, TAP, PATTERN_MEDIUM_3]],
+    [[PRAYERS]],
+    [[]],
+  ])("reads back a saved %j pair as written", (tasks) => {
+    const saved = { challenge: legacyChallengeFromWakeTasks(tasks), tasks };
+
+    expect(readSavedWakeTaskFields(saved)).toEqual(saved);
   });
 
   it("keeps a stack the overlay runs as a tap", () => {
@@ -310,6 +355,110 @@ describe("readSavedWakeTaskFields", () => {
     expect(readSavedWakeTaskFields(undefined)).toEqual({
       challenge: DEFAULT_CHALLENGE_CONFIG,
       tasks: DEFAULT_WAKE_TASKS,
+    });
+  });
+});
+
+describe("stack edits", () => {
+  it("adds a board at the end", () => {
+    expect(addWakeTask([PRAYERS], WAKE_TASK_ID.TAP)).toEqual([PRAYERS, TAP]);
+  });
+
+  it("adds no board twice and none past the limit", () => {
+    const full = [PRAYERS, TAP, DHIKR_4];
+
+    expect(canAddWakeTask([TAP], WAKE_TASK_ID.TAP)).toBe(false);
+    expect(addWakeTask([TAP], WAKE_TASK_ID.TAP)).toEqual([TAP]);
+    expect(canAddWakeTask(full, WAKE_TASK_ID.MATH)).toBe(false);
+    expect(addWakeTask(full, WAKE_TASK_ID.MATH)).toEqual(full);
+    expect(canAddWakeTask([TAP], WAKE_TASK_ID.MATH)).toBe(true);
+  });
+
+  it("removes a board and keeps the order of the rest", () => {
+    expect(removeWakeTask([PRAYERS, TAP, DHIKR_4], WAKE_TASK_ID.TAP)).toEqual([PRAYERS, DHIKR_4]);
+  });
+
+  it("moves a board one place each way", () => {
+    const stack = [PRAYERS, TAP, DHIKR_4];
+
+    expect(moveWakeTask(stack, WAKE_TASK_ID.TAP, WAKE_TASK_MOVE.UP)).toEqual([
+      TAP,
+      PRAYERS,
+      DHIKR_4,
+    ]);
+    expect(moveWakeTask(stack, WAKE_TASK_ID.TAP, WAKE_TASK_MOVE.DOWN)).toEqual([
+      PRAYERS,
+      DHIKR_4,
+      TAP,
+    ]);
+  });
+
+  it("leaves a stack alone for a move past its end or a missing board", () => {
+    const stack = [PRAYERS, TAP];
+
+    expect(moveWakeTask(stack, WAKE_TASK_ID.PRAYERS, WAKE_TASK_MOVE.UP)).toEqual(stack);
+    expect(moveWakeTask(stack, WAKE_TASK_ID.TAP, WAKE_TASK_MOVE.DOWN)).toEqual(stack);
+    expect(moveWakeTask(stack, WAKE_TASK_ID.MATH, WAKE_TASK_MOVE.UP)).toEqual(stack);
+  });
+
+  it("returns a new array and leaves its input as it was", () => {
+    const stack = [PRAYERS, TAP];
+    const edits = [
+      addWakeTask(stack, WAKE_TASK_ID.MATH),
+      addWakeTask(stack, WAKE_TASK_ID.TAP),
+      removeWakeTask(stack, WAKE_TASK_ID.MATH),
+      moveWakeTask(stack, WAKE_TASK_ID.TAP, WAKE_TASK_MOVE.UP),
+      moveWakeTask(stack, WAKE_TASK_ID.MATH, WAKE_TASK_MOVE.UP),
+    ];
+
+    edits.forEach((edited) => expect(edited).not.toBe(stack));
+    expect(stack).toEqual([PRAYERS, TAP]);
+  });
+});
+
+describe("changeWakeTask", () => {
+  it("changes one task's options and keeps the rest", () => {
+    const stack = [MATH_HARD_2, TAP];
+
+    expect(changeWakeTask(stack, WAKE_TASK_ID.MATH, { difficulty: EASY })).toEqual([
+      { ...MATH_HARD_2, difficulty: EASY },
+      TAP,
+    ]);
+    expect(changeWakeTask(stack, WAKE_TASK_ID.MATH, { steps: 4 })).toEqual([
+      { ...MATH_HARD_2, steps: 4 },
+      TAP,
+    ]);
+  });
+
+  it("keeps steps on the offered choices", () => {
+    expect(changeWakeTask([DHIKR_4], WAKE_TASK_ID.DHIKR, { steps: 9 })).toEqual([
+      { ...DHIKR_4, steps: WAKE_TASK_MAX_STEPS },
+    ]);
+    expect(changeWakeTask([DHIKR_4], WAKE_TASK_ID.DHIKR, { steps: 0 })).toEqual([
+      { ...DHIKR_4, steps: WAKE_TASK_MIN_STEPS },
+    ]);
+  });
+
+  it("gives a board only the options it offers", () => {
+    expect(changeWakeTask([DHIKR_4], WAKE_TASK_ID.DHIKR, { difficulty: HARD })).toEqual([DHIKR_4]);
+    expect(changeWakeTask([TAP], WAKE_TASK_ID.TAP, { steps: 3 })).toEqual([TAP]);
+  });
+
+  it("leaves a stack without the task as it was", () => {
+    expect(changeWakeTask([TAP], WAKE_TASK_ID.MATH, { steps: 3 })).toEqual([TAP]);
+  });
+});
+
+describe("wakeTaskFor", () => {
+  it("reads the stack's own task", () => {
+    expect(wakeTaskFor([TAP, MATH_HARD_2], WAKE_TASK_ID.MATH)).toEqual(MATH_HARD_2);
+  });
+
+  it("gives a task not in the stack its default options", () => {
+    expect(wakeTaskFor([TAP], WAKE_TASK_ID.PATTERN)).toEqual({
+      id: WAKE_TASK_ID.PATTERN,
+      difficulty: WAKE_TASK_DEFAULT_DIFFICULTY,
+      steps: WAKE_TASK_DEFAULT_STEPS,
     });
   });
 });
