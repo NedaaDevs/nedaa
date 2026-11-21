@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { act, renderHook } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { Vibration } from "react-native";
+import * as ExpoAlarm from "expo-alarm";
 
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmScreen } from "@/hooks/useAlarmScreen";
@@ -10,9 +12,6 @@ const mockStartAlarmSound = jest.fn((_name: string) => Promise.resolve(true));
 const mockCompleteAndReschedule = jest.fn((_id: string) => Promise.resolve());
 const mockSnoozeAlarm = jest.fn();
 const mockStopAlarmSound = jest.fn();
-const mockStopAllAlarmEffects = jest.fn(() => {
-  mockNativeVibrating = false;
-});
 // Mirrors the native vibration across start, stop and stop-all; the screen
 // mounts while the alarm already vibrates.
 let mockNativeVibrating = true;
@@ -52,7 +51,19 @@ jest.mock("react-native", () => ({
   BackHandler: { addEventListener: jest.fn(() => ({ remove: jest.fn() })) },
 }));
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
-// The alarm constants import icons; react-native is stubbed here, so stub them too.
+const mockLogWarn = jest.fn();
+jest.mock("@/utils/appLogger", () => ({
+  AppLogger: {
+    create: () => ({
+      d: jest.fn(),
+      i: jest.fn(),
+      w: (tag: string, message: string) => mockLogWarn(tag, message),
+      e: jest.fn(),
+    }),
+  },
+}));
+// The alarm constants import icons, and react-native is stubbed here,
+// so the icons are stubbed too.
 jest.mock("lucide-react-native", () => new Proxy({}, { get: () => () => null }));
 jest.mock("expo-alarm", () => {
   const { CHALLENGE_TYPE, CHALLENGE_DIFFICULTY } = jest.requireActual("expo-alarm");
@@ -62,7 +73,9 @@ jest.mock("expo-alarm", () => {
     isAlarmSoundPlaying: () => false,
     startAlarmSound: (name: string) => mockStartAlarmSound(name),
     setAlarmVolume: jest.fn(),
-    stopAllAlarmEffects: () => mockStopAllAlarmEffects(),
+    stopAllAlarmEffects: jest.fn(() => {
+      mockNativeVibrating = false;
+    }),
     restoreSystemVolume: jest.fn(),
     stopAlarmSound: () => mockStopAlarmSound(),
     stopAlarmVibration: () => mockStopAlarmVibration(),
@@ -91,11 +104,17 @@ const ALARM_ID = "11111111-1111-4111-8111-111111111111";
 const SNOOZE_ID = "22222222-2222-4222-8222-222222222222";
 const IOS_DIR = path.join(__dirname, "../../../ios");
 
-const snoozed = () => ({
-  snoozeId: SNOOZE_ID,
-  snoozeEndTime: new Date(Date.now() + 5 * 60_000),
-  snoozeCount: 1,
-});
+/** A sound start that finishes only when the test says so. */
+const holdSoundStart = () => {
+  let finish: () => void = () => undefined;
+  mockStartAlarmSound.mockImplementationOnce(
+    () =>
+      new Promise<boolean>((resolve) => {
+        finish = () => resolve(true);
+      })
+  );
+  return () => finish();
+};
 
 const mount = (alarmType: string = ScheduledAlarmType.FAJR) =>
   renderHook(() => useAlarmScreen(ALARM_ID, alarmType));
@@ -114,213 +133,51 @@ describe("useAlarmScreen", () => {
     expect(fs.existsSync(path.join(IOS_DIR, `${name}.caf`))).toBe(true);
   });
 
-  it("silences the sound and the native vibration while a challenge is solved", async () => {
+  it("silences the sound and the native vibration in quiet time", async () => {
     const { result } = await mount();
 
-    await act(async () => result.current.handleGraceStart());
+    await act(async () => result.current.handleQuietStart());
 
     expect(mockStopAlarmSound).toHaveBeenCalledTimes(1);
     expect(mockStopAlarmVibration).toHaveBeenCalledTimes(1);
   });
 
-  it.each([
-    [ScheduledAlarmType.FAJR, FAJR_PATTERN],
-    [ScheduledAlarmType.JUMMAH, FRIDAY_PATTERN],
-    [ScheduledAlarmType.CUSTOM, FAJR_PATTERN],
-  ])("restarts a %s alarm's native vibration with its pattern", async (alarmType, pattern) => {
-    mockStoreState = VIBRATING_STORE;
-    const { result } = await mount(alarmType);
+  it("logs a sound that fails to start, and keeps the screen", async () => {
+    mockStartAlarmSound.mockRejectedValueOnce(new Error("no audio session"));
 
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => result.current.handleGraceExpire());
-
-    expect(mockStartAlarmVibration).toHaveBeenCalledWith(pattern);
-  });
-
-  it("keeps the native vibration off after the grace time when vibration is off", async () => {
     const { result } = await mount();
 
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => result.current.handleGraceExpire());
-
-    expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(mockLogWarn).toHaveBeenCalledWith("Sound", expect.stringContaining("no audio session"))
+    );
+    expect(result.current.isDismissed).toBe(false);
   });
 
-  it("leaves no native vibration running once the challenge is solved", async () => {
-    mockStoreState = VIBRATING_STORE;
+  it("rings again when quiet time ends", async () => {
     const { result } = await mount();
-
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => result.current.handleGraceExpire());
-    await act(async () => {
-      await result.current.handleChallengeComplete();
-    });
-
-    expect(mockNativeVibrating).toBe(false);
-  });
-
-  it("does not restart the native vibration after the alarm is dismissed", async () => {
-    mockStoreState = VIBRATING_STORE;
-    const { result } = await mount();
-
-    await act(async () => {
-      await result.current.handleChallengeComplete();
-    });
-    await act(async () => result.current.handleGraceExpire());
-
-    expect(mockStartAlarmVibration).not.toHaveBeenCalled();
-  });
-
-  it("does not restart the native vibration when the snooze succeeds", async () => {
-    mockStoreState = VIBRATING_STORE;
-    mockSnoozeAlarm.mockResolvedValue(snoozed());
-    const { result } = await mount();
-
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => {
-      await result.current.handleSnooze();
-    });
-    await act(async () => result.current.handleGraceExpire());
-
-    expect(mockStartAlarmVibration).not.toHaveBeenCalled();
-  });
-
-  it("restarts the native vibration when the snooze fails during the grace time", async () => {
-    mockStoreState = VIBRATING_STORE;
-    mockSnoozeAlarm.mockResolvedValue(null);
-    const { result } = await mount();
-
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => {
-      await result.current.handleSnooze();
-    });
-
-    expect(mockStartAlarmVibration).toHaveBeenCalledWith(FAJR_PATTERN);
-  });
-
-  it("rings when the grace time ends after a snooze that threw", async () => {
-    mockStoreState = VIBRATING_STORE;
-    mockSnoozeAlarm.mockRejectedValue(new Error("cancel failed"));
-    const { result } = await mount();
-
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => {
-      await result.current.handleSnooze();
-    });
-    mockStartAlarmVibration.mockClear();
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => {
-      await result.current.handleGraceExpire();
-    });
-
-    expect(mockStartAlarmVibration).toHaveBeenCalledWith(FAJR_PATTERN);
-    expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
-  });
-
-  it("does not ring when the grace time ends while a snooze is in flight", async () => {
-    mockStoreState = VIBRATING_STORE;
-    let finishSnooze!: (value: ReturnType<typeof snoozed>) => void;
-    mockSnoozeAlarm.mockReturnValue(new Promise((resolve) => (finishSnooze = resolve)));
-    const { result } = await mount();
-    await act(async () => result.current.handleGraceStart());
     mockStartAlarmSound.mockClear();
 
-    // Sets only refs before its await, so it needs no act() of its own.
-    const snooze = result.current.handleSnooze();
-    await act(async () => result.current.handleGraceExpire());
-    await act(async () => {
-      finishSnooze(snoozed());
-      await snooze;
-    });
+    await act(async () => result.current.handleQuietStart());
+    await act(async () => result.current.handleQuietEnd());
 
-    expect(mockStartAlarmSound).not.toHaveBeenCalled();
-    expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+    expect(mockStartAlarmSound).toHaveBeenCalledTimes(1);
   });
 
-  it("stops a sound that starts after the challenge is solved", async () => {
+  it("keeps the native vibration off after quiet time when vibration is off", async () => {
     const { result } = await mount();
-    await act(async () => result.current.handleGraceStart());
-    let finishSound!: () => void;
-    mockStartAlarmSound.mockImplementationOnce(
-      () => new Promise((resolve) => (finishSound = () => resolve(true)))
-    );
 
-    const ring = result.current.handleGraceExpire();
-    await act(async () => {
-      await result.current.handleChallengeComplete();
-    });
-    mockStopAllAlarmEffects.mockClear();
-    await act(async () => {
-      finishSound();
-      await ring;
-    });
-
-    expect(mockStopAllAlarmEffects).toHaveBeenCalledTimes(1);
-  });
-
-  it("stops a sound that starts after a grace time restarts", async () => {
-    const { result } = await mount();
-    await act(async () => result.current.handleGraceStart());
-    let finishSound!: () => void;
-    mockStartAlarmSound.mockImplementationOnce(
-      () => new Promise((resolve) => (finishSound = () => resolve(true)))
-    );
-
-    const ring = result.current.handleGraceExpire();
-    await act(async () => result.current.handleGraceStart());
-    mockStopAlarmSound.mockClear();
-    await act(async () => {
-      finishSound();
-      await ring;
-    });
-
-    expect(mockStopAlarmSound).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps a newer ring when an older start finishes late", async () => {
-    mockStoreState = VIBRATING_STORE;
-    const { result } = await mount();
-    await act(async () => result.current.handleGraceStart());
-    let finishSound!: () => void;
-    mockStartAlarmSound.mockImplementationOnce(
-      () => new Promise((resolve) => (finishSound = () => resolve(true)))
-    );
-
-    const staleRing = result.current.handleGraceExpire();
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => result.current.handleGraceExpire());
-    mockStopAlarmSound.mockClear();
-    await act(async () => {
-      finishSound();
-      await staleRing;
-    });
-
-    expect(mockStopAlarmSound).not.toHaveBeenCalled();
-    expect(mockNativeVibrating).toBe(true);
-  });
-
-  it("leaves the native vibration off when a grace time restarts during the ring", async () => {
-    mockStoreState = VIBRATING_STORE;
-    const { result } = await mount();
-    await act(async () => result.current.handleGraceStart());
-    let finishSound!: () => void;
-    mockStartAlarmSound.mockImplementationOnce(
-      () => new Promise((resolve) => (finishSound = () => resolve(true)))
-    );
-
-    const ring = result.current.handleGraceExpire();
-    await act(async () => result.current.handleGraceStart());
-    await act(async () => {
-      finishSound();
-      await ring;
-    });
+    await act(async () => result.current.handleQuietStart());
+    await act(async () => result.current.handleQuietEnd());
 
     expect(mockStartAlarmVibration).not.toHaveBeenCalled();
-    expect(mockNativeVibrating).toBe(false);
   });
 
   it("completes the snoozed alarm, not the one it replaced", async () => {
-    mockSnoozeAlarm.mockResolvedValue(snoozed());
+    mockSnoozeAlarm.mockResolvedValue({
+      snoozeId: SNOOZE_ID,
+      snoozeEndTime: new Date(Date.now() + 5 * 60_000),
+      snoozeCount: 1,
+    });
     const { result } = await mount();
 
     await act(async () => {
@@ -344,6 +201,185 @@ describe("useAlarmScreen", () => {
 
     expect(mockStartAlarmSound).toHaveBeenCalled();
     expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
+  });
+
+  describe("with vibration on", () => {
+    beforeEach(() => {
+      mockStoreState = VIBRATING_STORE;
+    });
+
+    /** Rings again with the sound start held, and runs `during` meanwhile. */
+    const ringAroundSilencing = async (during: "handleQuietStart" | "handleChallengeComplete") => {
+      const { result } = await mount();
+      const finishSound = holdSoundStart();
+      let ringing = Promise.resolve();
+      await act(async () => {
+        ringing = result.current.handleQuietEnd();
+      });
+      await act(async () => {
+        await result.current[during]();
+      });
+      jest.clearAllMocks();
+
+      await act(async () => {
+        finishSound();
+        await ringing;
+      });
+    };
+
+    it("stays silent when quiet time starts while the sound restarts", async () => {
+      await ringAroundSilencing("handleQuietStart");
+
+      expect(Vibration.vibrate).not.toHaveBeenCalled();
+
+      expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+      expect(mockStopAlarmSound).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps a newer ring when an older start finishes late", async () => {
+      const { result } = await mount();
+      const finishSound = holdSoundStart();
+      let staleRing = Promise.resolve();
+      await act(async () => {
+        staleRing = result.current.handleQuietEnd();
+      });
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => result.current.handleQuietEnd());
+      mockStopAlarmSound.mockClear();
+
+      await act(async () => {
+        finishSound();
+        await staleRing;
+      });
+
+      expect(mockStopAlarmSound).not.toHaveBeenCalled();
+    });
+
+    it("stays stopped when the alarm stops while the sound restarts", async () => {
+      await ringAroundSilencing("handleChallengeComplete");
+
+      expect(Vibration.vibrate).not.toHaveBeenCalled();
+
+      expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+      expect(ExpoAlarm.stopAllAlarmEffects).toHaveBeenCalledTimes(1);
+      expect(ExpoAlarm.restoreSystemVolume).toHaveBeenCalledTimes(1);
+    });
+
+    // A task opened in a snooze still ends its quiet time.
+    it("stays silent when quiet time ends during a snooze", async () => {
+      mockSnoozeAlarm.mockResolvedValue({
+        snoozeId: SNOOZE_ID,
+        snoozeEndTime: new Date(Date.now() + 5 * 60_000),
+        snoozeCount: 1,
+      });
+      const { result } = await mount();
+      await act(async () => {
+        await result.current.handleSnooze();
+      });
+      mockStartAlarmSound.mockClear();
+      jest.mocked(Vibration.vibrate).mockClear();
+
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => result.current.handleQuietEnd());
+
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+      expect(Vibration.vibrate).not.toHaveBeenCalled();
+      expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [ScheduledAlarmType.FAJR, FAJR_PATTERN],
+      [ScheduledAlarmType.JUMMAH, FRIDAY_PATTERN],
+      [ScheduledAlarmType.CUSTOM, FAJR_PATTERN],
+    ])("restarts a %s alarm's native vibration with its pattern", async (alarmType, pattern) => {
+      const { result } = await mount(alarmType);
+
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => result.current.handleQuietEnd());
+
+      expect(mockStartAlarmVibration).toHaveBeenCalledWith(pattern);
+    });
+
+    it("leaves no native vibration running once the task is solved", async () => {
+      const { result } = await mount();
+
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => result.current.handleQuietEnd());
+      await act(async () => {
+        await result.current.handleChallengeComplete();
+      });
+
+      expect(mockNativeVibrating).toBe(false);
+    });
+
+    it("does not restart the native vibration after the alarm is solved", async () => {
+      const { result } = await mount();
+
+      await act(async () => {
+        await result.current.handleChallengeComplete();
+      });
+      await act(async () => result.current.handleQuietEnd());
+
+      expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+    });
+
+    it("restarts the native vibration when the snooze fails in quiet time", async () => {
+      mockSnoozeAlarm.mockResolvedValue(null);
+      const { result } = await mount();
+
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => {
+        await result.current.handleSnooze();
+      });
+
+      expect(mockStartAlarmVibration).toHaveBeenCalledWith(FAJR_PATTERN);
+    });
+
+    it("rings when quiet time ends after a snooze that threw", async () => {
+      mockSnoozeAlarm.mockRejectedValue(new Error("cancel failed"));
+      const { result } = await mount();
+
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => {
+        await result.current.handleSnooze();
+      });
+      mockStartAlarmVibration.mockClear();
+      await act(async () => result.current.handleQuietStart());
+      await act(async () => {
+        await result.current.handleQuietEnd();
+      });
+
+      expect(mockStartAlarmVibration).toHaveBeenCalledWith(FAJR_PATTERN);
+      expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
+    });
+
+    it("does not ring when quiet time ends while a snooze is in flight", async () => {
+      let finishSnooze: () => void = () => undefined;
+      mockSnoozeAlarm.mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishSnooze = () =>
+            resolve({
+              snoozeId: SNOOZE_ID,
+              snoozeEndTime: new Date(Date.now() + 5 * 60_000),
+              snoozeCount: 1,
+            });
+        })
+      );
+      const { result } = await mount();
+      await act(async () => result.current.handleQuietStart());
+      mockStartAlarmSound.mockClear();
+
+      // Sets only refs before its await, so it needs no act() of its own.
+      const snooze = result.current.handleSnooze();
+      await act(async () => result.current.handleQuietEnd());
+      await act(async () => {
+        finishSnooze();
+        await snooze;
+      });
+
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+      expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+    });
   });
 
   it.each([

@@ -18,6 +18,7 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { ScreenGutterContext } from "@/components/ui/screen-content";
 import { useBackDestination } from "@/components/ui/screen-header/useBackDestination";
+import { BackLink } from "@/components/ui/screen-header/back-link";
 
 // Icons
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
@@ -138,23 +139,7 @@ export const ScreenHeader = ({ title, subtitle, back, action, variant = "stacked
     <VStack gap="$0.5" paddingHorizontal={gutter} paddingTop="$1" paddingBottom="$3.5">
       {(hasBack || action) && (
         <HStack alignItems="center">
-          {hasBack && (
-            <Pressable
-              onPress={handleBack}
-              accessibilityLabel={backLabel}
-              flexDirection="row"
-              alignItems="center"
-              gap="$0.5"
-              // The chevron's side bearing hangs outside the title's column.
-              marginStart="$-1.5">
-              <Icon as={Chevron} size="lg" color="$accentText" />
-              {destinationName && (
-                <Text size="label" fontWeight="600" color="$accentText">
-                  {destinationName}
-                </Text>
-              )}
-            </Pressable>
-          )}
+          {hasBack && <BackLink onPress={handleBack} label={backLabel} name={destinationName} />}
           {actionButton && <Box marginStart="auto">{actionButton}</Box>}
         </HStack>
       )}

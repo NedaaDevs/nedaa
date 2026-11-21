@@ -17,11 +17,11 @@ import { Background } from "@/components/ui/background";
 import { Icon } from "@/components/ui/icon";
 import { Clock } from "lucide-react-native";
 
-import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
+import { useAlarmScreen } from "@/hooks/useAlarmScreen";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
-import { ChallengeWrapper } from "@/components/alarm/challenges";
-import { ChallengeConfig } from "@/types/alarm";
+import { TaskShell, TaskStart } from "@/components/alarm/challenges";
+import type { WakeTask } from "@/types/alarm";
 import { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";
 import { PRESENTATION } from "@/constants/Navigation";
 import { ScheduledAlarmType } from "@/enums/alarm";
@@ -31,6 +31,9 @@ import { deviceTimeZone } from "@/utils/date";
 import { isAlarmDue } from "@/utils/alarmDue";
 import { isScheduledAlarmType } from "@/utils/alarmTypes";
 import { PRAYER_ID } from "@/constants/Prayer";
+import { formatTimeRemaining } from "@/utils/timeRemaining";
+import { formatNumberToLocale } from "@/utils/number";
+import { isNonEmpty, type TaskRunSnapshot } from "@/utils/taskRun";
 
 // Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
 // Friday Dhuhr occurrence; custom alarms have no associated prayer.
@@ -44,6 +47,15 @@ const PRAYER_BY_ALARM: Record<
 
 const DUE_STATUS = { CHECKING: "checking", DUE: "due", NOT_DUE: "notDue" } as const;
 type DueStatus = (typeof DUE_STATUS)[keyof typeof DUE_STATUS];
+
+type TaskRun = Readonly<{
+  /** When the task screen last opened, in epoch ms. */
+  openedAt: number;
+  snoozed: boolean;
+  open: boolean;
+  /** Where Back left the run, so reopening resumes it. */
+  saved?: TaskRunSnapshot;
+}>;
 
 // Links reach this route before the alarm rings (the status bar's next-alarm
 // entry, a stale Live Activity); only a ringing alarm may open the challenge.
@@ -87,15 +99,26 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
     snoozeTimeRemaining,
     canSnooze,
     remainingSnoozes,
-    challengeConfig,
+    tasks,
     handleChallengeComplete,
     handleSnooze,
-    handleGraceStart,
-    handleGraceExpire,
+    handleQuietStart,
+    handleQuietEnd,
   } = useAlarmScreen(alarmId, alarmType);
+  const insets = useSafeAreaInsets();
 
   // A link can carry a type no alarm has; it rings as a custom alarm.
   const type = isScheduledAlarmType(alarmType) ? alarmType : ScheduledAlarmType.CUSTOM;
+
+  // The task run of this ring; Back keeps it, a snooze starting or ending
+  // drops it.
+  const [run, setRun] = useState<TaskRun | null>(null);
+  if (run && run.snoozed !== isSnoozed) setRun(null);
+  const openTask = () =>
+    setRun({ openedAt: Date.now(), snoozed: isSnoozed, open: true, saved: run?.saved });
+  const closeTask = (saved: TaskRunSnapshot) => {
+    if (run) setRun({ ...run, open: false, saved });
+  };
 
   return (
     <>
@@ -114,25 +137,42 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             automaticallyAdjustKeyboardInsets>
-            {isSnoozed && snoozeEndTime ? (
+            {run?.open && isNonEmpty(tasks) ? (
+              <VStack
+                flex={1}
+                paddingTop={insets.top}
+                paddingBottom={insets.bottom}
+                paddingHorizontal="$screen">
+                <VStack flex={1} paddingVertical="$section">
+                  <TaskShell
+                    tasks={tasks}
+                    openedAt={run.openedAt}
+                    resume={run.saved}
+                    audible={!run.snoozed}
+                    onComplete={handleChallengeComplete}
+                    onBack={closeTask}
+                    onQuietStart={handleQuietStart}
+                    onQuietEnd={handleQuietEnd}
+                  />
+                </VStack>
+              </VStack>
+            ) : isSnoozed && snoozeEndTime ? (
               <SnoozedView
                 snoozeTimeRemaining={snoozeTimeRemaining}
-                challengeConfig={challengeConfig}
-                onChallengeComplete={handleChallengeComplete}
-                onGraceStart={handleGraceStart}
-                onGraceExpire={handleGraceExpire}
+                tasks={tasks}
+                onStart={openTask}
+                onStop={handleChallengeComplete}
               />
             ) : (
               <ActiveAlarmView
                 alarmId={alarmId}
                 alarmType={type}
-                challengeConfig={challengeConfig}
+                tasks={tasks}
                 canSnooze={canSnooze}
                 remainingSnoozes={remainingSnoozes}
-                onChallengeComplete={handleChallengeComplete}
+                onStart={openTask}
+                onStop={handleChallengeComplete}
                 onSnooze={handleSnooze}
-                onGraceStart={handleGraceStart}
-                onGraceExpire={handleGraceExpire}
               />
             )}
           </ScrollView>
@@ -144,18 +184,17 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
 
 function SnoozedView({
   snoozeTimeRemaining,
-  challengeConfig,
-  onChallengeComplete,
-  onGraceStart,
-  onGraceExpire,
+  tasks,
+  onStart,
+  onStop,
 }: {
   snoozeTimeRemaining: number;
-  challengeConfig: ChallengeConfig;
-  onChallengeComplete: () => void;
-  onGraceStart: () => void;
-  onGraceExpire: () => void;
+  tasks: readonly WakeTask[];
+  onStart: () => void;
+  onStop: () => void;
 }) {
   const { t } = useTranslation();
+  const snoozeTime = formatNumberToLocale(formatTimeRemaining(snoozeTimeRemaining));
   return (
     <VStack flex={1} alignItems="center" justifyContent="center" padding="$6" gap="$5">
       <Card padding="$8" width="100%" maxWidth={384} alignItems="center">
@@ -171,22 +210,17 @@ function SnoozedView({
             bold
             color="$info"
             accessibilityLabel={t("a11y.alarm.countdown", {
-              time: formatTimeRemaining(snoozeTimeRemaining),
+              time: snoozeTime,
             })}
             accessibilityLiveRegion="polite">
-            {formatTimeRemaining(snoozeTimeRemaining)}
+            {snoozeTime}
           </Text>
           <Text size="sm" color="$typographySecondary">
             {t("alarm.untilRingsAgain")}
           </Text>
 
           <VStack marginTop="$6" width="100%" gap="$2">
-            <ChallengeWrapper
-              config={challengeConfig}
-              onAllComplete={onChallengeComplete}
-              onGraceStart={onGraceStart}
-              onGraceExpire={onGraceExpire}
-            />
+            <TaskStart tasks={tasks} onStart={onStart} onStop={onStop} />
           </VStack>
         </VStack>
       </Card>
@@ -197,23 +231,21 @@ function SnoozedView({
 function ActiveAlarmView({
   alarmId,
   alarmType,
-  challengeConfig,
+  tasks,
   canSnooze,
   remainingSnoozes,
-  onChallengeComplete,
+  onStart,
+  onStop,
   onSnooze,
-  onGraceStart,
-  onGraceExpire,
 }: {
   alarmId: string;
   alarmType: ScheduledAlarmType;
-  challengeConfig: ChallengeConfig;
+  tasks: readonly WakeTask[];
   canSnooze: boolean;
   remainingSnoozes: number;
-  onChallengeComplete: () => void;
+  onStart: () => void;
+  onStop: () => void;
   onSnooze: () => void;
-  onGraceStart: () => void;
-  onGraceExpire: () => void;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -306,12 +338,7 @@ function ActiveAlarmView({
       <VStack flex={1} minHeight="$6" />
 
       <VStack gap="$3" width="100%" maxWidth={420} alignSelf="center">
-        <ChallengeWrapper
-          config={challengeConfig}
-          onAllComplete={onChallengeComplete}
-          onGraceStart={onGraceStart}
-          onGraceExpire={onGraceExpire}
-        />
+        <TaskStart tasks={tasks} onStart={onStart} onStop={onStop} />
 
         {canSnooze && (
           <Button

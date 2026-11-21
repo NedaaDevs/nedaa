@@ -31,7 +31,6 @@ interface MathProblem {
 type Props = {
   difficulty: ChallengeDifficulty;
   onComplete: () => void;
-  onInteraction?: () => void;
 };
 
 const OPERATION_SYMBOL: Record<Operation, string> = { "+": "+", "-": "−", "*": "×" };
@@ -73,7 +72,7 @@ const generateProblem = (difficulty: ChallengeDifficulty): MathProblem => {
   return { num1, num2, operation, answer };
 };
 
-const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
+const MathChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
@@ -85,7 +84,6 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
   const [strikeCount, setStrikeCount] = useState(0);
 
   const handleSubmit = useCallback(() => {
-    onInteraction?.();
     Keyboard.dismiss();
     const parsedAnswer = parseInt(userAnswer, 10);
 
@@ -118,7 +116,6 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
     strikeCount,
     difficulty,
     onComplete,
-    onInteraction,
     hapticSuccess,
     hapticError,
     t,
@@ -128,10 +125,6 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
 
   return (
     <VStack gap="$4" alignItems="center" width="100%">
-      <Text size="sm" color="$typographySecondary" marginBottom="$2">
-        {t("alarm.challenge.solveMath")}
-      </Text>
-
       <Box
         padding="$6"
         borderRadius="$6"
@@ -152,10 +145,7 @@ const MathChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => 
 
       <TextInput
         value={userAnswer}
-        onChangeText={(text) => {
-          onInteraction?.();
-          setUserAnswer(text.replace(/[^0-9-]/g, ""));
-        }}
+        onChangeText={(text) => setUserAnswer(text.replace(/[^0-9-]/g, ""))}
         keyboardType="numeric"
         placeholder={t("alarm.challenge.enterAnswer")}
         placeholderTextColor={theme.placeholderColor.val}

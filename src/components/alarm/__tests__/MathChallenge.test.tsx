@@ -45,6 +45,13 @@ describe("MathChallenge", () => {
     jest.restoreAllMocks();
   });
 
+  // One answer may lead to a next step, so the board does not claim it stops.
+  it("says nothing about stopping the alarm", async () => {
+    await renderChallenge();
+
+    expect(screen.queryByText(t("alarm.challenge.solveMath"))).toBeNull();
+  });
+
   it("reads the problem box as one element", async () => {
     await renderChallenge();
 

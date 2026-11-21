@@ -142,6 +142,13 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<BrandIcon\b/,
     home: "components/ui/brand-icon/index.tsx",
   },
+  // Screen headers and the wake-up task lead back with the same link.
+  {
+    concept: "a back link to the previous place",
+    shows: /\ba11y\.backTo\b/,
+    drawsWith: /<BackLink\b/,
+    home: "components/ui/screen-header/back-link.tsx",
+  },
   // Settings and onboarding offer the same languages, chosen the same way.
   {
     concept: "the language list",
