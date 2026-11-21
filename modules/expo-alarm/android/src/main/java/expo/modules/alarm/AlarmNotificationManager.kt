@@ -67,7 +67,7 @@ class AlarmNotificationManager(private val context: Context) {
         // With overlay permission the native overlay is the challenge, and the full-screen
         // intent only wakes the screen and asks to unlock, since the keyguard hides overlays.
         // Without it, the app's alarm screen is the challenge.
-        val fullScreenIntent = if (android.provider.Settings.canDrawOverlays(context)) {
+        val fullScreenIntent = if (AlarmOverlayService.usesNativeOverlay(context)) {
             buildUnlockPendingIntent(alarmId)
         } else {
             pendingIntent

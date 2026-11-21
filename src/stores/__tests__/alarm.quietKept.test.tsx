@@ -142,6 +142,7 @@ describe("a relaunch during the quiet", () => {
   it("finds the quieted alarm still owed, and opens its screen", async () => {
     const { quietId } = await ringThenQuiet();
     nativeResults.getCompletedAlarmIds = [RINGING_ID];
+    nativeResults.getFutureAlarmIds = [];
     nativeResults.getPendingChallenge = null;
     const { scheduledAlarms } = useAlarmStore.getState();
 

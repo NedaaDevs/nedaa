@@ -242,4 +242,19 @@ describe("an emergency quiet", () => {
       undefined
     );
   });
+
+  // Native reads the count for its snooze cap and for a restore after a reboot.
+  it("tells native the snooze count of a quiet's re-ring", async () => {
+    await quiet();
+    const armed = mockCalls.find(({ name }) => name === "scheduleAlarm");
+
+    expect(armed?.args[0]).toMatchObject({ snoozeCount: 1 });
+  });
+
+  it("tells native the snooze count of a snooze", async () => {
+    await useAlarmStore.getState().snoozeAlarm(ALARM_ID, 5);
+    const armed = mockCalls.find(({ name }) => name === "scheduleAlarm");
+
+    expect(armed?.args[0]).toMatchObject({ snoozeCount: 2 });
+  });
 });

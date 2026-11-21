@@ -1,0 +1,11 @@
+ringing	ageMs	endsByAge
+self	0	false
+self	7200000	false
+self	7200001	false
+self	72000000	false
+other	0	false
+other	7200000	false
+other	7200001	true
+none	7199999	false
+none	7200000	false
+none	7200001	true

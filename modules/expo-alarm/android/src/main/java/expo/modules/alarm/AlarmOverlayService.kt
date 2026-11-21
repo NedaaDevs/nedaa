@@ -97,15 +97,16 @@ class AlarmOverlayService : Service() {
         private const val COLOR_INPUT_BG = "#FF4B5563"       // darkSurfaceActive input well
         private const val COLOR_DISABLED = "#FF374151"       // darkSurfaceHover (disabled)
 
-        private const val GRACE_UPDATE_INTERVAL_MS = 50L
-        private const val AUTO_SNOOZE_TIMEOUT_MS = 15 * 60 * 1000L
 
         @Volatile
         var isRunning = false
             private set
 
+        // With draw-over-apps, this overlay draws each ringing alarm.
+        fun usesNativeOverlay(context: Context): Boolean = Settings.canDrawOverlays(context)
+
         fun start(context: Context, alarmId: String, alarmType: String, title: String) {
-            if (!Settings.canDrawOverlays(context)) return
+            if (!usesNativeOverlay(context)) return
             if (isRunning) return
 
             val intent = Intent(context, AlarmOverlayService::class.java).apply {
@@ -169,34 +170,44 @@ class AlarmOverlayService : Service() {
     private var dhikrStrikeCount: Int = 0
     private var lastDhikrIndex: Int = -1
 
-    private var autoSnoozeRunnable: Runnable? = null
-
     // Grace period state
     private var graceRow: LinearLayout? = null
     private var graceProgressBar: ProgressBar? = null
     private var graceSecondsText: TextView? = null
     private var graceExpiredText: TextView? = null
     private var graceDurationMs: Long = 0
-    private var graceStartTime: Long = 0
-    private var graceActive = false
-    private var graceExpired = false
-    private var graceTimerRunning = false
     private val graceHandler = Handler(Looper.getMainLooper())
-    private val graceRunnable = object : Runnable {
-        override fun run() {
-            if (!graceActive) return
-            val elapsed = System.currentTimeMillis() - graceStartTime
-            val remaining = graceDurationMs - elapsed
-            if (remaining <= 0) {
-                onGraceExpired()
-            } else {
-                val progress = ((remaining.toFloat() / graceDurationMs) * 10000).toInt()
-                graceProgressBar?.progress = progress
-                updateGraceBarColor(remaining.toFloat() / graceDurationMs)
-                updateGraceSeconds(remaining)
-                graceHandler.postDelayed(this, GRACE_UPDATE_INTERVAL_MS)
-            }
+    // Only the grace timer posts here; cancelling it spares the UI callbacks.
+    private val graceTickHandler = Handler(Looper.getMainLooper())
+    private var grace: GraceTimer? = null
+
+    private val graceScheduler = object : GraceTimer.Scheduler {
+        override fun postDelayed(delayMs: Long, action: () -> Unit) {
+            graceTickHandler.postDelayed({ action() }, delayMs)
         }
+
+        override fun cancelAll() = graceTickHandler.removeCallbacksAndMessages(null)
+    }
+
+    private val graceListener = object : GraceTimer.Listener {
+        override fun onSilence() {
+            val audioManager = AlarmAudioManager.getInstance(this@AlarmOverlayService)
+            audioManager.stopAlarmSound()
+            audioManager.stopVibration()
+            AlarmLogger.getInstance(this@AlarmOverlayService).d("AlarmOverlay", "Grace period started: ${graceDurationMs}ms")
+        }
+
+        override fun onTick(remainingMs: Long) {
+            val fraction = remainingMs.toFloat() / graceDurationMs
+            graceProgressBar?.progress = (fraction * 10000).toInt()
+            updateGraceBarColor(fraction)
+            updateGraceSeconds(remainingMs)
+            graceExpiredText?.visibility = View.GONE
+            graceSecondsText?.visibility = View.VISIBLE
+            graceRow?.visibility = View.VISIBLE
+        }
+
+        override fun onExpired() = onGraceExpired()
     }
 
     // Settings for restarting sound after grace
@@ -228,8 +239,6 @@ class AlarmOverlayService : Service() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         showOverlay()
-        startAutoSnoozeTimeout()
-
         return START_NOT_STICKY
     }
 
@@ -255,6 +264,7 @@ class AlarmOverlayService : Service() {
             "dhikr" -> (GRACE_DHIKR[difficulty] ?: 20) * 1000L
             else -> 0L
         }
+        grace = GraceTimer(graceDurationMs, System::currentTimeMillis, graceScheduler, graceListener)
 
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge settings: type=$challengeType, difficulty=$challengeDifficulty, count=$challengeCount, requiredTaps=$requiredTaps, graceDuration=${graceDurationMs}ms")
     }
@@ -276,6 +286,7 @@ class AlarmOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
         isRunning = false
@@ -287,46 +298,10 @@ class AlarmOverlayService : Service() {
     // --- Grace Period ---
 
     private fun onInteraction() {
-        if (graceDurationMs <= 0) return
-
-        // Reset the countdown
-        graceStartTime = System.currentTimeMillis()
-        graceProgressBar?.progress = 10000
-        updateGraceSeconds(graceDurationMs)
-        graceSecondsText?.visibility = View.VISIBLE
-        graceRow?.visibility = View.VISIBLE
-
-        // If expired, silence alarm again
-        if (graceExpired) {
-            graceExpired = false
-            graceExpiredText?.visibility = View.GONE
-            val audioManager = AlarmAudioManager.getInstance(this)
-            audioManager.stopAlarmSound()
-            audioManager.stopVibration()
-        }
-
-        graceActive = true
-
-        // Only start the interval loop once
-        if (!graceTimerRunning) {
-            graceTimerRunning = true
-
-            // Silence alarm on first interaction
-            val audioManager = AlarmAudioManager.getInstance(this)
-            audioManager.stopAlarmSound()
-            audioManager.stopVibration()
-
-            graceHandler.post(graceRunnable)
-            AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period started: ${graceDurationMs}ms")
-        }
+        grace?.interact()
     }
 
     private fun onGraceExpired() {
-        graceActive = false
-        graceExpired = true
-        graceTimerRunning = false
-        graceHandler.removeCallbacksAndMessages(null)
-
         graceProgressBar?.progress = 0
         updateGraceBarColor(0f)
         graceSecondsText?.visibility = View.GONE
@@ -339,23 +314,11 @@ class AlarmOverlayService : Service() {
             audioManager.startVibration(vibrationPattern)
         }
 
-        startAutoSnoozeTimeout()
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period expired, sound restarted")
     }
 
     private fun resetGraceForNextRound() {
-        graceHandler.removeCallbacksAndMessages(null)
-        graceActive = false
-        graceExpired = false
-        graceTimerRunning = false
-        graceStartTime = 0
-        graceRow?.visibility = View.GONE
-        graceSecondsText?.visibility = View.GONE
-        graceProgressBar?.progress = 10000
-        graceExpiredText?.visibility = View.GONE
-
-        // User already started solving — keep challenge visible, restart grace on next interaction
-        startAutoSnoozeTimeout()
+        grace?.nextRound()
     }
 
     private fun updateGraceBarColor(fraction: Float) {
@@ -641,7 +604,9 @@ class AlarmOverlayService : Service() {
         try {
             windowManager?.addView(overlayView, params)
         } catch (e: Exception) {
-            AlarmLogger.getInstance(this).d("AlarmOverlay", "showOverlay addView failed: ${e.message}")
+            AlarmLogger.getInstance(this).w("AlarmOverlay", "showOverlay addView failed: ${e.message}")
+            // A running service with no view would refuse the banner tap.
+            stopSelf()
         }
     }
 
@@ -704,15 +669,8 @@ class AlarmOverlayService : Service() {
     private fun onStartSolving() {
         challengeStarted = true
 
-        // Always silence alarm when user starts solving
-        val audioManager = AlarmAudioManager.getInstance(this)
-        audioManager.stopAlarmSound()
-        audioManager.stopVibration()
-
-        // Start grace timer if configured
-        if (graceDurationMs > 0) {
-            onInteraction()
-        }
+        // Only a grace window silences, so its expiry can bring the sound back.
+        onInteraction()
 
         // Swap UI: hide start button, show challenge
         startSolvingContainer?.visibility = View.GONE
@@ -1215,39 +1173,9 @@ class AlarmOverlayService : Service() {
         }
     }
 
-    // --- Auto-Snooze Timeout ---
-
-    private fun startAutoSnoozeTimeout() {
-        cancelAutoSnoozeTimeout()
-        autoSnoozeRunnable = Runnable {
-            AlarmLogger.getInstance(this).d("AlarmOverlay", "Auto-snooze timeout reached")
-            performAutoSnooze()
-        }
-        graceHandler.postDelayed(autoSnoozeRunnable!!, AUTO_SNOOZE_TIMEOUT_MS)
-    }
-
-    private fun cancelAutoSnoozeTimeout() {
-        autoSnoozeRunnable?.let { graceHandler.removeCallbacks(it) }
-        autoSnoozeRunnable = null
-    }
-
-    private fun performAutoSnooze() {
-        val db = AlarmDatabase.getInstance(this)
-        val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
-        val currentSnoozeCount = db.getSnoozeCount(alarmId)
-
-        if (snoozeEnabled && currentSnoozeCount < snoozeMaxCount) {
-            scheduleSnooze(db, snoozeMaxCount, snoozeDuration, currentSnoozeCount)
-        } else {
-            finishAlarm(AlarmDatabase.OUTCOME_ABANDONED)
-        }
-    }
-
     // --- Snooze & Complete ---
 
     private fun onSnoozeClicked() {
-        cancelAutoSnoozeTimeout()
-
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
@@ -1296,6 +1224,7 @@ class AlarmOverlayService : Service() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
+        grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
 
@@ -1314,17 +1243,15 @@ class AlarmOverlayService : Service() {
         stopSelf()
     }
 
-    private fun completeAlarm() = finishAlarm(AlarmDatabase.OUTCOME_SOLVED)
-
-    private fun finishAlarm(outcome: String) {
-        cancelAutoSnoozeTimeout()
+    private fun completeAlarm() {
+        grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 
         val db = AlarmDatabase.getInstance(this)
-        db.addToCompletedQueue(alarmId, alarmType, title, outcome)
+        db.addToCompletedQueue(alarmId, alarmType, title, AlarmDatabase.OUTCOME_SOLVED)
         db.clearPendingChallenge()
         db.markCompleted(alarmId)
 
@@ -1338,8 +1265,7 @@ class AlarmOverlayService : Service() {
 
         removeOverlay()
 
-        // The completion screen congratulates a wake-up; a timed-out challenge gets none.
-        if (outcome == AlarmDatabase.OUTCOME_SOLVED) try {
+        try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
                 component = ComponentName(packageName, "$packageName.MainActivity")

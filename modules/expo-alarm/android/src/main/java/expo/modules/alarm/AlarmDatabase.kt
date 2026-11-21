@@ -6,14 +6,14 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 class AlarmDatabase private constructor(private val context: Context) :
-    SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
+    SQLiteOpenHelper(context, DB_NAME, null, AlarmMigrations.LATEST_VERSION) {
 
     companion object {
         private const val DB_NAME = "alarm_state.db"
-        private const val DB_VERSION = 5
         // How a challenge ended; only a solved one is a wake-up.
         const val OUTCOME_SOLVED = "solved"
         const val OUTCOME_ABANDONED = "abandoned"
+        const val OUTCOME_STOPPED = "stopped"
         const val SNOOZE_MINUTES = 5
         const val MAX_SNOOZES = 3
 
@@ -109,61 +109,7 @@ class AlarmDatabase private constructor(private val context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < 5) {
-            try {
-                db.execSQL("ALTER TABLE completed_queue ADD COLUMN outcome TEXT NOT NULL DEFAULT 'solved'")
-            } catch (_: Exception) {}
-        }
-        if (oldVersion < 2) {
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS completed_queue (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    alarm_id TEXT NOT NULL,
-                    alarm_type TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    completed_at REAL NOT NULL
-                )
-            """)
-        }
-        if (oldVersion < 3) {
-            // Add snooze_count column to alarms table
-            try {
-                db.execSQL("ALTER TABLE alarms ADD COLUMN snooze_count INTEGER DEFAULT 0")
-            } catch (_: Exception) {}
-
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS snooze_queue (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    original_alarm_id TEXT NOT NULL,
-                    snooze_alarm_id TEXT NOT NULL,
-                    alarm_type TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    snooze_count INTEGER NOT NULL,
-                    snooze_end_time REAL NOT NULL,
-                    snoozed_at REAL NOT NULL
-                )
-            """)
-        }
-        if (oldVersion < 4) {
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS alarm_settings (
-                    alarm_type TEXT PRIMARY KEY,
-                    enabled INTEGER DEFAULT 0,
-                    sound TEXT DEFAULT 'beep',
-                    volume REAL DEFAULT 1.0,
-                    challenge_type TEXT DEFAULT 'tap',
-                    challenge_difficulty TEXT DEFAULT 'easy',
-                    challenge_count INTEGER DEFAULT 1,
-                    gentle_wakeup_enabled INTEGER DEFAULT 0,
-                    gentle_wakeup_duration INTEGER DEFAULT 3,
-                    vibration_enabled INTEGER DEFAULT 1,
-                    vibration_pattern TEXT DEFAULT 'default',
-                    snooze_enabled INTEGER DEFAULT 1,
-                    snooze_max_count INTEGER DEFAULT 3,
-                    snooze_duration INTEGER DEFAULT 5
-                )
-            """)
-        }
+        AlarmMigrations.apply(oldVersion, newVersion, db::execSQL)
     }
 
     override fun onOpen(db: SQLiteDatabase) {
@@ -239,6 +185,21 @@ class AlarmDatabase private constructor(private val context: Context) :
         val ids = mutableListOf<String>()
         val cursor = readableDatabase.rawQuery(
             "SELECT id FROM alarms WHERE is_backup = 0", null
+        )
+        cursor.use {
+            while (it.moveToNext()) {
+                ids.add(it.getString(0))
+            }
+        }
+        return ids
+    }
+
+    // Uncompleted alarms set to ring after nowMs, re-arms included.
+    fun getFutureAlarmIds(nowMs: Long): List<String> {
+        val ids = mutableListOf<String>()
+        val cursor = readableDatabase.rawQuery(
+            "SELECT id FROM alarms WHERE completed = 0 AND is_backup = 0 AND trigger_time > ?",
+            arrayOf(nowMs.toString())
         )
         cursor.use {
             while (it.moveToNext()) {

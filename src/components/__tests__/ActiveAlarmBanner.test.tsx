@@ -1,9 +1,10 @@
 import { Platform } from "react-native";
-import { screen, userEvent, waitFor } from "@testing-library/react-native";
+import { screen, userEvent } from "@testing-library/react-native";
 
 import ActiveAlarmBanner from "@/components/ActiveAlarmBanner";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { PlatformType } from "@/enums/app";
+import { openAlarmOnRequest } from "@/hooks/useAlarmDeepLink";
 import i18n from "@/localization/i18n";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmStreakStore } from "@/stores/alarmStreak";
@@ -35,34 +36,15 @@ jest.mock("@/utils/alarmReport", () => ({
 jest.mock("@/utils/activeAlarmDetector", () => ({
   detectActiveAlarm: () => Promise.resolve(mockActive),
 }));
-jest.mock("@/hooks/useAlarmDeepLink", () => ({
-  navigateToAlarm: jest.fn(),
-  markAlarmHandled: jest.fn(),
-}));
-jest.mock("@/stores/alarmSettings", () => ({
-  useAlarmSettingsStore: {
-    getState: () => ({
-      fajr: { enabled: true, timing: { mode: "atPrayerTime" }, snooze: { maxCount: 3 } },
-    }),
-    persist: {},
-  },
-}));
-jest.mock("@/stores/prayerTimes", () => ({
-  usePrayerTimesStore: {
-    getState: () => ({
-      tomorrowTimings: { timings: { fajr: new Date(Date.now() + 8 * 3600_000).toISOString() } },
-    }),
-  },
-}));
-// The stored times are for a verified place.
-jest.mock("@/utils/timesPlace", () => {
-  const { TIMES_PLACE } = jest.requireActual("@/constants/Location");
-  return { readTimesPlace: async () => TIMES_PLACE.VERIFIED };
-});
+jest.mock("@/hooks/useAlarmDeepLink", () => ({ openAlarmOnRequest: jest.fn() }));
 
 const t = i18n.t.bind(i18n);
+const label = () => t("a11y.alarm.banner.label", { title: mockActive.title });
+const pressBanner = async () =>
+  userEvent.press(await screen.findByRole("button", { name: label() }));
 
 beforeEach(() => {
+  jest.mocked(openAlarmOnRequest).mockClear();
   resetNativeLog();
   resetMemoryKv();
   jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
@@ -87,18 +69,26 @@ beforeEach(() => {
 });
 
 describe("ActiveAlarmBanner", () => {
-  // The dismissed alarm's task was never solved.
-  it("holds the streak when a fresh Fajr alarm is dismissed on Android", async () => {
+  it.each([PlatformType.ANDROID, PlatformType.IOS])(
+    "opens the alarm screen on %s and leaves the alarm ringing",
+    async (os) => {
+      jest.replaceProperty(Platform, "OS", os);
+      await renderWithTheme(<ActiveAlarmBanner />);
+
+      await pressBanner();
+
+      expect(openAlarmOnRequest).toHaveBeenCalledWith(ALARM_ID, ScheduledAlarmType.FAJR);
+      expect(useAlarmStore.getState().scheduledAlarms[ALARM_ID]).toBeDefined();
+      expect(useAlarmStreakStore.getState().lastHeldDate).toBeNull();
+      expect(useAlarmStreakStore.getState().streak).toBe(3);
+    }
+  );
+
+  it("names the alarm for a screen reader and says what a tap does", async () => {
     await renderWithTheme(<ActiveAlarmBanner />);
 
-    await userEvent.press(
-      await screen.findByRole("button", { name: t("alarm.banner.activeAlarm") })
-    );
-
-    await waitFor(() =>
-      expect(useAlarmStreakStore.getState().lastHeldDate).toBe(toLocalDateISO(Date.now()))
-    );
-    expect(useAlarmStreakStore.getState().streak).toBe(3);
-    expect(useAlarmStreakStore.getState().lastSuccessDate).toBe(toLocalDateISO(Date.now() - DAY));
+    const banner = await screen.findByRole("button", { name: label() });
+    expect(banner.props).toMatchObject({ accessibilityHint: t("a11y.alarm.banner.hint") });
+    expect(screen.getByText(t("alarm.banner.tapToOpen", { title: mockActive.title }))).toBeTruthy();
   });
 });

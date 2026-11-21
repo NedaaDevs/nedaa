@@ -20,6 +20,8 @@ export interface ScheduleAlarmParams {
   // iOS only: present a live countdown (Dynamic Island / lock screen) before the
   // alarm fires. Used by the preview alarm; ignored on Android.
   countdown?: boolean;
+  // Snoozes already taken; Android caps the overlay's snooze with it.
+  snoozeCount?: number;
 }
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
@@ -98,6 +100,7 @@ export const scheduleAlarm = async (params: ScheduleAlarmParams): Promise<boolea
     dismissText: params.dismissText ?? "",
     openText: params.openText ?? "",
     countdown: params.countdown ?? false,
+    snoozeCount: params.snoozeCount ?? 0,
   });
 };
 
@@ -114,6 +117,17 @@ export const cancelAllAlarms = async (): Promise<void> => {
 export const getScheduledAlarmIds = async (): Promise<string[]> => {
   if (!isAvailable) return [];
   return NativeModule.getScheduledAlarmIds();
+};
+
+// Android: uncompleted alarms native will ring later, a deferred re-arm
+// included. iOS and a failed read give an empty list.
+export const getFutureAlarmIds = async (): Promise<string[]> => {
+  if (Platform.OS !== "android" || !isAvailable) return [];
+  try {
+    return await NativeModule.getFutureAlarmIds();
+  } catch {
+    return [];
+  }
 };
 
 export const markAlarmCompleted = (id: string): boolean => {
@@ -455,6 +469,30 @@ export const canDrawOverlays = (): boolean => {
   }
 };
 
+// A read only Android answers; iOS, a missing module and a throw give fallback.
+const readAndroid = <T>(read: () => T, fallback: T): T => {
+  if (Platform.OS !== "android" || !isAvailable) return fallback;
+  try {
+    return read();
+  } catch {
+    return fallback;
+  }
+};
+
+// Android: whether draw-over-apps lets the native overlay draw each ringing
+// alarm. Native owns the rule; iOS always uses the app's screen.
+export const usesNativeOverlay = (): boolean =>
+  readAndroid(() => NativeModule.usesNativeOverlay(), false);
+
+// Android: whether the overlay's service runs, from its start until its
+// destroy; a failed draw stops it.
+export const isOverlayShowing = (): boolean =>
+  readAndroid(() => NativeModule.isOverlayShowing(), false);
+
+// Android: the id the alarm service is ringing, null when it is silent.
+export const getRingingAlarmId = (): string | null =>
+  readAndroid(() => NativeModule.getRingingAlarmId() ?? null, null);
+
 export const requestDrawOverlaysPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
@@ -681,6 +719,7 @@ export default {
   cancelAlarm,
   cancelAllAlarms,
   getScheduledAlarmIds,
+  getFutureAlarmIds,
   markAlarmCompleted,
   deleteAlarmFromDB,
   startLiveActivity,
@@ -719,6 +758,9 @@ export default {
   canUseFullScreenIntent,
   requestFullScreenIntentPermission,
   canDrawOverlays,
+  usesNativeOverlay,
+  isOverlayShowing,
+  getRingingAlarmId,
   requestDrawOverlaysPermission,
   getDeviceManufacturer,
   hasAutoStartSettings,

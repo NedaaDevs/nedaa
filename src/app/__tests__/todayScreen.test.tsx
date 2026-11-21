@@ -120,7 +120,7 @@ describe("Today", () => {
   it("scrolls an active alarm's banner with the day", async () => {
     mockActiveAlarm = { alarmId: ALARM_ID, alarmType: ALARM_TYPE.FAJR, title: ALARM_TITLE };
     await renderToday();
-    const name = i18n.t("alarm.banner.activeAlarm");
+    const name = i18n.t("a11y.alarm.banner.label", { title: ALARM_TITLE });
 
     const banner = await screen.findByRole("button", { name });
     const scroll = screen.getByTestId(TODAY_SCREEN_PART.SCROLL);
