@@ -2,6 +2,7 @@ import { X } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import DhikrWord from "@/components/alarm/challenges/DhikrWord";
 import { Box } from "@/components/ui/box";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -61,6 +62,47 @@ export const CardMark = ({
   </Box>
 );
 
+/** A card's label, in the type its kind takes. */
+const CardLabel = ({ kind, label }: { kind: AnswerCardKind; label: string }) => {
+  switch (kind) {
+    case ANSWER_CARD_KIND.NUMERAL:
+      return (
+        <Text
+          color="$fg"
+          fontWeight="600"
+          numeric
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          fontSize={BOARD_TYPE.CARD_NUMERAL.fontSize}
+          lineHeight={BOARD_TYPE.CARD_NUMERAL.lineHeight}>
+          {label}
+        </Text>
+      );
+    case ANSWER_CARD_KIND.WORD:
+      return (
+        <Text
+          color="$fg"
+          size="headline"
+          typography="helper"
+          fontWeight="600"
+          numberOfLines={1}
+          adjustsFontSizeToFit>
+          {label}
+        </Text>
+      );
+    case ANSWER_CARD_KIND.DHIKR:
+      return (
+        <DhikrWord type={BOARD_TYPE.CARD_DHIKR} numberOfLines={1} adjustsFontSizeToFit>
+          {label}
+        </DhikrWord>
+      );
+    default: {
+      const unhandled: never = kind;
+      throw new Error(`no card label for ${unhandled}`);
+    }
+  }
+};
+
 /** One answer on a board's grid; only a card at rest takes a press. */
 const AnswerCard = (props: Props) => {
   const { label, spoken, kind, state, onPress } = props;
@@ -95,28 +137,7 @@ const AnswerCard = (props: Props) => {
           ? { opacity: 1 }
           : { ...press.pressStyle, opacity: 1, backgroundColor: "$pressed", borderColor: "$fg" }
       }>
-      {kind === ANSWER_CARD_KIND.NUMERAL ? (
-        <Text
-          color="$fg"
-          fontWeight="600"
-          numeric
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          fontSize={BOARD_TYPE.CARD_NUMERAL.fontSize}
-          lineHeight={BOARD_TYPE.CARD_NUMERAL.lineHeight}>
-          {label}
-        </Text>
-      ) : (
-        <Text
-          color="$fg"
-          size="headline"
-          typography="helper"
-          fontWeight="600"
-          numberOfLines={1}
-          adjustsFontSizeToFit>
-          {label}
-        </Text>
-      )}
+      <CardLabel kind={kind} label={label} />
       {wrong && (
         <CardMark tone="$danger">
           <Icon as={X} size="sm" color="$danger" />

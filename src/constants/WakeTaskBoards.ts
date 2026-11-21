@@ -86,8 +86,9 @@ export const ANSWER_CARD_STATE = {
 
 export type AnswerCardState = (typeof ANSWER_CARD_STATE)[keyof typeof ANSWER_CARD_STATE];
 
-/** What a card holds: a numeral, or a word such as a prayer's name. */
-export const ANSWER_CARD_KIND = { NUMERAL: "numeral", WORD: "word" } as const;
+/** What a card holds: a numeral, a word such as a prayer's name, or a
+ *  dhikr's word in the Arabic face. */
+export const ANSWER_CARD_KIND = { NUMERAL: "numeral", WORD: "word", DHIKR: "dhikr" } as const;
 
 export type AnswerCardKind = (typeof ANSWER_CARD_KIND)[keyof typeof ANSWER_CARD_KIND];
 
@@ -95,6 +96,7 @@ export type AnswerCardKind = (typeof ANSWER_CARD_KIND)[keyof typeof ANSWER_CARD_
 export const ANSWER_CARD_MIN_HEIGHT = {
   [ANSWER_CARD_KIND.NUMERAL]: "$24",
   [ANSWER_CARD_KIND.WORD]: 72,
+  [ANSWER_CARD_KIND.DHIKR]: 88,
 } as const satisfies Record<AnswerCardKind, string | number>;
 
 /** What a tap on a prayer card does to the board. */
@@ -149,7 +151,28 @@ export const BOARD_TYPE = {
   CARD_NUMERAL: { fontSize: 44, lineHeight: 51 },
   TAP_COUNT: { fontSize: 56, lineHeight: 73 },
   TAP_TARGET: { fontSize: 28, lineHeight: 42 },
+  // Arabic with full tashkeel: the line box clears the marks on both sides.
+  DHIKR: { fontSize: 30, lineHeight: 63 },
+  CARD_DHIKR: { fontSize: 26, lineHeight: 49 },
 } as const;
+
+/** Asking for the word, holding the completed dhikr, or solved. */
+export const DHIKR_PHASE = { ASKING: "asking", HELD: "held", SOLVED: "solved" } as const;
+
+export type DhikrPhase = (typeof DHIKR_PHASE)[keyof typeof DHIKR_PHASE];
+
+/** A dhikr's word fades into its gap over this. */
+export const DHIKR_FILL_MS = 280;
+
+/** How long a completed dhikr stays before another replaces it, in ms; a
+ *  screen reader's hold also waits for the announcement, up to CEILING. */
+export const DHIKR_HOLD_MS = { DEFAULT: 1500, SCREEN_READER: 5000, CEILING: 20000 } as const;
+
+/** Android has no end-of-speech event: an announcement's time per character. */
+export const SPOKEN_MS_PER_CHARACTER = 80;
+
+/** Spoken either side of a dhikr's gap, so the gap is heard as one. */
+export const DHIKR_SPOKEN_PAUSE = " … ";
 
 /** Test ids for the boards' parts. */
 export const BOARD_PART = {
@@ -164,6 +187,10 @@ export const BOARD_PART = {
   PRAYER_PLACE: "prayer-place",
   PRAYER_LINE: "prayer-line",
   PRAYER_STATUS: "prayer-status",
+  DHIKR_TEXT: "dhikr-text",
+  DHIKR_SLOT: "dhikr-slot",
+  DHIKR_NOTE: "dhikr-note",
+  DHIKR_MESSAGE: "dhikr-message",
 } as const;
 
 /** The four pads, left to right then top to bottom, in every language. */

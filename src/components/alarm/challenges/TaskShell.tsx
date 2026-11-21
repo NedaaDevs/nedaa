@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import EmergencyQuiet from "@/components/alarm/challenges/EmergencyQuiet";
 import QuietBanner from "@/components/alarm/challenges/QuietBanner";
 import QuietStrip from "@/components/alarm/challenges/QuietStrip";
-import { TASK_BOARDS, type Board } from "@/components/alarm/challenges/taskBoards";
+import { REVIEWED_BOARDS, TASK_BOARDS, type Board } from "@/components/alarm/challenges/taskBoards";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -39,6 +39,7 @@ import {
   stepsOf,
   taskName,
   type NonEmptyTasks,
+  type TaskDraws,
   type TaskPosition,
   type TaskRunSnapshot,
 } from "@/utils/taskRun";
@@ -70,6 +71,8 @@ type AlarmRun = {
 type TrialRun = {
   mode: typeof TASK_SHELL_MODE.TRIAL;
   tasks: NonEmptyTasks;
+  /** Runs every board as reviewed, e.g. a dhikr list still under review. */
+  reviewed?: boolean;
   onComplete: () => void;
   onBack: () => void;
 };
@@ -111,6 +114,7 @@ const TaskShell = (props: Props) => {
   const [round, setRound] = useState(0);
   // The task the handover panel leads to; no board takes a tap meanwhile.
   const [handover, setHandover] = useState<TaskPosition | null>(null);
+  const [drawn, setDrawn] = useState<TaskDraws>(alarm?.resume?.drawn ?? {});
 
   const finishHandover = useEffectEvent((next: TaskPosition) => {
     setHandover(null);
@@ -145,11 +149,15 @@ const TaskShell = (props: Props) => {
   // A solved board's handover leads to the next task, so Back keeps that.
   const handleBack = () => {
     if (props.mode === TASK_SHELL_MODE.TRIAL) props.onBack();
-    else props.onBack({ clock: quiet.leave(), position: handover ?? position });
+    else props.onBack({ clock: quiet.leave(), position: handover ?? position, drawn });
   };
 
   const task = tasks[position.task];
-  const board: Board = TASK_BOARDS[task.id];
+  const boards =
+    props.mode === TASK_SHELL_MODE.TRIAL && props.reviewed ? REVIEWED_BOARDS : TASK_BOARDS;
+  const board: Board = boards[task.id];
+  const draw = (item: number) =>
+    setDrawn((memory) => ({ ...memory, [task.id]: [...(memory[task.id] ?? []), item] }));
   const steps = stepsOf(task);
   const taskLine =
     tasks.length > 1
@@ -280,6 +288,8 @@ const TaskShell = (props: Props) => {
               difficulty={difficultyOf(task)}
               onComplete={handleSolved}
               opening={board.saysOpening ? opening : null}
+              drawn={drawn[task.id]}
+              onDraw={draw}
             />
           </Animated.View>
         )}

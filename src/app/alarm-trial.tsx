@@ -20,6 +20,7 @@ import {
   TASK_SHELL_MODE,
   TASK_TRIAL_ALL,
   TASK_TRIAL_PARAM,
+  TASK_TRIAL_REVIEWED,
   WAKE_TASK_DIFFICULTY_KEY,
 } from "@/constants/WakeTaskShell";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
@@ -56,10 +57,10 @@ const describeOptions = (task: WakeTask, t: TFunction): { shown: string; spoken:
   };
 };
 
-type TrialProps = { alarmType: AlarmType; task: string | undefined };
+type TrialProps = { alarmType: AlarmType; task: string | undefined; reviewed: boolean };
 
 /** The run itself, mounted once the saved stack has loaded. */
-const Trial = ({ alarmType, task }: TrialProps) => {
+const Trial = ({ alarmType, task, reviewed }: TrialProps) => {
   const { t } = useTranslation();
   const { settings, update } = useAlarmTypeSettings(alarmType);
   const [tasks] = useState(() => trialTasks(settings.tasks, task));
@@ -74,8 +75,11 @@ const Trial = ({ alarmType, task }: TrialProps) => {
 
   const [tried] = tasks;
   const single: WakeTaskId | null = task !== TASK_TRIAL_ALL && tried ? tried.id : null;
+  // A reviewed board is not the one the alarm would run, so it is not offered.
   const addable =
-    finished && single !== null && canAddWakeTask(settings.tasks, single) ? single : null;
+    finished && !reviewed && single !== null && canAddWakeTask(settings.tasks, single)
+      ? single
+      : null;
   const options = finished && tried && single !== null ? describeOptions(tried, t) : null;
 
   // The person's press, not the trial, changes the saved stack.
@@ -90,6 +94,7 @@ const Trial = ({ alarmType, task }: TrialProps) => {
         <TaskShell
           mode={TASK_SHELL_MODE.TRIAL}
           tasks={tasks}
+          reviewed={reviewed}
           onComplete={() => setFinished(true)}
           onBack={leave}
         />
@@ -158,7 +163,11 @@ export default function AlarmTrialRoute() {
               paddingBottom={insets.bottom}
               paddingHorizontal="$screen">
               {hydrated ? (
-                <Trial alarmType={alarmType} task={params[TASK_TRIAL_PARAM.TASK]} />
+                <Trial
+                  alarmType={alarmType}
+                  task={params[TASK_TRIAL_PARAM.TASK]}
+                  reviewed={params[TASK_TRIAL_PARAM.BOARDS] === TASK_TRIAL_REVIEWED}
+                />
               ) : null}
             </VStack>
           </ScrollView>
