@@ -3,13 +3,16 @@ import path from "path";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { Vibration } from "react-native";
 import * as ExpoAlarm from "expo-alarm";
+import { router } from "expo-router";
 
+import { ALARM_SCREEN_PATH } from "@/constants/Alarm";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmScreen } from "@/hooks/useAlarmScreen";
 import { DEFAULT_VIBRATION_CONFIG, VIBRATION_PATTERNS, VibrationPattern } from "@/types/alarm";
 
 const mockStartAlarmSound = jest.fn((_name: string) => Promise.resolve(true));
-const mockCompleteAndReschedule = jest.fn((_id: string) => Promise.resolve());
+const mockCompleteAndReschedule = jest.fn((_id: string, _ending: object) => Promise.resolve());
 const mockSnoozeAlarm = jest.fn();
 const mockStopAlarmSound = jest.fn();
 // Mirrors the native vibration across start, stop and stop-all; the screen
@@ -66,8 +69,9 @@ jest.mock("@/utils/appLogger", () => ({
 // so the icons are stubbed too.
 jest.mock("lucide-react-native", () => new Proxy({}, { get: () => () => null }));
 jest.mock("expo-alarm", () => {
-  const { CHALLENGE_TYPE, CHALLENGE_DIFFICULTY } = jest.requireActual("expo-alarm");
+  const { ALARM_OUTCOME, CHALLENGE_TYPE, CHALLENGE_DIFFICULTY } = jest.requireActual("expo-alarm");
   return {
+    ALARM_OUTCOME,
     CHALLENGE_TYPE,
     CHALLENGE_DIFFICULTY,
     isAlarmSoundPlaying: () => false,
@@ -91,7 +95,7 @@ jest.mock("@/stores/alarmSettings", () => ({
 }));
 jest.mock("@/utils/alarmReport", () => ({ alarmLog: { e: jest.fn() } }));
 jest.mock("@/utils/alarmScheduler", () => ({
-  completeAndRescheduleAlarm: (id: string) => mockCompleteAndReschedule(id),
+  completeAndRescheduleAlarm: (id: string, ending: object) => mockCompleteAndReschedule(id, ending),
 }));
 const mockMarkAlarmHandled = jest.fn();
 jest.mock("@/hooks/useAlarmDeepLink", () => ({
@@ -187,7 +191,41 @@ describe("useAlarmScreen", () => {
       await result.current.handleChallengeComplete();
     });
 
-    expect(mockCompleteAndReschedule).toHaveBeenCalledWith(SNOOZE_ID);
+    expect(mockCompleteAndReschedule).toHaveBeenCalledWith(SNOOZE_ID, {
+      outcome: ExpoAlarm.ALARM_OUTCOME.SOLVED,
+    });
+  });
+
+  it("completes a solved alarm and opens the completion screen", async () => {
+    const { result } = await mount();
+
+    await act(async () => {
+      await result.current.handleChallengeComplete();
+    });
+
+    expect(mockCompleteAndReschedule).toHaveBeenCalledWith(ALARM_ID, {
+      outcome: ExpoAlarm.ALARM_OUTCOME.SOLVED,
+    });
+    expect(router.replace).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: ALARM_SCREEN_PATH.COMPLETE })
+    );
+  });
+
+  // The completion screen greets a wake-up; a stop goes home.
+  it("records a stop as stopped and goes home", async () => {
+    const { result } = await mount();
+
+    await act(async () => {
+      await result.current.handleStop();
+    });
+
+    expect(ExpoAlarm.stopAllAlarmEffects).toHaveBeenCalled();
+    expect(mockMarkAlarmHandled).toHaveBeenCalledWith(ALARM_ID);
+    expect(mockCompleteAndReschedule).toHaveBeenCalledWith(ALARM_ID, {
+      outcome: ExpoAlarm.ALARM_OUTCOME.STOPPED,
+    });
+    expect(router.replace).toHaveBeenCalledWith(BACK_DESTINATION.HOME.href);
+    expect(result.current.isDismissed).toBe(true);
   });
 
   it("rings again and stays unhandled when the snooze fails", async () => {
@@ -209,7 +247,9 @@ describe("useAlarmScreen", () => {
     });
 
     /** Rings again with the sound start held, and runs `during` meanwhile. */
-    const ringAroundSilencing = async (during: "handleQuietStart" | "handleChallengeComplete") => {
+    const ringAroundSilencing = async (
+      during: "handleQuietStart" | "handleChallengeComplete" | "handleStop"
+    ) => {
       const { result } = await mount();
       const finishSound = holdSoundStart();
       let ringing = Promise.resolve();
@@ -255,15 +295,18 @@ describe("useAlarmScreen", () => {
       expect(mockStopAlarmSound).not.toHaveBeenCalled();
     });
 
-    it("stays stopped when the alarm stops while the sound restarts", async () => {
-      await ringAroundSilencing("handleChallengeComplete");
+    it.each(["handleChallengeComplete", "handleStop"] as const)(
+      "stays stopped when %s runs while the sound restarts",
+      async (end) => {
+        await ringAroundSilencing(end);
 
-      expect(Vibration.vibrate).not.toHaveBeenCalled();
+        expect(Vibration.vibrate).not.toHaveBeenCalled();
 
-      expect(mockStartAlarmVibration).not.toHaveBeenCalled();
-      expect(ExpoAlarm.stopAllAlarmEffects).toHaveBeenCalledTimes(1);
-      expect(ExpoAlarm.restoreSystemVolume).toHaveBeenCalledTimes(1);
-    });
+        expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+        expect(ExpoAlarm.stopAllAlarmEffects).toHaveBeenCalledTimes(1);
+        expect(ExpoAlarm.restoreSystemVolume).toHaveBeenCalledTimes(1);
+      }
+    );
 
     // A task opened in a snooze still ends its quiet time.
     it("stays silent when quiet time ends during a snooze", async () => {

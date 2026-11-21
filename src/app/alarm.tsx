@@ -101,6 +101,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
     remainingSnoozes,
     tasks,
     handleChallengeComplete,
+    handleStop,
     handleSnooze,
     handleQuietStart,
     handleQuietEnd,
@@ -150,6 +151,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
                     resume={run.saved}
                     audible={!run.snoozed}
                     onComplete={handleChallengeComplete}
+                    onStop={handleStop}
                     onBack={closeTask}
                     onQuietStart={handleQuietStart}
                     onQuietEnd={handleQuietEnd}

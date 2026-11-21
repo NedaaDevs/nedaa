@@ -1,18 +1,19 @@
 import { CHALLENGE_TYPE } from "expo-alarm";
 
 import {
+  CHALLENGE_COUNTS,
   WAKE_TASK_DEFAULT_DIFFICULTY,
   WAKE_TASK_DEFAULT_STEPS,
   WAKE_TASK_ID,
   WAKE_TASK_IDS,
   WAKE_TASK_MAX_STACK,
   WAKE_TASK_MOVE,
-  WAKE_TASK_STEP_CHOICES,
+  WAKE_TASK_OPTIONS,
   type WakeTaskId,
   type WakeTaskMove,
+  type WakeTaskSteps,
 } from "@/constants/WakeTask";
 import {
-  CHALLENGE_COUNTS,
   CHALLENGE_DIFFICULTIES,
   CHALLENGE_TYPES,
   DEFAULT_CHALLENGE_CONFIG,
@@ -39,17 +40,27 @@ const pickStep = <T extends number>(choices: readonly T[], value: unknown, fallb
 const readDifficulty = (value: unknown): ChallengeDifficulty =>
   pick(CHALLENGE_DIFFICULTIES, value) ?? WAKE_TASK_DEFAULT_DIFFICULTY;
 
-const readSteps = (value: unknown) =>
-  pickStep(WAKE_TASK_STEP_CHOICES, value, WAKE_TASK_DEFAULT_STEPS);
+/** Saved steps kept to a board's choices; every board offers the default. */
+const readSteps = <T extends number>(choices: readonly T[], value: unknown) =>
+  pickStep<T | WakeTaskSteps>(choices, value, WAKE_TASK_DEFAULT_STEPS);
 
 /** A task for `id`, its options read from `saved` or defaulted. */
 const createWakeTask = (id: WakeTaskId, saved: Record<string, unknown> = {}): WakeTask => {
   switch (id) {
     case WAKE_TASK_ID.MATH:
+      return {
+        id,
+        difficulty: readDifficulty(saved.difficulty),
+        steps: readSteps(WAKE_TASK_OPTIONS[id].stepChoices, saved.steps),
+      };
     case WAKE_TASK_ID.PATTERN:
-      return { id, difficulty: readDifficulty(saved.difficulty), steps: readSteps(saved.steps) };
+      return {
+        id,
+        difficulty: readDifficulty(saved.difficulty),
+        steps: readSteps(WAKE_TASK_OPTIONS[id].stepChoices, saved.steps),
+      };
     case WAKE_TASK_ID.DHIKR:
-      return { id, steps: readSteps(saved.steps) };
+      return { id, steps: readSteps(WAKE_TASK_OPTIONS[id].stepChoices, saved.steps) };
     case WAKE_TASK_ID.PRAYERS:
     case WAKE_TASK_ID.TAP:
       return { id };
@@ -123,16 +134,16 @@ export const normalizeLegacyChallenge = (input: unknown): ChallengeConfig => {
 
 /** The stack a saved challenge stands for. */
 export const wakeTasksFromLegacyChallenge = (challenge: ChallengeConfig): WakeTask[] => {
-  const steps = readSteps(challenge.count);
+  const { difficulty, count: steps } = challenge;
   switch (challenge.type) {
     case CHALLENGE_TYPE.NONE:
       return [];
     case CHALLENGE_TYPE.TAP:
       return [{ id: WAKE_TASK_ID.TAP }];
     case CHALLENGE_TYPE.MATH:
-      return [{ id: WAKE_TASK_ID.MATH, difficulty: challenge.difficulty, steps }];
+      return [createWakeTask(WAKE_TASK_ID.MATH, { difficulty, steps })];
     case CHALLENGE_TYPE.DHIKR:
-      return [{ id: WAKE_TASK_ID.DHIKR, steps }];
+      return [createWakeTask(WAKE_TASK_ID.DHIKR, { steps })];
     default: {
       const unhandled: never = challenge.type;
       throw new Error(`no wake task for challenge ${unhandled}`);

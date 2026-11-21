@@ -12,7 +12,7 @@ export interface ActiveAlarmInfo {
 }
 
 async function autoCompleteStaleAlarm(alarmId: string): Promise<void> {
-  await completeAndRescheduleAlarm(alarmId);
+  await completeAndRescheduleAlarm(alarmId, { outcome: ExpoAlarm.ALARM_OUTCOME.ABANDONED });
   alarmLog.i("Detector", `auto-completed stale alarm ${alarmId}`);
 }
 

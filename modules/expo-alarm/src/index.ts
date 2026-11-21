@@ -203,11 +203,16 @@ export const getCompletedAlarmIds = async (): Promise<string[]> => {
   return NativeModule.getCompletedAlarmIds();
 };
 
-// Completed queue (alarms completed via Android overlay, need JS processing)
-// How an Android overlay challenge ended; only a solved one is a wake-up.
-export const ALARM_OUTCOME = { SOLVED: "solved", ABANDONED: "abandoned" } as const;
+// How an alarm ended; only a solved one is a wake-up. The overlay writes
+// SOLVED or ABANDONED; STOPPED is the task screen's way out.
+export const ALARM_OUTCOME = {
+  SOLVED: "solved",
+  ABANDONED: "abandoned",
+  STOPPED: "stopped",
+} as const;
 export type AlarmOutcome = (typeof ALARM_OUTCOME)[keyof typeof ALARM_OUTCOME];
 
+// Completed queue (alarms completed via Android overlay, need JS processing)
 export interface CompletedAlarm {
   id: number;
   alarmId: string;

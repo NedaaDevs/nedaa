@@ -89,6 +89,7 @@ const setUp = async (
 ) => {
   const callbacks = {
     onComplete: jest.fn(),
+    onStop: jest.fn(),
     onBack: jest.fn<void, [TaskRunSnapshot]>(),
     onQuietStart: jest.fn(),
     onQuietEnd: jest.fn(),
@@ -399,7 +400,7 @@ describe("TaskShell", () => {
     const WAY_OUT_MS = WAY_OUT_SOUNDING_SECONDS * SECOND;
 
     it("appears after two minutes of sounding time and stops the alarm", async () => {
-      const { user, onComplete } = await setUp([TAP]);
+      const { user, onComplete, onStop } = await setUp([TAP]);
       await advance(QUIET_MS + WAY_OUT_MS - SECOND);
       expect(screen.queryByRole("button", { name: STOP })).toBeNull();
 
@@ -407,7 +408,9 @@ describe("TaskShell", () => {
       expect(screen.getByText(t("alarm.task.wayOut"))).toBeVisible();
       await user.press(screen.getByRole("button", { name: STOP }));
 
-      expect(onComplete).toHaveBeenCalledTimes(1);
+      // A stop is not a solve.
+      expect(onStop).toHaveBeenCalledTimes(1);
+      expect(onComplete).not.toHaveBeenCalled();
     });
 
     it("does not count quiet time toward the two minutes", async () => {
