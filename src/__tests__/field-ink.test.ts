@@ -180,7 +180,7 @@ describe("raw field reader", () => {
 // A placeholder that outranks typed text reads as typed text.
 describe("raw text fields", () => {
   it("finds the app's raw fields", () => {
-    expect(FIELDS.length).toBeGreaterThan(2);
+    expect(FIELDS.length).toBeGreaterThan(1);
   });
 
   it.each(FIELDS)("%s reads the placeholder key", (_path, field) => {

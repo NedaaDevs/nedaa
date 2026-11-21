@@ -99,14 +99,14 @@ describe("counted phrases", () => {
       ],
     ],
     [
-      "a11y.alarm.task.tapsLeft",
+      "alarm.task.tapAsk",
       [
-        "لم تبقَ نقرات",
-        "بقيت نقرة واحدة",
-        "بقيت نقرتان",
-        "بقيت 3 نقرات",
-        "بقيت 11 نقرة",
-        "بقيت 100 نقرة",
+        "النقر على الزر الكبير.",
+        "النقر على الزر الكبير مرة واحدة.",
+        "النقر على الزر الكبير مرتين.",
+        "النقر على الزر الكبير 3 مرات.",
+        "النقر على الزر الكبير 11 مرة.",
+        "النقر على الزر الكبير 100 مرة.",
       ],
     ],
     [
@@ -180,7 +180,7 @@ describe("counted phrases", () => {
     ],
     ["quran.highlight.verseCount", "1 verse", "5 verses"],
     ["alarm.task.startCount", "Start wake-up task", "Start 5 wake-up tasks"],
-    ["a11y.alarm.task.tapsLeft", "1 tap left", "5 taps left"],
+    ["alarm.task.tapAsk", "Tap the large button once.", "Tap the large button 5 times."],
     ["alarm.task.quiet.ending", "Sound returns in 1 second", "Sound returns in 5 seconds"],
     ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
     [
