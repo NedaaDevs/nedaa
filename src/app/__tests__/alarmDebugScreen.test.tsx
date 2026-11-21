@@ -1,9 +1,12 @@
 import { screen, userEvent } from "@testing-library/react-native";
+import { router } from "expo-router";
 
 import AlarmDebugScreen from "@/app/settings/alarm-debug";
 import VolumeSlider from "@/components/alarm/VolumeSlider";
 import { ALARM_TYPE } from "@/constants/Alarm";
 import { ALARM_DEBUG_TEST_SECONDS, alarmDebugScheduleId } from "@/constants/E2E";
+import { WAKE_TASK_ID } from "@/constants/WakeTask";
+import { TASK_TRIAL_PARAM, TASK_TRIAL_PATH, TASK_TRIAL_REVIEWED } from "@/constants/WakeTaskShell";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { renderWithTheme } from "@/test-helpers/theme";
 
@@ -55,5 +58,26 @@ describe("Alarm debug volumes", () => {
       await renderWithTheme(<VolumeSlider value={volume} onChange={jest.fn()} />);
       expect(screen.getAllByRole("radio", { selected: true })).toHaveLength(1);
     }
+  });
+});
+
+describe("Alarm debug dhikr board", () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it("opens a trial of the dhikr task on the reviewed boards", async () => {
+    const push = jest.spyOn(router, "push").mockImplementation(() => {});
+    const user = userEvent.setup();
+    await renderWithTheme(<AlarmDebugScreen />);
+
+    await user.press(screen.getByRole("button", { name: "Try the reviewed dhikr board" }));
+
+    expect(push).toHaveBeenCalledWith({
+      pathname: TASK_TRIAL_PATH,
+      params: {
+        [TASK_TRIAL_PARAM.ALARM_TYPE]: ALARM_TYPE.FAJR,
+        [TASK_TRIAL_PARAM.TASK]: WAKE_TASK_ID.DHIKR,
+        [TASK_TRIAL_PARAM.BOARDS]: TASK_TRIAL_REVIEWED,
+      },
+    });
   });
 });

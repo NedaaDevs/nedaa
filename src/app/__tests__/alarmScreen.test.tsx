@@ -92,6 +92,7 @@ jest.mock("@/components/alarm/challenges", () => {
       soundingMs: mockRun.wayOut ? WAY_OUT_SOUNDING_SECONDS * 1000 : 0,
     },
     position: FIRST_POSITION,
+    drawn: {},
   });
   const Shell = ({ onBack, onStop, onComplete, audible, resume, solved }: MockShellProps) => {
     const [done, setDone] = useState(false);

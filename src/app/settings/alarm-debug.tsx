@@ -38,7 +38,9 @@ import {
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
 import { shareAlarmReport, copyAlarmReport } from "@/utils/alarmReport";
 import { PRAYER_ID } from "@/constants/Prayer";
-import type { ChallengeCount } from "@/constants/WakeTask";
+import { WAKE_TASK_ID, type ChallengeCount } from "@/constants/WakeTask";
+import { TASK_TRIAL_PARAM, TASK_TRIAL_PATH, TASK_TRIAL_REVIEWED } from "@/constants/WakeTaskShell";
+import { ALARM_TYPE } from "@/constants/Alarm";
 import { ALARM_DEBUG_TEST_SECONDS, alarmDebugScheduleId } from "@/constants/E2E";
 
 const AlarmDebugScreen = () => {
@@ -674,6 +676,33 @@ const AlarmDebugScreen = () => {
                   </Button>
                 ))}
               </HStack>
+            </VStack>
+          </Card>
+
+          {/* The one way to the dhikr word board while its list is unreviewed. */}
+          <Card>
+            <VStack gap="$3">
+              <Text size="lg" fontWeight="600" color="$typography">
+                Dhikr Word Board
+              </Text>
+              <Text size="xs" color="$typographySecondary">
+                Trial of the reviewed board. Alarms run the typed board until the list is reviewed.
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={() =>
+                  router.push({
+                    pathname: TASK_TRIAL_PATH,
+                    params: {
+                      [TASK_TRIAL_PARAM.ALARM_TYPE]: ALARM_TYPE.FAJR,
+                      [TASK_TRIAL_PARAM.TASK]: WAKE_TASK_ID.DHIKR,
+                      [TASK_TRIAL_PARAM.BOARDS]: TASK_TRIAL_REVIEWED,
+                    },
+                  })
+                }>
+                <Button.Text>Try the reviewed dhikr board</Button.Text>
+              </Button>
             </VStack>
           </Card>
 
