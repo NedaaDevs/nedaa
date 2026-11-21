@@ -1,6 +1,12 @@
 import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
 import { ALARM_TIMING_MODE, type ALARM_TYPE } from "@/constants/Alarm";
+import {
+  DEFAULT_WAKE_TASKS,
+  type WAKE_TASK_OPTIONS,
+  type WakeTaskId,
+  type WakeTaskSteps,
+} from "@/constants/WakeTask";
 
 export type AlarmType = (typeof ALARM_TYPE)[keyof typeof ALARM_TYPE];
 
@@ -25,6 +31,16 @@ export interface ChallengeConfig {
   difficulty: ChallengeDifficulty;
   count: ChallengeCount;
 }
+
+type WakeTaskFields<Id extends WakeTaskId> = {
+  id: Id;
+} & ((typeof WAKE_TASK_OPTIONS)[Id]["hasDifficulty"] extends true
+  ? { difficulty: ChallengeDifficulty }
+  : unknown) &
+  ((typeof WAKE_TASK_OPTIONS)[Id]["hasSteps"] extends true ? { steps: WakeTaskSteps } : unknown);
+
+/** One board in a stack, carrying exactly the options that board offers. */
+export type WakeTask = { [Id in WakeTaskId]: WakeTaskFields<Id> }[WakeTaskId];
 
 export interface GentleWakeUpConfig {
   enabled: boolean;
@@ -62,6 +78,7 @@ export interface AlarmTypeSettings {
   volume: number;
   timing: TimingConfig;
   challenge: ChallengeConfig;
+  tasks: readonly WakeTask[];
   gentleWakeUp: GentleWakeUpConfig;
   vibration: VibrationConfig;
   snooze: SnoozeConfig;
@@ -115,6 +132,7 @@ export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   volume: 1.0,
   timing: DEFAULT_TIMING_CONFIG,
   challenge: DEFAULT_CHALLENGE_CONFIG,
+  tasks: DEFAULT_WAKE_TASKS,
   gentleWakeUp: DEFAULT_GENTLE_WAKEUP_CONFIG,
   vibration: DEFAULT_VIBRATION_CONFIG,
   snooze: DEFAULT_SNOOZE_CONFIG,

@@ -4,6 +4,7 @@ import Storage from "expo-sqlite/kv-store";
 import * as ExpoAlarm from "expo-alarm";
 
 import { ALARM_TIMING_MODE, ALARM_TYPE } from "@/constants/Alarm";
+import { WAKE_TASK_ID } from "@/constants/WakeTask";
 import type { SOUND_ASSETS } from "@/constants/sounds";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { PlatformType, type PlatformTypeValue } from "@/enums/app";
@@ -11,7 +12,12 @@ import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import type { DayPrayerTimes } from "@/types/prayerTimes";
-import { DEFAULT_VIBRATION_CONFIG, type AlarmType, type TimingConfig } from "@/types/alarm";
+import {
+  DEFAULT_VIBRATION_CONFIG,
+  type AlarmType,
+  type TimingConfig,
+  type WakeTask,
+} from "@/types/alarm";
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
 
@@ -46,7 +52,7 @@ const INITIAL = useAlarmSettingsStore.getState();
 // Golden bytes: a change here orphans every saved alarm setting.
 const PERSISTED_KEY = "alarm-settings-storage";
 const PERSISTED =
-  '{"state":{"fajr":{"enabled":true,"sound":"makkahAthan1","volume":0.5,"timing":{"mode":"atPrayerTime","minutesBefore":0},"challenge":{"type":"tap","difficulty":"easy","count":1},"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}},"friday":{"enabled":false,"sound":"beep","volume":1,"timing":{"mode":"beforePrayerTime","minutesBefore":30},"challenge":{"type":"tap","difficulty":"easy","count":1},"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}}},"version":0}';
+  '{"state":{"fajr":{"enabled":true,"sound":"makkahAthan1","volume":0.5,"timing":{"mode":"atPrayerTime","minutesBefore":0},"challenge":{"type":"tap","difficulty":"easy","count":1},"tasks":[{"id":"tap"}],"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}},"friday":{"enabled":false,"sound":"beep","volume":1,"timing":{"mode":"beforePrayerTime","minutesBefore":30},"challenge":{"type":"tap","difficulty":"easy","count":1},"tasks":[{"id":"tap"}],"gentleWakeUp":{"enabled":false,"durationMinutes":3},"vibration":{"enabled":true,"pattern":"default"},"snooze":{"enabled":true,"maxCount":3,"durationMinutes":5}}},"version":0}';
 
 const mount = (alarmType: AlarmType) => renderHook(() => useAlarmTypeSettings(alarmType));
 
@@ -122,6 +128,56 @@ describe("useAlarmTypeSettings", () => {
     });
   });
 
+  it("sends a stack to Android as the challenge its overlay runs", async () => {
+    onPlatform(PlatformType.ANDROID);
+    const math = {
+      id: WAKE_TASK_ID.MATH,
+      difficulty: ExpoAlarm.CHALLENGE_DIFFICULTY.HARD,
+      steps: 4,
+    } as const satisfies WakeTask;
+    const { result } = await mount(ALARM_TYPE.FAJR);
+
+    await act(async () => result.current.update({ tasks: [math, { id: WAKE_TASK_ID.TAP }] }));
+
+    expect(setNative).toHaveBeenCalledWith(ScheduledAlarmType.FAJR, {
+      challengeType: ExpoAlarm.CHALLENGE_TYPE.MATH,
+      challengeDifficulty: math.difficulty,
+      challengeCount: math.steps,
+    });
+    expect(result.current.settings.challenge.type).toBe(ExpoAlarm.CHALLENGE_TYPE.MATH);
+  });
+
+  // The picker offers counts and difficulties a stack cannot hold.
+  it.each([
+    {
+      type: ExpoAlarm.CHALLENGE_TYPE.TAP,
+      difficulty: ExpoAlarm.CHALLENGE_DIFFICULTY.EASY,
+      count: 3,
+    },
+    {
+      type: ExpoAlarm.CHALLENGE_TYPE.MATH,
+      difficulty: ExpoAlarm.CHALLENGE_DIFFICULTY.HARD,
+      count: 7,
+    },
+    {
+      type: ExpoAlarm.CHALLENGE_TYPE.DHIKR,
+      difficulty: ExpoAlarm.CHALLENGE_DIFFICULTY.HARD,
+      count: 3,
+    },
+  ] as const)("stores and sends a picked $type challenge as picked", async (challenge) => {
+    onPlatform(PlatformType.ANDROID);
+    const { result } = await mount(ALARM_TYPE.FAJR);
+
+    await act(async () => result.current.update({ challenge }));
+
+    expect(result.current.settings.challenge).toEqual(challenge);
+    expect(setNative).toHaveBeenCalledWith(ScheduledAlarmType.FAJR, {
+      challengeType: challenge.type,
+      challengeDifficulty: challenge.difficulty,
+      challengeCount: challenge.count,
+    });
+  });
+
   it("rebuilds an enabled alarm once after a burst of timing changes", async () => {
     jest.useFakeTimers();
     onPlatform(PlatformType.ANDROID);
@@ -153,6 +209,18 @@ describe("useAlarmTypeSettings", () => {
 
     expect(mockCancel).not.toHaveBeenCalled();
     expect(scheduleFriday).not.toHaveBeenCalled();
+    expect(alarmLog.e).toHaveBeenCalled();
+  });
+
+  it("logs a rebuild that throws", async () => {
+    jest.useFakeTimers();
+    scheduleFajr.mockRejectedValue(new Error("native refusal"));
+    enableInStore(ALARM_TYPE.FAJR);
+    const { result } = await mount(ALARM_TYPE.FAJR);
+
+    await act(async () => result.current.update({ timing: BEFORE_15 }));
+    await act(() => jest.runAllTimersAsync());
+
     expect(alarmLog.e).toHaveBeenCalled();
   });
 
