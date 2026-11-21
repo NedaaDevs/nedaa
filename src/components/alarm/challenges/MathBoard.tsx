@@ -11,14 +11,16 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import {
+  ANSWER_CARD_KIND,
+  ANSWER_CARD_PLACE_KEY,
   ANSWER_CARD_POSITIONS,
   ANSWER_CARD_STATE,
   BOARD_PART,
   BOARD_TYPE,
-  MATH_QUESTION_MS,
+  BOARD_SWAP_MS,
   MATH_SPOKEN_KEY,
   MATH_SYMBOL,
-  MATH_WRONG_HOLD_MS,
+  WRONG_CARD_HOLD_MS,
   type AnswerCardPosition,
 } from "@/constants/WakeTaskBoards";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -58,7 +60,7 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
 
   useEffect(() => {
     if (wrong === null) return;
-    const id = setTimeout(replace, MATH_WRONG_HOLD_MS);
+    const id = setTimeout(replace, WRONG_CARD_HOLD_MS);
     return () => clearTimeout(id);
   }, [wrong]);
 
@@ -88,8 +90,8 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
   const question = t(MATH_SPOKEN_KEY[operation], { left, right });
   const line =
     wrong !== null ? t("alarm.task.math.wrong") : asked > 0 ? t("alarm.task.math.new") : "";
-  const entering = reduceMotion ? undefined : FadeIn.duration(MATH_QUESTION_MS.IN);
-  const exiting = reduceMotion ? undefined : FadeOut.duration(MATH_QUESTION_MS.OUT);
+  const entering = reduceMotion ? undefined : FadeIn.duration(BOARD_SWAP_MS.IN);
+  const exiting = reduceMotion ? undefined : FadeOut.duration(BOARD_SWAP_MS.OUT);
 
   return (
     <VStack gap="$stack">
@@ -131,8 +133,12 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
           {ANSWER_CARD_POSITIONS.map((position) => (
             <Grid.Item key={position}>
               <AnswerCard
+                kind={ANSWER_CARD_KIND.NUMERAL}
                 label={formatted(round.cards[position])}
-                position={position}
+                spoken={t("a11y.alarm.task.card", {
+                  label: formatted(round.cards[position]),
+                  place: t(ANSWER_CARD_PLACE_KEY[position]),
+                })}
                 state={stateOf(position)}
                 onPress={() => choose(position)}
               />

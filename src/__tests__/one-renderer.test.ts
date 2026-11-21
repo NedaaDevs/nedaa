@@ -545,6 +545,17 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<SoundPreview\b/,
     home: "components/ui/sound-preview/index.tsx",
   },
+  {
+    concept: "a wake-up board's answer card",
+    shows: /\bANSWER_CARD_STATE\b/,
+    within: /^components\/.*\.tsx$/,
+    drawsWith: /<AnswerCard\b/,
+    home: "components/alarm/challenges/AnswerCard.tsx",
+    fails: {
+      path: "components/alarm/challenges/Fixture.tsx",
+      text: '<Box borderColor={state === ANSWER_CARD_STATE.WRONG ? "$danger" : "$fg"} />',
+    },
+  },
 ];
 
 const FILES: readonly Source[] = sources(SRC).map((path) => ({
