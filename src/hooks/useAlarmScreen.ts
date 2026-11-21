@@ -9,9 +9,23 @@ import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
 import { alarmLog } from "@/utils/alarmReport";
 import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
-import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
+import { VIBRATION_PATTERNS, DEFAULT_ALARM_TYPE_SETTINGS } from "@/types/alarm";
 import { ALARM_SCREEN_PATH, ALARM_TYPE } from "@/constants/Alarm";
+import { PlatformType } from "@/enums/app";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
+import { AppLogger } from "@/utils/appLogger";
+
+const log = AppLogger.create("alarm");
+
+const startSound = async (sound: string, volume: number) => {
+  await ExpoAlarm.startAlarmSound(getNativeSoundName(sound || DEFAULT_ALARM_TYPE_SETTINGS.sound));
+  ExpoAlarm.setAlarmVolume(volume);
+};
+
+/** Starts the alarm sound unless it plays already. */
+const ensureSound = async (sound: string, volume: number) => {
+  if (!ExpoAlarm.isAlarmSoundPlaying()) await startSound(sound, volume);
+};
 
 export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [isSnoozed, setIsSnoozed] = useState(false);
@@ -40,8 +54,6 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const canSnooze = alarmSettings.snooze.enabled && snoozeCount < maxSnoozes;
   const remainingSnoozes = Math.max(0, maxSnoozes - snoozeCount);
 
-  const challengeConfig: ChallengeConfig = alarmSettings.challenge ?? DEFAULT_CHALLENGE_CONFIG;
-
   const vibrationPattern = alarmSettings.vibration.enabled
     ? VIBRATION_PATTERNS[alarmSettings.vibration.pattern]
     : null;
@@ -53,30 +65,16 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     }
   }, [activeAlarmId, isSnoozed, snoozeEndTime]);
 
-  // On Android, the native AlarmService/AlarmOverlayService handles audio.
-  // On iOS, we need to manage audio from React Native.
+  // Android's alarm service plays the sound natively; iOS plays it from here.
   useEffect(() => {
-    if (Platform.OS === "ios") {
-      // iOS: ensure alarm sound is playing when screen mounts
-      const ensureAudioPlaying = async () => {
-        if (isSnoozed || isDismissed) return;
-        try {
-          const isPlaying = ExpoAlarm.isAlarmSoundPlaying();
-          if (!isPlaying) {
-            await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
-            ExpoAlarm.setAlarmVolume(alarmSettings.volume);
-          }
-        } catch {
-          // Silently handle errors
-        }
-      };
-      ensureAudioPlaying();
-    }
-    // Android: native side manages audio, don't interfere
+    if (Platform.OS !== PlatformType.IOS || isSnoozed || isDismissed) return;
+    ensureSound(alarmSettings.sound, alarmSettings.volume).catch((error: unknown) =>
+      log.w("Sound", `alarm sound did not start: ${String(error)}`)
+    );
   }, [isSnoozed, isDismissed, alarmSettings.sound, alarmSettings.volume]);
 
   useEffect(() => {
-    if (Platform.OS !== "android") return;
+    if (Platform.OS !== PlatformType.ANDROID) return;
 
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => true);
     return () => backHandler.remove();
@@ -87,9 +85,6 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     return () => setAlarmScreenActive(null);
   }, [activeAlarmId]);
 
-  // Bumped by a grace start or a snooze; a ring that awaited across one stops.
-  const silenceCountRef = useRef(0);
-  const ringCountRef = useRef(0);
   // Set from the snooze request until the snooze ends.
   const snoozingRef = useRef(false);
 
@@ -121,9 +116,13 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }, [isSnoozed, isDismissed, vibrationPattern]);
 
   const dismissedRef = useRef(false);
+  // Bumped by each silencing, so a sound restart that lands after one yields.
+  const quietGenRef = useRef(0);
+  const ringCountRef = useRef(0);
 
   const handleChallengeComplete = useCallback(async () => {
     dismissedRef.current = true;
+    quietGenRef.current += 1;
     setIsDismissed(true);
     Vibration.cancel();
     ExpoAlarm.stopAllAlarmEffects();
@@ -137,21 +136,20 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }, [activeAlarmId, alarmType]);
 
   const ringAgain = useCallback(async () => {
-    const silenceCount = silenceCountRef.current;
+    const gen = quietGenRef.current;
     const ringCount = ++ringCountRef.current;
-    await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
+    await startSound(alarmSettings.sound, alarmSettings.volume);
     if (dismissedRef.current) {
       // The stop ran before this start, so it is undone again.
       ExpoAlarm.stopAllAlarmEffects();
       ExpoAlarm.restoreSystemVolume();
       return;
     }
-    if (silenceCountRef.current !== silenceCount) {
+    if (quietGenRef.current !== gen) {
       // The native stop is shared, so only the newest ring may stop the sound.
       if (ringCountRef.current === ringCount) ExpoAlarm.stopAlarmSound();
       return;
     }
-    ExpoAlarm.setAlarmVolume(alarmSettings.volume);
     if (vibrationPattern) {
       ExpoAlarm.startAlarmVibration(alarmSettings.vibration.pattern);
       Vibration.vibrate([...vibrationPattern], true);
@@ -163,16 +161,17 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     vibrationPattern,
   ]);
 
-  const handleGraceStart = useCallback(() => {
+  /** Pauses the sound and vibration while the person works on the task. */
+  const handleQuietStart = useCallback(() => {
     if (dismissedRef.current) return;
-    silenceCountRef.current += 1;
+    quietGenRef.current += 1;
     // The alarm vibrates natively; cancel() reaches only a JS vibration.
     Vibration.cancel();
     ExpoAlarm.stopAlarmVibration();
     ExpoAlarm.stopAlarmSound();
   }, []);
 
-  const handleGraceExpire = useCallback(async () => {
+  const handleQuietEnd = useCallback(async () => {
     if (dismissedRef.current || snoozingRef.current) return;
     await ringAgain();
   }, [ringAgain]);
@@ -181,7 +180,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     if (!canSnooze) return;
 
     Vibration.cancel();
-    silenceCountRef.current += 1;
+    quietGenRef.current += 1;
     snoozingRef.current = true;
 
     const snoozeDuration = alarmSettings.snooze.durationMinutes;
@@ -210,16 +209,10 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     snoozeTimeRemaining,
     canSnooze,
     remainingSnoozes,
-    challengeConfig,
+    tasks: alarmSettings.tasks,
     handleChallengeComplete,
     handleSnooze,
-    handleGraceStart,
-    handleGraceExpire,
+    handleQuietStart,
+    handleQuietEnd,
   };
-}
-
-export function formatTimeRemaining(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${String(secs).padStart(2, "0")}`;
 }

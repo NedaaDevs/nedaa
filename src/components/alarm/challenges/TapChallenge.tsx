@@ -13,10 +13,9 @@ import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 type Props = {
   difficulty: ChallengeDifficulty;
   onComplete: () => void;
-  onInteraction?: () => void;
 };
 
-const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
+const TapChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   const { t } = useTranslation();
   const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
@@ -27,7 +26,7 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
 
   const remainingTaps = requiredTaps - tapCount;
   useIosAnnouncement(
-    remainingTaps > 0 ? t("a11y.alarm.tapsRemaining", { count: remainingTaps }) : null
+    remainingTaps > 0 ? t("a11y.alarm.task.tapsLeft", { count: remainingTaps }) : null
   );
 
   useEffect(() => {
@@ -39,7 +38,6 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
   }, [tapCount, requiredTaps, onComplete, hapticSuccess]);
 
   const handleTap = () => {
-    onInteraction?.();
     hapticLight();
     setTapCount((prev) => prev + 1);
   };
@@ -50,7 +48,7 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
         size="5xl"
         bold
         color="$typography"
-        accessibilityLabel={t("a11y.alarm.tapsRemaining", { count: remainingTaps })}
+        accessibilityLabel={t("a11y.alarm.task.tapsLeft", { count: remainingTaps })}
         accessibilityLiveRegion="polite">
         {remainingTaps}
       </Text>
@@ -59,9 +57,7 @@ const TapChallenge: FC<Props> = ({ difficulty, onComplete, onInteraction }) => {
       </Text>
 
       <Button size="xl" width="100%" marginTop="$4" onPress={handleTap}>
-        <Button.Text size="lg">
-          {remainingTaps > 0 ? t("alarm.challenge.tapToDismiss") : t("alarm.challenge.done")}
-        </Button.Text>
+        <Button.Text size="lg">{t("alarm.task.tap")}</Button.Text>
       </Button>
     </VStack>
   );

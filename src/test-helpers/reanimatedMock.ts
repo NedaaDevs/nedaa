@@ -90,3 +90,6 @@ export const FadeIn = {
   duration: () => FadeIn,
   easing: () => FadeIn,
 };
+export const FadeOut = {
+  duration: () => FadeOut,
+};
