@@ -4,6 +4,8 @@ import type { ScreenshotLocale, ScreenshotScreenKey } from "@/constants/Screensh
 export const E2E_ID = {
   ONBOARDING_GET_STARTED: "onboarding-get-started",
   ALARM_ENABLE_SWITCH: "alarm-enable-switch",
+  /** The alarm guide's Skip; it opens by itself on a fresh install. */
+  ALARM_GUIDE_SKIP: "alarm-guide-skip",
   /** The alarm city page's button to the location settings. */
   ALARM_CHOOSE_CITY: "alarm-choose-city",
   /** The city picker's way in on Settings › Location and the fetch error. */

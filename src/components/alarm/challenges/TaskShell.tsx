@@ -18,7 +18,6 @@ import {
   HANDOVER_MS,
   QUIET_ENDING_SECONDS,
   QUIET_PHASE,
-  QUIET_TIME_SECONDS,
   TASK_ENTER_MS,
   TASK_EXIT_MS,
   TASK_RUN_NEXT,
@@ -39,6 +38,7 @@ import {
   type TaskPosition,
   type TaskRunSnapshot,
 } from "@/utils/taskRun";
+import { quietSecondsFor } from "@/utils/taskClock";
 
 const SECOND_MS = 1000;
 
@@ -79,7 +79,7 @@ const TaskShell = (props: Props) => {
   const reduceMotion = useReducedMotion();
   const screenReader = useScreenReader();
   const hapticWarning = useHaptic(HAPTIC_FEEDBACK.WARNING);
-  const quietSeconds = screenReader ? QUIET_TIME_SECONDS.SCREEN_READER : QUIET_TIME_SECONDS.DEFAULT;
+  const quietSeconds = quietSecondsFor(screenReader);
   // A trial's clock never sounds, so it shows no strip and earns no way out.
   const [trialOpenedAt] = useState(Date.now);
   const quiet = useTaskClock({

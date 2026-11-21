@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, type Ref } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, Platform } from "react-native";
+import { ScrollView, Platform, type ScrollViewInstance, type ViewInstance } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { Box } from "@/components/ui/box";
@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { ListRow } from "@/components/ui/list-row";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 import {
@@ -25,8 +26,18 @@ import {
   SnoozeSettings,
   TimingSettings,
 } from "@/components/alarm";
+import AlarmGuide from "@/components/alarm/AlarmGuide";
 
-import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
+import {
+  Volume2,
+  Brain,
+  Vibrate,
+  Clock,
+  Timer,
+  Sunrise,
+  FlaskConical,
+  HelpCircle,
+} from "lucide-react-native";
 
 import {
   ALARM_PREVIEW_STATE,
@@ -34,12 +45,20 @@ import {
   PREVIEW_ALARM_SECONDS,
   type AlarmPreviewState,
 } from "@/constants/Alarm";
+import {
+  ALARM_GUIDE_RETURN,
+  ALARM_GUIDE_ROW_TEST_ID,
+  ALARM_TASK_SECTION_TEST_ID,
+  type AlarmGuideReturn,
+} from "@/constants/AlarmGuide";
 import { E2E_ID } from "@/constants/E2E";
 import { TASK_TRIAL_PARAM, TASK_TRIAL_PATH } from "@/constants/WakeTaskShell";
 import { PlatformType } from "@/enums/app";
+import { useAlarmGuide } from "@/hooks/useAlarmGuide";
 import { useAlarmOn } from "@/hooks/useAlarmOn";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { canTurnOnAlarm } from "@/utils/alarmReadiness";
 import { schedulePreviewAlarm } from "@/utils/alarmScheduler";
@@ -48,10 +67,12 @@ import { toScheduledAlarmType } from "@/utils/alarmTypes";
 type SettingsSectionProps = {
   title: string;
   icon: React.ComponentType<any>;
+  /** The title's view, where reader focus can land. */
+  titleRef?: Ref<ViewInstance>;
   children: React.ReactNode;
 };
 
-const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
+const SettingsSection = ({ title, icon, titleRef, children }: SettingsSectionProps) => (
   <Card marginHorizontal="$4" marginBottom="$4" borderRadius="$8">
     <VStack gap="$3">
       <HStack alignItems="center" gap="$2">
@@ -64,7 +85,12 @@ const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
           justifyContent="center">
           <Icon as={icon} size="md" color="$typography" />
         </Box>
-        <Text size="md" fontWeight="600" color="$typography" accessibilityRole="header">
+        <Text
+          ref={titleRef}
+          size="md"
+          fontWeight="600"
+          color="$typography"
+          accessibilityRole="header">
           {title}
         </Text>
       </HStack>
@@ -83,6 +109,26 @@ const AlarmTypeSettingsScreen = () => {
 
   const { settings, update, setEnabled } = useAlarmTypeSettings(alarmType);
   const shownOn = useAlarmOn(alarmType);
+  const reduceMotion = useReducedMotion();
+
+  const guide = useAlarmGuide();
+  const scroller = useRef<ScrollViewInstance>(null);
+  const screenTop = useRef<ViewInstance>(null);
+  const guideRow = useRef<ViewInstance>(null);
+  const pickerTitle = useRef<ViewInstance>(null);
+  const pickerY = useRef(0);
+  const [guideReturn, setGuideReturn] = useState<AlarmGuideReturn>(ALARM_GUIDE_RETURN.TOP);
+
+  const showGuide = () => {
+    setGuideReturn(ALARM_GUIDE_RETURN.ROW);
+    guide.show();
+  };
+
+  const tryTaskFromGuide = () => {
+    setGuideReturn(ALARM_GUIDE_RETURN.PICKER);
+    scroller.current?.scrollTo({ y: pickerY.current, animated: !reduceMotion });
+    guide.close();
+  };
 
   const [previewState, setPreviewState] = useState<AlarmPreviewState>(ALARM_PREVIEW_STATE.IDLE);
   // Seconds left in the pending window, ticked down live for the button label.
@@ -166,6 +212,7 @@ const AlarmTypeSettingsScreen = () => {
       <ScreenHeader title={title} back={{ fallback: BACK_DESTINATION.SETTINGS_ALARM }} />
 
       <ScrollView
+        ref={scroller}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1} paddingTop="$4">
@@ -173,7 +220,7 @@ const AlarmTypeSettingsScreen = () => {
           <Card marginHorizontal="$4" marginBottom="$4" borderRadius="$8">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
-                <Text size="lg" fontWeight="600" color="$typography">
+                <Text ref={screenTop} size="lg" fontWeight="600" color="$typography">
                   {t("alarm.settings.enableAlarm")}
                 </Text>
                 <Text size="sm" color="$typographySecondary">
@@ -238,13 +285,19 @@ const AlarmTypeSettingsScreen = () => {
                 </SettingsSection>
               )}
 
-              <SettingsSection title={t("alarm.task.picker")} icon={Brain}>
-                <TaskPicker
-                  tasks={settings.tasks}
-                  onChange={(tasks) => update({ tasks })}
-                  onTry={openTrial}
-                />
-              </SettingsSection>
+              <Box
+                testID={ALARM_TASK_SECTION_TEST_ID}
+                onLayout={({ nativeEvent }) => {
+                  pickerY.current = nativeEvent.layout.y;
+                }}>
+                <SettingsSection title={t("alarm.task.picker")} icon={Brain} titleRef={pickerTitle}>
+                  <TaskPicker
+                    tasks={settings.tasks}
+                    onChange={(tasks) => update({ tasks })}
+                    onTry={openTrial}
+                  />
+                </SettingsSection>
+              </Box>
 
               {/* Vibration Settings */}
               <SettingsSection title={t("alarm.settings.vibration")} icon={Vibrate}>
@@ -281,8 +334,32 @@ const AlarmTypeSettingsScreen = () => {
               </SettingsSection>
             </>
           )}
+
+          <Box marginHorizontal="$4">
+            <ListRow
+              ref={guideRow}
+              testID={ALARM_GUIDE_ROW_TEST_ID}
+              icon={HelpCircle}
+              title={t("alarm.guide.row")}
+              hint={t("a11y.alarm.guide.rowHint")}
+              onPress={showGuide}
+            />
+          </Box>
         </VStack>
       </ScrollView>
+
+      <AlarmGuide
+        open={guide.open}
+        onClose={guide.close}
+        onTryTask={shownOn ? tryTaskFromGuide : undefined}
+        finalFocusRef={
+          guideReturn === ALARM_GUIDE_RETURN.ROW
+            ? guideRow
+            : guideReturn === ALARM_GUIDE_RETURN.PICKER
+              ? pickerTitle
+              : screenTop
+        }
+      />
     </Background>
   );
 };

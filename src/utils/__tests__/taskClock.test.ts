@@ -2,19 +2,23 @@ import {
   QUIET_BAR_STEP_SECONDS,
   QUIET_ENDING_SECONDS,
   QUIET_PHASE,
+  QUIET_TIME_SECONDS,
   TASK_CLOCK_MAX_GAIN_MS,
   TASK_CLOCK_TICK_MS,
   WAY_OUT_SOUNDING_SECONDS,
 } from "@/constants/WakeTaskShell";
+import i18n from "@/localization/i18n";
 import {
   advanceTaskClock,
   endQuiet,
   quietFraction,
   quietPhase,
+  quietSecondsFor,
   quietSecondsLeft,
   restartQuiet,
   resumeTaskClock,
   startTaskClock,
+  wayOutSentence,
   wayOutShown,
   type TaskClock,
 } from "@/utils/taskClock";
@@ -140,6 +144,24 @@ describe("taskClock", () => {
 
       expect(clock.soundingMs).toBe(100 * SECOND);
       expect(wayOutShown(clock)).toBe(false);
+    });
+
+    it("is announced at the minute it appears", () => {
+      const said = /After (\d+) minutes?/.exec(wayOutSentence(i18n.t));
+      const minutes = Number(said?.[1]);
+      const at = OPENED + QUIET_MS + minutes * 60 * SECOND;
+
+      expect(minutes).toBeGreaterThan(0);
+      expect(wayOutShown(runTo(at - SECOND))).toBe(false);
+      expect(wayOutShown(runTo(at))).toBe(true);
+    });
+  });
+
+  describe("quiet time length", () => {
+    it("is longer with a screen reader on", () => {
+      expect(quietSecondsFor(false)).toBe(QUIET_TIME_SECONDS.DEFAULT);
+      expect(quietSecondsFor(true)).toBe(QUIET_TIME_SECONDS.SCREEN_READER);
+      expect(quietSecondsFor(true)).toBeGreaterThan(quietSecondsFor(false));
     });
   });
 

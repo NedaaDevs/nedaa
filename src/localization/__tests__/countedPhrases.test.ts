@@ -131,6 +131,28 @@ describe("counted phrases", () => {
         "النقر على الزر 100 مرة.",
       ],
     ],
+    [
+      "alarm.guide.task.quiet",
+      [
+        "لا يتوقف الصوت عند بدء المهمة ولا بعد إكمال أي خطوة.",
+        "يتوقف الصوت ثانية واحدة عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت ثانيتين عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت 3 ثوانٍ عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت 11 ثانية عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت 100 ثانية عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+      ],
+    ],
+    [
+      "alarm.guide.try.stack",
+      [
+        "لا يمكن اختيار أي مهمة للمنبّه.",
+        "يمكن اختيار مهمة واحدة فقط للمنبّه.",
+        "يمكن اختيار مهمتين على الأكثر للمنبّه، تُؤدّى إحداهما بعد الأخرى.",
+        "يمكن اختيار 3 مهام على الأكثر للمنبّه، تُؤدّى واحدة تلو الأخرى.",
+        "يمكن اختيار 11 مهمة على الأكثر للمنبّه، تُؤدّى واحدة تلو الأخرى.",
+        "يمكن اختيار 100 مهمة على الأكثر للمنبّه، تُؤدّى واحدة تلو الأخرى.",
+      ],
+    ],
     ["alarm.task.count", ["بلا مهام", "مهمة واحدة", "مهمتان", "3 مهام", "11 مهمة", "100 مهمة"]],
     [
       "alarm.task.full",
@@ -224,6 +246,16 @@ describe("counted phrases", () => {
     ["alarm.task.about.tap", "Tap a button once.", "Tap a button 5 times."],
     ["alarm.task.count", "1 task", "5 tasks"],
     ["alarm.task.full", "Up to 1 task", "Up to 5 tasks"],
+    [
+      "alarm.guide.task.quiet",
+      "The sound pauses for 1 second when the task first starts, and again after each step.",
+      "The sound pauses for 5 seconds when the task first starts, and again after each step.",
+    ],
+    [
+      "alarm.guide.try.stack",
+      "An alarm can have only 1 task.",
+      "An alarm can have up to 5 tasks, done one after another.",
+    ],
     ["a11y.alarm.task.steps", "1 step", "5 steps"],
     ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
     [
