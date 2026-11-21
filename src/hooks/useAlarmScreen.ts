@@ -11,7 +11,7 @@ import { alarmLog } from "@/utils/alarmReport";
 import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_ALARM_TYPE_SETTINGS } from "@/types/alarm";
-import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_SCREEN_PATH, ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { PlatformType } from "@/enums/app";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
@@ -121,8 +121,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   // Set from the snooze request until the snooze ends.
   const snoozingRef = useRef(false);
 
+  // An ended alarm keeps its snoozed view; its snooze never ends here.
   useEffect(() => {
-    if (!snoozeEndTime) return;
+    if (!snoozeEndTime || isDismissed) return;
 
     const interval = setInterval(() => {
       const remaining = Math.max(0, snoozeEndTime.getTime() - Date.now());
@@ -137,7 +138,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [snoozeEndTime]);
+  }, [snoozeEndTime, isDismissed]);
 
   // The re-ring alarm sounds natively at the same moment; this restores the screen.
   useEffect(() => {
@@ -180,15 +181,20 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     [activeAlarmId]
   );
 
+  // The solved panel stays until its Close; another alarm may open over it.
   const handleChallengeComplete = useCallback(async () => {
     await endAlarm(ExpoAlarm.ALARM_OUTCOME.SOLVED);
-    router.replace({
-      pathname: ALARM_SCREEN_PATH.COMPLETE,
-      params: { alarmType },
-    });
-  }, [endAlarm, alarmType]);
+    setAlarmScreenActive(null);
+  }, [endAlarm]);
 
-  // The completion screen greets a wake-up; a stop goes home.
+  /** An alarm with no task stops at its one press. */
+  const handlePlainStop = useCallback(async () => {
+    await endAlarm(ExpoAlarm.ALARM_OUTCOME.SOLVED);
+    router.replace(BACK_DESTINATION.HOME.href);
+  }, [endAlarm]);
+
+  const handleClose = useCallback(() => router.replace(BACK_DESTINATION.HOME.href), []);
+
   const handleStop = useCallback(async () => {
     await endAlarm(ExpoAlarm.ALARM_OUTCOME.STOPPED);
     router.replace(BACK_DESTINATION.HOME.href);
@@ -324,9 +330,13 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     snoozeEndTime,
     snoozeTimeRemaining,
     canSnooze,
+    snoozeEnabled: alarmSettings.snooze.enabled,
+    snoozeMinutes: alarmSettings.snooze.durationMinutes,
     remainingSnoozes,
     tasks: alarmSettings.tasks,
     handleChallengeComplete,
+    handlePlainStop,
+    handleClose,
     handleStop,
     handleSnooze,
     handleQuietStart,

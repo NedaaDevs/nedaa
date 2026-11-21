@@ -1,4 +1,4 @@
-import { AccessibilityInfo, Platform } from "react-native";
+import { AccessibilityInfo, Platform, Text } from "react-native";
 import { act, screen, userEvent } from "@testing-library/react-native";
 import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 
@@ -108,6 +108,7 @@ const setUp = async (
       resume={resume}
       audible={audible}
       emergency={emergency}
+      solved={<Text>{SOLVED}</Text>}
       {...callbacks}
     />
   );
@@ -128,6 +129,8 @@ const setUpTrial = async (tasks: NonEmptyTasks) => {
 };
 
 const PLATFORM = Platform.OS;
+/** What the shell is handed to show once the alarm's last task is solved. */
+const SOLVED = "alarm solved";
 
 describe("TaskShell", () => {
   beforeEach(() => {
@@ -549,6 +552,67 @@ describe("TaskShell", () => {
     });
   });
 
+  describe("the last task solved", () => {
+    it("shows the solved panel only once the last task is solved", async () => {
+      const { solve, onComplete } = await setUp([DHIKR_1, TAP]);
+      await solve("dhikr");
+      expect(screen.queryByText(SOLVED)).toBeNull();
+      await advance(HANDOVER_HOLD_MS);
+      expect(screen.queryByText(SOLVED)).toBeNull();
+
+      await solve("tap");
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(SOLVED)).toBeVisible();
+    });
+
+    it("puts the panel in the strip's place, with no way back or out", async () => {
+      const { solve } = await setUp([TAP], { emergency: quietControl() });
+      await advance((QUIET_TIME_SECONDS.DEFAULT + WAY_OUT_SOUNDING_SECONDS) * SECOND);
+      expect(screen.getByRole("button", { name: STOP })).toBeVisible();
+
+      await solve("tap");
+
+      expect(screen.queryByTestId(TASK_SHELL_PART.QUIET_STRIP)).toBeNull();
+      expect(screen.queryByRole("button", { name: STOP })).toBeNull();
+      expect(screen.queryByRole("button", { name: BACK })).toBeNull();
+      expect(screen.queryByRole("button", { name: t("alarm.quiet.button") })).toBeNull();
+    });
+
+    it("marks every step done", async () => {
+      const { solve } = await setUp([MATH_3]);
+      await solve("math");
+      await solve("math");
+      await solve("math");
+
+      const filled = screen
+        .getAllByTestId(TASK_SHELL_PART.PIP, { includeHiddenElements: true })
+        .map((pip) => styleOf(pip).backgroundColor);
+      expect(filled).toHaveLength(3);
+      expect(new Set(filled).size).toBe(1);
+      expect(filled[0]).toBeDefined();
+    });
+
+    it("completes the alarm once, however often the board is pressed", async () => {
+      const { user, onComplete } = await setUp([TAP]);
+      const board = screen.getByRole("button", { name: "solve tap" });
+
+      await user.press(board);
+      await user.press(board);
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns no sound once the alarm has stopped", async () => {
+      const { solve, onQuietEnd } = await setUp([TAP]);
+      await solve("tap");
+
+      await advance(QUIET_MS + SECOND);
+
+      expect(onQuietEnd).not.toHaveBeenCalled();
+    });
+  });
+
   describe("a trial", () => {
     const LIST = t("alarm.task.trial.backToList");
 
@@ -591,6 +655,8 @@ describe("TaskShell", () => {
       await solve("tap");
 
       expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(SOLVED)).toBeNull();
+      expect(screen.getByText(t("alarm.task.trial.tag"))).toBeVisible();
     });
   });
 });
