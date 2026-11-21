@@ -228,6 +228,7 @@ const TaskShell = ({
         ) : (
           <Animated.View
             key={round}
+            style={styles.board}
             entering={reduceMotion ? undefined : FadeInDown.duration(TASK_ENTER_MS)}
             exiting={reduceMotion ? undefined : FadeOut.duration(TASK_EXIT_MS)}>
             <board.Component difficulty={difficultyOf(task)} onComplete={handleSolved} />
@@ -276,6 +277,10 @@ const TaskShell = ({
   );
 };
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+// A board fills the area; one shorter than it sits in the middle.
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  board: { flex: 1, justifyContent: "center" },
+});
 
 export default TaskShell;

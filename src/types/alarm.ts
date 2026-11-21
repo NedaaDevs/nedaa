@@ -138,19 +138,6 @@ export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   snooze: DEFAULT_SNOOZE_CONFIG,
 };
 
-export const CHALLENGE_DIFFICULTY_CONFIG = {
-  tap: {
-    easy: { taps: 5 },
-    medium: { taps: 10 },
-    hard: { taps: 20 },
-  },
-  math: {
-    easy: { maxNumber: 10, operations: ["+", "-"] as const },
-    medium: { maxNumber: 50, operations: ["+", "-"] as const },
-    hard: { maxNumber: 100, operations: ["+", "-", "*"] as const },
-  },
-} as const;
-
 export const VIBRATION_PATTERNS = {
   default: [0, 800, 200, 800, 200, 800, 200, 800],
   gentle: [0, 400, 400, 400, 400, 400],
