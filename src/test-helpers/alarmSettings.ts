@@ -16,14 +16,15 @@ export const SAVED_TIMINGS = Object.values(ALARM_TYPE).flatMap((alarmType) => {
   );
 });
 
-/** Loads `saved` as stored; returns the settings the store then holds. */
-export const loadSavedSettings = async (
-  alarmType: AlarmType,
-  saved: Partial<AlarmTypeSettings>
-) => {
+/** Loads any `saved` value as stored; returns what the store then holds. */
+export const loadRawSettings = async (alarmType: AlarmType, saved: unknown) => {
   jest
     .mocked(Storage.getItem)
     .mockResolvedValueOnce(JSON.stringify({ state: { [alarmType]: saved }, version: 0 }));
   await useAlarmSettingsStore.persist.rehydrate();
   return useAlarmSettingsStore.getState()[alarmType];
 };
+
+/** Loads `saved` as stored; returns the settings the store then holds. */
+export const loadSavedSettings = (alarmType: AlarmType, saved: Partial<AlarmTypeSettings>) =>
+  loadRawSettings(alarmType, saved);

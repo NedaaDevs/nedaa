@@ -81,13 +81,17 @@ const rebuildDebounced = (alarmType: AlarmType, afterNativeSync: Promise<boolean
         if (!(await afterNativeSync)) return;
         await useAlarmStore.getState().cancelAlarmsByType(toScheduledAlarmType(alarmType));
         await SCHEDULE[alarmType]();
-      });
+      }).catch((error: unknown) => alarmLog.e("Settings", `rebuild failed: ${String(error)}`));
     }, REBUILD_DEBOUNCE_MS)
   );
 };
 
-const writeSettings = (alarmType: AlarmType, changes: Partial<AlarmTypeSettings>) => {
-  useAlarmSettingsStore.getState().updateSettings(alarmType, changes);
+const writeSettings = (alarmType: AlarmType, requested: Partial<AlarmTypeSettings>) => {
+  useAlarmSettingsStore.getState().updateSettings(alarmType, requested);
+  // The store pairs tasks with a challenge; native takes the stored pair.
+  const { challenge, tasks } = useAlarmSettingsStore.getState()[alarmType];
+  const touchesTasks = requested.tasks !== undefined || requested.challenge !== undefined;
+  const changes = touchesTasks ? { ...requested, challenge, tasks } : requested;
 
   const scheduledType = toScheduledAlarmType(alarmType);
   const native = toNativeSettings(changes);
@@ -96,9 +100,11 @@ const writeSettings = (alarmType: AlarmType, changes: Partial<AlarmTypeSettings>
     Object.keys(native).length > 0
       ? ExpoAlarm.setAlarmSettings(scheduledType, native)
       : Promise.resolve(true);
-  nativeSync.then((ok) => {
-    if (!ok) alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`);
-  });
+  nativeSync
+    .then((ok) => {
+      if (!ok) alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`);
+    })
+    .catch((error: unknown) => alarmLog.e("Settings", `native sync threw: ${String(error)}`));
 
   // AlarmKit copies the sound into the alarm; Android reads it at fire time.
   const soundNeedsRebuild = changes.sound !== undefined && Platform.OS === PlatformType.IOS;
