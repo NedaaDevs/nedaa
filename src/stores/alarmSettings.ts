@@ -15,6 +15,7 @@ import {
   DEFAULT_TIMING_CONFIG,
   MIN_ALARM_VOLUME,
 } from "@/types/alarm";
+import { readSavedWakeTaskFields, syncWakeTaskFields } from "@/utils/wakeTasks";
 
 interface AlarmSettingsState {
   fajr: AlarmTypeSettings;
@@ -82,9 +83,7 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
         },
 
         setChallenge: (alarmType, challenge) => {
-          set((state) => ({
-            [alarmType]: { ...state[alarmType], challenge },
-          }));
+          get().updateSettings(alarmType, { challenge });
         },
 
         setGentleWakeUp: (alarmType, config) => {
@@ -107,7 +106,7 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
 
         updateSettings: (alarmType, settings) => {
           set((state) => ({
-            [alarmType]: { ...state[alarmType], ...settings },
+            [alarmType]: { ...state[alarmType], ...syncWakeTaskFields(settings) },
           }));
         },
 
@@ -143,12 +142,14 @@ export const useAlarmSettingsStore = create<AlarmSettingsStore>()(
               ...persisted.fajr,
               timing: fajrTiming,
               volume: liftVolume(persisted.fajr?.volume),
+              ...readSavedWakeTaskFields(persisted.fajr),
             },
             friday: {
               ...DEFAULT_ALARM_TYPE_SETTINGS,
               ...persisted.friday,
               timing: fridayTiming,
               volume: liftVolume(persisted.friday?.volume),
+              ...readSavedWakeTaskFields(persisted.friday),
             },
           };
         },
