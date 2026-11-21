@@ -150,6 +150,20 @@ export const formatTime12Hour = (hour: number, minute: number) => {
  */
 export const clockFormat = (use24HourTime: boolean): string => (use24HourTime ? "HH:mm" : "h:mm a");
 
+/** A clock time's figure and 12-hour period, apart; 24-hour has no period. */
+export const formatClockParts = (
+  date: Date,
+  timezone: string,
+  options: { locale: AppLocale; use24HourTime: boolean }
+): { figure: string; period: string } => {
+  const [figureFormat, periodFormat] = clockFormat(options.use24HourTime).split(" ");
+  const dateLocale = { locale: getDateLocale(options.locale) };
+  return {
+    figure: formatInTimeZone(date, timezone, figureFormat, dateLocale),
+    period: periodFormat ? formatInTimeZone(date, timezone, periodFormat, dateLocale) : "",
+  };
+};
+
 /**
  * The mark a 12-hour clock time carries for this hour of the day, in the locale.
  * @param {number} hour - Hour of the day, 0 to 23

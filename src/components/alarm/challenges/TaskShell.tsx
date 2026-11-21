@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import { StyleSheet } from "react-native";
 import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -62,6 +62,8 @@ type AlarmRun = {
   onQuietStart: () => void;
   onQuietEnd: () => void;
   emergency?: EmergencyQuietControl;
+  /** Takes the strip's place once the last task is solved. */
+  solved: ReactNode;
 };
 
 /** A silent run from the picker: no quiet time, no way out, no saved state. */
@@ -81,7 +83,9 @@ const noop = () => {};
 const TaskShell = (props: Props) => {
   const { tasks, onComplete } = props;
   const alarm = props.mode === TASK_SHELL_MODE.TRIAL ? null : props;
-  const audible = alarm?.audible ?? false;
+  // The alarm's last task is solved; the alarm has stopped.
+  const [done, setDone] = useState(false);
+  const audible = !done && (alarm?.audible ?? false);
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const screenReader = useScreenReader();
@@ -122,8 +126,10 @@ const TaskShell = (props: Props) => {
   }, [handover]);
 
   const handleSolved = () => {
+    if (done) return;
     const result = advanceTaskRun(tasks, position);
     if (result.next === TASK_RUN_NEXT.DONE) {
+      if (alarm) setDone(true);
       onComplete();
       return;
     }
@@ -157,7 +163,9 @@ const TaskShell = (props: Props) => {
     handover && t("alarm.task.taskOf", { task: handover.task + 1, total: tasks.length });
   const handoverNext = nextTask && t("alarm.task.next", { name: taskName(nextTask, t) });
 
-  const opening = position.step > 0 ? stepLine : null;
+  const opening = position.step > 0 && !done ? stepLine : null;
+  // Every step is done once the alarm has stopped.
+  const current = done ? steps : position.step;
   const progressStatus =
     handoverPosition && handoverNext
       ? t("a11y.alarm.task.handover", { position: handoverPosition, next: handoverNext })
@@ -177,7 +185,7 @@ const TaskShell = (props: Props) => {
     ? t("a11y.backTo", { screen: backName })
     : t("alarm.task.trial.backToList");
   const stop = t("alarm.task.stop");
-  const onStop = alarm && quiet.wayOut ? alarm.onStop : null;
+  const onStop = alarm && quiet.wayOut && !done ? alarm.onStop : null;
   const emergency = alarm?.emergency;
   const quietUntil = emergency?.quietUntil ?? null;
   // The confirm stands in the strip's place; the way out takes it away.
@@ -186,7 +194,7 @@ const TaskShell = (props: Props) => {
   return (
     <VStack flex={1} gap="$stack">
       <HStack alignItems="flex-start" justifyContent="space-between" gap="$stack">
-        <BackLink onPress={handleBack} label={backLabel} name={backName} />
+        {done ? <Box /> : <BackLink onPress={handleBack} label={backLabel} name={backName} />}
         {!handover && (taskLine || stepLine) && (
           <VStack flexShrink={1} alignItems="flex-end" gap="$1.5">
             {taskLine && (
@@ -211,12 +219,12 @@ const TaskShell = (props: Props) => {
                     key={step}
                     testID={TASK_SHELL_PART.PIP}
                     width="$6"
-                    height={step === position.step ? "$2" : "$1.5"}
+                    height={step === current ? "$2" : "$1.5"}
                     borderRadius="$pill"
-                    borderWidth={step > position.step ? 1.5 : 0}
+                    borderWidth={step > current ? 1.5 : 0}
                     borderColor="$fg"
                     backgroundColor={
-                      step < position.step ? "$fg" : step === position.step ? "$accent" : undefined
+                      step < current ? "$fg" : step === current ? "$accent" : undefined
                     }
                   />
                 ))}
@@ -226,7 +234,7 @@ const TaskShell = (props: Props) => {
         )}
       </HStack>
 
-      {quietUntil !== null && <QuietBanner until={quietUntil} />}
+      {quietUntil !== null && !done && <QuietBanner until={quietUntil} />}
 
       {!handover && (
         <Text size="heading" bold color="$fg" accessibilityRole="header" marginTop="$2">
@@ -264,6 +272,8 @@ const TaskShell = (props: Props) => {
           <Animated.View
             key={round}
             style={styles.board}
+            pointerEvents={done ? "none" : "auto"}
+            {...(done ? HIDDEN_FROM_READER : null)}
             entering={reduceMotion ? undefined : FadeInDown.duration(TASK_ENTER_MS)}
             exiting={reduceMotion ? undefined : FadeOut.duration(TASK_EXIT_MS)}>
             <board.Component
@@ -297,7 +307,9 @@ const TaskShell = (props: Props) => {
             </VStack>
           </Animated.View>
         )}
-        {alarm ? (
+        {alarm && done ? (
+          alarm.solved
+        ) : alarm ? (
           <>
             {audible && !quietOffer.confirmOpen && (
               <QuietStrip

@@ -23,8 +23,8 @@ type Rule = {
   drawsWith: RegExp;
   home?: string;
   within?: RegExp;
-  /** A source the row covers that shows the value without its renderer. */
-  fails?: Source;
+  /** Sources the row covers that show the value without its renderer. */
+  fails?: Source | readonly Source[];
 };
 
 const ONE_RENDERER: readonly Rule[] = [
@@ -598,6 +598,39 @@ const ONE_RENDERER: readonly Rule[] = [
     home: "components/alarm/challenges/QuietBanner.tsx",
     fails: { path: "components/alarm/Fixture.tsx", text: 't("alarm.quiet.banner", { time })' },
   },
+  // The ringing screen and the stopped panel read the alarm's prayer alike.
+  {
+    concept: "an alarm's prayer time",
+    shows: new RegExp(
+      [
+        /\balarm\.solved\.(began|begins)\b|\ba11y\.alarm\.ringingAt\b/.source,
+        // A ring's time read against the stored days picks the prayer anew.
+        /\btriggerTime\b[\s\S]*\b(today|tomorrow)Timings\b/.source,
+        /\b(today|tomorrow)Timings\b[\s\S]*\btriggerTime\b/.source,
+      ].join("|")
+    ),
+    within: /^(app|components|hooks)\//,
+    drawsWith: /\buseAlarmPrayer\(/,
+    home: "hooks/useAlarmPrayer.ts",
+    fails: [
+      {
+        path: "components/alarm/Fixture.tsx",
+        text: 't("alarm.solved.began", { prayer, time })',
+      },
+      {
+        path: "hooks/useFixture.ts",
+        text: [
+          "const at = useAlarmStore((s) => s.getAlarm(id)?.triggerTime);",
+          "const day = usePrayerTimesStore((s) => s.todayTimings);",
+          't("alarm.types.fajr");',
+        ].join("\n"),
+      },
+      {
+        path: "components/alarm/OtherFixture.tsx",
+        text: 'const day = tomorrowTimings;\nconst at = record.triggerTime;\nt("alarm.snoozed");',
+      },
+    ],
+  },
 ];
 
 const FILES: readonly Source[] = sources(SRC).map((path) => ({
@@ -625,8 +658,8 @@ describe.each(ONE_RENDERER)("$concept", (rule) => {
   });
 
   if (fails !== undefined) {
-    it("catches a source that shows it without its renderer", () => {
-      expect(unrendered(rule, [fails])).toEqual([fails.path]);
+    it.each([fails].flat())("catches $path, shown without its renderer", (fixture) => {
+      expect(unrendered(rule, [fixture])).toEqual([fixture.path]);
     });
   }
 

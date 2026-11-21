@@ -5,10 +5,10 @@ import { Vibration } from "react-native";
 import * as ExpoAlarm from "expo-alarm";
 import { router } from "expo-router";
 
-import { ALARM_SCREEN_PATH } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { EMERGENCY_QUIET_MS } from "@/constants/EmergencyQuiet";
 import { ScheduledAlarmType } from "@/enums/alarm";
+import { setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { useAlarmScreen } from "@/hooks/useAlarmScreen";
 import { DEFAULT_VIBRATION_CONFIG, VIBRATION_PATTERNS, VibrationPattern } from "@/types/alarm";
 import { DEFAULT_WAKE_TASKS } from "@/constants/WakeTask";
@@ -115,9 +115,10 @@ jest.mock("@/utils/alarmScheduler", () => ({
   completeAndRescheduleAlarm: (id: string, ending: object) => mockCompleteAndReschedule(id, ending),
 }));
 const mockMarkAlarmHandled = jest.fn();
+const mockIsAlarmHandled = jest.fn((_id: string) => false);
 jest.mock("@/hooks/useAlarmDeepLink", () => ({
   markAlarmHandled: (id: string) => mockMarkAlarmHandled(id),
-  isAlarmHandled: () => false,
+  isAlarmHandled: (id: string) => mockIsAlarmHandled(id),
   setAlarmScreenActive: jest.fn(),
 }));
 
@@ -157,6 +158,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockStoreState = QUIET_STORE;
   mockNativeVibrating = true;
+  mockIsAlarmHandled.mockReturnValue(false);
   for (const id of Object.keys(mockAlarms)) delete mockAlarms[id];
 });
 
@@ -227,7 +229,8 @@ describe("useAlarmScreen", () => {
     });
   });
 
-  it("completes a solved alarm and opens the completion screen", async () => {
+  // The solved panel stays until its Close.
+  it("completes a solved alarm and stays on the screen", async () => {
     const { result } = await mount();
 
     await act(async () => {
@@ -237,12 +240,76 @@ describe("useAlarmScreen", () => {
     expect(mockCompleteAndReschedule).toHaveBeenCalledWith(ALARM_ID, {
       outcome: ExpoAlarm.ALARM_OUTCOME.SOLVED,
     });
-    expect(router.replace).toHaveBeenCalledWith(
-      expect.objectContaining({ pathname: ALARM_SCREEN_PATH.COMPLETE })
-    );
+    expect(result.current.isDismissed).toBe(true);
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
-  // The completion screen greets a wake-up; a stop goes home.
+  // The deep link waits for the screen's guard; a solve recorded releases it.
+  it("releases the screen's guard once the solve is recorded", async () => {
+    const { result } = await mount();
+    jest.mocked(setAlarmScreenActive).mockClear();
+
+    await act(async () => {
+      await result.current.handleChallengeComplete();
+    });
+
+    expect(setAlarmScreenActive).toHaveBeenCalledWith(null);
+  });
+
+  describe("solved during a snooze", () => {
+    const SNOOZE_MS = 5 * 60_000;
+    beforeEach(() => jest.useFakeTimers({ now: new Date(2026, 10, 21, 5) }));
+    afterEach(() => jest.useRealTimers());
+
+    it("stays snoozed past the snooze's end, and stays on screen", async () => {
+      mockSnoozeAlarm.mockResolvedValue({
+        snoozeId: SNOOZE_ID,
+        snoozeEndTime: new Date(Date.now() + SNOOZE_MS),
+        snoozeCount: 1,
+      });
+      const { result } = await mount();
+      await act(async () => {
+        await result.current.handleSnooze();
+      });
+      await act(async () => {
+        await result.current.handleChallengeComplete();
+      });
+      mockIsAlarmHandled.mockReturnValue(true);
+      mockStartAlarmSound.mockClear();
+
+      await act(async () => jest.advanceTimersByTime(SNOOZE_MS + 2000));
+
+      expect(result.current.isSnoozed).toBe(true);
+      expect(router.replace).not.toHaveBeenCalled();
+      expect(mockStartAlarmSound).not.toHaveBeenCalled();
+    });
+  });
+
+  it("closes a stopped alarm to Today", async () => {
+    const { result } = await mount();
+
+    await act(async () => {
+      await result.current.handleChallengeComplete();
+    });
+    await act(async () => result.current.handleClose());
+
+    expect(router.replace).toHaveBeenCalledWith(BACK_DESTINATION.HOME.href);
+  });
+
+  it("stops an alarm with no task as solved and goes to Today", async () => {
+    const { result } = await mount();
+
+    await act(async () => {
+      await result.current.handlePlainStop();
+    });
+
+    expect(ExpoAlarm.stopAllAlarmEffects).toHaveBeenCalled();
+    expect(mockCompleteAndReschedule).toHaveBeenCalledWith(ALARM_ID, {
+      outcome: ExpoAlarm.ALARM_OUTCOME.SOLVED,
+    });
+    expect(router.replace).toHaveBeenCalledWith(BACK_DESTINATION.HOME.href);
+  });
+
   it("records a stop as stopped and goes home", async () => {
     const { result } = await mount();
 
