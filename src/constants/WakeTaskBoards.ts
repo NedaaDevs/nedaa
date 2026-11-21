@@ -165,3 +165,102 @@ export const BOARD_PART = {
   PRAYER_LINE: "prayer-line",
   PRAYER_STATUS: "prayer-status",
 } as const;
+
+/** The four pads, left to right then top to bottom, in every language. */
+export const PATTERN_PAD = {
+  CIRCLE: "circle",
+  TRIANGLE: "triangle",
+  SQUARE: "square",
+  LINES: "lines",
+} as const;
+
+export type PatternPad = (typeof PATTERN_PAD)[keyof typeof PATTERN_PAD];
+
+export const PATTERN_PADS: readonly PatternPad[] = Object.values(PATTERN_PAD);
+
+/** Pads in each order; it never grows within one alarm. */
+export const PATTERN_LENGTH = {
+  [CHALLENGE_DIFFICULTY.EASY]: 3,
+  [CHALLENGE_DIFFICULTY.MEDIUM]: 4,
+  [CHALLENGE_DIFFICULTY.HARD]: 5,
+} as const satisfies Record<ChallengeDifficulty, number>;
+
+/** What a screen reader calls each pad's shape. */
+export const PATTERN_PAD_NAME_KEY = {
+  [PATTERN_PAD.CIRCLE]: "a11y.alarm.task.pattern.pad.circle",
+  [PATTERN_PAD.TRIANGLE]: "a11y.alarm.task.pattern.pad.triangle",
+  [PATTERN_PAD.SQUARE]: "a11y.alarm.task.pattern.pad.square",
+  [PATTERN_PAD.LINES]: "a11y.alarm.task.pattern.pad.lines",
+} as const satisfies Record<PatternPad, string>;
+
+/** Where each pad sits; the grid stays left to right in Arabic too. */
+export const PATTERN_PAD_PLACE_KEY = {
+  [PATTERN_PAD.CIRCLE]: "a11y.alarm.task.pattern.place.topLeft",
+  [PATTERN_PAD.TRIANGLE]: "a11y.alarm.task.pattern.place.topRight",
+  [PATTERN_PAD.SQUARE]: "a11y.alarm.task.pattern.place.bottomLeft",
+  [PATTERN_PAD.LINES]: "a11y.alarm.task.pattern.place.bottomRight",
+} as const satisfies Record<PatternPad, string>;
+
+/** Each shape on a 24-unit square, drawn as a stroke. */
+export const PATTERN_SHAPE_VIEWBOX = "0 0 24 24";
+
+/** A lit pad fills its shape; two lines have no inside to fill. */
+export const PATTERN_PAD_FILLS = {
+  [PATTERN_PAD.CIRCLE]: true,
+  [PATTERN_PAD.TRIANGLE]: true,
+  [PATTERN_PAD.SQUARE]: true,
+  [PATTERN_PAD.LINES]: false,
+} as const satisfies Record<PatternPad, boolean>;
+
+/** A pad's height, its shape's size and the shape's stroke, in pt. */
+export const PATTERN_PAD_SIZE = { HEIGHT: 148, SHAPE: 64, STROKE: 3 } as const;
+
+/** Playback times in ms; a screen reader widens the gaps. */
+export const PATTERN_TIMING = {
+  LEAD_IN: { DEFAULT: 500, SCREEN_READER: 750 },
+  LIT: { DEFAULT: 500, REDUCED_MOTION: 700 },
+  GAP: { DEFAULT: 250, SCREEN_READER: 750 },
+  /** A lit pad's fill fades in and out over this, without Reduce Motion. */
+  FADE: 160,
+  /** How long a wrong pad shows as wrong before a new order plays. */
+  WRONG_HOLD: 1000,
+} as const;
+
+/** What a tap on a pad does to the board. */
+export const PATTERN_TAP = { NEXT: "next", DONE: "done", WRONG: "wrong" } as const;
+
+export type PatternTapOutcome = (typeof PATTERN_TAP)[keyof typeof PATTERN_TAP];
+
+/** The order playing, being repeated, a wrong pad held, or repeated. */
+export const PATTERN_PHASE = {
+  WATCHING: "watching",
+  REPEATING: "repeating",
+  WRONG: "wrong",
+  SOLVED: "solved",
+} as const;
+
+export type PatternPhase = (typeof PATTERN_PHASE)[keyof typeof PATTERN_PHASE];
+
+/** A pad at rest, lit, marked wrong, or held while it takes no tap. */
+export const PATTERN_PAD_STATE = {
+  REST: "rest",
+  LIT: "lit",
+  WRONG: "wrong",
+  HELD: "held",
+} as const;
+
+export type PatternPadState = (typeof PATTERN_PAD_STATE)[keyof typeof PATTERN_PAD_STATE];
+
+/** The screen-reader action that says the current order again. */
+export const PATTERN_HEAR_AGAIN = "hearAgain";
+
+/** Test ids for the pattern board's parts. */
+export const PATTERN_PART = {
+  PADS: "pattern-pads",
+  PAD: "pattern-pad",
+  PAD_FILL: "pattern-pad-fill",
+  LINE: "pattern-line",
+  DOT: "pattern-dot",
+  STATUS: "pattern-status",
+  SPOKEN: "pattern-spoken",
+} as const;

@@ -83,7 +83,7 @@ const PrayersBoard = ({ onComplete, rng = Math.random }: Props) => {
     return () => clearTimeout(id);
   }, [wrong]);
 
-  // Reader focus follows a redeal; the shell places it on the first.
+  // Reader focus follows each redeal; the first deal moves no focus.
   useEffect(() => {
     if (deals > 0) focusOn(placesRef.current);
   }, [deals]);
