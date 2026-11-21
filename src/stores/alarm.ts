@@ -195,6 +195,7 @@ export const useAlarmStore = create<AlarmState>()(
             alarmType: alarm.alarmType,
             snoozeCount: newSnoozeCount,
             baseTitle,
+            isPreview: alarm.isPreview,
           });
           if (!rescheduled) {
             alarmLog.e(

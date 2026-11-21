@@ -3,27 +3,27 @@ import { join } from "path";
 import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
 import {
+  CHALLENGE_COUNTS,
   DEFAULT_WAKE_TASKS,
   WAKE_TASK_DEFAULT_DIFFICULTY,
   WAKE_TASK_DEFAULT_STEPS,
   WAKE_TASK_ID,
   WAKE_TASK_IDS,
   WAKE_TASK_MAX_STACK,
-  WAKE_TASK_MAX_STEPS,
   WAKE_TASK_MIN_STEPS,
   WAKE_TASK_MOVE,
   WAKE_TASK_OPTIONS,
+  WAKE_TASK_STEP_CHOICES,
+  type ChallengeCount,
   type WakeTaskSteps,
 } from "@/constants/WakeTask";
 import { TAP_PRESSES } from "@/constants/WakeTaskBoards";
 import { REPO_ROOT } from "@/test-helpers/routeTree";
 import {
-  CHALLENGE_COUNTS,
   CHALLENGE_DIFFICULTIES,
   DEFAULT_ALARM_TYPE_SETTINGS,
   DEFAULT_CHALLENGE_CONFIG,
   type ChallengeConfig,
-  type ChallengeCount,
   type WakeTask,
 } from "@/types/alarm";
 import {
@@ -63,13 +63,22 @@ const legacy = (
   count: ChallengeConfig["count"]
 ): ChallengeConfig => ({ type, difficulty, count });
 
-/** A saved count and the steps it becomes. */
+const SHARED_MAX_STEPS = WAKE_TASK_STEP_CHOICES[WAKE_TASK_STEP_CHOICES.length - 1];
+const MATH_MAX_STEPS = CHALLENGE_COUNTS[CHALLENGE_COUNTS.length - 1];
+
+/** A saved count and the steps a board on the shared choices makes of it. */
 const COUNT_STEPS: [ChallengeCount, WakeTaskSteps][] = [
   [1, 1],
   [5, 5],
-  [6, WAKE_TASK_MAX_STEPS],
-  [10, WAKE_TASK_MAX_STEPS],
+  [6, SHARED_MAX_STEPS],
+  [10, SHARED_MAX_STEPS],
 ];
+
+/** A saved count and the Math steps it becomes: the same number. */
+const MATH_COUNT_STEPS = CHALLENGE_COUNTS.map((count): [ChallengeCount, ChallengeCount] => [
+  count,
+  count,
+]);
 
 /** A saved challenge, its stack, and the challenge that stack writes. */
 const LEGACY_TABLE: {
@@ -90,16 +99,18 @@ const LEGACY_TABLE: {
         written: legacy(CHALLENGE_TYPE.TAP, MEDIUM, 1),
       },
       {
-        saved: legacy(CHALLENGE_TYPE.MATH, difficulty, count),
-        tasks: [{ id: WAKE_TASK_ID.MATH, difficulty, steps }],
-        written: legacy(CHALLENGE_TYPE.MATH, difficulty, steps),
-      },
-      {
         saved: legacy(CHALLENGE_TYPE.DHIKR, difficulty, count),
         tasks: [{ id: WAKE_TASK_ID.DHIKR, steps }],
         written: legacy(CHALLENGE_TYPE.DHIKR, EASY, steps),
       },
     ])
+  ),
+  ...MATH_COUNT_STEPS.flatMap(([count, steps]) =>
+    CHALLENGE_DIFFICULTIES.map((difficulty) => ({
+      saved: legacy(CHALLENGE_TYPE.MATH, difficulty, count),
+      tasks: [{ id: WAKE_TASK_ID.MATH, difficulty, steps }],
+      written: legacy(CHALLENGE_TYPE.MATH, difficulty, steps),
+    }))
   ),
 ];
 
@@ -119,13 +130,13 @@ describe("wake task shapes", () => {
   });
 
   it.each(WAKE_TASK_IDS)("reads %s with exactly the options its board offers", (id) => {
-    const { hasDifficulty, hasSteps } = WAKE_TASK_OPTIONS[id];
+    const { hasDifficulty, stepChoices } = WAKE_TASK_OPTIONS[id];
 
     expect(normalizeWakeTasks([{ id }])).toEqual([
       {
         id,
         ...(hasDifficulty && { difficulty: WAKE_TASK_DEFAULT_DIFFICULTY }),
-        ...(hasSteps && { steps: WAKE_TASK_DEFAULT_STEPS }),
+        ...(stepChoices && { steps: WAKE_TASK_DEFAULT_STEPS }),
       },
     ]);
   });
@@ -236,13 +247,23 @@ describe("normalizeWakeTasks", () => {
   it.each([
     [0, WAKE_TASK_MIN_STEPS],
     [-3, WAKE_TASK_MIN_STEPS],
-    [99, WAKE_TASK_MAX_STEPS],
+    [99, SHARED_MAX_STEPS],
     [2.6, 3],
     ["4", WAKE_TASK_DEFAULT_STEPS],
     [undefined, WAKE_TASK_DEFAULT_STEPS],
   ])("reads saved steps %p as %p", (steps, expected) => {
     expect(normalizeWakeTasks([{ id: WAKE_TASK_ID.DHIKR, steps }])).toEqual([
       { id: WAKE_TASK_ID.DHIKR, steps: expected },
+    ]);
+  });
+
+  it.each([
+    [MATH_MAX_STEPS, MATH_MAX_STEPS],
+    [99, MATH_MAX_STEPS],
+    [0, WAKE_TASK_MIN_STEPS],
+  ])("reads saved Math steps %p as %p", (steps, expected) => {
+    expect(normalizeWakeTasks([{ id: WAKE_TASK_ID.MATH, difficulty: HARD, steps }])).toEqual([
+      { id: WAKE_TASK_ID.MATH, difficulty: HARD, steps: expected },
     ]);
   });
 
@@ -273,7 +294,7 @@ describe("syncWakeTaskFields", () => {
 
     expect(syncWakeTaskFields({ challenge })).toEqual({
       challenge,
-      tasks: [{ id: WAKE_TASK_ID.DHIKR, steps: WAKE_TASK_MAX_STEPS }],
+      tasks: [{ id: WAKE_TASK_ID.DHIKR, steps: SHARED_MAX_STEPS }],
     });
   });
 
@@ -286,11 +307,7 @@ describe("syncWakeTaskFields", () => {
 
 describe("readSavedWakeTaskFields", () => {
   const MATH_HARD_7 = legacy(CHALLENGE_TYPE.MATH, HARD, 7);
-  const MATH_HARD_MAX: WakeTask = {
-    id: WAKE_TASK_ID.MATH,
-    difficulty: HARD,
-    steps: WAKE_TASK_MAX_STEPS,
-  };
+  const MATH_HARD_7_TASK: WakeTask = { id: WAKE_TASK_ID.MATH, difficulty: HARD, steps: 7 };
 
   // What the picker shows is what the overlay runs, from the first load.
   it.each(LEGACY_TABLE)(
@@ -308,7 +325,7 @@ describe("readSavedWakeTaskFields", () => {
   );
 
   it("keeps a saved stack its challenge stands for", () => {
-    const tasks = [MATH_HARD_MAX, PRAYERS, TAP];
+    const tasks = [MATH_HARD_7_TASK, PRAYERS, TAP];
 
     expect(readSavedWakeTaskFields({ challenge: MATH_HARD_7, tasks })).toEqual({
       challenge: legacyChallengeFromWakeTasks(tasks),
@@ -339,14 +356,14 @@ describe("readSavedWakeTaskFields", () => {
   it("rebuilds a stack left behind by a changed challenge", () => {
     expect(
       readSavedWakeTaskFields({ challenge: MATH_HARD_7, tasks: [DHIKR_4, TAP] }).tasks
-    ).toEqual([MATH_HARD_MAX]);
+    ).toEqual([MATH_HARD_7_TASK]);
   });
 
   it.each([null, undefined, WAKE_TASK_ID.TAP, { id: WAKE_TASK_ID.TAP }])(
     "reads saved tasks %p as the stack the challenge stands for",
     (tasks) => {
       expect(readSavedWakeTaskFields({ challenge: MATH_HARD_7, tasks }).tasks).toEqual([
-        MATH_HARD_MAX,
+        MATH_HARD_7_TASK,
       ]);
     }
   );
@@ -430,9 +447,18 @@ describe("changeWakeTask", () => {
     ]);
   });
 
+  it("counts Math steps up to its own most", () => {
+    expect(changeWakeTask([MATH_HARD_2], WAKE_TASK_ID.MATH, { steps: 9 })).toEqual([
+      { ...MATH_HARD_2, steps: 9 },
+    ]);
+    expect(changeWakeTask([MATH_HARD_2], WAKE_TASK_ID.MATH, { steps: 11 })).toEqual([
+      { ...MATH_HARD_2, steps: MATH_MAX_STEPS },
+    ]);
+  });
+
   it("keeps steps on the offered choices", () => {
     expect(changeWakeTask([DHIKR_4], WAKE_TASK_ID.DHIKR, { steps: 9 })).toEqual([
-      { ...DHIKR_4, steps: WAKE_TASK_MAX_STEPS },
+      { ...DHIKR_4, steps: SHARED_MAX_STEPS },
     ]);
     expect(changeWakeTask([DHIKR_4], WAKE_TASK_ID.DHIKR, { steps: 0 })).toEqual([
       { ...DHIKR_4, steps: WAKE_TASK_MIN_STEPS },

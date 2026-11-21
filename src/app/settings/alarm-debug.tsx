@@ -38,6 +38,7 @@ import {
 import { schedulePrayerAlarm, getNextPrayerDate } from "@/utils/alarmScheduler";
 import { shareAlarmReport, copyAlarmReport } from "@/utils/alarmReport";
 import { PRAYER_ID } from "@/constants/Prayer";
+import type { ChallengeCount } from "@/constants/WakeTask";
 import { ALARM_DEBUG_TEST_SECONDS, alarmDebugScheduleId } from "@/constants/E2E";
 
 const AlarmDebugScreen = () => {
@@ -68,7 +69,7 @@ const AlarmDebugScreen = () => {
   const [testDifficulty, setTestDifficulty] = useState<ChallengeDifficulty>(
     ExpoAlarm.CHALLENGE_DIFFICULTY.EASY
   );
-  const [testChallengeCount, setTestChallengeCount] = useState<number>(1);
+  const [testChallengeCount, setTestChallengeCount] = useState<ChallengeCount>(1);
   const [testVibrationEnabled, setTestVibrationEnabled] = useState<boolean>(true);
   const [testVibrationPattern, setTestVibrationPattern] = useState<VibrationPattern>("default");
   const [testVolume, setTestVolume] = useState<number>(1.0);
@@ -181,7 +182,7 @@ const AlarmDebugScreen = () => {
       challenge: {
         type: testChallengeType,
         difficulty: testDifficulty,
-        count: testChallengeCount as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+        count: testChallengeCount,
       },
       vibration: {
         enabled: testVibrationEnabled,
@@ -557,7 +558,7 @@ const AlarmDebugScreen = () => {
                   Challenge Count: {testChallengeCount}
                 </Text>
                 <HStack gap="$2">
-                  {[1, 2, 3, 5, 10].map((count) => (
+                  {([1, 2, 3, 5, 10] as const).map((count) => (
                     <Button
                       key={count}
                       size="sm"

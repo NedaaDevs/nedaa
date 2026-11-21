@@ -8,7 +8,12 @@ import {
   timingForMode,
 } from "@/constants/Alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { WAKE_TASK_DEFAULT_STEPS, WAKE_TASK_ID, WAKE_TASK_MAX_STEPS } from "@/constants/WakeTask";
+import {
+  CHALLENGE_COUNTS,
+  WAKE_TASK_DEFAULT_STEPS,
+  WAKE_TASK_ID,
+  WAKE_TASK_STEP_CHOICES,
+} from "@/constants/WakeTask";
 import { loadRawSettings, loadSavedSettings, SAVED_TIMINGS } from "@/test-helpers/alarmSettings";
 import {
   DEFAULT_CHALLENGE_CONFIG,
@@ -23,14 +28,12 @@ const INITIAL = useAlarmSettingsStore.getState();
 const PRAYER_AT = new Date(2026, 10, 8, 5, 0);
 const { EASY, HARD, MEDIUM } = CHALLENGE_DIFFICULTY;
 const MATH_HARD_7: ChallengeConfig = { type: CHALLENGE_TYPE.MATH, difficulty: HARD, count: 7 };
-const MATH_HARD_MAX: WakeTask = {
-  id: WAKE_TASK_ID.MATH,
-  difficulty: HARD,
-  steps: WAKE_TASK_MAX_STEPS,
-};
+// A 2.x Math challenge keeps its count as steps.
+const MATH_HARD_7_TASK: WakeTask = { id: WAKE_TASK_ID.MATH, difficulty: HARD, steps: 7 };
+const MATH_MAX_STEPS = CHALLENGE_COUNTS[CHALLENGE_COUNTS.length - 1];
+const SHARED_MAX_STEPS = WAKE_TASK_STEP_CHOICES[WAKE_TASK_STEP_CHOICES.length - 1];
 const PRAYERS: WakeTask = { id: WAKE_TASK_ID.PRAYERS };
 const PATTERN: WakeTask = { id: WAKE_TASK_ID.PATTERN, difficulty: MEDIUM, steps: 2 };
-const MATH_HARD_MAX_CHALLENGE: ChallengeConfig = { ...MATH_HARD_7, count: WAKE_TASK_MAX_STEPS };
 
 /** A saved blob as an older build wrote it, `tasks` absent. */
 const withoutTasks = ({ tasks: _tasks, ...rest }: AlarmTypeSettings) => rest;
@@ -88,8 +91,8 @@ describe("alarm settings store", () => {
       const saved = { ...withoutTasks(INITIAL[alarmType]), challenge: MATH_HARD_7 };
       const loaded = await loadSavedSettings(alarmType, saved);
 
-      expect(loaded.tasks).toEqual([MATH_HARD_MAX]);
-      expect(loaded.challenge).toEqual(MATH_HARD_MAX_CHALLENGE);
+      expect(loaded.tasks).toEqual([MATH_HARD_7_TASK]);
+      expect(loaded.challenge).toEqual(MATH_HARD_7);
     }
   );
 
@@ -106,7 +109,7 @@ describe("alarm settings store", () => {
     async (tasks) => {
       const loaded = await loadRawSettings(ALARM_TYPE.FRIDAY, { challenge: MATH_HARD_7, tasks });
 
-      expect(loaded.tasks).toEqual([MATH_HARD_MAX]);
+      expect(loaded.tasks).toEqual([MATH_HARD_7_TASK]);
     }
   );
 
@@ -116,8 +119,8 @@ describe("alarm settings store", () => {
       tasks: [PATTERN, PRAYERS],
     });
 
-    expect(loaded.challenge).toEqual(MATH_HARD_MAX_CHALLENGE);
-    expect(loaded.tasks).toEqual([MATH_HARD_MAX]);
+    expect(loaded.challenge).toEqual(MATH_HARD_7);
+    expect(loaded.tasks).toEqual([MATH_HARD_7_TASK]);
   });
 
   // The ring screen indexes tables by the challenge type.
@@ -146,7 +149,7 @@ describe("alarm settings store", () => {
     useAlarmSettingsStore.getState().setChallenge(ALARM_TYPE.FRIDAY, MATH_HARD_7);
 
     const { tasks, challenge } = useAlarmSettingsStore.getState().friday;
-    expect(tasks).toEqual([MATH_HARD_MAX]);
+    expect(tasks).toEqual([MATH_HARD_7_TASK]);
     expect(challenge).toEqual(MATH_HARD_7);
   });
 
@@ -154,9 +157,9 @@ describe("alarm settings store", () => {
   it.each<[WakeTask[]]>([
     [[]],
     [[PATTERN]],
-    [[PRAYERS, MATH_HARD_MAX]],
+    [[PRAYERS, MATH_HARD_7_TASK]],
     [[{ id: WAKE_TASK_ID.DHIKR, steps: 2 }, { id: WAKE_TASK_ID.TAP }, PATTERN]],
-    [[PATTERN, MATH_HARD_MAX]],
+    [[PATTERN, MATH_HARD_7_TASK]],
     [[PRAYERS]],
   ])("reloads a saved stack %j as it was", async (stack) => {
     useAlarmSettingsStore.getState().updateSettings(ALARM_TYPE.FAJR, { tasks: stack });
@@ -174,30 +177,38 @@ describe("alarm settings store", () => {
     expect(challenge).toEqual(saved.challenge);
   });
 
-  // A 2.x triple stronger than a stack holds loads as the stack's own triple.
-  it.each([
-    {
-      saved: { type: CHALLENGE_TYPE.TAP, difficulty: HARD, count: 10 },
-      tasks: [{ id: WAKE_TASK_ID.TAP }],
-      challenge: DEFAULT_CHALLENGE_CONFIG,
-    },
-    {
-      saved: { type: CHALLENGE_TYPE.MATH, difficulty: HARD, count: 10 },
-      tasks: [MATH_HARD_MAX],
-      challenge: MATH_HARD_MAX_CHALLENGE,
-    },
-  ])(
-    "loads a 2.x $saved.type $saved.difficulty ×$saved.count as what the picker shows",
-    async ({ saved, tasks, challenge }) => {
-      const loaded = await loadRawSettings(ALARM_TYPE.FAJR, {
-        ...withoutTasks(INITIAL.fajr),
-        challenge: saved,
-      });
+  // A 2.x triple loads as the triple of the stack the picker shows.
+  it("loads a 2.x Tap challenge as the default tap", async () => {
+    const loaded = await loadRawSettings(ALARM_TYPE.FAJR, {
+      ...withoutTasks(INITIAL.fajr),
+      challenge: { type: CHALLENGE_TYPE.TAP, difficulty: HARD, count: MATH_MAX_STEPS },
+    });
 
-      expect(loaded.tasks).toEqual(tasks);
-      expect(loaded.challenge).toEqual(challenge);
-    }
-  );
+    expect(loaded.tasks).toEqual([{ id: WAKE_TASK_ID.TAP }]);
+    expect(loaded.challenge).toEqual(DEFAULT_CHALLENGE_CONFIG);
+  });
+
+  it.each(CHALLENGE_COUNTS)("loads a 2.x Math challenge ×%p as that many steps", async (count) => {
+    const saved: ChallengeConfig = { type: CHALLENGE_TYPE.MATH, difficulty: HARD, count };
+    const loaded = await loadRawSettings(ALARM_TYPE.FAJR, {
+      ...withoutTasks(INITIAL.fajr),
+      challenge: saved,
+    });
+
+    expect(loaded.tasks).toEqual([{ ...MATH_HARD_7_TASK, steps: count }]);
+    expect(loaded.challenge).toEqual(saved);
+  });
+
+  it("keeps a saved Math task's steps past the shared most", async () => {
+    const tasks: WakeTask[] = [{ ...MATH_HARD_7_TASK, steps: MATH_MAX_STEPS }];
+    const challenge = { ...MATH_HARD_7, count: MATH_MAX_STEPS };
+
+    const loaded = await loadRawSettings(ALARM_TYPE.FAJR, { challenge, tasks });
+
+    expect(MATH_MAX_STEPS).toBeGreaterThan(SHARED_MAX_STEPS);
+    expect(loaded.tasks).toEqual(tasks);
+    expect(loaded.challenge).toEqual(challenge);
+  });
 
   // Blobs as 2.x and the builds before the picker wrote them.
   it.each([

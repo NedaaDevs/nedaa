@@ -43,12 +43,12 @@ const trialTasks = (stack: readonly WakeTask[], task: string | undefined): WakeT
 
 /** A task with the options its board offers, as shown and as spoken. */
 const describeOptions = (task: WakeTask, t: TFunction): { shown: string; spoken: string } => {
-  const { hasDifficulty, hasSteps } = WAKE_TASK_OPTIONS[task.id];
+  const { hasDifficulty, stepChoices } = WAKE_TASK_OPTIONS[task.id];
   const name = taskName(task, t);
   const difficulty = t(WAKE_TASK_DIFFICULTY_KEY[difficultyOf(task)]);
   const shown = hasDifficulty ? t("alarm.task.withDifficulty", { name, difficulty }) : name;
   const spoken = hasDifficulty ? t("a11y.join", { first: name, second: difficulty }) : name;
-  if (!hasSteps) return { shown, spoken };
+  if (!stepChoices) return { shown, spoken };
   const count = stepsOf(task);
   return {
     shown: formatNumberToLocale(t("alarm.task.withSteps", { name: shown, count })),
