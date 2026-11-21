@@ -8,7 +8,7 @@ import {
   ANSWER_CARD_POSITIONS,
   BOARD_PART,
   MATH_SPOKEN_KEY,
-  MATH_WRONG_HOLD_MS,
+  WRONG_CARD_HOLD_MS,
 } from "@/constants/WakeTaskBoards";
 import i18n from "@/localization/i18n";
 import { renderWithTheme } from "@/test-helpers/theme";
@@ -128,7 +128,7 @@ describe("MathBoard", () => {
     const { onComplete } = await renderBoard();
 
     await fireEvent.press(cards()[wrongPlace(first)]);
-    await advance(MATH_WRONG_HOLD_MS - 1);
+    await advance(WRONG_CARD_HOLD_MS - 1);
 
     expect(screen.getByTestId(BOARD_PART.MATH_SUM)).toHaveAccessibleName(spoken(first.question));
     expect(screen.getByTestId(BOARD_PART.ANSWER_MARK, HIDDEN)).toBeTruthy();
@@ -146,7 +146,7 @@ describe("MathBoard", () => {
     const { onComplete, user } = await renderBoard();
 
     await user.press(cards()[wrongPlace(first)]);
-    await advance(MATH_WRONG_HOLD_MS);
+    await advance(WRONG_CARD_HOLD_MS);
 
     expect(second.answer).not.toBe(first.answer);
     expect(screen.queryByTestId(BOARD_PART.ANSWER_MARK, HIDDEN)).toBeNull();
@@ -166,7 +166,7 @@ describe("MathBoard", () => {
     const { user } = await renderBoard();
 
     await user.press(cards()[wrongPlace(first)]);
-    await advance(MATH_WRONG_HOLD_MS);
+    await advance(WRONG_CARD_HOLD_MS);
 
     expect(screen.queryByText(/%|\//)).toBeNull();
     expect(screen.queryByText(t("alarm.challenge.wrongAnswer"))).toBeNull();

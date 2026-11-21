@@ -2,6 +2,7 @@ import type { FC } from "react";
 
 import DhikrChallenge from "@/components/alarm/challenges/DhikrChallenge";
 import MathBoard from "@/components/alarm/challenges/MathBoard";
+import PrayersBoard from "@/components/alarm/challenges/PrayersBoard";
 import TapBoard from "@/components/alarm/challenges/TapBoard";
 import { WAKE_TASK_ID, type WakeTaskId } from "@/constants/WakeTask";
 import { WAKE_TASK_NAME_KEY } from "@/constants/WakeTaskShell";
@@ -21,5 +22,5 @@ export const TASK_BOARDS = {
   [WAKE_TASK_ID.TAP]: TAP_BOARD,
   // No board yet and no way to pick one; tap still asks to be awake.
   [WAKE_TASK_ID.PATTERN]: TAP_BOARD,
-  [WAKE_TASK_ID.PRAYERS]: TAP_BOARD,
+  [WAKE_TASK_ID.PRAYERS]: { Component: PrayersBoard, titleKey: WAKE_TASK_NAME_KEY.prayers },
 } as const satisfies Record<WakeTaskId, Board>;
