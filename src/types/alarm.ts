@@ -89,9 +89,10 @@ export interface AlarmSettings {
   friday: AlarmTypeSettings;
 }
 
+/** Tap ×1 at medium: the overlay's 10 presses, as many as the Tap board asks. */
 export const DEFAULT_CHALLENGE_CONFIG: ChallengeConfig = {
   type: CHALLENGE_TYPE.TAP,
-  difficulty: CHALLENGE_DIFFICULTY.EASY,
+  difficulty: CHALLENGE_DIFFICULTY.MEDIUM,
   count: 1,
 };
 

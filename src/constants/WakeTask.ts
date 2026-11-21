@@ -4,11 +4,11 @@ import type { ChallengeDifficulty, WakeTask } from "@/types/alarm";
 
 /** Persisted board ids, in display order; renaming one drops a saved task. */
 export const WAKE_TASK_ID = {
+  TAP: "tap",
   MATH: "math",
   PATTERN: "pattern",
   DHIKR: "dhikr",
   PRAYERS: "prayers",
-  TAP: "tap",
 } as const;
 
 export type WakeTaskId = (typeof WAKE_TASK_ID)[keyof typeof WAKE_TASK_ID];
@@ -28,6 +28,11 @@ export const WAKE_TASK_OPTIONS = {
 
 /** The most tasks one alarm asks for, in order. */
 export const WAKE_TASK_MAX_STACK = 3;
+
+/** Which way a task moves in its stack. */
+export const WAKE_TASK_MOVE = { UP: "up", DOWN: "down" } as const;
+
+export type WakeTaskMove = (typeof WAKE_TASK_MOVE)[keyof typeof WAKE_TASK_MOVE];
 
 /** The step counts a board with steps offers. */
 export const WAKE_TASK_STEP_CHOICES = [1, 2, 3, 4, 5] as const;

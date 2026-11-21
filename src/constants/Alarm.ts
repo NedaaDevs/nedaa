@@ -93,6 +93,9 @@ export const ALARM_PERMISSION_TITLE_KEY: Record<AlarmPermissionId, string> = {
 export const ALARM_PREVIEW_STATE = { IDLE: "idle", PENDING: "pending", FAILED: "failed" } as const;
 export type AlarmPreviewState = (typeof ALARM_PREVIEW_STATE)[keyof typeof ALARM_PREVIEW_STATE];
 
+/** How long after a press the preview alarm rings. */
+export const PREVIEW_ALARM_SECONDS = 30;
+
 /** The route file of one alarm type's full settings, under src/app. */
 export const ALARM_SETTINGS_ROUTE = "settings/alarm/[type]";
 
