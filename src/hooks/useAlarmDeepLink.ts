@@ -170,19 +170,15 @@ async function processSnoozeQueue() {
   }
 }
 
-export function navigateToAlarm(alarmId: string, alarmType: string, _source: string) {
-  // Android: Native overlay handles alarms, don't navigate to /alarm
-  if (Platform.OS === "android") {
-    return false;
-  }
-
+// Opens the alarm screen unless one is open, opened just now, or handled. The
+// mounted screen sets activeAlarmId; lastNavTime blocks a second replace.
+const openAlarmScreen = (alarmId: string, alarmType: string): boolean => {
   const now = Date.now();
 
   if (navGuard.activeAlarmId) return false;
   if (now - navGuard.lastNavTime < NAVIGATION_DEBOUNCE_MS) return false;
   if (handledAlarmIds.has(alarmId)) return false;
 
-  navGuard.activeAlarmId = alarmId;
   navGuard.lastNavTime = now;
 
   router.replace({
@@ -191,7 +187,20 @@ export function navigateToAlarm(alarmId: string, alarmType: string, _source: str
   });
 
   return true;
-}
+};
+
+/** Launch, foreground and deep link: stands down where the overlay may draw. */
+export const navigateToAlarm = (alarmId: string, alarmType: string, _source: string): boolean => {
+  // With the overlay permission, the overlay may appear at any moment.
+  if (ExpoAlarm.usesNativeOverlay()) return false;
+  return openAlarmScreen(alarmId, alarmType);
+};
+
+/** A person asked for the alarm screen; stands down while the overlay runs. */
+export const openAlarmOnRequest = (alarmId: string, alarmType: string): boolean => {
+  if (ExpoAlarm.isOverlayShowing()) return false;
+  return openAlarmScreen(alarmId, alarmType);
+};
 
 export function useAlarmDeepLink() {
   const { scheduledAlarms } = useAlarmStore();
@@ -273,8 +282,14 @@ async function processAlarmUrl(url: string) {
     const alarmType = urlObj.searchParams.get("alarmType") ?? ScheduledAlarmType.CUSTOM;
 
     if (!alarmId) return;
+    // A link can outlive its alarm: a stale notification or shade clock tap.
+    // A failed read opens the screen: a ringing alarm needs a way out.
+    const completedIds = await ExpoAlarm.getCompletedAlarmIds().catch((e): string[] => {
+      alarmLog.w("DeepLink", `getCompletedAlarmIds failed: ${e?.message ?? e}`);
+      return [];
+    });
+    if (completedIds.includes(alarmId)) return;
 
-    // Default: navigate to alarm screen
     navigateToAlarm(alarmId, alarmType, "deep-link");
   } catch (error) {
     alarmLog.e(

@@ -140,6 +140,7 @@ export const useAlarmStore = create<AlarmState>()(
               title,
               alarmType,
               countdown,
+              snoozeCount,
             });
 
             if (!success) {
