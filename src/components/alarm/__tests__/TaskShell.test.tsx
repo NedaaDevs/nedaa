@@ -39,6 +39,9 @@ jest.mock("@/components/alarm/challenges/DhikrChallenge", () =>
 jest.mock("@/components/alarm/challenges/TapBoard", () =>
   jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("tap")
 );
+jest.mock("@/components/alarm/challenges/PrayersBoard", () =>
+  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("prayers")
+);
 
 const t = i18n.t.bind(i18n);
 const SECOND = 1000;
@@ -49,6 +52,7 @@ const HANDOVER_HOLD_MS = HANDOVER_MS.IN + HANDOVER_MS.HOLD;
 const MATH_3: WakeTask = { id: WAKE_TASK_ID.MATH, difficulty: CHALLENGE_DIFFICULTY.EASY, steps: 3 };
 const DHIKR_1: WakeTask = { id: WAKE_TASK_ID.DHIKR, steps: 1 };
 const TAP: WakeTask = { id: WAKE_TASK_ID.TAP };
+const PRAYERS: WakeTask = { id: WAKE_TASK_ID.PRAYERS };
 
 const PAUSED = t("alarm.task.quiet.paused");
 const ENDING = t("alarm.task.quiet.ending", { count: QUIET_ENDING_SECONDS });
@@ -120,6 +124,14 @@ describe("TaskShell", () => {
       expect(onComplete).not.toHaveBeenCalled();
 
       await solve("math");
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it("runs the prayers board under its name", async () => {
+      const { solve, onComplete } = await setUp([PRAYERS]);
+      expect(screen.getByText(t("alarm.task.name.prayers"))).toBeVisible();
+
+      await solve("prayers");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
