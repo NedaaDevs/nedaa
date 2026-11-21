@@ -16,12 +16,7 @@ import {
   type WakeTaskId,
 } from "@/constants/WakeTask";
 import { TAP_PRESSES } from "@/constants/WakeTaskBoards";
-import {
-  TASK_TRIAL_ALL,
-  WAKE_TASK_ABOUT_KEY,
-  WAKE_TASK_NAME_KEY,
-  WAY_OUT_SOUNDING_SECONDS,
-} from "@/constants/WakeTaskShell";
+import { TASK_TRIAL_ALL, WAKE_TASK_ABOUT_KEY, WAKE_TASK_NAME_KEY } from "@/constants/WakeTaskShell";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { PlatformType } from "@/enums/app";
 import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
@@ -29,6 +24,7 @@ import i18n from "@/localization/i18n";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { renderWithTheme } from "@/test-helpers/theme";
 import type { WakeTask } from "@/types/alarm";
+import { wayOutSentence } from "@/utils/taskClock";
 import {
   addWakeTask,
   changeWakeTask,
@@ -271,10 +267,7 @@ describe("TaskPicker", () => {
 
   it("says when the way out appears, only while a task is set", async () => {
     await setUp([TAP]);
-    const wayOut = t("alarm.task.wayOutAfter", {
-      count: WAY_OUT_SOUNDING_SECONDS / 60,
-      stop: t("alarm.task.stop"),
-    });
+    const wayOut = wayOutSentence(t);
 
     expect(screen.getByText(wayOut)).toBeVisible();
     await userEvent.setup().press(screen.getByRole("checkbox", { name: NONE }));

@@ -33,12 +33,12 @@ import {
   WAKE_TASK_ABOUT_KEY,
   WAKE_TASK_DIFFICULTY_KEY,
   WAKE_TASK_NAME_KEY,
-  WAY_OUT_SOUNDING_SECONDS,
 } from "@/constants/WakeTaskShell";
 import { useHaptic } from "@/hooks/useHaptic";
 import { CHALLENGE_DIFFICULTIES, type WakeTask } from "@/types/alarm";
 import { focusOn } from "@/utils/accessibilityFocus";
 import { formatNumberToLocale } from "@/utils/number";
+import { wayOutSentence } from "@/utils/taskClock";
 import { difficultyOf, stepsOf } from "@/utils/taskRun";
 import {
   addWakeTask,
@@ -49,7 +49,6 @@ import {
   type WakeTaskOptionChange,
 } from "@/utils/wakeTasks";
 
-const SECONDS_PER_MINUTE = 60;
 const DIMMED = 0.4;
 const MARK_EDGE = 1.5;
 
@@ -288,7 +287,6 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
 
   const none = t("alarm.task.none");
   const noneAbout = t("alarm.task.about.none");
-  const minutes = WAY_OUT_SOUNDING_SECONDS / SECONDS_PER_MINUTE;
 
   return (
     <VStack gap="$stack">
@@ -330,9 +328,7 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
       ) : null}
       {tasks.length > 0 ? (
         <Text size="sm" color="$muted">
-          {formatNumberToLocale(
-            t("alarm.task.wayOutAfter", { count: minutes, stop: t("alarm.task.stop") })
-          )}
+          {formatNumberToLocale(wayOutSentence(t))}
         </Text>
       ) : null}
       <SpokenStatus message={moved} testID={TASK_PICKER_PART.STATUS} />

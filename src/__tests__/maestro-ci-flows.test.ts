@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { TAB_BAR_PART } from "@/app/(tabs)/_layout";
+import { ALARM_TYPE } from "@/constants/Alarm";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
 import { ALARM_DEBUG_TEST_SECONDS, E2E_ID, alarmDebugScheduleId } from "@/constants/E2E";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
@@ -257,6 +258,25 @@ describe("CI Maestro flows", () => {
 
   it("writes every selector in a CI flow in block style, which the guards read", () => {
     expect(unreadableLines(ciFlows)).toEqual([]);
+  });
+
+  // The alarm guide opens by itself on a fresh install, over the switch.
+  it("skips the alarm guide before its first tap on an alarm's settings", () => {
+    const links = Object.values(ALARM_TYPE).map((type) => `${APP_SCHEME}settings/alarm/${type}`);
+    const visits = flows.flatMap(({ name, text }) =>
+      [...text.matchAll(/^[ \t]*-[ \t]*openLink:[ \t]*"([^"]*)"/gm)]
+        .filter((match) => links.includes(match[1]))
+        .map((match) => ({ name, rest: text.slice((match.index ?? 0) + match[0].length) }))
+    );
+    const firstTap = (rest: string) =>
+      /^[ \t]*-[ \t]*tapOn:\s*\n[ \t]*id:[ \t]*"([^"]*)"/m.exec(rest);
+
+    expect(visits.length).toBeGreaterThan(0);
+    expect(
+      visits
+        .filter(({ rest }) => firstTap(rest)?.[1] !== E2E_ID.ALARM_GUIDE_SKIP)
+        .map(({ name }) => name)
+    ).toEqual([]);
   });
 
   it("opens only links that resolve to a route", () => {
