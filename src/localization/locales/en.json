@@ -52,6 +52,7 @@
   "a11y.athkar.searchResults_other": "{{count}} results found.",
   "a11y.athkar.sessionListHint": "Shows this session's athkar",
   "a11y.athkar.sessionProgress": "Session progress",
+  "a11y.athkar.settings": "Athkar settings",
   "a11y.athkar.startAudioSession": "Play the athkar audio",
   "a11y.athkar.stopSample": "Stop sample",
   "a11y.back": "Go back",
