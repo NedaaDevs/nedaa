@@ -517,7 +517,8 @@ class ExpoAlarmModule : Module() {
                 "vibrationPattern" to settings.vibrationPattern,
                 "snoozeEnabled" to settings.snoozeEnabled,
                 "snoozeMaxCount" to settings.snoozeMaxCount,
-                "snoozeDuration" to settings.snoozeDuration
+                "snoozeDuration" to settings.snoozeDuration,
+                "tasks" to WakeTasks.toBridge(settings.tasks)
             )
         }
 
@@ -528,18 +529,28 @@ class ExpoAlarmModule : Module() {
                 enabled = (settingsMap["enabled"] as? Boolean) ?: currentSettings.enabled,
                 sound = (settingsMap["sound"] as? String) ?: currentSettings.sound,
                 volume = ((settingsMap["volume"] as? Number)?.toFloat()) ?: currentSettings.volume,
-                challengeType = (settingsMap["challengeType"] as? String) ?: currentSettings.challengeType,
-                challengeDifficulty = (settingsMap["challengeDifficulty"] as? String) ?: currentSettings.challengeDifficulty,
-                challengeCount = ((settingsMap["challengeCount"] as? Number)?.toInt()) ?: currentSettings.challengeCount,
+                challengeType = currentSettings.challengeType,
+                challengeDifficulty = currentSettings.challengeDifficulty,
+                challengeCount = currentSettings.challengeCount,
                 gentleWakeUpEnabled = (settingsMap["gentleWakeUpEnabled"] as? Boolean) ?: currentSettings.gentleWakeUpEnabled,
                 gentleWakeUpDuration = ((settingsMap["gentleWakeUpDuration"] as? Number)?.toInt()) ?: currentSettings.gentleWakeUpDuration,
                 vibrationEnabled = (settingsMap["vibrationEnabled"] as? Boolean) ?: currentSettings.vibrationEnabled,
                 vibrationPattern = (settingsMap["vibrationPattern"] as? String) ?: currentSettings.vibrationPattern,
                 snoozeEnabled = (settingsMap["snoozeEnabled"] as? Boolean) ?: currentSettings.snoozeEnabled,
                 snoozeMaxCount = ((settingsMap["snoozeMaxCount"] as? Number)?.toInt()) ?: currentSettings.snoozeMaxCount,
-                snoozeDuration = ((settingsMap["snoozeDuration"] as? Number)?.toInt()) ?: currentSettings.snoozeDuration
+                snoozeDuration = ((settingsMap["snoozeDuration"] as? Number)?.toInt()) ?: currentSettings.snoozeDuration,
+                tasks = currentSettings.tasks
             )
-            db.saveAlarmSettings(newSettings)
+            val current = currentSettings.stored.challenge
+            val sentChallenge = if (CHALLENGE_KEYS.any(settingsMap::containsKey)) {
+                WakeTasks.Challenge(
+                    type = (settingsMap[KEY_CHALLENGE_TYPE] as? String) ?: current.type,
+                    difficulty = (settingsMap[KEY_CHALLENGE_DIFFICULTY] as? String) ?: current.difficulty,
+                    count = ((settingsMap[KEY_CHALLENGE_COUNT] as? Number)?.toInt()) ?: current.count
+                )
+            } else null
+            val written = WakeTasks.write(currentSettings.stored, settingsMap[KEY_TASKS], sentChallenge)
+            db.saveAlarmSettings(newSettings.with(written))
         }
 
         Function("isAlarmTypeEnabled") { alarmType: String ->
@@ -724,5 +735,14 @@ class ExpoAlarmModule : Module() {
         }
 
         return "authorized"
+    }
+
+    // Keys of the settings map; NativeAlarmSettings in src/index.ts.
+    private companion object {
+        const val KEY_TASKS = "tasks"
+        const val KEY_CHALLENGE_TYPE = "challengeType"
+        const val KEY_CHALLENGE_DIFFICULTY = "challengeDifficulty"
+        const val KEY_CHALLENGE_COUNT = "challengeCount"
+        val CHALLENGE_KEYS = listOf(KEY_CHALLENGE_TYPE, KEY_CHALLENGE_DIFFICULTY, KEY_CHALLENGE_COUNT)
     }
 }

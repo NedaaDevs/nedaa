@@ -5,6 +5,9 @@ object AlarmMigrations {
 
     data class Step(val version: Int, val sql: String, val addsColumn: Boolean = false)
 
+    // NULL: no stack saved, so the row's challenge stands for it.
+    const val ADD_TASKS_COLUMN = "ALTER TABLE alarm_settings ADD COLUMN tasks TEXT"
+
     // Listed oldest first; a later step may rely on an earlier one's table.
     val STEPS: List<Step> = listOf(
         Step(2, """
@@ -52,6 +55,7 @@ object AlarmMigrations {
             "ALTER TABLE completed_queue ADD COLUMN outcome TEXT NOT NULL DEFAULT 'solved'",
             addsColumn = true
         ),
+        Step(6, ADD_TASKS_COLUMN, addsColumn = true),
     )
 
     val LATEST_VERSION: Int = STEPS.last().version

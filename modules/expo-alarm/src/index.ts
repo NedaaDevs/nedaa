@@ -548,6 +548,13 @@ export const CHALLENGE_DIFFICULTY = {
 
 export type ChallengeDifficulty = (typeof CHALLENGE_DIFFICULTY)[keyof typeof CHALLENGE_DIFFICULTY];
 
+/** One wake-up task; a board's absent options are left out. */
+export interface NativeWakeTask {
+  id: string;
+  difficulty?: ChallengeDifficulty;
+  steps?: number;
+}
+
 // Native alarm settings (Android only)
 export interface NativeAlarmSettings {
   enabled: boolean;
@@ -563,6 +570,8 @@ export interface NativeAlarmSettings {
   snoozeEnabled: boolean;
   snoozeMaxCount: number;
   snoozeDuration: number;
+  /** Android only; rebuilt from the challenge fields when the two disagree. */
+  tasks?: readonly NativeWakeTask[];
 }
 
 export const openNativeSettings = (alarmType: "fajr" | "jummah"): boolean => {
