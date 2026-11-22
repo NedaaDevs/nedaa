@@ -20,7 +20,7 @@ import {
 } from "@/types/alarm";
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
-import { legacyChallengeFromWakeTasks } from "@/utils/wakeTasks";
+import { legacyChallengeFromWakeTasks, wakeTasksFromLegacyChallenge } from "@/utils/wakeTasks";
 
 jest.mock("expo-alarm", () => ({
   ...jest.requireActual("expo-alarm"),
@@ -129,7 +129,16 @@ describe("useAlarmTypeSettings", () => {
     });
   });
 
-  it("sends a stack to Android as the challenge its overlay runs", async () => {
+  it("keeps a stack off the iOS settings", async () => {
+    onPlatform(PlatformType.IOS);
+    const { result } = await mount(ALARM_TYPE.FAJR);
+
+    await act(async () => result.current.update({ tasks: [{ id: WAKE_TASK_ID.PRAYERS }] }));
+
+    expect(setNative).not.toHaveBeenCalled();
+  });
+
+  it("sends a stack to Android with the challenge its overlay runs", async () => {
     onPlatform(PlatformType.ANDROID);
     const math = {
       id: WAKE_TASK_ID.MATH,
@@ -144,6 +153,7 @@ describe("useAlarmTypeSettings", () => {
       challengeType: ExpoAlarm.CHALLENGE_TYPE.MATH,
       challengeDifficulty: math.difficulty,
       challengeCount: math.steps,
+      tasks: [math, { id: WAKE_TASK_ID.TAP }],
     });
     expect(result.current.settings.challenge.type).toBe(ExpoAlarm.CHALLENGE_TYPE.MATH);
   });
@@ -171,6 +181,7 @@ describe("useAlarmTypeSettings", () => {
       challengeType: expected.type,
       challengeDifficulty: expected.difficulty,
       challengeCount: expected.count,
+      tasks,
     });
   });
 
@@ -202,6 +213,7 @@ describe("useAlarmTypeSettings", () => {
       challengeType: challenge.type,
       challengeDifficulty: challenge.difficulty,
       challengeCount: challenge.count,
+      tasks: wakeTasksFromLegacyChallenge(challenge),
     });
   });
 

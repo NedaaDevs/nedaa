@@ -1,0 +1,6 @@
+name	value
+MAX_STACK	3
+DEFAULT_DIFFICULTY	easy
+DEFAULT_STEPS	1
+DIFFICULTIES	easy,medium,hard
+CHALLENGE_TYPES	none,tap,math,dhikr

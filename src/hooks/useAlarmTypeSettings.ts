@@ -48,6 +48,7 @@ const toNativeSettings = (changes: Partial<AlarmTypeSettings>): Record<string, u
       native.challengeDifficulty = changes.challenge.difficulty;
       native.challengeCount = changes.challenge.count;
     }
+    if (changes.tasks) native.tasks = changes.tasks;
     if (changes.vibration) {
       native.vibrationEnabled = changes.vibration.enabled;
       native.vibrationPattern = changes.vibration.pattern;

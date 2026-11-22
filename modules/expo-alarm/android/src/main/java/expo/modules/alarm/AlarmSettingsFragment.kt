@@ -108,21 +108,24 @@ class AlarmSettingsFragment : PreferenceFragmentCompat() {
 
         findPreference<ListPreference>("challenge_type")?.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { pref, newValue ->
-                db.updateAlarmSetting(alarmType, "challenge_type", newValue as String)
+                val picked = newValue as String
+                db.updateChallenge(alarmType) { it.copy(type = picked) }
                 updateListPreferenceSummaryFromValue(pref as ListPreference, newValue)
                 true
             }
 
         findPreference<ListPreference>("challenge_difficulty")?.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { pref, newValue ->
-                db.updateAlarmSetting(alarmType, "challenge_difficulty", newValue as String)
+                val picked = newValue as String
+                db.updateChallenge(alarmType) { it.copy(difficulty = picked) }
                 updateListPreferenceSummaryFromValue(pref as ListPreference, newValue)
                 true
             }
 
         findPreference<ListPreference>("challenge_count")?.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { pref, newValue ->
-                db.updateAlarmSetting(alarmType, "challenge_count", (newValue as String).toInt())
+                val picked = newValue as String
+                db.updateChallenge(alarmType) { it.copy(count = picked.toInt()) }
                 updateListPreferenceSummaryFromValue(pref as ListPreference, newValue)
                 true
             }
