@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, fireEvent, screen, within } from "@testing-library/react-native";
 import { CHALLENGE_DIFFICULTY } from "expo-alarm";
@@ -294,6 +295,55 @@ describe("PatternBoard", () => {
       expect(focus()).toHaveBeenCalledTimes(1);
       expect(focus()).toHaveBeenCalledWith(statusSaying(both), "focus");
       expect(said()).toEqual([]);
+    });
+
+    describe("a reader turned on with the board open", () => {
+      const onComplete = jest.fn();
+      let rng = seededRng(SEED);
+      beforeEach(() => {
+        rng = seededRng(SEED);
+      });
+      const board = () => (
+        <PatternBoard difficulty={EASY} onComplete={onComplete} rng={rng} opening={null} />
+      );
+      const turnOn = async (view: { rerender: (ui: ReactElement) => unknown }) => {
+        jest.mocked(useScreenReader).mockReturnValue(true);
+        await view.rerender(board());
+      };
+
+      it("plays the order again from its start, on the reader's timing", async () => {
+        const { first } = orders();
+        const view = await renderWithTheme(board());
+        await layOut(status());
+        await advance(playbackMs(first.length) - 1);
+        expect(litPads()).not.toEqual([]);
+
+        await turnOn(view);
+
+        const watch = t("a11y.alarm.task.pattern.watch", { order: spokenOrder(first) });
+        expect(focus()).toHaveBeenCalledTimes(1);
+        expect(focus()).toHaveBeenCalledWith(statusSaying(watch), "focus");
+        expect(litPads()).toEqual([]);
+        await advance(playbackMs(first.length, false, true) - 1);
+        pads().forEach((pad) => expect(pad).toBeDisabled());
+        await advance(1);
+        pads().forEach((pad) => expect(pad).toBeEnabled());
+      });
+
+      it("keeps the pads already tapped once the turn is open", async () => {
+        const { first } = orders();
+        const view = await renderWithTheme(board());
+        await layOut(status());
+        await advance(playbackMs(first.length));
+        await fireEvent.press(padOf(first[0]));
+        const entered = dotsOn().length;
+
+        await turnOn(view);
+
+        expect(focus()).toHaveBeenCalledTimes(1);
+        expect(dotsOn()).toHaveLength(entered);
+        pads().forEach((pad) => expect(pad).toBeEnabled());
+      });
     });
 
     it("stays where it is with no reader on", async () => {

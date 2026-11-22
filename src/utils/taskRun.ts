@@ -28,6 +28,12 @@ export const stepsOf = (task: WakeTask): number =>
 export const difficultyOf = (task: WakeTask): ChallengeDifficulty =>
   "difficulty" in task ? task.difficulty : WAKE_TASK_DEFAULT_DIFFICULTY;
 
+/** A saved position the stack still holds; the start when it holds none. */
+export const resumePosition = (tasks: NonEmptyTasks, saved?: TaskPosition): TaskPosition => {
+  const task = saved && tasks[saved.task];
+  return saved && task && saved.step < stepsOf(task) ? saved : FIRST_POSITION;
+};
+
 /** What solving the board at `position` leads to. */
 export const advanceTaskRun = (tasks: NonEmptyTasks, position: TaskPosition): TaskRunAdvance => {
   const task = tasks[position.task];
