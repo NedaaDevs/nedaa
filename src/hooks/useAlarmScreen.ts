@@ -89,6 +89,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
   // Bumped by a grace start or a snooze; a ring that awaited across one stops.
   const silenceCountRef = useRef(0);
+  const ringCountRef = useRef(0);
   // Set from the snooze request until the snooze ends.
   const snoozingRef = useRef(false);
 
@@ -137,6 +138,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
   const ringAgain = useCallback(async () => {
     const silenceCount = silenceCountRef.current;
+    const ringCount = ++ringCountRef.current;
     await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
     if (dismissedRef.current) {
       // The stop ran before this start, so it is undone again.
@@ -145,7 +147,8 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
       return;
     }
     if (silenceCountRef.current !== silenceCount) {
-      ExpoAlarm.stopAlarmSound();
+      // The native stop is shared, so only the newest ring may stop the sound.
+      if (ringCountRef.current === ringCount) ExpoAlarm.stopAlarmSound();
       return;
     }
     ExpoAlarm.setAlarmVolume(alarmSettings.volume);
