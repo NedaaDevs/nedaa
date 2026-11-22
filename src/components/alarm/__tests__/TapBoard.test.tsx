@@ -1,14 +1,16 @@
-import { AccessibilityInfo } from "react-native";
+import { AccessibilityInfo, StyleSheet } from "react-native";
 import { act, fireEvent, screen, userEvent } from "@testing-library/react-native";
 import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 
 import TapBoard from "@/components/alarm/challenges/TapBoard";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 import { BOARD_PART, TAP_PRESSES, TAP_PRESS_MIN_GAP_MS } from "@/constants/WakeTaskBoards";
 import i18n from "@/localization/i18n";
+import { HAPTIC, clearHaptics, firedHaptics } from "@/test-helpers/hapticMock";
 import { renderWithTheme } from "@/test-helpers/theme";
 import { CHALLENGE_DIFFICULTIES, type ChallengeDifficulty } from "@/types/alarm";
 
-jest.mock("@/hooks/useHaptic", () => ({ useHaptic: () => jest.fn() }));
+jest.mock("@/hooks/useHaptic", () => jest.requireActual("@/test-helpers/hapticMock"));
 
 const t = i18n.t.bind(i18n);
 const HIDDEN = { includeHiddenElements: true };
@@ -20,6 +22,10 @@ const progress = (done: number) => t("alarm.task.tapCount", { done, total: TAP_P
 const shown = () => screen.getByTestId(BOARD_PART.TAP_COUNT);
 const said = () => jest.mocked(AccessibilityInfo.announceForAccessibility).mock.calls.flat();
 const wait = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+const filledTicks = () =>
+  screen
+    .getAllByTestId(BOARD_PART.TAP_TICK, HIDDEN)
+    .filter((tick) => StyleSheet.flatten(tick.props.style).backgroundColor !== undefined).length;
 // A fireEvent press takes no time, so the gaps between presses are exact.
 const press = () => fireEvent.press(target());
 
@@ -40,6 +46,7 @@ const pressSpaced = async (count: number) => {
 describe("TapBoard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearHaptics();
     jest.useFakeTimers();
   });
   afterEach(() => jest.useRealTimers());
@@ -113,5 +120,56 @@ describe("TapBoard", () => {
 
     expect(screen.queryByText(t("alarm.challenge.done"))).toBeNull();
     expect(shown()).toHaveTextContent(progress(TAP_PRESSES));
+  });
+
+  it("gives a light haptic for each counted press and success on the last", async () => {
+    await renderBoard();
+
+    await pressSpaced(TAP_PRESSES - 1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(TAP_PRESSES - 1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SUCCESS]).not.toHaveBeenCalled();
+
+    await pressSpaced(1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(TAP_PRESSES - 1);
+    expect(HAPTIC[HAPTIC_FEEDBACK.SUCCESS]).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives no haptic for an ignored press", async () => {
+    await renderBoard();
+
+    await press();
+    await wait(QUICK_TAP_MS);
+    await press();
+
+    expect(firedHaptics()).toEqual([HAPTIC_FEEDBACK.LIGHT]);
+    expect(HAPTIC[HAPTIC_FEEDBACK.LIGHT]).toHaveBeenCalledTimes(1);
+  });
+
+  it("solves once when two counted presses land in one update at the last press", async () => {
+    const { onComplete } = await renderBoard();
+    await pressSpaced(TAP_PRESSES - 1);
+    const { onResponderGrant, onResponderRelease } = target().props;
+    const touch = { nativeEvent: { timestamp: 0 }, persist: () => undefined };
+    const pressInPlace = () => {
+      onResponderGrant(touch);
+      onResponderRelease(touch);
+    };
+
+    // Both presses run before React commits the ninth count.
+    await act(() => {
+      pressInPlace();
+      jest.advanceTimersByTime(TAP_PRESS_MIN_GAP_MS);
+      pressInPlace();
+    });
+
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([0, 3, TAP_PRESSES])("fills a tick for each of %s presses", async (count) => {
+    await renderBoard();
+
+    await pressSpaced(count);
+
+    expect(filledTicks()).toBe(count);
   });
 });

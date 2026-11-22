@@ -191,7 +191,7 @@ class MathCardsBoard(context: Context, input: BoardInput, private val host: Boar
         private const val SUM_SP = 96f
         private const val SUM_LINE_DP = 110
         private const val CARD_SP = 44f
-        private const val LINE_SP = 18f
+        private const val LINE_SP = 16f
         private const val LINE_MIN_DP = 48
         private const val CARD_MIN_DP = 96
 

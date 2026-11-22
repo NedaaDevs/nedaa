@@ -7,4 +7,8 @@ object TextFit {
         while (sp > minSp && !fits(sp)) sp = maxOf(minSp, sp - 1f)
         return sp
     }
+
+    // Width and height both fit; a box with no height yet bounds only width.
+    fun fitsBox(width: Float, lineHeight: Float, roomWidth: Int, roomHeight: Int): Boolean =
+        width <= roomWidth && (roomHeight <= 0 || lineHeight <= roomHeight)
 }

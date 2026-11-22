@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Build
+import android.provider.Settings
 import android.text.Editable
 import android.text.TextPaint
 import android.text.TextWatcher
@@ -27,6 +28,10 @@ import java.util.Locale
 internal const val MIN_TARGET_DP = 48
 
 internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+// Animations off in system settings, which JS reads as Reduce Motion.
+internal fun animationsOff(context: Context): Boolean =
+    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
 internal fun matchWidth(): LinearLayout.LayoutParams =
     LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -104,12 +109,12 @@ private fun cardFill(context: Context, fill: String, edge: String, edgeDp: Float
 // Only a card at rest shows a press: the pressed fill and a full edge.
 internal fun answerCardBackground(context: Context, state: AnswerCardState): Drawable = when (state) {
     AnswerCardState.WRONG ->
-        cardFill(context, COLOR_ANSWER_CARD, COLOR_ERROR, AnswerCardShape.WRONG_EDGE_DP, dashed = true)
-    AnswerCardState.HELD -> cardFill(context, COLOR_ANSWER_CARD, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false)
+        cardFill(context, COLOR_SURFACE, COLOR_ERROR, AnswerCardShape.WRONG_EDGE_DP, dashed = true)
+    AnswerCardState.HELD -> cardFill(context, COLOR_SURFACE, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false)
     AnswerCardState.REST -> StateListDrawable().apply {
         val pressed = cardFill(context, COLOR_PRESSED, COLOR_TEXT, AnswerCardShape.EDGE_DP, false)
         addState(intArrayOf(android.R.attr.state_pressed), pressed)
-        addState(intArrayOf(), cardFill(context, COLOR_ANSWER_CARD, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false))
+        addState(intArrayOf(), cardFill(context, COLOR_SURFACE, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false))
     }
 }
 
@@ -160,7 +165,7 @@ internal fun View.speaksAsButton() {
     }
 }
 
-// Shrinks one line of text to fit its width: auto-size from API 26, else
+// Shrinks one line of text to fit its box: auto-size from API 26, else
 // TextFit after each layout and text change.
 internal fun fitOneLine(view: TextView, maxSp: Float, minSp: Float) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -182,12 +187,14 @@ internal fun fitOneLine(view: TextView, maxSp: Float, minSp: Float) {
 private fun shrinkToWidth(view: TextView, maxSp: Float, minSp: Float) {
     val room = view.width - view.totalPaddingLeft - view.totalPaddingRight
     if (room <= 0) return
+    val roomHeight = view.height - view.totalPaddingTop - view.totalPaddingBottom
     val text = view.text.toString()
     val paint = TextPaint(view.paint)
     val metrics = view.resources.displayMetrics
     val sp = TextFit.sp(maxSp, minSp) { size ->
         paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, metrics)
-        paint.measureText(text) <= room
+        val line = paint.fontMetrics.let { it.descent - it.ascent }
+        TextFit.fitsBox(paint.measureText(text), line, room, roomHeight)
     }
     val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics)
     if (view.textSize != px) view.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
