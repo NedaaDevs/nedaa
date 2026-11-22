@@ -11,6 +11,8 @@ export const E2E_ID = {
   CITY_SEARCH_INPUT: "city-search-input",
   /** Every row of the city results; a flow taps the first. */
   CITY_RESULT: "city-result",
+  /** The look chooser's button that keeps the look tried on. */
+  ATHKAR_LOOK_USE: "athkar-look-use",
   SCREENSHOT_READY: "screenshot-ready",
   SCREENSHOT_FRAME: "screenshot-frame",
 } as const;

@@ -20,7 +20,14 @@ appId: dev.nedaa.android
       id: "tab-bar-frame"
     timeout: 15000
 - takeScreenshot: smoke-qibla
+# A first visit puts the look chooser where the tab bar's pill was.
 - openLink: "myapp://athkar"
+- extendedWaitUntil:
+    visible:
+      id: "athkar-look-use"
+    timeout: 15000
+- tapOn:
+    id: "athkar-look-use"
 - extendedWaitUntil:
     visible:
       id: "tab-bar-frame"
