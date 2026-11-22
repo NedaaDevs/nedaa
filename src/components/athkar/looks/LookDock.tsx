@@ -14,6 +14,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { ATHKAR_LOOK_IDS, type AthkarLookId } from "@/constants/AthkarLook";
 import { CHOOSER_MODE } from "@/constants/AthkarLookChooser";
+import { E2E_ID } from "@/constants/E2E";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { PlatformType } from "@/enums/app";
 import type { AthkarLookChooser } from "@/hooks/useAthkarLookChooser";
@@ -79,7 +80,7 @@ export const LookDock = ({ chooser }: LookDockProps) => {
             label={nameOf}
           />
           <HStack alignItems="center" gap="$1">
-            <Button flex={1} action="primary" onPress={confirm}>
+            <Button flex={1} action="primary" testID={E2E_ID.ATHKAR_LOOK_USE} onPress={confirm}>
               <Button.Text>{t("athkar.look.use")}</Button.Text>
             </Button>
             {first ? null : (
