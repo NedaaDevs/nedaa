@@ -11,10 +11,10 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import { BOARD_PART, BOARD_TYPE, TAP_PRESSES } from "@/constants/WakeTaskBoards";
+import { BOARD_PART, BOARD_TYPE, TAP_OUTCOME, TAP_PRESSES } from "@/constants/WakeTaskBoards";
 import { useHaptic } from "@/hooks/useHaptic";
 import { formatNumberToLocale } from "@/utils/number";
-import { countsPress } from "@/utils/tapPress";
+import { pressTap, startTapBoard, tapStatusOf } from "@/utils/tapPress";
 
 const TICKS = Array.from({ length: TAP_PRESSES }, (_, tick) => tick);
 
@@ -25,23 +25,23 @@ const TapBoard = ({ onComplete }: BoardProps) => {
   const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const [done, setDone] = useState(0);
-  // The last counted press; one sooner than the gap after it is a bounce.
-  const lastCounted = useRef<number | null>(null);
+  // Read at each press, so two presses in one frame see each other.
+  const board = useRef(startTapBoard());
 
   const handlePress = () => {
-    const now = performance.now();
-    if (done >= TAP_PRESSES) return;
-    if (!countsPress(lastCounted.current, now)) return;
-    lastCounted.current = now;
-    const next = done + 1;
-    setDone(next);
-    if (next < TAP_PRESSES) {
+    const tap = pressTap(board.current, performance.now());
+    if (tap.outcome === TAP_OUTCOME.IGNORED) return;
+    board.current = tap.state;
+    setDone(tap.state.done);
+    if (tap.outcome === TAP_OUTCOME.COUNTED) {
       hapticLight();
       return;
     }
     hapticSuccess();
     onComplete();
   };
+
+  const status = tapStatusOf(done);
 
   const progress = t("alarm.task.tapCount", { done, total: TAP_PRESSES });
   const target = t("alarm.task.tapHere");
@@ -103,7 +103,7 @@ const TapBoard = ({ onComplete }: BoardProps) => {
 
       <SpokenStatus
         testID={BOARD_PART.TAP_STATUS}
-        message={done > 0 && done < TAP_PRESSES ? formatNumberToLocale(String(done)) : null}
+        message={status === null ? null : formatNumberToLocale(String(status))}
       />
     </VStack>
   );

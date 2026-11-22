@@ -1,6 +1,8 @@
 package expo.modules.alarm
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TextFitTest {
@@ -21,5 +23,21 @@ class TextFitTest {
     @Test
     fun stopsAtTheSmallestSize() {
         assertEquals(40f, TextFit.sp(96f, 40f, fitsAt(10f)), 0f)
+    }
+
+    @Test
+    fun aLineFitsWhenBothItsWidthAndHeightFit() {
+        assertTrue(TextFit.fitsBox(width = 100f, lineHeight = 70f, roomWidth = 100, roomHeight = 73))
+        assertFalse(TextFit.fitsBox(width = 101f, lineHeight = 70f, roomWidth = 100, roomHeight = 73))
+    }
+
+    @Test
+    fun aShortLineTooTallForItsBoxDoesNotFit() {
+        assertFalse(TextFit.fitsBox(width = 40f, lineHeight = 120f, roomWidth = 300, roomHeight = 73))
+    }
+
+    @Test
+    fun aBoxWithNoHeightYetChecksOnlyTheWidth() {
+        assertTrue(TextFit.fitsBox(width = 40f, lineHeight = 120f, roomWidth = 300, roomHeight = 0))
     }
 }
