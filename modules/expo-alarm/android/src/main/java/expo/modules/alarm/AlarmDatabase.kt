@@ -59,7 +59,8 @@ class AlarmDatabase private constructor(private val context: Context) :
                 vibration_pattern TEXT DEFAULT 'default',
                 snooze_enabled INTEGER DEFAULT 1,
                 snooze_max_count INTEGER DEFAULT 3,
-                snooze_duration INTEGER DEFAULT 5
+                snooze_duration INTEGER DEFAULT 5,
+                tasks TEXT
             )
         """)
 
@@ -517,19 +518,34 @@ class AlarmDatabase private constructor(private val context: Context) :
         val vibrationPattern: String,
         val snoozeEnabled: Boolean,
         val snoozeMaxCount: Int,
-        val snoozeDuration: Int
-    )
+        val snoozeDuration: Int,
+        val tasks: List<WakeTasks.Task>
+    ) {
+        val stored: WakeTasks.Stored
+            get() = WakeTasks.Stored(
+                WakeTasks.Challenge(challengeType, challengeDifficulty, challengeCount),
+                tasks
+            )
+
+        fun with(stored: WakeTasks.Stored) = copy(
+            challengeType = stored.challenge.type,
+            challengeDifficulty = stored.challenge.difficulty,
+            challengeCount = stored.challenge.count,
+            tasks = stored.tasks
+        )
+    }
 
     fun getAlarmSettings(alarmType: String): AlarmSettingsRecord {
         val cursor = readableDatabase.rawQuery(
             """SELECT alarm_type, enabled, sound, volume, challenge_type, challenge_difficulty,
                challenge_count, gentle_wakeup_enabled, gentle_wakeup_duration, vibration_enabled,
-               vibration_pattern, snooze_enabled, snooze_max_count, snooze_duration
+               vibration_pattern, snooze_enabled, snooze_max_count, snooze_duration, tasks
                FROM alarm_settings WHERE alarm_type = ?""",
             arrayOf(alarmType)
         )
         return cursor.use {
             if (it.moveToFirst()) {
+                val challenge = WakeTasks.Challenge(it.getString(4), it.getString(5), it.getInt(6))
                 AlarmSettingsRecord(
                     alarmType = it.getString(0),
                     enabled = it.getInt(1) == 1,
@@ -544,25 +560,28 @@ class AlarmDatabase private constructor(private val context: Context) :
                     vibrationPattern = it.getString(10),
                     snoozeEnabled = it.getInt(11) == 1,
                     snoozeMaxCount = it.getInt(12),
-                    snoozeDuration = it.getInt(13)
+                    snoozeDuration = it.getInt(13),
+                    tasks = WakeTasks.resolve(challenge, if (it.isNull(14)) null else it.getString(14))
                 )
             } else {
                 // Return defaults
+                val challenge = WakeTasks.Challenge(WakeTasks.CHALLENGE_TAP, WakeTasks.DEFAULT_DIFFICULTY, 1)
                 AlarmSettingsRecord(
                     alarmType = alarmType,
                     enabled = false,
                     sound = "beep",
                     volume = 1.0f,
-                    challengeType = "tap",
-                    challengeDifficulty = "easy",
-                    challengeCount = 1,
+                    challengeType = challenge.type,
+                    challengeDifficulty = challenge.difficulty,
+                    challengeCount = challenge.count,
                     gentleWakeUpEnabled = false,
                     gentleWakeUpDuration = 3,
                     vibrationEnabled = true,
                     vibrationPattern = "default",
                     snoozeEnabled = true,
                     snoozeMaxCount = 3,
-                    snoozeDuration = 5
+                    snoozeDuration = 5,
+                    tasks = WakeTasks.fromChallenge(challenge)
                 )
             }
         }
@@ -586,6 +605,7 @@ class AlarmDatabase private constructor(private val context: Context) :
             put("snooze_enabled", if (settings.snoozeEnabled) 1 else 0)
             put("snooze_max_count", settings.snoozeMaxCount)
             put("snooze_duration", settings.snoozeDuration)
+            put("tasks", WakeTasks.encode(settings.tasks))
         }
         return try {
             writableDatabase.insertWithOnConflict(
@@ -615,6 +635,13 @@ class AlarmDatabase private constructor(private val context: Context) :
             }
         }
         writableDatabase.update("alarm_settings", values, "alarm_type = ?", arrayOf(alarmType))
+    }
+
+    // A challenge edit rebuilds the stack, as WakeTasks.write rules.
+    fun updateChallenge(alarmType: String, change: (WakeTasks.Challenge) -> WakeTasks.Challenge): Boolean {
+        val settings = getAlarmSettings(alarmType)
+        val written = WakeTasks.write(settings.stored, null, change(settings.stored.challenge))
+        return saveAlarmSettings(settings.with(written))
     }
 
     fun isAlarmEnabled(alarmType: String): Boolean {

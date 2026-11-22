@@ -1,6 +1,7 @@
 package expo.modules.alarm
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -13,11 +14,12 @@ class AlarmMigrationsTest {
     @Test
     fun everyStartVersionRunsEachLaterStepOldestFirst() {
         val expected = mapOf(
-            1 to listOf(2, 3, 3, 4, 5),
-            2 to listOf(3, 3, 4, 5),
-            3 to listOf(4, 5),
-            4 to listOf(5),
-            5 to emptyList(),
+            1 to listOf(2, 3, 3, 4, 5, 6),
+            2 to listOf(3, 3, 4, 5, 6),
+            3 to listOf(4, 5, 6),
+            4 to listOf(5, 6),
+            5 to listOf(6),
+            6 to emptyList(),
         )
         for ((old, versions) in expected) {
             assertEquals("from v$old", versions, AlarmMigrations.steps(old, latest).map { it.version })
@@ -30,6 +32,23 @@ class AlarmMigrationsTest {
         val create = sql.indexOfFirst { it.contains("CREATE TABLE IF NOT EXISTS completed_queue") }
         val alter = sql.indexOfFirst { it.startsWith("ALTER TABLE completed_queue") }
         assertTrue("create at $create, alter at $alter", create in 0 until alter)
+    }
+
+    @Test
+    fun versionSixAddsTheTaskStackAfterTheSettingsTableExists() {
+        val sql = AlarmMigrations.steps(1, latest).map { it.sql }
+        val create = sql.indexOfFirst { it.contains("CREATE TABLE IF NOT EXISTS alarm_settings") }
+        val add = sql.indexOf(AlarmMigrations.ADD_TASKS_COLUMN)
+        assertTrue("create at $create, add at $add", create in 0 until add)
+    }
+
+    // NULL is "no stack saved": the row's challenge stands for it.
+    @Test
+    fun theTaskColumnStartsEmptySoAnOldRowKeepsItsChallenge() {
+        val step = AlarmMigrations.STEPS.single { it.sql == AlarmMigrations.ADD_TASKS_COLUMN }
+        assertEquals(6, step.version)
+        assertTrue(step.addsColumn)
+        assertFalse(step.sql.contains("DEFAULT"))
     }
 
     @Test
