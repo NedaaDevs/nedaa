@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 
+import { PRESS_SCALE } from "@/components/ui/pressable/pressScale";
+import { DURATION_MS } from "@/constants/Motion";
 import { isPrayerId } from "@/constants/Prayer";
 import {
   ANSWER_CARD_POSITIONS,
@@ -12,6 +14,7 @@ import {
   PATTERN_PADS,
   PATTERN_TAP,
   PRAYER_TAP,
+  TAP_OUTCOME,
   TAP_PRESSES,
   TAP_PRESS_MIN_GAP_MS,
   WRONG_CARD_HOLD_MS,
@@ -66,7 +69,7 @@ import {
   type ClockReading,
   type TaskClock,
 } from "@/utils/taskClock";
-import { countsPress } from "@/utils/tapPress";
+import { countsPress, pressTap, startTapBoard, tapStatusOf } from "@/utils/tapPress";
 
 // The Android overlay's JVM tests (TaskRngTest, TaskClockTest, TaskQuietTest,
 // MathCardsTest, MathBoardRunTest, PrayerOrderTest, PatternOrderTest, TapPressTest) read the same tables.
@@ -424,6 +427,28 @@ describe("tap-press.tsv", () => {
   });
 });
 
+describe("tap-board.tsv", () => {
+  const rows = readCases("tap-board.tsv");
+
+  it.each(byCase(rows))("%s replays", (_name, steps) => {
+    let state = startTapBoard();
+    for (const [, at, outcome, done, status] of steps) {
+      const tap = pressTap(state, Number(at));
+      state = tap.state;
+      const said = tapStatusOf(state.done);
+      expect([tap.outcome, state.done, said === null ? NONE : String(said)]).toEqual([
+        outcome,
+        Number(done),
+        status,
+      ]);
+    }
+  });
+
+  it("holds every outcome", () => {
+    expect(new Set(rows.map((row) => row[2]))).toEqual(new Set(Object.values(TAP_OUTCOME)));
+  });
+});
+
 describe("shell-constants.tsv", () => {
   /** The JS value each row pins; the native shell reads the same rows. */
   const SHELL_CONSTANTS: Record<string, number> = {
@@ -432,6 +457,8 @@ describe("shell-constants.tsv", () => {
     WRONG_CARD_HOLD_MS,
     HANDOVER_SHOWN_MS: HANDOVER_MS.IN + HANDOVER_MS.HOLD,
     BOARD_SWAP_IN_MS: BOARD_SWAP_MS.IN,
+    PRESS_SCALE,
+    PRESS_DOWN_MS: DURATION_MS.PRESS,
   };
 
   const rows = readCases("shell-constants.tsv");

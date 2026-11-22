@@ -81,8 +81,23 @@ class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs:
         return step.signal
     }
 
+    // What the progress status says, as JS TaskShell's progressStatus for a
+    // board that does not say its own opening.
+    sealed interface Spoken {
+        data class Handover(val next: TaskRun.Position) : Spoken
+        data class Step(val position: TaskRun.Position) : Spoken
+        data object Silent : Spoken
+    }
+
     companion object {
         // How long the handover shows: JS HANDOVER_MS IN + HOLD; the native panel has no fade.
         const val HANDOVER_MS = 180L + 1000L
+
+        // The handover first; else the step line from the second step until done.
+        fun spokenProgress(handover: TaskRun.Position?, position: TaskRun.Position, done: Boolean): Spoken = when {
+            handover != null -> Spoken.Handover(handover)
+            position.step > 0 && !done -> Spoken.Step(position)
+            else -> Spoken.Silent
+        }
     }
 }

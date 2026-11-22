@@ -161,6 +161,11 @@ export const TAP_PRESSES = 10;
 /** Presses closer together than this count once. */
 export const TAP_PRESS_MIN_GAP_MS = 150;
 
+/** What a press on the tap board does. */
+export const TAP_OUTCOME = { COUNTED: "counted", SOLVED: "solved", IGNORED: "ignored" } as const;
+
+export type TapOutcome = (typeof TAP_OUTCOME)[keyof typeof TAP_OUTCOME];
+
 /** Type sizes the boards draw past the text scale, in pt. */
 export const BOARD_TYPE = {
   SUM: { fontSize: 96, lineHeight: 110 },

@@ -18,6 +18,6 @@ internal const val COLOR_INPUT_BG = "#FF4B5563"       // darkSurfaceActive input
 internal const val COLOR_DISABLED = "#FF374151"       // darkSurfaceHover (disabled)
 internal const val COLOR_TRACK = "#33FFFFFF"         // progress bar track
 internal const val COLOR_HINT = "#FF8A897A"          // input placeholder
-internal const val COLOR_ANSWER_CARD = "#FF4B5563"    // answer card surface, raised over the card
+internal const val COLOR_SURFACE = "#FF4B5563"        // as JS $surface: answer cards and the tap target
 internal const val COLOR_HAIRLINE = "#1AFFFFFF"       // card edge at rest, as JS $hairline
 internal const val COLOR_PRESSED = "#14FFFFFF"        // pressed card fill, as JS $pressed

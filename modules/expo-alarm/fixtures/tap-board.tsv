@@ -1,0 +1,68 @@
+case	at	outcome	done	status
+spaced past solved	0	counted	1	1
+spaced past solved	150	counted	2	2
+spaced past solved	300	counted	3	3
+spaced past solved	450	counted	4	4
+spaced past solved	600	counted	5	5
+spaced past solved	750	counted	6	6
+spaced past solved	900	counted	7	7
+spaced past solved	1050	counted	8	8
+spaced past solved	1200	counted	9	9
+spaced past solved	1350	solved	10	-
+spaced past solved	1500	ignored	10	-
+spaced past solved	1650	ignored	10	-
+bounce around the gap	0	counted	1	1
+bounce around the gap	149	ignored	1	1
+bounce around the gap	150	counted	2	2
+bounce around the gap	299	ignored	2	2
+bounce around the gap	300	counted	3	3
+bounce around the gap	301	ignored	3	3
+quicker than the gap	0	counted	1	1
+quicker than the gap	140	ignored	1	1
+quicker than the gap	280	counted	2	2
+quicker than the gap	420	ignored	2	2
+quicker than the gap	560	counted	3	3
+quicker than the gap	700	ignored	3	3
+quicker than the gap	840	counted	4	4
+quicker than the gap	980	ignored	4	4
+quicker than the gap	1120	counted	5	5
+quicker than the gap	1260	ignored	5	5
+quicker than the gap	1400	counted	6	6
+quicker than the gap	1540	ignored	6	6
+quicker than the gap	1680	counted	7	7
+quicker than the gap	1820	ignored	7	7
+quicker than the gap	1960	counted	8	8
+quicker than the gap	2100	ignored	8	8
+quicker than the gap	2240	counted	9	9
+quicker than the gap	2380	ignored	9	9
+quicker than the gap	2520	solved	10	-
+quicker than the gap	2660	ignored	10	-
+quicker than the gap	2800	ignored	10	-
+quicker than the gap	2940	ignored	10	-
+quicker than the gap	3080	ignored	10	-
+quicker than the gap	3220	ignored	10	-
+quicker than the gap	3360	ignored	10	-
+quicker than the gap	3500	ignored	10	-
+quicker than the gap	3640	ignored	10	-
+quicker than the gap	3780	ignored	10	-
+quicker than the gap	3920	ignored	10	-
+quicker than the gap	4060	ignored	10	-
+same instant	0	counted	1	1
+same instant	0	ignored	1	1
+same instant	0	ignored	1	1
+same instant	150	counted	2	2
+same instant	150	ignored	2	2
+slow, then long after solved	1000	counted	1	1
+slow, then long after solved	6000	counted	2	2
+slow, then long after solved	11000	counted	3	3
+slow, then long after solved	16000	counted	4	4
+slow, then long after solved	21000	counted	5	5
+slow, then long after solved	26000	counted	6	6
+slow, then long after solved	31000	counted	7	7
+slow, then long after solved	36000	counted	8	8
+slow, then long after solved	41000	counted	9	9
+slow, then long after solved	46000	solved	10	-
+slow, then long after solved	1000000	ignored	10	-
+backwards	0	counted	1	1
+backwards	-50	ignored	1	1
+backwards	150	counted	2	2

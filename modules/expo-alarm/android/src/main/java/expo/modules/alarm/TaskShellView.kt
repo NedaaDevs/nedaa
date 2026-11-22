@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.provider.Settings
 import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.FrameLayout
@@ -44,9 +43,7 @@ class TaskShellView(
     private val accessibility = context.getSystemService(AccessibilityManager::class.java)
 
     // Animations off: the quiet bar moves in steps, as under JS Reduce Motion.
-    private val stepped = Settings.Global.getFloat(
-        context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f,
-    ) == 0f
+    private val stepped = animationsOff(context)
 
     private val rng = TaskRng.Rng { Random.nextDouble() }
 
@@ -279,7 +276,14 @@ class TaskShellView(
         stepLine.visibility = if (steps > 1) shown else View.GONE
         stepLine.text = context.getString(R.string.overlay_task_step_of, run.position.step + 1, steps)
         progressSpoken.say(
-            handover?.let { context.getString(R.string.overlay_task_handover, taskOf(run, it), nextOf(run, it)) },
+            when (val spoken = TaskShellRun.spokenProgress(handover, run.position, run.done)) {
+                is TaskShellRun.Spoken.Handover -> context.getString(
+                    R.string.overlay_task_handover, taskOf(run, spoken.next), nextOf(run, spoken.next),
+                )
+                is TaskShellRun.Spoken.Step ->
+                    context.getString(R.string.overlay_task_step_of, spoken.position.step + 1, steps)
+                TaskShellRun.Spoken.Silent -> null
+            },
         )
         renderQuiet(run.reading.clock, now, audible = !run.done)
         wayOut.visibility = if (run.wayOut) View.VISIBLE else View.GONE
