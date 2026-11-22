@@ -11,16 +11,8 @@ class PendingChallengeRuleTest {
 
     private data class Row(val ringing: String, val ageMs: Long, val endsByAge: Boolean)
 
-    private val shared: List<Row> = run {
-        val stream = checkNotNull(javaClass.classLoader?.getResourceAsStream("stale-rule.tsv")) {
-            "missing fixture stale-rule.tsv"
-        }
-        stream.bufferedReader(Charsets.UTF_8).use { it.readLines() }
-            .drop(1)
-            .filter { it.isNotEmpty() }
-            .map { it.split('\t') }
-            .map { (ringing, age, ends) -> Row(ringing, age.toLong(), ends.toBooleanStrict()) }
-    }
+    private val shared: List<Row> = sharedTable("stale-rule.tsv")
+        .map { (ringing, age, ends) -> Row(ringing, age.toLong(), ends.toBooleanStrict()) }
 
     @Test
     fun anUncompletedRowIsOpenUntilItEndsByAge() {

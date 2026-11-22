@@ -6,18 +6,8 @@ import org.junit.Test
 // Same tables as the JS test in src/utils/__tests__/dhikrChallenge.test.ts.
 class DhikrMatcherTest {
 
-    private fun readCases(file: String): List<List<String>> {
-        val stream = checkNotNull(javaClass.classLoader?.getResourceAsStream(file)) {
-            "missing fixture $file"
-        }
-        return stream.bufferedReader(Charsets.UTF_8).use { it.readLines() }
-            .drop(1)
-            .filter { it.isNotEmpty() }
-            .map { it.split('\t') }
-    }
-
-    private val normalizeCases = readCases("dhikr-normalize.tsv")
-    private val matchCases = readCases("dhikr-match.tsv")
+    private val normalizeCases = sharedTable("dhikr-normalize.tsv")
+    private val matchCases = sharedTable("dhikr-match.tsv")
 
     @Test
     fun normalizesEverySharedCase() {
