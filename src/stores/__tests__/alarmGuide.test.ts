@@ -37,6 +37,16 @@ describe("the alarm guide's seen mark", () => {
     expect(useAlarmGuideStore.getState().hasSeenGuide).toBe(true);
   });
 
+  it("keeps a mark made while the read is under way", async () => {
+    storage.getItem.mockResolvedValueOnce(saved({ hasSeenGuide: false }));
+
+    const read = useAlarmGuideStore.persist.rehydrate();
+    useAlarmGuideStore.getState().markGuideSeen();
+    await read;
+
+    expect(useAlarmGuideStore.getState().hasSeenGuide).toBe(true);
+  });
+
   it("reads a malformed record as unseen", async () => {
     storage.getItem.mockResolvedValueOnce(saved({ hasSeenGuide: "yes" }));
 
