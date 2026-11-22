@@ -314,6 +314,61 @@ describe("PrayersBoard", () => {
     expect(line()).toHaveTextContent(/^$/);
   });
 
+  describe("two taps before React commits the first", () => {
+    const touch = { nativeEvent: { timestamp: 0 }, persist: () => undefined };
+    const pressInPlace = (card: ReturnType<typeof cards>[number]) => {
+      const { onResponderGrant, onResponderRelease } = card.props;
+      onResponderGrant(touch);
+      onResponderRelease(touch);
+    };
+
+    it("takes no right card once a wrong one holds", async () => {
+      const { state } = opening();
+      await renderBoard();
+      const [isha, fajr] = [cardOf(state, PRAYER_ID.ISHA), cardOf(state, PRAYER_ID.FAJR)];
+
+      await act(() => {
+        pressInPlace(isha);
+        pressInPlace(fajr);
+      });
+
+      expect(places()).toHaveAccessibleName(empty(PRAYER_ID.FAJR));
+      expect(cardOf(state, PRAYER_ID.ISHA)).toHaveAccessibleName(
+        t("a11y.alarm.task.cardWrong", { card: name(PRAYER_ID.ISHA) })
+      );
+    });
+
+    it("places both of two right cards", async () => {
+      const { state } = opening();
+      await renderBoard();
+      const [fajr, dhuhr] = [cardOf(state, PRAYER_ID.FAJR), cardOf(state, PRAYER_ID.DHUHR)];
+
+      await act(() => {
+        pressInPlace(fajr);
+        pressInPlace(dhuhr);
+      });
+
+      expect(places()).toHaveAccessibleName(
+        spoken(filled(PRAYER_ID.FAJR), filled(PRAYER_ID.DHUHR), empty(PRAYER_ID.ASR))
+      );
+      expect(line()).toHaveTextContent(/^$/);
+    });
+
+    it("solves once from Isha pressed twice", async () => {
+      const { state } = opening();
+      const { onComplete } = await renderBoard();
+      await placeInOrder(state, PRAYER_IDS.length - 1);
+      const isha = cardOf(state, PRAYER_ID.ISHA);
+
+      await act(() => {
+        pressInPlace(isha);
+        pressInPlace(isha);
+      });
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("shows no score, count of misses or praise", async () => {
     const { state } = opening();
     await renderBoard();

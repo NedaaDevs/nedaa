@@ -163,4 +163,24 @@
     <string name="overlay_task_card_place_second">البطاقة الثانية من أربع</string>
     <string name="overlay_task_card_place_third">البطاقة الثالثة من أربع</string>
     <string name="overlay_task_card_place_fourth">البطاقة الرابعة من أربع</string>
+    <string name="overlay_task_prayers_ask">من %1$s إلى %2$s.</string>
+    <string name="overlay_task_prayers_wrong">لم يحن دور %1$s.</string>
+    <string name="overlay_task_prayers_dealt">وُزّعت البطاقات من جديد.</string>
+    <string name="overlay_task_prayers_dealt_next">وُزّعت البطاقات من جديد. المطلوب الصلاة التي تلي %1$s.</string>
+    <string name="overlay_task_prayers_after_miss">لم يحن دور %1$s. وُزّعت البطاقات من جديد.</string>
+    <string name="overlay_task_prayers_empty_fajr">الموضع الأول فارغ.</string>
+    <string name="overlay_task_prayers_empty_dhuhr">الموضع الثاني فارغ.</string>
+    <string name="overlay_task_prayers_empty_asr">الموضع الثالث فارغ.</string>
+    <string name="overlay_task_prayers_empty_maghrib">الموضع الرابع فارغ.</string>
+    <string name="overlay_task_prayers_empty_isha">الموضع الخامس فارغ.</string>
+    <string name="overlay_task_prayers_filled_fajr">%1$s في الموضع الأول.</string>
+    <string name="overlay_task_prayers_filled_dhuhr">%1$s في الموضع الثاني.</string>
+    <string name="overlay_task_prayers_filled_asr">%1$s في الموضع الثالث.</string>
+    <string name="overlay_task_prayers_filled_maghrib">%1$s في الموضع الرابع.</string>
+    <string name="overlay_task_prayers_filled_isha">%1$s في الموضع الخامس.</string>
+    <string name="overlay_prayer_fajr">الفجر</string>
+    <string name="overlay_prayer_dhuhr">الظهر</string>
+    <string name="overlay_prayer_asr">العصر</string>
+    <string name="overlay_prayer_maghrib">المغرب</string>
+    <string name="overlay_prayer_isha">العشاء</string>
 </resources>

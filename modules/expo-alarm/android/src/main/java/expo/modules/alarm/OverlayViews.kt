@@ -1,11 +1,15 @@
 package expo.modules.alarm
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
+import android.animation.StateListAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
@@ -20,6 +24,7 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import java.util.Locale
@@ -32,6 +37,29 @@ internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.den
 // Animations off in system settings, which JS reads as Reduce Motion.
 internal fun animationsOff(context: Context): Boolean =
     Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+
+// JS PRESS_SCALE and DURATION_MS.PRESS.
+internal const val PRESS_SCALE = 0.98f
+internal const val PRESS_DOWN_MS = 80L
+
+// As JS usePressScale: none with animations off, no spring on release.
+internal fun pressScale(target: View): StateListAnimator? =
+    if (animationsOff(target.context)) {
+        null
+    } else {
+        StateListAnimator().apply {
+            addState(intArrayOf(android.R.attr.state_pressed), scaleTo(target, PRESS_SCALE))
+            addState(intArrayOf(), scaleTo(target, 1f))
+        }
+    }
+
+private fun scaleTo(target: View, scale: Float) = AnimatorSet().apply {
+    playTogether(
+        ObjectAnimator.ofFloat(target, View.SCALE_X, scale),
+        ObjectAnimator.ofFloat(target, View.SCALE_Y, scale),
+    )
+    duration = PRESS_DOWN_MS
+}
 
 internal fun matchWidth(): LinearLayout.LayoutParams =
     LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -90,10 +118,15 @@ internal object AnswerCardShape {
     const val RADIUS_DP = 16f
     const val EDGE_DP = 1.5f
     const val WRONG_EDGE_DP = 2f
+    const val PLACED_EDGE_DP = 2.5f
     const val DASH_DP = 6f
     const val MARK_DP = 28
     const val MARK_INSET_DP = 8
     const val MARK_EDGE_DP = 2f
+
+    // JS size label; a placed mark's numeral shrinks to stay in its ring.
+    const val MARK_SP = 15f
+    const val MARK_MIN_SP = 8f
 }
 
 internal fun Context.dpf(value: Float): Float = value * resources.displayMetrics.density
@@ -111,6 +144,8 @@ internal fun answerCardBackground(context: Context, state: AnswerCardState): Dra
     AnswerCardState.WRONG ->
         cardFill(context, COLOR_SURFACE, COLOR_ERROR, AnswerCardShape.WRONG_EDGE_DP, dashed = true)
     AnswerCardState.HELD -> cardFill(context, COLOR_SURFACE, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false)
+    AnswerCardState.PLACED ->
+        cardFill(context, COLOR_SURFACE, COLOR_PRIMARY, AnswerCardShape.PLACED_EDGE_DP, dashed = false)
     AnswerCardState.REST -> StateListDrawable().apply {
         val pressed = cardFill(context, COLOR_PRESSED, COLOR_TEXT, AnswerCardShape.EDGE_DP, false)
         addState(intArrayOf(android.R.attr.state_pressed), pressed)
@@ -198,4 +233,83 @@ private fun shrinkToWidth(view: TextView, maxSp: Float, minSp: Float) {
     }
     val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics)
     if (view.textSize != px) view.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+}
+
+// An answer card's label size and edge inset, and the card's least height.
+internal data class AnswerCardSize(
+    val labelSp: Float,
+    val minSp: Float,
+    val labelDp: Int,
+    val minDp: Int,
+    val labelInsetDp: Int,
+)
+
+// One answer on a board's grid, as JS AnswerCard: only a card at rest takes
+// a tap; a placed card is hidden from the reader, which hears the board instead.
+internal class AnswerCardView(context: Context, size: AnswerCardSize, onTap: (View) -> Unit) {
+
+    private val inset = context.dp(AnswerCardShape.MARK_INSET_DP)
+
+    // The corner mark draws over the label unless the inset clears it.
+    private val label = overlayText(context, size.labelSp, COLOR_TEXT).apply {
+        val clear = context.dp(size.labelInsetDp)
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        maxLines = 1
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        setPaddingRelative(clear, 0, clear, 0)
+        layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, context.dp(size.labelDp), Gravity.CENTER)
+        fitOneLine(this, size.labelSp, size.minSp)
+    }
+
+    private val wrongMark = View(context).apply {
+        background = WrongMark(context.dpf(AnswerCardShape.MARK_EDGE_DP))
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        layoutParams = cornerMark(context)
+    }
+
+    private val placedMark = overlayText(context, AnswerCardShape.MARK_SP, COLOR_PRIMARY).apply {
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        maxLines = 1
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setStroke(context.dpf(AnswerCardShape.MARK_EDGE_DP).toInt().coerceAtLeast(1), Color.parseColor(COLOR_PRIMARY))
+        }
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        layoutParams = cornerMark(context)
+        fitOneLine(this, AnswerCardShape.MARK_SP, AnswerCardShape.MARK_MIN_SP)
+    }
+
+    val frame: FrameLayout = FrameLayout(context).apply {
+        minimumHeight = context.dp(size.minDp)
+        isClickable = true
+        isFocusable = true
+        speaksAsButton()
+        stateListAnimator = pressScale(this)
+        addView(label)
+        addView(wrongMark)
+        addView(placedMark)
+        setOnClickListener(onTap)
+    }
+
+    // `mark` is the number a placed card draws in its ring.
+    fun show(state: AnswerCardState, text: String, spoken: String, mark: String? = null) {
+        val context = frame.context
+        label.text = text
+        wrongMark.visibility = if (state == AnswerCardState.WRONG) View.VISIBLE else View.GONE
+        placedMark.visibility = if (state == AnswerCardState.PLACED) View.VISIBLE else View.GONE
+        placedMark.text = mark.orEmpty()
+        frame.background = answerCardBackground(context, state)
+        frame.isEnabled = state == AnswerCardState.REST
+        frame.importantForAccessibility = if (state == AnswerCardState.PLACED) {
+            View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        } else {
+            View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        }
+        frame.contentDescription =
+            if (state == AnswerCardState.WRONG) context.getString(R.string.overlay_task_card_wrong, spoken) else spoken
+    }
+
+    private fun cornerMark(context: Context) = FrameLayout.LayoutParams(
+        context.dp(AnswerCardShape.MARK_DP), context.dp(AnswerCardShape.MARK_DP), Gravity.TOP or Gravity.END,
+    ).apply { topMargin = inset; marginEnd = inset }
 }

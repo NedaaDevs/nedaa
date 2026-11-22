@@ -56,6 +56,16 @@ export const androidPlurals = (folder: string): Map<string, Map<string, string>>
     ])
   );
 
+const isBundle = (node: unknown): node is Bundle => typeof node === "object" && node !== null;
+
+/** A bundle's text for a key: a flat key first, else the nested path. */
+export const localeValue = (bundle: Bundle, key: string): unknown =>
+  key in bundle
+    ? bundle[key]
+    : key
+        .split(".")
+        .reduce<unknown>((node, part) => (isBundle(node) ? node[part] : undefined), bundle);
+
 /** An Android string in i18next's form: `%N$d` becomes the N-th name. */
 export const asI18next = (value: string, names: readonly string[]): string =>
   value.replace(ARGUMENT, (_, index: string) => `{{${names[Number(index) - 1]}}}`);
