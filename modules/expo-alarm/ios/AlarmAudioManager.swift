@@ -343,6 +343,8 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         isVibrating = true
 
         DispatchQueue.main.async { [weak self] in
+            // A stop that lands before this block leaves nothing to start.
+            guard self?.isVibrating == true else { return }
             self?.vibrationTimer?.invalidate()
             self?.vibrationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
                 guard self?.isVibrating == true else { return }

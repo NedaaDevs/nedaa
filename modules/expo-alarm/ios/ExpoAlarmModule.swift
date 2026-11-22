@@ -562,6 +562,12 @@ public class ExpoAlarmModule: Module {
             return true
         }
 
+        // The pattern is Android's; iOS has one system vibration.
+        Function("startAlarmVibration") { (_: String) -> Bool in
+            AlarmAudioManager.shared.startContinuousVibration()
+            return true
+        }
+
         Function("stopAllAlarmEffects") { () -> Bool in
             AlarmAudioManager.shared.stopAll()
             AlarmObserver.endBackgroundTask()
