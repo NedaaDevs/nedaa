@@ -1,16 +1,20 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
-import { QUIET_PHASE, TASK_CLOCK_TICK_MS } from "@/constants/WakeTaskShell";
 import {
-  advanceTaskClock,
-  endQuiet,
+  QUIET_EVENT,
+  QUIET_SIGNAL,
+  TASK_CLOCK_TICK_MS,
+  type QuietEvent,
+} from "@/constants/WakeTaskShell";
+import {
   quietFraction,
   quietPhase,
   quietSecondsLeft,
-  restartQuiet as restartQuietAt,
   resumeTaskClock,
   startTaskClock,
+  stepQuiet,
   wayOutShown,
+  type ClockReading,
   type TaskClock,
 } from "@/utils/taskClock";
 
@@ -30,8 +34,6 @@ type Options = {
   onQuietEnd: () => void;
 };
 
-type Reading = Readonly<{ clock: TaskClock; now: number }>;
-
 /** One task run's quiet time, and the sounding time that earns the way out. */
 export const useTaskClock = ({
   openedAt,
@@ -43,38 +45,30 @@ export const useTaskClock = ({
   onQuietEnding,
   onQuietEnd,
 }: Options) => {
-  const [reading, setReading] = useState<Reading>(() => ({
+  const [reading, setReading] = useState<ClockReading>(() => ({
     clock: resume ? resumeTaskClock(resume, openedAt) : startTaskClock(openedAt, quietMs),
     now: openedAt,
   }));
   // The reading the callbacks were last sent for; handlers and effects read it.
   const latest = useRef(reading);
 
-  const commit = (next: Reading) => {
-    latest.current = next;
-    setReading(next);
+  // Applies one event at the current time and sends the sound change it calls for.
+  const run = (event: QuietEvent): TaskClock => {
+    const before = latest.current;
+    const { reading: next, signal } = stepQuiet(before, event, Date.now(), quietMs, audible);
+    if (next !== before) {
+      latest.current = next;
+      // An unheard run shows no reading, so its ticks draw nothing.
+      if (audible || event !== QUIET_EVENT.TICK) setReading(next);
+    }
+    if (signal === QUIET_SIGNAL.START) onQuietStart();
+    if (signal === QUIET_SIGNAL.ENDING) onQuietEnding?.();
+    if (signal === QUIET_SIGNAL.END) onQuietEnd();
+    return next.clock;
   };
 
-  const tick = useEffectEvent(() => {
-    const before = latest.current;
-    const now = Date.now();
-    const clock = advanceTaskClock(before.clock, now, audible);
-    const next = { clock, now };
-    // An unheard run shows no reading, so its ticks draw nothing.
-    if (audible) commit(next);
-    else latest.current = next;
-
-    const was = quietPhase(before.clock, before.now);
-    const is = quietPhase(clock, now);
-    if (is === was || !audible) return;
-    if (is === QUIET_PHASE.ENDING) onQuietEnding?.();
-    if (is === QUIET_PHASE.SOUNDING) onQuietEnd();
-  });
-
-  const open = useEffectEvent(() => {
-    const { clock, now } = latest.current;
-    if (audible && quietPhase(clock, now) !== QUIET_PHASE.SOUNDING) onQuietStart();
-  });
+  const tick = useEffectEvent(() => run(QUIET_EVENT.TICK));
+  const open = useEffectEvent(() => run(QUIET_EVENT.OPEN));
 
   useEffect(() => {
     open();
@@ -84,10 +78,7 @@ export const useTaskClock = ({
 
   // The alarm sounds again as it becomes audible, so quiet time ends with it.
   const heard = useRef(audible);
-  const hear = useEffectEvent(() => {
-    const now = Date.now();
-    commit({ clock: endQuiet(latest.current.clock, now, false), now });
-  });
+  const hear = useEffectEvent(() => run(QUIET_EVENT.HEAR));
 
   useEffect(() => {
     if (audible && !heard.current) hear();
@@ -96,21 +87,11 @@ export const useTaskClock = ({
 
   /** A full quiet time from now; pauses the sound if it had returned. */
   const restartQuiet = () => {
-    const before = latest.current;
-    const now = Date.now();
-    commit({ clock: restartQuietAt(before.clock, now, quietMs, audible), now });
-    if (audible && quietPhase(before.clock, before.now) === QUIET_PHASE.SOUNDING) onQuietStart();
+    run(QUIET_EVENT.RESTART);
   };
 
   /** Ends quiet time as the task closes; returns the clock to resume from. */
-  const leave = (): TaskClock => {
-    const before = latest.current;
-    const now = Date.now();
-    const clock = endQuiet(before.clock, now, audible);
-    commit({ clock, now });
-    if (audible && quietPhase(before.clock, before.now) !== QUIET_PHASE.SOUNDING) onQuietEnd();
-    return clock;
-  };
+  const leave = (): TaskClock => run(QUIET_EVENT.LEAVE);
 
   const { clock, now } = reading;
   return {

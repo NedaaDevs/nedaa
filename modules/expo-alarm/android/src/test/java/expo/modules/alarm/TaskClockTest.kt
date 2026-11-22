@@ -18,7 +18,7 @@ class TaskClockTest {
     private val cases = sharedTable("task-clock.tsv").map(::Row).groupBy { it.case }
 
     private fun quietMs(screenReader: Boolean) =
-        TaskClock.quietSecondsFor(screenReader) * SECOND_MS
+        TaskClock.quietSecondsFor(screenReader) * TaskClock.SECOND_MS
 
     // Reads every tick from the last counted moment up to `to`.
     private fun ticks(clock: TaskClock, to: Long, audible: Boolean): TaskClock {
@@ -80,7 +80,6 @@ class TaskClockTest {
     }
 
     private companion object {
-        const val SECOND_MS = 1000L
         const val EXPECTED_FROM = 5
     }
 }

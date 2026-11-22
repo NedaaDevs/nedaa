@@ -3,11 +3,15 @@ import type { TFunction } from "i18next";
 import {
   QUIET_BAR_STEP_SECONDS,
   QUIET_ENDING_SECONDS,
+  QUIET_EVENT,
   QUIET_PHASE,
+  QUIET_SIGNAL,
   QUIET_TIME_SECONDS,
   TASK_CLOCK_MAX_GAIN_MS,
   WAY_OUT_SOUNDING_SECONDS,
+  type QuietEvent,
   type QuietPhase,
+  type QuietSignal,
 } from "@/constants/WakeTaskShell";
 
 const SECOND_MS = 1000;
@@ -83,6 +87,55 @@ export const quietFraction = (clock: TaskClock, now: number, stepped: boolean): 
   const left = quietLeftMs(clock, now);
   const shown = stepped ? Math.ceil(left / step) * step : left;
   return Math.min(1, shown / clock.quietMs);
+};
+
+/** A clock and the moment it was last read. */
+export type ClockReading = Readonly<{ clock: TaskClock; now: number }>;
+
+export type QuietStep = Readonly<{ reading: ClockReading; signal: QuietSignal | null }>;
+
+const tickSignal = (was: QuietPhase, is: QuietPhase): QuietSignal | null => {
+  if (is === was) return null;
+  if (is === QUIET_PHASE.ENDING) return QUIET_SIGNAL.ENDING;
+  return is === QUIET_PHASE.SOUNDING ? QUIET_SIGNAL.END : null;
+};
+
+/** What one event does to a run's quiet time, and the sound change it calls
+ *  for; an unheard alarm gets none. */
+export const stepQuiet = (
+  before: ClockReading,
+  event: QuietEvent,
+  now: number,
+  quietMs: number,
+  audible: boolean
+): QuietStep => {
+  const was = quietPhase(before.clock, before.now);
+  const sounding = was === QUIET_PHASE.SOUNDING;
+  switch (event) {
+    case QUIET_EVENT.OPEN:
+      return { reading: before, signal: audible && !sounding ? QUIET_SIGNAL.START : null };
+    case QUIET_EVENT.TICK: {
+      const clock = advanceTaskClock(before.clock, now, audible);
+      const signal = audible ? tickSignal(was, quietPhase(clock, now)) : null;
+      return { reading: { clock, now }, signal };
+    }
+    case QUIET_EVENT.HEAR:
+      return { reading: { clock: endQuiet(before.clock, now, false), now }, signal: null };
+    case QUIET_EVENT.RESTART:
+      return {
+        reading: { clock: restartQuiet(before.clock, now, quietMs, audible), now },
+        signal: audible && sounding ? QUIET_SIGNAL.START : null,
+      };
+    case QUIET_EVENT.LEAVE:
+      return {
+        reading: { clock: endQuiet(before.clock, now, audible), now },
+        signal: audible && !sounding ? QUIET_SIGNAL.END : null,
+      };
+    default: {
+      const unhandled: never = event;
+      throw new Error(`unknown quiet event ${String(unhandled)}`);
+    }
+  }
 };
 
 export const wayOutShown = (clock: TaskClock): boolean =>

@@ -101,4 +101,43 @@
     <string name="overlay_notification_math_one">Solve 1 math problem to dismiss</string>
     <string name="overlay_notification_math_many">Solve %d math problems to dismiss</string>
     <string name="overlay_notification_dismiss">Tap to dismiss</string>
+
+    <!-- Overlay - Wake-up task shell, a stack of two or more tasks -->
+    <string name="overlay_task_start">Start wake-up task</string>
+    <plurals name="overlay_task_start_count">
+        <item quantity="one">Start wake-up task</item>
+        <item quantity="other">Start %d wake-up tasks</item>
+    </plurals>
+    <string name="overlay_task_pair">%1$s, then %2$s</string>
+    <string name="overlay_task_of">Task %1$d of %2$d</string>
+    <string name="overlay_task_step_of">Step %1$d of %2$d</string>
+    <string name="overlay_task_next">Next: %s</string>
+    <string name="overlay_task_handover">%1$s. %2$s.</string>
+    <string name="overlay_task_name_math">Math</string>
+    <string name="overlay_task_name_pattern">Repeat the pattern</string>
+    <string name="overlay_task_name_dhikr">Complete the dhikr</string>
+    <string name="overlay_task_name_prayers">Prayers in order</string>
+    <string name="overlay_task_name_tap">Tapping</string>
+    <string name="overlay_task_title_math">What is the answer?</string>
+    <string name="overlay_quiet_paused">Sound paused</string>
+    <string name="overlay_quiet_soon">Sound returns soon</string>
+    <string name="overlay_quiet_on">Sound is on</string>
+    <string name="overlay_quiet_on_help">A correct answer pauses it</string>
+    <plurals name="overlay_quiet_ending">
+        <item quantity="one">Sound returns in 1 second</item>
+        <item quantity="other">Sound returns in %d seconds</item>
+    </plurals>
+    <plurals name="overlay_quiet_left">
+        <item quantity="one">%1$s, 1 second left</item>
+        <item quantity="other">%1$s, %2$d seconds left</item>
+    </plurals>
+    <string name="overlay_task_way_out">You can stop the alarm without finishing.</string>
+    <string name="overlay_task_stop">Stop alarm</string>
+    <plurals name="overlay_task_tap_ask">
+        <item quantity="one">Tap the large button once.</item>
+        <item quantity="other">Tap the large button %d times.</item>
+    </plurals>
+    <string name="overlay_task_tap_count">%1$d of %2$d</string>
+    <string name="overlay_task_tap_here">Tap here</string>
+    <string name="overlay_task_math_wrong">Not that one. A new question follows.</string>
 </resources>

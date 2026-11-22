@@ -34,6 +34,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextClock
 import android.widget.TextView
 import android.widget.Toast
@@ -80,24 +81,6 @@ class AlarmOverlayService : Service() {
             )
         )
 
-        // UI colors — Nedaa dark brand (tamagui.config.ts dark theme), always-dark overlay
-        private const val COLOR_BG = "#F0222831"            // darkBackground scrim
-        private const val COLOR_CARD_BG = "#FF393E46"       // darkBackgroundElevated
-        private const val COLOR_PRIMARY = "#FFE6C469"        // darkPrimary (gold)
-        private const val COLOR_PRIMARY_LIGHT = "#FFF0D89A"  // lighter gold
-        private const val COLOR_SUCCESS = "#FF22C55E"        // darkBorderSuccess
-        private const val COLOR_SUCCESS_LIGHT = "#FF4ADE80"  // tap success flash
-        private const val COLOR_WARNING = "#FFFCD34D"        // darkWarning
-        private const val COLOR_ERROR = "#FFEF4444"          // darkBorderError
-        private const val COLOR_SNOOZE = "#FF4B5563"         // darkSurfaceActive (secondary)
-        private const val COLOR_TEXT = "#FFFFFFFF"           // primary text on dark surfaces
-        private const val COLOR_TEXT_SECONDARY = "#FFE3E2CE" // darkTypographySecondary (off-white)
-        private const val COLOR_TEXT_ON_ACCENT = "#FF222831" // dark text on gold/green fills
-        private const val COLOR_TEXT_MUTED = "#FFB4B3A1"     // muted body text
-        private const val COLOR_INPUT_BG = "#FF4B5563"       // darkSurfaceActive input well
-        private const val COLOR_DISABLED = "#FF374151"       // darkSurfaceHover (disabled)
-
-
         @Volatile
         var isRunning = false
             private set
@@ -142,6 +125,22 @@ class AlarmOverlayService : Service() {
     private var challengeStarted = false
     private var startSolvingContainer: LinearLayout? = null
     private var challengeContainer: LinearLayout? = null
+
+    // Two or more tasks run the task shell in place of the challenge above.
+    private var stack: List<WakeTasks.Task> = emptyList()
+    private var taskShell: TaskShellView? = null
+    private var snoozeButton: Button? = null
+
+    private val shellListener = object : TaskShellView.Listener {
+        override fun onStart() {
+            snoozeButton?.visibility = View.GONE
+        }
+
+        override fun onSilence() = silenceAlarm()
+        override fun onSound() = soundAtVolume()
+        override fun onSolved() = completeAlarm()
+        override fun onStop() = completeAlarm(AlarmDatabase.OUTCOME_STOPPED)
+    }
 
     // Tap challenge state
     private var tapCount = 0
@@ -191,9 +190,7 @@ class AlarmOverlayService : Service() {
 
     private val graceListener = object : GraceTimer.Listener {
         override fun onSilence() {
-            val audioManager = AlarmAudioManager.getInstance(this@AlarmOverlayService)
-            audioManager.stopAlarmSound()
-            audioManager.stopVibration()
+            silenceAlarm()
             AlarmLogger.getInstance(this@AlarmOverlayService).d("AlarmOverlay", "Grace period started: ${graceDurationMs}ms")
         }
 
@@ -228,6 +225,11 @@ class AlarmOverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        // A second start keeps the shell showing and its progress; the ringing alarm's notice stays.
+        if (taskShell != null) {
+            startForeground(NOTIFICATION_ID, createNotification())
+            return START_NOT_STICKY
+        }
 
         alarmId = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_ID) ?: ""
         alarmType = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_TYPE) ?: ""
@@ -248,6 +250,7 @@ class AlarmOverlayService : Service() {
         challengeType = type
         challengeDifficulty = difficulty
         challengeCount = count
+        stack = db.getAlarmSettings(alarmType).tasks
 
         tapsPerRound = when (difficulty) {
             "easy" -> TAPS_EASY
@@ -286,6 +289,7 @@ class AlarmOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        taskShell?.release()
         grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
@@ -307,14 +311,31 @@ class AlarmOverlayService : Service() {
         graceSecondsText?.visibility = View.GONE
         graceExpiredText?.visibility = View.VISIBLE
 
-        // Restart alarm sound
+        soundAgain()
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period expired, sound restarted")
+    }
+
+    private fun silenceAlarm() {
+        val audioManager = AlarmAudioManager.getInstance(this)
+        audioManager.stopAlarmSound()
+        audioManager.stopVibration()
+    }
+
+    private fun soundAgain() {
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.startAlarmSound(alarmSound, alarmVolume, gentleWakeUpEnabled, gentleWakeUpDuration)
         if (vibrationEnabled) {
             audioManager.startVibration(vibrationPattern)
         }
+    }
 
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period expired, sound restarted")
+    // The shell's sound after quiet time: the set volume at once, as the JS task does.
+    private fun soundAtVolume() {
+        val audioManager = AlarmAudioManager.getInstance(this)
+        audioManager.startAlarmSound(alarmSound, alarmVolume, false, 0)
+        if (vibrationEnabled) {
+            audioManager.startVibration(vibrationPattern)
+        }
     }
 
     private fun resetGraceForNextRound() {
@@ -371,18 +392,20 @@ class AlarmOverlayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val contentText = when (challengeType) {
-            "math" -> if (challengeCount == 1) {
+        val contentText = if (NativeBoards.runsShell(stack)) {
+            resources.getQuantityString(R.plurals.overlay_task_start_count, stack.size, stack.size)
+        } else when (challengeType) {
+            WakeTasks.CHALLENGE_MATH -> if (challengeCount == 1) {
                 getString(R.string.overlay_notification_math_one)
             } else {
                 getString(R.string.overlay_notification_math_many, challengeCount)
             }
-            "dhikr" -> if (challengeCount == 1) {
+            WakeTasks.CHALLENGE_DHIKR -> if (challengeCount == 1) {
                 getString(R.string.overlay_dhikr_instruction_one)
             } else {
                 getString(R.string.overlay_dhikr_instruction_many, challengeCount)
             }
-            "none" -> getString(R.string.overlay_notification_dismiss)
+            WakeTasks.CHALLENGE_NONE -> getString(R.string.overlay_notification_dismiss)
             else -> getString(R.string.overlay_notification_tap, requiredTaps)
         }
 
@@ -468,7 +491,7 @@ class AlarmOverlayService : Service() {
             max = 10000
             progress = 10000
             progressTintList = ColorStateList.valueOf(Color.parseColor(COLOR_PRIMARY))
-            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#33FFFFFF"))
+            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor(COLOR_TRACK))
             layoutParams = LinearLayout.LayoutParams(0, (4 * dp).toInt(), 1f)
         }
         graceSecondsText = TextView(this).apply {
@@ -512,27 +535,11 @@ class AlarmOverlayService : Service() {
         }
         card.addView(graceExpiredText)
 
-        // "Start Solving" gate (shown initially)
-        startSolvingContainer = buildStartSolvingUI(dp)
-        card.addView(startSolvingContainer)
-
-        // Challenge-specific UI (hidden until Start Solving pressed)
-        challengeContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            visibility = View.GONE
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+        if (NativeBoards.runsShell(stack)) {
+            taskShell = TaskShellView(this, stack, shellListener).also { card.addView(it.view) }
+        } else {
+            buildChallengeUI(card, dp)
         }
-        when (challengeType) {
-            "math" -> buildMathChallengeUI(challengeContainer!!, dp)
-            "dhikr" -> buildDhikrChallengeUI(challengeContainer!!, dp)
-            "none" -> buildDirectDismissUI(challengeContainer!!, dp)
-            else -> buildTapChallengeUI(challengeContainer!!, dp)
-        }
-        card.addView(challengeContainer)
 
         // Snooze button
         val db = AlarmDatabase.getInstance(this)
@@ -567,10 +574,20 @@ class AlarmOverlayService : Service() {
                 setOnClickListener { onSnoozeClicked() }
             }
             card.addView(snoozeButton)
+            this.snoozeButton = snoozeButton
         }
 
         rootLayout.addView(card)
-        overlayView = rootLayout
+        // Scrolls when the card is taller than the screen, as with the keyboard open; centred when it fits.
+        val scroller = ScrollView(this).apply {
+            isFillViewport = true
+            setBackgroundColor(Color.parseColor(COLOR_BG))
+            addView(
+                rootLayout,
+                FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT),
+            )
+        }
+        overlayView = scroller
 
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -579,7 +596,12 @@ class AlarmOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
         }
 
-        val windowFlags = if (challengeType == "math" || challengeType == "dhikr") {
+        val typed = if (taskShell != null) {
+            NativeBoards.needsKeyboard(stack)
+        } else {
+            challengeType == WakeTasks.CHALLENGE_MATH || challengeType == WakeTasks.CHALLENGE_DHIKR
+        }
+        val windowFlags = if (typed) {
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
@@ -600,6 +622,9 @@ class AlarmOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
+        if (taskShell != null && typed) {
+            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        }
 
         try {
             windowManager?.addView(overlayView, params)
@@ -608,6 +633,30 @@ class AlarmOverlayService : Service() {
             // A running service with no view would refuse the banner tap.
             stopSelf()
         }
+    }
+
+    // The single-challenge UI: a "Start Solving" gate, then the challenge.
+    private fun buildChallengeUI(card: LinearLayout, dp: Float) {
+        startSolvingContainer = buildStartSolvingUI(dp)
+        card.addView(startSolvingContainer)
+
+        // Challenge-specific UI (hidden until Start Solving pressed)
+        challengeContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        when (challengeType) {
+            WakeTasks.CHALLENGE_MATH -> buildMathChallengeUI(challengeContainer!!, dp)
+            WakeTasks.CHALLENGE_DHIKR -> buildDhikrChallengeUI(challengeContainer!!, dp)
+            WakeTasks.CHALLENGE_NONE -> buildDirectDismissUI(challengeContainer!!, dp)
+            else -> buildTapChallengeUI(challengeContainer!!, dp)
+        }
+        card.addView(challengeContainer)
     }
 
     private fun buildStartSolvingUI(dp: Float): LinearLayout {
@@ -621,17 +670,17 @@ class AlarmOverlayService : Service() {
         }
 
         val instructionText = when (challengeType) {
-            "math" -> if (challengeCount == 1) {
+            WakeTasks.CHALLENGE_MATH -> if (challengeCount == 1) {
                 getString(R.string.overlay_math_instruction_one)
             } else {
                 getString(R.string.overlay_math_instruction_many, challengeCount)
             }
-            "dhikr" -> if (challengeCount == 1) {
+            WakeTasks.CHALLENGE_DHIKR -> if (challengeCount == 1) {
                 getString(R.string.overlay_dhikr_instruction_one)
             } else {
                 getString(R.string.overlay_dhikr_instruction_many, challengeCount)
             }
-            "none" -> getString(R.string.overlay_dismiss_instruction)
+            WakeTasks.CHALLENGE_NONE -> getString(R.string.overlay_dismiss_instruction)
             else -> getString(R.string.overlay_tap_instruction, requiredTaps)
         }
 
@@ -802,7 +851,7 @@ class AlarmOverlayService : Service() {
             hint = getString(R.string.overlay_math_hint)
             textSize = 28f
             setTextColor(Color.parseColor(COLOR_TEXT))
-            setHintTextColor(Color.parseColor("#FF8A897A"))
+            setHintTextColor(Color.parseColor(COLOR_HINT))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_INPUT_BG))
                 cornerRadius = 12 * dp
@@ -927,7 +976,7 @@ class AlarmOverlayService : Service() {
             hint = getString(R.string.overlay_dhikr_hint)
             textSize = 22f
             setTextColor(Color.parseColor(COLOR_TEXT))
-            setHintTextColor(Color.parseColor("#FF8A897A"))
+            setHintTextColor(Color.parseColor(COLOR_HINT))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(COLOR_INPUT_BG))
                 cornerRadius = 12 * dp
@@ -1224,6 +1273,7 @@ class AlarmOverlayService : Service() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
+        taskShell?.release()
         grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
@@ -1243,7 +1293,8 @@ class AlarmOverlayService : Service() {
         stopSelf()
     }
 
-    private fun completeAlarm() {
+    private fun completeAlarm(outcome: String = AlarmDatabase.OUTCOME_SOLVED) {
+        taskShell?.release()
         grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
 
@@ -1251,7 +1302,7 @@ class AlarmOverlayService : Service() {
         audioManager.stopAll()
 
         val db = AlarmDatabase.getInstance(this)
-        db.addToCompletedQueue(alarmId, alarmType, title, AlarmDatabase.OUTCOME_SOLVED)
+        db.addToCompletedQueue(alarmId, alarmType, title, outcome)
         db.clearPendingChallenge()
         db.markCompleted(alarmId)
 
@@ -1266,13 +1317,18 @@ class AlarmOverlayService : Service() {
         removeOverlay()
 
         try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
-                component = ComponentName(packageName, "$packageName.MainActivity")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+            // Only a solved alarm opens the success screen; a stopped one opens the app, as snooze does.
+            val intent = if (outcome == AlarmDatabase.OUTCOME_SOLVED) {
+                Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
+                    component = ComponentName(packageName, "$packageName.MainActivity")
+                }
+            } else {
+                Intent(this, Class.forName("$packageName.MainActivity"))
             }
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
             startActivity(intent)
         } catch (e: Exception) {
             AlarmLogger.getInstance(this).d("AlarmOverlay", "completeAlarm startActivity failed: ${e.message}")

@@ -30,6 +30,23 @@ export const QUIET_PHASE = {
 
 export type QuietPhase = (typeof QUIET_PHASE)[keyof typeof QUIET_PHASE];
 
+/** What happens to a task run's quiet time. */
+export const QUIET_EVENT = {
+  OPEN: "open",
+  TICK: "tick",
+  /** The alarm can be heard again, e.g. after a snooze. */
+  HEAR: "hear",
+  RESTART: "restart",
+  LEAVE: "leave",
+} as const;
+
+export type QuietEvent = (typeof QUIET_EVENT)[keyof typeof QUIET_EVENT];
+
+/** The sound change a quiet event calls for. */
+export const QUIET_SIGNAL = { START: "start", ENDING: "ending", END: "end" } as const;
+
+export type QuietSignal = (typeof QUIET_SIGNAL)[keyof typeof QUIET_SIGNAL];
+
 /** What a solved board leads to. */
 export const TASK_RUN_NEXT = {
   STEP: "step",
