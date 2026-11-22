@@ -277,6 +277,28 @@ describe("useAlarmScreen", () => {
     expect(mockStopAlarmSound).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a newer ring when an older start finishes late", async () => {
+    mockStoreState = VIBRATING_STORE;
+    const { result } = await mount();
+    await act(async () => result.current.handleGraceStart());
+    let finishSound!: () => void;
+    mockStartAlarmSound.mockImplementationOnce(
+      () => new Promise((resolve) => (finishSound = () => resolve(true)))
+    );
+
+    const staleRing = result.current.handleGraceExpire();
+    await act(async () => result.current.handleGraceStart());
+    await act(async () => result.current.handleGraceExpire());
+    mockStopAlarmSound.mockClear();
+    await act(async () => {
+      finishSound();
+      await staleRing;
+    });
+
+    expect(mockStopAlarmSound).not.toHaveBeenCalled();
+    expect(mockNativeVibrating).toBe(true);
+  });
+
   it("leaves the native vibration off when a grace time restarts during the ring", async () => {
     mockStoreState = VIBRATING_STORE;
     const { result } = await mount();
