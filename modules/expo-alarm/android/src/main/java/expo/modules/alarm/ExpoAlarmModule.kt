@@ -234,6 +234,11 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        Function("startAlarmVibration") { pattern: String ->
+            audioManager.startVibration(pattern)
+            true
+        }
+
         Function("stopAllAlarmEffects") {
             audioManager.stopAll()
             // Stop all alarm services

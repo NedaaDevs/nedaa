@@ -86,6 +86,11 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     return () => setAlarmScreenActive(null);
   }, [activeAlarmId]);
 
+  // Bumped by a grace start or a snooze; a ring that awaited across one stops.
+  const silenceCountRef = useRef(0);
+  // Set from the snooze request until the snooze ends.
+  const snoozingRef = useRef(false);
+
   useEffect(() => {
     if (!snoozeEndTime) return;
 
@@ -95,6 +100,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
 
       if (remaining <= 0) {
         clearInterval(interval);
+        snoozingRef.current = false;
         setIsSnoozed(false);
         setSnoozeEndTime(null);
       }
@@ -129,15 +135,24 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }, [activeAlarmId, alarmType]);
 
   const ringAgain = useCallback(async () => {
+    const silenceCount = silenceCountRef.current;
     await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
+    if (dismissedRef.current || silenceCountRef.current !== silenceCount) return;
     ExpoAlarm.setAlarmVolume(alarmSettings.volume);
     if (vibrationPattern) {
+      ExpoAlarm.startAlarmVibration(alarmSettings.vibration.pattern);
       Vibration.vibrate([...vibrationPattern], true);
     }
-  }, [alarmSettings.sound, alarmSettings.volume, vibrationPattern]);
+  }, [
+    alarmSettings.sound,
+    alarmSettings.volume,
+    alarmSettings.vibration.pattern,
+    vibrationPattern,
+  ]);
 
   const handleGraceStart = useCallback(() => {
     if (dismissedRef.current) return;
+    silenceCountRef.current += 1;
     // The alarm vibrates natively; cancel() reaches only a JS vibration.
     Vibration.cancel();
     ExpoAlarm.stopAlarmVibration();
@@ -145,19 +160,22 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   }, []);
 
   const handleGraceExpire = useCallback(async () => {
-    if (dismissedRef.current || isSnoozed) return;
+    if (dismissedRef.current || snoozingRef.current) return;
     await ringAgain();
-  }, [isSnoozed, ringAgain]);
+  }, [ringAgain]);
 
   const handleSnooze = useCallback(async () => {
     if (!canSnooze) return;
 
     Vibration.cancel();
+    silenceCountRef.current += 1;
+    snoozingRef.current = true;
 
     const snoozeDuration = alarmSettings.snooze.durationMinutes;
     const result = await snoozeAlarm(activeAlarmId, snoozeDuration);
     if (!result) {
       // The alarm is still armed, so it rings until the challenge is solved.
+      snoozingRef.current = false;
       await ringAgain();
       return;
     }
