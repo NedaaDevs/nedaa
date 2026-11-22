@@ -6,6 +6,7 @@ import * as ExpoAlarm from "expo-alarm";
 import { useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
+import { alarmLog } from "@/utils/alarmReport";
 import { getNativeSoundName } from "@/utils/nativeSoundName";
 import { markAlarmHandled, isAlarmHandled, setAlarmScreenActive } from "@/hooks/useAlarmDeepLink";
 import { VIBRATION_PATTERNS, DEFAULT_CHALLENGE_CONFIG, ChallengeConfig } from "@/types/alarm";
@@ -172,7 +173,11 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     snoozingRef.current = true;
 
     const snoozeDuration = alarmSettings.snooze.durationMinutes;
-    const result = await snoozeAlarm(activeAlarmId, snoozeDuration);
+    // A snooze that throws is a failed snooze, so the guard never outlives it.
+    const result = await snoozeAlarm(activeAlarmId, snoozeDuration).catch((error: unknown) => {
+      alarmLog.e("AlarmScreen", `snooze threw: ${String(error)}`);
+      return null;
+    });
     if (!result) {
       // The alarm is still armed, so it rings until the challenge is solved.
       snoozingRef.current = false;

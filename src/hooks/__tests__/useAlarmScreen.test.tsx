@@ -75,6 +75,7 @@ jest.mock("@/stores/alarm", () => ({
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: (select: (state: object) => unknown) => select(mockStoreState),
 }));
+jest.mock("@/utils/alarmReport", () => ({ alarmLog: { e: jest.fn() } }));
 jest.mock("@/utils/alarmScheduler", () => ({
   completeAndRescheduleAlarm: (id: string) => mockCompleteAndReschedule(id),
 }));
@@ -194,6 +195,25 @@ describe("useAlarmScreen", () => {
     });
 
     expect(mockStartAlarmVibration).toHaveBeenCalledWith(FAJR_PATTERN);
+  });
+
+  it("rings when the grace time ends after a snooze that threw", async () => {
+    mockStoreState = VIBRATING_STORE;
+    mockSnoozeAlarm.mockRejectedValue(new Error("cancel failed"));
+    const { result } = await mount();
+
+    await act(async () => result.current.handleGraceStart());
+    await act(async () => {
+      await result.current.handleSnooze();
+    });
+    mockStartAlarmVibration.mockClear();
+    await act(async () => result.current.handleGraceStart());
+    await act(async () => {
+      await result.current.handleGraceExpire();
+    });
+
+    expect(mockStartAlarmVibration).toHaveBeenCalledWith(FAJR_PATTERN);
+    expect(mockMarkAlarmHandled).not.toHaveBeenCalled();
   });
 
   it("does not ring when the grace time ends while a snooze is in flight", async () => {
