@@ -341,17 +341,7 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
 
         log("Starting vibration")
         isVibrating = true
-
-        DispatchQueue.main.async { [weak self] in
-            // A stop that lands before this block leaves nothing to start.
-            guard self?.isVibrating == true else { return }
-            self?.vibrationTimer?.invalidate()
-            self?.vibrationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                guard self?.isVibrating == true else { return }
-                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-            }
-            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-        }
+        DispatchQueue.main.async { [weak self] in self?.syncVibrationTimer() }
     }
 
     func stopContinuousVibration() {
@@ -359,9 +349,23 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
 
         log("Stopping vibration")
         isVibrating = false
-        let timer = vibrationTimer
-        timer?.invalidate()
-        vibrationTimer = nil
+        DispatchQueue.main.async { [weak self] in self?.syncVibrationTimer() }
+    }
+
+    // Main queue only: the timer follows the flag, so a start and a stop
+    // from different threads cannot leave a timer the flag does not own.
+    private func syncVibrationTimer() {
+        guard isVibrating else {
+            vibrationTimer?.invalidate()
+            vibrationTimer = nil
+            return
+        }
+        guard vibrationTimer == nil else { return }
+        vibrationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard self?.isVibrating == true else { return }
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        }
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
     }
 
     func isCurrentlyVibrating() -> Bool {
@@ -517,10 +521,7 @@ class AlarmAudioManager: NSObject, AVAudioPlayerDelegate {
         let alarmVolume = max(requestedVolume, Self.minimumVolume)
         log("Transitioning to loud alarm, volume: \(alarmVolume)")
 
-        isVibrating = false
-        let timer = vibrationTimer
-        timer?.invalidate()
-        vibrationTimer = nil
+        stopContinuousVibration()
 
         // Save system volume before we change it
         saveSystemVolume()
