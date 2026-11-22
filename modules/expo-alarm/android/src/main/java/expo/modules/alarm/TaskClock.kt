@@ -79,7 +79,7 @@ data class TaskClock(
         // The quiet bar's step under Reduce Motion, in seconds.
         const val QUIET_BAR_STEP_SECONDS = 5L
 
-        private const val SECOND_MS = 1000L
+        const val SECOND_MS = 1000L
 
         // Each quiet time's length; a screen reader gets the longer one.
         fun quietSecondsFor(screenReader: Boolean): Long =

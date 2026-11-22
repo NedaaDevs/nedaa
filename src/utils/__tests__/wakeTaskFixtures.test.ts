@@ -9,9 +9,18 @@ import {
   PATTERN_PADS,
   PATTERN_TAP,
   PRAYER_TAP,
+  TAP_PRESSES,
+  TAP_PRESS_MIN_GAP_MS,
   type PatternPad,
 } from "@/constants/WakeTaskBoards";
-import { QUIET_PHASE, TASK_CLOCK_TICK_MS } from "@/constants/WakeTaskShell";
+import {
+  HANDOVER_MS,
+  QUIET_EVENT,
+  QUIET_PHASE,
+  QUIET_SIGNAL,
+  TASK_CLOCK_TICK_MS,
+  type QuietEvent,
+} from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty } from "@/types/alarm";
 import { mathRound, type MathQuestion } from "@/utils/mathCards";
 import {
@@ -39,12 +48,15 @@ import {
   restartQuiet,
   resumeTaskClock,
   startTaskClock,
+  stepQuiet,
   wayOutShown,
+  type ClockReading,
   type TaskClock,
 } from "@/utils/taskClock";
+import { countsPress } from "@/utils/tapPress";
 
-// The Android overlay's JVM tests (TaskRngTest, TaskClockTest, MathCardsTest,
-// PrayerOrderTest, PatternOrderTest) read the same tables.
+// The Android overlay's JVM tests (TaskRngTest, TaskClockTest, TaskQuietTest,
+// MathCardsTest, PrayerOrderTest, PatternOrderTest, TapPressTest) read the same tables.
 const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
 
 const NONE = "-";
@@ -199,6 +211,52 @@ describe("task-clock.tsv", () => {
   });
 });
 
+describe("quiet-step.tsv", () => {
+  const events: readonly string[] = Object.values(QUIET_EVENT);
+  const isEvent = (op: string): op is QuietEvent => events.includes(op);
+
+  // One op on a reading, and the signals it sent; "ticks" reads every tick up to `now`.
+  const apply = (reading: ClockReading | null, [op, nowCell, audibleCell, reader]: string[]) => {
+    const now = Number(nowCell);
+    const quietMs = quietSecondsFor(bool(reader)) * SECOND_MS;
+    if (op === FIXTURE_OP.START)
+      return { reading: { clock: startTaskClock(now, quietMs), now }, sent: [] };
+    if (!reading) throw new Error(`${op} before start`);
+    if (op === FIXTURE_OP.RESUME) {
+      return { reading: { clock: resumeTaskClock(reading.clock, now), now }, sent: [] };
+    }
+    const audible = bool(audibleCell);
+    const sent: string[] = [];
+    let out = reading;
+    const send = (event: QuietEvent, at: number) => {
+      const step = stepQuiet(out, event, at, quietMs, audible);
+      out = step.reading;
+      if (step.signal) sent.push(step.signal);
+    };
+    if (op === FIXTURE_OP.TICKS) {
+      for (let at = out.now + TASK_CLOCK_TICK_MS; at <= now; at += TASK_CLOCK_TICK_MS) {
+        send(QUIET_EVENT.TICK, at);
+      }
+    } else if (isEvent(op)) send(op, now);
+    else throw new Error(`unknown op ${op}`);
+    return { reading: out, sent };
+  };
+
+  it.each(byCase(readCases("quiet-step.tsv")))("%s", (_name, rows) => {
+    rows.reduce<ClockReading | null>((reading, row) => {
+      const { reading: next, sent } = apply(reading, row.slice(1, 5));
+      const { clock, now } = next;
+      const signals = row[10] === NONE ? [] : row[10].split(",");
+      signals.forEach((signal) => expect(Object.values(QUIET_SIGNAL)).toContain(signal));
+      expect(
+        [clock.quietUntil, clock.quietMs, clock.soundingMs, clock.countedTo, now].map(String)
+      ).toEqual(row.slice(5, 10));
+      expect(sent).toEqual(signals);
+      return next;
+    }, null);
+  });
+});
+
 describe("math-round.tsv", () => {
   const rows = readCases("math-round.tsv");
 
@@ -291,4 +349,29 @@ describe("pattern-playback.tsv", () => {
       expect(shown).toEqual(frames.split(","));
     }
   );
+});
+
+describe("tap-press.tsv", () => {
+  it.each(readCases("tap-press.tsv"))("after %s, a press at %s counts: %s", (last, now, counts) => {
+    expect(countsPress(last === NONE ? null : Number(last), Number(now))).toBe(bool(counts));
+  });
+});
+
+describe("shell-constants.tsv", () => {
+  /** The JS value each row pins; the native shell reads the same rows. */
+  const SHELL_CONSTANTS: Record<string, number> = {
+    TAP_PRESSES,
+    TAP_PRESS_MIN_GAP_MS,
+    HANDOVER_SHOWN_MS: HANDOVER_MS.IN + HANDOVER_MS.HOLD,
+  };
+
+  const rows = readCases("shell-constants.tsv");
+
+  it.each(rows)("%s is %s", (name, value) => {
+    expect(SHELL_CONSTANTS[name]).toBe(Number(value));
+  });
+
+  it("pins every constant", () => {
+    expect(rows.map(([name]) => name)).toEqual(Object.keys(SHELL_CONSTANTS));
+  });
 });

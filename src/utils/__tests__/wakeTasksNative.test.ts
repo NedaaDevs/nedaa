@@ -8,14 +8,16 @@ import {
   WAKE_TASK_MAX_STACK,
   WAKE_TASK_OPTIONS,
 } from "@/constants/WakeTask";
+import { TASK_RUN_NEXT } from "@/constants/WakeTaskShell";
 import { CHALLENGE_DIFFICULTIES, CHALLENGE_TYPES, type WakeTask } from "@/types/alarm";
+import { advanceTaskRun, isNonEmpty } from "@/utils/taskRun";
 import {
   legacyChallengeFromWakeTasks,
   normalizeWakeTasks,
   readSavedWakeTaskFields,
 } from "@/utils/wakeTasks";
 
-// The Android JVM test WakeTasksSharedTest reads the same tables.
+// The Android JVM tests WakeTasksSharedTest and TaskRunTest read the same tables.
 const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
 
 /** The fixtures' syntax, which is also how native stores a stack. */
@@ -123,6 +125,24 @@ describe("the wake task rules Android shares", () => {
         tasks: stored === FORMAT.ABSENT ? undefined : decode(cell(stored)),
       };
       expect(encode(readSavedWakeTaskFields(saved).tasks)).toBe(cell(stack));
+    }
+  );
+});
+
+describe("task-run.tsv", () => {
+  it.each(table("task-run.tsv"))(
+    "solving %s at task %s step %s leads to %s %s %s",
+    (stack, task, step, next, nextTask, nextStep) => {
+      const tasks = normalizeWakeTasks(decode(stack));
+      if (!isNonEmpty(tasks)) throw new Error(`empty stack ${stack}`);
+      expect(Object.values(TASK_RUN_NEXT)).toContain(next);
+      const result = advanceTaskRun(tasks, { task: Number(task), step: Number(step) });
+      const position = "position" in result ? result.position : null;
+      expect([result.next, position?.task, position?.step]).toEqual([
+        next,
+        nextTask === FORMAT.EMPTY ? undefined : Number(nextTask),
+        nextStep === FORMAT.EMPTY ? undefined : Number(nextStep),
+      ]);
     }
   );
 });

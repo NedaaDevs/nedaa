@@ -1,7 +1,9 @@
 import {
   QUIET_BAR_STEP_SECONDS,
   QUIET_ENDING_SECONDS,
+  QUIET_EVENT,
   QUIET_PHASE,
+  QUIET_SIGNAL,
   QUIET_TIME_SECONDS,
   TASK_CLOCK_MAX_GAIN_MS,
   TASK_CLOCK_TICK_MS,
@@ -18,6 +20,7 @@ import {
   restartQuiet,
   resumeTaskClock,
   startTaskClock,
+  stepQuiet,
   wayOutSentence,
   wayOutShown,
   type TaskClock,
@@ -211,5 +214,54 @@ describe("taskClock", () => {
       expect(new Set(fractions).size).toBe(1);
       expect(quietFraction(clock, OPENED + step, true)).toBeLessThan(fractions[0]);
     });
+  });
+});
+
+describe("stepQuiet", () => {
+  const opened = () => ({ clock: startTaskClock(OPENED, QUIET_MS), now: OPENED });
+
+  it("pauses the sound as the task opens, unless it is unheard", () => {
+    expect(stepQuiet(opened(), QUIET_EVENT.OPEN, OPENED, QUIET_MS, true).signal).toBe(
+      QUIET_SIGNAL.START
+    );
+    expect(stepQuiet(opened(), QUIET_EVENT.OPEN, OPENED, QUIET_MS, false).signal).toBeNull();
+  });
+
+  it("warns as quiet time nears its end, then returns the sound", () => {
+    const ending = OPENED + QUIET_MS - QUIET_ENDING_SECONDS * SECOND;
+    const warned = stepQuiet(opened(), QUIET_EVENT.TICK, ending, QUIET_MS, true);
+    expect(warned.signal).toBe(QUIET_SIGNAL.ENDING);
+    const over = stepQuiet(warned.reading, QUIET_EVENT.TICK, OPENED + QUIET_MS, QUIET_MS, true);
+    expect(over.signal).toBe(QUIET_SIGNAL.END);
+    expect(
+      stepQuiet(over.reading, QUIET_EVENT.TICK, OPENED + QUIET_MS + 250, QUIET_MS, true).signal
+    ).toBeNull();
+  });
+
+  it("pauses again only when a restart finds the sound on", () => {
+    const quiet = stepQuiet(opened(), QUIET_EVENT.RESTART, OPENED + SECOND, QUIET_MS, true);
+    expect(quiet.signal).toBeNull();
+    const sounding = stepQuiet(opened(), QUIET_EVENT.TICK, OPENED + QUIET_MS, QUIET_MS, true);
+    const again = stepQuiet(
+      sounding.reading,
+      QUIET_EVENT.RESTART,
+      OPENED + QUIET_MS + SECOND,
+      QUIET_MS,
+      true
+    );
+    expect(again.signal).toBe(QUIET_SIGNAL.START);
+    expect(again.reading.clock.quietUntil).toBe(OPENED + QUIET_MS + SECOND + QUIET_MS);
+  });
+
+  it("returns the sound when the task is left during quiet time", () => {
+    const left = stepQuiet(opened(), QUIET_EVENT.LEAVE, OPENED + SECOND, QUIET_MS, true);
+    expect(left.signal).toBe(QUIET_SIGNAL.END);
+    expect(left.reading.clock.quietUntil).toBe(OPENED + SECOND);
+  });
+
+  it("ends quiet time with no signal as the alarm is heard again", () => {
+    const heard = stepQuiet(opened(), QUIET_EVENT.HEAR, OPENED + SECOND, QUIET_MS, true);
+    expect(heard.signal).toBeNull();
+    expect(heard.reading.clock.quietUntil).toBe(OPENED + SECOND);
   });
 });
