@@ -12,6 +12,7 @@ import {
   describeStart,
   difficultyOf,
   isNonEmpty,
+  resumePosition,
   stepsOf,
   type NonEmptyTasks,
   type TaskPosition,
@@ -48,6 +49,18 @@ describe("taskRun", () => {
   it("reads a task's difficulty, the default for a board without one", () => {
     expect(difficultyOf(MATH_3)).toBe(CHALLENGE_DIFFICULTY.HARD);
     expect(difficultyOf(DHIKR_2)).toBe(WAKE_TASK_DEFAULT_DIFFICULTY);
+  });
+
+  it("resumes a saved position the stack still holds", () => {
+    expect(resumePosition([MATH_3, TAP], { task: 0, step: 2 })).toEqual({ task: 0, step: 2 });
+    expect(resumePosition([MATH_3, TAP], { task: 1, step: 0 })).toEqual({ task: 1, step: 0 });
+  });
+
+  it("starts over when the stack no longer holds the saved position", () => {
+    expect(resumePosition([MATH_3], undefined)).toBe(FIRST_POSITION);
+    expect(resumePosition([MATH_3], { task: 1, step: 0 })).toBe(FIRST_POSITION);
+    expect(resumePosition([MATH_1, TAP], { task: 0, step: 2 })).toBe(FIRST_POSITION);
+    expect(resumePosition([MATH_3], { task: -1, step: 0 })).toBe(FIRST_POSITION);
   });
 
   it("tells an empty stack apart", () => {

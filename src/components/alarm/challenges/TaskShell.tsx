@@ -29,9 +29,9 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScreenReader } from "@/hooks/useScreenReader";
 import { useTaskClock } from "@/hooks/useTaskClock";
 import {
-  FIRST_POSITION,
   advanceTaskRun,
   difficultyOf,
+  resumePosition,
   stepsOf,
   taskName,
   type NonEmptyTasks,
@@ -93,7 +93,9 @@ const TaskShell = (props: Props) => {
     onQuietEnd: alarm?.onQuietEnd ?? noop,
   });
 
-  const [position, setPosition] = useState<TaskPosition>(alarm?.resume?.position ?? FIRST_POSITION);
+  const [position, setPosition] = useState<TaskPosition>(() =>
+    resumePosition(tasks, alarm?.resume?.position)
+  );
   // Each board, a repeat of the same one included, mounts fresh.
   const [round, setRound] = useState(0);
   // The task the handover panel leads to; no board takes a tap meanwhile.

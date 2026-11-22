@@ -482,6 +482,18 @@ describe("TaskShell", () => {
       expect(screen.getByText(t("alarm.task.taskOf", { task: 2, total: 2 }))).toBeVisible();
       expect(screen.getByRole("button", { name: "solve tap" })).toBeVisible();
     });
+
+    it("starts at the first task when the stack lost the saved one", async () => {
+      const first = await setUp([DHIKR_1, TAP]);
+      await first.solve("dhikr");
+      await first.back();
+      const saved = first.onBack.mock.calls[0][0];
+      await first.unmount();
+
+      await setUp([DHIKR_1], { resume: saved });
+
+      expect(screen.getByRole("button", { name: "solve dhikr" })).toBeVisible();
+    });
   });
 
   describe("a trial", () => {

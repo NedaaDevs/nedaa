@@ -90,13 +90,22 @@ const PatternBoard = ({ difficulty, onComplete, opening, rng = Math.random }: Pr
     if (screenReader) focusStatus();
   });
 
+  // An order still playing starts over, so one timing covers all of it.
+  const [timedFor, setTimedFor] = useState(screenReader);
+  if (timedFor !== screenReader) {
+    setTimedFor(screenReader);
+    if (frame.playing) setStep(0);
+  }
+  const playing = useEffectEvent(() => frame.playing);
+
   useEffect(() => {
     focusIfReading();
+    if (!playing()) return;
     const ids = schedule()
       .slice(1)
       .map((at, index) => setTimeout(() => setStep(index + 1), at));
     return () => ids.forEach(clearTimeout);
-  }, [plays]);
+  }, [plays, screenReader]);
 
   const replace = useEffectEvent(() => {
     setBoard({ pattern: drawPattern(difficulty, rng, board.pattern), done: 0 });

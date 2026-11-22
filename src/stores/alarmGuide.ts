@@ -23,10 +23,11 @@ export const useAlarmGuideStore = create<AlarmGuideStore>()(
       name: ALARM_GUIDE_STORE_KEY,
       storage: createJSONStorage(() => Storage),
       partialize: (state) => ({ hasSeenGuide: state.hasSeenGuide }),
-      // Anything but a saved true reads as unseen.
+      // Seen is a saved true, or a mark made before the read resolved.
       merge: (persisted, current) => ({
         ...current,
-        hasSeenGuide: isRecord(persisted) && persisted.hasSeenGuide === true,
+        hasSeenGuide:
+          current.hasSeenGuide || (isRecord(persisted) && persisted.hasSeenGuide === true),
       }),
     }
   )
