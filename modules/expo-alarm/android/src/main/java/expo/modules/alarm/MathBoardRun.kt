@@ -1,10 +1,11 @@
 package expo.modules.alarm
 
-// A card at rest, held, or marked wrong; ids as JS ANSWER_CARD_STATE.
+// A card at rest, held, marked wrong, or placed; ids as JS ANSWER_CARD_STATE.
 enum class AnswerCardState(val id: String) {
     REST("rest"),
     HELD("held"),
     WRONG("wrong"),
+    PLACED("placed"),
 }
 
 // The line under the sum, as JS MATH_LINE.

@@ -1,8 +1,5 @@
 package expo.modules.alarm
 
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
-import android.animation.StateListAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -53,7 +50,7 @@ class TapBoard(context: Context, private val host: BoardHost) : TaskBoard {
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         setTextColor(Color.parseColor(COLOR_TEXT))
         background = targetBackground(context)
-        stateListAnimator = if (animationsOff(context)) null else pressScale(this)
+        stateListAnimator = pressScale(this)
         setPadding(context.dp(TARGET_INSET_DP), 0, context.dp(TARGET_INSET_DP), 0)
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, context.dp(TARGET_DP))
             .apply { topMargin = context.dp(STACK_DP) }
@@ -106,25 +103,8 @@ class TapBoard(context: Context, private val host: BoardHost) : TaskBoard {
         setStroke(context.dp(TARGET_EDGE_DP), Color.parseColor(COLOR_TEXT))
     }
 
-    // As JS usePressScale; the release eases back with no spring.
-    private fun pressScale(target: View) = StateListAnimator().apply {
-        addState(intArrayOf(android.R.attr.state_pressed), scaleTo(target, PRESS_SCALE))
-        addState(intArrayOf(), scaleTo(target, 1f))
-    }
-
-    private fun scaleTo(target: View, scale: Float) = AnimatorSet().apply {
-        playTogether(
-            ObjectAnimator.ofFloat(target, View.SCALE_X, scale),
-            ObjectAnimator.ofFloat(target, View.SCALE_Y, scale),
-        )
-        duration = PRESS_DOWN_MS
-    }
 
     companion object {
-        // JS PRESS_SCALE and DURATION_MS.PRESS.
-        const val PRESS_SCALE = 0.98f
-        const val PRESS_DOWN_MS = 80L
-
         private const val MEDIUM = "sans-serif-medium"
         private const val TABULAR_DIGITS = "tnum"
 

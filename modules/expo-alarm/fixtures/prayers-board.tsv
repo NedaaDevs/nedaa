@@ -1,0 +1,98 @@
+case	op	arg	outcome	deal	placed	cards	line	places	said	deals	solved
+all right in order	start	1	-	maghrib,fajr,asr,isha,dhuhr	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+all right in order	tap	1	placed	maghrib,fajr,asr,isha,dhuhr	1	rest,placed,rest,rest,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	0	false
+all right in order	tap	4	placed	maghrib,fajr,asr,isha,dhuhr	2	rest,placed,rest,rest,placed	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	0	false
+all right in order	tap	2	placed	maghrib,fajr,asr,isha,dhuhr	3	rest,placed,placed,rest,placed	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	0	false
+all right in order	tap	0	placed	maghrib,fajr,asr,isha,dhuhr	4	placed,placed,placed,rest,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	0	false
+all right in order	tap	3	done	maghrib,fajr,asr,isha,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+all right in order	tap	1	ignored	maghrib,fajr,asr,isha,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+wrong first tap	start	5	-	maghrib,dhuhr,isha,asr,fajr	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+wrong first tap	tap	0	wrong	maghrib,dhuhr,isha,asr,fajr	0	wrong,held,held,held,held	wrong:maghrib	empty:fajr	-	0	false
+wrong first tap	hold	-	-	asr,fajr,dhuhr,maghrib,isha	0	rest,rest,rest,rest,rest	dealt	afterMiss:maghrib,empty:fajr	-	1	false
+wrong first tap	tap	1	placed	asr,fajr,dhuhr,maghrib,isha	1	rest,placed,rest,rest,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	1	false
+wrong first tap	tap	2	placed	asr,fajr,dhuhr,maghrib,isha	2	rest,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	1	false
+wrong first tap	tap	0	placed	asr,fajr,dhuhr,maghrib,isha	3	placed,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	1	false
+wrong first tap	tap	3	placed	asr,fajr,dhuhr,maghrib,isha	4	placed,placed,placed,placed,rest	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	1	false
+wrong first tap	tap	4	done	asr,fajr,dhuhr,maghrib,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	1	true
+wrong midway	start	2026	-	asr,dhuhr,fajr,isha,maghrib	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+wrong midway	tap	2	placed	asr,dhuhr,fajr,isha,maghrib	1	rest,rest,placed,rest,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	0	false
+wrong midway	tap	1	placed	asr,dhuhr,fajr,isha,maghrib	2	rest,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	0	false
+wrong midway	tap	3	wrong	asr,dhuhr,fajr,isha,maghrib	2	held,placed,placed,wrong,held	wrong:isha	filled:fajr,filled:dhuhr,empty:asr	-	0	false
+wrong midway	hold	-	-	asr,dhuhr,fajr,maghrib,isha	2	rest,placed,placed,rest,rest	dealtNext:dhuhr	afterMiss:isha,filled:fajr,filled:dhuhr,empty:asr	-	1	false
+wrong midway	tap	0	placed	asr,dhuhr,fajr,maghrib,isha	3	placed,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	1	false
+wrong midway	tap	2	ignored	asr,dhuhr,fajr,maghrib,isha	3	placed,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	-	1	false
+wrong midway	tap	4	wrong	asr,dhuhr,fajr,maghrib,isha	3	placed,placed,placed,held,wrong	wrong:isha	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	-	1	false
+wrong midway	hold	-	-	asr,dhuhr,fajr,isha,maghrib	3	placed,placed,placed,rest,rest	dealtNext:asr	afterMiss:isha,filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	-	2	false
+wrong midway	tap	4	placed	asr,dhuhr,fajr,isha,maghrib	4	placed,placed,placed,rest,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	2	false
+wrong midway	tap	3	done	asr,dhuhr,fajr,isha,maghrib	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	2	true
+taps during the hold	start	7	-	fajr,dhuhr,maghrib,asr,isha	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+taps during the hold	tap	1	wrong	fajr,dhuhr,maghrib,asr,isha	0	held,wrong,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+taps during the hold	tap	0	ignored	fajr,dhuhr,maghrib,asr,isha	0	held,wrong,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+taps during the hold	tap	1	ignored	fajr,dhuhr,maghrib,asr,isha	0	held,wrong,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+taps during the hold	tap	2	ignored	fajr,dhuhr,maghrib,asr,isha	0	held,wrong,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+taps during the hold	tap	3	ignored	fajr,dhuhr,maghrib,asr,isha	0	held,wrong,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+taps during the hold	tap	4	ignored	fajr,dhuhr,maghrib,asr,isha	0	held,wrong,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+taps during the hold	hold	-	-	fajr,maghrib,dhuhr,isha,asr	0	rest,rest,rest,rest,rest	dealt	afterMiss:dhuhr,empty:fajr	-	1	false
+taps during the hold	tap	0	placed	fajr,maghrib,dhuhr,isha,asr	1	placed,rest,rest,rest,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	1	false
+taps during the hold	tap	2	placed	fajr,maghrib,dhuhr,isha,asr	2	placed,rest,placed,rest,rest	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	1	false
+taps during the hold	tap	4	placed	fajr,maghrib,dhuhr,isha,asr	3	placed,rest,placed,rest,placed	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	1	false
+taps during the hold	tap	1	placed	fajr,maghrib,dhuhr,isha,asr	4	placed,placed,placed,rest,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	1	false
+taps during the hold	tap	3	done	fajr,maghrib,dhuhr,isha,asr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	1	true
+taps after solved	start	3	-	maghrib,asr,dhuhr,fajr,isha	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+taps after solved	tap	3	placed	maghrib,asr,dhuhr,fajr,isha	1	rest,rest,rest,placed,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	0	false
+taps after solved	tap	2	placed	maghrib,asr,dhuhr,fajr,isha	2	rest,rest,placed,placed,rest	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	0	false
+taps after solved	tap	1	placed	maghrib,asr,dhuhr,fajr,isha	3	rest,placed,placed,placed,rest	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	0	false
+taps after solved	tap	0	placed	maghrib,asr,dhuhr,fajr,isha	4	placed,placed,placed,placed,rest	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	0	false
+taps after solved	tap	4	done	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+taps after solved	tap	0	ignored	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+taps after solved	tap	1	ignored	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+taps after solved	tap	2	ignored	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+taps after solved	tap	3	ignored	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+taps after solved	tap	4	ignored	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+taps after solved	hold	-	-	maghrib,asr,dhuhr,fajr,isha	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	0	true
+hold with no wrong card	start	4	-	isha,asr,dhuhr,fajr,maghrib	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+hold with no wrong card	hold	-	-	isha,asr,dhuhr,fajr,maghrib	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+hold with no wrong card	tap	3	placed	isha,asr,dhuhr,fajr,maghrib	1	rest,rest,rest,placed,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	0	false
+hold with no wrong card	hold	-	-	isha,asr,dhuhr,fajr,maghrib	1	rest,rest,rest,placed,rest	none	filled:fajr,empty:dhuhr	-	0	false
+blind pass in reading order	start	9	-	dhuhr,fajr,asr,maghrib,isha	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+blind pass in reading order	tap	0	wrong	dhuhr,fajr,asr,maghrib,isha	0	wrong,held,held,held,held	wrong:dhuhr	empty:fajr	-	0	false
+blind pass in reading order	hold	-	-	isha,fajr,dhuhr,asr,maghrib	0	rest,rest,rest,rest,rest	dealt	afterMiss:dhuhr,empty:fajr	-	1	false
+blind pass in reading order	tap	1	placed	isha,fajr,dhuhr,asr,maghrib	1	rest,placed,rest,rest,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	1	false
+blind pass in reading order	hold	-	-	isha,fajr,dhuhr,asr,maghrib	1	rest,placed,rest,rest,rest	none	filled:fajr,empty:dhuhr	-	1	false
+blind pass in reading order	tap	2	placed	isha,fajr,dhuhr,asr,maghrib	2	rest,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	1	false
+blind pass in reading order	hold	-	-	isha,fajr,dhuhr,asr,maghrib	2	rest,placed,placed,rest,rest	none	filled:fajr,filled:dhuhr,empty:asr	-	1	false
+blind pass in reading order	tap	3	placed	isha,fajr,dhuhr,asr,maghrib	3	rest,placed,placed,placed,rest	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	1	false
+blind pass in reading order	hold	-	-	isha,fajr,dhuhr,asr,maghrib	3	rest,placed,placed,placed,rest	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	-	1	false
+blind pass in reading order	tap	4	placed	isha,fajr,dhuhr,asr,maghrib	4	rest,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	1	false
+blind pass in reading order	hold	-	-	isha,fajr,dhuhr,asr,maghrib	4	rest,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	-	1	false
+blind passes	start	42	-	maghrib,fajr,dhuhr,asr,isha	0	rest,rest,rest,rest,rest	none	empty:fajr	-	0	false
+blind passes	tap	0	wrong	maghrib,fajr,dhuhr,asr,isha	0	wrong,held,held,held,held	wrong:maghrib	empty:fajr	-	0	false
+blind passes	hold	-	-	dhuhr,maghrib,isha,asr,fajr	0	rest,rest,rest,rest,rest	dealt	afterMiss:maghrib,empty:fajr	-	1	false
+blind passes	tap	1	wrong	dhuhr,maghrib,isha,asr,fajr	0	held,wrong,held,held,held	wrong:maghrib	afterMiss:maghrib,empty:fajr	-	1	false
+blind passes	hold	-	-	fajr,maghrib,dhuhr,isha,asr	0	rest,rest,rest,rest,rest	dealt	afterMiss:maghrib,empty:fajr	-	2	false
+blind passes	tap	2	wrong	fajr,maghrib,dhuhr,isha,asr	0	held,held,wrong,held,held	wrong:dhuhr	afterMiss:maghrib,empty:fajr	-	2	false
+blind passes	hold	-	-	isha,maghrib,dhuhr,fajr,asr	0	rest,rest,rest,rest,rest	dealt	afterMiss:dhuhr,empty:fajr	-	3	false
+blind passes	tap	3	placed	isha,maghrib,dhuhr,fajr,asr	1	rest,rest,rest,placed,rest	none	filled:fajr,empty:dhuhr	filled:fajr,empty:dhuhr	3	false
+blind passes	hold	-	-	isha,maghrib,dhuhr,fajr,asr	1	rest,rest,rest,placed,rest	none	filled:fajr,empty:dhuhr	-	3	false
+blind passes	tap	4	wrong	isha,maghrib,dhuhr,fajr,asr	1	held,held,held,placed,wrong	wrong:asr	filled:fajr,empty:dhuhr	-	3	false
+blind passes	hold	-	-	isha,asr,maghrib,fajr,dhuhr	1	rest,rest,rest,placed,rest	dealtNext:fajr	afterMiss:asr,filled:fajr,empty:dhuhr	-	4	false
+blind passes	tap	0	wrong	isha,asr,maghrib,fajr,dhuhr	1	wrong,held,held,placed,held	wrong:isha	afterMiss:asr,filled:fajr,empty:dhuhr	-	4	false
+blind passes	hold	-	-	maghrib,isha,asr,fajr,dhuhr	1	rest,rest,rest,placed,rest	dealtNext:fajr	afterMiss:isha,filled:fajr,empty:dhuhr	-	5	false
+blind passes	tap	1	wrong	maghrib,isha,asr,fajr,dhuhr	1	held,wrong,held,placed,held	wrong:isha	afterMiss:isha,filled:fajr,empty:dhuhr	-	5	false
+blind passes	hold	-	-	isha,maghrib,asr,fajr,dhuhr	1	rest,rest,rest,placed,rest	dealtNext:fajr	afterMiss:isha,filled:fajr,empty:dhuhr	-	6	false
+blind passes	tap	2	wrong	isha,maghrib,asr,fajr,dhuhr	1	held,held,wrong,placed,held	wrong:asr	afterMiss:isha,filled:fajr,empty:dhuhr	-	6	false
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	1	rest,rest,rest,placed,rest	dealtNext:fajr	afterMiss:asr,filled:fajr,empty:dhuhr	-	7	false
+blind passes	tap	3	ignored	asr,maghrib,isha,fajr,dhuhr	1	rest,rest,rest,placed,rest	dealtNext:fajr	afterMiss:asr,filled:fajr,empty:dhuhr	-	7	false
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	1	rest,rest,rest,placed,rest	dealtNext:fajr	afterMiss:asr,filled:fajr,empty:dhuhr	-	7	false
+blind passes	tap	4	placed	asr,maghrib,isha,fajr,dhuhr	2	rest,rest,rest,placed,placed	none	filled:fajr,filled:dhuhr,empty:asr	filled:dhuhr,empty:asr	7	false
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	2	rest,rest,rest,placed,placed	none	filled:fajr,filled:dhuhr,empty:asr	-	7	false
+blind passes	tap	0	placed	asr,maghrib,isha,fajr,dhuhr	3	placed,rest,rest,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	filled:asr,empty:maghrib	7	false
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	3	placed,rest,rest,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,empty:maghrib	-	7	false
+blind passes	tap	1	placed	asr,maghrib,isha,fajr,dhuhr	4	placed,placed,rest,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	filled:maghrib,empty:isha	7	false
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	4	placed,placed,rest,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,empty:isha	-	7	false
+blind passes	tap	2	done	asr,maghrib,isha,fajr,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	7	true
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	7	true
+blind passes	tap	3	ignored	asr,maghrib,isha,fajr,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	7	true
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	7	true
+blind passes	tap	4	ignored	asr,maghrib,isha,fajr,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	7	true
+blind passes	hold	-	-	asr,maghrib,isha,fajr,dhuhr	5	placed,placed,placed,placed,placed	none	filled:fajr,filled:dhuhr,filled:asr,filled:maghrib,filled:isha	-	7	true

@@ -149,6 +149,33 @@ export const PRAYER_PLACE_KEY = {
   },
 } as const satisfies Record<PrayerId, { empty: string; filled: string }>;
 
+/** The line under the places: none, a wrong card held, or a redeal with
+ *  nothing placed or after a placed prayer. */
+export const PRAYER_LINE = {
+  NONE: "none",
+  WRONG: "wrong",
+  DEALT: "dealt",
+  DEALT_NEXT: "dealtNext",
+} as const;
+
+export type PrayerLine = (typeof PRAYER_LINE)[keyof typeof PRAYER_LINE];
+
+export const PRAYER_LINE_KEY = {
+  [PRAYER_LINE.NONE]: null,
+  [PRAYER_LINE.WRONG]: "alarm.task.prayers.wrong",
+  [PRAYER_LINE.DEALT]: "alarm.task.prayers.dealt",
+  [PRAYER_LINE.DEALT_NEXT]: "alarm.task.prayers.dealtNext",
+} as const satisfies Record<PrayerLine, string | null>;
+
+/** What the places say of a prayer: tapped too soon, placed, or next. */
+export const PRAYER_PLACE_PART = {
+  AFTER_MISS: "afterMiss",
+  FILLED: "filled",
+  EMPTY: "empty",
+} as const;
+
+export type PrayerPlacePart = (typeof PRAYER_PLACE_PART)[keyof typeof PRAYER_PLACE_PART];
+
 /** A prayer's name fades into its place over this. */
 export const PRAYER_PLACE_FILL_MS = 160;
 
