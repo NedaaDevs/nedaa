@@ -138,7 +138,16 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const ringAgain = useCallback(async () => {
     const silenceCount = silenceCountRef.current;
     await ExpoAlarm.startAlarmSound(getNativeSoundName(alarmSettings.sound || "beep"));
-    if (dismissedRef.current || silenceCountRef.current !== silenceCount) return;
+    if (dismissedRef.current) {
+      // The stop ran before this start, so it is undone again.
+      ExpoAlarm.stopAllAlarmEffects();
+      ExpoAlarm.restoreSystemVolume();
+      return;
+    }
+    if (silenceCountRef.current !== silenceCount) {
+      ExpoAlarm.stopAlarmSound();
+      return;
+    }
     ExpoAlarm.setAlarmVolume(alarmSettings.volume);
     if (vibrationPattern) {
       ExpoAlarm.startAlarmVibration(alarmSettings.vibration.pattern);
