@@ -10,6 +10,9 @@ const mockStartAlarmSound = jest.fn((_name: string) => Promise.resolve(true));
 const mockCompleteAndReschedule = jest.fn((_id: string) => Promise.resolve());
 const mockSnoozeAlarm = jest.fn();
 const mockStopAlarmSound = jest.fn();
+const mockStopAllAlarmEffects = jest.fn(() => {
+  mockNativeVibrating = false;
+});
 // Mirrors the native vibration across start, stop and stop-all; the screen
 // mounts while the alarm already vibrates.
 let mockNativeVibrating = true;
@@ -59,9 +62,7 @@ jest.mock("expo-alarm", () => {
     isAlarmSoundPlaying: () => false,
     startAlarmSound: (name: string) => mockStartAlarmSound(name),
     setAlarmVolume: jest.fn(),
-    stopAllAlarmEffects: () => {
-      mockNativeVibrating = false;
-    },
+    stopAllAlarmEffects: () => mockStopAllAlarmEffects(),
     restoreSystemVolume: jest.fn(),
     stopAlarmSound: () => mockStopAlarmSound(),
     stopAlarmVibration: () => mockStopAlarmVibration(),
@@ -234,6 +235,46 @@ describe("useAlarmScreen", () => {
 
     expect(mockStartAlarmSound).not.toHaveBeenCalled();
     expect(mockStartAlarmVibration).not.toHaveBeenCalled();
+  });
+
+  it("stops a sound that starts after the challenge is solved", async () => {
+    const { result } = await mount();
+    await act(async () => result.current.handleGraceStart());
+    let finishSound!: () => void;
+    mockStartAlarmSound.mockImplementationOnce(
+      () => new Promise((resolve) => (finishSound = () => resolve(true)))
+    );
+
+    const ring = result.current.handleGraceExpire();
+    await act(async () => {
+      await result.current.handleChallengeComplete();
+    });
+    mockStopAllAlarmEffects.mockClear();
+    await act(async () => {
+      finishSound();
+      await ring;
+    });
+
+    expect(mockStopAllAlarmEffects).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops a sound that starts after a grace time restarts", async () => {
+    const { result } = await mount();
+    await act(async () => result.current.handleGraceStart());
+    let finishSound!: () => void;
+    mockStartAlarmSound.mockImplementationOnce(
+      () => new Promise((resolve) => (finishSound = () => resolve(true)))
+    );
+
+    const ring = result.current.handleGraceExpire();
+    await act(async () => result.current.handleGraceStart());
+    mockStopAlarmSound.mockClear();
+    await act(async () => {
+      finishSound();
+      await ring;
+    });
+
+    expect(mockStopAlarmSound).toHaveBeenCalledTimes(1);
   });
 
   it("leaves the native vibration off when a grace time restarts during the ring", async () => {
