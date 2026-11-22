@@ -1,0 +1,41 @@
+case	op	now	audible	screenReader	quietUntil	quietMs	soundingMs	countedTo	phase	secondsLeft	fraction	steppedFraction	wayOut
+quiet time counts no sound	start	1000	-	false	31000	30000	0	1000	paused	30	1	1	false
+quiet time counts no sound	advance	1250	true	-	31000	30000	0	1250	paused	30	0.9916666666666667	1	false
+quiet time counts no sound	advance	12345	true	-	31000	30000	0	12345	paused	19	0.6218333333333333	0.6666666666666666	false
+quiet time counts no sound	advance	25999	true	-	31000	30000	0	25999	paused	6	0.1667	0.3333333333333333	false
+quiet time counts no sound	advance	26000	true	-	31000	30000	0	26000	ending	5	0.16666666666666666	0.16666666666666666	false
+quiet time counts no sound	advance	27000	true	-	31000	30000	0	27000	ending	4	0.13333333333333333	0.16666666666666666	false
+quiet time counts no sound	advance	31000	true	-	31000	30000	0	31000	sounding	0	0	0	false
+quiet time counts no sound	advance	31250	true	-	31000	30000	250	31250	sounding	0	0	0	false
+one read adds at most two ticks	start	0	-	false	30000	30000	0	0	paused	30	1	1	false
+one read adds at most two ticks	advance	30000	true	-	30000	30000	0	30000	sounding	0	0	0	false
+one read adds at most two ticks	advance	40000	true	-	30000	30000	500	40000	sounding	0	0	0	false
+one read adds at most two ticks	advance	40000	true	-	30000	30000	500	40000	sounding	0	0	0	false
+one read adds at most two ticks	advance	39000	true	-	30000	30000	500	40000	sounding	0	0	0	false
+unheard time counts no sound	start	0	-	false	30000	30000	0	0	paused	30	1	1	false
+unheard time counts no sound	advance	30000	true	-	30000	30000	0	30000	sounding	0	0	0	false
+unheard time counts no sound	advance	30250	false	-	30000	30000	0	30250	sounding	0	0	0	false
+unheard time counts no sound	advance	30500	true	-	30000	30000	250	30500	sounding	0	0	0	false
+a screen reader gets the longer quiet	start	0	-	true	60000	60000	0	0	paused	60	1	1	false
+a screen reader gets the longer quiet	advance	30000	true	-	60000	60000	0	30000	paused	30	0.5	0.5	false
+a screen reader gets the longer quiet	advance	54321	true	-	60000	60000	0	54321	paused	6	0.09465	0.16666666666666666	false
+a screen reader gets the longer quiet	advance	60000	true	-	60000	60000	0	60000	sounding	0	0	0	false
+a screen reader gets the longer quiet	advance	60250	true	-	60000	60000	250	60250	sounding	0	0	0	false
+the way out after two minutes of sound	start	0	-	false	30000	30000	0	0	paused	30	1	1	false
+the way out after two minutes of sound	ticks	149750	true	-	30000	30000	119750	149750	sounding	0	0	0	false
+the way out after two minutes of sound	ticks	150000	true	-	30000	30000	120000	150000	sounding	0	0	0	true
+a solve restarts quiet	start	0	-	false	30000	30000	0	0	paused	30	1	1	false
+a solve restarts quiet	ticks	40000	true	-	30000	30000	10000	40000	sounding	0	0	0	false
+a solve restarts quiet	restart	40100	true	false	70100	30000	10100	40100	paused	30	1	1	false
+a solve restarts quiet	ticks	70000	true	-	70100	30000	10100	69850	ending	1	0.0033333333333333335	0.16666666666666666	false
+a solve restarts quiet	restart	70000	true	true	130000	60000	10100	70000	paused	60	1	1	false
+a solve restarts quiet	ticks	131000	true	-	130000	60000	11100	131000	sounding	0	0	0	false
+quiet can end early	start	0	-	false	30000	30000	0	0	paused	30	1	1	false
+quiet can end early	end	10000	true	-	10000	30000	0	10000	sounding	0	0	0	false
+quiet can end early	advance	10250	true	-	10000	30000	250	10250	sounding	0	0	0	false
+quiet can end early	end	10500	true	-	10000	30000	500	10500	sounding	0	0	0	false
+closed time counts nothing	start	0	-	false	30000	30000	0	0	paused	30	1	1	false
+closed time counts nothing	ticks	35000	true	-	30000	30000	5000	35000	sounding	0	0	0	false
+closed time counts nothing	resume	90000	-	-	30000	30000	5000	90000	sounding	0	0	0	false
+closed time counts nothing	advance	90250	true	-	30000	30000	5250	90250	sounding	0	0	0	false
+closed time counts nothing	resume	80000	-	-	30000	30000	5250	90250	sounding	0	0	0	false

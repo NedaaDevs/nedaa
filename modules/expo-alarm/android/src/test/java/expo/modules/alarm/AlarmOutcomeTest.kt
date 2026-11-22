@@ -9,16 +9,8 @@ class AlarmOutcomeTest {
 
     private val prefix = "OUTCOME_"
 
-    private val shared: Map<String, String> = run {
-        val stream = checkNotNull(javaClass.classLoader?.getResourceAsStream("alarm-outcome.tsv")) {
-            "missing fixture alarm-outcome.tsv"
-        }
-        stream.bufferedReader(Charsets.UTF_8).use { it.readLines() }
-            .drop(1)
-            .filter { it.isNotEmpty() }
-            .map { it.split('\t') }
-            .associate { (name, value) -> name to value }
-    }
+    private val shared: Map<String, String> = sharedTable("alarm-outcome.tsv")
+        .associate { (name, value) -> name to value }
 
     // Every OUTCOME_ constant, so one added in Kotlin alone fails here.
     private val native: Map<String, Any?> = AlarmDatabase::class.java.declaredFields
