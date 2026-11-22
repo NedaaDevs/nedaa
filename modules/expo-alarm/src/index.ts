@@ -300,6 +300,12 @@ export const stopAlarmVibration = (): boolean => {
   return NativeModule.stopAlarmVibration();
 };
 
+/** Starts the alarm's vibration and leaves its sound and volume alone. iOS has one vibration. */
+export const startAlarmVibration = (pattern: NativeAlarmSettings["vibrationPattern"]): boolean => {
+  if (!isAvailable) return false;
+  return NativeModule.startAlarmVibration(pattern);
+};
+
 export const stopAllAlarmEffects = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.stopAllAlarmEffects();
@@ -690,6 +696,7 @@ export default {
   isAlarmSoundPlaying,
   setAlarmCopy,
   stopAlarmVibration,
+  startAlarmVibration,
   stopAllAlarmEffects,
   setAlarmVolume,
   getAlarmVolume,
