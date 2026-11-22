@@ -1,0 +1,112 @@
+case	difficulty	op	arg	outcome	question	cards	states	line	asked
+wrong then right	easy	start	1	-	7,2	7,6,8,9	rest,rest,rest,rest	none	0
+wrong then right	easy	tap	0	wrong	7,2	7,6,8,9	wrong,held,held,held	wrong	0
+wrong then right	easy	replace	-	-	6,9	16,15,17,14	rest,rest,rest,rest	new	1
+wrong then right	easy	tap	1	solved	6,9	16,15,17,14	rest,rest,rest,rest	new	1
+wrong on every card	easy	start	2	-	7,4	11,10,13,12	rest,rest,rest,rest	none	0
+wrong on every card	easy	tap	1	wrong	7,4	11,10,13,12	held,wrong,held,held	wrong	0
+wrong on every card	easy	replace	-	-	4,6	9,8,7,10	rest,rest,rest,rest	new	1
+wrong on every card	easy	tap	0	wrong	4,6	9,8,7,10	wrong,held,held,held	wrong	1
+wrong on every card	easy	replace	-	-	9,7	13,16,14,15	rest,rest,rest,rest	new	2
+wrong on every card	easy	tap	0	wrong	9,7	13,16,14,15	wrong,held,held,held	wrong	2
+wrong on every card	easy	replace	-	-	5,4	8,10,9,7	rest,rest,rest,rest	new	3
+wrong on every card	easy	tap	1	wrong	5,4	8,10,9,7	held,wrong,held,held	wrong	3
+wrong on every card	easy	replace	-	-	8,2	9,7,8,10	rest,rest,rest,rest	new	4
+wrong on every card	easy	tap	2	wrong	8,2	9,7,8,10	held,held,wrong,held	wrong	4
+wrong on every card	easy	replace	-	-	8,3	12,11,14,13	rest,rest,rest,rest	new	5
+wrong on every card	easy	tap	3	wrong	8,3	12,11,14,13	held,held,held,wrong	wrong	5
+wrong on every card	easy	replace	-	-	5,8	14,11,12,13	rest,rest,rest,rest	new	6
+wrong on every card	easy	tap	3	solved	5,8	14,11,12,13	rest,rest,rest,rest	new	6
+taps during the hold	medium	start	3	-	75,2	69,67,77,79	rest,rest,rest,rest	none	0
+taps during the hold	medium	tap	0	wrong	75,2	69,67,77,79	wrong,held,held,held	wrong	0
+taps during the hold	medium	tap	2	ignored	75,2	69,67,77,79	wrong,held,held,held	wrong	0
+taps during the hold	medium	tap	0	ignored	75,2	69,67,77,79	wrong,held,held,held	wrong	0
+taps during the hold	medium	tap	1	ignored	75,2	69,67,77,79	wrong,held,held,held	wrong	0
+taps during the hold	medium	replace	-	-	51,2	62,53,63,52	rest,rest,rest,rest	new	1
+taps during the hold	medium	tap	1	solved	51,2	62,53,63,52	rest,rest,rest,rest	new	1
+taps after solved	medium	start	4	-	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+taps after solved	medium	tap	3	solved	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+taps after solved	medium	tap	0	ignored	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+taps after solved	medium	tap	1	ignored	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+taps after solved	medium	tap	2	ignored	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+taps after solved	medium	tap	3	ignored	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+taps after solved	medium	replace	-	-	93,4	107,106,96,97	rest,rest,rest,rest	none	0
+four cards in turn seed 5	easy	start	5	-	7,8	18,16,15,17	rest,rest,rest,rest	none	0
+four cards in turn seed 5	easy	tap	0	wrong	7,8	18,16,15,17	wrong,held,held,held	wrong	0
+four cards in turn seed 5	easy	tap	1	ignored	7,8	18,16,15,17	wrong,held,held,held	wrong	0
+four cards in turn seed 5	easy	tap	2	ignored	7,8	18,16,15,17	wrong,held,held,held	wrong	0
+four cards in turn seed 5	easy	tap	3	ignored	7,8	18,16,15,17	wrong,held,held,held	wrong	0
+four cards in turn seed 6	easy	start	6	-	6,2	8,9,6,7	rest,rest,rest,rest	none	0
+four cards in turn seed 6	easy	tap	0	solved	6,2	8,9,6,7	rest,rest,rest,rest	none	0
+four cards in turn seed 6	easy	tap	1	ignored	6,2	8,9,6,7	rest,rest,rest,rest	none	0
+four cards in turn seed 6	easy	tap	2	ignored	6,2	8,9,6,7	rest,rest,rest,rest	none	0
+four cards in turn seed 6	easy	tap	3	ignored	6,2	8,9,6,7	rest,rest,rest,rest	none	0
+four cards in turn seed 8	easy	start	8	-	3,7	11,9,10,8	rest,rest,rest,rest	none	0
+four cards in turn seed 8	easy	tap	0	wrong	3,7	11,9,10,8	wrong,held,held,held	wrong	0
+four cards in turn seed 8	easy	tap	1	ignored	3,7	11,9,10,8	wrong,held,held,held	wrong	0
+four cards in turn seed 8	easy	tap	2	ignored	3,7	11,9,10,8	wrong,held,held,held	wrong	0
+four cards in turn seed 8	easy	tap	3	ignored	3,7	11,9,10,8	wrong,held,held,held	wrong	0
+hard	hard	start	9	-	12,8	88,98,96,86	rest,rest,rest,rest	none	0
+hard	hard	tap	0	wrong	12,8	88,98,96,86	wrong,held,held,held	wrong	0
+hard	hard	replace	-	-	12,9	107,108,106,105	rest,rest,rest,rest	new	1
+hard	hard	tap	0	wrong	12,9	107,108,106,105	wrong,held,held,held	wrong	1
+hard	hard	replace	-	-	17,7	118,119,108,109	rest,rest,rest,rest	new	2
+hard	hard	tap	1	solved	17,7	118,119,108,109	rest,rest,rest,rest	new	2
+three steps	medium	start	10	-	55,9	64,74,73,63	rest,rest,rest,rest	none	0
+three steps	medium	tap	0	solved	55,9	64,74,73,63	rest,rest,rest,rest	none	0
+three steps	medium	step	-	-	72,8	78,70,80,68	rest,rest,rest,rest	none	0
+three steps	medium	tap	0	wrong	72,8	78,70,80,68	wrong,held,held,held	wrong	0
+three steps	medium	replace	-	-	51,5	56,66,67,57	rest,rest,rest,rest	new	1
+three steps	medium	tap	0	solved	51,5	56,66,67,57	rest,rest,rest,rest	new	1
+three steps	medium	step	-	-	29,2	29,28,30,31	rest,rest,rest,rest	none	0
+three steps	medium	tap	3	solved	29,2	29,28,30,31	rest,rest,rest,rest	none	0
+ten steps	easy	start	11	-	6,6	12,11,10,9	rest,rest,rest,rest	none	0
+ten steps	easy	tap	0	solved	6,6	12,11,10,9	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	6,6	12,11,10,9	rest,rest,rest,rest	none	0
+ten steps	easy	tap	0	solved	6,6	12,11,10,9	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	8,6	15,14,16,13	rest,rest,rest,rest	none	0
+ten steps	easy	tap	1	solved	8,6	15,14,16,13	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	2,6	9,8,7,10	rest,rest,rest,rest	none	0
+ten steps	easy	tap	0	wrong	2,6	9,8,7,10	wrong,held,held,held	wrong	0
+ten steps	easy	replace	-	-	6,5	11,14,13,12	rest,rest,rest,rest	new	1
+ten steps	easy	tap	0	solved	6,5	11,14,13,12	rest,rest,rest,rest	new	1
+ten steps	easy	step	-	-	5,8	14,11,12,13	rest,rest,rest,rest	none	0
+ten steps	easy	tap	3	solved	5,8	14,11,12,13	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	5,7	10,11,12,13	rest,rest,rest,rest	none	0
+ten steps	easy	tap	2	solved	5,7	10,11,12,13	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	7,3	13,10,12,11	rest,rest,rest,rest	none	0
+ten steps	easy	tap	1	solved	7,3	13,10,12,11	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	3,4	6,7,4,5	rest,rest,rest,rest	none	0
+ten steps	easy	tap	0	wrong	3,4	6,7,4,5	wrong,held,held,held	wrong	0
+ten steps	easy	replace	-	-	5,5	10,13,11,12	rest,rest,rest,rest	new	1
+ten steps	easy	tap	0	solved	5,5	10,13,11,12	rest,rest,rest,rest	new	1
+ten steps	easy	step	-	-	6,3	8,9,10,11	rest,rest,rest,rest	none	0
+ten steps	easy	tap	1	solved	6,3	8,9,10,11	rest,rest,rest,rest	none	0
+ten steps	easy	step	-	-	6,6	12,11,10,9	rest,rest,rest,rest	none	0
+ten steps	easy	tap	0	solved	6,6	12,11,10,9	rest,rest,rest,rest	none	0
+ten steps hard	hard	start	12	-	13,3	39,69,49,59	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	0	solved	13,3	39,69,49,59	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	16,9	146,156,144,154	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	0	wrong	16,9	146,156,144,154	wrong,held,held,held	wrong	0
+ten steps hard	hard	replace	-	-	12,3	36,26,38,28	rest,rest,rest,rest	new	1
+ten steps hard	hard	tap	0	solved	12,3	36,26,38,28	rest,rest,rest,rest	new	1
+ten steps hard	hard	step	-	-	17,7	118,119,108,109	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	1	solved	17,7	118,119,108,109	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	15,8	121,118,119,120	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	3	solved	15,8	121,118,119,120	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	11,9	88,99,89,98	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	1	solved	11,9	88,99,89,98	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	13,6	88,78,98,68	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	0	wrong	13,6	88,78,98,68	wrong,held,held,held	wrong	0
+ten steps hard	hard	replace	-	-	17,7	118,119,108,109	rest,rest,rest,rest	new	1
+ten steps hard	hard	tap	1	solved	17,7	118,119,108,109	rest,rest,rest,rest	new	1
+ten steps hard	hard	step	-	-	15,8	121,118,119,120	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	3	solved	15,8	121,118,119,120	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	19,4	96,86,106,76	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	3	solved	19,4	96,86,106,76	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	13,9	117,116,106,107	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	0	solved	13,9	117,116,106,107	rest,rest,rest,rest	none	0
+ten steps hard	hard	step	-	-	14,6	64,74,54,84	rest,rest,rest,rest	none	0
+ten steps hard	hard	tap	0	wrong	14,6	64,74,54,84	wrong,held,held,held	wrong	0
+ten steps hard	hard	replace	-	-	13,3	39,69,49,59	rest,rest,rest,rest	new	1
+ten steps hard	hard	tap	0	solved	13,3	39,69,49,59	rest,rest,rest,rest	new	1

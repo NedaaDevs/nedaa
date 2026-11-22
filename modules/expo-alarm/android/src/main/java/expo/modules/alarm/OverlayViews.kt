@@ -1,15 +1,27 @@
 package expo.modules.alarm
 
 import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.Paint
+import android.graphics.PixelFormat
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
 import android.os.Build
+import android.text.Editable
+import android.text.TextPaint
+import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.util.Locale
 
 // The smallest touch target, as Android's accessibility guidance sets it.
 internal const val MIN_TARGET_DP = 48
@@ -63,4 +75,120 @@ internal fun spokenStatus(context: Context): TextView = TextView(context).apply 
 internal fun TextView.say(message: String?) {
     val next = message.orEmpty()
     if (text.toString() != next) text = next
+}
+
+// A number in the digits the shell's clock and counts use.
+internal fun localeNumber(value: Int): String = String.format(Locale.getDefault(), "%d", value)
+
+// Card shapes, as JS AnswerCard; a wrong card's edge is dashed.
+internal object AnswerCardShape {
+    const val RADIUS_DP = 16f
+    const val EDGE_DP = 1.5f
+    const val WRONG_EDGE_DP = 2f
+    const val DASH_DP = 6f
+    const val MARK_DP = 28
+    const val MARK_INSET_DP = 8
+    const val MARK_EDGE_DP = 2f
+}
+
+internal fun Context.dpf(value: Float): Float = value * resources.displayMetrics.density
+
+private fun cardFill(context: Context, fill: String, edge: String, edgeDp: Float, dashed: Boolean) =
+    GradientDrawable().apply {
+        setColor(Color.parseColor(fill))
+        cornerRadius = context.dpf(AnswerCardShape.RADIUS_DP)
+        val dash = if (dashed) context.dpf(AnswerCardShape.DASH_DP) else 0f
+        setStroke(context.dpf(edgeDp).toInt().coerceAtLeast(1), Color.parseColor(edge), dash, dash)
+    }
+
+// Only a card at rest shows a press: the pressed fill and a full edge.
+internal fun answerCardBackground(context: Context, state: AnswerCardState): Drawable = when (state) {
+    AnswerCardState.WRONG ->
+        cardFill(context, COLOR_ANSWER_CARD, COLOR_ERROR, AnswerCardShape.WRONG_EDGE_DP, dashed = true)
+    AnswerCardState.HELD -> cardFill(context, COLOR_ANSWER_CARD, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false)
+    AnswerCardState.REST -> StateListDrawable().apply {
+        val pressed = cardFill(context, COLOR_PRESSED, COLOR_TEXT, AnswerCardShape.EDGE_DP, false)
+        addState(intArrayOf(android.R.attr.state_pressed), pressed)
+        addState(intArrayOf(), cardFill(context, COLOR_ANSWER_CARD, COLOR_HAIRLINE, AnswerCardShape.EDGE_DP, false))
+    }
+}
+
+// The wrong card's corner badge: a ring with a cross, drawn only.
+internal class WrongMark(private val edge: Float) : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = edge
+        strokeCap = Paint.Cap.ROUND
+        color = Color.parseColor(COLOR_ERROR)
+    }
+
+    override fun draw(canvas: Canvas) {
+        val box = bounds
+        val radius = (minOf(box.width(), box.height()) - edge) / 2f
+        canvas.drawCircle(box.exactCenterX(), box.exactCenterY(), radius, paint)
+        val arm = radius * CROSS_ARM
+        val x = box.exactCenterX()
+        val y = box.exactCenterY()
+        canvas.drawLine(x - arm, y - arm, x + arm, y + arm, paint)
+        canvas.drawLine(x - arm, y + arm, x + arm, y - arm, paint)
+    }
+
+    override fun setAlpha(alpha: Int) {
+        paint.alpha = alpha
+    }
+
+    override fun setColorFilter(colorFilter: ColorFilter?) {
+        paint.colorFilter = colorFilter
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+
+    private companion object {
+        // Half the cross's span as a share of the ring's radius.
+        const val CROSS_ARM = 0.4f
+    }
+}
+
+// TalkBack names a view a button only from its class name.
+internal fun View.speaksAsButton() {
+    accessibilityDelegate = object : View.AccessibilityDelegate() {
+        override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
+            super.onInitializeAccessibilityNodeInfo(host, info)
+            info.className = Button::class.java.name
+        }
+    }
+}
+
+// Shrinks one line of text to fit its width: auto-size from API 26, else
+// TextFit after each layout and text change.
+internal fun fitOneLine(view: TextView, maxSp: Float, minSp: Float) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        view.setAutoSizeTextTypeUniformWithConfiguration(minSp.toInt(), maxSp.toInt(), 1, TypedValue.COMPLEX_UNIT_SP)
+        return
+    }
+    view.setTextSize(TypedValue.COMPLEX_UNIT_SP, maxSp)
+    val fit = Runnable { shrinkToWidth(view, maxSp, minSp) }
+    view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> view.post(fit) }
+    view.addTextChangedListener(object : TextWatcher {
+        override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
+        override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        override fun afterTextChanged(text: Editable?) {
+            view.post(fit)
+        }
+    })
+}
+
+private fun shrinkToWidth(view: TextView, maxSp: Float, minSp: Float) {
+    val room = view.width - view.totalPaddingLeft - view.totalPaddingRight
+    if (room <= 0) return
+    val text = view.text.toString()
+    val paint = TextPaint(view.paint)
+    val metrics = view.resources.displayMetrics
+    val sp = TextFit.sp(maxSp, minSp) { size ->
+        paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, metrics)
+        paint.measureText(text) <= room
+    }
+    val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics)
+    if (view.textSize != px) view.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
 }

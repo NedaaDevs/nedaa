@@ -31,7 +31,7 @@ class NativeBoardsTest {
     @Test
     fun mathRunsItsOwnBoardAndEveryOtherTaskRunsTap() {
         val expected = mapOf(
-            WakeTasks.Board.MATH to NativeBoards.Kind.TYPED_MATH,
+            WakeTasks.Board.MATH to NativeBoards.Kind.MATH_CARDS,
             WakeTasks.Board.TAP to NativeBoards.Kind.TAP,
             WakeTasks.Board.PATTERN to NativeBoards.Kind.TAP,
             WakeTasks.Board.PRAYERS to NativeBoards.Kind.TAP,
@@ -50,11 +50,5 @@ class NativeBoardsTest {
             assertEquals(board.id, if (board == WakeTasks.Board.MATH) board else WakeTasks.Board.TAP, shown)
             assertEquals(board.id, NativeBoards.kindOf(task), NativeBoards.kindOf(stack("id=${shown.id}").single()))
         }
-    }
-
-    @Test
-    fun onlyATypedBoardNeedsTheKeyboard() {
-        assertTrue(NativeBoards.needsKeyboard(stack("id=tap;id=math")))
-        assertFalse(NativeBoards.needsKeyboard(stack("id=tap;id=pattern;id=dhikr")))
     }
 }

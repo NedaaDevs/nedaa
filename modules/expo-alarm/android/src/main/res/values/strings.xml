@@ -140,4 +140,14 @@
     <string name="overlay_task_tap_count">%1$d of %2$d</string>
     <string name="overlay_task_tap_here">Tap here</string>
     <string name="overlay_task_math_wrong">Not that one. A new question follows.</string>
+    <string name="overlay_task_math_new">This is a new question.</string>
+    <string name="overlay_task_math_add">%1$s plus %2$s</string>
+    <string name="overlay_task_math_multiply">%1$s times %2$s</string>
+    <string name="overlay_task_math_after_miss">Not that one. New question. %1$s</string>
+    <string name="overlay_task_card">%1$s, %2$s</string>
+    <string name="overlay_task_card_wrong">%1$s, wrong</string>
+    <string name="overlay_task_card_place_first">card 1 of 4</string>
+    <string name="overlay_task_card_place_second">card 2 of 4</string>
+    <string name="overlay_task_card_place_third">card 3 of 4</string>
+    <string name="overlay_task_card_place_fourth">card 4 of 4</string>
 </resources>
