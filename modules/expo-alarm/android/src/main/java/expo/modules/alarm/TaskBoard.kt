@@ -23,10 +23,7 @@ interface BoardHost {
 interface TaskBoard {
     val view: View
 
-    // The field a typed board takes its answer in; the shell gives it the keyboard.
-    val input: View? get() = null
-
-    // Called as the shell removes the board; no native board holds anything to free yet.
+    // Called as the shell removes the board; frees its timers.
     fun release() {}
 }
 
@@ -39,12 +36,12 @@ object TaskBoards {
 
     fun factoryOf(kind: NativeBoards.Kind): TaskBoardFactory = when (kind) {
         NativeBoards.Kind.TAP -> TaskBoardFactory { context, _, host -> TapBoard(context, host) }
-        NativeBoards.Kind.TYPED_MATH -> TaskBoardFactory(::TypedMathBoard)
+        NativeBoards.Kind.MATH_CARDS -> TaskBoardFactory(::MathCardsBoard)
     }
 
     fun headingOf(kind: NativeBoards.Kind): Int = when (kind) {
         NativeBoards.Kind.TAP -> R.string.overlay_task_name_tap
-        NativeBoards.Kind.TYPED_MATH -> R.string.overlay_task_title_math
+        NativeBoards.Kind.MATH_CARDS -> R.string.overlay_task_title_math
     }
 
     // The task's own name, as the start button and the handover say it.

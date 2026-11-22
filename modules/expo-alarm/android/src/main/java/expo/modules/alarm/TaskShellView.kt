@@ -10,7 +10,6 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
 import android.view.accessibility.AccessibilityManager
-import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -43,8 +42,6 @@ class TaskShellView(
     private val handler = Handler(Looper.getMainLooper())
 
     private val accessibility = context.getSystemService(AccessibilityManager::class.java)
-
-    private val keyboard = context.getSystemService(InputMethodManager::class.java)
 
     // Animations off: the quiet bar moves in steps, as under JS Reduce Motion.
     private val stepped = Settings.Global.getFloat(
@@ -221,19 +218,6 @@ class TaskShellView(
         boardHost.addView(shown.view)
         boardHeading.visibility = View.VISIBLE
         boardHost.visibility = View.VISIBLE
-        val typing = shown.input
-        if (typing == null) {
-            hideKeyboard()
-        } else {
-            typing.post {
-                typing.requestFocus()
-                keyboard?.showSoftInput(typing, InputMethodManager.SHOW_IMPLICIT)
-            }
-        }
-    }
-
-    private fun hideKeyboard() {
-        keyboard?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private fun clearBoard() {
@@ -266,7 +250,6 @@ class TaskShellView(
         handoverPosition.text = taskOf(run, next)
         handoverNext.text = nextOf(run, next)
         handoverPanel.visibility = View.VISIBLE
-        if (!NativeBoards.kindOf(run.taskAt(next)).typed) hideKeyboard()
         handler.postDelayed({
             val now = now()
             apply(run.finishHandover(now, quietMs()))

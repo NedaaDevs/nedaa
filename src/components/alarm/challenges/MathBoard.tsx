@@ -14,12 +14,13 @@ import {
   ANSWER_CARD_KIND,
   ANSWER_CARD_PLACE_KEY,
   ANSWER_CARD_POSITIONS,
-  ANSWER_CARD_STATE,
   BOARD_PART,
   BOARD_TYPE,
   BOARD_SWAP_MS,
+  MATH_LINE_KEY,
   MATH_SPOKEN_KEY,
   MATH_SYMBOL,
+  MATH_TAP,
   WRONG_CARD_HOLD_MS,
   type AnswerCardPosition,
 } from "@/constants/WakeTaskBoards";
@@ -27,7 +28,13 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { focusOn } from "@/utils/accessibilityFocus";
 import { LTR_ISOLATE } from "@/utils/digits";
-import { mathRound } from "@/utils/mathCards";
+import {
+  cardStateOf,
+  mathLineOf,
+  replaceQuestion,
+  startMathBoard,
+  tapMathCard,
+} from "@/utils/mathBoard";
 import { formatNumberToLocale } from "@/utils/number";
 import type { Rng } from "@/utils/rng";
 
@@ -44,19 +51,11 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
   const reduceMotion = useReducedMotion();
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const hapticError = useHaptic(HAPTIC_FEEDBACK.ERROR);
-  const [round, setRound] = useState(() => mathRound(difficulty, rng));
-  // Questions replaced so far; each mounts its sum and cards fresh.
-  const [asked, setAsked] = useState(0);
-  // The card held as wrong; no card takes a press meanwhile.
-  const [wrong, setWrong] = useState<AnswerCardPosition | null>(null);
-  const solved = useRef(false);
+  const [board, setBoard] = useState(() => startMathBoard(difficulty, rng));
+  const { round, asked, wrong } = board;
   const sumRef = useRef<ViewInstance>(null);
 
-  const replace = useEffectEvent(() => {
-    setRound(mathRound(difficulty, rng, round.question));
-    setWrong(null);
-    setAsked((count) => count + 1);
-  });
+  const replace = useEffectEvent(() => setBoard(replaceQuestion(board, difficulty, rng)));
 
   useEffect(() => {
     if (wrong === null) return;
@@ -70,26 +69,21 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
   }, [asked]);
 
   const choose = (position: AnswerCardPosition) => {
-    if (solved.current || wrong !== null) return;
-    if (round.cards[position] === round.answer) {
-      solved.current = true;
+    const tap = tapMathCard(board, position);
+    if (tap.outcome === MATH_TAP.IGNORED) return;
+    setBoard(tap.state);
+    if (tap.outcome === MATH_TAP.SOLVED) {
       hapticSuccess();
       onComplete();
       return;
     }
     hapticError();
-    setWrong(position);
-  };
-
-  const stateOf = (position: AnswerCardPosition) => {
-    if (wrong === null) return ANSWER_CARD_STATE.REST;
-    return wrong === position ? ANSWER_CARD_STATE.WRONG : ANSWER_CARD_STATE.HELD;
   };
 
   const { operation, left, right } = round.question;
   const question = t(MATH_SPOKEN_KEY[operation], { left, right });
-  const line =
-    wrong !== null ? t("alarm.task.math.wrong") : asked > 0 ? t("alarm.task.math.new") : "";
+  const lineKey = MATH_LINE_KEY[mathLineOf(board)];
+  const line = lineKey ? t(lineKey) : "";
   const entering = reduceMotion ? undefined : FadeIn.duration(BOARD_SWAP_MS.IN);
   const exiting = reduceMotion ? undefined : FadeOut.duration(BOARD_SWAP_MS.OUT);
 
@@ -139,7 +133,7 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
                   label: formatted(round.cards[position]),
                   place: t(ANSWER_CARD_PLACE_KEY[position]),
                 })}
-                state={stateOf(position)}
+                state={cardStateOf(board, position)}
                 onPress={() => choose(position)}
               />
             </Grid.Item>

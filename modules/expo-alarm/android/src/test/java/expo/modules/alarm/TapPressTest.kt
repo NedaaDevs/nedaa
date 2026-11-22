@@ -19,7 +19,9 @@ class TapPressTest {
         val native = mapOf(
             "TAP_PRESSES" to TapBoard.TAP_PRESSES.toLong(),
             "TAP_PRESS_MIN_GAP_MS" to TapPress.MIN_GAP_MS,
+            "WRONG_CARD_HOLD_MS" to MathBoardRun.WRONG_HOLD_MS,
             "HANDOVER_SHOWN_MS" to TaskShellRun.HANDOVER_MS,
+            "BOARD_SWAP_IN_MS" to MathCardsBoard.SWAP_IN_MS,
         )
         val rows = sharedTable("shell-constants.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })
