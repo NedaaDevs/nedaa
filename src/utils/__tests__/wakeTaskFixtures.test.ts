@@ -8,11 +8,15 @@ import { DURATION_MS } from "@/constants/Motion";
 import { isPrayerId } from "@/constants/Prayer";
 import {
   ANSWER_CARD_POSITIONS,
+  ANSWER_CARD_STATE,
   BOARD_SWAP_MS,
   MATH_LEVELS,
   MATH_TAP,
   PATTERN_PADS,
   PATTERN_TAP,
+  PRAYER_LINE,
+  PRAYER_PLACE_EMPTY,
+  PRAYER_PLACE_FILL_MS,
   PRAYER_TAP,
   TAP_OUTCOME,
   TAP_PRESSES,
@@ -53,6 +57,17 @@ import {
   tapPrayer,
   type PrayerBoardState,
 } from "@/utils/prayerOrder";
+import {
+  endWrongHold,
+  placedSaidOf,
+  placesSpokenOf,
+  prayerCardStateOf,
+  prayerLineOf,
+  startPrayersBoard,
+  tapPrayerCard,
+  type PlaceSaid,
+  type PrayersBoardState,
+} from "@/utils/prayersBoard";
 import { drawInt, seededRng, shuffled, type Rng } from "@/utils/rng";
 import {
   advanceTaskClock,
@@ -72,7 +87,8 @@ import {
 import { countsPress, pressTap, startTapBoard, tapStatusOf } from "@/utils/tapPress";
 
 // The Android overlay's JVM tests (TaskRngTest, TaskClockTest, TaskQuietTest,
-// MathCardsTest, MathBoardRunTest, PrayerOrderTest, PatternOrderTest, TapPressTest) read the same tables.
+// MathCardsTest, MathBoardRunTest, PrayerOrderTest, PrayersBoardRunTest, PatternOrderTest,
+// TapPressTest) read the same tables.
 const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
 
 const NONE = "-";
@@ -95,6 +111,7 @@ const FIXTURE_OP = {
   REDRAW: "redraw",
   REPLACE: "replace",
   STEP: "step",
+  HOLD: "hold",
 } as const;
 const SECOND_MS = 1000;
 const UINT_RANGE = 2 ** 32;
@@ -377,6 +394,61 @@ describe("prayer-order.tsv", () => {
   });
 });
 
+describe("prayers-board.tsv", () => {
+  const cases = byCase(readCases("prayers-board.tsv"));
+  /** Each sentence as `part:prayer`, joined by commas. */
+  const saidCell = (said: PlaceSaid[]) =>
+    said.length === 0 ? NONE : said.map(({ part, prayer }) => `${part}:${prayer}`).join(",");
+
+  it.each(cases)("%s", (_name, rows) => {
+    let rng: Rng | null = null;
+    let state: PrayersBoardState | null = null;
+    for (const [, op, arg, ...expected] of rows) {
+      let outcome = NONE;
+      let said = NONE;
+      if (op === FIXTURE_OP.START) {
+        rng = seededRng(Number(arg));
+        state = startPrayersBoard(rng);
+      } else if (op === FIXTURE_OP.TAP && state) {
+        const tap = tapPrayerCard(state, Number(arg));
+        outcome = tap.outcome;
+        if ("state" in tap) state = tap.state;
+        if (tap.outcome === PRAYER_TAP.PLACED) said = saidCell(placedSaidOf(tap.state));
+      } else if (op === FIXTURE_OP.HOLD && state && rng) {
+        state = endWrongHold(state, rng);
+      } else {
+        throw new Error(`unknown op ${op}`);
+      }
+      const board = state;
+      const line = prayerLineOf(board);
+      expect([
+        outcome,
+        board.order.deal.join(","),
+        String(board.order.placed),
+        board.order.deal.map((_, slot) => prayerCardStateOf(board, slot)).join(","),
+        "prayer" in line ? `${line.line}:${line.prayer}` : line.line,
+        saidCell(placesSpokenOf(board)),
+        said,
+        String(board.deals),
+        String(board.solved),
+      ]).toEqual(expected);
+    }
+  });
+
+  it("holds every outcome, card state and line", () => {
+    const rows = cases.flatMap(([, caseRows]) => caseRows);
+    expect(new Set(rows.map((row) => row[3]))).toEqual(
+      new Set([NONE, ...Object.values(PRAYER_TAP)])
+    );
+    expect(new Set(rows.flatMap((row) => row[6].split(",")))).toEqual(
+      new Set(Object.values(ANSWER_CARD_STATE))
+    );
+    expect(new Set(rows.map((row) => row[7].split(":")[0]))).toEqual(
+      new Set(Object.values(PRAYER_LINE))
+    );
+  });
+});
+
 describe("pattern-order.tsv", () => {
   it.each(byCase(readCases("pattern-order.tsv")))("%s", (_name, rows) => {
     let rng: Rng | null = null;
@@ -459,6 +531,7 @@ describe("shell-constants.tsv", () => {
     BOARD_SWAP_IN_MS: BOARD_SWAP_MS.IN,
     PRESS_SCALE,
     PRESS_DOWN_MS: DURATION_MS.PRESS,
+    PRAYER_PLACE_FILL_MS,
   };
 
   const rows = readCases("shell-constants.tsv");
@@ -469,5 +542,20 @@ describe("shell-constants.tsv", () => {
 
   it("pins every constant", () => {
     expect(rows.map(([name]) => name)).toEqual(Object.keys(SHELL_CONSTANTS));
+  });
+});
+
+describe("shell-text.tsv", () => {
+  /** The JS text each row pins; the native boards read the same rows. */
+  const SHELL_TEXT: Record<string, string> = { PRAYER_PLACE_EMPTY };
+
+  const rows = readCases("shell-text.tsv");
+
+  it.each(rows)("%s is %s", (name, value) => {
+    expect(SHELL_TEXT[name]).toBe(value);
+  });
+
+  it("pins every text", () => {
+    expect(rows.map(([name]) => name)).toEqual(Object.keys(SHELL_TEXT));
   });
 });

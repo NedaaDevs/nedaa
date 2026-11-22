@@ -53,12 +53,21 @@ class TapPressTest {
             "WRONG_CARD_HOLD_MS" to MathBoardRun.WRONG_HOLD_MS.toDouble(),
             "HANDOVER_SHOWN_MS" to TaskShellRun.HANDOVER_MS.toDouble(),
             "BOARD_SWAP_IN_MS" to MathCardsBoard.SWAP_IN_MS.toDouble(),
-            "PRESS_SCALE" to TapBoard.PRESS_SCALE.toDouble(),
-            "PRESS_DOWN_MS" to TapBoard.PRESS_DOWN_MS.toDouble(),
+            "PRESS_SCALE" to PRESS_SCALE.toDouble(),
+            "PRESS_DOWN_MS" to PRESS_DOWN_MS.toDouble(),
+            "PRAYER_PLACE_FILL_MS" to PrayersBoard.PLACE_FILL_MS.toDouble(),
         )
         val rows = sharedTable("shell-constants.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })
         for ((name, value) in rows) assertEquals(name, value.toDouble(), checkNotNull(native[name]), CONSTANT_DELTA)
+    }
+
+    @Test
+    fun theShellTextMatchesTheJs() {
+        val native = mapOf("PRAYER_PLACE_EMPTY" to PrayersBoard.PLACE_EMPTY)
+        val rows = sharedTable("shell-text.tsv")
+        assertEquals(native.keys.toList(), rows.map { it[0] })
+        for ((name, value) in rows) assertEquals(name, value, native[name])
     }
 
     private companion object {

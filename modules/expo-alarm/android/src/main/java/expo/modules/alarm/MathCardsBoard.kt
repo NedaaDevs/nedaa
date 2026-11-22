@@ -4,12 +4,9 @@ import android.content.Context
 import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
-import android.view.Gravity
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.TextView
 
 // Math's board: a sum and four answer cards, as JS MathBoard. It draws what
 // MathBoardRun decides; a wrong card holds, then a new sum replaces it.
@@ -44,10 +41,9 @@ class MathCardsBoard(context: Context, input: BoardInput, private val host: Boar
         minHeight = context.dp(LINE_MIN_DP)
     }
 
-    // One answer card: its frame, its number and its wrong mark.
-    private class Card(val frame: FrameLayout, val label: TextView, val mark: View)
-
-    private val cards = List(MathCards.CARD_COUNT) { position -> card(context, position) }
+    private val cards = List(MathCards.CARD_COUNT) { position ->
+        AnswerCardView(context, CARD_SIZE) { choose(it, position) }
+    }
 
     private val grid = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
@@ -80,39 +76,6 @@ class MathCardsBoard(context: Context, input: BoardInput, private val host: Boar
     override fun release() {
         handler.removeCallbacks(endHold)
         handler.removeCallbacks(focusSum)
-    }
-
-    private fun card(context: Context, position: Int): Card {
-        val inset = context.dp(AnswerCardShape.MARK_INSET_DP)
-        // Clear of the wrong mark on both edges, so the numeral stays centred.
-        val clear = inset + context.dp(AnswerCardShape.MARK_DP)
-        val label = overlayText(context, CARD_SP, COLOR_TEXT).apply {
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            maxLines = 1
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            setPaddingRelative(clear, 0, clear, 0)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, context.dp(CARD_LABEL_DP), Gravity.CENTER,
-            )
-            fitOneLine(this, CARD_SP, CARD_MIN_SP)
-        }
-        val mark = View(context).apply {
-            background = WrongMark(context.dpf(AnswerCardShape.MARK_EDGE_DP))
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            layoutParams = FrameLayout.LayoutParams(
-                context.dp(AnswerCardShape.MARK_DP), context.dp(AnswerCardShape.MARK_DP), Gravity.TOP or Gravity.END,
-            ).apply { topMargin = inset; marginEnd = inset }
-        }
-        val frame = FrameLayout(context).apply {
-            minimumHeight = context.dp(CARD_MIN_DP)
-            isClickable = true
-            isFocusable = true
-            speaksAsButton()
-            addView(label)
-            addView(mark)
-            setOnClickListener { choose(it, position) }
-        }
-        return Card(frame, label, mark)
     }
 
     private fun choose(card: View, position: Int) {
@@ -167,17 +130,11 @@ class MathCardsBoard(context: Context, input: BoardInput, private val host: Boar
         cards.forEachIndexed { position, card -> showCard(card, position) }
     }
 
-    private fun showCard(card: Card, position: Int) {
+    private fun showCard(card: AnswerCardView, position: Int) {
         val context = card.frame.context
-        val cardState = state.cardState(position)
         val label = localeNumber(state.round.cards[position])
-        card.label.text = label
-        card.mark.visibility = if (cardState == AnswerCardState.WRONG) View.VISIBLE else View.GONE
-        card.frame.background = answerCardBackground(context, cardState)
-        card.frame.isEnabled = cardState == AnswerCardState.REST
         val named = context.getString(R.string.overlay_task_card, label, context.getString(ANSWER_CARD_PLACE[position]))
-        card.frame.contentDescription =
-            if (cardState == AnswerCardState.WRONG) context.getString(R.string.overlay_task_card_wrong, named) else named
+        card.show(state.cardState(position), label, named)
     }
 
     companion object {
@@ -201,6 +158,11 @@ class MathCardsBoard(context: Context, input: BoardInput, private val host: Boar
 
         // Holds the card numeral's line, so auto-size has a bounded box.
         private const val CARD_LABEL_DP = 64
+
+        // Clear of the corner mark, so the centred number never moves.
+        private const val CARD_INSET_DP = AnswerCardShape.MARK_INSET_DP + AnswerCardShape.MARK_DP
+
+        private val CARD_SIZE = AnswerCardSize(CARD_SP, CARD_MIN_SP, CARD_LABEL_DP, CARD_MIN_DP, CARD_INSET_DP)
 
         // JS $stack, between the parts and between cards.
         private const val GAP_DP = 12

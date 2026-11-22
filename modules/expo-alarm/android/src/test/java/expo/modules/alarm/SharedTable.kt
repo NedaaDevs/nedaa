@@ -36,6 +36,7 @@ object FixtureOp {
     const val REDRAW = "redraw"
     const val REPLACE = "replace"
     const val STEP = "step"
+    const val HOLD = "hold"
 }
 
 // Tap outcomes as the JS PRAYER_TAP, PATTERN_TAP and MATH_TAP write them.

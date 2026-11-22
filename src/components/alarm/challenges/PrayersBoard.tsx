@@ -19,9 +19,12 @@ import {
   ANSWER_CARD_STATE,
   BOARD_PART,
   BOARD_SWAP_MS,
+  PRAYER_LINE,
+  PRAYER_LINE_KEY,
   PRAYER_PLACE_EMPTY,
   PRAYER_PLACE_FILL_MS,
   PRAYER_PLACE_KEY,
+  PRAYER_PLACE_PART,
   PRAYER_TAP,
   WRONG_CARD_HOLD_MS,
 } from "@/constants/WakeTaskBoards";
@@ -29,8 +32,18 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { focusOn } from "@/utils/accessibilityFocus";
 import { formatNumberToLocale } from "@/utils/number";
-import { isPlaced, reshuffleUnplaced, startBoard, tapPrayer } from "@/utils/prayerOrder";
 import { prayerNameKey } from "@/utils/prayerName";
+import {
+  endWrongHold,
+  placedSaidOf,
+  placesSpokenOf,
+  prayerCardStateOf,
+  prayerLineOf,
+  startPrayersBoard,
+  tapPrayerCard,
+  type PlaceSaid,
+  type PrayersBoardState,
+} from "@/utils/prayersBoard";
 import type { Rng } from "@/utils/rng";
 
 type Props = BoardProps & {
@@ -53,29 +66,39 @@ const PrayersBoard = ({ onComplete, rng = Math.random }: Props) => {
   const hapticLight = useHaptic(HAPTIC_FEEDBACK.LIGHT);
   const hapticError = useHaptic(HAPTIC_FEEDBACK.ERROR);
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
-  const [board, setBoard] = useState(() => startBoard(rng));
-  // The card held as wrong; no card takes a press meanwhile.
-  const [wrong, setWrong] = useState<number | null>(null);
-  // The prayer last tapped too soon, until the next placement.
-  const [missed, setMissed] = useState<PrayerId | null>(null);
-  // Redeals so far; reader focus moves to the places after each.
-  const [deals, setDeals] = useState(0);
+  const [board, setBoard] = useState(() => startPrayersBoard(rng));
+  // Taps read this, so two in one frame see the first one's board.
+  const live = useRef(board);
   const [said, setSaid] = useState<string | null>(null);
-  const solved = useRef(false);
   const placesRef = useRef<ViewInstance>(null);
+  const { order, wrong, deals } = board;
+
+  const commit = (next: PrayersBoardState) => {
+    live.current = next;
+    setBoard(next);
+  };
 
   const name = (prayer: PrayerId) => t(prayerNameKey(prayer, false));
   const emptyPlace = (prayer: PrayerId) => t(PRAYER_PLACE_KEY[prayer].empty);
   const filledPlace = (prayer: PrayerId) =>
     t(PRAYER_PLACE_KEY[prayer].filled, { prayer: name(prayer) });
 
-  const reshuffle = useEffectEvent(() => {
-    if (wrong === null) return;
-    setMissed(board.deal[wrong]);
-    setBoard(reshuffleUnplaced(board, rng));
-    setWrong(null);
-    setDeals((count) => count + 1);
-  });
+  const sayPart = ({ part, prayer }: PlaceSaid) => {
+    switch (part) {
+      case PRAYER_PLACE_PART.AFTER_MISS:
+        return t("a11y.alarm.task.prayers.afterMiss", { prayer: name(prayer) });
+      case PRAYER_PLACE_PART.FILLED:
+        return filledPlace(prayer);
+      case PRAYER_PLACE_PART.EMPTY:
+        return emptyPlace(prayer);
+      default: {
+        const unhandled: never = part;
+        throw new Error(`unhandled place part: ${String(unhandled)}`);
+      }
+    }
+  };
+
+  const reshuffle = useEffectEvent(() => commit(endWrongHold(live.current, rng)));
 
   useEffect(() => {
     if (wrong === null) return;
@@ -89,29 +112,23 @@ const PrayersBoard = ({ onComplete, rng = Math.random }: Props) => {
   }, [deals]);
 
   const choose = (slot: number) => {
-    if (solved.current || wrong !== null) return;
-    const result = tapPrayer(board, slot);
+    const result = tapPrayerCard(live.current, slot);
     switch (result.outcome) {
       case PRAYER_TAP.IGNORED:
         return;
       case PRAYER_TAP.WRONG:
         hapticError();
         setSaid(null);
-        setWrong(slot);
+        commit(result.state);
         return;
-      case PRAYER_TAP.PLACED: {
+      case PRAYER_TAP.PLACED:
         hapticLight();
-        const prayer = board.deal[slot];
-        setBoard(result.state);
-        setMissed(null);
-        setSaid(spoken(filledPlace(prayer), emptyPlace(PRAYER_IDS[result.state.placed])));
+        commit(result.state);
+        setSaid(spoken(...placedSaidOf(result.state).map(sayPart)));
         return;
-      }
       case PRAYER_TAP.DONE:
-        solved.current = true;
         hapticSuccess();
-        setBoard(result.state);
-        setMissed(null);
+        commit(result.state);
         onComplete();
         return;
       default: {
@@ -121,50 +138,38 @@ const PrayersBoard = ({ onComplete, rng = Math.random }: Props) => {
     }
   };
 
-  const next = board.placed < PRAYER_IDS.length ? PRAYER_IDS[board.placed] : null;
-  const previous = board.placed > 0 ? PRAYER_IDS[board.placed - 1] : null;
-
   // The places speak for the placed cards: each filled one, then the next.
-  const placesLabel = () =>
-    spoken(
-      ...(missed === null
-        ? []
-        : [t("a11y.alarm.task.prayers.afterMiss", { prayer: name(missed) })]),
-      ...PRAYER_IDS.slice(0, board.placed).map(filledPlace),
-      ...(next === null ? [] : [emptyPlace(next)])
-    );
+  const placesLabel = () => spoken(...placesSpokenOf(board).map(sayPart));
 
-  // The same words whether or not the redeal moved a card.
   const line = () => {
-    if (wrong !== null) return t("alarm.task.prayers.wrong", { prayer: name(board.deal[wrong]) });
-    if (missed === null) return "";
-    if (previous === null) return t("alarm.task.prayers.dealt");
-    return t("alarm.task.prayers.dealtNext", { prayer: name(previous) });
+    const shown = prayerLineOf(board);
+    switch (shown.line) {
+      case PRAYER_LINE.NONE:
+        return "";
+      case PRAYER_LINE.DEALT:
+        return t(PRAYER_LINE_KEY[shown.line]);
+      case PRAYER_LINE.WRONG:
+      case PRAYER_LINE.DEALT_NEXT:
+        return t(PRAYER_LINE_KEY[shown.line], { prayer: name(shown.prayer) });
+      default: {
+        const unhandled: never = shown;
+        throw new Error(`unhandled prayer line: ${String(unhandled)}`);
+      }
+    }
   };
 
   const cardOf = (slot: number) => {
-    const prayer = board.deal[slot];
+    const prayer = order.deal[slot];
     const shared = {
       kind: ANSWER_CARD_KIND.WORD,
       label: name(prayer),
       spoken: name(prayer),
       onPress: () => choose(slot),
     };
-    if (isPlaced(board, slot)) {
-      return (
-        <AnswerCard
-          {...shared}
-          state={ANSWER_CARD_STATE.PLACED}
-          mark={numeral(PRAYER_IDS.indexOf(prayer))}
-        />
-      );
+    const state = prayerCardStateOf(board, slot);
+    if (state === ANSWER_CARD_STATE.PLACED) {
+      return <AnswerCard {...shared} state={state} mark={numeral(PRAYER_IDS.indexOf(prayer))} />;
     }
-    const state =
-      wrong === null
-        ? ANSWER_CARD_STATE.REST
-        : wrong === slot
-          ? ANSWER_CARD_STATE.WRONG
-          : ANSWER_CARD_STATE.HELD;
     return <AnswerCard {...shared} state={state} />;
   };
 
@@ -188,8 +193,8 @@ const PrayersBoard = ({ onComplete, rng = Math.random }: Props) => {
         accessibilityLabel={placesLabel()}
         gap="$1.5">
         {PRAYER_IDS.map((prayer, place) => {
-          const filled = place < board.placed;
-          const upNext = place === board.placed;
+          const filled = place < order.placed;
+          const upNext = place === order.placed;
           return (
             <Box
               key={prayer}
@@ -242,11 +247,11 @@ const PrayersBoard = ({ onComplete, rng = Math.random }: Props) => {
       </Text>
 
       <Grid columns={2} gap="$stack">
-        {board.deal.map((_, slot) => {
-          const placed = isPlaced(board, slot);
+        {order.deal.map((_, slot) => {
+          const placed = prayerCardStateOf(board, slot) === ANSWER_CARD_STATE.PLACED;
           // Keyed by slot: a redeal fades each open card's content in place.
           return (
-            <Grid.Item key={slot} wide={slot === board.deal.length - 1}>
+            <Grid.Item key={slot} wide={slot === order.deal.length - 1}>
               <Animated.View
                 key={placed ? ANSWER_CARD_STATE.PLACED : deals}
                 entering={placed ? undefined : entering}

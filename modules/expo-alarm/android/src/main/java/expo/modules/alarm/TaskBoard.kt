@@ -37,11 +37,13 @@ object TaskBoards {
     fun factoryOf(kind: NativeBoards.Kind): TaskBoardFactory = when (kind) {
         NativeBoards.Kind.TAP -> TaskBoardFactory { context, _, host -> TapBoard(context, host) }
         NativeBoards.Kind.MATH_CARDS -> TaskBoardFactory(::MathCardsBoard)
+        NativeBoards.Kind.PRAYERS -> TaskBoardFactory(::PrayersBoard)
     }
 
     fun headingOf(kind: NativeBoards.Kind): Int = when (kind) {
         NativeBoards.Kind.TAP -> R.string.overlay_task_name_tap
         NativeBoards.Kind.MATH_CARDS -> R.string.overlay_task_title_math
+        NativeBoards.Kind.PRAYERS -> R.string.overlay_task_name_prayers
     }
 
     // The task's own name, as the start button and the handover say it.
