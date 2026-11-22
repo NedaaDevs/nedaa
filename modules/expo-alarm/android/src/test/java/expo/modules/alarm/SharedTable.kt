@@ -34,13 +34,16 @@ object FixtureOp {
     const val RESHUFFLE = "reshuffle"
     const val DRAW = "draw"
     const val REDRAW = "redraw"
+    const val REPLACE = "replace"
+    const val STEP = "step"
 }
 
-// Tap outcomes as the JS PRAYER_TAP and PATTERN_TAP write them.
+// Tap outcomes as the JS PRAYER_TAP, PATTERN_TAP and MATH_TAP write them.
 object FixtureOutcome {
     const val PLACED = "placed"
     const val DONE = "done"
     const val WRONG = "wrong"
     const val IGNORED = "ignored"
     const val NEXT = "next"
+    const val SOLVED = "solved"
 }

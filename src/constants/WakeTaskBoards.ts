@@ -57,6 +57,22 @@ export const MATH_SPOKEN_KEY = {
   [MATH_OPERATION.MULTIPLY]: "a11y.alarm.task.math.multiply",
 } as const satisfies Record<MathOperation, string>;
 
+/** What a tap on a math card does to the board. */
+export const MATH_TAP = { SOLVED: "solved", WRONG: "wrong", IGNORED: "ignored" } as const;
+
+export type MathTapOutcome = (typeof MATH_TAP)[keyof typeof MATH_TAP];
+
+/** The line under the sum: none, a wrong card held, or a replaced question. */
+export const MATH_LINE = { NONE: "none", WRONG: "wrong", NEW: "new" } as const;
+
+export type MathLine = (typeof MATH_LINE)[keyof typeof MATH_LINE];
+
+export const MATH_LINE_KEY = {
+  [MATH_LINE.NONE]: null,
+  [MATH_LINE.WRONG]: "alarm.task.math.wrong",
+  [MATH_LINE.NEW]: "alarm.task.math.new",
+} as const satisfies Record<MathLine, string | null>;
+
 /** How long a wrong card shows as wrong before its board goes on. */
 export const WRONG_CARD_HOLD_MS = 600;
 

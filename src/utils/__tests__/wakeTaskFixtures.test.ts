@@ -5,12 +5,17 @@ import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 
 import { isPrayerId } from "@/constants/Prayer";
 import {
+  ANSWER_CARD_POSITIONS,
+  BOARD_SWAP_MS,
   MATH_LEVELS,
+  MATH_TAP,
   PATTERN_PADS,
   PATTERN_TAP,
   PRAYER_TAP,
   TAP_PRESSES,
   TAP_PRESS_MIN_GAP_MS,
+  WRONG_CARD_HOLD_MS,
+  type AnswerCardPosition,
   type PatternPad,
 } from "@/constants/WakeTaskBoards";
 import {
@@ -22,6 +27,14 @@ import {
   type QuietEvent,
 } from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty } from "@/types/alarm";
+import {
+  cardStateOf,
+  mathLineOf,
+  replaceQuestion,
+  startMathBoard,
+  tapMathCard,
+  type MathBoardState,
+} from "@/utils/mathBoard";
 import { mathRound, type MathQuestion } from "@/utils/mathCards";
 import {
   drawPattern,
@@ -56,7 +69,7 @@ import {
 import { countsPress } from "@/utils/tapPress";
 
 // The Android overlay's JVM tests (TaskRngTest, TaskClockTest, TaskQuietTest,
-// MathCardsTest, PrayerOrderTest, PatternOrderTest, TapPressTest) read the same tables.
+// MathCardsTest, MathBoardRunTest, PrayerOrderTest, PatternOrderTest, TapPressTest) read the same tables.
 const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
 
 const NONE = "-";
@@ -77,6 +90,8 @@ const FIXTURE_OP = {
   RESHUFFLE: "reshuffle",
   DRAW: "draw",
   REDRAW: "redraw",
+  REPLACE: "replace",
+  STEP: "step",
 } as const;
 const SECOND_MS = 1000;
 const UINT_RANGE = 2 ** 32;
@@ -108,6 +123,12 @@ const DIFFICULTIES: readonly ChallengeDifficulty[] = Object.values(CHALLENGE_DIF
 const difficultyOf = (cell: string): ChallengeDifficulty => {
   const found = DIFFICULTIES.find((id) => id === cell);
   if (!found) throw new Error(`unknown difficulty ${cell}`);
+  return found;
+};
+
+const positionOf = (cell: string): AnswerCardPosition => {
+  const found = ANSWER_CARD_POSITIONS.find((position) => String(position) === cell);
+  if (found === undefined) throw new Error(`unknown card position ${cell}`);
   return found;
 };
 
@@ -282,6 +303,52 @@ describe("math-round.tsv", () => {
   });
 });
 
+describe("math-board.tsv", () => {
+  const cases = byCase(readCases("math-board.tsv"));
+
+  it.each(cases)("%s", (_name, rows) => {
+    let rng: Rng | null = null;
+    let state: MathBoardState | null = null;
+    for (const [, id, op, arg, outcome, question, cards, states, line, asked] of rows) {
+      const difficulty = difficultyOf(id);
+      let said = NONE;
+      if (op === FIXTURE_OP.START) {
+        rng = seededRng(Number(arg));
+        state = startMathBoard(difficulty, rng);
+      } else if (op === FIXTURE_OP.STEP && rng) {
+        state = startMathBoard(difficulty, rng);
+      } else if (op === FIXTURE_OP.TAP && state) {
+        const tap = tapMathCard(state, positionOf(arg));
+        said = tap.outcome;
+        if ("state" in tap) state = tap.state;
+      } else if (op === FIXTURE_OP.REPLACE && state && rng) {
+        state = replaceQuestion(state, difficulty, rng);
+      } else {
+        throw new Error(`unknown op ${op}`);
+      }
+      const board = state;
+      const { left, right } = board.round.question;
+      const shown = ANSWER_CARD_POSITIONS.map((position) => cardStateOf(board, position));
+      expect([
+        said,
+        `${left},${right}`,
+        board.round.cards.join(","),
+        shown.join(","),
+        mathLineOf(board),
+        String(board.asked),
+      ]).toEqual([outcome, question, cards, states, line, asked]);
+    }
+  });
+
+  it("covers every difficulty, every outcome and every card missed", () => {
+    const rows = cases.flatMap(([, caseRows]) => caseRows);
+    expect(new Set(rows.map((row) => row[1]))).toEqual(new Set(DIFFICULTIES));
+    expect(new Set(rows.map((row) => row[4]))).toEqual(new Set([NONE, ...Object.values(MATH_TAP)]));
+    const missed = rows.filter((row) => row[4] === MATH_TAP.WRONG).map((row) => row[3]);
+    expect(new Set(missed)).toEqual(new Set(ANSWER_CARD_POSITIONS.map(String)));
+  });
+});
+
 describe("prayer-order.tsv", () => {
   it.each(byCase(readCases("prayer-order.tsv")))("%s", (_name, rows) => {
     let rng: Rng | null = null;
@@ -362,7 +429,9 @@ describe("shell-constants.tsv", () => {
   const SHELL_CONSTANTS: Record<string, number> = {
     TAP_PRESSES,
     TAP_PRESS_MIN_GAP_MS,
+    WRONG_CARD_HOLD_MS,
     HANDOVER_SHOWN_MS: HANDOVER_MS.IN + HANDOVER_MS.HOLD,
+    BOARD_SWAP_IN_MS: BOARD_SWAP_MS.IN,
   };
 
   const rows = readCases("shell-constants.tsv");

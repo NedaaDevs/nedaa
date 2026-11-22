@@ -596,11 +596,9 @@ class AlarmOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
         }
 
-        val typed = if (taskShell != null) {
-            NativeBoards.needsKeyboard(stack)
-        } else {
-            challengeType == WakeTasks.CHALLENGE_MATH || challengeType == WakeTasks.CHALLENGE_DHIKR
-        }
+        // Only the single-challenge math and dhikr take typing.
+        val typed = taskShell == null &&
+            (challengeType == WakeTasks.CHALLENGE_MATH || challengeType == WakeTasks.CHALLENGE_DHIKR)
         val windowFlags = if (typed) {
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
@@ -622,9 +620,6 @@ class AlarmOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
-        if (taskShell != null && typed) {
-            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-        }
 
         try {
             windowManager?.addView(overlayView, params)
