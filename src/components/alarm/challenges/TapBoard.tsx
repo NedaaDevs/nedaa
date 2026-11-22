@@ -11,14 +11,10 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HIDDEN_FROM_READER } from "@/constants/Accessibility";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-import {
-  BOARD_PART,
-  BOARD_TYPE,
-  TAP_PRESSES,
-  TAP_PRESS_MIN_GAP_MS,
-} from "@/constants/WakeTaskBoards";
+import { BOARD_PART, BOARD_TYPE, TAP_PRESSES } from "@/constants/WakeTaskBoards";
 import { useHaptic } from "@/hooks/useHaptic";
 import { formatNumberToLocale } from "@/utils/number";
+import { countsPress } from "@/utils/tapPress";
 
 const TICKS = Array.from({ length: TAP_PRESSES }, (_, tick) => tick);
 
@@ -35,7 +31,7 @@ const TapBoard = ({ onComplete }: BoardProps) => {
   const handlePress = () => {
     const now = performance.now();
     if (done >= TAP_PRESSES) return;
-    if (lastCounted.current !== null && now - lastCounted.current < TAP_PRESS_MIN_GAP_MS) return;
+    if (!countsPress(lastCounted.current, now)) return;
     lastCounted.current = now;
     const next = done + 1;
     setDone(next);

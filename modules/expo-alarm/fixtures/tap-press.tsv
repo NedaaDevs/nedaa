@@ -1,0 +1,8 @@
+last	now	counts
+-	0	true
+-	5000	true
+1000	1000	false
+1000	1149	false
+1000	1150	true
+1000	1151	true
+1000	4000	true

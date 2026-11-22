@@ -98,4 +98,59 @@
     <string name="overlay_notification_math_one">حل مسألة رياضية واحدة للإيقاف</string>
     <string name="overlay_notification_math_many">حل %d مسائل رياضية للإيقاف</string>
     <string name="overlay_notification_dismiss">انقر للإيقاف</string>
+
+    <!-- Overlay - Wake-up task shell, a stack of two or more tasks -->
+    <string name="overlay_task_start">بدء مهمة الاستيقاظ</string>
+    <plurals name="overlay_task_start_count">
+        <item quantity="zero">بدء مهام الاستيقاظ</item>
+        <item quantity="one">بدء مهمة الاستيقاظ</item>
+        <item quantity="two">بدء مهمتَي الاستيقاظ</item>
+        <item quantity="few">بدء %d مهام استيقاظ</item>
+        <item quantity="many">بدء %d مهمة استيقاظ</item>
+        <item quantity="other">بدء %d مهمة استيقاظ</item>
+    </plurals>
+    <string name="overlay_task_pair">%1$s ثم %2$s</string>
+    <string name="overlay_task_of">المهمة %1$d من %2$d</string>
+    <string name="overlay_task_step_of">الخطوة %1$d من %2$d</string>
+    <string name="overlay_task_next">التالي: %s</string>
+    <string name="overlay_task_handover">%1$s. %2$s.</string>
+    <string name="overlay_task_name_math">مسألة حسابية</string>
+    <string name="overlay_task_name_pattern">تكرار الترتيب</string>
+    <string name="overlay_task_name_dhikr">إكمال الذِّكر</string>
+    <string name="overlay_task_name_prayers">ترتيب الصلوات</string>
+    <string name="overlay_task_name_tap">النقر</string>
+    <string name="overlay_task_title_math">ما الناتج؟</string>
+    <string name="overlay_quiet_paused">الصوت متوقف مؤقتًا</string>
+    <string name="overlay_quiet_soon">يعود الصوت قريبًا</string>
+    <string name="overlay_quiet_on">عاد الصوت</string>
+    <string name="overlay_quiet_on_help">يتوقف مؤقتًا بعد الإجابة الصحيحة</string>
+    <plurals name="overlay_quiet_ending">
+        <item quantity="zero">يعود الصوت الآن</item>
+        <item quantity="one">يعود الصوت بعد ثانية واحدة</item>
+        <item quantity="two">يعود الصوت بعد ثانيتين</item>
+        <item quantity="few">يعود الصوت بعد %d ثوانٍ</item>
+        <item quantity="many">يعود الصوت بعد %d ثانية</item>
+        <item quantity="other">يعود الصوت بعد %d ثانية</item>
+    </plurals>
+    <plurals name="overlay_quiet_left">
+        <item quantity="zero">%1$s، لم يبقَ وقت</item>
+        <item quantity="one">%1$s، بقيت ثانية واحدة</item>
+        <item quantity="two">%1$s، بقيت ثانيتان</item>
+        <item quantity="few">%1$s، بقيت %2$d ثوانٍ</item>
+        <item quantity="many">%1$s، بقيت %2$d ثانية</item>
+        <item quantity="other">%1$s، بقيت %2$d ثانية</item>
+    </plurals>
+    <string name="overlay_task_way_out">يمكن إيقاف المنبّه دون إكمال المهمة.</string>
+    <string name="overlay_task_stop">إيقاف المنبّه</string>
+    <plurals name="overlay_task_tap_ask">
+        <item quantity="zero">النقر على الزر الكبير.</item>
+        <item quantity="one">النقر على الزر الكبير مرة واحدة.</item>
+        <item quantity="two">النقر على الزر الكبير مرتين.</item>
+        <item quantity="few">النقر على الزر الكبير %d مرات.</item>
+        <item quantity="many">النقر على الزر الكبير %d مرة.</item>
+        <item quantity="other">النقر على الزر الكبير %d مرة.</item>
+    </plurals>
+    <string name="overlay_task_tap_count">%1$d من %2$d</string>
+    <string name="overlay_task_tap_here">النقر هنا</string>
+    <string name="overlay_task_math_wrong">ليست هذه الإجابة. سيظهر سؤال جديد.</string>
 </resources>

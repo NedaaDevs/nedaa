@@ -1,0 +1,83 @@
+case	op	now	audible	screenReader	quietUntil	quietMs	soundingMs	countedTo	readAt	signals
+opens, warns once, then sounds	start	1000	-	false	31000	30000	0	1000	1000	-
+opens, warns once, then sounds	open	1000	true	false	31000	30000	0	1000	1000	start
+opens, warns once, then sounds	ticks	25750	true	false	31000	30000	0	25750	25750	-
+opens, warns once, then sounds	ticks	26000	true	false	31000	30000	0	26000	26000	ending
+opens, warns once, then sounds	ticks	30750	true	false	31000	30000	0	30750	30750	-
+opens, warns once, then sounds	ticks	31000	true	false	31000	30000	0	31000	31000	end
+opens, warns once, then sounds	ticks	40000	true	false	31000	30000	9000	40000	40000	-
+a restart during quiet pauses nothing	start	1000	-	false	31000	30000	0	1000	1000	-
+a restart during quiet pauses nothing	open	1000	true	false	31000	30000	0	1000	1000	start
+a restart during quiet pauses nothing	ticks	11000	true	false	31000	30000	0	11000	11000	-
+a restart during quiet pauses nothing	restart	11000	true	false	41000	30000	0	11000	11000	-
+a restart during quiet pauses nothing	ticks	36000	true	false	41000	30000	0	36000	36000	ending
+a restart during quiet pauses nothing	ticks	41000	true	false	41000	30000	0	41000	41000	end
+a restart after the sound returned pauses it	start	1000	-	false	31000	30000	0	1000	1000	-
+a restart after the sound returned pauses it	open	1000	true	false	31000	30000	0	1000	1000	start
+a restart after the sound returned pauses it	ticks	31250	true	false	31000	30000	250	31250	31250	ending,end
+a restart after the sound returned pauses it	restart	32000	true	false	62000	30000	750	32000	32000	start
+a restart after the sound returned pauses it	ticks	62000	true	false	62000	30000	750	62000	62000	ending,end
+a screen reader gets 60 s	start	1000	-	true	61000	60000	0	1000	1000	-
+a screen reader gets 60 s	open	1000	true	true	61000	60000	0	1000	1000	start
+a screen reader gets 60 s	ticks	56000	true	true	61000	60000	0	56000	56000	ending
+a screen reader gets 60 s	ticks	61000	true	true	61000	60000	0	61000	61000	end
+a screen reader gets 60 s	restart	70000	true	true	130000	60000	500	70000	70000	start
+an unheard alarm signals nothing	start	1000	-	false	31000	30000	0	1000	1000	-
+an unheard alarm signals nothing	open	1000	false	false	31000	30000	0	1000	1000	-
+an unheard alarm signals nothing	ticks	40000	false	false	31000	30000	0	40000	40000	-
+an unheard alarm signals nothing	hear	40000	true	false	31000	30000	0	40000	40000	-
+an unheard alarm signals nothing	ticks	41000	true	false	31000	30000	1000	41000	41000	-
+leaving in quiet returns the sound; reopening adds no quiet	start	1000	-	false	31000	30000	0	1000	1000	-
+leaving in quiet returns the sound; reopening adds no quiet	open	1000	true	false	31000	30000	0	1000	1000	start
+leaving in quiet returns the sound; reopening adds no quiet	ticks	5000	true	false	31000	30000	0	5000	5000	-
+leaving in quiet returns the sound; reopening adds no quiet	leave	5000	true	false	5000	30000	0	5000	5000	end
+leaving in quiet returns the sound; reopening adds no quiet	resume	100000	-	false	5000	30000	0	100000	100000	-
+leaving in quiet returns the sound; reopening adds no quiet	open	100000	true	false	5000	30000	0	100000	100000	-
+leaving in quiet returns the sound; reopening adds no quiet	ticks	101000	true	false	5000	30000	1000	101000	101000	-
+leaving while it sounds changes nothing	start	1000	-	false	31000	30000	0	1000	1000	-
+leaving while it sounds changes nothing	open	1000	true	false	31000	30000	0	1000	1000	start
+leaving while it sounds changes nothing	ticks	31000	true	false	31000	30000	0	31000	31000	ending,end
+leaving while it sounds changes nothing	leave	32000	true	false	31000	30000	500	32000	32000	-
+one late tick jumps from quiet to sound	start	1000	-	false	31000	30000	0	1000	1000	-
+one late tick jumps from quiet to sound	open	1000	true	false	31000	30000	0	1000	1000	start
+one late tick jumps from quiet to sound	tick	40000	true	false	31000	30000	0	40000	40000	end
+one late tick jumps from quiet to sound	tick	90000	true	false	31000	30000	500	90000	90000	-
+the way out comes after 120 s of sound	start	1000	-	false	31000	30000	0	1000	1000	-
+the way out comes after 120 s of sound	open	1000	true	false	31000	30000	0	1000	1000	start
+the way out comes after 120 s of sound	ticks	31000	true	false	31000	30000	0	31000	31000	ending,end
+the way out comes after 120 s of sound	ticks	151000	true	false	31000	30000	120000	151000	151000	-
+the way out comes after 120 s of sound	restart	151000	true	false	181000	30000	120000	151000	151000	start
+the way out comes after 120 s of sound	ticks	152000	true	false	181000	30000	120000	152000	152000	-
+hearing again counts no unheard sound	start	1000	-	false	31000	30000	0	1000	1000	-
+hearing again counts no unheard sound	open	1000	true	false	31000	30000	0	1000	1000	start
+hearing again counts no unheard sound	ticks	35000	true	false	31000	30000	4000	35000	35000	ending,end
+hearing again counts no unheard sound	hear	60000	true	false	31000	30000	4000	60000	60000	-
+hearing again counts no unheard sound	ticks	61000	true	false	31000	30000	5000	61000	61000	-
+hearing again during quiet ends it with no signal	start	1000	-	false	31000	30000	0	1000	1000	-
+hearing again during quiet ends it with no signal	open	1000	true	false	31000	30000	0	1000	1000	start
+hearing again during quiet ends it with no signal	ticks	5000	true	false	31000	30000	0	5000	5000	-
+hearing again during quiet ends it with no signal	hear	5000	true	false	5000	30000	0	5000	5000	-
+hearing again during quiet ends it with no signal	ticks	31500	true	false	5000	30000	26500	31500	31500	-
+a restart while quiet ends gives full quiet	start	1000	-	false	31000	30000	0	1000	1000	-
+a restart while quiet ends gives full quiet	open	1000	true	false	31000	30000	0	1000	1000	start
+a restart while quiet ends gives full quiet	ticks	27000	true	false	31000	30000	0	27000	27000	ending
+a restart while quiet ends gives full quiet	restart	27000	true	false	57000	30000	0	27000	27000	-
+a restart while quiet ends gives full quiet	ticks	58000	true	false	57000	30000	1000	58000	58000	ending,end
+leaving while quiet ends returns the sound	start	1000	-	false	31000	30000	0	1000	1000	-
+leaving while quiet ends returns the sound	open	1000	true	false	31000	30000	0	1000	1000	start
+leaving while quiet ends returns the sound	ticks	27000	true	false	31000	30000	0	27000	27000	ending
+leaving while quiet ends returns the sound	leave	27000	true	false	27000	30000	0	27000	27000	end
+an unheard restart after the sound ran signals nothing	start	1000	-	false	31000	30000	0	1000	1000	-
+an unheard restart after the sound ran signals nothing	open	1000	true	false	31000	30000	0	1000	1000	start
+an unheard restart after the sound ran signals nothing	ticks	32000	true	false	31000	30000	1000	32000	32000	ending,end
+an unheard restart after the sound ran signals nothing	restart	33000	false	false	63000	30000	1000	33000	33000	-
+an unheard restart after the sound ran signals nothing	ticks	64000	false	false	63000	30000	1000	64000	64000	-
+an unheard leave after the sound ran signals nothing	start	1000	-	false	31000	30000	0	1000	1000	-
+an unheard leave after the sound ran signals nothing	open	1000	true	false	31000	30000	0	1000	1000	start
+an unheard leave after the sound ran signals nothing	ticks	32000	true	false	31000	30000	1000	32000	32000	ending,end
+an unheard leave after the sound ran signals nothing	leave	33000	false	false	31000	30000	1000	33000	33000	-
+a restart takes the quiet length read then	start	1000	-	false	31000	30000	0	1000	1000	-
+a restart takes the quiet length read then	open	1000	true	false	31000	30000	0	1000	1000	start
+a restart takes the quiet length read then	ticks	32000	true	false	31000	30000	1000	32000	32000	ending,end
+a restart takes the quiet length read then	restart	33000	true	true	93000	60000	1500	33000	33000	start
+a restart takes the quiet length read then	ticks	93500	true	true	93000	60000	2000	93500	93500	ending,end
