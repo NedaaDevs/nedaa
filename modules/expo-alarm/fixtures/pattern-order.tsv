@@ -1,0 +1,64 @@
+case	op	arg	outcome	pattern	done
+easy seed 1	draw	easy:1	-	square,square,circle	0
+easy seed 1	tap	square	next	square,square,circle	1
+easy seed 1	tap	circle	wrong	square,square,circle	1
+easy seed 1	redraw	easy	-	circle,circle,circle	0
+easy seed 1	tap	circle	next	circle,circle,circle	1
+easy seed 1	tap	circle	next	circle,circle,circle	2
+easy seed 1	tap	circle	done	circle,circle,circle	3
+easy seed 1	tap	circle	wrong	circle,circle,circle	3
+easy seed 314	draw	easy:314	-	triangle,square,circle	0
+easy seed 314	tap	triangle	next	triangle,square,circle	1
+easy seed 314	tap	circle	wrong	triangle,square,circle	1
+easy seed 314	redraw	easy	-	square,square,triangle	0
+easy seed 314	tap	square	next	square,square,triangle	1
+easy seed 314	tap	square	next	square,square,triangle	2
+easy seed 314	tap	triangle	done	square,square,triangle	3
+easy seed 314	tap	square	wrong	square,square,triangle	3
+medium seed 1	draw	medium:1	-	square,square,circle,circle	0
+medium seed 1	tap	square	next	square,square,circle,circle	1
+medium seed 1	tap	circle	wrong	square,square,circle,circle	1
+medium seed 1	redraw	medium	-	circle,circle,circle,circle	0
+medium seed 1	tap	circle	next	circle,circle,circle,circle	1
+medium seed 1	tap	circle	next	circle,circle,circle,circle	2
+medium seed 1	tap	circle	next	circle,circle,circle,circle	3
+medium seed 1	tap	circle	done	circle,circle,circle,circle	4
+medium seed 1	tap	circle	wrong	circle,circle,circle,circle	4
+medium seed 314	draw	medium:314	-	triangle,square,circle,lines	0
+medium seed 314	tap	triangle	next	triangle,square,circle,lines	1
+medium seed 314	tap	circle	wrong	triangle,square,circle,lines	1
+medium seed 314	redraw	medium	-	square,square,circle,lines	0
+medium seed 314	tap	square	next	square,square,circle,lines	1
+medium seed 314	tap	square	next	square,square,circle,lines	2
+medium seed 314	tap	circle	next	square,square,circle,lines	3
+medium seed 314	tap	lines	done	square,square,circle,lines	4
+medium seed 314	tap	square	wrong	square,square,circle,lines	4
+hard seed 1	draw	hard:1	-	square,square,circle,circle,square	0
+hard seed 1	tap	square	next	square,square,circle,circle,square	1
+hard seed 1	tap	circle	wrong	square,square,circle,circle,square	1
+hard seed 1	redraw	hard	-	circle,circle,circle,circle,square	0
+hard seed 1	tap	circle	next	circle,circle,circle,circle,square	1
+hard seed 1	tap	circle	next	circle,circle,circle,circle,square	2
+hard seed 1	tap	circle	next	circle,circle,circle,circle,square	3
+hard seed 1	tap	circle	next	circle,circle,circle,circle,square	4
+hard seed 1	tap	square	done	circle,circle,circle,circle,square	5
+hard seed 1	tap	circle	wrong	circle,circle,circle,circle,square	5
+hard seed 314	draw	hard:314	-	triangle,square,circle,lines,square	0
+hard seed 314	tap	triangle	next	triangle,square,circle,lines,square	1
+hard seed 314	tap	circle	wrong	triangle,square,circle,lines,square	1
+hard seed 314	redraw	hard	-	square,square,circle,lines,triangle	0
+hard seed 314	tap	square	next	square,square,circle,lines,triangle	1
+hard seed 314	tap	square	next	square,square,circle,lines,triangle	2
+hard seed 314	tap	circle	next	square,square,circle,lines,triangle	3
+hard seed 314	tap	lines	next	square,square,circle,lines,triangle	4
+hard seed 314	tap	triangle	done	square,square,circle,lines,triangle	5
+hard seed 314	tap	square	wrong	square,square,circle,lines,triangle	5
+easy seed 149 draws the skipped rank	draw	easy:149	-	triangle,lines,triangle	0
+easy seed 149 draws the skipped rank	redraw	easy	-	triangle,lines,square	0
+medium seed 424 draws the skipped rank	draw	medium:424	-	triangle,lines,circle,lines	0
+medium seed 424 draws the skipped rank	redraw	medium	-	triangle,lines,triangle,circle	0
+hard seed 641 draws the skipped rank	draw	hard:641	-	circle,circle,lines,lines,square	0
+hard seed 641 draws the skipped rank	redraw	hard	-	circle,circle,lines,lines,lines	0
+a redraw after the difficulty changes	draw	easy:51	-	circle,square,triangle	0
+a redraw after the difficulty changes	redraw	hard	-	circle,triangle,circle,square,square	0
+a redraw after the difficulty changes	redraw	medium	-	triangle,square,square,triangle	0
