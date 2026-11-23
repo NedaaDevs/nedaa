@@ -15,6 +15,7 @@ import { awaitPendingReapply, useProviderSettingsStore } from "@/stores/provider
 // Utils
 import { ensureAlarmsScheduled, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { registerAlarmCopySync } from "@/utils/alarmCopy";
+import { pushSavedWakeTasks } from "@/utils/alarmSettingsSync";
 import { registerForegroundReschedule } from "@/utils/foregroundReschedule";
 import { reloadPrayerWidgets } from "expo-widget";
 import { syncWidgetPayloads } from "@/services/widgetPayloads";
@@ -53,6 +54,7 @@ export const appSetup = async (
     // skips scheduling for the launch. Bounded so setup can never hang.
     await waitForAlarmStores();
     registerAlarmCopySync();
+    await pushSavedWakeTasks();
     await ensureAlarmsScheduled();
 
     // Load qada data (needed for notification scheduling)

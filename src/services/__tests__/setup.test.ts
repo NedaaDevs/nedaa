@@ -1,6 +1,7 @@
 import { appSetup } from "@/services/setup";
 import { CITY_CHECK_TRIGGER } from "@/constants/CityCheck";
 import { ensureAlarmsScheduled } from "@/utils/alarmScheduler";
+import { pushSavedWakeTasks } from "@/utils/alarmSettingsSync";
 
 const mockClearPendingReapply = jest.fn();
 const mockRunCityCheck = jest.fn();
@@ -32,6 +33,7 @@ jest.mock("@/utils/alarmScheduler", () => ({
   waitForAlarmStores: async () => {},
 }));
 jest.mock("@/utils/alarmCopy", () => ({ registerAlarmCopySync: () => {} }));
+jest.mock("@/utils/alarmSettingsSync", () => ({ pushSavedWakeTasks: jest.fn(async () => {}) }));
 jest.mock("@/utils/foregroundReschedule", () => ({ registerForegroundReschedule: () => {} }));
 jest.mock("expo-widget", () => ({ reloadPrayerWidgets: () => {} }));
 jest.mock("@/services/widgetPayloads", () => ({ syncWidgetPayloads: async () => {} }));
@@ -100,5 +102,14 @@ describe("appSetup with a pending reapply", () => {
 
     expect(mockClearPendingReapply).not.toHaveBeenCalled();
     expect(ensureAlarmsScheduled).toHaveBeenCalled();
+  });
+
+  // Arming reads the stack native holds.
+  it("writes the saved wake-up tasks to native before arming alarms", async () => {
+    await launch(false);
+
+    const [pushed] = jest.mocked(pushSavedWakeTasks).mock.invocationCallOrder;
+    const [armed] = jest.mocked(ensureAlarmsScheduled).mock.invocationCallOrder;
+    expect(pushed).toBeLessThan(armed);
   });
 });
