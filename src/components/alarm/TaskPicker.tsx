@@ -299,7 +299,7 @@ const TaskPicker = ({ tasks, onChange, onTry }: Props) => {
           onPress={tasks.length === 0 ? undefined : () => edit([])}
           accessibilityRole="checkbox"
           accessibilityLabel={t("a11y.sentences", { first: none, second: noneAbout })}
-          accessibilityState={{ checked: tasks.length === 0 }}>
+          accessibilityState={{ checked: tasks.length === 0, disabled: tasks.length === 0 }}>
           <TaskMark chosen={tasks.length === 0} place={null} full={false} />
           <VStack flex={1}>
             <Text size="md" fontWeight="600" color="$fg">

@@ -109,6 +109,20 @@ describe("useTaskClock", () => {
     expect(result.current.wayOut).toBe(true);
   });
 
+  it("draws no tick while the alarm cannot be heard, then the next one heard", async () => {
+    const { result, rerender, onQuietEnd } = await setUp(false);
+    const opened = result.current;
+
+    await advance(QUIET_MS + SECOND);
+    expect(result.current).toBe(opened);
+
+    await rerender({ audible: true });
+    await advance(TASK_CLOCK_TICK_MS);
+    expect(result.current.phase).toBe(QUIET_PHASE.SOUNDING);
+    // The unheard ticks counted, so the heard one finds quiet already over.
+    expect(onQuietEnd).not.toHaveBeenCalled();
+  });
+
   it("makes no sound changes while the alarm cannot be heard", async () => {
     const { onQuietStart, onQuietEnding, onQuietEnd } = await setUp(false);
     await advance(QUIET_MS + SECOND);
