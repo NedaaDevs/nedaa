@@ -70,4 +70,31 @@ describe("an alarm snoozed from the Android overlay", () => {
       firstTriggerTime: FIRST_RING,
     });
   });
+
+  it("keeps them when a replayed row finds only the snooze it wrote", async () => {
+    useAlarmStore.setState({
+      scheduledAlarms: {
+        [SNOOZE_ID]: {
+          alarmId: SNOOZE_ID,
+          alarmType: ScheduledAlarmType.FAJR,
+          title: ScheduledAlarmType.FAJR,
+          triggerTime: SNOOZE_ENDS,
+          liveActivityId: null,
+          snoozeCount: 1,
+          isPreview: true,
+          quietUsed: true,
+          firstTriggerTime: FIRST_RING,
+        },
+      },
+    });
+
+    await renderHook(() => useAlarmDeepLink());
+    await act(async () => undefined);
+
+    expect(useAlarmStore.getState().scheduledAlarms[SNOOZE_ID]).toMatchObject({
+      isPreview: true,
+      quietUsed: true,
+      firstTriggerTime: FIRST_RING,
+    });
+  });
 });

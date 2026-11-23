@@ -603,6 +603,44 @@ describe("useAlarmScreen", () => {
       expect(Vibration.cancel).toHaveBeenCalled();
     });
 
+    it("ends the re-ring, not the replaced alarm, when Stop lands while the quiet commits", async () => {
+      let commit: (ringsAt: Date) => void = () => undefined;
+      mockQuietAlarm.mockImplementationOnce(
+        (_id: string, { ringsAt }: { ringsAt: Date }) =>
+          new Promise((resolve) => {
+            commit = () => resolve({ quietId: storeReRing(ringsAt), ringsAt });
+          })
+      );
+      const { result } = await mount();
+      await act(async () => result.current.emergency.open());
+
+      await act(async () => {
+        const confirming = result.current.emergency.confirm();
+        await Promise.resolve();
+        const stopping = result.current.handleStop();
+        commit(new Date());
+        await Promise.all([confirming, stopping]);
+      });
+
+      const [, { ringsAt }] = mockQuietAlarm.mock.calls[0];
+      expect(mockCompleteAndReschedule).toHaveBeenCalledTimes(1);
+      expect(mockCompleteAndReschedule).toHaveBeenCalledWith(storeReRing(ringsAt), {
+        outcome: ExpoAlarm.ALARM_OUTCOME.STOPPED,
+      });
+    });
+
+    it("counts nothing once the alarm has ended", async () => {
+      const { result } = await quietNow();
+      const [, steps] = mockQuietAlarm.mock.calls[0];
+
+      await act(async () => {
+        await result.current.handleStop();
+      });
+
+      expect(() => steps.recordUse()).toThrow();
+      expect(mockRecordUse).not.toHaveBeenCalled();
+    });
+
     it("stays silent when a task's quiet time ends during the quiet", async () => {
       const { result } = await quietNow();
       mockStartAlarmSound.mockClear();
