@@ -95,7 +95,7 @@ export type AnswerCardKind = (typeof ANSWER_CARD_KIND)[keyof typeof ANSWER_CARD_
 /** A card's least height by what it holds. */
 export const ANSWER_CARD_MIN_HEIGHT = {
   [ANSWER_CARD_KIND.NUMERAL]: "$24",
-  [ANSWER_CARD_KIND.WORD]: 72,
+  [ANSWER_CARD_KIND.WORD]: "$16",
   [ANSWER_CARD_KIND.DHIKR]: 88,
 } as const satisfies Record<AnswerCardKind, string | number>;
 
