@@ -71,8 +71,10 @@ reviews:
           `$pill`.
           Space and size use tokens, not raw numbers. Colour comes from theme keys.
         - A value shown on two surfaces is drawn by one component; flag a second renderer.
-        - Interactive elements need accessibilityRole, an accessibilityLabel from `t("a11y.*")`,
-          accessibilityState when stateful, and a 44pt minimum target.
+        - Interactive elements need accessibilityRole, an accessibilityLabel, accessibilityState
+          when stateful, and a 44pt minimum target. The label comes from `t("a11y.*")` only when
+          the spoken text differs from the shown text; a label equal to the shown text reuses its
+          key.
         - Inside `Sheet.ScrollView`, `gap` belongs on an inner stack, not `contentContainerStyle`.
     - path: "src/app/**/*.tsx"
       instructions: |
