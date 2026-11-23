@@ -98,10 +98,7 @@ class MathCardsBoard(context: Context, input: BoardInput, private val host: Boar
     private fun replace() {
         state = MathBoardRun.replace(state, difficulty, rng)
         show()
-        for (part in listOf(sum, grid)) {
-            part.alpha = 0f
-            part.animate().alpha(1f).setDuration(SWAP_IN_MS).start()
-        }
+        for (part in listOf(sum, grid)) fadeIn(part, SWAP_IN_MS)
         handler.post(focusSum)
     }
 

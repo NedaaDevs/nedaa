@@ -68,6 +68,19 @@ describe("pushSavedWakeTasks", () => {
     expect(setNative).not.toHaveBeenCalled();
   });
 
+  it("writes once the saved settings are read, for any number of early calls", async () => {
+    onPlatform(PlatformType.ANDROID);
+    const unread = hydrated(false);
+    await pushSavedWakeTasks();
+    await pushSavedWakeTasks();
+
+    unread.mockReturnValue(true);
+    await useAlarmSettingsStore.persist.rehydrate();
+    await Promise.resolve();
+
+    expect(setNative).toHaveBeenCalledTimes(Object.values(ALARM_TYPE).length);
+  });
+
   it("writes nothing on iOS", async () => {
     onPlatform(PlatformType.IOS);
 

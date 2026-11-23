@@ -44,6 +44,19 @@ export const toNativeSettings = (changes: Partial<AlarmTypeSettings>): Record<st
   return native;
 };
 
+let awaitingRead = false;
+
+/** Pushes once the saved settings are read, however many callers asked. */
+const pushOnceRead = (): void => {
+  if (awaitingRead) return;
+  awaitingRead = true;
+  const stop = useAlarmSettingsStore.persist.onFinishHydration(() => {
+    stop();
+    awaitingRead = false;
+    void pushSavedWakeTasks();
+  });
+};
+
 /**
  * Writes each alarm's saved stack to Android, whose overlay reads its own copy.
  * A copy from before stacks were stored, or one a failed write left behind,
@@ -52,7 +65,10 @@ export const toNativeSettings = (changes: Partial<AlarmTypeSettings>): Record<st
 export const pushSavedWakeTasks = async (): Promise<void> => {
   if (Platform.OS !== PlatformType.ANDROID) return;
   // Unhydrated settings are the defaults, which would replace a saved stack.
-  if (!useAlarmSettingsStore.persist.hasHydrated()) return;
+  if (!useAlarmSettingsStore.persist.hasHydrated()) {
+    pushOnceRead();
+    return;
+  }
 
   const saved = useAlarmSettingsStore.getState();
   for (const alarmType of Object.values(ALARM_TYPE)) {
