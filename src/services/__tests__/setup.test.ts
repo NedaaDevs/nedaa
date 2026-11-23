@@ -106,10 +106,20 @@ describe("appSetup with a pending reapply", () => {
 
   // Arming reads the stack native holds.
   it("writes the saved wake-up tasks to native before arming alarms", async () => {
-    await launch(false);
+    let finishPush = () => {};
+    jest.mocked(pushSavedWakeTasks).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishPush = resolve;
+      })
+    );
 
-    const [pushed] = jest.mocked(pushSavedWakeTasks).mock.invocationCallOrder;
-    const [armed] = jest.mocked(ensureAlarmsScheduled).mock.invocationCallOrder;
-    expect(pushed).toBeLessThan(armed);
+    const launched = launch(false);
+    await new Promise(process.nextTick);
+    expect(pushSavedWakeTasks).toHaveBeenCalled();
+    expect(ensureAlarmsScheduled).not.toHaveBeenCalled();
+
+    finishPush();
+    await launched;
+    expect(ensureAlarmsScheduled).toHaveBeenCalled();
   });
 });

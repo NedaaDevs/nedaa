@@ -39,6 +39,17 @@ internal fun animationsOff(context: Context): Boolean =
     Settings.Global.getString(context.contentResolver, Settings.Global.TRANSITION_ANIMATION_SCALE)
         ?.replace(',', '.')?.toFloatOrNull() == 0f
 
+// As a JS entering fade: none with animations off.
+internal fun fadeIn(part: View, ms: Long) {
+    part.animate().cancel()
+    if (animationsOff(part.context)) {
+        part.alpha = 1f
+        return
+    }
+    part.alpha = 0f
+    part.animate().alpha(1f).setDuration(ms).start()
+}
+
 // JS PRESS_SCALE and DURATION_MS.PRESS.
 internal const val PRESS_SCALE = 0.98f
 internal const val PRESS_DOWN_MS = 80L
