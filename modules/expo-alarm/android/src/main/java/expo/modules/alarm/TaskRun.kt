@@ -1,7 +1,8 @@
 package expo.modules.alarm
 
-// Where a stack's run stands and what a solved board leads to; the rules of
-// advanceTaskRun in src/utils/taskRun.ts. task-run.tsv pins the two.
+// Where a stack's run stands, what a solved board leads to and what the start
+// button says; the rules of src/utils/taskRun.ts. task-run.tsv and
+// task-start.tsv pin both sides.
 object TaskRun {
 
     // The task's index and the step within it, from 0.
@@ -40,5 +41,25 @@ object TaskRun {
         }
         if (position.task + 1 < tasks.size) return Advance.Handover(Position(position.task + 1, 0))
         return Advance.Done
+    }
+
+    // What the start button says, as JS describeStart.
+    sealed interface Start {
+        // A title alone: the count carries the noun.
+        data class Count(val size: Int) : Start
+
+        data class Pair(val first: WakeTasks.Task, val second: WakeTasks.Task) : Start
+
+        // The task's name; steps only when there are more than one.
+        data class One(val task: WakeTasks.Task, val steps: Int?) : Start
+    }
+
+    fun start(tasks: List<WakeTasks.Task>): Start {
+        require(tasks.isNotEmpty()) { "a start needs a task" }
+        return when (tasks.size) {
+            1 -> Start.One(tasks[0], stepsOf(tasks[0]).takeIf { it > 1 })
+            2 -> Start.Pair(tasks[0], tasks[1])
+            else -> Start.Count(tasks.size)
+        }
     }
 }

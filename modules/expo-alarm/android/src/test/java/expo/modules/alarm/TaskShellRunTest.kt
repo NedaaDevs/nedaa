@@ -25,6 +25,13 @@ class TaskShellRunTest {
     }
 
     @Test
+    fun onlyAStackOfTwoOrMoreShowsWhichTaskIsRunning() {
+        assertFalse(run("id=pattern,difficulty=easy,steps=3").showsTaskLine)
+        assertTrue(run("id=math;id=tap").showsTaskLine)
+        assertTrue(run("id=math;id=tap;id=prayers").showsTaskLine)
+    }
+
+    @Test
     fun openingPausesTheSound() {
         assertEquals(TaskQuiet.Signal.START, run("id=math;id=tap").open())
     }

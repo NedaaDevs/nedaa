@@ -126,7 +126,7 @@ class AlarmOverlayService : Service() {
     private var startSolvingContainer: LinearLayout? = null
     private var challengeContainer: LinearLayout? = null
 
-    // Two or more tasks run the task shell in place of the challenge above.
+    // A stack NativeBoards.runsShell takes runs the task shell instead.
     private var stack: List<WakeTasks.Task> = emptyList()
     private var taskShell: TaskShellView? = null
     private var snoozeButton: Button? = null

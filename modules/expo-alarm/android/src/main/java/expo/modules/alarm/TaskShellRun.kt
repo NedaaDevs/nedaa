@@ -29,6 +29,9 @@ class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs:
 
     val size: Int get() = tasks.size
 
+    // As JS taskLine: a lone task shows no "Task 1 of 1".
+    val showsTaskLine: Boolean get() = tasks.size > 1
+
     val task: WakeTasks.Task get() = tasks[position.task]
 
     fun taskAt(position: TaskRun.Position): WakeTasks.Task = tasks[position.task]

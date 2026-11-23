@@ -9,8 +9,10 @@ import {
   WAKE_TASK_OPTIONS,
 } from "@/constants/WakeTask";
 import { TASK_RUN_NEXT } from "@/constants/WakeTaskShell";
+import { AppLocale } from "@/enums/app";
+import i18n from "@/localization/i18n";
 import { CHALLENGE_DIFFICULTIES, CHALLENGE_TYPES, type WakeTask } from "@/types/alarm";
-import { advanceTaskRun, isNonEmpty } from "@/utils/taskRun";
+import { advanceTaskRun, describeStart, isNonEmpty, taskName } from "@/utils/taskRun";
 import {
   legacyChallengeFromWakeTasks,
   normalizeWakeTasks,
@@ -143,6 +145,47 @@ describe("task-run.tsv", () => {
         nextTask === FORMAT.EMPTY ? undefined : Number(nextTask),
         nextStep === FORMAT.EMPTY ? undefined : Number(nextStep),
       ]);
+    }
+  );
+});
+
+/** The words task-start.tsv uses; TaskRunTest's companion matches. */
+const START_ROW = {
+  START: "start",
+  COUNT: "count",
+  NAME: "name",
+  STEPS: "steps",
+  PAIR: "pair",
+} as const;
+
+describe("task-start.tsv", () => {
+  const say = i18n.getFixedT(AppLocale.EN);
+
+  it.each(table("task-start.tsv"))(
+    "the start button for %s shows a %s title and %s detail (%s)",
+    (stack, title, detail, count) => {
+      const tasks = normalizeWakeTasks(decode(stack));
+      if (!isNonEmpty(tasks)) throw new Error(`empty stack ${stack}`);
+      const [first, second] = tasks;
+      const titles: Record<string, string> = {
+        [START_ROW.START]: say("alarm.task.start"),
+        [START_ROW.COUNT]: say("alarm.task.startCount", { count: Number(count) }),
+      };
+      const details: Record<string, string | null> = {
+        [FORMAT.EMPTY]: null,
+        [START_ROW.NAME]: taskName(first, say),
+        [START_ROW.STEPS]: say("alarm.task.withSteps", {
+          name: taskName(first, say),
+          count: Number(count),
+        }),
+        [START_ROW.PAIR]: second
+          ? say("alarm.task.pair", { first: taskName(first, say), second: taskName(second, say) })
+          : null,
+      };
+      expect(titles[title]).toBeDefined();
+      expect(details[detail]).toBeDefined();
+      const start = describeStart(tasks, say);
+      expect([start.title, start.detail]).toEqual([titles[title], details[detail]]);
     }
   );
 });

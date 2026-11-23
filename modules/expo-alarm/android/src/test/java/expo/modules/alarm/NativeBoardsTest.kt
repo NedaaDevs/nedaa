@@ -10,21 +10,30 @@ class NativeBoardsTest {
     private fun stack(text: String) = WakeTasks.normalize(WakeTasks.decode(text))
 
     @Test
-    fun noStackOrOneTaskKeepsTheSingleChallengeOverlay() {
+    fun noStackKeepsTheSingleChallengeOverlay() {
         assertFalse(NativeBoards.runsShell(emptyList()))
+    }
+
+    @Test
+    fun aLoneTaskRunsTheShellUnlessItHasNoBoardOfItsOwn() {
         for (board in WakeTasks.Board.entries) {
-            assertFalse(board.id, NativeBoards.runsShell(stack("id=${board.id}")))
+            assertEquals(board.id, board != WakeTasks.Board.DHIKR, NativeBoards.runsShell(stack("id=${board.id}")))
         }
-        // A NULL stored stack resolves to the one task its challenge stands for.
+    }
+
+    @Test
+    fun aStoredChallengeWithNoStackRunsTheShellForTapAndMath() {
+        val inShell = setOf(WakeTasks.CHALLENGE_TAP, WakeTasks.CHALLENGE_MATH)
         for (type in WakeTasks.CHALLENGE_TYPES) for (difficulty in WakeTasks.DIFFICULTIES) {
             val derived = WakeTasks.resolve(WakeTasks.Challenge(type, difficulty, 3), null)
-            assertFalse("$type $difficulty", NativeBoards.runsShell(derived))
+            assertEquals("$type $difficulty", type in inShell, NativeBoards.runsShell(derived))
         }
     }
 
     @Test
     fun twoOrMoreTasksRunTheShell() {
         assertTrue(NativeBoards.runsShell(stack("id=math;id=tap")))
+        assertTrue(NativeBoards.runsShell(stack("id=dhikr;id=tap")))
         assertTrue(NativeBoards.runsShell(stack("id=pattern;id=prayers;id=dhikr")))
     }
 
