@@ -57,19 +57,29 @@ jest.mock("@/utils/alarmScheduler", () => ({
 
 // Each board solves at one press; the boards' own tests cover their play.
 jest.mock("@/components/alarm/challenges/MathBoard", () =>
-  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("math")
+  jest
+    .requireActual("@/test-helpers/taskBoardMock")
+    .mockBoard(jest.requireActual("@/constants/WakeTask").WAKE_TASK_ID.MATH)
 );
 jest.mock("@/components/alarm/challenges/DhikrChallenge", () =>
-  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("dhikr")
+  jest
+    .requireActual("@/test-helpers/taskBoardMock")
+    .mockBoard(jest.requireActual("@/constants/WakeTask").WAKE_TASK_ID.DHIKR)
 );
 jest.mock("@/components/alarm/challenges/TapBoard", () =>
-  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("tap")
+  jest
+    .requireActual("@/test-helpers/taskBoardMock")
+    .mockBoard(jest.requireActual("@/constants/WakeTask").WAKE_TASK_ID.TAP)
 );
 jest.mock("@/components/alarm/challenges/PrayersBoard", () =>
-  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("prayers")
+  jest
+    .requireActual("@/test-helpers/taskBoardMock")
+    .mockBoard(jest.requireActual("@/constants/WakeTask").WAKE_TASK_ID.PRAYERS)
 );
 jest.mock("@/components/alarm/challenges/PatternBoard", () =>
-  jest.requireActual("@/test-helpers/taskBoardMock").mockBoard("pattern")
+  jest
+    .requireActual("@/test-helpers/taskBoardMock")
+    .mockBoard(jest.requireActual("@/constants/WakeTask").WAKE_TASK_ID.PATTERN)
 );
 
 const t = i18n.t.bind(i18n);
@@ -129,7 +139,7 @@ describe("AlarmTrialRoute", () => {
 
     expect(screen.getByTestId(TASK_SHELL_PART.TRIAL_STRIP)).toBeVisible();
     expect(screen.queryByRole("button", { name: "solve tap" })).toBeNull();
-    await solve("math");
+    await solve(WAKE_TASK_ID.MATH);
 
     expect(screen.getByRole("header", { name: DONE })).toBeVisible();
     await user.press(screen.getByRole("button", { name: LIST }));
@@ -138,9 +148,9 @@ describe("AlarmTrialRoute", () => {
 
   it("runs the saved stack in order for Try all", async () => {
     const { solve } = await open(TASK_TRIAL_ALL);
-    await solve("tap");
+    await solve(WAKE_TASK_ID.TAP);
     await act(() => jest.advanceTimersByTime(HANDOVER_HOLD_MS));
-    await solve("math");
+    await solve(WAKE_TASK_ID.MATH);
 
     expect(screen.getByRole("header", { name: DONE })).toBeVisible();
   });
@@ -148,7 +158,7 @@ describe("AlarmTrialRoute", () => {
   it("tries a task the alarm does not hold", async () => {
     const { solve } = await open(WAKE_TASK_ID.PATTERN);
 
-    await solve("pattern");
+    await solve(WAKE_TASK_ID.PATTERN);
 
     expect(screen.getByRole("header", { name: DONE })).toBeVisible();
   });
@@ -192,7 +202,7 @@ describe("AlarmTrialRoute", () => {
 
   it("names the task and the options it just ran", async () => {
     const { solve } = await open(WAKE_TASK_ID.MATH);
-    await solve("math");
+    await solve(WAKE_TASK_ID.MATH);
 
     const named = t("alarm.task.withSteps", {
       name: t("alarm.task.withDifficulty", {
@@ -212,7 +222,7 @@ describe("AlarmTrialRoute", () => {
     expect(stack.length).toBeLessThanOrEqual(WAKE_TASK_MAX_STACK);
     saveStack(stack);
     const { solve } = await open(task);
-    await solve(task === TASK_TRIAL_ALL ? "tap" : task);
+    await solve(task === TASK_TRIAL_ALL ? WAKE_TASK_ID.TAP : task);
 
     expect(screen.getByRole("header", { name: DONE })).toBeVisible();
     expect(screen.queryByRole("button", { name: USE })).toBeNull();
@@ -224,7 +234,7 @@ describe("AlarmTrialRoute", () => {
     jest.replaceProperty(Platform, "OS", PlatformType.ANDROID);
     const before = records();
     const { user, solve } = await open(WAKE_TASK_ID.PATTERN);
-    await solve("pattern");
+    await solve(WAKE_TASK_ID.PATTERN);
 
     expect(nativeCalls).toEqual([]);
     expect(records().settings).toBe(before.settings);
@@ -266,9 +276,9 @@ describe("AlarmTrialRoute", () => {
     const before = records();
     const { user, solve } = await open(TASK_TRIAL_ALL);
 
-    await solve("tap");
+    await solve(WAKE_TASK_ID.TAP);
     await act(() => jest.advanceTimersByTime(HANDOVER_HOLD_MS));
-    await solve("math");
+    await solve(WAKE_TASK_ID.MATH);
     await user.press(screen.getByRole("button", { name: LIST }));
 
     expect(nativeCalls).toEqual([]);
