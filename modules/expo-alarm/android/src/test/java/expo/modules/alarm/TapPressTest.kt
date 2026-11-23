@@ -56,6 +56,11 @@ class TapPressTest {
             "PRESS_SCALE" to PRESS_SCALE.toDouble(),
             "PRESS_DOWN_MS" to PRESS_DOWN_MS.toDouble(),
             "PRAYER_PLACE_FILL_MS" to PrayersBoard.PLACE_FILL_MS.toDouble(),
+            "PATTERN_WRONG_HOLD_MS" to PatternBoardRun.WRONG_HOLD_MS.toDouble(),
+            "PATTERN_FADE_MS" to PatternBoardRun.FADE_MS.toDouble(),
+            "PATTERN_PAD_HEIGHT" to PatternPadView.HEIGHT_DP.toDouble(),
+            "PATTERN_PAD_SHAPE" to PatternPadView.SHAPE_DP.toDouble(),
+            "PATTERN_PAD_STROKE" to PatternShape.STROKE.toDouble(),
         )
         val rows = sharedTable("shell-constants.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })

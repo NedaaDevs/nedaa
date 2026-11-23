@@ -170,4 +170,25 @@
     <string name="overlay_prayer_asr">Asr</string>
     <string name="overlay_prayer_maghrib">Maghrib</string>
     <string name="overlay_prayer_isha">Isha</string>
+    <string name="overlay_task_pattern_watch_ask">Watch the buttons light up.</string>
+    <string name="overlay_task_pattern_turn_ask">Tap the buttons in the same order.</string>
+    <string name="overlay_task_pattern_showing">Showing %1$d of %2$d</string>
+    <string name="overlay_task_pattern_showing_new">New order: showing %1$d of %2$d</string>
+    <string name="overlay_task_pattern_turn">Your turn: %1$d of %2$d</string>
+    <string name="overlay_task_pattern_wrong">Not that button. A new order follows.</string>
+    <string name="overlay_task_pattern_done">Order repeated</string>
+    <string name="overlay_task_pattern_watch">Watch the order: %1$s. Your turn.</string>
+    <string name="overlay_task_pattern_after_miss">Not that button. New order: %1$s. Your turn.</string>
+    <string name="overlay_task_pattern_again">The order: %1$s.</string>
+    <string name="overlay_task_pattern_hear_again">Hear the order again</string>
+    <string name="overlay_task_pattern_pad_circle">Circle</string>
+    <string name="overlay_task_pattern_pad_triangle">Triangle</string>
+    <string name="overlay_task_pattern_pad_square">Square</string>
+    <string name="overlay_task_pattern_pad_lines">Two lines</string>
+    <string name="overlay_task_pattern_place_top_left">top left</string>
+    <string name="overlay_task_pattern_place_top_right">top right</string>
+    <string name="overlay_task_pattern_place_bottom_left">bottom left</string>
+    <string name="overlay_task_pattern_place_bottom_right">bottom right</string>
+    <string name="overlay_sentences">%1$s. %2$s</string>
+    <string name="overlay_list_separator">", "</string>
 </resources>

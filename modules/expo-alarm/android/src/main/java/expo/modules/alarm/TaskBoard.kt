@@ -9,6 +9,8 @@ data class BoardInput(
     // What onDraw kept for this task's earlier steps; no native board reads it yet.
     val drawn: List<Int>,
     val rng: TaskRng.Rng,
+    // The shell's step line for a board that says it; null on a first step.
+    val opening: String?,
 )
 
 // How a board reports to the shell.
@@ -38,12 +40,14 @@ object TaskBoards {
         NativeBoards.Kind.TAP -> TaskBoardFactory { context, _, host -> TapBoard(context, host) }
         NativeBoards.Kind.MATH_CARDS -> TaskBoardFactory(::MathCardsBoard)
         NativeBoards.Kind.PRAYERS -> TaskBoardFactory(::PrayersBoard)
+        NativeBoards.Kind.PATTERN -> TaskBoardFactory(::PatternBoard)
     }
 
     fun headingOf(kind: NativeBoards.Kind): Int = when (kind) {
         NativeBoards.Kind.TAP -> R.string.overlay_task_name_tap
         NativeBoards.Kind.MATH_CARDS -> R.string.overlay_task_title_math
         NativeBoards.Kind.PRAYERS -> R.string.overlay_task_name_prayers
+        NativeBoards.Kind.PATTERN -> R.string.overlay_task_name_pattern
     }
 
     // The task's own name, as the start button and the handover say it.
