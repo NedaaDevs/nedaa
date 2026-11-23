@@ -171,4 +171,39 @@ describe("MathBoard", () => {
     expect(screen.queryByText(/%|\//)).toBeNull();
     expect(screen.queryByText(t("alarm.challenge.wrongAnswer"))).toBeNull();
   });
+
+  describe("two taps before React commits the first", () => {
+    const touch = { nativeEvent: { timestamp: 0 }, persist: () => undefined };
+    const pressInPlace = (card: ReturnType<typeof cards>[number]) => {
+      const { onResponderGrant, onResponderRelease } = card.props;
+      onResponderGrant(touch);
+      onResponderRelease(touch);
+    };
+
+    it("reports one solve for the right card pressed twice", async () => {
+      const [round] = roundsFor(1);
+      const { onComplete } = await renderBoard();
+      const right = cards()[rightPlace(round)];
+
+      await act(() => {
+        pressInPlace(right);
+        pressInPlace(right);
+      });
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it("takes no right card once a wrong one holds", async () => {
+      const [round] = roundsFor(1);
+      const { onComplete } = await renderBoard();
+      const [wrong, right] = [cards()[wrongPlace(round)], cards()[rightPlace(round)]];
+
+      await act(() => {
+        pressInPlace(wrong);
+        pressInPlace(right);
+      });
+
+      expect(onComplete).not.toHaveBeenCalled();
+    });
+  });
 });

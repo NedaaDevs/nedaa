@@ -217,11 +217,6 @@ class PrayersBoard(context: Context, input: BoardInput, private val host: BoardH
         }
     }
 
-    private fun fadeIn(part: View, ms: Long) {
-        part.alpha = 0f
-        part.animate().alpha(1f).setDuration(ms).start()
-    }
-
     companion object {
         // JS PRAYER_PLACE_FILL_MS.
         const val PLACE_FILL_MS = 160L

@@ -34,6 +34,7 @@ import {
   replaceQuestion,
   startMathBoard,
   tapMathCard,
+  type MathBoardState,
 } from "@/utils/mathBoard";
 import { formatNumberToLocale } from "@/utils/number";
 import type { Rng } from "@/utils/rng";
@@ -52,10 +53,17 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
   const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
   const hapticError = useHaptic(HAPTIC_FEEDBACK.ERROR);
   const [board, setBoard] = useState(() => startMathBoard(difficulty, rng));
+  // Taps read this, so two in one frame see the first one's board.
+  const live = useRef(board);
   const { round, asked, wrong } = board;
   const sumRef = useRef<ViewInstance>(null);
 
-  const replace = useEffectEvent(() => setBoard(replaceQuestion(board, difficulty, rng)));
+  const commit = (next: MathBoardState) => {
+    live.current = next;
+    setBoard(next);
+  };
+
+  const replace = useEffectEvent(() => commit(replaceQuestion(live.current, difficulty, rng)));
 
   useEffect(() => {
     if (wrong === null) return;
@@ -69,9 +77,9 @@ const MathBoard = ({ difficulty, onComplete, rng = Math.random }: Props) => {
   }, [asked]);
 
   const choose = (position: AnswerCardPosition) => {
-    const tap = tapMathCard(board, position);
+    const tap = tapMathCard(live.current, position);
     if (tap.outcome === MATH_TAP.IGNORED) return;
-    setBoard(tap.state);
+    commit(tap.state);
     if (tap.outcome === MATH_TAP.SOLVED) {
       hapticSuccess();
       onComplete();
