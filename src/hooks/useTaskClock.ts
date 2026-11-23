@@ -59,7 +59,10 @@ export const useTaskClock = ({
     const before = latest.current;
     const now = Date.now();
     const clock = advanceTaskClock(before.clock, now, audible);
-    commit({ clock, now });
+    const next = { clock, now };
+    // An unheard run shows no reading, so its ticks draw nothing.
+    if (audible) commit(next);
+    else latest.current = next;
 
     const was = quietPhase(before.clock, before.now);
     const is = quietPhase(clock, now);

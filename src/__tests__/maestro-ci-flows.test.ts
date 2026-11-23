@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { TAB_BAR_PART } from "@/app/(tabs)/_layout";
-import { ALARM_TYPE } from "@/constants/Alarm";
+import { ALARM_SETTINGS_ROUTE, ALARM_TYPE } from "@/constants/Alarm";
 import { FOCUS_COUNTDOWN_PART } from "@/components/today/FocusCountdown";
 import { ALARM_DEBUG_TEST_SECONDS, E2E_ID, alarmDebugScheduleId } from "@/constants/E2E";
 import { ONBOARDING_PART } from "@/constants/Onboarding";
@@ -125,6 +125,15 @@ const unreadableLines = (from: Flow[]) =>
       .filter(({ line }) => !/^\s*#/.test(line) && UNREADABLE.test(line))
       .map(({ line, at }) => `${name}:${at + 1}: ${line.trim()}`)
   );
+
+/** A route file's one dynamic segment, e.g. `[type]`. */
+const DYNAMIC_SEGMENT = /\[\w+\]/;
+
+/** The id of the first tap of any kind, when that tap is a block that leads with an id. */
+const firstTapId = (rest: string) =>
+  /^[ \t]*-[ \t]*(?:tapOn|longPressOn|doubleTapOn):[ \t]*(?:\n[ \t]*id:[ \t]*"([^"]*)")?/m.exec(
+    rest
+  )?.[1];
 
 describe("CI Maestro flows", () => {
   it("finds the flows, and each flow CI runs", () => {
@@ -260,21 +269,35 @@ describe("CI Maestro flows", () => {
     expect(unreadableLines(ciFlows)).toEqual([]);
   });
 
+  it("reads the id of the first tap only when the tap is a block that leads with an id", () => {
+    const skip = `- tapOn:\n    id: "${E2E_ID.ALARM_GUIDE_SKIP}"`;
+
+    expect(firstTapId(`- waitForAnimationToEnd\n${skip}`)).toBe(E2E_ID.ALARM_GUIDE_SKIP);
+    expect(firstTapId(`- runFlow:\n    commands:\n      ${skip}`)).toBe(E2E_ID.ALARM_GUIDE_SKIP);
+    expect(firstTapId(`- tapOn: "Enable"\n${skip}`)).toBeUndefined();
+    expect(firstTapId(`- tapOn:\n    text: "Enable"\n${skip}`)).toBeUndefined();
+    expect(firstTapId(`- longPressOn:\n    text: "Enable"\n${skip}`)).toBeUndefined();
+    expect(firstTapId(`- doubleTapOn: "Enable"\n${skip}`)).toBeUndefined();
+    expect(
+      firstTapId(`- tapOn:\n    index: 0\n    id: "${E2E_ID.ALARM_GUIDE_SKIP}"`)
+    ).toBeUndefined();
+    expect(firstTapId("- assertVisible: a")).toBeUndefined();
+  });
+
   // The alarm guide opens by itself on a fresh install, over the switch.
   it("skips the alarm guide before its first tap on an alarm's settings", () => {
-    const links = Object.values(ALARM_TYPE).map((type) => `${APP_SCHEME}settings/alarm/${type}`);
+    const links = Object.values(ALARM_TYPE).map(
+      (type) => `${APP_SCHEME}${ALARM_SETTINGS_ROUTE.replace(DYNAMIC_SEGMENT, type)}`
+    );
     const visits = flows.flatMap(({ name, text }) =>
       [...text.matchAll(/^[ \t]*-[ \t]*openLink:[ \t]*"([^"]*)"/gm)]
         .filter((match) => links.includes(match[1]))
         .map((match) => ({ name, rest: text.slice((match.index ?? 0) + match[0].length) }))
     );
-    const firstTap = (rest: string) =>
-      /^[ \t]*-[ \t]*tapOn:\s*\n[ \t]*id:[ \t]*"([^"]*)"/m.exec(rest);
-
     expect(visits.length).toBeGreaterThan(0);
     expect(
       visits
-        .filter(({ rest }) => firstTap(rest)?.[1] !== E2E_ID.ALARM_GUIDE_SKIP)
+        .filter(({ rest }) => firstTapId(rest) !== E2E_ID.ALARM_GUIDE_SKIP)
         .map(({ name }) => name)
     ).toEqual([]);
   });

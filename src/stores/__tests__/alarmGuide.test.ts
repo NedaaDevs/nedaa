@@ -14,7 +14,7 @@ beforeEach(() => {
 
 describe("the alarm guide's seen mark", () => {
   it("starts unseen", () => {
-    expect(useAlarmGuideStore.getState().hasSeenGuide).toBe(false);
+    expect(useAlarmGuideStore.getInitialState().hasSeenGuide).toBe(false);
   });
 
   it("writes only the mark under its own key", () => {
