@@ -24,6 +24,10 @@ object NativeBoards {
     // As JS saysOpening: the board's status speaks the shell's step line.
     fun saysOpening(kind: Kind): Boolean = kind == Kind.PATTERN
 
-    // No stack or one task runs the single-challenge overlay unchanged.
-    fun runsShell(tasks: List<WakeTasks.Task>): Boolean = tasks.size > 1
+    // As JS, any stack runs the shell, but a lone task with no board of its
+    // own keeps its single challenge: Dhikr's typed phrase, not tap.
+    fun runsShell(tasks: List<WakeTasks.Task>): Boolean {
+        val lone = tasks.singleOrNull() ?: return tasks.isNotEmpty()
+        return shownBoard(lone) == lone.board
+    }
 }

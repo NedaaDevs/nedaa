@@ -162,20 +162,28 @@ class TaskShellView(
         clearBoard()
     }
 
-    // As JS describeStart, for the two or more tasks the shell runs.
+    // As JS describeStart: the title, and the tasks under it for one or two.
     private fun startGate(): View {
-        val pair = tasks.size == 2
-        val title = if (pair) {
-            context.getString(R.string.overlay_task_start)
+        val start = TaskRun.start(tasks)
+        val title = if (start is TaskRun.Start.Count) {
+            context.resources.getQuantityString(R.plurals.overlay_task_start_count, start.size, start.size)
         } else {
-            context.resources.getQuantityString(R.plurals.overlay_task_start_count, tasks.size, tasks.size)
+            context.getString(R.string.overlay_task_start)
+        }
+        val detail = when (start) {
+            is TaskRun.Start.Count -> null
+            is TaskRun.Start.Pair ->
+                context.getString(R.string.overlay_task_pair, nameOf(start.first), nameOf(start.second))
+            is TaskRun.Start.One -> start.steps?.let {
+                context.resources.getQuantityString(R.plurals.overlay_task_with_steps, it, nameOf(start.task), it)
+            } ?: nameOf(start.task)
         }
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = matchWidth()
-            if (pair) {
+            if (detail != null) {
                 addView(overlayText(context, 15f, COLOR_TEXT_MUTED).apply {
-                    text = context.getString(R.string.overlay_task_pair, nameOf(tasks[0]), nameOf(tasks[1]))
+                    text = detail
                     setPadding(0, context.dp(8), 0, context.dp(24))
                 })
             }
@@ -271,7 +279,7 @@ class TaskShellView(
     private fun render(run: TaskShellRun, now: Long) {
         val handover = run.handover
         val shown = if (handover == null) View.VISIBLE else View.GONE
-        positionLine.visibility = shown
+        positionLine.visibility = if (run.showsTaskLine) shown else View.GONE
         positionLine.text = taskOf(run, run.position)
         val steps = TaskRun.stepsOf(run.task)
         stepLine.visibility = if (steps > 1) shown else View.GONE
