@@ -336,13 +336,15 @@ describe("PatternBoard", () => {
         await layOut(status());
         await advance(playbackMs(first.length));
         await fireEvent.press(padOf(first[0]));
-        const entered = dotsOn().length;
+        expect(dotsOn()).toHaveLength(1);
 
         await turnOn(view);
 
         expect(focus()).toHaveBeenCalledTimes(1);
-        expect(dotsOn()).toHaveLength(entered);
+        expect(dotsOn()).toHaveLength(1);
         pads().forEach((pad) => expect(pad).toBeEnabled());
+        await tapAll(first.slice(1));
+        expect(onComplete).toHaveBeenCalledTimes(1);
       });
     });
 

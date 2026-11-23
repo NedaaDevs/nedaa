@@ -3,7 +3,7 @@
 import AlarmTypeSettingsScreen from "@/app/settings/alarm/[type]";
 import { AccessibilityInfo, ScrollView, Text } from "react-native";
 import { router, Stack, useLocalSearchParams, usePathname } from "expo-router";
-import { act, fireEvent } from "@testing-library/react-native";
+import { act, fireEvent, userEvent } from "@testing-library/react-native";
 import { renderRouter, screen, within } from "expo-router/testing-library";
 
 import {
@@ -258,9 +258,7 @@ describe("the alarm's sections", () => {
   it("opens a trial of a task with the alarm's type", async () => {
     await showSections();
 
-    await act(async () =>
-      fireEvent.press(await screen.findByRole("button", { name: mockTryLabel }))
-    );
+    await userEvent.press(await screen.findByRole("button", { name: mockTryLabel }));
 
     expect(JSON.parse(String(screen.getByTestId("trial").props.children))).toEqual({
       [TASK_TRIAL_PARAM.ALARM_TYPE]: ALARM_TYPE.FAJR,
@@ -273,7 +271,7 @@ describe("the alarm's sections", () => {
     await showSections();
     const name = t("a11y.alarm.previewAlarm", { seconds: PREVIEW_ALARM_SECONDS });
 
-    await act(async () => fireEvent.press(await screen.findByRole("button", { name })));
+    await userEvent.press(await screen.findByRole("button", { name }));
 
     const button = screen.getByRole("button", { name });
     expect(within(button).getByText(t("alarm.settings.previewAlarmFailed"))).toBeVisible();
@@ -290,7 +288,7 @@ describe("the alarm guide", () => {
     });
   const guideHeading = () => screen.queryByRole("header", { name: firstCard() });
   const press = async (name: string) =>
-    act(async () => fireEvent.press(await screen.findByRole("button", { name })));
+    userEvent.press(await screen.findByRole("button", { name }));
   const alarmOn = () =>
     useAlarmSettingsStore.setState({
       [ALARM_TYPE.FAJR]: { ...useAlarmSettingsStore.getState()[ALARM_TYPE.FAJR], enabled: true },
