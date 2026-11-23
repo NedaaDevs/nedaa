@@ -74,6 +74,7 @@ describe("the emergency quiet count", () => {
     expect(storage.getItem).toHaveBeenLastCalledWith(EMERGENCY_QUIET_STORE_KEY);
     expect(useEmergencyQuietStore.persist.hasHydrated()).toBe(true);
     expect(useEmergencyQuietStore.getState().ledger).toEqual(ledger);
+    expect(storage.setItem).not.toHaveBeenCalled();
   });
 
   it("moves a ledger written ahead of the clock to the clock's month", async () => {
@@ -87,6 +88,23 @@ describe("the emergency quiet count", () => {
       month: monthKeyOf(NOW),
       lastWriteAt: NOW,
     });
+    expect(left(NEXT_MONTH)).toBe(TWO);
+  });
+
+  it("saves a ledger rebased on a clock set back, so the next month refills", async () => {
+    const ahead = recordUse(recordUse(NEW_QUIET_LEDGER, NEXT_YEAR) ?? NEW_QUIET_LEDGER, NEXT_YEAR);
+    storage.getItem.mockResolvedValueOnce(saved({ ledger: ahead }));
+    await useEmergencyQuietStore.persist.rehydrate();
+
+    const [key, rebased] = storage.setItem.mock.lastCall ?? [];
+    expect(key).toBe(EMERGENCY_QUIET_STORE_KEY);
+    expect(left(NOW)).toBe(0);
+
+    // The next restart reads what this one saved.
+    jest.setSystemTime(NEXT_MONTH);
+    storage.getItem.mockResolvedValueOnce(String(rebased));
+    await useEmergencyQuietStore.persist.rehydrate();
+
     expect(left(NEXT_MONTH)).toBe(TWO);
   });
 

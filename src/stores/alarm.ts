@@ -50,7 +50,7 @@ export interface QuietResult {
 /** An emergency quiet's steps the caller owns, run in the store's order. */
 export interface QuietSteps {
   ringsAt: Date;
-  /** Counts the use; a throw keeps the alarm ringing with nothing counted. */
+  /** Counts the use; a throw disarms the re-ring and counts nothing. */
   recordUse: () => void;
   /** Silences what the caller plays, such as a JS vibration. */
   silence: () => void;
@@ -89,14 +89,17 @@ interface AlarmState {
 }
 
 // A replaced alarm, once its replacement is armed. Completed before the
-// cancel, so its reported dismissal cannot re-arm it. A failed step is logged
-// and the rest still run.
+// cancel, so its reported dismissal cannot re-arm it. The pending challenge
+// and the backups are global: cleared only while the open challenge is this
+// alarm's, or none is. A failed step is logged and the rest still run.
 const retireReplaced = async (alarmId: string): Promise<void> => {
+  const pending = await ExpoAlarm.getPendingChallenge().catch(() => null);
+  const ownsAlarmState = !pending || pending.alarmId === alarmId;
   const steps = [
     () => ExpoAlarm.markAlarmCompleted(alarmId),
-    () => ExpoAlarm.clearPendingChallenge(),
+    ...(ownsAlarmState ? [() => ExpoAlarm.clearPendingChallenge()] : []),
     () => ExpoAlarm.cancelAlarm(alarmId),
-    () => ExpoAlarm.cancelAllBackups(),
+    ...(ownsAlarmState ? [() => ExpoAlarm.cancelAllBackups()] : []),
   ];
   for (const step of steps) {
     try {
@@ -311,6 +314,19 @@ export const useAlarmStore = create<AlarmState>()(
             return null;
           }
 
+          // A refused cancel keeps the re-ring's record, so it rings as a tracked alarm.
+          const disarm = async () => {
+            if (!(await get().cancelAlarms([quietId]))) {
+              alarmLog.e("Store", `quiet: re-ring ${quietId} kept — its cancel was refused`);
+            }
+          };
+
+          if (!get().scheduledAlarms[alarmId]) {
+            alarmLog.i("Store", `quiet: ${alarmId} ended while its re-ring armed`);
+            await disarm();
+            return null;
+          }
+
           try {
             recordUse();
           } catch (error) {
@@ -319,7 +335,7 @@ export const useAlarmStore = create<AlarmState>()(
               `quiet: use not counted — still ringing ${alarmId}`,
               error as Error
             );
-            await get().cancelAlarm(quietId);
+            await disarm();
             return null;
           }
 

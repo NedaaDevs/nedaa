@@ -156,6 +156,41 @@ describe("an emergency quiet", () => {
     expect(Object.keys(useAlarmStore.getState().scheduledAlarms)).toEqual([ALARM_ID]);
   });
 
+  it("keeps the re-ring's record when its disarm is refused", async () => {
+    mockResults.cancelAlarm = false;
+    recordUse.mockImplementationOnce(() => {
+      throw new Error("none left");
+    });
+
+    expect(await quiet()).toBeNull();
+    const scheduled = mockCalls.find(({ name }) => name === "scheduleAlarm");
+    const quietId = (scheduled?.args[0] as { id: string }).id;
+    expect(useAlarmStore.getState().scheduledAlarms[quietId]).toBeDefined();
+    expect(names()).not.toContain("deleteAlarmFromDB");
+  });
+
+  it("disarms the re-ring and counts nothing when the alarm ended while it armed", async () => {
+    const quieting = quiet();
+    useAlarmStore.setState({ scheduledAlarms: {} });
+
+    expect(await quieting).toBeNull();
+    expect(recordUse).not.toHaveBeenCalled();
+    expect(silence).not.toHaveBeenCalled();
+    expect(names()).not.toContain("markAlarmCompleted");
+  });
+
+  it("leaves another alarm's challenge and backups alone", async () => {
+    mockResults.getPendingChallenge = { alarmId: "other" };
+
+    const result = await quiet();
+
+    expect(result).not.toBeNull();
+    expect(names()).not.toContain("clearPendingChallenge");
+    expect(names()).not.toContain("cancelAllBackups");
+    expect(mockCalls).toContainEqual({ name: "markAlarmCompleted", args: [ALARM_ID] });
+    expect(mockCalls).toContainEqual({ name: "cancelAlarm", args: [ALARM_ID] });
+  });
+
   it("still cancels the backups and drops the record when the cancel throws", async () => {
     mockResults.cancelAlarm = new Error("native cancel failed");
 
