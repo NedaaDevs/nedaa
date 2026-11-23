@@ -154,6 +154,12 @@
     <string name="overlay_task_card_place_second">card 2 of 4</string>
     <string name="overlay_task_card_place_third">card 3 of 4</string>
     <string name="overlay_task_card_place_fourth">card 4 of 4</string>
+    <string name="overlay_task_dhikr_ask">Which word completes this dhikr as it is narrated?</string>
+    <string name="overlay_task_dhikr_completed">This dhikr is completed with:</string>
+    <string name="overlay_task_dhikr_another">This is another dhikr.</string>
+    <string name="overlay_task_dhikr_completed_spoken">This dhikr is completed with: %1$s. %2$s</string>
+    <string name="overlay_task_dhikr_gap">missing word</string>
+    <string name="overlay_task_dhikr_another_spoken">Another dhikr. %1$s</string>
     <string name="overlay_task_prayers_ask">Tap from %1$s to %2$s.</string>
     <string name="overlay_task_prayers_wrong">Not %1$s yet.</string>
     <string name="overlay_task_prayers_dealt">The cards were dealt again.</string>

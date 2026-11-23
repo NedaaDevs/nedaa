@@ -61,6 +61,10 @@ class TapPressTest {
             "PATTERN_PAD_HEIGHT" to PatternPadView.HEIGHT_DP.toDouble(),
             "PATTERN_PAD_SHAPE" to PatternPadView.SHAPE_DP.toDouble(),
             "PATTERN_PAD_STROKE" to PatternShape.STROKE.toDouble(),
+            "DHIKR_FILL_MS" to DhikrBoard.FILL_MS.toDouble(),
+            "DHIKR_HOLD_MS" to DhikrBoardRun.HOLD_MS.toDouble(),
+            "DHIKR_READER_HOLD_MS" to DhikrBoardRun.READER_HOLD_MS.toDouble(),
+            "SPOKEN_MS_PER_CHARACTER" to DhikrBoardRun.SPOKEN_MS_PER_CHARACTER.toDouble(),
         )
         val rows = sharedTable("shell-constants.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })
@@ -69,7 +73,10 @@ class TapPressTest {
 
     @Test
     fun theShellTextMatchesTheJs() {
-        val native = mapOf("PRAYER_PLACE_EMPTY" to PrayersBoard.PLACE_EMPTY)
+        val native = mapOf(
+            "PRAYER_PLACE_EMPTY" to PrayersBoard.PLACE_EMPTY,
+            "DHIKR_TASK_REVIEWED" to DhikrTask.REVIEWED.toString(),
+        )
         val rows = sharedTable("shell-text.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })
         for ((name, value) in rows) assertEquals(name, value, native[name])
