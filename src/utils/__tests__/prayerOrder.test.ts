@@ -173,13 +173,16 @@ const BLIND: [string, Strategy][] = [
   ["always the last open card", (open) => open[open.length - 1]],
 ];
 
+/** Far past any game chance allows; a board that stops moving on throws. */
+const MAX_TAPS = 1000;
+
 /** Taps until Isha is placed; the board's own source deals and reshuffles. */
 const play = (strategy: Strategy, seed: number): number => {
   const rng = seededRng(seed);
   const random = seededRng(seed + 7919);
   let state = startBoard(rng);
   let last: number | null = null;
-  for (let taps = 1; ; taps += 1) {
+  for (let taps = 1; taps <= MAX_TAPS; taps += 1) {
     last = strategy(unplacedSlots(state), last, random);
     const result = tapPrayer(state, last);
     switch (result.outcome) {
@@ -199,6 +202,7 @@ const play = (strategy: Strategy, seed: number): number => {
       }
     }
   }
+  throw new Error(`seed ${seed} placed no Isha in ${MAX_TAPS} taps`);
 };
 
 /** Each tap with k cards open is right 1 time in k: 5 + 4 + 3 + 2 + 1. */

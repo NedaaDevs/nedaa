@@ -265,7 +265,7 @@ describe("PrayersBoard", () => {
       const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
       const { unmount } = await renderBoard(draws(0.5, reshuffle));
       const board = { deal, placed: 0 };
-      await fireEvent.press(cardOf(board, PRAYER_ID.FAJR));
+      for (const prayer of PRAYER_IDS.slice(0, -2)) await fireEvent.press(cardOf(board, prayer));
       await fireEvent.press(cardOf(board, PRAYER_ID.ISHA));
       await advance(WRONG_CARD_HOLD_MS);
       const result = {
