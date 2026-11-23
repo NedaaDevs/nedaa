@@ -20,7 +20,7 @@ import {
 } from "@/types/alarm";
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
-import { legacyChallengeFromWakeTasks, wakeTasksFromLegacyChallenge } from "@/utils/wakeTasks";
+import { legacyChallengeFromWakeTasks } from "@/utils/wakeTasks";
 
 jest.mock("expo-alarm", () => ({
   ...jest.requireActual("expo-alarm"),
@@ -185,7 +185,7 @@ describe("useAlarmTypeSettings", () => {
     });
   });
 
-  // A challenge write, as the debug screen makes, keeps what a stack cannot.
+  // Native rebuilds the stack from a sent challenge, so no stack rides along.
   it.each([
     {
       type: ExpoAlarm.CHALLENGE_TYPE.TAP,
@@ -213,7 +213,6 @@ describe("useAlarmTypeSettings", () => {
       challengeType: challenge.type,
       challengeDifficulty: challenge.difficulty,
       challengeCount: challenge.count,
-      tasks: wakeTasksFromLegacyChallenge(challenge),
     });
   });
 

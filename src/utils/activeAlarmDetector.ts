@@ -38,14 +38,17 @@ export async function detectActiveAlarm(
 
   const now = Date.now();
   // Android only; iOS reads null and an empty list, so only age decides.
-  const ringingAlarmId = ExpoAlarm.getRingingAlarmId();
   const futureIds = new Set(await ExpoAlarm.getFutureAlarmIds());
+  // An alarm native re-armed for later keeps its first times, so its age says
+  // nothing. The ringing id is read at each decision: a ring can start during any await.
+  const endsNow = (alarmId: string, ageMs: number): boolean =>
+    !futureIds.has(alarmId) && endsByAge(alarmId, ageMs, ExpoAlarm.getRingingAlarmId());
 
   try {
     const pending = await ExpoAlarm.getPendingChallenge();
 
     if (pending && !completedIds.has(pending.alarmId) && !handledIds?.has(pending.alarmId)) {
-      if (endsByAge(pending.alarmId, now - pending.timestamp, ringingAlarmId)) {
+      if (endsNow(pending.alarmId, now - pending.timestamp)) {
         await autoCompleteStaleAlarm(pending.alarmId);
         return null;
       }
@@ -95,7 +98,7 @@ export async function detectActiveAlarm(
       !completedIds.has(alarm.alarmId) &&
       !handledIds?.has(alarm.alarmId)
     ) {
-      if (endsByAge(alarm.alarmId, now - alarm.triggerTime, ringingAlarmId)) {
+      if (endsNow(alarm.alarmId, now - alarm.triggerTime)) {
         await autoCompleteStaleAlarm(alarm.alarmId);
         continue;
       }

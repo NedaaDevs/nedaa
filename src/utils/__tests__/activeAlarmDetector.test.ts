@@ -130,6 +130,51 @@ describe("detectActiveAlarm", () => {
     expect(mockComplete).not.toHaveBeenCalled();
   });
 
+  it("keeps a pending challenge whose ring starts during the reads", async () => {
+    nativeResults.getPendingChallenge = () => {
+      nativeResults.getRingingAlarmId = ALARM_ID;
+      return pendingRow(OLD);
+    };
+
+    const active = await detectActiveAlarm({});
+
+    expect(active).toMatchObject({
+      alarmId: ALARM_ID,
+      source: ACTIVE_ALARM_SOURCE.PENDING_CHALLENGE,
+    });
+    expect(mockComplete).not.toHaveBeenCalled();
+  });
+
+  it("keeps a past-due alarm whose ring starts while an earlier one is abandoned", async () => {
+    const [record] = Object.values(pastDueRecord(OLD));
+    mockComplete.mockImplementationOnce(() => {
+      nativeResults.getRingingAlarmId = ALARM_ID;
+      return Promise.resolve();
+    });
+
+    const active = await detectActiveAlarm({
+      [OTHER_ID]: { ...record, alarmId: OTHER_ID },
+      [ALARM_ID]: record,
+    });
+
+    expect(mockComplete).toHaveBeenCalledTimes(1);
+    expect(mockComplete).toHaveBeenCalledWith(OTHER_ID, { outcome: ALARM_OUTCOME.ABANDONED });
+    expect(active).toMatchObject({ alarmId: ALARM_ID, source: ACTIVE_ALARM_SOURCE.PAST_DUE });
+  });
+
+  it("keeps a stale pending challenge whose alarm native re-armed for later", async () => {
+    nativeResults.getPendingChallenge = pendingRow(OLD);
+    nativeResults.getFutureAlarmIds = [ALARM_ID];
+
+    const active = await detectActiveAlarm({});
+
+    expect(active).toMatchObject({
+      alarmId: ALARM_ID,
+      source: ACTIVE_ALARM_SOURCE.PENDING_CHALLENGE,
+    });
+    expect(mockComplete).not.toHaveBeenCalled();
+  });
+
   it("does not show a deferred alarm as ringing before its new time", async () => {
     nativeResults.getFutureAlarmIds = [ALARM_ID];
 
