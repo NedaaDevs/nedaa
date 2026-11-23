@@ -146,6 +146,15 @@ describe("TaskPicker", () => {
     expect(screen.getByRole("checkbox", { name: NONE })).toBeChecked();
   });
 
+  it("reports None as disabled only while it is the choice", async () => {
+    const { user } = await setUp([TAP]);
+
+    expect(screen.getByRole("checkbox", { name: NONE })).toBeEnabled();
+    await user.press(screen.getByRole("checkbox", { name: NONE }));
+
+    expect(screen.getByRole("checkbox", { name: NONE })).toBeDisabled();
+  });
+
   it("holds the other tasks still once the stack is full", async () => {
     const { user, onChange } = await setUp([TAP, MATH, DHIKR]);
     const full = t("alarm.task.full", { count: WAKE_TASK_MAX_STACK });

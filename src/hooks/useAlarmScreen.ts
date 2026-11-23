@@ -138,7 +138,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const ringAgain = useCallback(async () => {
     const gen = quietGenRef.current;
     const ringCount = ++ringCountRef.current;
-    await startSound(alarmSettings.sound, alarmSettings.volume);
+    await startSound(alarmSettings.sound, alarmSettings.volume).catch((error: unknown) =>
+      log.w("Sound", `alarm sound did not start: ${String(error)}`)
+    );
     if (dismissedRef.current) {
       // The stop ran before this start, so it is undone again.
       ExpoAlarm.stopAllAlarmEffects();

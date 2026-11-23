@@ -300,6 +300,21 @@ describe("useAlarmScreen", () => {
       expect(mockStartAlarmVibration).toHaveBeenCalledWith(pattern);
     });
 
+    it("restarts the native vibration when the sound fails to return", async () => {
+      const { result } = await mount();
+      await act(async () => result.current.handleQuietStart());
+      mockStartAlarmVibration.mockClear();
+      mockStartAlarmSound.mockRejectedValueOnce(new Error("no audio session"));
+
+      await act(async () => result.current.handleQuietEnd());
+
+      expect(mockLogWarn).toHaveBeenCalledWith(
+        "Sound",
+        expect.stringContaining("no audio session")
+      );
+      expect(mockStartAlarmVibration).toHaveBeenCalledTimes(1);
+    });
+
     it("leaves no native vibration running once the task is solved", async () => {
       const { result } = await mount();
 
