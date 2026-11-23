@@ -123,13 +123,19 @@ class TaskShellRunTest {
 
     @Test
     fun saysNothingOnTheFirstStep() {
-        assertEquals(TaskShellRun.Spoken.Silent, TaskShellRun.spokenProgress(null, TaskRun.FIRST, done = false))
+        assertEquals(TaskShellRun.Spoken.Silent, TaskShellRun.spokenProgress(null, TaskRun.FIRST, done = false, saysOpening = false))
     }
 
     @Test
     fun saysTheStepLineFromTheSecondStep() {
         val second = TaskRun.Position(0, 1)
-        assertEquals(TaskShellRun.Spoken.Step(second), TaskShellRun.spokenProgress(null, second, done = false))
+        assertEquals(TaskShellRun.Spoken.Step(second), TaskShellRun.spokenProgress(null, second, done = false, saysOpening = false))
+    }
+
+    @Test
+    fun aBoardThatSaysItsOpeningTakesTheStepLine() {
+        val second = TaskRun.Position(0, 1)
+        assertEquals(TaskShellRun.Spoken.Silent, TaskShellRun.spokenProgress(null, second, done = false, saysOpening = true))
     }
 
     @Test
@@ -137,20 +143,20 @@ class TaskShellRunTest {
         val next = TaskRun.Position(1, 0)
         assertEquals(
             TaskShellRun.Spoken.Handover(next),
-            TaskShellRun.spokenProgress(next, TaskRun.Position(0, 1), done = false),
+            TaskShellRun.spokenProgress(next, TaskRun.Position(0, 1), done = false, saysOpening = true),
         )
     }
 
     @Test
     fun saysNothingOnceDone() {
-        assertEquals(TaskShellRun.Spoken.Silent, TaskShellRun.spokenProgress(null, TaskRun.Position(0, 1), done = true))
+        assertEquals(TaskShellRun.Spoken.Silent, TaskShellRun.spokenProgress(null, TaskRun.Position(0, 1), done = true, saysOpening = false))
     }
 
     @Test
     fun aRunSaysEachStepThenTheHandoverThenNothingOnTheNextTask() {
         val run = run("id=math,difficulty=easy,steps=2;id=tap")
         run.open()
-        val said = { TaskShellRun.spokenProgress(run.handover, run.position, run.done) }
+        val said = { TaskShellRun.spokenProgress(run.handover, run.position, run.done, saysOpening = false) }
         assertEquals(TaskShellRun.Spoken.Silent, said())
         run.solved(opened + 1_000, quietMs)
         assertEquals(TaskShellRun.Spoken.Step(TaskRun.Position(0, 1)), said())
@@ -158,5 +164,17 @@ class TaskShellRunTest {
         assertEquals(TaskShellRun.Spoken.Handover(TaskRun.Position(1, 0)), said())
         run.finishHandover(opened + 3_000, quietMs)
         assertEquals(TaskShellRun.Spoken.Silent, said())
+    }
+
+    @Test
+    fun aStepPastTheFirstIsSaidByTheShellOrTheBoardNeverBothOrNeither() {
+        for (step in 0..2) for (done in listOf(false, true)) for (saysOpening in listOf(false, true)) {
+            val position = TaskRun.Position(0, step)
+            val shell = TaskShellRun.spokenProgress(null, position, done, saysOpening) is TaskShellRun.Spoken.Step
+            val board = TaskShellRun.openingAt(position, done, saysOpening) != null
+            assertEquals("$step $done $saysOpening", step > 0 && !done, shell != board)
+            assertFalse("$step $done $saysOpening", shell && board)
+            assertEquals("$step $done $saysOpening", saysOpening && step > 0 && !done, board)
+        }
     }
 }

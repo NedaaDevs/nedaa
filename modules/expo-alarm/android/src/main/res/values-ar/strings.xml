@@ -183,4 +183,25 @@
     <string name="overlay_prayer_asr">العصر</string>
     <string name="overlay_prayer_maghrib">المغرب</string>
     <string name="overlay_prayer_isha">العشاء</string>
+    <string name="overlay_task_pattern_watch_ask">الأزرار تضيء الآن بالترتيب.</string>
+    <string name="overlay_task_pattern_turn_ask">النقر على الأزرار بالترتيب نفسه.</string>
+    <string name="overlay_task_pattern_showing">يُعرض الآن: %1$d من %2$d</string>
+    <string name="overlay_task_pattern_showing_new">ترتيب جديد: يُعرض %1$d من %2$d</string>
+    <string name="overlay_task_pattern_turn">دورك الآن: %1$d من %2$d</string>
+    <string name="overlay_task_pattern_wrong">ليس هذا الزر. سيُعرض ترتيب جديد.</string>
+    <string name="overlay_task_pattern_done">اكتمل الترتيب</string>
+    <string name="overlay_task_pattern_watch">الترتيب: %1$s. دورك الآن.</string>
+    <string name="overlay_task_pattern_after_miss">ليس هذا الزر. ترتيب جديد: %1$s. دورك الآن.</string>
+    <string name="overlay_task_pattern_again">الترتيب: %1$s.</string>
+    <string name="overlay_task_pattern_hear_again">سماع الترتيب مرة أخرى</string>
+    <string name="overlay_task_pattern_pad_circle">دائرة</string>
+    <string name="overlay_task_pattern_pad_triangle">مثلث</string>
+    <string name="overlay_task_pattern_pad_square">مربّع</string>
+    <string name="overlay_task_pattern_pad_lines">خطّان</string>
+    <string name="overlay_task_pattern_place_top_left">أعلى اليسار</string>
+    <string name="overlay_task_pattern_place_top_right">أعلى اليمين</string>
+    <string name="overlay_task_pattern_place_bottom_left">أسفل اليسار</string>
+    <string name="overlay_task_pattern_place_bottom_right">أسفل اليمين</string>
+    <string name="overlay_sentences">%1$s. %2$s</string>
+    <string name="overlay_list_separator">"، "</string>
 </resources>

@@ -34,9 +34,10 @@ internal const val MIN_TARGET_DP = 48
 
 internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
-// Animations off in system settings, which JS reads as Reduce Motion.
+// The transition scale at zero, which RN reads as Reduce Motion.
 internal fun animationsOff(context: Context): Boolean =
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    Settings.Global.getString(context.contentResolver, Settings.Global.TRANSITION_ANIMATION_SCALE)
+        ?.replace(',', '.')?.toFloatOrNull() == 0f
 
 // JS PRESS_SCALE and DURATION_MS.PRESS.
 internal const val PRESS_SCALE = 0.98f
@@ -131,7 +132,7 @@ internal object AnswerCardShape {
 
 internal fun Context.dpf(value: Float): Float = value * resources.displayMetrics.density
 
-private fun cardFill(context: Context, fill: String, edge: String, edgeDp: Float, dashed: Boolean) =
+internal fun cardFill(context: Context, fill: String, edge: String, edgeDp: Float, dashed: Boolean) =
     GradientDrawable().apply {
         setColor(Color.parseColor(fill))
         cornerRadius = context.dpf(AnswerCardShape.RADIUS_DP)
@@ -248,8 +249,6 @@ internal data class AnswerCardSize(
 // a tap; a placed card is hidden from the reader, which hears the board instead.
 internal class AnswerCardView(context: Context, size: AnswerCardSize, onTap: (View) -> Unit) {
 
-    private val inset = context.dp(AnswerCardShape.MARK_INSET_DP)
-
     // The corner mark draws over the label unless the inset clears it.
     private val label = overlayText(context, size.labelSp, COLOR_TEXT).apply {
         val clear = context.dp(size.labelInsetDp)
@@ -309,7 +308,12 @@ internal class AnswerCardView(context: Context, size: AnswerCardSize, onTap: (Vi
             if (state == AnswerCardState.WRONG) context.getString(R.string.overlay_task_card_wrong, spoken) else spoken
     }
 
-    private fun cornerMark(context: Context) = FrameLayout.LayoutParams(
+}
+
+// A card's corner badge box, at its top end.
+internal fun cornerMark(context: Context): FrameLayout.LayoutParams {
+    val inset = context.dp(AnswerCardShape.MARK_INSET_DP)
+    return FrameLayout.LayoutParams(
         context.dp(AnswerCardShape.MARK_DP), context.dp(AnswerCardShape.MARK_DP), Gravity.TOP or Gravity.END,
     ).apply { topMargin = inset; marginEnd = inset }
 }

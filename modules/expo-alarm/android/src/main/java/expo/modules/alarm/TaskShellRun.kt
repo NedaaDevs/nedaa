@@ -93,10 +93,21 @@ class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs:
         // How long the handover shows: JS HANDOVER_MS IN + HOLD; the native panel has no fade.
         const val HANDOVER_MS = 180L + 1000L
 
-        // The handover first; else the step line from the second step until done.
-        fun spokenProgress(handover: TaskRun.Position?, position: TaskRun.Position, done: Boolean): Spoken = when {
+        // The step a board says as its opening: from a task's second step
+        // until done, for a board that says it.
+        fun openingAt(position: TaskRun.Position, done: Boolean, saysOpening: Boolean): TaskRun.Position? =
+            if (saysOpening && position.step > 0 && !done) position else null
+
+        // The handover first; else the step line from the second step until
+        // done, unless the board says it as its opening.
+        fun spokenProgress(
+            handover: TaskRun.Position?,
+            position: TaskRun.Position,
+            done: Boolean,
+            saysOpening: Boolean,
+        ): Spoken = when {
             handover != null -> Spoken.Handover(handover)
-            position.step > 0 && !done -> Spoken.Step(position)
+            position.step > 0 && !done && openingAt(position, done, saysOpening) == null -> Spoken.Step(position)
             else -> Spoken.Silent
         }
     }

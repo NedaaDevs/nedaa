@@ -207,7 +207,8 @@ class TaskShellView(
         clearBoard()
         val kind = NativeBoards.kindOf(run.task)
         boardHeading.text = context.getString(TaskBoards.headingOf(kind))
-        val shown = TaskBoards.factoryOf(kind).create(context, BoardInput(run.task, run.drawn, rng), object : BoardHost {
+        val input = BoardInput(run.task, run.drawn, rng, openingOf(run, kind))
+        val shown = TaskBoards.factoryOf(kind).create(context, input, object : BoardHost {
             override fun onSolved() = solved()
             override fun onDraw(item: Int) = run.draw(item)
         })
@@ -276,7 +277,7 @@ class TaskShellView(
         stepLine.visibility = if (steps > 1) shown else View.GONE
         stepLine.text = context.getString(R.string.overlay_task_step_of, run.position.step + 1, steps)
         progressSpoken.say(
-            when (val spoken = TaskShellRun.spokenProgress(handover, run.position, run.done)) {
+            when (val spoken = TaskShellRun.spokenProgress(handover, run.position, run.done, saysOpening(run))) {
                 is TaskShellRun.Spoken.Handover -> context.getString(
                     R.string.overlay_task_handover, taskOf(run, spoken.next), nextOf(run, spoken.next),
                 )
@@ -321,6 +322,14 @@ class TaskShellView(
         quietSeconds.text = String.format(Locale.getDefault(), CLOCK_FORMAT, seconds / 60, seconds % 60)
         quietRow.contentDescription =
             context.resources.getQuantityString(R.plurals.overlay_quiet_left, seconds.toInt(), state, seconds.toInt())
+    }
+
+    private fun saysOpening(run: TaskShellRun): Boolean = NativeBoards.saysOpening(NativeBoards.kindOf(run.task))
+
+    // As JS TaskShell's opening: the step line from a task's second step.
+    private fun openingOf(run: TaskShellRun, kind: NativeBoards.Kind): String? {
+        val opening = TaskShellRun.openingAt(run.position, run.done, NativeBoards.saysOpening(kind)) ?: return null
+        return context.getString(R.string.overlay_task_step_of, opening.step + 1, TaskRun.stepsOf(run.task))
     }
 
     private fun heading(sizeSp: Float, color: String): TextView = overlayText(context, sizeSp, color).apply {
