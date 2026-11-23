@@ -4,12 +4,16 @@ import { join } from "node:path";
 import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 
 import { PRESS_SCALE } from "@/components/ui/pressable/pressScale";
+import { DHIKR_TASK_REVIEWED, DHIKR_TASK_ROWS } from "@/constants/DhikrTask";
 import { DURATION_MS } from "@/constants/Motion";
 import { isPrayerId } from "@/constants/Prayer";
 import {
   ANSWER_CARD_POSITIONS,
   ANSWER_CARD_STATE,
   BOARD_SWAP_MS,
+  DHIKR_FILL_MS,
+  DHIKR_HOLD_MS,
+  DHIKR_SPOKEN_PAUSE,
   MATH_LEVELS,
   MATH_TAP,
   PATTERN_PADS,
@@ -20,6 +24,7 @@ import {
   PRAYER_PLACE_EMPTY,
   PRAYER_PLACE_FILL_MS,
   PRAYER_TAP,
+  SPOKEN_MS_PER_CHARACTER,
   TAP_OUTCOME,
   TAP_PRESSES,
   TAP_PRESS_MIN_GAP_MS,
@@ -36,6 +41,7 @@ import {
   type QuietEvent,
 } from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty } from "@/types/alarm";
+import { dhikrCardsOf, drawDhikrRound, fullDhikr, spokenDhikrLine } from "@/utils/dhikrTask";
 import {
   cardStateOf,
   mathLineOf,
@@ -90,10 +96,13 @@ import { countsPress, pressTap, startTapBoard, tapStatusOf } from "@/utils/tapPr
 
 // The Android overlay's JVM tests (TaskRngTest, TaskClockTest, TaskQuietTest,
 // MathCardsTest, MathBoardRunTest, PrayerOrderTest, PrayersBoardRunTest, PatternOrderTest,
-// TapPressTest) read the same tables.
+// DhikrBoardRunTest, TapPressTest) read the same tables.
 const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
 
 const NONE = "-";
+
+/** What a spoken line in the tables calls its gap; the JVM tests' FIXTURE_GAP matches. */
+const FIXTURE_GAP = "gap";
 
 /** The op words the tables use; the JVM tests' FixtureOp holds the same. */
 const FIXTURE_OP = {
@@ -451,6 +460,56 @@ describe("prayers-board.tsv", () => {
   });
 });
 
+describe("dhikr-rows.tsv", () => {
+  it("holds the app's rows, in order", () => {
+    expect(readCases("dhikr-rows.tsv")).toEqual(
+      DHIKR_TASK_ROWS.map((row, index) => [
+        String(index),
+        String(row.sourceId),
+        row.before,
+        row.after,
+        row.answer,
+        ...row.others,
+      ])
+    );
+  });
+});
+
+describe("dhikr-draw.tsv", () => {
+  it.each(byCase(readCases("dhikr-draw.tsv")))("%s", (_name, rows) => {
+    let rng: Rng | null = null;
+    let seen: number[] = [];
+    for (const [, op, arg, drawn, row, cards] of rows) {
+      if (op === FIXTURE_OP.START) {
+        rng = seededRng(Number(arg));
+        seen = drawn === NONE ? [] : ints(drawn);
+      } else if (op !== FIXTURE_OP.DRAW) {
+        throw new Error(`unknown op ${op}`);
+      }
+      if (!rng) throw new Error("no start");
+      const round = drawDhikrRound(DHIKR_TASK_ROWS, seen, rng);
+      const dealt = dhikrCardsOf(DHIKR_TASK_ROWS[round.row]);
+      expect(round.row).toBe(Number(row));
+      expect(round.cards).toEqual(ints(cards).map((card) => dealt[card]));
+      seen = [...seen, round.row];
+    }
+  });
+});
+
+describe("dhikr-line.tsv", () => {
+  const rows = readCases("dhikr-line.tsv");
+
+  it.each(rows)("row %s is said as the table says", (index, full, spoken) => {
+    const row = DHIKR_TASK_ROWS[Number(index)];
+    expect(fullDhikr(row)).toBe(full);
+    expect(spokenDhikrLine(row, FIXTURE_GAP, DHIKR_SPOKEN_PAUSE)).toBe(spoken);
+  });
+
+  it("holds every row", () => {
+    expect(rows.map(([index]) => Number(index))).toEqual(DHIKR_TASK_ROWS.map((_, index) => index));
+  });
+});
+
 describe("pattern-order.tsv", () => {
   it.each(byCase(readCases("pattern-order.tsv")))("%s", (_name, rows) => {
     let rng: Rng | null = null;
@@ -539,6 +598,10 @@ describe("shell-constants.tsv", () => {
     PATTERN_PAD_HEIGHT: PATTERN_PAD_SIZE.HEIGHT,
     PATTERN_PAD_SHAPE: PATTERN_PAD_SIZE.SHAPE,
     PATTERN_PAD_STROKE: PATTERN_PAD_SIZE.STROKE,
+    DHIKR_FILL_MS,
+    DHIKR_HOLD_MS: DHIKR_HOLD_MS.DEFAULT,
+    DHIKR_READER_HOLD_MS: DHIKR_HOLD_MS.SCREEN_READER,
+    SPOKEN_MS_PER_CHARACTER,
   };
 
   const rows = readCases("shell-constants.tsv");
@@ -554,7 +617,10 @@ describe("shell-constants.tsv", () => {
 
 describe("shell-text.tsv", () => {
   /** The JS text each row pins; the native boards read the same rows. */
-  const SHELL_TEXT: Record<string, string> = { PRAYER_PLACE_EMPTY };
+  const SHELL_TEXT: Record<string, string> = {
+    PRAYER_PLACE_EMPTY,
+    DHIKR_TASK_REVIEWED: String(DHIKR_TASK_REVIEWED),
+  };
 
   const rows = readCases("shell-text.tsv");
 
