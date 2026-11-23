@@ -89,10 +89,14 @@ const rebuildDebounced = (alarmType: AlarmType, afterNativeSync: Promise<boolean
 
 const writeSettings = (alarmType: AlarmType, requested: Partial<AlarmTypeSettings>) => {
   useAlarmSettingsStore.getState().updateSettings(alarmType, requested);
-  // The store pairs tasks with a challenge; native takes the stored pair.
+  // The store pairs tasks with a challenge. Native rebuilds a sent challenge's
+  // stack, and a sent stack wins over its challenge.
   const { challenge, tasks } = useAlarmSettingsStore.getState()[alarmType];
-  const touchesTasks = requested.tasks !== undefined || requested.challenge !== undefined;
-  const changes = touchesTasks ? { ...requested, challenge, tasks } : requested;
+  const changes = {
+    ...requested,
+    ...(requested.challenge !== undefined && { challenge }),
+    ...(requested.tasks !== undefined && { challenge, tasks }),
+  };
 
   const scheduledType = toScheduledAlarmType(alarmType);
   const native = toNativeSettings(changes);
