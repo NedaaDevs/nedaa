@@ -162,6 +162,22 @@ describe("detectActiveAlarm", () => {
     expect(active).toMatchObject({ alarmId: ALARM_ID, source: ACTIVE_ALARM_SOURCE.PAST_DUE });
   });
 
+  it("finds a deferred alarm whose ring starts while an earlier one is abandoned", async () => {
+    const [record] = Object.values(pastDueRecord(OLD));
+    nativeResults.getFutureAlarmIds = [ALARM_ID];
+    mockComplete.mockImplementationOnce(() => {
+      nativeResults.getRingingAlarmId = ALARM_ID;
+      return Promise.resolve();
+    });
+
+    const active = await detectActiveAlarm({
+      [OTHER_ID]: { ...record, alarmId: OTHER_ID },
+      [ALARM_ID]: record,
+    });
+
+    expect(active).toMatchObject({ alarmId: ALARM_ID, source: ACTIVE_ALARM_SOURCE.PAST_DUE });
+  });
+
   it("keeps a stale pending challenge whose alarm native re-armed for later", async () => {
     nativeResults.getPendingChallenge = pendingRow(OLD);
     nativeResults.getFutureAlarmIds = [ALARM_ID];
