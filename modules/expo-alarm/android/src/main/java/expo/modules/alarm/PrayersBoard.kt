@@ -232,7 +232,7 @@ class PrayersBoard(context: Context, input: BoardInput, private val host: BoardH
         private const val MEDIUM = "sans-serif-medium"
 
         // JS sizes: lg lines, the line's $12, a place's helper number over md
-        // name, its $16 height and $1.5 / $0.5 padding, a word card's 72.
+        // name, its $16 height and $1.5 / $0.5 padding, a word card's $16.
         private const val LINE_SP = 16f
         private const val LINE_MIN_DP = 48
         private const val PLACE_NUMBER_SP = 13f
@@ -246,7 +246,7 @@ class PrayersBoard(context: Context, input: BoardInput, private val host: BoardH
         private const val PLACE_EDGE_DP = 1.5f
         private const val PLACE_NEXT_EDGE_DP = 2.5f
         private const val CARD_SP = 22f
-        private const val CARD_MIN_DP = 72
+        private const val CARD_MIN_DP = 64
 
         // How far a name shrinks on a narrow, enlarged screen, and the boxes
         // that bound auto-size.
