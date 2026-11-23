@@ -21,8 +21,12 @@ const PLURAL_ITEM = /<item quantity="([^"]+)">([^<]*)<\/item>/g;
 const ARGUMENT = /%(\d+)\$[sd]/g;
 const PLURAL_COUNT = /%d/g;
 
+// Android drops a value's enclosing quotes, which keep its edge spaces.
+const unquote = (value: string): string =>
+  value.length > 1 && value.startsWith('"') && value.endsWith('"') ? value.slice(1, -1) : value;
+
 const unescapeXml = (value: string): string =>
-  value
+  unquote(value)
     .replace(/\\'/g, "'")
     .replace(/\\"/g, '"')
     .replace(/&lt;/g, "<")

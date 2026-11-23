@@ -29,7 +29,7 @@ class NativeBoardsTest {
     }
 
     @Test
-    fun mathAndPrayersRunTheirOwnBoardsAndEveryOtherTaskRunsTap() {
+    fun mathPrayersAndPatternRunTheirOwnBoardsAndDhikrRunsTap() {
         for (board in WakeTasks.Board.entries) {
             assertEquals(board.id, KIND_OF[board], NativeBoards.kindOf(stack("id=${board.id}").single()))
         }
@@ -46,15 +46,25 @@ class NativeBoardsTest {
     }
 
     @Test
-    fun prayersIsHeadedByItsTaskName() {
-        assertEquals(TaskBoards.nameOf(WakeTasks.Board.PRAYERS), TaskBoards.headingOf(NativeBoards.Kind.PRAYERS))
+    fun prayersAndPatternAreHeadedByTheirTaskNames() {
+        for (board in listOf(WakeTasks.Board.PRAYERS, WakeTasks.Board.PATTERN)) {
+            val kind = NativeBoards.kindOf(stack("id=${board.id}").single())
+            assertEquals(board.id, TaskBoards.nameOf(board), TaskBoards.headingOf(kind))
+        }
+    }
+
+    @Test
+    fun onlyPatternSaysTheShellsOpening() {
+        for (kind in NativeBoards.Kind.entries) {
+            assertEquals(kind.name, kind == NativeBoards.Kind.PATTERN, NativeBoards.saysOpening(kind))
+        }
     }
 
     private companion object {
         val KIND_OF = mapOf(
             WakeTasks.Board.MATH to NativeBoards.Kind.MATH_CARDS,
             WakeTasks.Board.TAP to NativeBoards.Kind.TAP,
-            WakeTasks.Board.PATTERN to NativeBoards.Kind.TAP,
+            WakeTasks.Board.PATTERN to NativeBoards.Kind.PATTERN,
             WakeTasks.Board.PRAYERS to NativeBoards.Kind.PRAYERS,
             WakeTasks.Board.DHIKR to NativeBoards.Kind.TAP,
         )
