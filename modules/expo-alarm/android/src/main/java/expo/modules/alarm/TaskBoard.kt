@@ -6,7 +6,7 @@ import android.view.View
 // What a board gets to draw one step of its task.
 data class BoardInput(
     val task: WakeTasks.Task,
-    // What onDraw kept for this task's earlier steps; no native board reads it yet.
+    // What onDraw kept for this task's earlier steps.
     val drawn: List<Int>,
     val rng: TaskRng.Rng,
     // The shell's step line for a board that says it; null on a first step.
@@ -41,6 +41,7 @@ object TaskBoards {
         NativeBoards.Kind.MATH_CARDS -> TaskBoardFactory(::MathCardsBoard)
         NativeBoards.Kind.PRAYERS -> TaskBoardFactory(::PrayersBoard)
         NativeBoards.Kind.PATTERN -> TaskBoardFactory(::PatternBoard)
+        NativeBoards.Kind.DHIKR -> TaskBoardFactory(::DhikrBoard)
     }
 
     fun headingOf(kind: NativeBoards.Kind): Int = when (kind) {
@@ -48,6 +49,7 @@ object TaskBoards {
         NativeBoards.Kind.MATH_CARDS -> R.string.overlay_task_title_math
         NativeBoards.Kind.PRAYERS -> R.string.overlay_task_name_prayers
         NativeBoards.Kind.PATTERN -> R.string.overlay_task_name_pattern
+        NativeBoards.Kind.DHIKR -> R.string.overlay_task_name_dhikr
     }
 
     // The task's own name, as the start button and the handover say it.
