@@ -36,11 +36,13 @@ export const useEmergencyQuietStore = create<EmergencyQuietStore>()(
       name: EMERGENCY_QUIET_STORE_KEY,
       storage: createJSONStorage(() => Storage),
       partialize: (state) => ({ ledger: state.ledger }),
-      // Persist writes the merged state back, so a clock set back is saved.
-      merge: (persisted, current) => ({
-        ...current,
-        ledger: settleClock(readPersistedLedger(persisted), Date.now()),
-      }),
+      merge: (persisted, current) => ({ ...current, ledger: readPersistedLedger(persisted) }),
+      // Hydration saves nothing itself, so a ledger rebased on a clock set back is written here.
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        const ledger = settleClock(state.ledger, Date.now());
+        if (ledger !== state.ledger) useEmergencyQuietStore.setState({ ledger });
+      },
     }
   )
 );

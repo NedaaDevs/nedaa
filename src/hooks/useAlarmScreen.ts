@@ -3,7 +3,7 @@ import { Vibration, BackHandler, Platform } from "react-native";
 import { router } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 
-import { useAlarmStore } from "@/stores/alarm";
+import { type QuietResult, useAlarmStore } from "@/stores/alarm";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { useEmergencyQuietStore } from "@/stores/emergencyQuiet";
 import { completeAndRescheduleAlarm } from "@/utils/alarmScheduler";
@@ -166,6 +166,9 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     if (quiet) quietPendingRef.current = false;
   }, [quiet]);
 
+  // The quiet being confirmed; an ending waits for it.
+  const quietInFlightRef = useRef<Promise<QuietResult | null> | null>(null);
+
   /** Silences the alarm for good and records how it ended. */
   const endAlarm = useCallback(
     async (outcome: ExpoAlarm.AlarmOutcome) => {
@@ -175,8 +178,11 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
       Vibration.cancel();
       ExpoAlarm.stopAllAlarmEffects();
       ExpoAlarm.restoreSystemVolume();
-      markAlarmHandled(activeAlarmId);
-      await completeAndRescheduleAlarm(activeAlarmId, { outcome });
+      // A quiet that committed first leaves its re-ring as the armed alarm.
+      const quieted = await quietInFlightRef.current?.catch(() => null);
+      const endingId = quieted?.quietId ?? activeAlarmId;
+      markAlarmHandled(endingId);
+      await completeAndRescheduleAlarm(endingId, { outcome });
     },
     [activeAlarmId]
   );
@@ -277,9 +283,11 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     try {
       const { persist } = useEmergencyQuietStore;
       await waitForHydration(persist, { timeoutMs: ALARM_HYDRATION_TIMEOUT_MS });
-      const result = await quietAlarm(activeAlarmId, {
+      if (dismissedRef.current) return;
+      const inFlight = quietAlarm(activeAlarmId, {
         ringsAt: new Date(quietEndsAt(Date.now())),
         recordUse: () => {
+          if (dismissedRef.current) throw new Error("alarm ended");
           // An unread count could hand out a use already spent.
           if (!persist.hasHydrated()) throw new Error("emergency quiet count not read");
           useEmergencyQuietStore.getState().recordUse(Date.now());
@@ -290,6 +298,10 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
           Vibration.cancel();
         },
       });
+      quietInFlightRef.current = inFlight;
+      const result = await inFlight;
+      // The ending owns the alarm from here.
+      if (dismissedRef.current) return;
       if (!result) {
         quietPendingRef.current = false;
         setFailed(true);
@@ -303,6 +315,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
       quietPendingRef.current = false;
       setFailed(true);
     } finally {
+      quietInFlightRef.current = null;
       setQuieting(false);
     }
   }, [quieting, quietAlarm, activeAlarmId]);

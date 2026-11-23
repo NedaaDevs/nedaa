@@ -109,8 +109,10 @@ async function processSnoozeQueue() {
     for (const item of queue) {
       // Mark original alarm as handled
       handledAlarmIds.set(item.originalAlarmId, Date.now());
-      // Read before the delete: the snooze is the same alarm.
-      const original = useAlarmStore.getState().scheduledAlarms[item.originalAlarmId];
+      // Read before the delete: the snooze is the same alarm. A replayed row
+      // finds only the snooze it already wrote.
+      const { scheduledAlarms } = useAlarmStore.getState();
+      const original = scheduledAlarms[item.originalAlarmId] ?? scheduledAlarms[item.snoozeAlarmId];
 
       // Remove old alarm from store
       useAlarmStore.setState((state) => {
