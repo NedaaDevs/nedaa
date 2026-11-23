@@ -39,10 +39,13 @@ export async function detectActiveAlarm(
   const now = Date.now();
   // Android only; iOS reads null and an empty list, so only age decides.
   const futureIds = new Set(await ExpoAlarm.getFutureAlarmIds());
-  // An alarm native re-armed for later keeps its first times, so its age says
-  // nothing. The ringing id is read at each decision: a ring can start during any await.
+  // The ringing id is read at each decision: a ring can start during any await,
+  // and a ringing alarm is not waiting for later whatever the list said.
+  const waitsForLater = (alarmId: string): boolean =>
+    futureIds.has(alarmId) && ExpoAlarm.getRingingAlarmId() !== alarmId;
+  // An alarm native re-armed for later keeps its first times, so its age says nothing.
   const endsNow = (alarmId: string, ageMs: number): boolean =>
-    !futureIds.has(alarmId) && endsByAge(alarmId, ageMs, ExpoAlarm.getRingingAlarmId());
+    !waitsForLater(alarmId) && endsByAge(alarmId, ageMs, ExpoAlarm.getRingingAlarmId());
 
   try {
     const pending = await ExpoAlarm.getPendingChallenge();
@@ -94,7 +97,7 @@ export async function detectActiveAlarm(
     if (
       alarm.triggerTime <= now &&
       // Native re-armed it for later; the store keeps the first trigger time.
-      !futureIds.has(alarm.alarmId) &&
+      !waitsForLater(alarm.alarmId) &&
       !completedIds.has(alarm.alarmId) &&
       !handledIds?.has(alarm.alarmId)
     ) {
