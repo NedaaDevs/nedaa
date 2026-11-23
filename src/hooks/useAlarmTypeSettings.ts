@@ -8,9 +8,9 @@ import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import type { AlarmType, AlarmTypeSettings } from "@/types/alarm";
 import { alarmLog } from "@/utils/alarmReport";
 import { scheduleFajrAlarm, scheduleFridayAlarm } from "@/utils/alarmScheduler";
+import { toNativeSettings } from "@/utils/alarmSettingsSync";
 import { toScheduledAlarmType } from "@/utils/alarmTypes";
 import { createAsyncLock, type AsyncLock } from "@/utils/asyncLock";
-import { getNativeSoundName } from "@/utils/nativeSoundName";
 
 /** A settings change; switching the alarm on or off is setEnabled's. */
 export type AlarmSettingsChange = Partial<Omit<AlarmTypeSettings, "enabled">>;
@@ -35,40 +35,6 @@ const LOCKS: Record<AlarmType, AsyncLock> = {
   [ALARM_TYPE.FRIDAY]: createAsyncLock(),
 };
 const pendingRebuilds = new Map<AlarmType, ReturnType<typeof setTimeout>>();
-
-const toNativeSettings = (changes: Partial<AlarmTypeSettings>): Record<string, unknown> => {
-  const native: Record<string, unknown> = {};
-  if (changes.enabled !== undefined) native.enabled = changes.enabled;
-  if (changes.sound !== undefined) native.sound = getNativeSoundName(changes.sound);
-  if (changes.volume !== undefined) native.volume = changes.volume;
-
-  if (Platform.OS === PlatformType.ANDROID) {
-    if (changes.challenge) {
-      native.challengeType = changes.challenge.type;
-      native.challengeDifficulty = changes.challenge.difficulty;
-      native.challengeCount = changes.challenge.count;
-    }
-    if (changes.tasks) native.tasks = changes.tasks;
-    if (changes.vibration) {
-      native.vibrationEnabled = changes.vibration.enabled;
-      native.vibrationPattern = changes.vibration.pattern;
-    }
-    if (changes.snooze) {
-      native.snoozeEnabled = changes.snooze.enabled;
-      native.snoozeMaxCount = changes.snooze.maxCount;
-      native.snoozeDuration = changes.snooze.durationMinutes;
-    }
-    if (changes.timing) {
-      native.timingMode = changes.timing.mode;
-      native.timingMinutesBefore = changes.timing.minutesBefore;
-    }
-    if (changes.gentleWakeUp) {
-      native.gentleWakeUpEnabled = changes.gentleWakeUp.enabled;
-      native.gentleWakeUpDuration = changes.gentleWakeUp.durationMinutes;
-    }
-  }
-  return native;
-};
 
 const rebuildDebounced = (alarmType: AlarmType, afterNativeSync: Promise<boolean>) => {
   clearTimeout(pendingRebuilds.get(alarmType));
