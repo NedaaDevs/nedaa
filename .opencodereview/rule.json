@@ -1,0 +1,109 @@
+{
+  "include": [
+    "**/__tests__/**",
+    "**/*.test.{ts,tsx}",
+    "**/src/test/**/*.{kt,kts}",
+    "**/fixtures/**",
+    "**/*.tsv",
+    ".github/workflows/**"
+  ],
+  "exclude": [
+    "**/bun.lock",
+    "ios/Podfile.lock",
+    "**/*.pbxproj",
+    "**/*.xcworkspace/**",
+    "ios/Pods/**",
+    "android/app/build/**",
+    "**/build/**",
+    "**/*.png",
+    "**/*.jpg",
+    "**/*.ttf",
+    "**/*.otf",
+    "**/*.mp3",
+    "**/*.db",
+    "assets/**",
+    "local-data/**"
+  ],
+  "rules": [
+    {
+      "path": "src/utils/readerSpread.ts",
+      "rule": "Protected Quran reader layout. Flag ANY change here as needing an explicit owner approval and a device test.\n\n- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/hooks/useReaderLayout.ts",
+      "rule": "Protected Quran reader layout. Flag ANY change here as needing an explicit owner approval and a device test.\n\n- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/localization/locales/*.json",
+      "rule": "- en.json and ar.json carry every key. ms.json and ur.json come from Crowdin, which writes\n  them from en.json; they are not edited by hand. A string with `{{count}}` in\n  Arabic needs all six plural forms (_zero, _one, _two, _few, _many, _other), each a full\n  sentence. Flag a count phrase slotted into a fixed sentence.\n- The app name is reached through `$t(brand.name)`, never hand-written.\n- Latin text inside Arabic is wrapped in U+2066…U+2069 isolates.\n- Do not rewrite Quran text, hadith or du'a wording; flag only clear typos.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/components/**/__tests__/**/*.tsx",
+      "rule": "- A test checks behaviour, not a copied constant. Two APIs that must agree get one test that\n  runs both over the same inputs.\n- Prefer `userEvent` and role queries over `fireEvent` and testIDs.\n- Domain strings in tests come from the same constants as production.\n\n- Radius uses the six intents only: `$chip`, `$control`, `$card`, `$sheet`, `$hero`,\n  `$pill`.\n  Space and size use tokens, not raw numbers. Colour comes from theme keys.\n- A value shown on two surfaces is drawn by one component; flag a second renderer.\n- Interactive elements need accessibilityRole, an accessibilityLabel, accessibilityState\n  when stateful, and a 44pt minimum target. The label comes from `t(\"a11y.*\")` only when\n  the spoken text differs from the shown text; a label equal to the shown text reuses its\n  key.\n- Inside `Sheet.ScrollView`, `gap` belongs on an inner stack, not `contentContainerStyle`.\n\n- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/**/__tests__/**/*.{ts,tsx}",
+      "rule": "- A test checks behaviour, not a copied constant. Two APIs that must agree get one test that\n  runs both over the same inputs.\n- Prefer `userEvent` and role queries over `fireEvent` and testIDs.\n- Domain strings in tests come from the same constants as production.\n\n- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/__tests__/**",
+      "rule": "- A test checks behaviour, not a copied constant. Two APIs that must agree get one test that\n  runs both over the same inputs.\n- Prefer `userEvent` and role queries over `fireEvent` and testIDs.\n- Domain strings in tests come from the same constants as production.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/app/**/*.tsx",
+      "rule": "- Same accessibility rules as components. Route paths are frozen: flag a renamed or moved\n  route file.\n\n- Radius uses the six intents only: `$chip`, `$control`, `$card`, `$sheet`, `$hero`,\n  `$pill`.\n  Space and size use tokens, not raw numbers. Colour comes from theme keys.\n- A value shown on two surfaces is drawn by one component; flag a second renderer.\n- Interactive elements need accessibilityRole, an accessibilityLabel, accessibilityState\n  when stateful, and a 44pt minimum target. The label comes from `t(\"a11y.*\")` only when\n  the spoken text differs from the shown text; a label equal to the shown text reuses its\n  key.\n- Inside `Sheet.ScrollView`, `gap` belongs on an inner stack, not `contentContainerStyle`.\n\n- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/components/**/*.tsx",
+      "rule": "- Radius uses the six intents only: `$chip`, `$control`, `$card`, `$sheet`, `$hero`,\n  `$pill`.\n  Space and size use tokens, not raw numbers. Colour comes from theme keys.\n- A value shown on two surfaces is drawn by one component; flag a second renderer.\n- Interactive elements need accessibilityRole, an accessibilityLabel, accessibilityState\n  when stateful, and a 44pt minimum target. The label comes from `t(\"a11y.*\")` only when\n  the spoken text differs from the shown text; a label equal to the shown text reuses its\n  key.\n- Inside `Sheet.ScrollView`, `gap` belongs on an inner stack, not `contentContainerStyle`.\n\n- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/**/*.{ts,tsx}",
+      "rule": "- Imports use the `@/` alias, never relative `./` paths.\n- No magic strings: ids, storage keys, modes and types the code branches on live in\n  `src/constants` or `src/enums` as `const X = {...} as const` with a union derived from it.\n  Flag a hand-written list beside such a constant, and unions built with `Exclude`.\n- Prefer arrow-function expressions over function declarations.\n- Reanimated shared values use `.get()` / `.set()`, never `.value`; never written during render.\n- Any `eslint-disable` for a `react-hooks/*` rule turns the React Compiler off for the whole\n  component; flag it.\n- A store API that needs paired calls (begin/end, lock/unlock) must expose `withX(fn)` with\n  try/finally instead.\n- Comments describe the present code and its reason in one short clause. Flag comments that\n  narrate a change (\"now\", \"no longer\", \"instead of\"), cite plans or tasks, or state a\n  guarantee the code does not hold.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "scripts/**/*.ts",
+      "rule": "- Build and CI tooling, not app code: its constants live in the script module as\n  `const X = {...} as const` with a derived union, not in `src/constants`.\n- Relative imports between scripts are fine; `@/` is only for reaching into `src/`.\n- Prefer arrow-function expressions. Fail closed on malformed input.\n- Comments describe the present code and its reason in one short clause.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "ios/NedaaWidget/**",
+      "rule": "A widget must show an empty state, never invented prayer times, when its data row is missing.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "modules/expo-alarm/android/**/*.kt",
+      "rule": "- The alarm overlay behaves exactly as the React Native ring flow in\n  `src/components/alarm/` and `src/utils/`. Flag a rule that differs from its JS twin.\n- A rule written on both sides is pinned by a table in `modules/expo-alarm/fixtures/*.tsv`\n  that both Jest and JUnit run. Flag a rule on both sides with no shared table.\n- A view that outlives a run resets its state when the run ends.\n- TalkBack: each control has a role, a label and a 48dp target; a status is spoken once\n  per change. Layout works right-to-left.\n- Text in `res/values*/strings.xml` copies the app's locale text exactly.\n\n- Native alarm code: flag work done from the background that iOS forbids, missing exact-alarm\n  permission handling on Android 12+, and reflection or Expo Record classes that R8 could strip\n  without a keep rule.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "modules/**/*.{kt,swift}",
+      "rule": "- Native alarm code: flag work done from the background that iOS forbids, missing exact-alarm\n  permission handling on Android 12+, and reflection or Expo Record classes that R8 could strip\n  without a keep rule.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "package.json",
+      "rule": "bun is the only package manager. Flag npm/npx usage in scripts and any new dependency without a stated reason.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": ".github/workflows/**",
+      "rule": "Pin third-party actions by commit SHA, set least-privilege `permissions`, never use `pull_request_target` with checkout of PR code.\n\nTone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/*",
+      "rule": "Tone: Terse and technical. Lead with the defect and its fix; skip praise and restating the diff.",
+      "merge_system_rule": true
+    }
+  ]
+}
