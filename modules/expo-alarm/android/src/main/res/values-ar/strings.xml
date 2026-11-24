@@ -118,6 +118,8 @@
         <item quantity="other">%1$s · %2$d خطوة</item>
     </plurals>
     <string name="overlay_task_pair">%1$s ثم %2$s</string>
+    <string name="overlay_task_back">المنبّه</string>
+    <string name="overlay_back_to">العودة إلى %1$s</string>
     <string name="overlay_task_of">المهمة %1$d من %2$d</string>
     <string name="overlay_task_step_of">الخطوة %1$d من %2$d</string>
     <string name="overlay_task_next">التالي: %s</string>

@@ -3,12 +3,15 @@ package expo.modules.alarm
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.Gravity
 import android.view.View
 import android.view.accessibility.AccessibilityManager
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -16,8 +19,8 @@ import android.widget.TextView
 import java.util.Locale
 import kotlin.random.Random
 
-// The task shell for a stack: start gate, position line, board, handover,
-// quiet bar and way out. It draws what TaskShellRun decides.
+// The task shell for a stack: start gate, Back, position line, board,
+// handover, quiet bar and way out. It draws what TaskShellRun decides.
 class TaskShellView(
     private val context: Context,
     private val tasks: List<WakeTasks.Task>,
@@ -27,6 +30,9 @@ class TaskShellView(
     interface Listener {
         // The first board shows.
         fun onStart()
+
+        // Back left the run; the start gate shows again.
+        fun onBack()
 
         fun onSilence()
         fun onSound()
@@ -49,7 +55,28 @@ class TaskShellView(
 
     private var run: TaskShellRun? = null
 
+    // What the last Back kept; the next start resumes it.
+    private var saved: TaskShellRun.Saved? = null
+
     private var board: TaskBoard? = null
+
+    // As JS BackLink: a chevron to the start edge and the screen it returns to.
+    private val backButton = TextView(context).apply {
+        val name = context.getString(R.string.overlay_task_back)
+        text = "$BACK_CHEVRON $name"
+        contentDescription = context.getString(R.string.overlay_back_to, name)
+        textSize = 15f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.parseColor(COLOR_PRIMARY))
+        gravity = Gravity.CENTER_VERTICAL or Gravity.START
+        minWidth = context.dp(MIN_TARGET_DP)
+        minHeight = context.dp(MIN_TARGET_DP)
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply { gravity = Gravity.START }
+        speaksAsButton()
+        setOnClickListener { back() }
+    }
 
     private val positionLine = heading(17f, COLOR_TEXT_SECONDARY)
 
@@ -133,10 +160,14 @@ class TaskShellView(
         orientation = LinearLayout.VERTICAL
         layoutParams = matchWidth()
         visibility = View.GONE
-        listOf(positionLine, stepLine, boardHeading, boardHost, handoverPanel, quietRow, quietState, quietHelp, wayOut)
-            .forEach(::addView)
+        listOf(
+            backButton, positionLine, stepLine, boardHeading, boardHost,
+            handoverPanel, quietRow, quietState, quietHelp, wayOut,
+        ).forEach(::addView)
         listOf(quietSpoken, progressSpoken, wayOutSpoken).forEach(::addView)
     }
+
+    private lateinit var startButton: View
 
     private val gate = startGate()
 
@@ -187,16 +218,17 @@ class TaskShellView(
                     setPadding(0, context.dp(8), 0, context.dp(24))
                 })
             }
-            addView(overlayButton(context, title, COLOR_PRIMARY, COLOR_TEXT_ON_ACCENT).apply {
+            startButton = overlayButton(context, title, COLOR_PRIMARY, COLOR_TEXT_ON_ACCENT).apply {
                 setOnClickListener { start() }
-            })
+            }
+            addView(startButton)
         }
     }
 
     private fun start() {
         if (run != null) return
         val now = now()
-        val run = TaskShellRun(tasks, quietMs(), now).also { this.run = it }
+        val run = TaskShellRun(tasks, quietMs(), now, saved).also { this.run = it }
         listener.onStart()
         gate.visibility = View.GONE
         taskPanel.visibility = View.VISIBLE
@@ -204,6 +236,25 @@ class TaskShellView(
         showBoard(run)
         render(run, now)
         handler.postDelayed(ticker, TaskClock.TICK_MS)
+    }
+
+    // As JS handleBack: the run is kept and its quiet time ends.
+    private fun back() {
+        val left = run?.leave(now()) ?: return
+        release()
+        run = null
+        saved = left.saved
+        // A status the next run repeats is spoken again.
+        listOf(quietSpoken, progressSpoken, wayOutSpoken).forEach { it.say(null) }
+        handoverPanel.visibility = View.GONE
+        taskPanel.visibility = View.GONE
+        gate.visibility = View.VISIBLE
+        apply(left.signal)
+        listener.onBack()
+        // As the JS ring screen: focus returns to the start button.
+        startButton.post {
+            startButton.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+        }
     }
 
     private fun stop() {
@@ -364,6 +415,9 @@ class TaskShellView(
         const val BAR_MAX = 10000
 
         const val CLOCK_FORMAT = "%d:%02d"
+
+        // Bidi-mirrored, so it points to the start edge in RTL text.
+        const val BACK_CHEVRON = "\u2039"
 
         const val ENDING_SECONDS = TaskClock.QUIET_ENDING_SECONDS.toInt()
     }

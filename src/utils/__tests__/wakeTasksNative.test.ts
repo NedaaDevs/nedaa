@@ -12,7 +12,13 @@ import { TASK_RUN_NEXT } from "@/constants/WakeTaskShell";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
 import { CHALLENGE_DIFFICULTIES, CHALLENGE_TYPES, type WakeTask } from "@/types/alarm";
-import { advanceTaskRun, describeStart, isNonEmpty, taskName } from "@/utils/taskRun";
+import {
+  advanceTaskRun,
+  describeStart,
+  isNonEmpty,
+  resumePosition,
+  taskName,
+} from "@/utils/taskRun";
 import {
   legacyChallengeFromWakeTasks,
   normalizeWakeTasks,
@@ -145,6 +151,21 @@ describe("task-run.tsv", () => {
         nextTask === FORMAT.EMPTY ? undefined : Number(nextTask),
         nextStep === FORMAT.EMPTY ? undefined : Number(nextStep),
       ]);
+    }
+  );
+});
+
+describe("task-resume.tsv", () => {
+  it.each(table("task-resume.tsv"))(
+    "reopening %s saved at task %s step %s resumes at task %s step %s",
+    (stack, task, step, resumedTask, resumedStep) => {
+      const tasks = normalizeWakeTasks(decode(stack));
+      if (!isNonEmpty(tasks)) throw new Error(`empty stack ${stack}`);
+      const saved = task === FORMAT.EMPTY ? undefined : { task: Number(task), step: Number(step) };
+      expect(resumePosition(tasks, saved)).toEqual({
+        task: Number(resumedTask),
+        step: Number(resumedStep),
+      });
     }
   );
 });

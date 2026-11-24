@@ -136,6 +136,10 @@ class AlarmOverlayService : Service() {
             snoozeButton?.visibility = View.GONE
         }
 
+        override fun onBack() {
+            snoozeButton?.visibility = View.VISIBLE
+        }
+
         override fun onSilence() = silenceAlarm()
         override fun onSound() = soundAtVolume()
         override fun onSolved() = completeAlarm()

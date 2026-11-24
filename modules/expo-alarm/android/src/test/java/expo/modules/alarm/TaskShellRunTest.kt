@@ -184,4 +184,71 @@ class TaskShellRunTest {
             assertEquals("$step $done $saysOpening", saysOpening && step > 0 && !done, board)
         }
     }
+
+    @Test
+    fun leavingInQuietReturnsTheSoundAndReopeningAddsNoQuiet() {
+        val tasks = WakeTasks.normalize(WakeTasks.decode("id=math;id=tap"))
+        val run = TaskShellRun(tasks, quietMs, opened)
+        run.open()
+        val left = checkNotNull(run.leave(opened + 4_000))
+        assertEquals(TaskQuiet.Signal.END, left.signal)
+        assertEquals(opened + 4_000, left.saved.clock.quietUntil)
+
+        val back = opened + 100_000
+        val again = TaskShellRun(tasks, quietMs, back, left.saved)
+        assertNull("the sound is already back", again.open())
+        assertEquals(opened + 4_000, again.reading.clock.quietUntil)
+        again.ticks(back + 1_000)
+        assertEquals("closed time counts nothing", 1_000L, again.reading.clock.soundingMs)
+    }
+
+    @Test
+    fun leavingWhileItSoundsChangesNothing() {
+        val run = run("id=math;id=tap")
+        run.open()
+        run.ticks(opened + quietMs)
+        assertNull(run.leave(opened + quietMs + 1_000)?.signal)
+    }
+
+    @Test
+    fun reopeningResumesAtTheStepLeft() {
+        val tasks = WakeTasks.normalize(WakeTasks.decode("id=math,steps=3;id=tap"))
+        val run = TaskShellRun(tasks, quietMs, opened)
+        run.open()
+        run.solved(opened + 1_000, quietMs)
+        val saved = checkNotNull(run.leave(opened + 2_000)).saved
+        assertEquals(TaskRun.Position(0, 1), TaskShellRun(tasks, quietMs, opened + 9_000, saved).position)
+    }
+
+    @Test
+    fun leavingDuringAHandoverResumesAtTheNextTask() {
+        val tasks = WakeTasks.normalize(WakeTasks.decode("id=tap;id=math"))
+        val run = TaskShellRun(tasks, quietMs, opened)
+        run.open()
+        run.solved(opened + 1_000, quietMs)
+        val saved = checkNotNull(run.leave(opened + 1_100)).saved
+        val again = TaskShellRun(tasks, quietMs, opened + 9_000, saved)
+        assertEquals(TaskRun.Position(1, 0), again.position)
+        assertNull(again.handover)
+        assertEquals(WakeTasks.Board.MATH, again.task.board)
+    }
+
+    @Test
+    fun reopeningKeepsWhatEarlierStepsDrew() {
+        val tasks = WakeTasks.normalize(WakeTasks.decode("id=math,steps=3;id=tap"))
+        val run = TaskShellRun(tasks, quietMs, opened)
+        run.draw(4)
+        run.solved(opened + 1_000, quietMs)
+        val saved = checkNotNull(run.leave(opened + 2_000)).saved
+        assertEquals(listOf(4), TaskShellRun(tasks, quietMs, opened + 9_000, saved).drawn)
+    }
+
+    @Test
+    fun aDoneRunHasNoWayBack() {
+        val run = run("id=tap")
+        run.open()
+        run.solved(opened + 1_000, quietMs)
+        assertTrue(run.done)
+        assertNull(run.leave(opened + 2_000))
+    }
 }
