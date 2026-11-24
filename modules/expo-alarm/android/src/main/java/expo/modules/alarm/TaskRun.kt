@@ -36,8 +36,11 @@ object TaskRun {
     // A saved position the stack still holds; the start when it holds none.
     fun resume(tasks: List<WakeTasks.Task>, saved: Position?): Position {
         val task = saved?.let { tasks.getOrNull(it.task) }
-        return if (saved != null && task != null && saved.step < stepsOf(task)) saved else FIRST
+        return if (saved != null && task != null && saved.step in 0 until stepsOf(task)) saved else FIRST
     }
+
+    // The position a left run saves: a solved board's handover leads to the next task.
+    fun left(position: Position, handover: Position?): Position = handover ?: position
 
     // What solving the board at `position` leads to.
     fun advance(tasks: List<WakeTasks.Task>, position: Position): Advance {

@@ -231,6 +231,7 @@ class TaskShellView(
         val run = TaskShellRun(tasks, quietMs(), now, saved).also { this.run = it }
         listener.onStart()
         gate.visibility = View.GONE
+        backButton.visibility = View.VISIBLE
         taskPanel.visibility = View.VISIBLE
         apply(run.open())
         showBoard(run)
@@ -289,6 +290,8 @@ class TaskShellView(
         val result = run.solved(now, quietMs()) ?: return
         when (val advance = result.advance) {
             TaskRun.Advance.Done -> {
+                // As JS: a done run shows no Back.
+                backButton.visibility = View.GONE
                 release()
                 listener.onSolved()
                 return

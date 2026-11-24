@@ -207,7 +207,8 @@ class TaskShellRunTest {
         val run = run("id=math;id=tap")
         run.open()
         run.ticks(opened + quietMs)
-        assertNull(run.leave(opened + quietMs + 1_000)?.signal)
+        val left = checkNotNull(run.leave(opened + quietMs + 1_000))
+        assertNull(left.signal)
     }
 
     @Test

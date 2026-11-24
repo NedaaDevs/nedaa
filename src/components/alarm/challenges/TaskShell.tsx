@@ -35,6 +35,7 @@ import { useTaskClock } from "@/hooks/useTaskClock";
 import {
   advanceTaskRun,
   difficultyOf,
+  leftPosition,
   resumePosition,
   stepsOf,
   taskName,
@@ -146,10 +147,11 @@ const TaskShell = (props: Props) => {
     setRound((count) => count + 1);
   };
 
-  // A solved board's handover leads to the next task, so Back keeps that.
   const handleBack = () => {
     if (props.mode === TASK_SHELL_MODE.TRIAL) props.onBack();
-    else props.onBack({ clock: quiet.leave(), position: handover ?? position, drawn });
+    else {
+      props.onBack({ clock: quiet.leave(), position: leftPosition(position, handover), drawn });
+    }
   };
 
   const task = tasks[position.task];
