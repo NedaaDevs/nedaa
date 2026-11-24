@@ -140,7 +140,7 @@ const mockScreen = {
   isDismissed: false,
   snoozeEndTime: null as Date | null,
   snoozeTimeRemaining: 0,
-  canSnooze: false,
+  snoozeIsOpen: false,
   snoozeEnabled: true,
   remainingSnoozes: 1,
   tasks: [{ id: WAKE_TASK_ID.MATH, steps: 1 }],
@@ -153,7 +153,7 @@ jest.mock("@/hooks/useAlarmScreen", () => ({
     isDismissed: mockScreen.isDismissed,
     snoozeEndTime: mockScreen.snoozeEndTime,
     snoozeTimeRemaining: mockScreen.snoozeTimeRemaining,
-    canSnooze: mockScreen.canSnooze,
+    snoozeIsOpen: mockScreen.snoozeIsOpen,
     snoozeEnabled: mockScreen.snoozeEnabled,
     snoozeMinutes: SNOOZE_MINUTES,
     remainingSnoozes: mockScreen.remainingSnoozes,
@@ -210,7 +210,7 @@ describe("AlarmTriggeredScreen", () => {
     mockScreen.isDismissed = false;
     mockScreen.snoozeEndTime = null;
     mockScreen.snoozeTimeRemaining = 0;
-    mockScreen.canSnooze = false;
+    mockScreen.snoozeIsOpen = false;
     mockScreen.snoozeEnabled = true;
     mockScreen.remainingSnoozes = 1;
     mockScreen.tasks = [{ id: WAKE_TASK_ID.MATH, steps: 1 }];
@@ -376,7 +376,7 @@ describe("AlarmTriggeredScreen", () => {
   describe("snooze", () => {
     it("offers its length and the snoozes left, and snoozes at a press", async () => {
       const user = userEvent.setup();
-      mockScreen.canSnooze = true;
+      mockScreen.snoozeIsOpen = true;
       await renderWithTheme(<AlarmTriggeredScreen />);
 
       expect(screen.getByText(t("alarm.ringing.snooze", { count: SNOOZE_MINUTES }))).toBeVisible();
@@ -387,7 +387,7 @@ describe("AlarmTriggeredScreen", () => {
     });
 
     it("counts the snoozes left in a full sentence", async () => {
-      mockScreen.canSnooze = true;
+      mockScreen.snoozeIsOpen = true;
       mockScreen.remainingSnoozes = 2;
       await renderWithTheme(<AlarmTriggeredScreen />);
 
@@ -551,7 +551,7 @@ describe("AlarmTriggeredScreen", () => {
     });
 
     it("covers snooze with its confirm", async () => {
-      mockScreen.canSnooze = true;
+      mockScreen.snoozeIsOpen = true;
       const { rerender } = await renderWithTheme(<AlarmTriggeredScreen />);
       expect(screen.getByRole("button", { name: snoozeName() })).toBeVisible();
 
@@ -564,7 +564,7 @@ describe("AlarmTriggeredScreen", () => {
 
     it("gives snooze back once the way out takes the confirm away", async () => {
       const user = userEvent.setup();
-      mockScreen.canSnooze = true;
+      mockScreen.snoozeIsOpen = true;
       mockScreen.emergency = { ...QUIET_CONTROL, confirming: true };
       mockRun.wayOut = true;
       await renderWithTheme(<AlarmTriggeredScreen />);

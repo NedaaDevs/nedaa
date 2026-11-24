@@ -11,8 +11,9 @@ class RingingStringsTest {
     @Test
     fun everyKeyDrawsItsNamedString() {
         val byKey = sharedTable("ringing-strings.tsv").associate { (key, resource) -> key to resource }
-        val drawn = RingingScreen.Prayer.entries.map { it.key to RingingStrings.of(it) } +
-            RingingScreen.AlarmName.entries.map { it.key to RingingStrings.of(it) } +
+        // Through the Name overload the header view calls.
+        val names: List<RingingScreen.Name> = RingingScreen.Prayer.entries + RingingScreen.AlarmName.entries
+        val drawn = names.map { it.key to RingingStrings.of(it) } +
             RingingScreen.Heading.entries.map { it.key to RingingStrings.of(it) } +
             RingingScreen.Announcement.entries.map { it.key to RingingStrings.of(it) } +
             RingingScreen.SnoozePlace.entries.mapNotNull { place -> RingingStrings.of(place)?.let { place.key to it } }

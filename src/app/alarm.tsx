@@ -102,7 +102,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
     isDismissed,
     snoozeEndTime,
     snoozeTimeRemaining,
-    canSnooze,
+    snoozeIsOpen,
     snoozeEnabled,
     snoozeMinutes,
     remainingSnoozes,
@@ -184,7 +184,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
                 alarmType={type}
                 tasks={tasks}
                 snooze={{
-                  can: canSnooze,
+                  open: snoozeIsOpen,
                   enabled: snoozeEnabled,
                   minutes: snoozeMinutes,
                   left: remainingSnoozes,
@@ -283,8 +283,8 @@ function SnoozedView({
 }
 
 type Snooze = Readonly<{
-  /** A snooze is left and nothing holds it back. */
-  can: boolean;
+  /** A snooze is left. */
+  open: boolean;
   enabled: boolean;
   minutes: number;
   left: number;
@@ -379,7 +379,7 @@ function ActiveAlarmView({
         {emergency.quietUntil !== null && <QuietBanner until={emergency.quietUntil} />}
         <TaskStart ref={mainButton} tasks={tasks} onStart={onStart} onStop={onStop} />
         {/* The confirm stands in snooze's place; a running quiet holds none. */}
-        {!quietOffer.confirmOpen && !quiet && <SnoozePlace snooze={snooze} onSnooze={onSnooze} />}
+        {!quietOffer.confirmOpen && !quiet && <SnoozeSlot snooze={snooze} onSnooze={onSnooze} />}
         <EmergencyQuiet control={emergency} offer={quietOffer} />
       </VStack>
     </RingingColumn>
@@ -387,10 +387,10 @@ function ActiveAlarmView({
 }
 
 /** Snooze, or one line in its place, so the main button keeps its place. */
-const SnoozePlace = ({ snooze, onSnooze }: { snooze: Snooze; onSnooze: () => void }) => {
+const SnoozeSlot = ({ snooze, onSnooze }: { snooze: Snooze; onSnooze: () => void }) => {
   const { t } = useTranslation();
 
-  const place = snoozePlace(snooze.can, snooze.enabled);
+  const place = snoozePlace(snooze.open, snooze.enabled);
   if (place !== SNOOZE_PLACE.BUTTON) {
     return (
       <VStack testID={RINGING_PART.SNOOZE_OFF} minHeight="$16" justifyContent="center">

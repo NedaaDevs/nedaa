@@ -16,6 +16,7 @@ class RingingScreenTest {
         val rows = sharedTable("ringing-header.tsv")
         check(rows.isNotEmpty())
         for (row in rows) {
+            check(row.size == 8) { "ringing-header row: $row" }
             val (type, hasMoment) = row
             val header = RingingScreen.header(RingingScreen.typeOf(cell(type)), yes(hasMoment))
             val shown = listOf(
@@ -35,6 +36,7 @@ class RingingScreenTest {
         val rows = sharedTable("snooze-place.tsv")
         check(rows.isNotEmpty())
         for (row in rows) {
+            check(row.size == 6) { "snooze-place row: $row" }
             val (enabled, count, max, can, left) = row
             val use = RingingScreen.SnoozeUse(yes(enabled), count.toInt(), max.toInt())
             val open = RingingScreen.snoozeOpen(use)
