@@ -14,12 +14,13 @@ class AlarmMigrationsTest {
     @Test
     fun everyStartVersionRunsEachLaterStepOldestFirst() {
         val expected = mapOf(
-            1 to listOf(2, 3, 3, 4, 5, 6),
-            2 to listOf(3, 3, 4, 5, 6),
-            3 to listOf(4, 5, 6),
-            4 to listOf(5, 6),
-            5 to listOf(6),
-            6 to emptyList(),
+            1 to listOf(2, 3, 3, 4, 5, 6, 7, 7, 7, 7),
+            2 to listOf(3, 3, 4, 5, 6, 7, 7, 7, 7),
+            3 to listOf(4, 5, 6, 7, 7, 7, 7),
+            4 to listOf(5, 6, 7, 7, 7, 7),
+            5 to listOf(6, 7, 7, 7, 7),
+            6 to listOf(7, 7, 7, 7),
+            7 to emptyList(),
         )
         for ((old, versions) in expected) {
             assertEquals("from v$old", versions, AlarmMigrations.steps(old, latest).map { it.version })
@@ -49,6 +50,21 @@ class AlarmMigrationsTest {
         assertEquals(6, step.version)
         assertTrue(step.addsColumn)
         assertFalse(step.sql.contains("DEFAULT"))
+    }
+
+    @Test
+    fun versionSevenAltersTheSnoozeQueueAfterItExists() {
+        val sql = AlarmMigrations.steps(1, latest).map { it.sql }
+        val create = sql.indexOfFirst { it.contains("CREATE TABLE IF NOT EXISTS snooze_queue") }
+        val alter = sql.indexOfFirst { it.startsWith("ALTER TABLE snooze_queue") }
+        assertTrue("create at $create, alter at $alter", create in 0 until alter)
+    }
+
+    @Test
+    fun versionSevenCreatesTheQuietLedgerOnce() {
+        val steps = AlarmMigrations.STEPS.filter { it.sql == AlarmMigrations.CREATE_QUIET_LEDGER }
+        assertEquals(listOf(7), steps.map { it.version })
+        assertFalse(steps.single().addsColumn)
     }
 
     @Test

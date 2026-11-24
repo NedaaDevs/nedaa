@@ -155,6 +155,14 @@ export const quietOfferFor = (input: OfferInput): EmergencyQuietOffer => {
   return input.left > 0 ? EMERGENCY_QUIET_OFFER.OFFER : EMERGENCY_QUIET_OFFER.NONE_LEFT;
 };
 
+/** A running quiet holds the snooze. */
+export const canSnoozeWith = (snoozeOpen: boolean, quietUntil: number | null): boolean =>
+  snoozeOpen && quietUntil === null;
+
+/** The confirm stands only while the quiet is offered. */
+export const confirmOpenFor = (confirming: boolean, offer: EmergencyQuietOffer): boolean =>
+  confirming && offer === EMERGENCY_QUIET_OFFER.OFFER;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 

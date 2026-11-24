@@ -38,6 +38,7 @@ import { useAlarmStore } from "@/stores/alarm";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { deviceTimeZone } from "@/utils/date";
+import { canSnoozeWith } from "@/utils/emergencyQuiet";
 import { localizeDigits } from "@/utils/digits";
 import { focusOn } from "@/utils/accessibilityFocus";
 import { isAlarmDue } from "@/utils/alarmDue";
@@ -379,7 +380,9 @@ function ActiveAlarmView({
         {emergency.quietUntil !== null && <QuietBanner until={emergency.quietUntil} />}
         <TaskStart ref={mainButton} tasks={tasks} onStart={onStart} onStop={onStop} />
         {/* The confirm stands in snooze's place; a running quiet holds none. */}
-        {!quietOffer.confirmOpen && !quiet && <SnoozeSlot snooze={snooze} onSnooze={onSnooze} />}
+        {canSnoozeWith(!quietOffer.confirmOpen, emergency.quietUntil) && (
+          <SnoozeSlot snooze={snooze} onSnooze={onSnooze} />
+        )}
         <EmergencyQuiet control={emergency} offer={quietOffer} />
       </VStack>
     </RingingColumn>

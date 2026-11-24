@@ -6,6 +6,12 @@ import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 import { PRESS_SCALE } from "@/components/ui/pressable/pressScale";
 import { DHIKR_TASK_REVIEWED, DHIKR_TASK_ROWS } from "@/constants/DhikrTask";
 import { RINGING_HALO, RINGING_TYPE } from "@/constants/AlarmRinging";
+import {
+  DEFAULT_EMERGENCY_QUIET_ALLOWANCE,
+  EMERGENCY_QUIET_ALLOWANCE,
+  EMERGENCY_QUIET_MINUTES,
+  QUIET_CONFIRM_WAIT_SECONDS,
+} from "@/constants/EmergencyQuiet";
 import { DURATION_MS } from "@/constants/Motion";
 import { isPrayerId } from "@/constants/Prayer";
 import {
@@ -591,6 +597,9 @@ describe("tap-board.tsv", () => {
   });
 });
 
+/** The shell-constants rows that list the allowance choices. */
+const ALLOWANCE_ROW = "EMERGENCY_QUIET_ALLOWANCE_";
+
 describe("shell-constants.tsv", () => {
   /** The JS value each row pins; the native shell reads the same rows. */
   const SHELL_CONSTANTS: Record<string, number> = {
@@ -620,6 +629,13 @@ describe("shell-constants.tsv", () => {
     RINGING_HALO_SCALE: RINGING_HALO.SCALE,
     RINGING_HALO_REST_OPACITY: RINGING_HALO.REST_OPACITY,
     RINGING_HALO_LOW_OPACITY: RINGING_HALO.LOW_OPACITY,
+    EMERGENCY_QUIET_MINUTES,
+    QUIET_CONFIRM_WAIT_SECONDS,
+    DEFAULT_EMERGENCY_QUIET_ALLOWANCE,
+    EMERGENCY_QUIET_ALLOWANCE_OFF: EMERGENCY_QUIET_ALLOWANCE.OFF,
+    EMERGENCY_QUIET_ALLOWANCE_ONE: EMERGENCY_QUIET_ALLOWANCE.ONE,
+    EMERGENCY_QUIET_ALLOWANCE_TWO: EMERGENCY_QUIET_ALLOWANCE.TWO,
+    EMERGENCY_QUIET_ALLOWANCE_THREE: EMERGENCY_QUIET_ALLOWANCE.THREE,
   };
 
   const rows = readCases("shell-constants.tsv");
@@ -630,6 +646,13 @@ describe("shell-constants.tsv", () => {
 
   it("pins every constant", () => {
     expect(rows.map(([name]) => name)).toEqual(Object.keys(SHELL_CONSTANTS));
+  });
+
+  it("pins every allowance choice, in order", () => {
+    const choices = rows
+      .filter(([name]) => name.startsWith(ALLOWANCE_ROW))
+      .map(([, value]) => Number(value));
+    expect(choices).toEqual(Object.values(EMERGENCY_QUIET_ALLOWANCE));
   });
 });
 

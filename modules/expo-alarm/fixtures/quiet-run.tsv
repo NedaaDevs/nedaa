@@ -1,0 +1,9 @@
+type	trigger	id	quietUsed	now	snoozeOpen	runningEnd	canSnooze
+fajr	2026-11-24T02:05:00.000Z	quiet	yes	2026-11-24T02:01:00.000Z	yes	2026-11-24T02:05:00.000Z	no
+fajr	2026-11-24T02:05:00.000Z	quiet	yes	2026-11-24T02:01:00.000Z	no	2026-11-24T02:05:00.000Z	no
+jummah	2026-11-27T09:35:30.250Z	quiet	yes	2026-11-27T09:35:30.249Z	yes	2026-11-27T09:35:30.250Z	no
+fajr	2026-11-24T02:05:00.000Z	quiet	yes	2026-11-24T02:05:00.000Z	yes	-	yes
+fajr	2026-11-24T02:05:00.000Z	quiet	yes	2026-11-24T02:06:00.000Z	yes	-	yes
+fajr	2026-11-24T02:05:00.000Z	quiet	no	2026-11-24T02:01:00.000Z	yes	-	yes
+fajr	2026-11-24T02:05:00.000Z	other	yes	2026-11-24T02:01:00.000Z	yes	-	yes
+custom	2026-11-24T02:05:00.000Z	other	yes	2026-11-24T02:01:00.000Z	no	-	no

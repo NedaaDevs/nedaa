@@ -252,4 +252,24 @@
         <item quantity="many">بقيت %d غفوة</item>
         <item quantity="other">بقيت %d غفوة</item>
     </plurals>
+    <!-- Emergency quiet, as alarm.quiet.* -->
+    <string name="overlay_quiet_button">إسكات طارئ</string>
+    <string name="overlay_quiet_hint">يطلب التأكيد قبل إيقاف الصوت.</string>
+    <string name="overlay_quiet_confirm_title">إسكات المنبّه؟</string>
+    <plurals name="overlay_quiet_confirm_body">
+        <item quantity="zero">لا يتوقف الصوت، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="one">يتوقف الصوت دقيقة واحدة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="two">يتوقف الصوت دقيقتين، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="few">يتوقف الصوت %d دقائق، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="many">يتوقف الصوت %d دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="other">يتوقف الصوت %d دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+    </plurals>
+    <string name="overlay_quiet_confirm_cost">يُحتسب من مرات الإسكات الطارئ لهذا الشهر.</string>
+    <string name="overlay_quiet_confirm_go">إسكات الآن</string>
+    <string name="overlay_quiet_failed">تعذّر إسكات المنبّه. لم تُحتسب أي مرة.</string>
+    <string name="overlay_quiet_none_left">لا يتوفر الإسكات الطارئ قبل %1$s.</string>
+    <string name="overlay_quiet_used">استُخدم الإسكات الطارئ لهذا المنبّه.</string>
+    <string name="overlay_quiet_banner">الصوت متوقف. يرنّ المنبّه مجددًا الساعة %1$s.</string>
+    <string name="overlay_quiet_ready">أصبح زر \"%1$s\" متاحًا.</string>
+    <string name="overlay_quiet_back">رجوع</string>
 </resources>

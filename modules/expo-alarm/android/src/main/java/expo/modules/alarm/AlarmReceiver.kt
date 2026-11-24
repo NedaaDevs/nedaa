@@ -3,6 +3,7 @@ package expo.modules.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.database.SQLException
 
 class AlarmReceiver : BroadcastReceiver() {
 
@@ -48,7 +49,12 @@ class AlarmReceiver : BroadcastReceiver() {
             AlarmLogger.getInstance(context).w("AlarmReceiver", "Deferred $alarmId behind ${pending.alarmId}")
             return
         }
-        db.setPendingChallenge(alarmId, alarmType, title)
+        // The ring goes ahead; the row may still name an earlier alarm.
+        try {
+            db.setPendingChallenge(alarmId, alarmType, title)
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(context).e("AlarmReceiver", "Pending challenge save failed: ${e.message}")
+        }
 
         AlarmService.start(context, alarmId, alarmType, title, soundName)
     }

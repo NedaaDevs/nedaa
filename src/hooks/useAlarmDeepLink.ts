@@ -7,6 +7,7 @@ import { ScheduledAlarmType } from "@/enums/alarm";
 import { ALARM_SCREEN_PATH, LIVE_ACTIVITY_STATE } from "@/constants/Alarm";
 import { isAlarmLink, linkPath } from "@/utils/alarmLink";
 import { useAlarmStore } from "@/stores/alarm";
+import { useEmergencyQuietStore } from "@/stores/emergencyQuiet";
 import { completeAndRescheduleAlarm, waitForAlarmStores } from "@/utils/alarmScheduler";
 import { detectActiveAlarm } from "@/utils/activeAlarmDetector";
 import { alarmLog } from "@/utils/alarmReport";
@@ -50,6 +51,8 @@ async function processQueues() {
   if (isProcessingQueues) return;
   isProcessingQueues = true;
   try {
+    // The overlay may have spent an emergency quiet while the app was away.
+    useEmergencyQuietStore.getState().refresh();
     // Snoozes first: a snooze alarm completed before this drain must already
     // be in the store, or its completion cannot resolve the type.
     await processSnoozeQueue();
@@ -139,7 +142,7 @@ async function processSnoozeQueue() {
             liveActivityId: null,
             snoozeCount: item.snoozeCount,
             ...(original?.isPreview && { isPreview: true }),
-            ...(original?.quietUsed && { quietUsed: true }),
+            ...((original?.quietUsed || item.quietUsed) && { quietUsed: true }),
             ...(original && {
               firstTriggerTime: original.firstTriggerTime ?? original.triggerTime,
             }),

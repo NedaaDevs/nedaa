@@ -8,6 +8,21 @@ object AlarmMigrations {
     // NULL: no stack saved, so the row's challenge stands for it.
     const val ADD_TASKS_COLUMN = "ALTER TABLE alarm_settings ADD COLUMN tasks TEXT"
 
+    // One row: the emergency quiet's monthly count, shared by every alarm.
+    // `from_app` is 0 until the app's own ledger is joined in.
+    val CREATE_QUIET_LEDGER = """
+        CREATE TABLE IF NOT EXISTS emergency_quiet (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            allowance INTEGER NOT NULL,
+            raise_to INTEGER,
+            raise_from INTEGER,
+            month INTEGER,
+            used INTEGER NOT NULL,
+            last_write_at INTEGER,
+            from_app INTEGER NOT NULL DEFAULT 0
+        )
+    """.trimIndent()
+
     // Listed oldest first; a later step may rely on an earlier one's table.
     val STEPS: List<Step> = listOf(
         Step(2, """
@@ -56,6 +71,10 @@ object AlarmMigrations {
             addsColumn = true
         ),
         Step(6, ADD_TASKS_COLUMN, addsColumn = true),
+        Step(7, "ALTER TABLE alarms ADD COLUMN quiet_used INTEGER DEFAULT 0", addsColumn = true),
+        Step(7, "ALTER TABLE alarms ADD COLUMN preview INTEGER DEFAULT 0", addsColumn = true),
+        Step(7, "ALTER TABLE snooze_queue ADD COLUMN quiet_used INTEGER DEFAULT 0", addsColumn = true),
+        Step(7, CREATE_QUIET_LEDGER),
     )
 
     val LATEST_VERSION: Int = STEPS.last().version

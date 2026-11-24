@@ -1,5 +1,6 @@
 package expo.modules.alarm
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -16,6 +17,33 @@ class AlarmNotificationManager(private val context: Context) {
         const val CHANNEL_ID = "nedaa_alarm_channel"
         private const val CHANNEL_NAME = "Prayer Alarms"
         const val NOTIFICATION_ID = 9001
+        const val OVERLAY_NOTIFICATION_ID = 9003
+        const val OVERLAY_CHANNEL_ID = "alarm_overlay_channel"
+    }
+
+    fun createOverlayChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val channel = NotificationChannel(
+            OVERLAY_CHANNEL_ID,
+            "Alarm Overlay",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Shows alarm overlay"
+            setShowBadge(false)
+        }
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(channel)
+    }
+
+    // A silent notice with no full-screen intent, for a start that rings nothing.
+    fun buildSilentStartNotification(): Notification {
+        createOverlayChannel()
+        return NotificationCompat.Builder(context, OVERLAY_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(context.getString(R.string.overlay_notification_title))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSilent(true)
+            .build()
     }
 
     fun createNotificationChannel() {

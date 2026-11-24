@@ -12,4 +12,8 @@ object PendingChallengeRule {
         if (completed != false) return false
         return pendingAlarmId == ringingAlarmId || ageMs <= STALE_PENDING_MS
     }
+
+    // A clear by one alarm never completes another alarm's leftover row.
+    fun completesOnClear(pendingAlarmId: String, ownerId: String?): Boolean =
+        ownerId == null || pendingAlarmId == ownerId
 }

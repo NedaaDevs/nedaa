@@ -17,7 +17,7 @@ import { PlatformType } from "@/enums/app";
 import { snoozeLeft, snoozeOpen } from "@/utils/alarmRinging";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import { AppLogger } from "@/utils/appLogger";
-import { quietEndsAt, runningQuietEnd } from "@/utils/emergencyQuiet";
+import { canSnoozeWith, quietEndsAt, runningQuietEnd } from "@/utils/emergencyQuiet";
 import { waitForHydration } from "@/utils/storeHydration";
 
 const log = AppLogger.create("alarm");
@@ -74,13 +74,13 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     (isScheduledAlarmType(alarmType) && toSettingsAlarmType(alarmType)) || ALARM_TYPE.FAJR;
   const alarmSettings = useAlarmSettingsStore((state) => state[settingsType]);
 
+  const [confirming, setConfirming] = useState(false);
+  const [quieting, setQuieting] = useState(false);
+  const [failed, setFailed] = useState(false);
   // The quiet lives in the record, so a relaunch finds it; this clock is read
   // again when it ends.
   const [quietClock, setQuietClock] = useState(() => Date.now());
   const quietUntil = runningQuietEnd(alarm, quietClock);
-  const [confirming, setConfirming] = useState(false);
-  const [quieting, setQuieting] = useState(false);
-  const [failed, setFailed] = useState(false);
   const quiet = quietUntil !== null;
 
   const snoozeUse = {
@@ -89,7 +89,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     max: alarmSettings.snooze.maxCount,
   };
   const snoozeIsOpen = snoozeOpen(snoozeUse);
-  const canSnooze = snoozeIsOpen && !quiet;
+  const canSnooze = canSnoozeWith(snoozeIsOpen, quietUntil);
   const remainingSnoozes = snoozeLeft(snoozeUse);
 
   const vibrationPattern = alarmSettings.vibration.enabled

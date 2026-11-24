@@ -227,4 +227,20 @@
         <item quantity="one">Last snooze</item>
         <item quantity="other">%d snoozes left</item>
     </plurals>
+    <!-- Emergency quiet, as alarm.quiet.* -->
+    <string name="overlay_quiet_button">Emergency quiet</string>
+    <string name="overlay_quiet_hint">Asks to confirm before the sound stops.</string>
+    <string name="overlay_quiet_confirm_title">Quiet the alarm?</string>
+    <plurals name="overlay_quiet_confirm_body">
+        <item quantity="one">The sound stops for 1 minute. The task stays, and finishing it ends the alarm.</item>
+        <item quantity="other">The sound stops for %d minutes. The task stays, and finishing it ends the alarm.</item>
+    </plurals>
+    <string name="overlay_quiet_confirm_cost">Uses one of this month\'s emergency quiets.</string>
+    <string name="overlay_quiet_confirm_go">Quiet now</string>
+    <string name="overlay_quiet_failed">The alarm could not be quieted. Nothing was counted.</string>
+    <string name="overlay_quiet_none_left">No emergency quiet left until %1$s.</string>
+    <string name="overlay_quiet_used">Emergency quiet was used for this alarm.</string>
+    <string name="overlay_quiet_banner">Sound off. Rings again at %1$s.</string>
+    <string name="overlay_quiet_ready">The \"%1$s\" button is available.</string>
+    <string name="overlay_quiet_back">Back</string>
 </resources>

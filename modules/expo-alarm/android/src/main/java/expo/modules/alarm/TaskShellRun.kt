@@ -46,6 +46,19 @@ class TaskShellRun(
 
     private val draws = resume?.draws.orEmpty().toMutableMap()
 
+    // False while an emergency quiet holds the sound, as JS alarm.audible.
+    var heard = true
+        private set
+
+    val audible: Boolean get() = heard && !done
+
+    // Quiet time ends as the alarm sounds again, as JS useTaskClock's hear.
+    fun hear(heard: Boolean, now: Long) {
+        val returns = heard && !this.heard
+        this.heard = heard
+        if (returns) quiet(TaskQuiet.Event.HEAR, now)
+    }
+
     val size: Int get() = tasks.size
 
     // As JS taskLine: a lone task shows no "Task 1 of 1".
@@ -105,7 +118,7 @@ class TaskShellRun(
     }
 
     private fun quiet(event: TaskQuiet.Event, now: Long): TaskQuiet.Signal? {
-        val step = TaskQuiet.step(reading, event, now, quietMs, audible = !done)
+        val step = TaskQuiet.step(reading, event, now, quietMs, audible)
         reading = step.reading
         return step.signal
     }

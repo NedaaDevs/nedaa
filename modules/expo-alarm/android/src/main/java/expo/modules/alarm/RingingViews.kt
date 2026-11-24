@@ -47,7 +47,7 @@ internal object RingingLook {
     const val MARK_EDGE_DP = 2f
 }
 
-private fun accessibilityHeading(view: View) {
+internal fun accessibilityHeading(view: View) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) view.isAccessibilityHeading = true
 }
 
@@ -92,9 +92,20 @@ internal class RingingHalo(context: Context) : View(context) {
         canvas.drawCircle(width / 2f, height / 2f, (diameter - paint.strokeWidth) / 2f, paint)
     }
 
+    // Still while a quiet runs, as JS RingingHalo's breathing.
+    var breathing = true
+        set(value) {
+            field = value
+            settle(isShown)
+        }
+
     override fun onVisibilityAggregated(isVisible: Boolean) {
         super.onVisibilityAggregated(isVisible)
-        if (isVisible && !animationsOff(context)) {
+        settle(isVisible)
+    }
+
+    private fun settle(isVisible: Boolean) {
+        if (isVisible && breathing && !animationsOff(context)) {
             if (!breath.isStarted) breath.start()
         } else {
             breath.cancel()
@@ -117,6 +128,14 @@ internal class RingingHeaderView(private val context: Context, type: RingingScre
     private val prayerName = header.prayer?.let { context.getString(RingingStrings.of(it)) }
 
     private val announcer = spokenStatus(context)
+
+    private val halo = RingingHalo(context)
+
+    var breathing: Boolean
+        get() = halo.breathing
+        set(value) {
+            halo.breathing = value
+        }
 
     private val figure = TextClock(context).apply {
         format12Hour = "h:mm"
@@ -180,7 +199,7 @@ internal class RingingHeaderView(private val context: Context, type: RingingScre
     val view: View = FrameLayout(context).apply {
         layoutParams = matchWidth()
         minimumHeight = context.dp(RingingLook.HALO_SIZE_DP)
-        addView(RingingHalo(context), FrameLayout.LayoutParams(
+        addView(halo, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT,
         ))
