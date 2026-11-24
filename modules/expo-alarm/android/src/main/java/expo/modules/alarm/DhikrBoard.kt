@@ -130,7 +130,6 @@ class DhikrBoard(context: Context, input: BoardInput, private val host: BoardHos
             is DhikrTap.Solved -> {
                 state = tap.state
                 card.performHapticFeedback(OverlayHaptic.CONFIRM)
-                show(fade = true)
                 host.onSolved()
             }
             is DhikrTap.Held -> {
@@ -170,9 +169,9 @@ class DhikrBoard(context: Context, input: BoardInput, private val host: BoardHos
 
     private fun showLine(row: DhikrTask.Row, fade: Boolean) {
         val context = line.context
-        val gap = GapSpan(context, state.gapFilled)
+        val gap = GapSpan(context, state.gapFilled) { line.width - line.paddingLeft - line.paddingRight }
         line.text = SpannableStringBuilder(row.before).apply {
-            append(row.answer, gap, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            append(DhikrGap.textOf(row, state.gapFilled), gap, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             append(row.after)
         }
         val spoken = DhikrRules.spoken(row, context.getString(R.string.overlay_task_dhikr_gap))
@@ -200,7 +199,12 @@ class DhikrBoard(context: Context, input: BoardInput, private val host: BoardHos
     }
 
     // The dhikr's gap: dashed while empty, solid round its word once filled.
-    private class GapSpan(context: Context, private val filled: Boolean) : ReplacementSpan() {
+    private class GapSpan(
+        context: Context,
+        private val filled: Boolean,
+        // The line's width for text; 0 before its first layout.
+        private val available: () -> Int,
+    ) : ReplacementSpan() {
 
         var wordAlpha = 1f
 
@@ -226,8 +230,11 @@ class DhikrBoard(context: Context, input: BoardInput, private val host: BoardHos
                 it.bottom = maxOf(it.bottom, it.descent)
             }
             if (!filled) return minWidth
-            return maxOf(minWidth, paint.measureText(text, start, end).roundToInt() + 2 * inline)
+            return fitOf(paint, text, start, end).width.roundToInt()
         }
+
+        private fun fitOf(paint: Paint, text: CharSequence, start: Int, end: Int): DhikrGap.Fit =
+            DhikrGap.fitOf(paint.measureText(text, start, end), inline.toFloat(), minWidth.toFloat(), available().toFloat())
 
         override fun draw(
             canvas: Canvas,
@@ -247,9 +254,13 @@ class DhikrBoard(context: Context, input: BoardInput, private val host: BoardHos
             canvas.drawRoundRect(box, radius, radius, edge)
             if (!filled) return
             val ink = paint.alpha
+            val size = paint.textSize
+            val fit = fitOf(paint, text, start, end)
             paint.alpha = (ink * wordAlpha).roundToInt()
+            paint.textSize = size * fit.scale
             val word = paint.measureText(text, start, end)
             canvas.drawText(text, start, end, x + (width - word) / 2f, y.toFloat(), paint)
+            paint.textSize = size
             paint.alpha = ink
         }
 
