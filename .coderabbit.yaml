@@ -104,6 +104,16 @@ reviews:
         - Native alarm code: flag work done from the background that iOS forbids, missing exact-alarm
           permission handling on Android 12+, and reflection or Expo Record classes that R8 could strip
           without a keep rule.
+    - path: "modules/expo-alarm/android/**/*.kt"
+      instructions: |
+        - The alarm overlay behaves exactly as the React Native ring flow in
+          `src/components/alarm/` and `src/utils/`. Flag a rule that differs from its JS twin.
+        - A rule written on both sides is pinned by a table in `modules/expo-alarm/fixtures/*.tsv`
+          that both Jest and JUnit run. Flag a rule on both sides with no shared table.
+        - A view that outlives a run resets its state when the run ends.
+        - TalkBack: each control has a role, a label and a 48dp target; a status is spoken once
+          per change. Layout works right-to-left.
+        - Text in `res/values*/strings.xml` copies the app's locale text exactly.
     - path: "ios/NedaaWidget/**"
       instructions: "A widget must show an empty state, never invented prayer times, when its data row is missing."
     - path: "package.json"
