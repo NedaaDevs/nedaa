@@ -279,7 +279,7 @@ describe("LocationStep", () => {
     expect(props.onNext).toHaveBeenCalledTimes(1);
   });
 
-  // One «رجوع» does one thing: the frame's back walks out of the sub-views.
+  // One "رجوع" does one thing: the frame's back walks out of the sub-views.
   it("steps back from coordinates to the picker to the choices, with no back of its own", async () => {
     const props = stepProps();
     await renderWithTheme(<LocationStep {...props} />);

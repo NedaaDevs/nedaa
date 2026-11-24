@@ -12,7 +12,7 @@ import { dayLabelOf } from "@/utils/qadaDays";
 /** A Qada row's day: whether it is today, and how it reads. */
 export type QadaDayText = { today: boolean; text: string };
 
-/** Writes a stored instant as its Hijri day in the location's zone: «اليوم», «25 صفر», or with the year when it is not this year's. */
+/** Writes a stored instant as its Hijri day in the location's zone: "اليوم", "25 صفر", or with the year when it is not this year's. */
 export const useQadaDayText = () => {
   const { t } = useTranslation();
   const locale = useAppStore((state) => state.locale);

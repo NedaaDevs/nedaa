@@ -290,7 +290,7 @@ describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
     expect(String(lookup(bundle, "onboarding.calculation.intro"))).toContain("$t(brand.name)");
   });
 
-  it("counts the steps in the locale's own «N of M» form", () => {
+  it('counts the steps in the locale\'s own "N of M" form', () => {
     const alarmCount = String(lookup(bundle, "onboarding.alarm.count"));
     expect(lookup(bundle, "onboarding.progress")).toBe(
       alarmCount.replace("{{granted}}", "{{current}}")
@@ -299,11 +299,11 @@ describe.each(HAND_WRITTEN_LOCALES)("the shared copy in %s", (locale) => {
 });
 
 describe("the Arabic alarm copy", () => {
-  it.each(ALARM_TYPES)("asks for the %s alarm with «هل تريد»", (type) => {
+  it.each(ALARM_TYPES)('asks for the %s alarm with "هل تريد"', (type) => {
     expect(String(lookup(ar, `onboarding.alarm.${type}.question`))).toMatch(/^هل تريد /);
   });
 
-  it("calls the prayer alert «تنبيه», keeping «الإشعارات» for the system permission", () => {
+  it('calls the prayer alert "تنبيه", keeping "الإشعارات" for the system permission', () => {
     const body = String(lookup(ar, "onboarding.alarm.fajr.body"));
     expect(body).toContain("منفصل عن تنبيه الصلاة العادي");
     expect(body).not.toContain("إشعار");

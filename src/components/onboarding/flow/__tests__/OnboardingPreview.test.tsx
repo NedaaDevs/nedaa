@@ -105,7 +105,7 @@ it("mounts each chip's value shown under Reduce Motion", async () => {
   expect(useSharedValue).not.toHaveBeenCalledWith(0);
 });
 
-// Arabic writes «ص» after the digits; the whole time is not one LTR run.
+// Arabic writes "ص" after the digits; the whole time is not one LTR run.
 it("writes an Arabic 12-hour time as Today's prayer grid does", async () => {
   await act(() => i18n.changeLanguage(AppLocale.AR));
   useAppStore.setState({ locale: AppLocale.AR });

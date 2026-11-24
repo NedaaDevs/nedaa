@@ -44,7 +44,7 @@ export type SegmentedChoiceProps<V extends string | number> = {
   label: (option: V) => string;
   /** An option's spoken name, where its visible text is a bare number. */
   spokenLabel?: (option: V) => string;
-  /** Shows every option's digits as written, such as «123» beside «١٢٣». */
+  /** Shows every option's digits as written, such as "123" beside "١٢٣". */
   literalDigits?: boolean;
   /** An icon over each option's text. */
   icon?: (option: V) => IconProps["as"];

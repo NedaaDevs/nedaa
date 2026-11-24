@@ -104,7 +104,7 @@ const HizbMedallion = ({
       <View style={panelBox}>
         {/* allowFontScaling is off because the art can't grow with the OS font
             size — the type shrinks to the panel instead. Only the quarter line
-            refits: it is the one that varies in length («ثلاث ارباع»). */}
+            refits: it is the one that varies in length ("ثلاث ارباع"). */}
         {quarter ? (
           <View
             style={{
