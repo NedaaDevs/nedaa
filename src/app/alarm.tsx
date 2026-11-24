@@ -26,7 +26,12 @@ import RingingHalo from "@/components/alarm/challenges/RingingHalo";
 import SolvedPanel from "@/components/alarm/challenges/SolvedPanel";
 import type { WakeTask } from "@/types/alarm";
 import { PRESENTATION } from "@/constants/Navigation";
-import { RINGING_MAX_WIDTH, RINGING_PART, RINGING_TYPE } from "@/constants/AlarmRinging";
+import {
+  RINGING_MAX_WIDTH,
+  RINGING_PART,
+  RINGING_TYPE,
+  SNOOZE_PLACE,
+} from "@/constants/AlarmRinging";
 import { COUNT_WIDEST } from "@/constants/Countdown";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
@@ -36,7 +41,7 @@ import { deviceTimeZone } from "@/utils/date";
 import { localizeDigits } from "@/utils/digits";
 import { focusOn } from "@/utils/accessibilityFocus";
 import { isAlarmDue } from "@/utils/alarmDue";
-import { isScheduledAlarmType } from "@/utils/alarmTypes";
+import { ringingHeader, ringingTypeOf, snoozePlace } from "@/utils/alarmRinging";
 import { formatTimeRemaining } from "@/utils/timeRemaining";
 import { wayOutShown } from "@/utils/taskClock";
 import { isNonEmpty, type TaskRunSnapshot } from "@/utils/taskRun";
@@ -113,8 +118,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
   } = useAlarmScreen(alarmId, alarmType);
   const insets = useSafeAreaInsets();
 
-  // A link can carry a type no alarm has; it rings as a custom alarm.
-  const type = isScheduledAlarmType(alarmType) ? alarmType : ScheduledAlarmType.CUSTOM;
+  const type = ringingTypeOf(alarmType);
 
   // The task run of this ring; Back keeps it, a snooze starting or ending
   // drops it.
@@ -314,14 +318,10 @@ function ActiveAlarmView({
   const { alarm, prayer, moment } = useAlarmPrayer(alarmId, alarmType);
   const quiet = emergency.quietUntil !== null;
 
-  // The prayer's time heads the screen; with none, the wall clock does.
+  const header = ringingHeader(alarmType, moment !== null);
   const time = moment ? clockTime(moment.time, moment.timezone) : clockTime(now, deviceTimeZone());
-  const name = prayer ?? alarm;
-  // A prayer alarm without its stored time shows the clock, said as the time now.
-  const heading =
-    prayer && !moment
-      ? t("a11y.alarm.currentTime", { time: time.spoken })
-      : t("a11y.alarm.ringingAt", { alarm, time: time.spoken });
+  const name = t(header.nameKey);
+  const heading = t(header.headingKey, { alarm, time: time.spoken });
 
   // Announced and focused once per screen; a re-render must not repeat it.
   const announced = useRef(false);
@@ -329,11 +329,9 @@ function ActiveAlarmView({
   useEffect(() => {
     if (announced.current) return;
     announced.current = true;
-    AccessibilityInfo.announceForAccessibility(
-      prayer ? t("a11y.alarm.ringingAnnouncement", { prayer }) : t("a11y.alarm.ringingCustom")
-    );
+    AccessibilityInfo.announceForAccessibility(t(header.announcementKey, { prayer }));
     focusOn(mainButton.current);
-  }, [t, prayer]);
+  }, [t, prayer, header.announcementKey]);
 
   return (
     <RingingColumn>
@@ -392,11 +390,12 @@ function ActiveAlarmView({
 const SnoozePlace = ({ snooze, onSnooze }: { snooze: Snooze; onSnooze: () => void }) => {
   const { t } = useTranslation();
 
-  if (!snooze.can) {
+  const place = snoozePlace(snooze.can, snooze.enabled);
+  if (place !== SNOOZE_PLACE.BUTTON) {
     return (
       <VStack testID={RINGING_PART.SNOOZE_OFF} minHeight="$16" justifyContent="center">
         <Text size="lg" fontWeight="500" color="$muted" textAlign="center">
-          {t(snooze.enabled ? "alarm.ringing.snoozeUsedUp" : "alarm.ringing.snoozeOff")}
+          {t(place)}
         </Text>
       </VStack>
     );

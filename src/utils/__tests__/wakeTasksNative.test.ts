@@ -8,9 +8,18 @@ import {
   WAKE_TASK_MAX_STACK,
   WAKE_TASK_OPTIONS,
 } from "@/constants/WakeTask";
+import { RINGING_TIME, SNOOZE_PLACE } from "@/constants/AlarmRinging";
 import { TASK_RUN_NEXT } from "@/constants/WakeTaskShell";
 import { AppLocale } from "@/enums/app";
 import i18n from "@/localization/i18n";
+import {
+  ringingHeader,
+  ringingTypeOf,
+  snoozeLeft,
+  snoozeOpen,
+  snoozePlace,
+  solvedLineKey,
+} from "@/utils/alarmRinging";
 import { CHALLENGE_DIFFICULTIES, CHALLENGE_TYPES, type WakeTask } from "@/types/alarm";
 import {
   advanceTaskRun,
@@ -26,7 +35,8 @@ import {
   readSavedWakeTaskFields,
 } from "@/utils/wakeTasks";
 
-// The Android JVM tests WakeTasksSharedTest and TaskRunTest read the same tables.
+// The Android JVM tests WakeTasksSharedTest, TaskRunTest and RingingScreenTest
+// read the same tables.
 const FIXTURES = join(__dirname, "..", "..", "..", "modules", "expo-alarm", "fixtures");
 
 /** The fixtures' syntax, which is also how native stores a stack. */
@@ -226,4 +236,64 @@ describe("task-start.tsv", () => {
       expect([start.title, start.detail]).toEqual([titles[title], details[detail]]);
     }
   );
+});
+
+const yes = (value: string): boolean => value === FORMAT.YES;
+const orNone = (value: string | null): string => value ?? FORMAT.EMPTY;
+
+describe("ringing-header.tsv", () => {
+  it.each(table("ringing-header.tsv"))(
+    "a %s alarm with a prayer time %s heads its screen by the shared rule",
+    (type, hasMoment, prayer, alarm, name, time, heading, announcement) => {
+      const header = ringingHeader(ringingTypeOf(cell(type)), yes(hasMoment));
+      expect([
+        orNone(header.prayerKey),
+        header.alarmKey,
+        header.nameKey,
+        header.time,
+        header.headingKey,
+        header.announcementKey,
+      ]).toEqual([prayer, alarm, name, time, heading, announcement]);
+    }
+  );
+
+  it("names each time source the table uses", () => {
+    const sources = new Set(table("ringing-header.tsv").map((row) => row[5]));
+    expect([...sources].sort()).toEqual(Object.values(RINGING_TIME).sort());
+  });
+});
+
+describe("solved-line.tsv", () => {
+  it.each(table("solved-line.tsv"))(
+    "a %s alarm whose prayer is at %s, solved at %s, says %s",
+    (type, momentAt, solvedAt, line) => {
+      const moment = momentAt === FORMAT.EMPTY ? null : Number(momentAt);
+      expect(orNone(solvedLineKey(ringingTypeOf(type), moment, Number(solvedAt)))).toBe(line);
+    }
+  );
+});
+
+describe("snooze-place.tsv", () => {
+  it.each(table("snooze-place.tsv"))(
+    "snooze enabled %s, used %s of %s: open %s, %s left, %s in its place",
+    (enabled, count, max, can, left, place) => {
+      const snooze = { enabled: yes(enabled), count: Number(count), max: Number(max) };
+      const open = snoozeOpen(snooze);
+      expect([open, snoozeLeft(snooze), snoozePlace(open, snooze.enabled)]).toEqual([
+        yes(can),
+        Number(left),
+        place,
+      ]);
+    }
+  );
+
+  it("names the button the way the table does", () => {
+    expect(table("snooze-place.tsv").map((row) => row[5])).toContain(SNOOZE_PLACE.BUTTON);
+  });
+});
+
+describe("solved-exit.tsv", () => {
+  it.each(table("solved-exit.tsv"))("the stack %s shows the solved panel: %s", (stack, panel) => {
+    expect(isNonEmpty(normalizeWakeTasks(decode(cell(stack))))).toBe(yes(panel));
+  });
 });

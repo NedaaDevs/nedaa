@@ -1,0 +1,7 @@
+enabled	count	max	can	left	place
+yes	0	3	yes	3	button
+yes	2	3	yes	1	button
+yes	3	3	no	0	alarm.ringing.snoozeUsedUp
+yes	4	3	no	0	alarm.ringing.snoozeUsedUp
+no	0	3	no	0	alarm.ringing.snoozeOff
+no	3	3	no	0	alarm.ringing.snoozeOff

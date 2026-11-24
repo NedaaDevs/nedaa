@@ -1,5 +1,6 @@
 package expo.modules.alarm
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -9,9 +10,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.accessibility.AccessibilityManager
-import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -86,7 +87,16 @@ class TaskShellView(
         setPadding(0, context.dp(12), 0, context.dp(16))
     }
 
-    private val boardHost = FrameLayout(context).apply { layoutParams = matchWidth() }
+    // A done board stays in sight, takes no touch and is hidden from the reader.
+    private var boardDone = false
+
+    private val boardHost = object : FrameLayout(context) {
+        override fun onInterceptTouchEvent(event: MotionEvent): Boolean =
+            boardDone || super.onInterceptTouchEvent(event)
+
+        @SuppressLint("ClickableViewAccessibility")
+        override fun onTouchEvent(event: MotionEvent): Boolean = boardDone || super.onTouchEvent(event)
+    }.apply { layoutParams = matchWidth() }
 
     private val handoverPosition = overlayText(context, 17f, COLOR_TEXT_SECONDARY)
 
@@ -188,9 +198,18 @@ class TaskShellView(
         }
     }
 
+    // Frees the timers; the board's view stays until the next board or the window goes.
     fun release() {
         handler.removeCallbacksAndMessages(null)
-        clearBoard()
+        board?.release()
+        board = null
+    }
+
+    fun focusStart() = focusForReader(startButton)
+
+    // The solved panel takes the quiet strip's place, as JS TaskShell's done state.
+    fun showSolved(panel: View) {
+        taskPanel.addView(panel, taskPanel.indexOfChild(quietRow))
     }
 
     // As JS describeStart: the title, and the tasks under it for one or two.
@@ -253,9 +272,7 @@ class TaskShellView(
         apply(left.signal)
         listener.onBack()
         // As the JS ring screen: focus returns to the start button.
-        startButton.post {
-            startButton.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
-        }
+        focusStart()
     }
 
     private fun stop() {
@@ -290,9 +307,13 @@ class TaskShellView(
         val result = run.solved(now, quietMs()) ?: return
         when (val advance = result.advance) {
             TaskRun.Advance.Done -> {
-                // As JS: a done run shows no Back.
+                // As JS: a done run shows no Back, no quiet strip and no way out.
                 backButton.visibility = View.GONE
                 release()
+                boardDone = true
+                boardHost.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                listOf(quietRow, quietState, quietHelp, wayOut).forEach { it.visibility = View.GONE }
+                listOf(quietSpoken, progressSpoken, wayOutSpoken).forEach { it.say(null) }
                 listener.onSolved()
                 return
             }

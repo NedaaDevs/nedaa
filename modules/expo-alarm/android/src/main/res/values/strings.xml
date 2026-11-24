@@ -203,4 +203,28 @@
     <string name="overlay_task_pattern_place_bottom_right">bottom right</string>
     <string name="overlay_sentences">%1$s. %2$s</string>
     <string name="overlay_list_separator">", "</string>
+
+    <!-- Overlay - Ringing screen and solved panel -->
+    <string name="overlay_ringing_prayer_alarm">Prayer alarm</string>
+    <string name="overlay_ringing_jumuah">Jumu\'ah</string>
+    <string name="overlay_ringing_fajr_alarm">Fajr Alarm</string>
+    <string name="overlay_ringing_friday_alarm">Friday Alarm</string>
+    <string name="overlay_ringing_alarm">Alarm</string>
+    <string name="overlay_ringing_current_time">Current time, %1$s</string>
+    <string name="overlay_ringing_at">%1$s, %2$s</string>
+    <string name="overlay_ringing_announcement">%1$s alarm. Time to wake up for prayer.</string>
+    <string name="overlay_ringing_custom">Alarm ringing.</string>
+    <string name="overlay_ringing_snooze_off">Snooze is off for this alarm.</string>
+    <string name="overlay_ringing_snooze_used_up">No snoozes left for this alarm.</string>
+    <string name="overlay_join">%1$s, %2$s</string>
+    <string name="overlay_solved_title">Alarm stopped</string>
+    <string name="overlay_close">Close</string>
+    <plurals name="overlay_ringing_snooze">
+        <item quantity="one">Snooze %d minute</item>
+        <item quantity="other">Snooze %d minutes</item>
+    </plurals>
+    <plurals name="overlay_ringing_snoozes_left">
+        <item quantity="one">Last snooze</item>
+        <item quantity="other">%d snoozes left</item>
+    </plurals>
 </resources>

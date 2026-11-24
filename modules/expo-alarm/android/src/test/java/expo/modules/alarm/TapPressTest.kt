@@ -65,6 +65,15 @@ class TapPressTest {
             "DHIKR_HOLD_MS" to DhikrBoardRun.HOLD_MS.toDouble(),
             "DHIKR_READER_HOLD_MS" to DhikrBoardRun.READER_HOLD_MS.toDouble(),
             "SPOKEN_MS_PER_CHARACTER" to DhikrBoardRun.SPOKEN_MS_PER_CHARACTER.toDouble(),
+            "TASK_ENTER_MS" to RingingLook.ENTER_MS.toDouble(),
+            "RINGING_NAME_SIZE" to RingingLook.NAME_SP.toDouble(),
+            "RINGING_TIME_SIZE" to RingingLook.TIME_SP.toDouble(),
+            "RINGING_HALO_SIZE" to RingingLook.HALO_SIZE_DP.toDouble(),
+            "RINGING_HALO_RING" to RingingLook.HALO_RING_DP.toDouble(),
+            "RINGING_HALO_BREATH_MS" to RingingLook.HALO_BREATH_MS.toDouble(),
+            "RINGING_HALO_SCALE" to RingingLook.HALO_SCALE.toDouble(),
+            "RINGING_HALO_REST_OPACITY" to RingingLook.HALO_REST_OPACITY.toDouble(),
+            "RINGING_HALO_LOW_OPACITY" to RingingLook.HALO_LOW_OPACITY.toDouble(),
         )
         val rows = sharedTable("shell-constants.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })
