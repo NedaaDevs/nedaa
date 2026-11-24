@@ -220,4 +220,36 @@
     <string name="overlay_task_pattern_place_bottom_right">أسفل اليمين</string>
     <string name="overlay_sentences">%1$s. %2$s</string>
     <string name="overlay_list_separator">"، "</string>
+
+    <!-- Overlay - Ringing screen and solved panel -->
+    <string name="overlay_ringing_prayer_alarm">منبّه الصلاة</string>
+    <string name="overlay_ringing_jumuah">الجمعة</string>
+    <string name="overlay_ringing_fajr_alarm">منبّه الفجر</string>
+    <string name="overlay_ringing_friday_alarm">منبّه الجمعة</string>
+    <string name="overlay_ringing_alarm">منبّه</string>
+    <string name="overlay_ringing_current_time">الوقت الآن، %1$s</string>
+    <string name="overlay_ringing_at">%1$s، الساعة %2$s</string>
+    <string name="overlay_ringing_announcement">منبّه %1$s. حان وقت الاستيقاظ للصلاة.</string>
+    <string name="overlay_ringing_custom">المنبّه يرنّ.</string>
+    <string name="overlay_ringing_snooze_off">الغفوة غير مفعّلة لهذا المنبّه.</string>
+    <string name="overlay_ringing_snooze_used_up">لم تبقَ غفوات لهذا المنبّه.</string>
+    <string name="overlay_join">%1$s، %2$s</string>
+    <string name="overlay_solved_title">توقّف المنبّه</string>
+    <string name="overlay_close">إغلاق</string>
+    <plurals name="overlay_ringing_snooze">
+        <item quantity="zero">غفوة</item>
+        <item quantity="one">غفوة دقيقة واحدة</item>
+        <item quantity="two">غفوة دقيقتين</item>
+        <item quantity="few">غفوة %d دقائق</item>
+        <item quantity="many">غفوة %d دقيقة</item>
+        <item quantity="other">غفوة %d دقيقة</item>
+    </plurals>
+    <plurals name="overlay_ringing_snoozes_left">
+        <item quantity="zero">لم تبقَ غفوات</item>
+        <item quantity="one">الغفوة الأخيرة</item>
+        <item quantity="two">بقيت غفوتان</item>
+        <item quantity="few">بقيت %d غفوات</item>
+        <item quantity="many">بقيت %d غفوة</item>
+        <item quantity="other">بقيت %d غفوة</item>
+    </plurals>
 </resources>

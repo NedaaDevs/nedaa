@@ -604,6 +604,8 @@ const ONE_RENDERER: readonly Rule[] = [
     shows: new RegExp(
       [
         /\balarm\.solved\.(began|begins)\b|\ba11y\.alarm\.ringingAt\b/.source,
+        // The rules that pick those keys.
+        /\b(ringingHeader|solvedLineKey)\(/.source,
         // A ring's time read against the stored days picks the prayer anew.
         /\btriggerTime\b[\s\S]*\b(today|tomorrow)Timings\b/.source,
         /\b(today|tomorrow)Timings\b[\s\S]*\btriggerTime\b/.source,
@@ -616,6 +618,10 @@ const ONE_RENDERER: readonly Rule[] = [
       {
         path: "components/alarm/Fixture.tsx",
         text: 't("alarm.solved.began", { prayer, time })',
+      },
+      {
+        path: "components/alarm/HeaderFixture.tsx",
+        text: "const header = ringingHeader(alarmType, false);",
       },
       {
         path: "hooks/useFixture.ts",

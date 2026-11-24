@@ -7,14 +7,14 @@ import org.junit.Test
 class WakeTasksSharedTest {
 
     // "-" stands for an empty field, which a fixture never holds.
-    private fun cell(value: String): String = if (value == EMPTY) "" else value
+    private fun cell(value: String): String = if (value == FIXTURE_NONE) "" else value
 
     private fun list(value: String): List<String> = cell(value).split(',').filter { it.isNotEmpty() }
 
     @Test
     fun everyBoardOffersTheOptionsJsOffers() {
         val shared = sharedTable("wake-task-boards.tsv").map { (id, difficulty, steps) ->
-            listOf(id, difficulty == YES, list(steps).map(String::toInt).ifEmpty { null })
+            listOf(id, difficulty == FIXTURE_YES, list(steps).map(String::toInt).ifEmpty { null })
         }
         val native = WakeTasks.Board.entries.map { listOf(it.id, it.hasDifficulty, it.stepChoices) }
         assertEquals(shared, native)
@@ -61,8 +61,6 @@ class WakeTasksSharedTest {
     }
 
     private companion object {
-        const val EMPTY = "-"
-        const val YES = "yes"
         const val ABSENT = "absent"
     }
 }

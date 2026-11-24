@@ -18,6 +18,7 @@ import { useAlarmPrayer } from "@/hooks/useAlarmPrayer";
 import { useClockTime } from "@/hooks/useClockTime";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { focusOn } from "@/utils/accessibilityFocus";
+import { solvedLineKey } from "@/utils/alarmRinging";
 
 type Props = {
   alarmId: string;
@@ -39,8 +40,7 @@ const SolvedPanel = ({ alarmId, alarmType, onClose }: Props) => {
   useEffect(() => focusOn(title.current), []);
 
   const time = moment && clockTime(moment.time, moment.timezone);
-  const key =
-    moment && moment.time.getTime() <= solvedAt ? "alarm.solved.began" : "alarm.solved.begins";
+  const key = solvedLineKey(alarmType, moment?.time.getTime() ?? null, solvedAt);
   const close = t("common.close");
 
   return (
@@ -71,7 +71,7 @@ const SolvedPanel = ({ alarmId, alarmType, onClose }: Props) => {
                 {t("alarm.solved.title")}
               </Text>
             </View>
-            {prayer && time ? (
+            {prayer && time && key ? (
               <Text
                 size="lg"
                 fontWeight="500"

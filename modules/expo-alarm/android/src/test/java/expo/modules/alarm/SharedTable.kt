@@ -18,6 +18,9 @@ fun String.ints(): List<Int> = split(',').map { it.toInt() }
 // The cell for no value, such as no outcome or no previous question.
 const val FIXTURE_NONE = "-"
 
+// The cell for a true flag, as FORMAT.YES in wakeTasksNative.test.ts.
+const val FIXTURE_YES = "yes"
+
 // What a spoken line in the tables calls its gap; FIXTURE_GAP in wakeTaskFixtures.test.ts matches.
 const val FIXTURE_GAP = "gap"
 

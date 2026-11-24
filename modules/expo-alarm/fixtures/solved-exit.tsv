@@ -1,0 +1,5 @@
+tasks	panel
+-	no
+id=tap	yes
+id=dhikr	yes
+id=math,difficulty=hard,steps=3;id=pattern	yes

@@ -29,13 +29,13 @@ import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
-import android.widget.TextClock
 import android.widget.TextView
 import android.widget.Toast
 import java.util.UUID
@@ -85,6 +85,11 @@ class AlarmOverlayService : Service() {
         var isRunning = false
             private set
 
+        // The solved panel outlives the ring; a stopped ring leaves it up.
+        @Volatile
+        var solvedShowing = false
+            private set
+
         // With draw-over-apps, this overlay draws each ringing alarm.
         fun usesNativeOverlay(context: Context): Boolean = Settings.canDrawOverlays(context)
 
@@ -108,6 +113,11 @@ class AlarmOverlayService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, AlarmOverlayService::class.java))
         }
+
+        // The ring's end, which leaves a shown solved panel for its Close.
+        fun stopRinging(context: Context) {
+            if (!solvedShowing) stop(context)
+        }
     }
 
     private var windowManager: WindowManager? = null
@@ -129,15 +139,21 @@ class AlarmOverlayService : Service() {
     // A stack NativeBoards.runsShell takes runs the task shell instead.
     private var stack: List<WakeTasks.Task> = emptyList()
     private var taskShell: TaskShellView? = null
-    private var snoozeButton: Button? = null
+    private var card: LinearLayout? = null
+    private var header: RingingHeaderView? = null
+    private var snoozeSlot: View? = null
+    private var lastStartId = 0
 
+    // As JS: the ring screen gives way to the task and comes back on Back.
     private val shellListener = object : TaskShellView.Listener {
         override fun onStart() {
-            snoozeButton?.visibility = View.GONE
+            header?.hide()
+            snoozeSlot?.visibility = View.GONE
         }
 
         override fun onBack() {
-            snoozeButton?.visibility = View.VISIBLE
+            header?.show()
+            snoozeSlot?.visibility = View.VISIBLE
         }
 
         override fun onSilence() = silenceAlarm()
@@ -229,6 +245,9 @@ class AlarmOverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        lastStartId = startId
+        // A new ring replaces a shown solved panel.
+        if (solvedShowing) closeSolved(stopService = false)
         // A second start keeps the shell showing and its progress; the ringing alarm's notice stays.
         if (taskShell != null) {
             startForeground(NOTIFICATION_ID, createNotification())
@@ -298,6 +317,7 @@ class AlarmOverlayService : Service() {
         graceHandler.removeCallbacksAndMessages(null)
         removeOverlay()
         isRunning = false
+        solvedShowing = false
         super.onDestroy()
     }
 
@@ -467,28 +487,7 @@ class AlarmOverlayService : Service() {
             layoutParams = params
         }
 
-        // Header clock — native, self-updating; follows device 12/24-hour setting
-        val clockView = TextClock(this).apply {
-            format12Hour = "h:mm"
-            format24Hour = "HH:mm"
-            textSize = 56f
-            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            setPadding(0, 0, 0, (4 * dp).toInt())
-        }
-        card.addView(clockView)
-
-        // Title
-        val titleView = TextView(this).apply {
-            text = title
-            textSize = 28f
-            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-            setPadding(0, 0, 0, (8 * dp).toInt())
-        }
-        card.addView(titleView)
+        header = RingingHeaderView(this, RingingScreen.typeOf(alarmType)).also { card.addView(it.view) }
 
         // Grace period bar + numeric seconds readout (hidden until first interaction)
         graceProgressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
@@ -545,41 +544,13 @@ class AlarmOverlayService : Service() {
             buildChallengeUI(card, dp)
         }
 
-        // Snooze button
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDurationMinutes) = db.getSnoozeConfig(alarmType)
-        val currentSnoozeCount = db.getSnoozeCount(alarmId)
-        val remainingSnoozes = snoozeMaxCount - currentSnoozeCount
-        val canSnooze = snoozeEnabled && remainingSnoozes > 0
-
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=$snoozeDurationMinutes, current=$currentSnoozeCount, remaining=$remainingSnoozes")
-
-        if (snoozeEnabled) {
-            val snoozeButton = Button(this).apply {
-                text = if (canSnooze) getString(R.string.overlay_snooze_button, remainingSnoozes) else getString(R.string.overlay_snooze_none)
-                textSize = 15f
-                isAllCaps = false
-                setTextColor(if (canSnooze) Color.parseColor(COLOR_TEXT) else Color.parseColor(COLOR_TEXT_MUTED))
-                background = GradientDrawable().apply {
-                    if (canSnooze) {
-                        setColor(Color.parseColor(COLOR_SNOOZE))
-                    } else {
-                        setColor(Color.parseColor(COLOR_DISABLED))
-                    }
-                    cornerRadius = 12 * dp
-                }
-                setPadding((24 * dp).toInt(), (14 * dp).toInt(), (24 * dp).toInt(), (14 * dp).toInt())
-                isEnabled = canSnooze
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = (12 * dp).toInt() }
-                layoutParams = params
-                setOnClickListener { onSnoozeClicked() }
-            }
-            card.addView(snoozeButton)
-            this.snoozeButton = snoozeButton
-        }
+        val snoozeUse = RingingScreen.SnoozeUse(snoozeEnabled, db.getSnoozeCount(alarmId), snoozeMaxCount)
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - $snoozeUse, duration=$snoozeDurationMinutes")
+        snoozeSlot = SnoozeSlotView(this, snoozeUse, snoozeDurationMinutes) { onSnoozeClicked() }.view
+        card.addView(snoozeSlot)
+        this.card = card
 
         rootLayout.addView(card)
         // Scrolls when the card is taller than the screen, as with the keyboard open; centred when it fits.
@@ -627,6 +598,8 @@ class AlarmOverlayService : Service() {
 
         try {
             windowManager?.addView(overlayView, params)
+            header?.announce()
+            taskShell?.focusStart()
         } catch (e: Exception) {
             AlarmLogger.getInstance(this).w("AlarmOverlay", "showOverlay addView failed: ${e.message}")
             // A running service with no view would refuse the banner tap.
@@ -723,6 +696,11 @@ class AlarmOverlayService : Service() {
         // Swap UI: hide start button, show challenge
         startSolvingContainer?.visibility = View.GONE
         challengeContainer?.visibility = View.VISIBLE
+        // As the shell: a task under way shows no ringing header and no snooze.
+        if (stack.isNotEmpty()) {
+            header?.hide()
+            snoozeSlot?.visibility = View.GONE
+        }
 
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge started by user")
     }
@@ -1308,33 +1286,109 @@ class AlarmOverlayService : Service() {
         // Drops any re-arm placed by onTaskRemoved during this challenge.
         AlarmScheduler(this).cancelAlarm(alarmId)
 
+        val solved = outcome == AlarmDatabase.OUTCOME_SOLVED
+        // Set before the ring stops, so AlarmService leaves the panel up.
+        if (solved && RingingScreen.solvedShowsPanel(stack)) {
+            solvedShowing = true
+            isRunning = false
+        }
+
         AlarmService.stop(this)
 
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
-        removeOverlay()
-
-        try {
-            // Only a solved alarm opens the success screen; a stopped one opens the app, as snooze does.
-            val intent = if (outcome == AlarmDatabase.OUTCOME_SOLVED) {
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
-                    component = ComponentName(packageName, "$packageName.MainActivity")
-                }
-            } else {
-                Intent(this, Class.forName("$packageName.MainActivity"))
+        when {
+            solvedShowing -> {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                showSolved()
             }
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            solved -> closeSolved(stopService = true)
+            else -> {
+                removeOverlay()
+                openApp()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
+        }
+    }
+
+    // A stopped alarm opens the app, as snooze does.
+    private fun openApp() {
+        try {
+            val intent = Intent(this, Class.forName("$packageName.MainActivity")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
             startActivity(intent)
         } catch (e: Exception) {
             AlarmLogger.getInstance(this).d("AlarmOverlay", "completeAlarm startActivity failed: ${e.message}")
         }
+    }
 
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+    // As JS: the panel stands where the task was, and the screen may sleep.
+    private fun showSolved() {
+        val panel = SolvedPanelView(this) { closeSolved(stopService = true) }
+        header?.hide()
+        snoozeSlot?.visibility = View.GONE
+        graceRow?.visibility = View.GONE
+        graceExpiredText?.visibility = View.GONE
+        val shell = taskShell
+        if (shell != null) {
+            shell.showSolved(panel.view)
+        } else {
+            startSolvingContainer?.visibility = View.GONE
+            challengeContainer?.visibility = View.GONE
+            card?.addView(panel.view)
+        }
+        overlayView?.let { view ->
+            // A typed task leaves its keyboard up.
+            getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(view.windowToken, 0)
+            (view.layoutParams as? WindowManager.LayoutParams)?.let { params ->
+                params.flags = params.flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv()
+                windowManager?.updateViewLayout(view, params)
+            }
+        }
+        panel.shown()
+    }
+
+    // Ends the panel; a new ring keeps the service and draws afresh.
+    private fun closeSolved(stopService: Boolean) {
+        solvedShowing = false
+        removeOverlay()
+        resetRing()
+        if (stopService) {
+            // The app drains the completed queue when it comes to the front.
+            openApp()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            // A ring that started after the last one seen keeps the service.
+            stopSelfResult(lastStartId)
+        } else {
+            isRunning = true
+        }
+    }
+
+    // The state one ring leaves, cleared so the next draws as new.
+    private fun resetRing() {
+        taskShell = null
+        card = null
+        header = null
+        snoozeSlot = null
+        startSolvingContainer = null
+        challengeContainer = null
+        challengeStarted = false
+        tapCount = 0
+        tapRoundsCompleted = 0
+        completedMathChallenges = 0
+        mathStrikeCount = 0
+        completedDhikrChallenges = 0
+        dhikrStrikeCount = 0
+        lastDhikrIndex = -1
+        graceRow = null
+        graceProgressBar = null
+        graceSecondsText = null
+        graceExpiredText = null
     }
 
     private fun removeOverlay() {

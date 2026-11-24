@@ -25,3 +25,15 @@ export const RINGING_PART = {
   SNOOZE_OFF: "ringing-snooze-off",
   SOLVED: "alarm-solved",
 } as const;
+
+/** What the big time on the ringing screen shows. */
+export const RINGING_TIME = { PRAYER: "prayer", CLOCK: "clock" } as const;
+export type RingingTime = (typeof RINGING_TIME)[keyof typeof RINGING_TIME];
+
+/** Snooze's place under the main button; the other values are locale keys. */
+export const SNOOZE_PLACE = {
+  BUTTON: "button",
+  USED_UP: "alarm.ringing.snoozeUsedUp",
+  OFF: "alarm.ringing.snoozeOff",
+} as const;
+export type SnoozePlace = (typeof SNOOZE_PLACE)[keyof typeof SNOOZE_PLACE];
