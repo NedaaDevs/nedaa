@@ -42,8 +42,13 @@ export const difficultyOf = (task: WakeTask): ChallengeDifficulty =>
 /** A saved position the stack still holds; the start when it holds none. */
 export const resumePosition = (tasks: NonEmptyTasks, saved?: TaskPosition): TaskPosition => {
   const task = saved && tasks[saved.task];
-  return saved && task && saved.step < stepsOf(task) ? saved : FIRST_POSITION;
+  const held = saved && task && saved.step >= 0 && saved.step < stepsOf(task);
+  return held ? saved : FIRST_POSITION;
 };
+
+/** The position a left run saves: a solved board's handover leads to the next task. */
+export const leftPosition = (position: TaskPosition, handover: TaskPosition | null): TaskPosition =>
+  handover ?? position;
 
 /** What solving the board at `position` leads to. */
 export const advanceTaskRun = (tasks: NonEmptyTasks, position: TaskPosition): TaskRunAdvance => {
