@@ -13,7 +13,7 @@ appId: dev.nedaa.app
     timeout: 60000
 - tapOn:
     id: "onboarding-get-started"
-# Continue each step and «later» each alarm; «Turn on» opens system screens.
+# Continue each step and "later" each alarm; "Turn on" opens system screens.
 - repeat:
     while:
       notVisible:

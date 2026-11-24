@@ -68,7 +68,7 @@ appId: ${APP_ID}
           timeout: 3000
 - assertVisible:
     id: "onboarding-notifications-denied"
-# Continue and «later» carry the rest; the exit lands on Today without a city.
+# Continue and "later" carry the rest; the exit lands on Today without a city.
 - repeat:
     while:
       notVisible:

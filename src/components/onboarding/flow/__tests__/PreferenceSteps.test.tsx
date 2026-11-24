@@ -129,7 +129,7 @@ describe("NumeralsStep", () => {
     expect(HAPTIC[HAPTIC_FEEDBACK.SELECTION]).toHaveBeenCalledTimes(1);
   });
 
-  // Arabic writes «ص» after the digits; the whole time is not one LTR run.
+  // Arabic writes "ص" after the digits; the whole time is not one LTR run.
   it("writes the sample as Today's prayer grid writes the same time", async () => {
     // A day whose Fajr is the sample's moment; the other times differ from it.
     const at = (time: string) => `2026-01-01T${time}:00.000Z`;

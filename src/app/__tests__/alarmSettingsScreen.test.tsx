@@ -103,7 +103,7 @@ const daysFromNow = (days: number) => {
 };
 /** Any emoji; a screen reader says each one by its long Unicode name. */
 const EMOJI = /\p{Extended_Pictographic}/u;
-/** Clock digits in either digit set, such as "1:05" or «١:٠٥». */
+/** Clock digits in either digit set, such as "1:05" or "١:٠٥". */
 const CLOCK_DIGITS = /[0-9٠-٩]+:[0-9٠-٩]+/;
 
 /** Two days out at 13:05 on the device's clock, an afternoon ring time. */
@@ -347,7 +347,7 @@ describe("Alarm settings list", () => {
     expect(fajr).not.toHaveAccessibleName(EMOJI);
   });
 
-  // Arabic speech reads «م» as its own period word, so the time is in words.
+  // Arabic speech reads "م" as its own period word, so the time is in words.
   it("speaks an afternoon ring time in words in Arabic", async () => {
     useAlarmSettingsStore.getState().setEnabled(ALARM_TYPE.FAJR, true);
     const rings = afternoonRing();

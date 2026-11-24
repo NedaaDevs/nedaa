@@ -279,7 +279,7 @@ describe("CityPicker's full city list", () => {
   });
 });
 
-// Urdu ends a sentence with «۔», not a Latin full stop.
+// Urdu ends a sentence with "۔", not a Latin full stop.
 describe("CityPicker in Urdu", () => {
   it("joins a note's two sentences as the language does", async () => {
     await act(() => i18n.changeLanguage(AppLocale.UR));

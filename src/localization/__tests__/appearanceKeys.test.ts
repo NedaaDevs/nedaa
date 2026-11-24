@@ -42,7 +42,7 @@ describe.each(Object.values(AppLocale))("Appearance copy in %s", (locale) => {
 });
 
 // The design's words: the phase-following mode is the automatic one.
-it("calls Adaptive «تلقائي» and System «النظام» in Arabic", () => {
+it('calls Adaptive "تلقائي" and System "النظام" in Arabic', () => {
   expect([ar["settings.themes.adaptive.title"], ar["settings.themes.system.title"]]).toEqual([
     "تلقائي",
     "النظام",

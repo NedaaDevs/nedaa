@@ -8,7 +8,7 @@ import { storedDayList, type StoredDays } from "@/utils/phase";
 export type FocusPrayer = { id: PrayerId; time: Date; timezone: string };
 
 export type CountSettings = {
-  /** «Show seconds»: the figure counts to the second, both ways. */
+  /** "Show seconds": the figure counts to the second, both ways. */
   seconds: boolean;
 };
 
