@@ -92,12 +92,11 @@ class TaskShellRun(
         return restart(now, quietMs)
     }
 
-    // Ends quiet time as the task closes; a handover leads to the next task.
-    // Null once done: no Back shows.
+    // Ends quiet time as the task closes. Null once done: nothing is left to resume.
     fun leave(now: Long): Left? {
         if (done) return null
         val signal = quiet(TaskQuiet.Event.LEAVE, now)
-        return Left(Saved(reading.clock, handover ?: position, draws.toMap()), signal)
+        return Left(Saved(reading.clock, TaskRun.left(position, handover), draws.toMap()), signal)
     }
 
     private fun restart(now: Long, quietMs: Long): TaskQuiet.Signal? {

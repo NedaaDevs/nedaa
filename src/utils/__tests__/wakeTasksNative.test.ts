@@ -16,6 +16,7 @@ import {
   advanceTaskRun,
   describeStart,
   isNonEmpty,
+  leftPosition,
   resumePosition,
   taskName,
 } from "@/utils/taskRun";
@@ -165,6 +166,22 @@ describe("task-resume.tsv", () => {
       expect(resumePosition(tasks, saved)).toEqual({
         task: Number(resumedTask),
         step: Number(resumedStep),
+      });
+    }
+  );
+});
+
+describe("task-leave.tsv", () => {
+  it.each(table("task-leave.tsv"))(
+    "leaving at task %s step %s with a handover to %s %s saves task %s step %s",
+    (task, step, handoverTask, handoverStep, savedTask, savedStep) => {
+      const handover =
+        handoverTask === FORMAT.EMPTY
+          ? null
+          : { task: Number(handoverTask), step: Number(handoverStep) };
+      expect(leftPosition({ task: Number(task), step: Number(step) }, handover)).toEqual({
+        task: Number(savedTask),
+        step: Number(savedStep),
       });
     }
   );
