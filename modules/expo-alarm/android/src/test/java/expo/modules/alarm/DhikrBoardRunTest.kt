@@ -37,7 +37,8 @@ class DhikrBoardRunTest {
                 assertEquals(case, FixtureOp.DRAW, op)
             }
             val round = DhikrRules.draw(rows, seen, checkNotNull(rng))
-            val dealt = DhikrRules.cardsOf(rows[round.row])
+            val expected = rows[row.toInt()]
+            val dealt = listOf(expected.answer) + expected.others
             assertEquals(case, row.toInt(), round.row)
             assertEquals(case, cards.ints().map { dealt[it] }, round.cards)
             seen = seen + round.row
@@ -129,6 +130,24 @@ class DhikrBoardRunTest {
         for (state in listOf(start, solved)) {
             assertEquals(state.phase.name, state, DhikrBoardRun.replace(state, rows, TaskRng.seeded(SEED)))
         }
+    }
+
+    @Test
+    fun anEmptyGapsTextNeverHoldsTheAnswer() {
+        for (row in rows) {
+            assertFalse(row.answer, DhikrGap.textOf(row, filled = false).contains(row.answer))
+            assertEquals(row.answer, DhikrGap.textOf(row, filled = true))
+        }
+    }
+
+    @Test
+    fun aFilledGapNeverPassesTheLineAndItsWordShrinksToFit() {
+        assertEquals(DhikrGap.Fit(96f, 1f), DhikrGap.fitOf(word = 40f, inline = 8f, minWidth = 96f, available = 300f))
+        assertEquals(DhikrGap.Fit(216f, 1f), DhikrGap.fitOf(word = 200f, inline = 8f, minWidth = 96f, available = 300f))
+        assertEquals(DhikrGap.Fit(416f, 1f), DhikrGap.fitOf(word = 400f, inline = 8f, minWidth = 96f, available = 0f))
+        val tight = DhikrGap.fitOf(word = 400f, inline = 8f, minWidth = 96f, available = 300f)
+        assertEquals(300f, tight.width, 0f)
+        assertEquals(284f, 400f * tight.scale, 0.001f)
     }
 
     @Test
