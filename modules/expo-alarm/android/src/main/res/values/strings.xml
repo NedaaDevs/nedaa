@@ -102,7 +102,7 @@
     <string name="overlay_notification_math_many">Solve %d math problems to dismiss</string>
     <string name="overlay_notification_dismiss">Tap to dismiss</string>
 
-    <!-- Overlay - Wake-up task shell, a stack of two or more tasks -->
+    <!-- Overlay - Wake-up task shell -->
     <string name="overlay_task_start">Start wake-up task</string>
     <plurals name="overlay_task_start_count">
         <item quantity="one">Start wake-up task</item>

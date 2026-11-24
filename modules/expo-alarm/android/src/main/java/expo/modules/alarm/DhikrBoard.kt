@@ -170,9 +170,10 @@ class DhikrBoard(context: Context, input: BoardInput, private val host: BoardHos
     private fun showLine(row: DhikrTask.Row, fade: Boolean) {
         val context = line.context
         val gap = GapSpan(context, state.gapFilled) { line.width - line.paddingLeft - line.paddingRight }
-        line.text = SpannableStringBuilder(row.before).apply {
-            append(DhikrGap.textOf(row, state.gapFilled), gap, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            append(row.after)
+        val parts = DhikrGap.lineOf(row, state.gapFilled)
+        line.text = SpannableStringBuilder(parts.before).apply {
+            append(parts.gap, gap, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            append(parts.after)
         }
         val spoken = DhikrRules.spoken(row, context.getString(R.string.overlay_task_dhikr_gap))
         line.contentDescription = when (state.label) {

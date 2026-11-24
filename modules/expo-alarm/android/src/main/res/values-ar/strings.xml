@@ -99,7 +99,7 @@
     <string name="overlay_notification_math_many">حل %d مسائل رياضية للإيقاف</string>
     <string name="overlay_notification_dismiss">انقر للإيقاف</string>
 
-    <!-- Overlay - Wake-up task shell, a stack of two or more tasks -->
+    <!-- Overlay - Wake-up task shell -->
     <string name="overlay_task_start">بدء مهمة الاستيقاظ</string>
     <plurals name="overlay_task_start_count">
         <item quantity="zero">بدء مهام الاستيقاظ</item>
