@@ -31,7 +31,7 @@ describe("SurahListRow", () => {
   beforeEach(() => i18n.changeLanguage(AppLocale.AR));
   afterAll(() => i18n.changeLanguage(AppLocale.EN));
 
-  // The count picks the Arabic plural form: seven takes «آيات», not «آية».
+  // The count picks the Arabic plural form: seven takes "آيات", not "آية".
   it("states the ayah count in the form its number takes", async () => {
     await renderRow();
 

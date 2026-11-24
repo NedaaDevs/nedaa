@@ -7,7 +7,7 @@ export type DhikrRound = { row: number; cards: string[] };
 /** The dhikr split into the words drawn either side of its gap. */
 export type DhikrLine = {
   before: string[];
-  /** The piece written against the gap, with no space, such as «وَ». */
+  /** The piece written against the gap, with no space, such as "وَ". */
   touchingBefore: string | null;
   touchingAfter: string | null;
   after: string[];

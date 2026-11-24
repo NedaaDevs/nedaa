@@ -12,7 +12,7 @@ const ALADHAN = PRAYER_TIME_PROVIDERS.ALADHAN;
 
 // Harakat, the dagger alef and tatweel, which a typed query rarely carries.
 const MARKS = /[\u064B-\u065F\u0670\u0640]/g;
-// Directional isolates around Latin names such as «⁦ISNA⁩».
+// Directional isolates around Latin names such as "⁦ISNA⁩".
 const ISOLATES = new RegExp(`[${LTR_ISOLATE.OPEN}-${LTR_ISOLATE.CLOSE}]`, "g");
 const ALEF_FORMS = /[\u0622\u0623\u0625\u0671]/g;
 

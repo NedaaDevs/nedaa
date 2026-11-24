@@ -538,7 +538,7 @@ export const SURAH_NAMES: readonly string[] = [
 
 // Transliterated surah names (for Latin-script app locales: en, ms). Indexed by
 // surah number; index 0 is a placeholder to align with SURAH_NAMES.
-// Vocalized names for the running header, genitive after «سُورَةُ» per the
+// Vocalized names for the running header, genitive after "سُورَةُ" per the
 // Madinah print; quoted-title plurals stay nominative, letter-names bare.
 // User-reviewed list. 1-indexed like SURAH_NAMES.
 export const SURAH_NAMES_VOCALIZED: readonly string[] = [

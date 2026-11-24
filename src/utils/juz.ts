@@ -72,7 +72,7 @@ const QUARTER_FRACTION_LATIN = ["", "1/4", "1/2", "3/4"] as const;
 const QUARTER_WORD_AR = ["", "ربع", "نصف", "ثلاث ارباع"] as const;
 
 // The medallion's three pieces, stacked as a printed mushaf sets them: the
-// quarter word, «الحزب», then the hizb number. Always Arabic — the mark belongs
+// quarter word, "الحزب", then the hizb number. Always Arabic — the mark belongs
 // to the mushaf page, not the surrounding UI. The number stays raw so the caller
 // can render it in the mushaf font's own digits.
 export const rubMarkParts = (rub: number): { quarter: string; word: string; hizb: number } => {
@@ -80,7 +80,7 @@ export const rubMarkParts = (rub: number): { quarter: string; word: string; hizb
   return { quarter: QUARTER_WORD_AR[quarter], word: "الحزب", hizb };
 };
 
-// Localized hizb-quarter label, read out for the footer plaque: «٣/٤ الحزب ١»
+// Localized hizb-quarter label, read out for the footer plaque: "٣/٤ الحزب ١"
 // in Arabic, "3/4 Hizb 1" elsewhere; hizb starts show just the hizb.
 export const rubLabel = (rub: number): string => {
   const { hizb, quarter } = rubForHizbQuarter(rub);
@@ -105,7 +105,7 @@ export const juzLabel = (juz: number): string => {
 };
 
 // Vocalized ordinals for the running header, following the Madinah print
-// («الجُزْءُ الأَوَّلُ»; compounds 11–19 built on fath). User-reviewed list.
+// ("الجُزْءُ الأَوَّلُ"; compounds 11–19 built on fath). User-reviewed list.
 const JUZ_ORDINALS_VOCALIZED = [
   "الأَوَّلُ",
   "الثَّانِي",

@@ -167,7 +167,7 @@ afterEach(() => {
 });
 
 describe("the question", () => {
-  it("asks in the body, «turn on» before «later», with the frame's Continue hidden", async () => {
+  it('asks in the body, "turn on" before "later", with the frame\'s Continue hidden', async () => {
     device(ANDROID, [N, E]);
     const { props } = await renderStep();
 
@@ -184,7 +184,7 @@ describe("the question", () => {
     expect(jest.mocked(props.setPrimaryHidden).mock.lastCall).toEqual([false]);
   });
 
-  // The pressed «turn on» leaves the screen, so focus goes to the new heading.
+  // The pressed "turn on" leaves the screen, so focus goes to the new heading.
   it("moves reader focus to the heading when the sequence starts", async () => {
     device(ANDROID, [N, E]);
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");

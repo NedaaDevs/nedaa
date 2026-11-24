@@ -414,7 +414,7 @@ const ONE_RENDERER: readonly Rule[] = [
     drawsWith: /<MoonGlyph\b/,
     home: "components/ui/sky-background/MoonGlyph.tsx",
   },
-  // A screen reader says «م» as morning, so a spoken time names its period.
+  // A screen reader says "م" as morning, so a spoken time names its period.
   {
     concept: "a clock time a screen reader speaks",
     shows:

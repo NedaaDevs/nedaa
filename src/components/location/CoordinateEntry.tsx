@@ -106,7 +106,7 @@ const CoordinateField = ({ axis, text, onChangeText }: FieldProps) => {
       </HStack>
       <Input
         value={text}
-        // Arabic-Indic digits and «٫» show as the Western digits they mean.
+        // Arabic-Indic digits and "٫" show as the Western digits they mean.
         onChangeText={(next) => onChangeText(toAsciiNumerals(next))}
         keyboardType={coordinateKeyboard()}
         autoCorrect={false}

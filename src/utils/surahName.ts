@@ -21,7 +21,7 @@ export const metadataFontFamily = (): string | undefined =>
   isArabicScript() ? QURAN_FONT_FAMILY : undefined;
 
 // Running-header surah label: Arabic-script locales get the vocalized print
-// form after «سُورَةُ»; Latin locales get the localized "Surah X".
+// form after "سُورَةُ"; Latin locales get the localized "Surah X".
 export const headerSurahLabel = (surahNumber: number): string => {
   const vocalized = SURAH_NAMES_VOCALIZED[surahNumber];
   if (isArabicScript() && vocalized) {
@@ -46,12 +46,12 @@ export const surahNameLigatureFont = (version: MushafVersion): string =>
   SURAH_NAME_LIGATURE_FONTS[version];
 
 // GSUB ligature token QuranCommon turns into the calligraphic vocalized
-// «الجزء …» glyph.
+// "الجزء …" glyph.
 export const juzNameLigature = (juz: number): string | null =>
   juz >= 1 && juz <= 30 ? `juz${String(juz).padStart(3, "0")}` : null;
 
 // GSUB ligature token the version's surah-name font turns into the calligraphic
-// vocalized «سورة …» glyph. v1/v4 name glyphs are bare, so the «سورة» word comes
+// vocalized "سورة …" glyph. v1/v4 name glyphs are bare, so the "سورة" word comes
 // from the separate surah-icon ligature; v2 bakes the word into the name glyph
 // and has no surah-icon ligature (the token would render as literal "-icon").
 export const surahNameLigature = (surahNumber: number, version: MushafVersion): string | null => {
