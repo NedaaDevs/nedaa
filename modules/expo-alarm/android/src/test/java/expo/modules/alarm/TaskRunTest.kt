@@ -5,6 +5,7 @@ import org.junit.Test
 
 // task-run.tsv: what solving the board at each position of a stack leads to.
 // task-start.tsv: what the start button says for each stack.
+// task-resume.tsv: where a reopened run starts from a saved position.
 class TaskRunTest {
 
     private fun shown(advance: TaskRun.Advance): List<String> = when (advance) {
@@ -22,6 +23,19 @@ class TaskRunTest {
             val tasks = WakeTasks.normalize(WakeTasks.decode(stack))
             val advance = TaskRun.advance(tasks, TaskRun.Position(task.toInt(), step.toInt()))
             assertEquals("$stack at $task.$step", row.subList(3, 6), shown(advance))
+        }
+    }
+
+    @Test
+    fun everyResumeMatchesJs() {
+        val rows = sharedTable("task-resume.tsv")
+        check(rows.isNotEmpty())
+        for (row in rows) {
+            val (stack, task, step) = row
+            val tasks = WakeTasks.normalize(WakeTasks.decode(stack))
+            val saved = if (task == FIXTURE_NONE) null else TaskRun.Position(task.toInt(), step.toInt())
+            val resumed = TaskRun.resume(tasks, saved)
+            assertEquals("$stack from $task.$step", row.subList(3, 5), listOf("${resumed.task}", "${resumed.step}"))
         }
     }
 

@@ -1,0 +1,10 @@
+tasks	savedTask	savedStep	task	step
+id=tap	-	-	0	0
+id=tap	0	0	0	0
+id=math,difficulty=hard,steps=3	0	2	0	2
+id=math,difficulty=hard,steps=3	0	3	0	0
+id=math,difficulty=easy,steps=2;id=tap	1	0	1	0
+id=math,difficulty=easy,steps=2;id=tap	0	1	0	1
+id=math,difficulty=easy,steps=2;id=tap	2	0	0	0
+id=tap;id=pattern,difficulty=medium,steps=2;id=prayers	1	1	1	1
+id=tap;id=pattern,difficulty=medium,steps=2;id=prayers	2	1	0	0

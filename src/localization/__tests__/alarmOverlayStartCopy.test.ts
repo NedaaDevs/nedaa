@@ -10,6 +10,8 @@ import {
 const OVERLAY_TO_LOCALE: Record<string, { key: string; names: readonly string[] }> = {
   overlay_task_start: { key: "alarm.task.start", names: [] },
   overlay_task_pair: { key: "alarm.task.pair", names: ["first", "second"] },
+  overlay_task_back: { key: "alarm.task.back", names: [] },
+  overlay_back_to: { key: "a11y.backTo", names: ["screen"] },
 };
 
 // Each overlay plural's RN key and its %N$ argument names; a bare %d is the count.
