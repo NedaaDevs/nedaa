@@ -38,6 +38,21 @@ object DhikrGap {
     // Offsets from the baseline; `top` is negative.
     data class Box(val top: Float, val bottom: Float)
 
+    // The filled gap's width, and the scale that fits its word between the insets.
+    data class Fit(val width: Float, val scale: Float)
+
+    // What stands in the line for an empty gap, so the line's text never holds the answer.
+    const val EMPTY = "\uFFFC"
+
+    fun textOf(row: DhikrTask.Row, filled: Boolean): String = if (filled) row.answer else EMPTY
+
+    // `available` is the line's width, 0 when unknown; the gap never passes it.
+    fun fitOf(word: Float, inline: Float, minWidth: Float, available: Float): Fit {
+        val natural = maxOf(minWidth, word + 2 * inline)
+        if (available <= 0f || natural <= available) return Fit(natural, 1f)
+        return Fit(available, ((available - 2 * inline) / word).coerceIn(0f, 1f))
+    }
+
     fun boxOf(ascent: Float, descent: Float, minHeight: Float): Box {
         val height = maxOf(minHeight, descent - ascent)
         val middle = (ascent + descent) / 2f

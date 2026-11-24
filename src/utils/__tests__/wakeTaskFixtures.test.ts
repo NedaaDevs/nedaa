@@ -41,7 +41,7 @@ import {
   type QuietEvent,
 } from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty } from "@/types/alarm";
-import { dhikrCardsOf, drawDhikrRound, fullDhikr, spokenDhikrLine } from "@/utils/dhikrTask";
+import { drawDhikrRound, fullDhikr, spokenDhikrLine } from "@/utils/dhikrTask";
 import {
   cardStateOf,
   mathLineOf,
@@ -488,7 +488,8 @@ describe("dhikr-draw.tsv", () => {
       }
       if (!rng) throw new Error("no start");
       const round = drawDhikrRound(DHIKR_TASK_ROWS, seen, rng);
-      const dealt = dhikrCardsOf(DHIKR_TASK_ROWS[round.row]);
+      const expected = DHIKR_TASK_ROWS[Number(row)];
+      const dealt = [expected.answer, ...expected.others];
       expect(round.row).toBe(Number(row));
       expect(round.cards).toEqual(ints(cards).map((card) => dealt[card]));
       seen = [...seen, round.row];
