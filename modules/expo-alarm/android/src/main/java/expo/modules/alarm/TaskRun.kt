@@ -1,8 +1,8 @@
 package expo.modules.alarm
 
 // Where a stack's run stands, what a solved board leads to and what the start
-// button says; the rules of src/utils/taskRun.ts. task-run.tsv and
-// task-start.tsv pin both sides.
+// button says; the rules of src/utils/taskRun.ts. task-run.tsv,
+// task-resume.tsv and task-start.tsv pin both sides.
 object TaskRun {
 
     // The task's index and the step within it, from 0.
@@ -32,6 +32,12 @@ object TaskRun {
     fun stepsOf(task: WakeTasks.Task): Int = task.steps ?: WakeTasks.DEFAULT_STEPS
 
     fun difficultyOf(task: WakeTasks.Task): String = task.difficulty ?: WakeTasks.DEFAULT_DIFFICULTY
+
+    // A saved position the stack still holds; the start when it holds none.
+    fun resume(tasks: List<WakeTasks.Task>, saved: Position?): Position {
+        val task = saved?.let { tasks.getOrNull(it.task) }
+        return if (saved != null && task != null && saved.step < stepsOf(task)) saved else FIRST
+    }
 
     // What solving the board at `position` leads to.
     fun advance(tasks: List<WakeTasks.Task>, position: Position): Advance {

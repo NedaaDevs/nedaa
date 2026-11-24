@@ -2,7 +2,13 @@ package expo.modules.alarm
 
 // One stack's run through the shell, as TaskShell.tsx keeps it. Each restart
 // takes the quiet length the caller reads then; the view applies each result.
-class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs: Long, openedAt: Long) {
+class TaskShellRun(
+    private val tasks: List<WakeTasks.Task>,
+    private var quietMs: Long,
+    openedAt: Long,
+    // The run a Back saved; it resumes where it was left.
+    resume: Saved? = null,
+) {
 
     init {
         require(tasks.isNotEmpty()) { "a run needs a task" }
@@ -11,7 +17,17 @@ class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs:
     // A solved board's result and the sound change its new quiet time calls for.
     data class Solved(val advance: TaskRun.Advance, val signal: TaskQuiet.Signal?)
 
-    var position: TaskRun.Position = TaskRun.FIRST
+    // A left run, kept so reopening resumes it; JS TaskRunSnapshot.
+    data class Saved(
+        val clock: TaskClock,
+        val position: TaskRun.Position,
+        val draws: Map<WakeTasks.Board, List<Int>>,
+    )
+
+    // What Back keeps and the sound change leaving calls for.
+    data class Left(val saved: Saved, val signal: TaskQuiet.Signal?)
+
+    var position: TaskRun.Position = TaskRun.resume(tasks, resume?.position)
         private set
 
     // The task the handover leads to; no board takes a solve meanwhile.
@@ -22,10 +38,13 @@ class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs:
     var done = false
         private set
 
-    var reading = TaskQuiet.Reading(TaskClock.start(openedAt, quietMs), openedAt)
+    var reading = TaskQuiet.Reading(
+        resume?.clock?.resume(openedAt) ?: TaskClock.start(openedAt, quietMs),
+        openedAt,
+    )
         private set
 
-    private val draws = mutableMapOf<WakeTasks.Board, List<Int>>()
+    private val draws = resume?.draws.orEmpty().toMutableMap()
 
     val size: Int get() = tasks.size
 
@@ -71,6 +90,14 @@ class TaskShellRun(private val tasks: List<WakeTasks.Task>, private var quietMs:
         position = handover ?: return null
         handover = null
         return restart(now, quietMs)
+    }
+
+    // Ends quiet time as the task closes; a handover leads to the next task.
+    // Null once done: no Back shows.
+    fun leave(now: Long): Left? {
+        if (done) return null
+        val signal = quiet(TaskQuiet.Event.LEAVE, now)
+        return Left(Saved(reading.clock, handover ?: position, draws.toMap()), signal)
     }
 
     private fun restart(now: Long, quietMs: Long): TaskQuiet.Signal? {
