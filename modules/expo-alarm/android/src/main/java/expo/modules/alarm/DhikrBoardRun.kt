@@ -46,6 +46,19 @@ object DhikrGap {
 
     fun textOf(row: DhikrTask.Row, filled: Boolean): String = if (filled) row.answer else EMPTY
 
+    // Forbids a line break on either side of it.
+    const val JOINER = "\u2060"
+
+    data class Line(val before: String, val gap: String, val after: String)
+
+    // The line's parts. A word with no space to the gap is joined to it,
+    // as JS dhikrLineOf keeps it.
+    fun lineOf(row: DhikrTask.Row, filled: Boolean): Line = Line(
+        if (row.before.lastOrNull()?.isWhitespace() == false) row.before + JOINER else row.before,
+        textOf(row, filled),
+        if (row.after.firstOrNull()?.isWhitespace() == false) JOINER + row.after else row.after,
+    )
+
     // `available` is the line's width, 0 when unknown; the gap never passes it.
     fun fitOf(word: Float, inline: Float, minWidth: Float, available: Float): Fit {
         val natural = maxOf(minWidth, word + 2 * inline)

@@ -55,6 +55,21 @@ class DhikrBoardRunTest {
     }
 
     @Test
+    fun aWordTouchingTheGapNeverBreaksFromItAsInJs() {
+        for (cells in sharedTable("dhikr-line.tsv")) {
+            val row = rows[cells[0].toInt()]
+            for (filled in listOf(false, true)) {
+                val line = DhikrGap.lineOf(row, filled)
+                assertEquals(cells[0], cells[3].toBoolean(), line.before.endsWith(DhikrGap.JOINER))
+                assertEquals(cells[0], cells[4].toBoolean(), line.after.startsWith(DhikrGap.JOINER))
+                assertEquals(cells[0], row.before, line.before.removeSuffix(DhikrGap.JOINER))
+                assertEquals(cells[0], row.after, line.after.removePrefix(DhikrGap.JOINER))
+                assertEquals(cells[0], DhikrGap.textOf(row, filled), line.gap)
+            }
+        }
+    }
+
+    @Test
     fun aListOfOneDhikrDrawsItAgain() {
         val one = listOf(rows[3], rows[4])
         val round = DhikrRules.draw(one, listOf(0, 1), TaskRng.seeded(SEED))
