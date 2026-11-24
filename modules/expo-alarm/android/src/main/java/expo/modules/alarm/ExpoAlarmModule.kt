@@ -32,7 +32,35 @@ class ScheduleAlarmOptions : Record {
     @Field val openText: String = ""
     @Field val countdown: Boolean = false
     @Field val snoozeCount: Int = 0
+    @Field val quietUsed: Boolean = false
+    @Field val isPreview: Boolean = false
 }
+
+// The emergency quiet ledger as utils/emergencyQuiet.ts QuietLedger holds it.
+class QuietLedgerRecord : Record {
+    @Field var allowance: Int = EmergencyQuiet.DEFAULT_ALLOWANCE
+    @Field var raiseTo: Int? = null
+    @Field var raiseFrom: Int? = null
+    @Field var month: Int? = null
+    @Field var used: Int = 0
+    @Field var lastWriteAt: Double? = null
+
+    fun toLedger(): EmergencyQuiet.Ledger = EmergencyQuiet.Ledger(
+        allowance = allowance,
+        raise = raiseTo?.let { to -> raiseFrom?.let { EmergencyQuiet.Raise(to, it) } },
+        month = month,
+        used = used,
+        lastWriteAt = lastWriteAt?.toLong(),
+    )
+}
+
+private fun EmergencyQuiet.Ledger.toMap(): Map<String, Any?> = mapOf(
+    "allowance" to allowance,
+    "raise" to raise?.let { mapOf("to" to it.to, "from" to it.from) },
+    "month" to month,
+    "used" to used,
+    "lastWriteAt" to lastWriteAt?.toDouble(),
+)
 
 class ExpoAlarmModule : Module() {
 
@@ -85,7 +113,8 @@ class ExpoAlarmModule : Module() {
                 val soundName = if (options.sound.isNotEmpty()) options.sound else "beep"
 
                 val scheduled = scheduler.scheduleAlarm(
-                    options.id, triggerMs, options.alarmType, options.title, soundName, options.snoozeCount
+                    options.id, triggerMs, options.alarmType, options.title, soundName, options.snoozeCount,
+                    quietUsed = options.quietUsed, preview = options.isPreview
                 )
                 promise.resolve(scheduled)
             } catch (e: Exception) {
@@ -206,9 +235,28 @@ class ExpoAlarmModule : Module() {
                     "alarmType" to record.alarmType,
                     "title" to record.title,
                     "snoozeCount" to record.snoozeCount,
-                    "snoozeEndTime" to record.snoozeEndTime
+                    "snoozeEndTime" to record.snoozeEndTime,
+                    "quietUsed" to record.quietUsed
                 )
             }
+        }
+
+        // -- Emergency quiet ledger: this database is its one truth on Android --
+
+        Function("getQuietLedger") {
+            db.getQuietLedger().toMap()
+        }
+
+        Function("seedQuietLedger") { app: QuietLedgerRecord, now: Double ->
+            db.seedQuietLedger(app.toLedger(), now.toLong()).toMap()
+        }
+
+        Function("recordQuietUse") { now: Double ->
+            db.recordQuietUse(now.toLong())?.toMap()
+        }
+
+        Function("setQuietAllowance") { allowance: Int, now: Double ->
+            db.setQuietAllowance(allowance, now.toLong()).toMap()
         }
 
         AsyncFunction("clearSnoozeQueue") {

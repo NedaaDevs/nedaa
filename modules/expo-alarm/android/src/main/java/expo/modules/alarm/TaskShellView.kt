@@ -43,6 +43,9 @@ class TaskShellView(
 
         // "Stop alarm" was pressed.
         fun onStop()
+
+        // "Stop alarm" appeared, which takes the emergency quiet away.
+        fun onWayOut() = Unit
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -166,13 +169,28 @@ class TaskShellView(
         addView(stopButton)
     }
 
+    // Where the emergency quiet's banner and offer stand during a run.
+    val bannerSlot = quietSlot(context)
+
+    val offerSlot = quietSlot(context)
+
+    // As JS alarm.audible; the strip also yields to the quiet's confirm.
+    private var heard = true
+
+    private var confirmOpen = false
+
+    private var wayOutWas = false
+
+    // "Stop alarm" shows in the open run, or showed in the run Back kept.
+    val wayOutShown: Boolean get() = run?.wayOut ?: (saved?.clock?.wayOutShown ?: false)
+
     private val taskPanel = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         layoutParams = matchWidth()
         visibility = View.GONE
         listOf(
-            backButton, positionLine, stepLine, boardHeading, boardHost,
-            handoverPanel, quietRow, quietState, quietHelp, wayOut,
+            backButton, positionLine, stepLine, bannerSlot, boardHeading, boardHost,
+            handoverPanel, quietRow, quietState, quietHelp, wayOut, offerSlot,
         ).forEach(::addView)
         listOf(quietSpoken, progressSpoken, wayOutSpoken).forEach(::addView)
     }
@@ -206,6 +224,16 @@ class TaskShellView(
     }
 
     fun focusStart() = focusForReader(startButton)
+
+    // A quiet holds the sound, or its confirm takes the strip's place.
+    fun setQuiet(heard: Boolean, confirmOpen: Boolean) {
+        this.heard = heard
+        this.confirmOpen = confirmOpen
+        val run = run ?: return
+        val now = now()
+        run.hear(heard, now)
+        render(run, now)
+    }
 
     // The solved panel takes the quiet strip's place, as JS TaskShell's done state.
     fun showSolved(panel: View) {
@@ -248,6 +276,7 @@ class TaskShellView(
         if (run != null) return
         val now = now()
         val run = TaskShellRun(tasks, quietMs(), now, saved).also { this.run = it }
+        run.hear(heard, now)
         listener.onStart()
         gate.visibility = View.GONE
         backButton.visibility = View.VISIBLE
@@ -312,7 +341,9 @@ class TaskShellView(
                 release()
                 boardDone = true
                 boardHost.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-                listOf(quietRow, quietState, quietHelp, wayOut).forEach { it.visibility = View.GONE }
+                listOf(quietRow, quietState, quietHelp, wayOut, bannerSlot, offerSlot).forEach {
+                    it.visibility = View.GONE
+                }
                 listOf(quietSpoken, progressSpoken, wayOutSpoken).forEach { it.say(null) }
                 listener.onSolved()
                 return
@@ -369,12 +400,14 @@ class TaskShellView(
                 TaskShellRun.Spoken.Silent -> null
             },
         )
-        renderQuiet(run.reading.clock, now, audible = !run.done)
+        renderQuiet(run.reading.clock, now, run.audible, strip = run.audible && !confirmOpen)
         wayOut.visibility = if (run.wayOut) View.VISIBLE else View.GONE
         wayOutSpoken.say(if (run.wayOut) context.getString(R.string.overlay_task_way_out) else null)
+        if (run.wayOut && !wayOutWas) listener.onWayOut()
+        wayOutWas = run.wayOut
     }
 
-    private fun renderQuiet(clock: TaskClock, now: Long, audible: Boolean) {
+    private fun renderQuiet(clock: TaskClock, now: Long, audible: Boolean, strip: Boolean) {
         val phase = clock.quietPhase(now)
         val sounding = phase == TaskClock.QuietPhase.SOUNDING
         val state = context.getString(
@@ -399,8 +432,9 @@ class TaskShellView(
         val fill = if (phase == TaskClock.QuietPhase.ENDING) COLOR_WARNING else COLOR_PRIMARY
         quietBar.progressTintList = ColorStateList.valueOf(Color.parseColor(fill))
         quietBar.progress = (clock.quietFraction(now, stepped) * BAR_MAX).toInt()
-        quietRow.visibility = if (sounding) View.GONE else View.VISIBLE
-        quietHelp.visibility = if (sounding) View.VISIBLE else View.GONE
+        quietRow.visibility = if (strip && !sounding) View.VISIBLE else View.GONE
+        quietState.visibility = if (strip) View.VISIBLE else View.GONE
+        quietHelp.visibility = if (strip && sounding) View.VISIBLE else View.GONE
         val seconds = clock.quietSecondsLeft(now)
         quietSeconds.text = String.format(Locale.getDefault(), CLOCK_FORMAT, seconds / 60, seconds % 60)
         quietRow.contentDescription =

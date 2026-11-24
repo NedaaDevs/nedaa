@@ -61,6 +61,20 @@ class TaskShellRunTest {
         assertNull("a stopped alarm takes no more solves", run.solved(opened + 4_100, quietMs))
     }
 
+    // As JS useTaskClock: an unheard alarm sends no signal; hearing ends quiet time.
+    @Test
+    fun anEmergencyQuietHoldsTheSignalsAndItsEndEndsQuietTime() {
+        val run = run("id=math,steps=2;id=tap")
+        run.open()
+        run.hear(false, opened + 1_000)
+        assertFalse(run.audible)
+        assertEquals(emptyList<TaskQuiet.Signal>(), run.ticks(opened + quietMs))
+        assertNull(run.solved(opened + quietMs + 1_000, quietMs)?.signal)
+        run.hear(true, opened + quietMs + 2_000)
+        assertTrue(run.audible)
+        assertEquals(TaskClock.QuietPhase.SOUNDING, run.reading.clock.quietPhase(opened + quietMs + 2_000))
+    }
+
     @Test
     fun aSolveAfterTheSoundReturnedPausesItAgain() {
         val run = run("id=math,steps=2;id=tap")

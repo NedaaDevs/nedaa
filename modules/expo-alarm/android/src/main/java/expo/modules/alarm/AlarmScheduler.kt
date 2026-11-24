@@ -13,6 +13,9 @@ class AlarmScheduler(private val context: Context) {
 
     companion object {
         const val REARM_DELAY_MS = 15_000L
+
+        // A re-ring still ahead, such as a quiet's, keeps its own time.
+        fun rearmAt(now: Long, delayMs: Long, savedTriggerAt: Long): Long = maxOf(now + delayMs, savedTriggerAt)
     }
 
     private val alarmManager: AlarmManager
@@ -35,11 +38,13 @@ class AlarmScheduler(private val context: Context) {
         val sound = db.getAlarmSettings(record.alarmType).sound.ifEmpty { "beep" }
         val armed = scheduleAlarm(
             id = alarmId,
-            triggerTimeMs = System.currentTimeMillis() + delayMs,
+            triggerTimeMs = rearmAt(System.currentTimeMillis(), delayMs, record.triggerTime.toLong()),
             alarmType = record.alarmType,
             title = record.title,
             soundName = sound,
-            snoozeCount = record.snoozeCount
+            snoozeCount = record.snoozeCount,
+            quietUsed = record.quietUsed,
+            preview = record.preview
         )
         AlarmLogger.getInstance(context).w(
             "AlarmScheduler",
@@ -71,7 +76,9 @@ class AlarmScheduler(private val context: Context) {
         alarmType: String,
         title: String,
         soundName: String,
-        snoozeCount: Int = 0
+        snoozeCount: Int = 0,
+        quietUsed: Boolean = false,
+        preview: Boolean = false
     ): Boolean {
         if (!canScheduleExactAlarms()) {
             AlarmLogger.getInstance(context).e("AlarmScheduler", "Exact alarm permission denied — cannot schedule id=$id type=$alarmType")
@@ -125,7 +132,10 @@ class AlarmScheduler(private val context: Context) {
 
         // Saved after arming, so BootReceiver never restores an unarmed alarm.
         AlarmDatabase.getInstance(context)
-            .saveAlarm(id, alarmType, title, triggerTimeMs.toDouble(), isBackup = false, snoozeCount = snoozeCount)
+            .saveAlarm(
+                id, alarmType, title, triggerTimeMs.toDouble(),
+                isBackup = false, snoozeCount = snoozeCount, quietUsed = quietUsed, preview = preview
+            )
         AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm scheduled: id=$id triggerTime=$triggerTimeMs")
 
         return true

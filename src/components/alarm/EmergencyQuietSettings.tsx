@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
@@ -28,6 +29,9 @@ const EmergencyQuietSettings = () => {
   const now = useMinuteClock().getTime();
   const ledger = useEmergencyQuietStore((state) => state.ledger);
   const setAllowance = useEmergencyQuietStore((state) => state.setAllowance);
+  const refresh = useEmergencyQuietStore((state) => state.refresh);
+  // The overlay may have spent a quiet since the count was last read.
+  useEffect(refresh, [refresh]);
   const dayMonth = useDayMonth();
   const raise = raiseStartsOn(ledger, now);
   const off = t("common.off");

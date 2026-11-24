@@ -2,6 +2,7 @@ package expo.modules.alarm
 
 import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
@@ -40,7 +41,9 @@ class AlarmDatabase private constructor(private val context: Context) :
                 completed INTEGER DEFAULT 0,
                 is_backup INTEGER DEFAULT 0,
                 snooze_count INTEGER DEFAULT 0,
-                created_at REAL NOT NULL
+                created_at REAL NOT NULL,
+                quiet_used INTEGER DEFAULT 0,
+                preview INTEGER DEFAULT 0
             )
         """)
 
@@ -104,9 +107,12 @@ class AlarmDatabase private constructor(private val context: Context) :
                 title TEXT NOT NULL,
                 snooze_count INTEGER NOT NULL,
                 snooze_end_time REAL NOT NULL,
-                snoozed_at REAL NOT NULL
+                snoozed_at REAL NOT NULL,
+                quiet_used INTEGER DEFAULT 0
             )
         """)
+
+        db.execSQL(AlarmMigrations.CREATE_QUIET_LEDGER)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -132,7 +138,9 @@ class AlarmDatabase private constructor(private val context: Context) :
         title: String,
         triggerTime: Double,
         isBackup: Boolean = false,
-        snoozeCount: Int = 0
+        snoozeCount: Int = 0,
+        quietUsed: Boolean = false,
+        preview: Boolean = false
     ) {
         val values = ContentValues().apply {
             put("id", id)
@@ -143,6 +151,8 @@ class AlarmDatabase private constructor(private val context: Context) :
             put("is_backup", if (isBackup) 1 else 0)
             put("snooze_count", snoozeCount)
             put("created_at", System.currentTimeMillis().toDouble())
+            put("quiet_used", if (quietUsed) 1 else 0)
+            put("preview", if (preview) 1 else 0)
         }
         writableDatabase.insertWithOnConflict("alarms", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
@@ -154,27 +164,30 @@ class AlarmDatabase private constructor(private val context: Context) :
         val triggerTime: Double,
         val completed: Boolean,
         val isBackup: Boolean,
-        val snoozeCount: Int
+        val snoozeCount: Int,
+        // This alarm, its snoozes included, has had its emergency quiet.
+        val quietUsed: Boolean = false,
+        val preview: Boolean = false
+    )
+
+    private val alarmColumns =
+        "id, alarm_type, title, trigger_time, completed, is_backup, snooze_count, quiet_used, preview"
+
+    private fun alarmAt(cursor: Cursor) = AlarmRecord(
+        id = cursor.getString(0),
+        alarmType = cursor.getString(1),
+        title = cursor.getString(2),
+        triggerTime = cursor.getDouble(3),
+        completed = cursor.getInt(4) == 1,
+        isBackup = cursor.getInt(5) == 1,
+        snoozeCount = cursor.getInt(6),
+        quietUsed = cursor.getInt(7) == 1,
+        preview = cursor.getInt(8) == 1
     )
 
     fun getAlarm(id: String): AlarmRecord? {
-        val cursor = readableDatabase.rawQuery(
-            "SELECT id, alarm_type, title, trigger_time, completed, is_backup, snooze_count FROM alarms WHERE id = ?",
-            arrayOf(id)
-        )
-        return cursor.use {
-            if (it.moveToFirst()) {
-                AlarmRecord(
-                    id = it.getString(0),
-                    alarmType = it.getString(1),
-                    title = it.getString(2),
-                    triggerTime = it.getDouble(3),
-                    completed = it.getInt(4) == 1,
-                    isBackup = it.getInt(5) == 1,
-                    snoozeCount = it.getInt(6)
-                )
-            } else null
-        }
+        val cursor = readableDatabase.rawQuery("SELECT $alarmColumns FROM alarms WHERE id = ?", arrayOf(id))
+        return cursor.use { if (it.moveToFirst()) alarmAt(it) else null }
     }
 
     fun getSnoozeCount(alarmId: String): Int {
@@ -213,23 +226,11 @@ class AlarmDatabase private constructor(private val context: Context) :
     fun getAllPendingAlarms(): List<AlarmRecord> {
         val alarms = mutableListOf<AlarmRecord>()
         val cursor = readableDatabase.rawQuery(
-            "SELECT id, alarm_type, title, trigger_time, completed, is_backup, snooze_count FROM alarms WHERE completed = 0 AND is_backup = 0",
+            "SELECT $alarmColumns FROM alarms WHERE completed = 0 AND is_backup = 0",
             null
         )
         cursor.use {
-            while (it.moveToNext()) {
-                alarms.add(
-                    AlarmRecord(
-                        id = it.getString(0),
-                        alarmType = it.getString(1),
-                        title = it.getString(2),
-                        triggerTime = it.getDouble(3),
-                        completed = it.getInt(4) == 1,
-                        isBackup = it.getInt(5) == 1,
-                        snoozeCount = it.getInt(6)
-                    )
-                )
-            }
+            while (it.moveToNext()) alarms.add(alarmAt(it))
         }
         return alarms
     }
@@ -291,7 +292,7 @@ class AlarmDatabase private constructor(private val context: Context) :
                 put("title", title)
                 put("timestamp", System.currentTimeMillis() / 1000.0)
             }
-            db.insert("pending_challenge", null, values)
+            db.insertOrThrow("pending_challenge", null, values)
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
@@ -322,9 +323,10 @@ class AlarmDatabase private constructor(private val context: Context) :
         }
     }
 
-    fun clearPendingChallenge() {
+    // Deletes the row; completes its alarm only if [ownerId] is null or names it.
+    fun clearPendingChallenge(ownerId: String? = null) {
         val pending = getPendingChallenge()
-        if (pending != null) {
+        if (pending != null && PendingChallengeRule.completesOnClear(pending.alarmId, ownerId)) {
             markCompleted(pending.alarmId)
         }
         writableDatabase.delete("pending_challenge", null, null)
@@ -443,7 +445,8 @@ class AlarmDatabase private constructor(private val context: Context) :
         alarmType: String,
         title: String,
         snoozeCount: Int,
-        snoozeEndTime: Double
+        snoozeEndTime: Double,
+        quietUsed: Boolean = false
     ) {
         val values = ContentValues().apply {
             put("original_alarm_id", originalAlarmId)
@@ -453,8 +456,9 @@ class AlarmDatabase private constructor(private val context: Context) :
             put("snooze_count", snoozeCount)
             put("snooze_end_time", snoozeEndTime)
             put("snoozed_at", System.currentTimeMillis() / 1000.0)
+            put("quiet_used", if (quietUsed) 1 else 0)
         }
-        writableDatabase.insert("snooze_queue", null, values)
+        writableDatabase.insertOrThrow("snooze_queue", null, values)
     }
 
     data class SnoozeQueueRecord(
@@ -464,13 +468,14 @@ class AlarmDatabase private constructor(private val context: Context) :
         val alarmType: String,
         val title: String,
         val snoozeCount: Int,
-        val snoozeEndTime: Double
+        val snoozeEndTime: Double,
+        val quietUsed: Boolean
     )
 
     fun getSnoozeQueue(): List<SnoozeQueueRecord> {
         val queue = mutableListOf<SnoozeQueueRecord>()
         val cursor = readableDatabase.rawQuery(
-            "SELECT id, original_alarm_id, snooze_alarm_id, alarm_type, title, snooze_count, snooze_end_time FROM snooze_queue ORDER BY snoozed_at ASC",
+            "SELECT id, original_alarm_id, snooze_alarm_id, alarm_type, title, snooze_count, snooze_end_time, quiet_used FROM snooze_queue ORDER BY snoozed_at ASC",
             null
         )
         cursor.use {
@@ -483,7 +488,8 @@ class AlarmDatabase private constructor(private val context: Context) :
                         alarmType = it.getString(3),
                         title = it.getString(4),
                         snoozeCount = it.getInt(5),
-                        snoozeEndTime = it.getDouble(6)
+                        snoozeEndTime = it.getDouble(6),
+                        quietUsed = it.getInt(7) == 1
                     )
                 )
             }
@@ -500,6 +506,83 @@ class AlarmDatabase private constructor(private val context: Context) :
         val placeholders = ids.joinToString(",") { "?" }
         val args = ids.map { it.toString() }.toTypedArray()
         writableDatabase.delete("snooze_queue", "id IN ($placeholders)", args)
+    }
+
+    // -- Emergency quiet ledger (one row, shared by every alarm) --
+
+    private data class QuietRow(val ledger: EmergencyQuiet.Ledger, val fromApp: Boolean)
+
+    private fun readQuietRow(db: SQLiteDatabase): QuietRow? = db.rawQuery(
+        "SELECT allowance, raise_to, raise_from, month, used, last_write_at, from_app FROM emergency_quiet WHERE id = 1",
+        null
+    ).use {
+        if (!it.moveToFirst()) return@use null
+        val raise = if (it.isNull(1) || it.isNull(2)) null else EmergencyQuiet.Raise(it.getInt(1), it.getInt(2))
+        QuietRow(
+            EmergencyQuiet.Ledger(
+                allowance = it.getInt(0),
+                raise = raise,
+                month = if (it.isNull(3)) null else it.getInt(3),
+                used = it.getInt(4),
+                lastWriteAt = if (it.isNull(5)) null else it.getLong(5)
+            ),
+            fromApp = it.getInt(6) == 1
+        )
+    }
+
+    private fun writeQuietRow(db: SQLiteDatabase, ledger: EmergencyQuiet.Ledger, fromApp: Boolean) {
+        val values = ContentValues().apply {
+            put("id", 1)
+            put("allowance", ledger.allowance)
+            put("raise_to", ledger.raise?.to)
+            put("raise_from", ledger.raise?.from)
+            put("month", ledger.month)
+            put("used", ledger.used)
+            put("last_write_at", ledger.lastWriteAt)
+            put("from_app", if (fromApp) 1 else 0)
+        }
+        db.insertWithOnConflict("emergency_quiet", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    // One read-change-write under the database lock, so two writers never lose a use.
+    private fun <T> quietTransaction(change: (SQLiteDatabase, QuietRow?) -> T): T {
+        val db = writableDatabase
+        db.beginTransactionNonExclusive()
+        try {
+            val result = change(db, readQuietRow(db))
+            db.setTransactionSuccessful()
+            return result
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun getQuietLedger(): EmergencyQuiet.Ledger = readQuietRow(readableDatabase)?.ledger ?: EmergencyQuiet.NEW_LEDGER
+
+    // Null until the app has written a ledger: no allowance is known before.
+    fun quietLedgerOrNull(): EmergencyQuiet.Ledger? = readQuietRow(readableDatabase)?.ledger
+
+    // Null, and nothing written, with none left or no ledger row. A throw from
+    // [alsoWrite] undoes the count with it.
+    fun recordQuietUse(now: Long, alsoWrite: () -> Unit = {}): EmergencyQuiet.Ledger? =
+        quietTransaction { db, row ->
+            row ?: return@quietTransaction null
+            EmergencyQuiet.recordUse(row.ledger, now)?.also {
+                writeQuietRow(db, it, row.fromApp)
+                alsoWrite()
+            }
+        }
+
+    fun setQuietAllowance(allowance: Int, now: Long): EmergencyQuiet.Ledger = quietTransaction { db, row ->
+        EmergencyQuiet.setAllowance(row?.ledger ?: EmergencyQuiet.NEW_LEDGER, allowance, now)
+            .also { writeQuietRow(db, it, row?.fromApp ?: false) }
+    }
+
+    // Writes the app's saved ledger unless a seed already wrote one.
+    fun seedQuietLedger(app: EmergencyQuiet.Ledger, now: Long): EmergencyQuiet.Ledger = quietTransaction { db, row ->
+        val ledger = EmergencyQuiet.seedFrom(app, row?.takeIf { it.fromApp }?.ledger, now)
+        if (row == null || !row.fromApp || ledger != row.ledger) writeQuietRow(db, ledger, fromApp = true)
+        ledger
     }
 
     // -- Alarm Settings --

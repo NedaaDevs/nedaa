@@ -63,7 +63,14 @@ class AlarmService : Service() {
 
         if (intent?.action == ACTION_START) {
             val alarmId = intent.getStringExtra(EXTRA_ALARM_ID)
-            if (alarmId != null) {
+            val record = alarmId?.let { AlarmDatabase.getInstance(this).getAlarm(it) }
+            val redelivered = flags and START_FLAG_REDELIVERY != 0
+            val action = RedeliveredStart.actionFor(redelivered, record?.completed, isRunning)
+            if (alarmId != null && action != RedeliveredStart.Action.RING) {
+                AlarmLogger.getInstance(this).w("AlarmService", "Skipping ended alarm: id=$alarmId")
+                if (action == RedeliveredStart.Action.SKIP_AND_STOP_THIS_START) endSkippedStart(startId)
+                return START_NOT_STICKY
+            } else if (alarmId != null) {
                 val alarmType = intent.getStringExtra(EXTRA_ALARM_TYPE) ?: "custom"
                 val title = intent.getStringExtra(EXTRA_ALARM_TITLE) ?: "Alarm"
                 val soundName = intent.getStringExtra(EXTRA_SOUND_NAME) ?: "beep"
@@ -80,6 +87,14 @@ class AlarmService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         return START_NOT_STICKY
+    }
+
+    // The foreground start the system requires, then this start alone ends.
+    private fun endSkippedStart(startId: Int) {
+        val notification = AlarmNotificationManager(this).buildSilentStartNotification()
+        startForeground(AlarmNotificationManager.NOTIFICATION_ID, notification)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf(startId)
     }
 
     private fun startAlarm(alarmId: String, alarmType: String, title: String, soundName: String) {

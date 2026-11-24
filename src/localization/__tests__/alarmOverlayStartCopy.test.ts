@@ -31,6 +31,17 @@ const OVERLAY_TO_LOCALE: Record<string, { key: string; names: readonly string[] 
   overlay_join: { key: "a11y.join", names: ["first", "second"] },
   overlay_solved_title: { key: "alarm.solved.title", names: [] },
   overlay_close: { key: "common.close", names: [] },
+  overlay_quiet_button: { key: "alarm.quiet.button", names: [] },
+  overlay_quiet_hint: { key: "a11y.alarm.quiet.buttonHint", names: [] },
+  overlay_quiet_confirm_title: { key: "alarm.quiet.confirm.title", names: [] },
+  overlay_quiet_confirm_cost: { key: "alarm.quiet.confirm.cost", names: [] },
+  overlay_quiet_confirm_go: { key: "alarm.quiet.confirm.go", names: [] },
+  overlay_quiet_failed: { key: "alarm.quiet.failed", names: [] },
+  overlay_quiet_none_left: { key: "alarm.quiet.noneLeft", names: ["date"] },
+  overlay_quiet_used: { key: "alarm.quiet.used", names: [] },
+  overlay_quiet_banner: { key: "alarm.quiet.banner", names: ["time"] },
+  overlay_quiet_ready: { key: "a11y.alarm.quiet.ready", names: ["go"] },
+  overlay_quiet_back: { key: "common.back", names: [] },
 };
 
 // Each overlay plural's RN key and its %N$ argument names; a bare %d is the count.
@@ -39,6 +50,7 @@ const OVERLAY_PLURAL_TO_LOCALE: Record<string, { key: string; names: readonly st
   overlay_task_with_steps: { key: "alarm.task.withSteps", names: ["name", "count"] },
   overlay_ringing_snooze: { key: "alarm.ringing.snooze", names: [] },
   overlay_ringing_snoozes_left: { key: "alarm.ringing.snoozesLeft", names: [] },
+  overlay_quiet_confirm_body: { key: "alarm.quiet.confirm.body", names: [] },
 };
 
 describe.each(OVERLAY_BUNDLES)("Start overlay copy in %s", (folder, bundle, locale) => {

@@ -9,6 +9,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.database.SQLException
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
@@ -44,8 +45,9 @@ import kotlin.random.Random
 class AlarmOverlayService : Service() {
 
     companion object {
-        private const val NOTIFICATION_ID = 9002
-        private const val CHANNEL_ID = "alarm_overlay_channel"
+
+        // How long past the re-ring the overlay waits before sounding itself.
+        private const val QUIET_LATE_MS = 10_000L
 
         // Tap counts per difficulty
         private const val TAPS_EASY = 5
@@ -85,6 +87,10 @@ class AlarmOverlayService : Service() {
         var isRunning = false
             private set
 
+        // The running quiet's re-ring id; null while no quiet runs.
+        @Volatile
+        private var quietRingId: String? = null
+
         // The solved panel outlives the ring; a stopped ring leaves it up.
         @Volatile
         var solvedShowing = false
@@ -95,7 +101,7 @@ class AlarmOverlayService : Service() {
 
         fun start(context: Context, alarmId: String, alarmType: String, title: String) {
             if (!usesNativeOverlay(context)) return
-            if (isRunning) return
+            if (!EmergencyQuiet.reachesOverlay(isRunning, quietRingId, alarmId)) return
 
             val intent = Intent(context, AlarmOverlayService::class.java).apply {
                 putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
@@ -143,23 +149,57 @@ class AlarmOverlayService : Service() {
     private var header: RingingHeaderView? = null
     private var snoozeSlot: View? = null
     private var lastStartId = 0
+    private var shellRunning = false
+
+    // The emergency quiet, as JS useAlarmScreen's emergency control.
+    private var quietView: EmergencyQuietView? = null
+    private var quietBanner: QuietBannerView? = null
+    private var ringBannerSlot: FrameLayout? = null
+    private var ringOfferSlot: FrameLayout? = null
+    private var quietConfirming = false
+    private var quietFailed = false
+    private var quieting = false
+    // When the alarm rings again; null while no quiet runs.
+    private var quietUntil: Long? = null
+    private val quietHandler = Handler(Looper.getMainLooper())
 
     // As JS: the ring screen gives way to the task and comes back on Back.
     private val shellListener = object : TaskShellView.Listener {
         override fun onStart() {
+            shellRunning = true
             header?.hide()
-            snoozeSlot?.visibility = View.GONE
+            moveQuiet()
+            renderQuiet()
         }
 
         override fun onBack() {
+            shellRunning = false
             header?.show()
-            snoozeSlot?.visibility = View.VISIBLE
+            moveQuiet()
+            renderQuiet()
         }
 
         override fun onSilence() = silenceAlarm()
         override fun onSound() = soundAtVolume()
         override fun onSolved() = completeAlarm()
         override fun onStop() = completeAlarm(AlarmDatabase.OUTCOME_STOPPED)
+        override fun onWayOut() = renderQuiet()
+    }
+
+    private val quietListener = object : EmergencyQuietView.Listener {
+        override fun onOpen() {
+            quietConfirming = true
+            quietFailed = false
+            renderQuiet()
+        }
+
+        override fun onBack() {
+            quietConfirming = false
+            quietFailed = false
+            renderQuiet()
+        }
+
+        override fun onConfirm() = startQuiet()
     }
 
     // Tap challenge state
@@ -250,7 +290,9 @@ class AlarmOverlayService : Service() {
         if (solvedShowing) closeSolved(stopService = false)
         // A second start keeps the shell showing and its progress; the ringing alarm's notice stays.
         if (taskShell != null) {
-            startForeground(NOTIFICATION_ID, createNotification())
+            // The quiet's re-ring: AlarmService has started the sound.
+            if (intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_ID) == alarmId) endQuiet(sound = false)
+            startForeground(AlarmNotificationManager.OVERLAY_NOTIFICATION_ID, createNotification())
             return START_NOT_STICKY
         }
 
@@ -261,8 +303,8 @@ class AlarmOverlayService : Service() {
         loadChallengeSettings()
         loadSoundSettings()
 
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+        AlarmNotificationManager(this).createOverlayChannel()
+        startForeground(AlarmNotificationManager.OVERLAY_NOTIFICATION_ID, createNotification())
         showOverlay()
         return START_NOT_STICKY
     }
@@ -312,6 +354,7 @@ class AlarmOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        releaseQuiet()
         taskShell?.release()
         grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
@@ -346,6 +389,7 @@ class AlarmOverlayService : Service() {
     }
 
     private fun soundAgain() {
+        if (quietUntil != null) return
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.startAlarmSound(alarmSound, alarmVolume, gentleWakeUpEnabled, gentleWakeUpDuration)
         if (vibrationEnabled) {
@@ -355,6 +399,7 @@ class AlarmOverlayService : Service() {
 
     // The shell's sound after quiet time: the set volume at once, as the JS task does.
     private fun soundAtVolume() {
+        if (quietUntil != null) return
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.startAlarmSound(alarmSound, alarmVolume, false, 0)
         if (vibrationEnabled) {
@@ -389,21 +434,6 @@ class AlarmOverlayService : Service() {
 
     // --- Notification ---
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Alarm Overlay",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Shows alarm overlay"
-                setShowBadge(false)
-            }
-            val nm = getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(channel)
-        }
-    }
-
     private fun createNotification(): Notification {
         val openIntent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("dev.nedaa.app://alarm?alarmId=$alarmId&alarmType=$alarmType")
@@ -434,7 +464,7 @@ class AlarmOverlayService : Service() {
         }
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
+            Notification.Builder(this, AlarmNotificationManager.OVERLAY_CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle(getString(R.string.overlay_notification_title))
                 .setContentText(contentText)
@@ -539,6 +569,7 @@ class AlarmOverlayService : Service() {
         card.addView(graceExpiredText)
 
         if (NativeBoards.runsShell(stack)) {
+            ringBannerSlot = quietSlot(this).also { card.addView(it) }
             taskShell = TaskShellView(this, stack, shellListener).also { card.addView(it.view) }
         } else {
             buildChallengeUI(card, dp)
@@ -550,6 +581,7 @@ class AlarmOverlayService : Service() {
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - $snoozeUse, duration=$snoozeDurationMinutes")
         snoozeSlot = SnoozeSlotView(this, snoozeUse, snoozeDurationMinutes) { onSnoozeClicked() }.view
         card.addView(snoozeSlot)
+        if (taskShell != null) buildQuiet(card, db)
         this.card = card
 
         rootLayout.addView(card)
@@ -1202,6 +1234,7 @@ class AlarmOverlayService : Service() {
     // --- Snooze & Complete ---
 
     private fun onSnoozeClicked() {
+        if (!EmergencyQuiet.canSnooze(snoozeOpen = true, quietUntil = quietUntil)) return
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
@@ -1224,32 +1257,48 @@ class AlarmOverlayService : Service() {
 
         // The replacement is secured first; a failed snooze leaves this alarm ringing.
         val scheduler = AlarmScheduler(this)
-        if (!scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount)) {
+        val record = db.getAlarm(alarmId)
+        val quietUsed = record?.quietUsed == true
+        val scheduled = scheduler.scheduleAlarm(
+            snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount,
+            quietUsed = quietUsed, preview = record?.preview == true,
+        )
+        if (!scheduled) {
             AlarmLogger.getInstance(this).e("AlarmOverlay", "Snooze scheduling failed; alarm keeps ringing: id=$alarmId")
+            return
+        }
+
+        // Without its queue row the app cannot cancel the snooze, so none is set.
+        try {
+            db.addToSnoozeQueue(
+                originalAlarmId = alarmId,
+                snoozeAlarmId = snoozeId,
+                alarmType = alarmType,
+                title = snoozeTitle,
+                snoozeCount = newSnoozeCount,
+                snoozeEndTime = snoozeTime.toDouble(),
+                quietUsed = quietUsed
+            )
+        } catch (e: SQLException) {
+            scheduler.cancelAlarm(snoozeId)
+            runCatching { db.deleteAlarm(snoozeId) }
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Snooze queue save failed; alarm keeps ringing: ${e.message}")
             return
         }
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 
-        db.clearPendingChallenge()
+        db.clearPendingChallenge(alarmId)
         db.markCompleted(alarmId)
         // Also removes the abandoned-challenge re-arm scheduled under this id.
         scheduler.cancelAlarm(alarmId)
-
-        db.addToSnoozeQueue(
-            originalAlarmId = alarmId,
-            snoozeAlarmId = snoozeId,
-            alarmType = alarmType,
-            title = snoozeTitle,
-            snoozeCount = newSnoozeCount,
-            snoozeEndTime = snoozeTime.toDouble()
-        )
 
         AlarmService.stop(this)
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
+        releaseQuiet()
         taskShell?.release()
         grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
@@ -1271,6 +1320,7 @@ class AlarmOverlayService : Service() {
     }
 
     private fun completeAlarm(outcome: String = AlarmDatabase.OUTCOME_SOLVED) {
+        releaseQuiet()
         taskShell?.release()
         grace?.stop()
         graceHandler.removeCallbacksAndMessages(null)
@@ -1280,7 +1330,7 @@ class AlarmOverlayService : Service() {
 
         val db = AlarmDatabase.getInstance(this)
         db.addToCompletedQueue(alarmId, alarmType, title, outcome)
-        db.clearPendingChallenge()
+        db.clearPendingChallenge(alarmId)
         db.markCompleted(alarmId)
 
         // Drops any re-arm placed by onTaskRemoved during this challenge.
@@ -1371,6 +1421,15 @@ class AlarmOverlayService : Service() {
 
     // The state one ring leaves, cleared so the next draws as new.
     private fun resetRing() {
+        shellRunning = false
+        quietView = null
+        quietBanner = null
+        ringBannerSlot = null
+        ringOfferSlot = null
+        quietConfirming = false
+        quietFailed = false
+        quieting = false
+        quietUntil = null
         taskShell = null
         card = null
         header = null
@@ -1389,6 +1448,157 @@ class AlarmOverlayService : Service() {
         graceProgressBar = null
         graceSecondsText = null
         graceExpiredText = null
+    }
+
+    // --- Emergency quiet ---
+
+    // A restarted overlay picks up a quiet whose re-ring is still ahead.
+    private fun buildQuiet(card: LinearLayout, db: AlarmDatabase) {
+        quietBanner = QuietBannerView(this)
+        quietView = EmergencyQuietView(this, quietListener)
+        ringOfferSlot = quietSlot(this).also { card.addView(it) }
+        moveQuiet()
+        val record = db.getAlarm(alarmId)
+        val now = System.currentTimeMillis()
+        val until = record?.let {
+            EmergencyQuiet.runningQuietEnd(alarmId, alarmType, it.triggerTime.toLong(), it.quietUsed, now)
+        }
+        if (until != null) holdQuiet(until, now)
+        renderQuiet()
+    }
+
+    // The ring screen's slots, or the open run's.
+    private fun moveQuiet() {
+        val shell = taskShell ?: return
+        val bannerSlot = if (shellRunning) shell.bannerSlot else ringBannerSlot
+        val offerSlot = if (shellRunning) shell.offerSlot else ringOfferSlot
+        bannerSlot?.let { quietBanner?.view?.moveTo(it) }
+        offerSlot?.let { quietView?.view?.moveTo(it) }
+    }
+
+    // As JS useQuietOffer, read from the alarm database at each change.
+    private fun renderQuiet() {
+        val shell = taskShell ?: return
+        val view = quietView ?: return
+        val db = AlarmDatabase.getInstance(this)
+        val record = db.getAlarm(alarmId)
+        val saved = db.quietLedgerOrNull()
+        val ledger = saved ?: EmergencyQuiet.NEW_LEDGER
+        val now = System.currentTimeMillis()
+        // Until the app writes the ledger no allowance is known, so it reads as off.
+        val allowance = if (saved == null) EmergencyQuiet.ALLOWANCE_OFF else EmergencyQuiet.allowanceInEffect(ledger, now)
+        val offer = EmergencyQuiet.offerFor(
+            EmergencyQuiet.OfferInput(
+                hasTask = true,
+                preview = record?.preview == true,
+                snoozed = false,
+                wayOut = shell.wayOutShown,
+                used = record?.quietUsed == true,
+                quietUntil = quietUntil,
+                allowance = allowance,
+                left = if (saved == null) 0 else EmergencyQuiet.usesLeft(ledger, now),
+            )
+        )
+        val confirmOpen = EmergencyQuiet.confirmOpen(quietConfirming, offer)
+        view.show(QuietShown(offer, confirmOpen, quietFailed, quieting, EmergencyQuiet.refillDate(ledger, now)))
+        quietUntil?.let { quietBanner?.show(it) }
+        shell.setQuiet(heard = quietUntil == null, confirmOpen = confirmOpen)
+        // The confirm stands in snooze's place; a running quiet holds none.
+        val snoozeShown = EmergencyQuiet.canSnooze(!shellRunning && !confirmOpen, quietUntil)
+        snoozeSlot?.visibility = if (snoozeShown) View.VISIBLE else View.GONE
+    }
+
+    // The re-ring is armed first; a failed save cancels it and counts nothing.
+    private fun startQuiet() {
+        if (quieting || quietUntil != null) return
+        quieting = true
+        renderQuiet()
+        val db = AlarmDatabase.getInstance(this)
+        val record = db.getAlarm(alarmId)
+        val now = System.currentTimeMillis()
+        val ringsAt = EmergencyQuiet.quietEndsAt(now)
+        val quietId = EmergencyQuiet.quietIdFor(alarmType, ringsAt)
+        val snoozeCount = record?.snoozeCount ?: 0
+        val scheduler = AlarmScheduler(this)
+        // The count and the hand-over to the re-ring are saved together or not at all.
+        val counted = try {
+            scheduler.scheduleAlarm(
+                quietId, ringsAt, alarmType, title, alarmSound, snoozeCount,
+                quietUsed = true, preview = record?.preview == true,
+            ) && db.recordQuietUse(now) {
+                db.markCompleted(alarmId)
+                // The re-ring owns the ring, so it is not deferred behind this alarm.
+                db.setPendingChallenge(quietId, alarmType, title)
+                db.addToSnoozeQueue(
+                    originalAlarmId = alarmId,
+                    snoozeAlarmId = quietId,
+                    alarmType = alarmType,
+                    title = title,
+                    snoozeCount = snoozeCount,
+                    snoozeEndTime = ringsAt.toDouble(),
+                    quietUsed = true
+                )
+            } != null
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Quiet save failed: ${e.message}")
+            false
+        }
+        quieting = false
+        if (!counted) {
+            scheduler.cancelAlarm(quietId)
+            runCatching { db.deleteAlarm(quietId) }
+            AlarmLogger.getInstance(this).w("AlarmOverlay", "Quiet failed: id=$alarmId")
+            quietFailed = true
+            renderQuiet()
+            return
+        }
+        scheduler.cancelAlarm(alarmId)
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Quiet until $ringsAt: $alarmId -> $quietId")
+        alarmId = quietId
+        quietConfirming = false
+        holdQuiet(ringsAt, now)
+        startForeground(AlarmNotificationManager.OVERLAY_NOTIFICATION_ID, createNotification())
+        renderQuiet()
+    }
+
+    // The sound stops until the re-ring; the overlay sounds it if that is late.
+    private fun holdQuiet(until: Long, now: Long) {
+        quietUntil = until
+        quietRingId = alarmId
+        silenceAlarm()
+        grace?.stop()
+        header?.breathing = false
+        quietHandler.removeCallbacksAndMessages(null)
+        quietHandler.postDelayed({ endQuiet(sound = true) }, until - now + QUIET_LATE_MS)
+    }
+
+    private fun endQuiet(sound: Boolean) {
+        if (quietUntil == null) return
+        quietHandler.removeCallbacksAndMessages(null)
+        quietUntil = null
+        quietRingId = null
+        header?.breathing = true
+        quietBanner?.hide()
+        if (sound) ringLate()
+        renderQuiet()
+    }
+
+    // The late re-ring rings through AlarmService, as an on-time one does:
+    // the gentle wake-up, the service's ringing id and a fresh pending row.
+    private fun ringLate() {
+        AlarmScheduler(this).cancelAlarm(alarmId)
+        try {
+            AlarmDatabase.getInstance(this).setPendingChallenge(alarmId, alarmType, title)
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Pending challenge save failed: ${e.message}")
+        }
+        AlarmService.start(this, alarmId, alarmType, title, alarmSound)
+    }
+
+    private fun releaseQuiet() {
+        quietRingId = null
+        quietHandler.removeCallbacksAndMessages(null)
+        quietView?.release()
     }
 
     private fun removeOverlay() {

@@ -74,10 +74,19 @@ class TapPressTest {
             "RINGING_HALO_SCALE" to RingingLook.HALO_SCALE.toDouble(),
             "RINGING_HALO_REST_OPACITY" to RingingLook.HALO_REST_OPACITY.toDouble(),
             "RINGING_HALO_LOW_OPACITY" to RingingLook.HALO_LOW_OPACITY.toDouble(),
+            "EMERGENCY_QUIET_MINUTES" to EmergencyQuiet.MINUTES.toDouble(),
+            "QUIET_CONFIRM_WAIT_SECONDS" to EmergencyQuiet.CONFIRM_WAIT_SECONDS.toDouble(),
+            "DEFAULT_EMERGENCY_QUIET_ALLOWANCE" to EmergencyQuiet.DEFAULT_ALLOWANCE.toDouble(),
+            "EMERGENCY_QUIET_ALLOWANCE_OFF" to EmergencyQuiet.ALLOWANCE_OFF.toDouble(),
+            "EMERGENCY_QUIET_ALLOWANCE_ONE" to EmergencyQuiet.ALLOWANCE_ONE.toDouble(),
+            "EMERGENCY_QUIET_ALLOWANCE_TWO" to EmergencyQuiet.DEFAULT_ALLOWANCE.toDouble(),
+            "EMERGENCY_QUIET_ALLOWANCE_THREE" to EmergencyQuiet.ALLOWANCE_THREE.toDouble(),
         )
         val rows = sharedTable("shell-constants.tsv")
         assertEquals(native.keys.toList(), rows.map { it[0] })
         for ((name, value) in rows) assertEquals(name, value.toDouble(), checkNotNull(native[name]), CONSTANT_DELTA)
+        val choices = rows.filter { it[0].startsWith(ALLOWANCE_ROW) }.map { it[1].toInt() }
+        assertEquals(EmergencyQuiet.ALLOWANCES, choices)
     }
 
     @Test
@@ -94,5 +103,6 @@ class TapPressTest {
     private companion object {
         // A Float constant read back as a Double is off in the eighth place.
         const val CONSTANT_DELTA = 1e-6
+        const val ALLOWANCE_ROW = "EMERGENCY_QUIET_ALLOWANCE_"
     }
 }

@@ -49,7 +49,10 @@ class BootReceiver : BroadcastReceiver() {
                     val triggerMs = alarm.triggerTime.toLong()
                     if (triggerMs > now) {
                         val settings = db.getAlarmSettings(alarm.alarmType)
-                        scheduler.scheduleAlarm(alarm.id, triggerMs, alarm.alarmType, alarm.title, settings.sound, alarm.snoozeCount)
+                        scheduler.scheduleAlarm(
+                            alarm.id, triggerMs, alarm.alarmType, alarm.title, settings.sound, alarm.snoozeCount,
+                            quietUsed = alarm.quietUsed, preview = alarm.preview
+                        )
                         rescheduled++
                     } else {
                         logger.d(TAG, "Skipping expired alarm: ${alarm.id}")

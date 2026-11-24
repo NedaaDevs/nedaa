@@ -22,6 +22,10 @@ export interface ScheduleAlarmParams {
   countdown?: boolean;
   // Snoozes already taken; Android caps the overlay's snooze with it.
   snoozeCount?: number;
+  // Android: this alarm has had its emergency quiet, so the overlay offers none.
+  quietUsed?: boolean;
+  // Android: a preview ring, which the overlay offers no quiet on.
+  isPreview?: boolean;
 }
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
@@ -101,6 +105,8 @@ export const scheduleAlarm = async (params: ScheduleAlarmParams): Promise<boolea
     openText: params.openText ?? "",
     countdown: params.countdown ?? false,
     snoozeCount: params.snoozeCount ?? 0,
+    quietUsed: params.quietUsed ?? false,
+    isPreview: params.isPreview ?? false,
   });
 };
 
@@ -265,6 +271,8 @@ export interface SnoozedAlarm {
   title: string;
   snoozeCount: number;
   snoozeEndTime: number;
+  // The new alarm is an emergency quiet's re-ring, or a snooze after one.
+  quietUsed: boolean;
 }
 
 export const getSnoozeQueue = async (): Promise<SnoozedAlarm[]> => {
@@ -286,6 +294,42 @@ export const clearSnoozeQueue = async (ids?: number[]): Promise<boolean> => {
   }
   return NativeModule.clearSnoozeQueue();
 };
+
+// The emergency quiet count as the alarm database holds it; the app reads it
+// with its own ledger reader.
+export interface NativeQuietLedger {
+  allowance: number;
+  raise: { to: number; from: number } | null;
+  month: number | null;
+  used: number;
+  lastWriteAt: number | null;
+}
+
+// Android keeps the count in the alarm database, so the overlay spends it with
+// the app closed; iOS keeps it in the app alone.
+export const hasNativeQuietLedger = (): boolean => Platform.OS === "android" && isAvailable;
+
+export const getQuietLedger = (): NativeQuietLedger => NativeModule.getQuietLedger();
+
+// Writes the app's saved ledger unless a seed already wrote one; returns the row.
+export const seedQuietLedger = (ledger: NativeQuietLedger, now: number): NativeQuietLedger =>
+  NativeModule.seedQuietLedger(
+    {
+      allowance: ledger.allowance,
+      used: ledger.used,
+      ...(ledger.raise && { raiseTo: ledger.raise.to, raiseFrom: ledger.raise.from }),
+      ...(ledger.month !== null && { month: ledger.month }),
+      ...(ledger.lastWriteAt !== null && { lastWriteAt: ledger.lastWriteAt }),
+    },
+    now
+  );
+
+// Null, with nothing counted, when none is left or no seed wrote a ledger yet.
+export const recordQuietUse = (now: number): NativeQuietLedger | null =>
+  NativeModule.recordQuietUse(now);
+
+export const setQuietAllowance = (allowance: number, now: number): NativeQuietLedger =>
+  NativeModule.setQuietAllowance(allowance, now);
 
 export const cancelAllBackups = async (): Promise<number> => {
   if (!isAvailable) return 0;
@@ -743,6 +787,11 @@ export default {
   clearCompletedQueue,
   getSnoozeQueue,
   clearSnoozeQueue,
+  hasNativeQuietLedger,
+  getQuietLedger,
+  seedQuietLedger,
+  recordQuietUse,
+  setQuietAllowance,
   cancelAllBackups,
   startAlarmSound,
   stopAlarmSound,

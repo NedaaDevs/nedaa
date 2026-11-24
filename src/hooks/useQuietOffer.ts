@@ -2,7 +2,13 @@ import { EMERGENCY_QUIET_OFFER, type EmergencyQuietOffer } from "@/constants/Eme
 import type { EmergencyQuietControl } from "@/hooks/useAlarmScreen";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { useEmergencyQuietStore } from "@/stores/emergencyQuiet";
-import { allowanceInEffect, quietOfferFor, refillDate, usesLeft } from "@/utils/emergencyQuiet";
+import {
+  allowanceInEffect,
+  confirmOpenFor,
+  quietOfferFor,
+  refillDate,
+  usesLeft,
+} from "@/utils/emergencyQuiet";
 
 export type QuietOffer = Readonly<{
   offer: EmergencyQuietOffer;
@@ -29,7 +35,7 @@ export const useQuietOffer = (
     : EMERGENCY_QUIET_OFFER.HIDDEN;
   return {
     offer,
-    confirmOpen: control?.confirming === true && offer === EMERGENCY_QUIET_OFFER.OFFER,
+    confirmOpen: confirmOpenFor(control?.confirming === true, offer),
     refillsOn: refillDate(ledger, now),
   };
 };
