@@ -252,7 +252,7 @@ internal class RingingHeaderView(private val context: Context, type: RingingScre
     }
 }
 
-// Snooze, or one line in its place, as JS SnoozePlace.
+// Snooze, or one line in its place, as JS SnoozeSlot.
 internal class SnoozeSlotView(
     private val context: Context,
     use: RingingScreen.SnoozeUse,

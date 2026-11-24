@@ -653,6 +653,7 @@ describe("useAlarmScreen", () => {
     it("offers no snooze during the quiet, and again after it", async () => {
       const { result } = await quietNow();
       expect(result.current.canSnooze).toBe(false);
+      expect(result.current.snoozeIsOpen).toBe(true);
 
       await act(async () => jest.advanceTimersByTime(EMERGENCY_QUIET_MS));
       expect(result.current.canSnooze).toBe(true);

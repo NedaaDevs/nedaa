@@ -88,7 +88,8 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     count: alarm?.snoozeCount ?? 0,
     max: alarmSettings.snooze.maxCount,
   };
-  const canSnooze = snoozeOpen(snoozeUse) && !quiet;
+  const snoozeIsOpen = snoozeOpen(snoozeUse);
+  const canSnooze = snoozeIsOpen && !quiet;
   const remainingSnoozes = snoozeLeft(snoozeUse);
 
   const vibrationPattern = alarmSettings.vibration.enabled
@@ -347,6 +348,7 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
     snoozeEndTime,
     snoozeTimeRemaining,
     canSnooze,
+    snoozeIsOpen,
     snoozeEnabled: alarmSettings.snooze.enabled,
     snoozeMinutes: alarmSettings.snooze.durationMinutes,
     remainingSnoozes,
