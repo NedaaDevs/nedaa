@@ -1,26 +1,12 @@
 import { parseISO } from "date-fns";
 import { useTranslation } from "react-i18next";
 
-import { PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
 import { useAlarmStore } from "@/stores/alarm";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import type { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";
-
-type AlarmPrayer = { nameKey: string; timing: PrayerName };
-
-// Jumu'ah is the Friday Dhuhr occurrence; a custom alarm has no prayer.
-const PRAYER_BY_ALARM: Record<ScheduledAlarmType.FAJR | ScheduledAlarmType.JUMMAH, AlarmPrayer> = {
-  [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: PRAYER_ID.FAJR },
-  [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: PRAYER_ID.DHUHR },
-};
-
-const ALARM_NAME_KEY: Record<ScheduledAlarmType, string> = {
-  [ScheduledAlarmType.FAJR]: "alarm.types.fajr",
-  [ScheduledAlarmType.JUMMAH]: "alarm.types.friday",
-  [ScheduledAlarmType.CUSTOM]: "alarm.types.custom",
-};
+import type { DayPrayerTimes } from "@/types/prayerTimes";
+import { alarmNameKeyOf, alarmPrayerOf } from "@/utils/alarmRinging";
 
 /** A prayer's moment and the zone its clock is read in. */
 export type PrayerMoment = { time: Date; timezone: string };
@@ -33,7 +19,7 @@ export const useAlarmPrayer = (alarmId: string, alarmType: ScheduledAlarmType) =
   const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
   const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
 
-  const prayer = alarmType === ScheduledAlarmType.CUSTOM ? null : PRAYER_BY_ALARM[alarmType];
+  const prayer = alarmPrayerOf(alarmType);
 
   // Null with no times stored, so a wrong time is never shown.
   const nearest = (): PrayerMoment | null => {
@@ -52,7 +38,7 @@ export const useAlarmPrayer = (alarmId: string, alarmType: ScheduledAlarmType) =
   };
 
   return {
-    alarm: t(ALARM_NAME_KEY[alarmType]),
+    alarm: t(alarmNameKeyOf(alarmType)),
     prayer: prayer ? t(prayer.nameKey) : null,
     moment: nearest(),
   };

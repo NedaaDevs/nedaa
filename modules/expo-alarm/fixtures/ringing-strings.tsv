@@ -1,0 +1,12 @@
+key	resource
+prayerTimes.fajr	overlay_prayer_fajr
+prayerTimes.jumuah	overlay_ringing_jumuah
+alarm.types.fajr	overlay_ringing_fajr_alarm
+alarm.types.friday	overlay_ringing_friday_alarm
+alarm.types.custom	overlay_ringing_alarm
+a11y.alarm.currentTime	overlay_ringing_current_time
+a11y.alarm.ringingAt	overlay_ringing_at
+a11y.alarm.ringingAnnouncement	overlay_ringing_announcement
+a11y.alarm.ringingCustom	overlay_ringing_custom
+alarm.ringing.snoozeUsedUp	overlay_ringing_snooze_used_up
+alarm.ringing.snoozeOff	overlay_ringing_snooze_off

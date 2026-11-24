@@ -14,6 +14,7 @@ import { VIBRATION_PATTERNS, DEFAULT_ALARM_TYPE_SETTINGS } from "@/types/alarm";
 import { ALARM_HYDRATION_TIMEOUT_MS, ALARM_TYPE } from "@/constants/Alarm";
 import { BACK_DESTINATION } from "@/constants/BackDestinations";
 import { PlatformType } from "@/enums/app";
+import { snoozeLeft, snoozeOpen } from "@/utils/alarmRinging";
 import { isScheduledAlarmType, toSettingsAlarmType } from "@/utils/alarmTypes";
 import { AppLogger } from "@/utils/appLogger";
 import { quietEndsAt, runningQuietEnd } from "@/utils/emergencyQuiet";
@@ -82,10 +83,13 @@ export function useAlarmScreen(alarmId: string, alarmType: string) {
   const [failed, setFailed] = useState(false);
   const quiet = quietUntil !== null;
 
-  const snoozeCount = alarm?.snoozeCount ?? 0;
-  const maxSnoozes = alarmSettings.snooze.enabled ? alarmSettings.snooze.maxCount : 0;
-  const canSnooze = alarmSettings.snooze.enabled && snoozeCount < maxSnoozes && !quiet;
-  const remainingSnoozes = Math.max(0, maxSnoozes - snoozeCount);
+  const snoozeUse = {
+    enabled: alarmSettings.snooze.enabled,
+    count: alarm?.snoozeCount ?? 0,
+    max: alarmSettings.snooze.maxCount,
+  };
+  const canSnooze = snoozeOpen(snoozeUse) && !quiet;
+  const remainingSnoozes = snoozeLeft(snoozeUse);
 
   const vibrationPattern = alarmSettings.vibration.enabled
     ? VIBRATION_PATTERNS[alarmSettings.vibration.pattern]

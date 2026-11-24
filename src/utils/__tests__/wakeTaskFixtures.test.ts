@@ -5,6 +5,7 @@ import { CHALLENGE_DIFFICULTY } from "expo-alarm";
 
 import { PRESS_SCALE } from "@/components/ui/pressable/pressScale";
 import { DHIKR_TASK_REVIEWED, DHIKR_TASK_ROWS } from "@/constants/DhikrTask";
+import { RINGING_HALO, RINGING_TYPE } from "@/constants/AlarmRinging";
 import { DURATION_MS } from "@/constants/Motion";
 import { isPrayerId } from "@/constants/Prayer";
 import {
@@ -38,6 +39,7 @@ import {
   QUIET_PHASE,
   QUIET_SIGNAL,
   TASK_CLOCK_TICK_MS,
+  TASK_ENTER_MS,
   type QuietEvent,
 } from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty } from "@/types/alarm";
@@ -609,6 +611,15 @@ describe("shell-constants.tsv", () => {
     DHIKR_HOLD_MS: DHIKR_HOLD_MS.DEFAULT,
     DHIKR_READER_HOLD_MS: DHIKR_HOLD_MS.SCREEN_READER,
     SPOKEN_MS_PER_CHARACTER,
+    TASK_ENTER_MS,
+    RINGING_NAME_SIZE: RINGING_TYPE.NAME.fontSize,
+    RINGING_TIME_SIZE: RINGING_TYPE.TIME.fontSize,
+    RINGING_HALO_SIZE: RINGING_HALO.SIZE,
+    RINGING_HALO_RING: RINGING_HALO.RING,
+    RINGING_HALO_BREATH_MS: RINGING_HALO.BREATH_MS,
+    RINGING_HALO_SCALE: RINGING_HALO.SCALE,
+    RINGING_HALO_REST_OPACITY: RINGING_HALO.REST_OPACITY,
+    RINGING_HALO_LOW_OPACITY: RINGING_HALO.LOW_OPACITY,
   };
 
   const rows = readCases("shell-constants.tsv");

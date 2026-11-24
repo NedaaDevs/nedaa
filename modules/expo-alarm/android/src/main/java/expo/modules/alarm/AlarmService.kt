@@ -120,7 +120,7 @@ class AlarmService : Service() {
     }
 
     private fun stopAlarm() {
-        AlarmOverlayService.stop(this)
+        AlarmOverlayService.stopRinging(this)
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()

@@ -15,7 +15,6 @@ internal const val COLOR_TEXT_SECONDARY = "#FFE3E2CE" // darkTypographySecondary
 internal const val COLOR_TEXT_ON_ACCENT = "#FF222831" // dark text on gold/green fills
 internal const val COLOR_TEXT_MUTED = "#FFB4B3A1"     // muted body text
 internal const val COLOR_INPUT_BG = "#FF4B5563"       // darkSurfaceActive input well
-internal const val COLOR_DISABLED = "#FF374151"       // darkSurfaceHover (disabled)
 internal const val COLOR_TRACK = "#33FFFFFF"         // progress bar track
 internal const val COLOR_HINT = "#FF8A897A"          // input placeholder
 internal const val COLOR_SURFACE = "#FF4B5563"        // as JS $surface: answer cards and the tap target
