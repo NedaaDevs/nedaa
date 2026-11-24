@@ -41,7 +41,7 @@ import {
   type QuietEvent,
 } from "@/constants/WakeTaskShell";
 import type { ChallengeDifficulty } from "@/types/alarm";
-import { drawDhikrRound, fullDhikr, spokenDhikrLine } from "@/utils/dhikrTask";
+import { dhikrLineOf, drawDhikrRound, fullDhikr, spokenDhikrLine } from "@/utils/dhikrTask";
 import {
   cardStateOf,
   mathLineOf,
@@ -504,6 +504,12 @@ describe("dhikr-line.tsv", () => {
     const row = DHIKR_TASK_ROWS[Number(index)];
     expect(fullDhikr(row)).toBe(full);
     expect(spokenDhikrLine(row, FIXTURE_GAP, DHIKR_SPOKEN_PAUSE)).toBe(spoken);
+  });
+
+  it.each(rows)("row %s keeps to the gap the words the table says", (index, ...cells) => {
+    const line = dhikrLineOf(DHIKR_TASK_ROWS[Number(index)]);
+    expect(line.touchingBefore !== null).toBe(bool(cells[2]));
+    expect(line.touchingAfter !== null).toBe(bool(cells[3]));
   });
 
   it("holds every row", () => {
