@@ -65,10 +65,12 @@ export const useEmergencyQuietStore = create<EmergencyQuietStore>()(
           if (!spent) throw new Error(NONE_LEFT);
           set({ ledger: readLedger(spent) });
         },
-        // Without a ledger row the change stays in the saved ledger, and the
-        // next seed writes it. A failed database write changes nothing.
+        // A failed seed or write changes nothing: an app-written row the seed
+        // could not read would win the next seed. Without a row the change
+        // stays in the saved ledger, and the next seed writes it.
         setAllowance: (allowance, now) => {
-          if (native && seededBy(now)) {
+          if (native) {
+            if (!seededBy(now)) return;
             try {
               const answer = ExpoAlarm.setQuietAllowance(allowance, now);
               if (answer) {

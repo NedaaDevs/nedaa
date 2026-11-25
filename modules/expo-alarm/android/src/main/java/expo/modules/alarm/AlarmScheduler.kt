@@ -17,6 +17,10 @@ class AlarmScheduler(private val context: Context) {
 
         // A re-ring still ahead, such as a quiet's, keeps its own time.
         fun rearmAt(now: Long, delayMs: Long, savedTriggerAt: Long): Long = maxOf(now + delayMs, savedTriggerAt)
+
+        // After a failed save, an open row still rings the entry, as AlarmReceiver
+        // checks; with no row, or a completed one, the entry rings nothing.
+        fun keepsArmedAfterFailedSave(savedCompleted: Boolean?): Boolean = savedCompleted == false
     }
 
     private val alarmManager: AlarmManager
@@ -131,16 +135,20 @@ class AlarmScheduler(private val context: Context) {
             return false
         }
 
-        // Saved after arming, so BootReceiver never restores an unarmed alarm; an
-        // entry with no record would ring nothing, so a failed save disarms it.
+        // Saved after arming, so BootReceiver never restores an unarmed alarm.
+        val db = AlarmDatabase.getInstance(context)
         val saved = try {
-            AlarmDatabase.getInstance(context).saveAlarm(
+            db.saveAlarm(
                 id, alarmType, title, triggerTimeMs.toDouble(),
                 isBackup = false, snoozeCount = snoozeCount, quietUsed = quietUsed, preview = preview
             )
         } catch (e: SQLException) {
             AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save threw id=$id: ${e.message}")
             false
+        }
+        if (!saved && keepsArmedAfterFailedSave(savedCompleted(db, id))) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save failed; armed on its saved row: id=$id")
+            return true
         }
         if (!saved) {
             alarmManager.cancel(pendingIntent)
@@ -151,6 +159,12 @@ class AlarmScheduler(private val context: Context) {
         AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm scheduled: id=$id triggerTime=$triggerTimeMs")
 
         return true
+    }
+
+    private fun savedCompleted(db: AlarmDatabase, id: String): Boolean? = try {
+        db.getAlarm(id)?.completed
+    } catch (e: SQLException) {
+        null
     }
 
     fun cancelAlarm(id: String) {
