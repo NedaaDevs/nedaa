@@ -198,13 +198,26 @@ describe("the emergency quiet count before a seed has worked", () => {
     expect(store.getState().ledger).toEqual(NEW_QUIET_LEDGER);
   });
 
-  it("keeps an allowance in the saved ledger alone while the seed fails", async () => {
+  it("changes no allowance while the seed fails", async () => {
     const store = await loadStore(SEED.FAILS);
+    const before = store.getState().ledger;
 
     store.getState().setAllowance(THREE, NOW);
 
     expect(alarm.setQuietAllowance).not.toHaveBeenCalled();
-    expect(store.getState().ledger).toEqual(setAllowance(NEW_QUIET_LEDGER, THREE, NOW));
+    expect(store.getState().ledger).toBe(before);
+  });
+
+  it("shows the database's allowance once a seed works after a failed one", async () => {
+    const store = await loadStore(SEED.FAILS);
+    const held = setAllowance(SPENT, THREE, NOW);
+    store.getState().setAllowance(ONE, NOW);
+    alarm.seedQuietLedger.mockReturnValueOnce(held);
+
+    store.getState().refresh();
+
+    expect(alarm.seedQuietLedger).toHaveBeenLastCalledWith(NEW_QUIET_LEDGER, NOW);
+    expect(store.getState().ledger).toEqual(held);
   });
 
   it("seeds before it spends", async () => {
