@@ -65,18 +65,23 @@ export const useEmergencyQuietStore = create<EmergencyQuietStore>()(
           if (!spent) throw new Error(NONE_LEFT);
           set({ ledger: readLedger(spent) });
         },
-        // Without a seed the change stays in the saved ledger, for the next seed.
-        // A failed database write changes nothing; the overlay keeps what it has.
+        // Without a ledger row the change stays in the saved ledger, and the
+        // next seed writes it. A failed database write changes nothing.
         setAllowance: (allowance, now) => {
-          if (!native || !seededBy(now)) {
-            set({ ledger: setAllowance(get().ledger, allowance, now) });
-            return;
+          if (native && seededBy(now)) {
+            try {
+              const answer = ExpoAlarm.setQuietAllowance(allowance, now);
+              if (answer) {
+                set({ ledger: readLedger(answer) });
+                return;
+              }
+              seeded = false;
+            } catch (error) {
+              log.w("Quiet", `saving the quiet allowance failed: ${String(error)}`);
+              return;
+            }
           }
-          try {
-            set({ ledger: readLedger(ExpoAlarm.setQuietAllowance(allowance, now)) });
-          } catch (error) {
-            log.w("Quiet", `saving the quiet allowance failed: ${String(error)}`);
-          }
+          set({ ledger: setAllowance(get().ledger, allowance, now) });
         },
         refresh: () => {
           if (!native || !useEmergencyQuietStore.persist.hasHydrated()) return;

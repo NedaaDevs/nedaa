@@ -205,9 +205,13 @@ export const getPendingChallenge = async (): Promise<PendingChallenge | null> =>
   };
 };
 
-export const clearPendingChallenge = async (): Promise<boolean> => {
+// Android clears the row only when it names ownerId, or ownerId is omitted;
+// the iOS function takes no argument.
+export const clearPendingChallenge = async (ownerId?: string): Promise<boolean> => {
   if (!isAvailable) return false;
-  return NativeModule.clearPendingChallenge();
+  return Platform.OS === "android" && ownerId !== undefined
+    ? NativeModule.clearPendingChallenge(ownerId)
+    : NativeModule.clearPendingChallenge();
 };
 
 export const clearCompletedChallenges = async (): Promise<boolean> => {
@@ -328,7 +332,8 @@ export const seedQuietLedger = (ledger: NativeQuietLedger, now: number): NativeQ
 export const recordQuietUse = (now: number): NativeQuietLedger | null =>
   NativeModule.recordQuietUse(now);
 
-export const setQuietAllowance = (allowance: number, now: number): NativeQuietLedger =>
+// Null, with nothing written, when no seed wrote a ledger yet.
+export const setQuietAllowance = (allowance: number, now: number): NativeQuietLedger | null =>
   NativeModule.setQuietAllowance(allowance, now);
 
 export const cancelAllBackups = async (): Promise<number> => {

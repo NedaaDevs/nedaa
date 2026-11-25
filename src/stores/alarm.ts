@@ -97,7 +97,7 @@ const retireReplaced = async (alarmId: string): Promise<void> => {
   const ownsAlarmState = !pending || pending.alarmId === alarmId;
   const steps = [
     () => ExpoAlarm.markAlarmCompleted(alarmId),
-    ...(ownsAlarmState ? [() => ExpoAlarm.clearPendingChallenge()] : []),
+    ...(ownsAlarmState ? [() => ExpoAlarm.clearPendingChallenge(alarmId)] : []),
     () => ExpoAlarm.cancelAlarm(alarmId),
     ...(ownsAlarmState ? [() => ExpoAlarm.cancelAllBackups()] : []),
   ];
@@ -197,7 +197,7 @@ export const useAlarmStore = create<AlarmState>()(
           if (ownsAlarmState) ExpoAlarm.stopAllAlarmEffects();
           ExpoAlarm.markAlarmCompleted(alarmId);
           if (ownsAlarmState) {
-            await ExpoAlarm.clearPendingChallenge();
+            await ExpoAlarm.clearPendingChallenge(alarmId);
             await ExpoAlarm.cancelAllBackups();
           }
           await ExpoAlarm.cancelAlarm(alarmId);

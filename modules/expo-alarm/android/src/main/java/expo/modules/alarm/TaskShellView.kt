@@ -403,8 +403,10 @@ class TaskShellView(
         renderQuiet(run.reading.clock, now, run.audible, strip = run.audible && !confirmOpen)
         wayOut.visibility = if (run.wayOut) View.VISIBLE else View.GONE
         wayOutSpoken.say(if (run.wayOut) context.getString(R.string.overlay_task_way_out) else null)
-        if (run.wayOut && !wayOutWas) listener.onWayOut()
+        // Recorded before the call: onWayOut renders this view again.
+        val entered = run.wayOut && !wayOutWas
         wayOutWas = run.wayOut
+        if (entered) listener.onWayOut()
     }
 
     private fun renderQuiet(clock: TaskClock, now: Long, audible: Boolean, strip: Boolean) {

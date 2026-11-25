@@ -65,7 +65,7 @@ class AlarmService : Service() {
             val alarmId = intent.getStringExtra(EXTRA_ALARM_ID)
             val record = alarmId?.let { AlarmDatabase.getInstance(this).getAlarm(it) }
             val redelivered = flags and START_FLAG_REDELIVERY != 0
-            val action = RedeliveredStart.actionFor(redelivered, record?.completed, isRunning)
+            val action = RedeliveredStart.actionFor(redelivered, RedeliveredStart.isEnded(record?.completed), isRunning)
             if (alarmId != null && action != RedeliveredStart.Action.RING) {
                 AlarmLogger.getInstance(this).w("AlarmService", "Skipping ended alarm: id=$alarmId")
                 if (action == RedeliveredStart.Action.SKIP_AND_STOP_THIS_START) endSkippedStart(startId)
