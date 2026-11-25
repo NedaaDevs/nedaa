@@ -10,22 +10,14 @@ class NativeBoardsTest {
     private fun stack(text: String) = WakeTasks.normalize(WakeTasks.decode(text))
 
     @Test
-    fun noStackKeepsTheSingleChallengeOverlay() {
+    fun noStackShowsOnlyTheDismiss() {
         assertFalse(NativeBoards.runsShell(emptyList()))
     }
 
     @Test
-    fun underReviewALoneDhikrKeepsItsTypedChallenge() {
+    fun everyLoneTaskRunsTheShell() {
         for (board in WakeTasks.Board.entries) {
-            val shell = NativeBoards.runsShell(stack("id=${board.id}"), dhikrReviewed = false)
-            assertEquals(board.id, board != WakeTasks.Board.DHIKR, shell)
-        }
-    }
-
-    @Test
-    fun reviewedEveryLoneTaskRunsTheShell() {
-        for (board in WakeTasks.Board.entries) {
-            assertTrue(board.id, NativeBoards.runsShell(stack("id=${board.id}"), dhikrReviewed = true))
+            assertTrue(board.id, NativeBoards.runsShell(stack("id=${board.id}")))
         }
     }
 
@@ -33,18 +25,14 @@ class NativeBoardsTest {
     fun theGateDefaultsToTheReviewFlag() {
         val dhikr = stack("id=${WakeTasks.Board.DHIKR.id}")
         assertEquals(NativeBoards.kindOf(dhikr.single(), DhikrTask.REVIEWED), NativeBoards.kindOf(dhikr.single()))
-        assertEquals(NativeBoards.runsShell(dhikr, DhikrTask.REVIEWED), NativeBoards.runsShell(dhikr))
-        assertEquals(NativeBoards.shownBoard(dhikr.single(), DhikrTask.REVIEWED), NativeBoards.shownBoard(dhikr.single()))
     }
 
+    // Only "none" stores no stack, so only it keeps the plain dismiss.
     @Test
-    fun aStoredChallengeWithNoStackRunsTheShellForTapAndMathAndReviewedDhikr() {
-        val underReview = setOf(WakeTasks.CHALLENGE_TAP, WakeTasks.CHALLENGE_MATH)
-        val reviewed = underReview + WakeTasks.CHALLENGE_DHIKR
+    fun aStoredChallengeWithNoStackRunsTheShellUnlessItIsNone() {
         for (type in WakeTasks.CHALLENGE_TYPES) for (difficulty in WakeTasks.DIFFICULTIES) {
             val derived = WakeTasks.resolve(WakeTasks.Challenge(type, difficulty, 3), null)
-            assertEquals("$type $difficulty", type in underReview, NativeBoards.runsShell(derived, dhikrReviewed = false))
-            assertEquals("$type $difficulty", type in reviewed, NativeBoards.runsShell(derived, dhikrReviewed = true))
+            assertEquals("$type $difficulty", type != WakeTasks.CHALLENGE_NONE, NativeBoards.runsShell(derived))
         }
     }
 
@@ -56,7 +44,7 @@ class NativeBoardsTest {
     }
 
     @Test
-    fun underReviewDhikrRunsTapAndEveryOtherTaskItsOwnBoard() {
+    fun underReviewDhikrTypesItsPhraseAndEveryOtherTaskRunsItsOwnBoard() {
         for (board in WakeTasks.Board.entries) {
             val kind = NativeBoards.kindOf(stack("id=${board.id}").single(), dhikrReviewed = false)
             assertEquals(board.id, KIND_UNDER_REVIEW[board], kind)
@@ -72,27 +60,22 @@ class NativeBoardsTest {
     }
 
     @Test
-    fun aTaskWithNoNativeBoardShowsTheBoardThatRuns() {
-        for ((reviewed, kinds) in listOf(false to KIND_UNDER_REVIEW, true to KIND_REVIEWED)) {
-            val own = kinds.filterValues { it != NativeBoards.Kind.TAP }.keys
-            for (board in WakeTasks.Board.entries) {
-                val task = stack("id=${board.id}").single()
-                val shown = NativeBoards.shownBoard(task, reviewed)
-                assertEquals("${board.id} $reviewed", if (board in own) board else WakeTasks.Board.TAP, shown)
-                assertEquals(
-                    "${board.id} $reviewed",
-                    NativeBoards.kindOf(task, reviewed),
-                    NativeBoards.kindOf(stack("id=${shown.id}").single(), reviewed),
-                )
-            }
-        }
-    }
-
-    @Test
     fun prayersPatternAndDhikrAreHeadedByTheirTaskNames() {
         for (board in listOf(WakeTasks.Board.PRAYERS, WakeTasks.Board.PATTERN, WakeTasks.Board.DHIKR)) {
             val kind = NativeBoards.kindOf(stack("id=${board.id}").single(), dhikrReviewed = true)
             assertEquals(board.id, TaskBoards.nameOf(board), TaskBoards.headingOf(kind))
+        }
+    }
+
+    @Test
+    fun theTypedDhikrIsHeadedByTheTaskName() {
+        assertEquals(TaskBoards.nameOf(WakeTasks.Board.DHIKR), TaskBoards.headingOf(NativeBoards.Kind.DHIKR_TYPED))
+    }
+
+    @Test
+    fun onlyTheTypedDhikrTakesTyping() {
+        for (kind in NativeBoards.Kind.entries) {
+            assertEquals(kind.name, kind == NativeBoards.Kind.DHIKR_TYPED, NativeBoards.takesTyping(kind))
         }
     }
 
@@ -109,7 +92,7 @@ class NativeBoardsTest {
             WakeTasks.Board.TAP to NativeBoards.Kind.TAP,
             WakeTasks.Board.PATTERN to NativeBoards.Kind.PATTERN,
             WakeTasks.Board.PRAYERS to NativeBoards.Kind.PRAYERS,
-            WakeTasks.Board.DHIKR to NativeBoards.Kind.TAP,
+            WakeTasks.Board.DHIKR to NativeBoards.Kind.DHIKR_TYPED,
         )
 
         val KIND_REVIEWED = KIND_UNDER_REVIEW + (WakeTasks.Board.DHIKR to NativeBoards.Kind.DHIKR)

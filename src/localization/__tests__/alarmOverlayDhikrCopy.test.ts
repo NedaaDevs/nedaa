@@ -19,6 +19,15 @@ const OVERLAY_TO_LOCALE: Record<string, { key: string; names: readonly string[] 
   overlay_task_dhikr_gap: { key: "a11y.alarm.task.dhikr.gap", names: [] },
   overlay_task_dhikr_another_spoken: { key: "a11y.alarm.task.dhikr.another", names: ["dhikr"] },
   overlay_task_name_dhikr: { key: WAKE_TASK_NAME_KEY[WAKE_TASK_ID.DHIKR], names: [] },
+  overlay_task_dhikr_type_hint: { key: "alarm.task.dhikrHint", names: [] },
+  overlay_task_dhikr_type_field: { key: "alarm.challenge.dhikrPlaceholder", names: [] },
+  overlay_task_dhikr_type_submit: { key: "alarm.challenge.submit", names: [] },
+  overlay_task_dhikr_type_wrong: { key: "alarm.challenge.wrongAnswer", names: [] },
+  overlay_task_dhikr_type_phrase: {
+    key: "a11y.alarm.dhikrPhrase",
+    names: ["arabic", "transliteration"],
+  },
+  overlay_task_dhikr_type_new: { key: "a11y.alarm.newDhikr", names: ["arabic", "transliteration"] },
 };
 
 describe.each(OVERLAY_BUNDLES)("Dhikr overlay copy in %s", (folder, bundle) => {

@@ -160,8 +160,8 @@ export interface DhikrPhrase {
   transliteration: string;
 }
 
-// Dhikr typing challenge pool by difficulty. Arabic + transliteration are
-// locale-independent content; the Android overlay mirrors this pool in Kotlin.
+// Dhikr typing challenge pool by difficulty; locale-independent content.
+// DhikrTypedRun.kt holds the same pool, pinned by fixtures/dhikr-phrases.tsv.
 export const DHIKR_PHRASES: Record<ChallengeDifficulty, DhikrPhrase[]> = {
   easy: [
     { arabic: "سبحان الله", transliteration: "Subhanallah" },

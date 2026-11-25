@@ -42,6 +42,7 @@ object TaskBoards {
         NativeBoards.Kind.PRAYERS -> TaskBoardFactory(::PrayersBoard)
         NativeBoards.Kind.PATTERN -> TaskBoardFactory(::PatternBoard)
         NativeBoards.Kind.DHIKR -> TaskBoardFactory(::DhikrBoard)
+        NativeBoards.Kind.DHIKR_TYPED -> TaskBoardFactory(::DhikrTypedBoard)
     }
 
     fun headingOf(kind: NativeBoards.Kind): Int = when (kind) {
@@ -49,7 +50,7 @@ object TaskBoards {
         NativeBoards.Kind.MATH_CARDS -> R.string.overlay_task_title_math
         NativeBoards.Kind.PRAYERS -> R.string.overlay_task_name_prayers
         NativeBoards.Kind.PATTERN -> R.string.overlay_task_name_pattern
-        NativeBoards.Kind.DHIKR -> R.string.overlay_task_name_dhikr
+        NativeBoards.Kind.DHIKR, NativeBoards.Kind.DHIKR_TYPED -> R.string.overlay_task_name_dhikr
     }
 
     // The task's own name, as the start button and the handover say it.

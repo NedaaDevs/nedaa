@@ -1,5 +1,3 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
 import {
@@ -17,8 +15,6 @@ import {
   type ChallengeCount,
   type WakeTaskSteps,
 } from "@/constants/WakeTask";
-import { TAP_PRESSES } from "@/constants/WakeTaskBoards";
-import { REPO_ROOT } from "@/test-helpers/routeTree";
 import {
   CHALLENGE_DIFFICULTIES,
   DEFAULT_ALARM_TYPE_SETTINGS,
@@ -165,24 +161,6 @@ describe("legacyChallengeFromWakeTasks", () => {
       legacyChallengeFromWakeTasks([TAP])
     );
   });
-
-  // The overlay asks TAPS_<difficulty> presses per count; the Tap board asks TAP_PRESSES.
-  it.each([TAP, PATTERN_MEDIUM_3, PRAYERS])(
-    "asks the overlay for as many presses as the Tap board for a first $id task",
-    (first) => {
-      const overlay = readFileSync(
-        join(
-          REPO_ROOT,
-          "modules/expo-alarm/android/src/main/java/expo/modules/alarm/AlarmOverlayService.kt"
-        ),
-        "utf8"
-      );
-      const { difficulty, count } = legacyChallengeFromWakeTasks([first]);
-      const perCount = overlay.match(new RegExp(`TAPS_${difficulty.toUpperCase()} = (\\d+)`))?.[1];
-
-      expect(Number(perCount) * count).toBe(TAP_PRESSES);
-    }
-  );
 
   // Every stack the overlay can run survives the trip through the old fields.
   it.each(LEGACY_TABLE)("reads back what it writes for $saved.type", ({ tasks }) => {

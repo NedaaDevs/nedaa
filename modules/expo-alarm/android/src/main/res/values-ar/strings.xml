@@ -60,26 +60,6 @@
     <!-- Duration formats -->
     <string name="minute_format">%d دقيقة</string>
 
-    <!-- Overlay - Tap Challenge -->
-    <string name="overlay_tap_instruction">انقر الزر %d مرة للإيقاف</string>
-    <string name="overlay_tap_progress">%1$d / %2$d</string>
-    <string name="overlay_tap_button">انقر للإيقاف</string>
-
-    <!-- Overlay - Math Challenge -->
-    <string name="overlay_math_instruction_one">حل مسألة رياضية واحدة للإيقاف</string>
-    <string name="overlay_math_instruction_many">حل %d مسائل رياضية للإيقاف</string>
-    <string name="overlay_math_progress">المسألة %1$d من %2$d</string>
-    <string name="overlay_math_hint">أدخل الإجابة</string>
-    <string name="overlay_math_submit">إرسال</string>
-    <string name="overlay_math_wrong">إجابة خاطئة، حاول مرة أخرى</string>
-    <string name="overlay_math_invalid">الرجاء إدخال رقم</string>
-
-    <!-- Overlay - Dhikr Challenge -->
-    <string name="overlay_dhikr_instruction_one">اكتب ذِكراً واحداً للإيقاف</string>
-    <string name="overlay_dhikr_instruction_many">اكتب %d أذكار للإيقاف</string>
-    <string name="overlay_dhikr_progress">الذِكر %1$d من %2$d</string>
-    <string name="overlay_dhikr_hint">اكتب هنا</string>
-
     <!-- Overlay - Start Solving -->
     <string name="overlay_start_solving">ابدأ الحل</string>
 
@@ -94,9 +74,6 @@
 
     <!-- Overlay - Notification -->
     <string name="overlay_notification_title">المنبه نشط</string>
-    <string name="overlay_notification_tap">انقر %d مرة للإيقاف</string>
-    <string name="overlay_notification_math_one">حل مسألة رياضية واحدة للإيقاف</string>
-    <string name="overlay_notification_math_many">حل %d مسائل رياضية للإيقاف</string>
     <string name="overlay_notification_dismiss">انقر للإيقاف</string>
 
     <!-- Overlay - Wake-up task shell -->
@@ -179,6 +156,12 @@
     <string name="overlay_task_dhikr_completed_spoken">تتمة هذا الذِّكر: %1$s. %2$s</string>
     <string name="overlay_task_dhikr_gap">كلمة ناقصة</string>
     <string name="overlay_task_dhikr_another_spoken">ذِكر آخر. %1$s</string>
+    <string name="overlay_task_dhikr_type_hint">كتابة الذِّكر بالعربية أو بالحروف اللاتينية</string>
+    <string name="overlay_task_dhikr_type_field">اكتب هنا</string>
+    <string name="overlay_task_dhikr_type_submit">إرسال</string>
+    <string name="overlay_task_dhikr_type_wrong">إجابة خاطئة، حاول مرة أخرى</string>
+    <string name="overlay_task_dhikr_type_phrase">الذِّكر المطلوب كتابته: %1$s</string>
+    <string name="overlay_task_dhikr_type_new">إجابة خاطئة. الذِّكر الجديد المطلوب كتابته: %1$s</string>
     <string name="overlay_task_prayers_ask">من %1$s إلى %2$s.</string>
     <string name="overlay_task_prayers_wrong">لم يحن دور %1$s.</string>
     <string name="overlay_task_prayers_dealt">وُزّعت البطاقات من جديد.</string>
