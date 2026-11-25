@@ -141,7 +141,7 @@ class AlarmDatabase private constructor(private val context: Context) :
         snoozeCount: Int = 0,
         quietUsed: Boolean = false,
         preview: Boolean = false
-    ) {
+    ): Boolean {
         val values = ContentValues().apply {
             put("id", id)
             put("alarm_type", alarmType)
@@ -154,7 +154,7 @@ class AlarmDatabase private constructor(private val context: Context) :
             put("quiet_used", if (quietUsed) 1 else 0)
             put("preview", if (preview) 1 else 0)
         }
-        writableDatabase.insertWithOnConflict("alarms", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+        return writableDatabase.insertWithOnConflict("alarms", null, values, SQLiteDatabase.CONFLICT_REPLACE) != -1L
     }
 
     data class AlarmRecord(
@@ -323,13 +323,21 @@ class AlarmDatabase private constructor(private val context: Context) :
         }
     }
 
-    // Deletes the row; completes its alarm only if [ownerId] is null or names it.
+    // Completes and deletes the row, in one transaction, when [ownerId] is null
+    // or names it; a row naming another alarm stays.
     fun clearPendingChallenge(ownerId: String? = null) {
-        val pending = getPendingChallenge()
-        if (pending != null && PendingChallengeRule.completesOnClear(pending.alarmId, ownerId)) {
-            markCompleted(pending.alarmId)
+        val db = writableDatabase
+        db.beginTransactionNonExclusive()
+        try {
+            val pending = getPendingChallenge()
+            if (pending != null && PendingChallengeRule.clearedBy(pending.alarmId, ownerId)) {
+                markCompleted(pending.alarmId)
+                db.delete("pending_challenge", null, null)
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
-        writableDatabase.delete("pending_challenge", null, null)
     }
 
     // -- Bypass State --
@@ -573,9 +581,10 @@ class AlarmDatabase private constructor(private val context: Context) :
             }
         }
 
-    fun setQuietAllowance(allowance: Int, now: Long): EmergencyQuiet.Ledger = quietTransaction { db, row ->
-        EmergencyQuiet.setAllowance(row?.ledger ?: EmergencyQuiet.NEW_LEDGER, allowance, now)
-            .also { writeQuietRow(db, it, row?.fromApp ?: false) }
+    // Null, and nothing written, with no ledger row: only a seed writes the first.
+    fun setQuietAllowance(allowance: Int, now: Long): EmergencyQuiet.Ledger? = quietTransaction { db, row ->
+        row ?: return@quietTransaction null
+        EmergencyQuiet.setAllowance(row.ledger, allowance, now).also { writeQuietRow(db, it, row.fromApp) }
     }
 
     // Writes the app's saved ledger unless a seed already wrote one.

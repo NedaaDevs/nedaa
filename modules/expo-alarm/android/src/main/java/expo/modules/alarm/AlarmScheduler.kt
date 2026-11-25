@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.database.SQLException
 import android.net.Uri
 import android.os.Build
 
@@ -130,12 +131,23 @@ class AlarmScheduler(private val context: Context) {
             return false
         }
 
-        // Saved after arming, so BootReceiver never restores an unarmed alarm.
-        AlarmDatabase.getInstance(context)
-            .saveAlarm(
+        // Saved after arming, so BootReceiver never restores an unarmed alarm; an
+        // entry with no record would ring nothing, so a failed save disarms it.
+        val saved = try {
+            AlarmDatabase.getInstance(context).saveAlarm(
                 id, alarmType, title, triggerTimeMs.toDouble(),
                 isBackup = false, snoozeCount = snoozeCount, quietUsed = quietUsed, preview = preview
             )
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save threw id=$id: ${e.message}")
+            false
+        }
+        if (!saved) {
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save failed; disarmed id=$id")
+            return false
+        }
         AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm scheduled: id=$id triggerTime=$triggerTimeMs")
 
         return true

@@ -39,13 +39,13 @@ class PendingChallengeRuleTest {
 
     @Test
     fun aClearCompletesOnlyTheRowOfTheAlarmThatClearsIt() {
-        assertEquals(true, PendingChallengeRule.completesOnClear(pendingId, pendingId))
-        assertEquals(false, PendingChallengeRule.completesOnClear(pendingId, "alarm-2"))
+        assertEquals(true, PendingChallengeRule.clearedBy(pendingId, pendingId))
+        assertEquals(false, PendingChallengeRule.clearedBy(pendingId, "alarm-2"))
     }
 
     // The app clears the row it reads, whichever alarm it names.
     @Test
     fun aClearNamingNoAlarmCompletesTheRow() {
-        assertEquals(true, PendingChallengeRule.completesOnClear(pendingId, null))
+        assertEquals(true, PendingChallengeRule.clearedBy(pendingId, null))
     }
 }

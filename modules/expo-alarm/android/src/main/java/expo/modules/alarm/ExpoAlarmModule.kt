@@ -182,8 +182,8 @@ class ExpoAlarmModule : Module() {
             )
         }
 
-        AsyncFunction("clearPendingChallenge") {
-            db.clearPendingChallenge()
+        AsyncFunction("clearPendingChallenge") { ownerId: String? ->
+            db.clearPendingChallenge(ownerId)
             true
         }
 
@@ -256,7 +256,7 @@ class ExpoAlarmModule : Module() {
         }
 
         Function("setQuietAllowance") { allowance: Int, now: Double ->
-            db.setQuietAllowance(allowance, now.toLong()).toMap()
+            db.setQuietAllowance(allowance, now.toLong())?.toMap()
         }
 
         AsyncFunction("clearSnoozeQueue") {
