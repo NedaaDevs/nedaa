@@ -10,14 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/box";
 
 import { ChallengeDifficulty, DhikrPhrase } from "@/types/alarm";
-import { matchesDhikr, pickDhikrPhrase } from "@/utils/dhikrChallenge";
+import { pickDhikrPhrase, submitDhikr } from "@/utils/dhikrChallenge";
 import { useHaptic } from "@/hooks/useHaptic";
+import { DHIKR_TYPED } from "@/constants/DhikrTask";
 import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
-
-// Wrong submissions before the phrase resets — lets a typo be fixed in place
-// instead of losing the attempt on every miss. Mirrored in the Android
-// overlay's onDhikrSubmitted.
-const STRIKE_THRESHOLD = 3;
 
 type Props = {
   difficulty: ChallengeDifficulty;
@@ -47,17 +43,16 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete }) => {
   const handleSubmit = useCallback(() => {
     Keyboard.dismiss();
 
-    if (matchesDhikr(userInput, phrase)) {
+    const { outcome, strikes } = submitDhikr(userInput, phrase, strikeCount);
+    if (outcome === DHIKR_TYPED.SOLVED) {
       hapticSuccess();
       onComplete();
     } else {
       hapticError();
       setIsWrong(true);
+      setStrikeCount(strikes);
 
-      const nextStrikes = strikeCount + 1;
-      if (nextStrikes >= STRIKE_THRESHOLD) {
-        // Too many misses on this phrase — fresh phrase, clean slate.
-        setStrikeCount(0);
+      if (outcome === DHIKR_TYPED.NEXT) {
         setUserInput("");
         const picked = pickDhikrPhrase(difficulty, phrase);
         lastDhikrPhrase = picked;
@@ -69,8 +64,6 @@ const DhikrChallenge: FC<Props> = ({ difficulty, onComplete }) => {
           })
         );
       } else {
-        // Keep the same phrase and typed text so a typo can be fixed in place.
-        setStrikeCount(nextStrikes);
         announceMiss(t("alarm.challenge.wrongAnswer"));
       }
 

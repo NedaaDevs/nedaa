@@ -740,11 +740,6 @@ class AlarmDatabase private constructor(private val context: Context) :
         return getAlarmSettings(alarmType).enabled
     }
 
-    fun getChallengeConfig(alarmType: String): Triple<String, String, Int> {
-        val settings = getAlarmSettings(alarmType)
-        return Triple(settings.challengeType, settings.challengeDifficulty, settings.challengeCount)
-    }
-
     fun getSnoozeConfig(alarmType: String): Triple<Boolean, Int, Int> {
         val settings = getAlarmSettings(alarmType)
         return Triple(settings.snoozeEnabled, settings.snoozeMaxCount, settings.snoozeDuration)

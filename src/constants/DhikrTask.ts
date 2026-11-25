@@ -11,6 +11,19 @@ export type DhikrTaskRowShape = {
 /** While false, an alarm's dhikr task runs the typed board, not these rows. */
 export const DHIKR_TASK_REVIEWED = false;
 
+/** What a typed dhikr submission does; fixtures/dhikr-typed.tsv writes these. */
+export const DHIKR_TYPED = {
+  SOLVED: "solved",
+  WRONG: "wrong",
+  /** Too many misses: the board draws a fresh phrase. */
+  NEXT: "next",
+} as const;
+
+export type DhikrTypedOutcome = (typeof DHIKR_TYPED)[keyof typeof DHIKR_TYPED];
+
+/** Misses on one phrase before the board draws another. */
+export const DHIKR_STRIKE_LIMIT = 3;
+
 /** Rows from the Hisn al-Muslim text, vocalised by hand; under review. */
 export const DHIKR_TASK_ROWS = [
   {

@@ -60,26 +60,6 @@
     <!-- Duration formats -->
     <string name="minute_format">%d min</string>
 
-    <!-- Overlay - Tap Challenge -->
-    <string name="overlay_tap_instruction">Tap the button %d times to dismiss</string>
-    <string name="overlay_tap_progress">%1$d / %2$d</string>
-    <string name="overlay_tap_button">TAP TO DISMISS</string>
-
-    <!-- Overlay - Math Challenge -->
-    <string name="overlay_math_instruction_one">Solve 1 math problem to dismiss</string>
-    <string name="overlay_math_instruction_many">Solve %d math problems to dismiss</string>
-    <string name="overlay_math_progress">Problem %1$d of %2$d</string>
-    <string name="overlay_math_hint">Enter answer</string>
-    <string name="overlay_math_submit">SUBMIT</string>
-    <string name="overlay_math_wrong">Wrong answer, try again!</string>
-    <string name="overlay_math_invalid">Please enter a number</string>
-
-    <!-- Overlay - Dhikr Challenge -->
-    <string name="overlay_dhikr_instruction_one">Type 1 dhikr to dismiss</string>
-    <string name="overlay_dhikr_instruction_many">Type %d dhikr to dismiss</string>
-    <string name="overlay_dhikr_progress">Dhikr %1$d of %2$d</string>
-    <string name="overlay_dhikr_hint">Type here</string>
-
     <!-- Overlay - Snooze -->
     <string name="overlay_snooze_button">SNOOZE (%d left)</string>
     <string name="overlay_snooze_none">NO SNOOZES LEFT</string>
@@ -92,14 +72,8 @@
     <!-- Overlay - Start Solving -->
     <string name="overlay_start_solving">START SOLVING</string>
 
-    <!-- Overlay - Grace Period -->
-    <string name="overlay_grace_expired">Time\'s up — solve to silence</string>
-
     <!-- Overlay - Notification -->
     <string name="overlay_notification_title">Alarm Active</string>
-    <string name="overlay_notification_tap">Tap %d times to dismiss</string>
-    <string name="overlay_notification_math_one">Solve 1 math problem to dismiss</string>
-    <string name="overlay_notification_math_many">Solve %d math problems to dismiss</string>
     <string name="overlay_notification_dismiss">Tap to dismiss</string>
 
     <!-- Overlay - Wake-up task shell -->
@@ -162,6 +136,12 @@
     <string name="overlay_task_dhikr_completed_spoken">This dhikr is completed with: %1$s. %2$s</string>
     <string name="overlay_task_dhikr_gap">missing word</string>
     <string name="overlay_task_dhikr_another_spoken">Another dhikr. %1$s</string>
+    <string name="overlay_task_dhikr_type_hint">Type it in Arabic or in Latin letters</string>
+    <string name="overlay_task_dhikr_type_field">Type here</string>
+    <string name="overlay_task_dhikr_type_submit">Submit</string>
+    <string name="overlay_task_dhikr_type_wrong">Wrong answer, try again</string>
+    <string name="overlay_task_dhikr_type_phrase">Dhikr to type: %2$s</string>
+    <string name="overlay_task_dhikr_type_new">Wrong answer. New dhikr to type: %2$s</string>
     <string name="overlay_task_prayers_ask">Tap from %1$s to %2$s.</string>
     <string name="overlay_task_prayers_wrong">Not %1$s yet.</string>
     <string name="overlay_task_prayers_dealt">The cards were dealt again.</string>

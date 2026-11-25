@@ -46,6 +46,9 @@ class TaskShellView(
 
         // "Stop alarm" appeared, which takes the emergency quiet away.
         fun onWayOut() = Unit
+
+        // A typing board showed or left; only then may the window take the keyboard.
+        fun onTyping(typing: Boolean)
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -63,6 +66,8 @@ class TaskShellView(
     private var saved: TaskShellRun.Saved? = null
 
     private var board: TaskBoard? = null
+
+    private var typing = false
 
     // As JS BackLink: a chevron to the start edge and the screen it returns to.
     private val backButton = TextView(context).apply {
@@ -223,6 +228,12 @@ class TaskShellView(
         board = null
     }
 
+    private fun type(typing: Boolean) {
+        if (this.typing == typing) return
+        this.typing = typing
+        listener.onTyping(typing)
+    }
+
     fun focusStart() = focusForReader(startButton)
 
     // A quiet holds the sound, or its confirm takes the strip's place.
@@ -291,6 +302,7 @@ class TaskShellView(
     private fun back() {
         val left = run?.leave(now()) ?: return
         release()
+        type(false)
         run = null
         saved = left.saved
         // A status the next run repeats is spoken again.
@@ -322,6 +334,7 @@ class TaskShellView(
         boardHost.addView(shown.view)
         boardHeading.visibility = View.VISIBLE
         boardHost.visibility = View.VISIBLE
+        type(NativeBoards.takesTyping(kind))
     }
 
     private fun clearBoard() {
@@ -339,6 +352,7 @@ class TaskShellView(
                 // As JS: a done run shows no Back, no quiet strip and no way out.
                 backButton.visibility = View.GONE
                 release()
+                type(false)
                 boardDone = true
                 boardHost.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
                 listOf(quietRow, quietState, quietHelp, wayOut, bannerSlot, offerSlot).forEach {
@@ -357,6 +371,7 @@ class TaskShellView(
 
     private fun showHandover(run: TaskShellRun, next: TaskRun.Position) {
         clearBoard()
+        type(false)
         boardHeading.visibility = View.GONE
         boardHost.visibility = View.GONE
         handoverPosition.text = taskOf(run, next)
@@ -456,7 +471,7 @@ class TaskShellView(
     }
 
     private fun nameOf(task: WakeTasks.Task): String =
-        context.getString(TaskBoards.nameOf(NativeBoards.shownBoard(task)))
+        context.getString(TaskBoards.nameOf(task.board))
 
     private fun taskOf(run: TaskShellRun, position: TaskRun.Position): String =
         context.getString(R.string.overlay_task_of, position.task + 1, run.size)

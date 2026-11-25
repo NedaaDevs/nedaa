@@ -1,0 +1,9 @@
+case	arabic	transliteration	typed	outcomes
+right first time	سبحان الله	Subhanallah	Subhanallah	solved
+the Arabic keyboard	سبحان الله	Subhanallah	سبحان الله	solved
+a miss keeps the phrase	الحمد لله	Alhamdulillah	Alhamdulillahi|Alhamdulillah	wrong|solved
+two misses keep the phrase	الحمد لله	Alhamdulillah	x|الحمد|الحمد لله	wrong|wrong|solved
+the third miss draws a new phrase	الله أكبر	Allahu Akbar	x|y|z	wrong|wrong|next
+a new phrase starts the misses again	الله أكبر	Allahu Akbar	x|y|z|x|y|z	wrong|wrong|next|wrong|wrong|next
+solved after a new phrase	الله أكبر	Allahu Akbar	x|y|z|Allahu Akbar	wrong|wrong|next|solved
+an empty submission is a miss	سبحان الله	Subhanallah	-|Subhanallah	wrong|solved
