@@ -32,6 +32,27 @@ class RingingScreenTest {
     }
 
     @Test
+    fun aStoredMomentKeepsItsInstantAndZone() {
+        assertEquals(RingingScreen.Moment(MOMENT_AT, ZONE), RingingScreen.momentOf(MOMENT_AT, ZONE))
+    }
+
+    // An old row has neither; a zone this device cannot read would show a wrong hour.
+    @Test
+    fun aMissingPartOrAnUnknownZoneStoresNoMoment() {
+        assertEquals(null, RingingScreen.momentOf(null, ZONE))
+        assertEquals(null, RingingScreen.momentOf(MOMENT_AT, null))
+        assertEquals(null, RingingScreen.momentOf(MOMENT_AT, "Mars/Olympus"))
+    }
+
+    // The prayer's hour in its own place, wherever the phone is.
+    @Test
+    fun aMomentReadsInItsOwnZone() {
+        val calendar = RingingScreen.Moment(MOMENT_AT, ZONE).calendar()
+        assertEquals(4, calendar.get(java.util.Calendar.HOUR_OF_DAY))
+        assertEquals(30, calendar.get(java.util.Calendar.MINUTE))
+    }
+
+    @Test
     fun everySnoozePlaceMatchesJs() {
         val rows = sharedTable("snooze-place.tsv")
         check(rows.isNotEmpty())
@@ -53,5 +74,11 @@ class RingingScreenTest {
             val tasks = WakeTasks.normalize(WakeTasks.decode(cell(stack)))
             assertEquals(stack, yes(panel), RingingScreen.solvedShowsPanel(tasks))
         }
+    }
+
+    private companion object {
+        // 2026-09-26 01:30 UTC: 04:30 in Riyadh.
+        const val MOMENT_AT = 1_790_386_200_000L
+        const val ZONE = "Asia/Riyadh"
     }
 }

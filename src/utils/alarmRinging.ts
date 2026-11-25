@@ -1,3 +1,5 @@
+import { parseISO } from "date-fns";
+
 import {
   RINGING_TIME,
   SNOOZE_PLACE,
@@ -6,7 +8,7 @@ import {
 } from "@/constants/AlarmRinging";
 import { PRAYER_ID } from "@/constants/Prayer";
 import { ScheduledAlarmType } from "@/enums/alarm";
-import type { PrayerName } from "@/types/prayerTimes";
+import type { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";
 import { isScheduledAlarmType } from "@/utils/alarmTypes";
 
 // The ringing screen's rules; RingingScreen.kt holds the header's and the
@@ -36,6 +38,9 @@ export type RingingHeader = Readonly<{
   announcementKey: string;
 }>;
 
+/** A prayer's moment and the zone its clock is read in. */
+export type PrayerMoment = Readonly<{ time: Date; timezone: string }>;
+
 /** A link can carry a type no alarm has; it rings as a custom alarm. */
 export const ringingTypeOf = (raw: string): ScheduledAlarmType =>
   isScheduledAlarmType(raw) ? raw : ScheduledAlarmType.CUSTOM;
@@ -45,10 +50,30 @@ export const alarmPrayerOf = (type: ScheduledAlarmType): AlarmPrayer | null =>
 
 export const alarmNameKeyOf = (type: ScheduledAlarmType): string => ALARM_NAME_KEY[type];
 
+/** The alarm's prayer on the stored day nearest the reference; null with none. */
+export const nearestPrayerMoment = (
+  type: ScheduledAlarmType,
+  reference: number,
+  days: readonly (DayPrayerTimes | null | undefined)[]
+): PrayerMoment | null => {
+  const prayer = alarmPrayerOf(type);
+  if (!prayer) return null;
+  const moments = days
+    .filter((day): day is DayPrayerTimes => !!day?.timings[prayer.timing])
+    .map((day) => ({ time: parseISO(day.timings[prayer.timing]), timezone: day.timezone }));
+  if (moments.length === 0) return null;
+  return moments.reduce((closest, moment) =>
+    Math.abs(moment.time.getTime() - reference) < Math.abs(closest.time.getTime() - reference)
+      ? moment
+      : closest
+  );
+};
+
 /** The prayer's time heads the screen; with none stored, the clock does. */
 export const ringingHeader = (type: ScheduledAlarmType, hasMoment: boolean): RingingHeader => {
   const prayerKey = alarmPrayerOf(type)?.nameKey ?? null;
-  const time = hasMoment ? RINGING_TIME.PRAYER : RINGING_TIME.CLOCK;
+  // Only a prayer has a moment to show; a custom alarm keeps the clock.
+  const time = hasMoment && prayerKey ? RINGING_TIME.PRAYER : RINGING_TIME.CLOCK;
   return {
     prayerKey,
     alarmKey: alarmNameKeyOf(type),

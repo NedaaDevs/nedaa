@@ -45,6 +45,9 @@ internal object RingingLook {
     const val CARD_RADIUS_DP = 16f
     const val MARK_DP = 40
     const val MARK_EDGE_DP = 2f
+    const val FIGURE_12_HOUR = "h:mm"
+    const val FIGURE_24_HOUR = "HH:mm"
+    const val PERIOD = "a"
 }
 
 internal fun accessibilityHeading(view: View) {
@@ -120,10 +123,16 @@ internal class RingingHalo(context: Context) : View(context) {
 }
 
 // The ringing header: the name, the time and the halo, as JS ActiveAlarmView.
-internal class RingingHeaderView(private val context: Context, type: RingingScreen.Type) {
+internal class RingingHeaderView(
+    private val context: Context,
+    type: RingingScreen.Type,
+    moment: RingingScreen.Moment?,
+) {
 
-    // No prayer time is stored natively, so the clock heads the screen.
-    private val header = RingingScreen.header(type, hasMoment = false)
+    private val header = RingingScreen.header(type, hasMoment = moment != null)
+
+    // The prayer's moment, fixed, when it heads the screen; the clock otherwise.
+    private val shownMoment = moment.takeIf { header.time == RingingScreen.Time.PRAYER }
     private val alarmName = context.getString(RingingStrings.of(header.alarm))
     private val prayerName = header.prayer?.let { context.getString(RingingStrings.of(it)) }
 
@@ -137,9 +146,7 @@ internal class RingingHeaderView(private val context: Context, type: RingingScre
             halo.breathing = value
         }
 
-    private val figure = TextClock(context).apply {
-        format12Hour = "h:mm"
-        format24Hour = "HH:mm"
+    private val figure = timeText(RingingLook.FIGURE_12_HOUR, RingingLook.FIGURE_24_HOUR).apply {
         maxLines = 1
         textSize = RingingLook.TIME_SP
         setTextColor(Color.parseColor(COLOR_TEXT))
@@ -149,9 +156,7 @@ internal class RingingHeaderView(private val context: Context, type: RingingScre
     }
 
     // The period shows on a 12-hour clock only, as JS time.period.
-    private val period = TextClock(context).apply {
-        format12Hour = "a"
-        format24Hour = "a"
+    private val period = timeText(RingingLook.PERIOD, RingingLook.PERIOD).apply {
         textSize = RingingLook.PERIOD_SP
         setTextColor(Color.parseColor(COLOR_TEXT))
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -238,13 +243,28 @@ internal class RingingHeaderView(private val context: Context, type: RingingScre
         if (figure.textSize != px) figure.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
     }
 
+    // A TextClock ticks; the prayer's moment is drawn once with the same pattern and formatter.
+    private fun timeText(format12: String, format24: String): TextView = shownMoment?.let { fixed ->
+        TextView(context).apply {
+            val pattern = if (DateFormat.is24HourFormat(context)) format24 else format12
+            text = DateFormat.format(pattern, fixed.calendar())
+        }
+    } ?: TextClock(context).apply {
+        format12Hour = format12
+        format24Hour = format24
+    }
+
     private fun line(sizeSp: Float, color: String): TextView = overlayText(context, sizeSp, color).apply {
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
 
     // As JS: a prayer alarm on the clock says the time now; others say the alarm.
     private fun describe() {
-        val spoken = DateFormat.getTimeFormat(context).format(Date())
+        val format = DateFormat.getTimeFormat(context)
+        val spoken = shownMoment?.let { fixed ->
+            format.timeZone = fixed.calendar().timeZone
+            format.format(Date(fixed.at))
+        } ?: format.format(Date())
         heading.contentDescription = when (header.heading) {
             RingingScreen.Heading.CURRENT_TIME -> context.getString(RingingStrings.of(header.heading), spoken)
             RingingScreen.Heading.RINGING_AT -> context.getString(RingingStrings.of(header.heading), alarmName, spoken)

@@ -9,6 +9,8 @@ import { generateDeterministicUUID, getQuietKey, getSnoozeKey } from "@/utils/al
 import { toSettingsAlarmType } from "@/utils/alarmTypes";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
+import { usePrayerTimesStore } from "@/stores/prayerTimes";
+import { nearestPrayerMoment } from "@/utils/alarmRinging";
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
 import { forgetBooking, forgetUnfired } from "@/services/firedPrayerLedger";
 import { runningQuietEnd } from "@/utils/emergencyQuiet";
@@ -134,6 +136,14 @@ export const useAlarmStore = create<AlarmState>()(
           firstTriggerTime,
         }) => {
           try {
+            // Every stored day, so an occurrence past tomorrow finds its own.
+            const { todayTimings, tomorrowTimings, twoWeeksTimings } =
+              usePrayerTimesStore.getState();
+            const moment = nearestPrayerMoment(alarmType, triggerDate.getTime(), [
+              todayTimings,
+              tomorrowTimings,
+              ...(twoWeeksTimings ?? []),
+            ]);
             const success = await ExpoAlarm.scheduleAlarm({
               id,
               triggerDate,
@@ -143,6 +153,7 @@ export const useAlarmStore = create<AlarmState>()(
               snoozeCount,
               quietUsed,
               isPreview,
+              prayerMoment: moment && { at: moment.time.getTime(), timezone: moment.timezone },
             });
 
             if (!success) {

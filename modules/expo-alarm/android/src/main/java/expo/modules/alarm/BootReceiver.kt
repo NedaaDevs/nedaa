@@ -51,7 +51,7 @@ class BootReceiver : BroadcastReceiver() {
                         val settings = db.getAlarmSettings(alarm.alarmType)
                         scheduler.scheduleAlarm(
                             alarm.id, triggerMs, alarm.alarmType, alarm.title, settings.sound, alarm.snoozeCount,
-                            quietUsed = alarm.quietUsed, preview = alarm.preview
+                            quietUsed = alarm.quietUsed, preview = alarm.preview, moment = alarm.moment
                         )
                         rescheduled++
                     } else {

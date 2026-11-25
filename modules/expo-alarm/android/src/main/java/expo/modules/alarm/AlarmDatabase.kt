@@ -32,20 +32,7 @@ class AlarmDatabase private constructor(private val context: Context) :
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("""
-            CREATE TABLE IF NOT EXISTS alarms (
-                id TEXT PRIMARY KEY,
-                alarm_type TEXT NOT NULL,
-                title TEXT NOT NULL,
-                trigger_time REAL NOT NULL,
-                completed INTEGER DEFAULT 0,
-                is_backup INTEGER DEFAULT 0,
-                snooze_count INTEGER DEFAULT 0,
-                created_at REAL NOT NULL,
-                quiet_used INTEGER DEFAULT 0,
-                preview INTEGER DEFAULT 0
-            )
-        """)
+        db.execSQL(AlarmMigrations.CREATE_ALARMS)
 
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS alarm_settings (
@@ -140,7 +127,8 @@ class AlarmDatabase private constructor(private val context: Context) :
         isBackup: Boolean = false,
         snoozeCount: Int = 0,
         quietUsed: Boolean = false,
-        preview: Boolean = false
+        preview: Boolean = false,
+        moment: RingingScreen.Moment?
     ): Boolean {
         val values = ContentValues().apply {
             put("id", id)
@@ -153,6 +141,8 @@ class AlarmDatabase private constructor(private val context: Context) :
             put("created_at", System.currentTimeMillis().toDouble())
             put("quiet_used", if (quietUsed) 1 else 0)
             put("preview", if (preview) 1 else 0)
+            put("prayer_moment_at", moment?.at)
+            put("prayer_zone", moment?.zone)
         }
         return writableDatabase.insertWithOnConflict("alarms", null, values, SQLiteDatabase.CONFLICT_REPLACE) != -1L
     }
@@ -167,11 +157,14 @@ class AlarmDatabase private constructor(private val context: Context) :
         val snoozeCount: Int,
         // This alarm, its snoozes included, has had its emergency quiet.
         val quietUsed: Boolean = false,
-        val preview: Boolean = false
+        val preview: Boolean = false,
+        // The prayer's moment its ringing screen shows; null shows the clock.
+        val moment: RingingScreen.Moment? = null
     )
 
     private val alarmColumns =
-        "id, alarm_type, title, trigger_time, completed, is_backup, snooze_count, quiet_used, preview"
+        "id, alarm_type, title, trigger_time, completed, is_backup, snooze_count, quiet_used, preview, " +
+            "prayer_moment_at, prayer_zone"
 
     private fun alarmAt(cursor: Cursor) = AlarmRecord(
         id = cursor.getString(0),
@@ -182,7 +175,11 @@ class AlarmDatabase private constructor(private val context: Context) :
         isBackup = cursor.getInt(5) == 1,
         snoozeCount = cursor.getInt(6),
         quietUsed = cursor.getInt(7) == 1,
-        preview = cursor.getInt(8) == 1
+        preview = cursor.getInt(8) == 1,
+        moment = RingingScreen.momentOf(
+            if (cursor.isNull(9)) null else cursor.getLong(9),
+            if (cursor.isNull(10)) null else cursor.getString(10),
+        )
     )
 
     fun getAlarm(id: String): AlarmRecord? {

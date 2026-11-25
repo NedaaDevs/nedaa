@@ -26,6 +26,14 @@ export interface ScheduleAlarmParams {
   quietUsed?: boolean;
   // Android: a preview ring, which the overlay offers no quiet on.
   isPreview?: boolean;
+  // Android: the prayer's moment the ringing screen shows; null shows the clock.
+  prayerMoment?: PrayerMomentParams | null;
+}
+
+/** An instant in epoch ms and the IANA zone its clock is read in. */
+export interface PrayerMomentParams {
+  at: number;
+  timezone: string;
 }
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
@@ -107,6 +115,8 @@ export const scheduleAlarm = async (params: ScheduleAlarmParams): Promise<boolea
     snoozeCount: params.snoozeCount ?? 0,
     quietUsed: params.quietUsed ?? false,
     isPreview: params.isPreview ?? false,
+    prayerMomentAt: params.prayerMoment?.at ?? null,
+    prayerTimezone: params.prayerMoment?.timezone ?? null,
   });
 };
 

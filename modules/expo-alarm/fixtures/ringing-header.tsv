@@ -4,5 +4,8 @@ fajr	no	prayerTimes.fajr	alarm.types.fajr	prayerTimes.fajr	clock	a11y.alarm.curr
 jummah	yes	prayerTimes.jumuah	alarm.types.friday	prayerTimes.jumuah	prayer	a11y.alarm.ringingAt	a11y.alarm.ringingAnnouncement
 jummah	no	prayerTimes.jumuah	alarm.types.friday	prayerTimes.jumuah	clock	a11y.alarm.currentTime	a11y.alarm.ringingAnnouncement
 custom	no	-	alarm.types.custom	alarm.types.custom	clock	a11y.alarm.ringingAt	a11y.alarm.ringingCustom
+custom	yes	-	alarm.types.custom	alarm.types.custom	clock	a11y.alarm.ringingAt	a11y.alarm.ringingCustom
 friday	no	-	alarm.types.custom	alarm.types.custom	clock	a11y.alarm.ringingAt	a11y.alarm.ringingCustom
+friday	yes	-	alarm.types.custom	alarm.types.custom	clock	a11y.alarm.ringingAt	a11y.alarm.ringingCustom
 -	no	-	alarm.types.custom	alarm.types.custom	clock	a11y.alarm.ringingAt	a11y.alarm.ringingCustom
+-	yes	-	alarm.types.custom	alarm.types.custom	clock	a11y.alarm.ringingAt	a11y.alarm.ringingCustom

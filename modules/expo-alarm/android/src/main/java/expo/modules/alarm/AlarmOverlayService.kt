@@ -318,7 +318,9 @@ class AlarmOverlayService : Service() {
             layoutParams = params
         }
 
-        header = RingingHeaderView(this, RingingScreen.typeOf(alarmType)).also { card.addView(it.view) }
+        // Read from the row, so a snooze, a redelivered start or a restart shows the same time.
+        val moment = AlarmDatabase.getInstance(this).getAlarm(alarmId)?.moment
+        header = RingingHeaderView(this, RingingScreen.typeOf(alarmType), moment).also { card.addView(it.view) }
 
         if (NativeBoards.runsShell(stack)) {
             ringBannerSlot = quietSlot(this).also { card.addView(it) }
@@ -508,7 +510,7 @@ class AlarmOverlayService : Service() {
         val quietUsed = record?.quietUsed == true
         val scheduled = scheduler.scheduleAlarm(
             snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount,
-            quietUsed = quietUsed, preview = record?.preview == true,
+            quietUsed = quietUsed, preview = record?.preview == true, moment = record?.moment,
         )
         if (!scheduled) {
             AlarmLogger.getInstance(this).e("AlarmOverlay", "Snooze scheduling failed; alarm keeps ringing: id=$alarmId")
@@ -740,7 +742,7 @@ class AlarmOverlayService : Service() {
         val counted = try {
             scheduler.scheduleAlarm(
                 quietId, ringsAt, alarmType, title, alarmSound, snoozeCount,
-                quietUsed = true, preview = record?.preview == true,
+                quietUsed = true, preview = record?.preview == true, moment = record?.moment,
             ) && db.recordQuietUse(now) {
                 db.markCompleted(alarmId)
                 // The re-ring owns the ring, so it is not deferred behind this alarm.
