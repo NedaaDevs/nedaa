@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import Storage from "expo-sqlite/kv-store";
 import * as ExpoAlarm from "expo-alarm";
+import type { PrayerMomentParams } from "expo-alarm";
 import i18next from "@/localization/i18n";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { ALARM_DEFAULTS, LIVE_ACTIVITY_STATE } from "@/constants/Alarm";
@@ -10,7 +11,7 @@ import { toSettingsAlarmType } from "@/utils/alarmTypes";
 import { alarmLog } from "@/utils/alarmReport";
 import { useAlarmSettingsStore } from "@/stores/alarmSettings";
 import { usePrayerTimesStore } from "@/stores/prayerTimes";
-import { nearestPrayerMoment } from "@/utils/alarmRinging";
+import { nearestPrayerMoment, storedPrayerDays } from "@/utils/alarmRinging";
 import { FIRED_LEDGER } from "@/constants/FiredPrayerGuard";
 import { forgetBooking, forgetUnfired } from "@/services/firedPrayerLedger";
 import { runningQuietEnd } from "@/utils/emergencyQuiet";
@@ -31,6 +32,8 @@ export interface ScheduledAlarm {
   quietUsed?: boolean;
   // The first ring's trigger, kept by the snoozes and quiet that replace it.
   firstTriggerTime?: number;
+  // The prayer's moment sent with the first ring, kept by its replacements.
+  prayerMoment?: PrayerMomentParams | null;
 }
 
 // Whatever the cancel reports, forgotten from its start time: a kept entry
@@ -72,6 +75,8 @@ interface AlarmState {
     quietUsed?: boolean;
     firstTriggerTime?: number;
     countdown?: boolean;
+    /** A replacement's kept moment; left out, the nearest stored one is picked. */
+    prayerMoment?: PrayerMomentParams | null;
   }) => Promise<boolean>;
 
   completeAlarm: (alarmId: string) => Promise<void>;
@@ -117,6 +122,19 @@ const retireReplaced = async (alarmId: string): Promise<void> => {
   });
 };
 
+/** The alarm's prayer on the stored day nearest its trigger, as native takes it. */
+const pickPrayerMoment = (
+  alarmType: ScheduledAlarmType,
+  triggerTime: number
+): PrayerMomentParams | null => {
+  const moment = nearestPrayerMoment(
+    alarmType,
+    triggerTime,
+    storedPrayerDays(usePrayerTimesStore.getState())
+  );
+  return moment && { at: moment.time.getTime(), timezone: moment.timezone };
+};
+
 export const useAlarmStore = create<AlarmState>()(
   devtools(
     persist(
@@ -134,16 +152,11 @@ export const useAlarmStore = create<AlarmState>()(
           isPreview,
           quietUsed,
           firstTriggerTime,
+          prayerMoment: kept,
         }) => {
           try {
-            // Every stored day, so an occurrence past tomorrow finds its own.
-            const { todayTimings, tomorrowTimings, twoWeeksTimings } =
-              usePrayerTimesStore.getState();
-            const moment = nearestPrayerMoment(alarmType, triggerDate.getTime(), [
-              todayTimings,
-              tomorrowTimings,
-              ...(twoWeeksTimings ?? []),
-            ]);
+            const prayerMoment =
+              kept === undefined ? pickPrayerMoment(alarmType, triggerDate.getTime()) : kept;
             const success = await ExpoAlarm.scheduleAlarm({
               id,
               triggerDate,
@@ -153,7 +166,7 @@ export const useAlarmStore = create<AlarmState>()(
               snoozeCount,
               quietUsed,
               isPreview,
-              prayerMoment: moment && { at: moment.time.getTime(), timezone: moment.timezone },
+              prayerMoment,
             });
 
             if (!success) {
@@ -179,6 +192,7 @@ export const useAlarmStore = create<AlarmState>()(
                   ...(isPreview && { isPreview }),
                   ...(quietUsed && { quietUsed }),
                   ...(firstTriggerTime !== undefined && { firstTriggerTime }),
+                  prayerMoment,
                 },
               },
             }));
@@ -267,6 +281,7 @@ export const useAlarmStore = create<AlarmState>()(
             isPreview: alarm.isPreview,
             quietUsed: alarm.quietUsed,
             firstTriggerTime: alarm.firstTriggerTime ?? alarm.triggerTime,
+            prayerMoment: alarm.prayerMoment,
           });
           if (!rescheduled) {
             alarmLog.e(
@@ -319,6 +334,7 @@ export const useAlarmStore = create<AlarmState>()(
             isPreview: alarm.isPreview,
             quietUsed: true,
             firstTriggerTime: alarm.firstTriggerTime ?? alarm.triggerTime,
+            prayerMoment: alarm.prayerMoment,
           });
           if (!armed) {
             alarmLog.e(

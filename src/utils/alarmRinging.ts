@@ -50,6 +50,19 @@ export const alarmPrayerOf = (type: ScheduledAlarmType): AlarmPrayer | null =>
 
 export const alarmNameKeyOf = (type: ScheduledAlarmType): string => ALARM_NAME_KEY[type];
 
+type StoredDays = {
+  todayTimings: DayPrayerTimes | null;
+  tomorrowTimings: DayPrayerTimes | null;
+  twoWeeksTimings: DayPrayerTimes[] | null;
+};
+
+/** Every stored day, so an occurrence past tomorrow finds its own. */
+export const storedPrayerDays = (stored: StoredDays): (DayPrayerTimes | null)[] => [
+  stored.todayTimings,
+  stored.tomorrowTimings,
+  ...(stored.twoWeeksTimings ?? []),
+];
+
 /** The alarm's prayer on the stored day nearest the reference; null with none. */
 export const nearestPrayerMoment = (
   type: ScheduledAlarmType,

@@ -74,6 +74,7 @@ describe("scheduleAlarm's prayer moment", () => {
     ["at Fajr", ScheduledAlarmType.FAJR, "2026-09-25T01:30:00.000Z"],
     ["a snooze after Fajr", ScheduledAlarmType.FAJR, "2026-09-25T01:45:00.000Z"],
     ["an hour before Jumuah", ScheduledAlarmType.JUMMAH, "2026-09-26T08:10:00.000Z"],
+    ["a Fajr past tomorrow", ScheduledAlarmType.FAJR, "2026-09-27T01:10:00.000Z"],
     ["a custom alarm", ScheduledAlarmType.CUSTOM, "2026-09-25T01:10:00.000Z"],
   ])("for %s, matches the moment the ringing screen shows", async (_when, alarmType, at) => {
     await arm(alarmType, at);
@@ -91,6 +92,31 @@ describe("scheduleAlarm's prayer moment", () => {
   it("takes a later stored day for an occurrence past tomorrow", async () => {
     await arm(ScheduledAlarmType.FAJR, "2026-09-27T01:10:00.000Z");
     expect(sent()).toEqual({ at: Date.parse(LATER.timings[PRAYER_ID.FAJR]), timezone: ZONE });
+  });
+
+  // Times can change or clear between the first ring and its replacement.
+  it.each([
+    ["snooze", () => useAlarmStore.getState().snoozeAlarm(ALARM_ID)],
+    [
+      "quiet",
+      () =>
+        useAlarmStore.getState().quietAlarm(ALARM_ID, {
+          ringsAt: new Date("2026-09-25T01:35:00.000Z"),
+          recordUse: jest.fn(),
+          silence: jest.fn(),
+        }),
+    ],
+  ])("keeps the first ring's moment through a %s with the times gone", async (_path, replace) => {
+    await arm(ScheduledAlarmType.FAJR, "2026-09-25T01:10:00.000Z");
+    const first = sent();
+    usePrayerTimesStore.setState({
+      todayTimings: null,
+      tomorrowTimings: null,
+      twoWeeksTimings: null,
+    });
+    expect(await replace()).not.toBeNull();
+    expect(ExpoAlarm.scheduleAlarm).toHaveBeenCalledTimes(2);
+    expect(sent()).toEqual(first);
   });
 
   it("sends none for a custom alarm", async () => {
