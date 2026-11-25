@@ -64,8 +64,6 @@
     <string name="overlay_start_solving">ابدأ الحل</string>
 
     <!-- Overlay - Snooze -->
-    <string name="overlay_snooze_button">غفوة (%d متبقية)</string>
-    <string name="overlay_snooze_none">لا غفوات متبقية</string>
     <string name="overlay_snooze_max_reached">تم الوصول للحد الأقصى من الغفوات</string>
 
     <!-- Overlay - Direct Dismiss (No Challenge) -->

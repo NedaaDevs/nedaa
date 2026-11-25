@@ -64,8 +64,6 @@
     <string name="overlay_start_solving">حل شروع کریں</string>
 
     <!-- Overlay - Snooze -->
-    <string name="overlay_snooze_button">سنوز (%d باقی)</string>
-    <string name="overlay_snooze_none">کوئی سنوز باقی نہیں</string>
     <string name="overlay_snooze_max_reached">زیادہ سے زیادہ سنوز تک پہنچ گئے</string>
 
     <!-- Overlay - Direct Dismiss (No Challenge) -->

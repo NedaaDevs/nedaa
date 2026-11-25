@@ -61,8 +61,6 @@
     <string name="minute_format">%d min</string>
 
     <!-- Overlay - Snooze -->
-    <string name="overlay_snooze_button">SNOOZE (%d left)</string>
-    <string name="overlay_snooze_none">NO SNOOZES LEFT</string>
     <string name="overlay_snooze_max_reached">Maximum snoozes reached</string>
 
     <!-- Overlay - Direct Dismiss (No Challenge) -->
