@@ -49,7 +49,8 @@ class AlarmScheduler(private val context: Context) {
             soundName = sound,
             snoozeCount = record.snoozeCount,
             quietUsed = record.quietUsed,
-            preview = record.preview
+            preview = record.preview,
+            moment = record.moment
         )
         AlarmLogger.getInstance(context).w(
             "AlarmScheduler",
@@ -83,7 +84,9 @@ class AlarmScheduler(private val context: Context) {
         soundName: String,
         snoozeCount: Int = 0,
         quietUsed: Boolean = false,
-        preview: Boolean = false
+        preview: Boolean = false,
+        // Required: a row rewritten without its moment would ring on the clock.
+        moment: RingingScreen.Moment?
     ): Boolean {
         if (!canScheduleExactAlarms()) {
             AlarmLogger.getInstance(context).e("AlarmScheduler", "Exact alarm permission denied — cannot schedule id=$id type=$alarmType")
@@ -140,7 +143,8 @@ class AlarmScheduler(private val context: Context) {
         val saved = try {
             db.saveAlarm(
                 id, alarmType, title, triggerTimeMs.toDouble(),
-                isBackup = false, snoozeCount = snoozeCount, quietUsed = quietUsed, preview = preview
+                isBackup = false, snoozeCount = snoozeCount, quietUsed = quietUsed, preview = preview,
+                moment = moment
             )
         } catch (e: SQLException) {
             AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save threw id=$id: ${e.message}")

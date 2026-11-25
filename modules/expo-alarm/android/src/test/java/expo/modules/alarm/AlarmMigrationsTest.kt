@@ -14,13 +14,14 @@ class AlarmMigrationsTest {
     @Test
     fun everyStartVersionRunsEachLaterStepOldestFirst() {
         val expected = mapOf(
-            1 to listOf(2, 3, 3, 4, 5, 6, 7, 7, 7, 7),
-            2 to listOf(3, 3, 4, 5, 6, 7, 7, 7, 7),
-            3 to listOf(4, 5, 6, 7, 7, 7, 7),
-            4 to listOf(5, 6, 7, 7, 7, 7),
-            5 to listOf(6, 7, 7, 7, 7),
-            6 to listOf(7, 7, 7, 7),
-            7 to emptyList(),
+            1 to listOf(2, 3, 3, 4, 5, 6, 7, 7, 7, 7, 8, 8),
+            2 to listOf(3, 3, 4, 5, 6, 7, 7, 7, 7, 8, 8),
+            3 to listOf(4, 5, 6, 7, 7, 7, 7, 8, 8),
+            4 to listOf(5, 6, 7, 7, 7, 7, 8, 8),
+            5 to listOf(6, 7, 7, 7, 7, 8, 8),
+            6 to listOf(7, 7, 7, 7, 8, 8),
+            7 to listOf(8, 8),
+            8 to emptyList(),
         )
         for ((old, versions) in expected) {
             assertEquals("from v$old", versions, AlarmMigrations.steps(old, latest).map { it.version })
@@ -65,6 +66,29 @@ class AlarmMigrationsTest {
         val steps = AlarmMigrations.STEPS.filter { it.sql == AlarmMigrations.CREATE_QUIET_LEDGER }
         assertEquals(listOf(7), steps.map { it.version })
         assertFalse(steps.single().addsColumn)
+    }
+
+    // NULL is "no moment stored": an old row's ring shows the clock.
+    @Test
+    fun versionEightAddsThePrayerMomentWithNoValueForAnOldRow() {
+        val steps = AlarmMigrations.steps(7, latest)
+        assertEquals(
+            listOf(AlarmMigrations.ADD_MOMENT_AT_COLUMN, AlarmMigrations.ADD_MOMENT_ZONE_COLUMN),
+            steps.map { it.sql },
+        )
+        for (step in steps) {
+            assertTrue(step.sql, step.sql.startsWith("ALTER TABLE alarms ADD COLUMN"))
+            assertTrue(step.addsColumn)
+            assertFalse(step.sql, step.sql.contains("DEFAULT") || step.sql.contains("NOT NULL"))
+        }
+    }
+
+    @Test
+    fun theFreshSchemaHasEveryColumnTheMomentStepsAdd() {
+        for (sql in listOf(AlarmMigrations.ADD_MOMENT_AT_COLUMN, AlarmMigrations.ADD_MOMENT_ZONE_COLUMN)) {
+            val column = sql.removePrefix("ALTER TABLE alarms ADD COLUMN ")
+            assertTrue(column, AlarmMigrations.CREATE_ALARMS.contains(column))
+        }
     }
 
     @Test

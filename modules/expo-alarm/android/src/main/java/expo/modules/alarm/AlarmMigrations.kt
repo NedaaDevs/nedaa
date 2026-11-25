@@ -5,6 +5,28 @@ object AlarmMigrations {
 
     data class Step(val version: Int, val sql: String, val addsColumn: Boolean = false)
 
+    // The alarms table as a fresh install creates it.
+    val CREATE_ALARMS = """
+        CREATE TABLE IF NOT EXISTS alarms (
+            id TEXT PRIMARY KEY,
+            alarm_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            trigger_time REAL NOT NULL,
+            completed INTEGER DEFAULT 0,
+            is_backup INTEGER DEFAULT 0,
+            snooze_count INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            quiet_used INTEGER DEFAULT 0,
+            preview INTEGER DEFAULT 0,
+            prayer_moment_at INTEGER,
+            prayer_zone TEXT
+        )
+    """.trimIndent()
+
+    // NULL: no prayer moment stored, so the ringing screen shows the clock.
+    const val ADD_MOMENT_AT_COLUMN = "ALTER TABLE alarms ADD COLUMN prayer_moment_at INTEGER"
+    const val ADD_MOMENT_ZONE_COLUMN = "ALTER TABLE alarms ADD COLUMN prayer_zone TEXT"
+
     // NULL: no stack saved, so the row's challenge stands for it.
     const val ADD_TASKS_COLUMN = "ALTER TABLE alarm_settings ADD COLUMN tasks TEXT"
 
@@ -75,6 +97,8 @@ object AlarmMigrations {
         Step(7, "ALTER TABLE alarms ADD COLUMN preview INTEGER DEFAULT 0", addsColumn = true),
         Step(7, "ALTER TABLE snooze_queue ADD COLUMN quiet_used INTEGER DEFAULT 0", addsColumn = true),
         Step(7, CREATE_QUIET_LEDGER),
+        Step(8, ADD_MOMENT_AT_COLUMN, addsColumn = true),
+        Step(8, ADD_MOMENT_ZONE_COLUMN, addsColumn = true),
     )
 
     val LATEST_VERSION: Int = STEPS.last().version

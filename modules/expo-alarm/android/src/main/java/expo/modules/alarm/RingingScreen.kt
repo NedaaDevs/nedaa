@@ -1,5 +1,8 @@
 package expo.modules.alarm
 
+import java.util.Calendar
+import java.util.TimeZone
+
 // The ringing screen's rules, as JS alarmRinging.ts; each key is the JS value.
 object RingingScreen {
 
@@ -48,6 +51,15 @@ object RingingScreen {
         val name: Name get() = prayer ?: alarm
     }
 
+    // A prayer's moment and the zone its clock is read in, as JS PrayerMoment.
+    data class Moment(val at: Long, val zone: String) {
+        fun calendar(): Calendar = Calendar.getInstance(TimeZone.getTimeZone(zone)).apply { timeInMillis = at }
+    }
+
+    // getTimeZone falls back to GMT for an id it cannot read, which would show a wrong hour.
+    fun momentOf(at: Long?, zone: String?): Moment? =
+        if (at != null && zone != null && TimeZone.getTimeZone(zone).id == zone) Moment(at, zone) else null
+
     data class SnoozeUse(val enabled: Boolean, val count: Int, val max: Int)
 
     // A type no alarm has rings as a custom alarm.
@@ -69,7 +81,8 @@ object RingingScreen {
     // The prayer's time heads the screen; with none stored, the clock does.
     fun header(type: Type, hasMoment: Boolean): Header {
         val prayer = prayerOf(type)
-        val time = if (hasMoment) Time.PRAYER else Time.CLOCK
+        // Only a prayer has a moment to show; a custom alarm keeps the clock.
+        val time = if (hasMoment && prayer != null) Time.PRAYER else Time.CLOCK
         return Header(
             prayer = prayer,
             alarm = alarmNameOf(type),

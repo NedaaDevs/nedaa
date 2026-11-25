@@ -34,6 +34,8 @@ class ScheduleAlarmOptions : Record {
     @Field val snoozeCount: Int = 0
     @Field val quietUsed: Boolean = false
     @Field val isPreview: Boolean = false
+    @Field val prayerMomentAt: Double? = null
+    @Field val prayerTimezone: String? = null
 }
 
 // The emergency quiet ledger as utils/emergencyQuiet.ts QuietLedger holds it.
@@ -114,7 +116,8 @@ class ExpoAlarmModule : Module() {
 
                 val scheduled = scheduler.scheduleAlarm(
                     options.id, triggerMs, options.alarmType, options.title, soundName, options.snoozeCount,
-                    quietUsed = options.quietUsed, preview = options.isPreview
+                    quietUsed = options.quietUsed, preview = options.isPreview,
+                    moment = RingingScreen.momentOf(options.prayerMomentAt?.toLong(), options.prayerTimezone)
                 )
                 promise.resolve(scheduled)
             } catch (e: Exception) {
