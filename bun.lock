@@ -109,6 +109,7 @@
   },
   "patchedDependencies": {
     "expo-modules-core@57.0.19": "patches/expo-modules-core@57.0.19.patch",
+    "react-native-reanimated@4.5.1": "patches/react-native-reanimated@4.5.1.patch",
     "react-native-worklets@0.10.1": "patches/react-native-worklets@0.10.1.patch",
   },
   "overrides": {
