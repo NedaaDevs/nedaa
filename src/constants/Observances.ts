@@ -18,7 +18,7 @@ export type ObservanceDef = {
   rulingKey: string;
 };
 
-export const OBSERVANCES: ObservanceDef[] = [
+export const OBSERVANCES: readonly ObservanceDef[] = [
   {
     id: ObservanceId.WHITE_DAYS,
     recurrence: { kind: "hijri-monthly", days: [13, 14, 15] },
@@ -41,18 +41,32 @@ export const OBSERVANCES: ObservanceDef[] = [
     rulingKey: "hijriCalendar.rulings.friday",
   },
   {
+    id: ObservanceId.TASUA,
+    recurrence: { kind: "hijri-fixed", month: 1, day: 9 },
+    observanceClass: ObservanceClass.RECOMMENDED_FAST,
+    nameKey: "hijriCalendar.observances.tasua",
+    rulingKey: "hijriCalendar.rulings.tasua",
+  },
+  {
     id: ObservanceId.ASHURA,
-    recurrence: { kind: "hijri-range", month: 1, from: 9, to: 10 },
+    recurrence: { kind: "hijri-fixed", month: 1, day: 10 },
     observanceClass: ObservanceClass.RECOMMENDED_FAST,
     nameKey: "hijriCalendar.observances.ashura",
-    rulingKey: "hijriCalendar.rulings.ashura",
+    rulingKey: "hijriCalendar.rulings.ashuraDay",
   },
   {
     id: ObservanceId.DHUL_HIJJAH_FIRST_NINE,
-    recurrence: { kind: "hijri-range", month: 12, from: 1, to: 9 },
+    recurrence: { kind: "hijri-range", month: 12, from: 1, to: 8 },
     observanceClass: ObservanceClass.RECOMMENDED_FAST,
     nameKey: "hijriCalendar.observances.dhulHijjahFirstNine",
-    rulingKey: "hijriCalendar.rulings.dhulHijjahFirstNine",
+    rulingKey: "hijriCalendar.rulings.dhulHijjahFirstDays",
+  },
+  {
+    id: ObservanceId.ARAFAH,
+    recurrence: { kind: "hijri-fixed", month: 12, day: 9 },
+    observanceClass: ObservanceClass.RECOMMENDED_FAST,
+    nameKey: "hijriCalendar.observances.arafah",
+    rulingKey: "hijriCalendar.rulings.arafah",
   },
   {
     id: ObservanceId.RAMADAN_LAST_TEN,
