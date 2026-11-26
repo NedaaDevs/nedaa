@@ -1,7 +1,7 @@
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useState, useEffect, type Ref } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, Platform } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { ScrollView, Platform, type ScrollViewInstance, type ViewInstance } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -12,59 +12,87 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { ListRow } from "@/components/ui/list-row";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
 
 import {
   SoundPicker,
   VolumeSlider,
-  ChallengePicker,
+  TaskPicker,
+  type TaskTrialTarget,
   GentleWakeUpSettings,
   VibrationSettings,
   SnoozeSettings,
   TimingSettings,
+  EmergencyQuietSettings,
 } from "@/components/alarm";
+import AlarmGuide from "@/components/alarm/AlarmGuide";
 
-import { Volume2, Brain, Vibrate, Clock, Timer, Sunrise, FlaskConical } from "lucide-react-native";
-
-import * as ExpoAlarm from "expo-alarm";
-
-import { useAlarmSettingsStore } from "@/stores/alarmSettings";
-import { toScheduledAlarmType } from "@/utils/alarmTypes";
-
-// Enums
-import { PlatformType } from "@/enums/app";
-import { useAlarmStore } from "@/stores/alarm";
-import { createAsyncLock } from "@/utils/asyncLock";
 import {
-  scheduleFajrAlarm,
-  scheduleFridayAlarm,
-  schedulePreviewAlarm,
-} from "@/utils/alarmScheduler";
-import { alarmLog } from "@/utils/alarmReport";
-import { AlarmType, AlarmTypeSettings } from "@/types/alarm";
+  Volume2,
+  Brain,
+  Vibrate,
+  Clock,
+  Timer,
+  Sunrise,
+  FlaskConical,
+  HelpCircle,
+  VolumeX,
+} from "lucide-react-native";
+
+import {
+  ALARM_PREVIEW_STATE,
+  ALARM_TYPE,
+  PREVIEW_ALARM_SECONDS,
+  type AlarmPreviewState,
+} from "@/constants/Alarm";
+import {
+  ALARM_GUIDE_RETURN,
+  ALARM_GUIDE_ROW_TEST_ID,
+  ALARM_TASK_SECTION_TEST_ID,
+  type AlarmGuideReturn,
+} from "@/constants/AlarmGuide";
+import { E2E_ID } from "@/constants/E2E";
+import { TASK_TRIAL_PARAM, TASK_TRIAL_PATH } from "@/constants/WakeTaskShell";
+import { PlatformType } from "@/enums/app";
+import { useAlarmGuide } from "@/hooks/useAlarmGuide";
+import { useAlarmOn } from "@/hooks/useAlarmOn";
+import { useAlarmTypeSettings } from "@/hooks/useAlarmTypeSettings";
 import { useHaptic } from "@/hooks/useHaptic";
-import { getNativeSoundName } from "@/utils/nativeSoundName";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { canTurnOnAlarm } from "@/utils/alarmReadiness";
+import { schedulePreviewAlarm } from "@/utils/alarmScheduler";
+import { toScheduledAlarmType } from "@/utils/alarmTypes";
 
 type SettingsSectionProps = {
   title: string;
   icon: React.ComponentType<any>;
+  /** The title's view, where reader focus can land. */
+  titleRef?: Ref<ViewInstance>;
   children: React.ReactNode;
 };
 
-const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
+const SettingsSection = ({ title, icon, titleRef, children }: SettingsSectionProps) => (
   <Card marginHorizontal="$4" marginBottom="$4" borderRadius="$8">
     <VStack gap="$3">
       <HStack alignItems="center" gap="$2">
         <Box
-          width={32}
-          height={32}
-          borderRadius="$4"
+          width="$8"
+          height="$8"
+          borderRadius="$chip"
           backgroundColor="$surfaceActive"
           alignItems="center"
           justifyContent="center">
           <Icon as={icon} size="md" color="$typography" />
         </Box>
-        <Text size="md" fontWeight="600" color="$typography">
+        <Text
+          ref={titleRef}
+          size="md"
+          fontWeight="600"
+          color="$typography"
+          accessibilityRole="header">
           {title}
         </Text>
       </HStack>
@@ -76,22 +104,35 @@ const SettingsSection = ({ title, icon, children }: SettingsSectionProps) => (
 const AlarmTypeSettingsScreen = () => {
   const { t } = useTranslation();
   const { type } = useLocalSearchParams<{ type: string }>();
-  const alarmType = type as AlarmType;
-  // Native settings storage and scheduled alarms are keyed by the scheduled type
-  // ("jummah"), not the settings key ("friday") — fire paths look up by it.
+  const alarmType = type === ALARM_TYPE.FAJR ? ALARM_TYPE.FAJR : ALARM_TYPE.FRIDAY;
+  // Previews fire by scheduled type ("jummah"), not the settings key ("friday").
   const scheduledType = toScheduledAlarmType(alarmType);
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
-  const settings = useAlarmSettingsStore((state) =>
-    alarmType === "fajr" ? state.fajr : state.friday
-  );
-  const updateSettings = useAlarmSettingsStore((state) => state.updateSettings);
+  const { settings, update, setEnabled } = useAlarmTypeSettings(alarmType);
+  const shownOn = useAlarmOn(alarmType);
+  const reduceMotion = useReducedMotion();
 
-  const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toggleLock = useRef(createAsyncLock()).current;
+  const guide = useAlarmGuide();
+  const scroller = useRef<ScrollViewInstance>(null);
+  const screenTop = useRef<ViewInstance>(null);
+  const guideRow = useRef<ViewInstance>(null);
+  const pickerTitle = useRef<ViewInstance>(null);
+  const pickerY = useRef(0);
+  const [guideReturn, setGuideReturn] = useState<AlarmGuideReturn>(ALARM_GUIDE_RETURN.TOP);
 
-  const PREVIEW_ALARM_SECONDS = 30;
-  const [previewState, setPreviewState] = useState<"idle" | "pending" | "failed">("idle");
+  const showGuide = () => {
+    setGuideReturn(ALARM_GUIDE_RETURN.ROW);
+    guide.show();
+  };
+
+  const tryTaskFromGuide = () => {
+    setGuideReturn(ALARM_GUIDE_RETURN.PICKER);
+    scroller.current?.scrollTo({ y: pickerY.current, animated: !reduceMotion });
+    guide.close();
+  };
+
+  const [previewState, setPreviewState] = useState<AlarmPreviewState>(ALARM_PREVIEW_STATE.IDLE);
   // Seconds left in the pending window, ticked down live for the button label.
   const [previewRemaining, setPreviewRemaining] = useState(PREVIEW_ALARM_SECONDS);
   const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -105,144 +146,75 @@ const AlarmTypeSettingsScreen = () => {
   useEffect(() => clearPreviewTimers, []);
 
   const handlePreviewAlarm = async () => {
-    if (previewState === "pending") return;
+    if (previewState === ALARM_PREVIEW_STATE.PENDING) return;
     hapticSelection();
     clearPreviewTimers();
 
     const id = await schedulePreviewAlarm(scheduledType, PREVIEW_ALARM_SECONDS);
     if (id) {
-      setPreviewState("pending");
+      setPreviewState(ALARM_PREVIEW_STATE.PENDING);
       setPreviewRemaining(PREVIEW_ALARM_SECONDS);
       const startedAt = Date.now();
       previewIntervalRef.current = setInterval(() => {
         const left = Math.round(PREVIEW_ALARM_SECONDS - (Date.now() - startedAt) / 1000);
         if (left <= 0) {
           clearPreviewTimers();
-          setPreviewState("idle");
+          setPreviewState(ALARM_PREVIEW_STATE.IDLE);
         } else {
           setPreviewRemaining(left);
         }
       }, 1000);
     } else {
-      setPreviewState("failed");
-      previewFailTimerRef.current = setTimeout(() => setPreviewState("idle"), 3000);
+      setPreviewState(ALARM_PREVIEW_STATE.FAILED);
+      previewFailTimerRef.current = setTimeout(
+        () => setPreviewState(ALARM_PREVIEW_STATE.IDLE),
+        3000
+      );
     }
   };
 
-  const debouncedReschedule = useCallback(
-    (afterNativeSync?: Promise<boolean>) => {
-      if (rescheduleTimerRef.current) clearTimeout(rescheduleTimerRef.current);
-      rescheduleTimerRef.current = setTimeout(() => {
-        // Shares the toggle lock: cancel-then-recreate must not interleave with an
-        // enable/disable, or a disable can land between the two and leave a live alarm
-        // behind an Off switch.
-        toggleLock(async () => {
-          // Scheduling rebuilds the alarm from the saved native settings, so a write
-          // that failed would rebuild it from stale values. Keep the existing alarm.
-          if (afterNativeSync && !(await afterNativeSync)) return;
-          await useAlarmStore.getState().cancelAlarmsByType(scheduledType);
-          if (alarmType === "fajr") {
-            await scheduleFajrAlarm();
-          } else {
-            await scheduleFridayAlarm();
-          }
-        });
-      }, 500);
-    },
-    [alarmType, scheduledType, toggleLock]
-  );
+  // One readiness check at a time, so a quick second flip opens no second gate.
+  const checking = useRef(false);
 
-  const handleChange = (changes: Partial<AlarmTypeSettings>) => {
-    updateSettings(alarmType, changes);
-
-    const nativeSettings: Record<string, unknown> = {};
-    if (changes.enabled !== undefined) nativeSettings.enabled = changes.enabled;
-    if (changes.sound !== undefined) nativeSettings.sound = getNativeSoundName(changes.sound);
-    if (changes.volume !== undefined) nativeSettings.volume = changes.volume;
-
-    if (Platform.OS === "android") {
-      if (changes.challenge) {
-        nativeSettings.challengeType = changes.challenge.type;
-        nativeSettings.challengeDifficulty = changes.challenge.difficulty;
-        nativeSettings.challengeCount = changes.challenge.count;
-      }
-      if (changes.vibration) {
-        nativeSettings.vibrationEnabled = changes.vibration.enabled;
-        nativeSettings.vibrationPattern = changes.vibration.pattern;
-      }
-      if (changes.snooze) {
-        nativeSettings.snoozeEnabled = changes.snooze.enabled;
-        nativeSettings.snoozeMaxCount = changes.snooze.maxCount;
-        nativeSettings.snoozeDuration = changes.snooze.durationMinutes;
-      }
-      if (changes.timing) {
-        nativeSettings.timingMode = changes.timing.mode;
-        nativeSettings.timingMinutesBefore = changes.timing.minutesBefore;
-      }
-      if (changes.gentleWakeUp) {
-        nativeSettings.gentleWakeUpEnabled = changes.gentleWakeUp.enabled;
-        nativeSettings.gentleWakeUpDuration = changes.gentleWakeUp.durationMinutes;
-      }
-    }
-
-    // setAlarmSettings resolves false rather than rejecting, so a failure shows up in
-    // the result, not in a catch.
-    const nativeSync =
-      Object.keys(nativeSettings).length > 0
-        ? ExpoAlarm.setAlarmSettings(scheduledType, nativeSettings)
-        : Promise.resolve(true);
-
-    nativeSync.then((ok) => {
-      if (!ok) alarmLog.e("Settings", `native settings sync failed for ${scheduledType}`);
-    });
-
-    // AlarmKit copies the sound into the scheduled alarm, so iOS only picks up a new
-    // one by rebuilding it. Android reads the sound from its database as the alarm
-    // fires, so rescheduling there would risk the alarm for no gain.
-    const soundNeedsReschedule = changes.sound !== undefined && Platform.OS === PlatformType.IOS;
-    if ((changes.timing || soundNeedsReschedule) && settings.enabled) {
-      debouncedReschedule(nativeSync);
-    }
-  };
-
-  const handleEnabledToggle = (enabled: boolean) => {
+  const handleEnabledToggle = async (enabled: boolean) => {
+    if (checking.current) return;
     hapticSelection();
-
-    // Serialize toggles: a disable interleaving with a pending enable's scheduleAlarm
-    // sees no stored alarm yet, finishes, then the enable inserts one that fires
-    // while the UI reads Off.
-    toggleLock(async () => {
-      handleChange({ enabled });
-
-      try {
-        if (enabled) {
-          const id = alarmType === "fajr" ? await scheduleFajrAlarm() : await scheduleFridayAlarm();
-          // enabled is already true in the store (handleChange ran synchronously), so
-          // a null here is a real failure (native refusal / no prayer data), not the
-          // settings-disabled early return — revert to Off.
-          if (id === null) {
-            handleChange({ enabled: false });
-          }
-        } else if (!(await useAlarmStore.getState().cancelAlarmsByType(scheduledType))) {
-          // The alarm is still armed, so the switch must not read Off.
-          handleChange({ enabled: true });
-        }
-      } catch {
-        handleChange({ enabled: !enabled });
+    if (enabled) {
+      checking.current = true;
+      // Never rejects: a failed read is a no.
+      const ready = await canTurnOnAlarm();
+      checking.current = false;
+      // The gate shows what is missing: the city first, then the permissions.
+      if (!ready) {
+        router.push(BACK_DESTINATION.SETTINGS_ALARM.href);
+        return;
       }
-    });
+    }
+    await setEnabled(enabled);
   };
+
+  const openTrial = (target: TaskTrialTarget) =>
+    router.push({
+      pathname: TASK_TRIAL_PATH,
+      params: { [TASK_TRIAL_PARAM.ALARM_TYPE]: alarmType, [TASK_TRIAL_PARAM.TASK]: target },
+    });
+
+  const previewText =
+    previewState === ALARM_PREVIEW_STATE.PENDING
+      ? t("alarm.settings.previewAlarmPending", { seconds: previewRemaining })
+      : previewState === ALARM_PREVIEW_STATE.FAILED
+        ? t("alarm.settings.previewAlarmFailed")
+        : null;
 
   const title =
-    alarmType === "fajr" ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
-
-  const backHref = "/settings/alarm";
+    alarmType === ALARM_TYPE.FAJR ? t("alarm.settings.fajrAlarm") : t("alarm.settings.fridayAlarm");
 
   return (
     <Background>
-      <TopBar title={title} href={backHref} backOnClick />
+      <ScreenHeader title={title} back={{ fallback: BACK_DESTINATION.SETTINGS_ALARM }} />
 
       <ScrollView
+        ref={scroller}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}>
         <VStack flex={1} paddingTop="$4">
@@ -250,43 +222,44 @@ const AlarmTypeSettingsScreen = () => {
           <Card marginHorizontal="$4" marginBottom="$4" borderRadius="$8">
             <HStack justifyContent="space-between" alignItems="center">
               <VStack flex={1} marginEnd="$4">
-                <Text size="lg" fontWeight="600" color="$typography">
+                <Text ref={screenTop} size="lg" fontWeight="600" color="$typography">
                   {t("alarm.settings.enableAlarm")}
                 </Text>
                 <Text size="sm" color="$typographySecondary">
-                  {alarmType === "fajr"
+                  {alarmType === ALARM_TYPE.FAJR
                     ? t("alarm.settings.fajrEnableDescription")
                     : t("alarm.settings.fridayEnableDescription")}
                 </Text>
               </VStack>
               <Switch
-                value={settings.enabled}
-                onValueChange={handleEnabledToggle}
+                testID={E2E_ID.ALARM_ENABLE_SWITCH}
+                value={shownOn}
+                onValueChange={(enabled) => void handleEnabledToggle(enabled)}
                 size="md"
                 accessibilityLabel={t("alarm.settings.enableAlarm")}
               />
             </HStack>
           </Card>
 
-          {settings.enabled && (
+          {shownOn && (
             <>
               {/* Timing Settings */}
               <SettingsSection title={t("alarm.settings.timing")} icon={Timer}>
                 <Text size="sm" color="$typographySecondary" marginBottom="$2">
-                  {alarmType === "fajr"
+                  {alarmType === ALARM_TYPE.FAJR
                     ? t("alarm.settings.timingDescriptionFajr")
                     : t("alarm.settings.timingDescriptionFriday")}
                 </Text>
                 <TimingSettings
                   value={settings.timing}
                   alarmType={alarmType}
-                  onChange={(timing) => handleChange({ timing })}
+                  onChange={(timing) => update({ timing })}
                 />
               </SettingsSection>
 
               {/* Sound Settings */}
               <SettingsSection title={t("alarm.settings.sound")} icon={Volume2}>
-                <SoundPicker value={settings.sound} onChange={(sound) => handleChange({ sound })} />
+                <SoundPicker value={settings.sound} onChange={(sound) => update({ sound })} />
 
                 <VStack
                   gap="$2"
@@ -297,51 +270,52 @@ const AlarmTypeSettingsScreen = () => {
                   <Text size="sm" color="$typographySecondary">
                     {t("alarm.settings.volume")}
                   </Text>
-                  <VolumeSlider
-                    value={settings.volume}
-                    onChange={(volume) => handleChange({ volume })}
-                  />
+                  <VolumeSlider value={settings.volume} onChange={(volume) => update({ volume })} />
                 </VStack>
               </SettingsSection>
 
               {/* Gentle Wake-Up Settings (Android-only: iOS alarm sound is OS-controlled) */}
-              {Platform.OS === "android" && (
+              {Platform.OS === PlatformType.ANDROID && (
                 <SettingsSection title={t("alarm.settings.gentleWakeUp")} icon={Sunrise}>
                   <Text size="sm" color="$typographySecondary" marginBottom="$2">
                     {t("alarm.settings.gentleWakeUpDescription")}
                   </Text>
                   <GentleWakeUpSettings
                     value={settings.gentleWakeUp}
-                    onChange={(gentleWakeUp) => handleChange({ gentleWakeUp })}
+                    onChange={(gentleWakeUp) => update({ gentleWakeUp })}
                   />
                 </SettingsSection>
               )}
 
-              {/* Challenge Settings */}
-              <SettingsSection title={t("alarm.settings.challenge")} icon={Brain}>
-                <Text size="sm" color="$typographySecondary" marginBottom="$2">
-                  {t("alarm.settings.challengeDescription")}
-                </Text>
-                <ChallengePicker
-                  value={settings.challenge}
-                  onChange={(challenge) => handleChange({ challenge })}
-                />
-              </SettingsSection>
+              <Box
+                testID={ALARM_TASK_SECTION_TEST_ID}
+                onLayout={({ nativeEvent }) => {
+                  pickerY.current = nativeEvent.layout.y;
+                }}>
+                <SettingsSection title={t("alarm.task.picker")} icon={Brain} titleRef={pickerTitle}>
+                  <TaskPicker
+                    tasks={settings.tasks}
+                    onChange={(tasks) => update({ tasks })}
+                    onTry={openTrial}
+                  />
+                </SettingsSection>
+              </Box>
 
               {/* Vibration Settings */}
               <SettingsSection title={t("alarm.settings.vibration")} icon={Vibrate}>
                 <VibrationSettings
                   value={settings.vibration}
-                  onChange={(vibration) => handleChange({ vibration })}
+                  onChange={(vibration) => update({ vibration })}
                 />
               </SettingsSection>
 
               {/* Snooze Settings */}
               <SettingsSection title={t("alarm.settings.snooze")} icon={Clock}>
-                <SnoozeSettings
-                  value={settings.snooze}
-                  onChange={(snooze) => handleChange({ snooze })}
-                />
+                <SnoozeSettings value={settings.snooze} onChange={(snooze) => update({ snooze })} />
+              </SettingsSection>
+
+              <SettingsSection title={t("alarm.quiet.settings.title")} icon={VolumeX}>
+                <EmergencyQuietSettings />
               </SettingsSection>
 
               {/* Preview Alarm: end-to-end rehearsal using the saved per-type settings */}
@@ -351,29 +325,47 @@ const AlarmTypeSettingsScreen = () => {
                 </Text>
                 <Button
                   size="lg"
-                  minHeight={44}
-                  action={previewState === "failed" ? "negative" : "primary"}
-                  variant={previewState === "idle" ? "solid" : "outline"}
-                  disabled={previewState === "pending"}
+                  minHeight="$target"
+                  action={previewState === ALARM_PREVIEW_STATE.FAILED ? "negative" : "primary"}
+                  variant={previewState === ALARM_PREVIEW_STATE.IDLE ? "solid" : "outline"}
+                  disabled={previewState === ALARM_PREVIEW_STATE.PENDING}
                   onPress={handlePreviewAlarm}
                   accessibilityRole="button"
                   accessibilityLabel={t("a11y.alarm.previewAlarm", {
                     seconds: PREVIEW_ALARM_SECONDS,
                   })}
-                  accessibilityState={{ disabled: previewState === "pending" }}>
-                  <Button.Text>
-                    {previewState === "pending"
-                      ? t("alarm.settings.previewAlarmPending", { seconds: previewRemaining })
-                      : previewState === "failed"
-                        ? t("alarm.settings.previewAlarmFailed")
-                        : t("alarm.settings.previewAlarm")}
-                  </Button.Text>
+                  accessibilityState={{ disabled: previewState === ALARM_PREVIEW_STATE.PENDING }}>
+                  <Button.Text>{previewText ?? t("alarm.settings.previewAlarm")}</Button.Text>
                 </Button>
               </SettingsSection>
             </>
           )}
+
+          <Box marginHorizontal="$4">
+            <ListRow
+              ref={guideRow}
+              testID={ALARM_GUIDE_ROW_TEST_ID}
+              icon={HelpCircle}
+              title={t("alarm.guide.row")}
+              hint={t("a11y.alarm.guide.rowHint")}
+              onPress={showGuide}
+            />
+          </Box>
         </VStack>
       </ScrollView>
+
+      <AlarmGuide
+        open={guide.open}
+        onClose={guide.close}
+        onTryTask={shownOn ? tryTaskFromGuide : undefined}
+        finalFocusRef={
+          guideReturn === ALARM_GUIDE_RETURN.ROW
+            ? guideRow
+            : guideReturn === ALARM_GUIDE_RETURN.PICKER
+              ? pickerTitle
+              : screenTop
+        }
+      />
     </Background>
   );
 };

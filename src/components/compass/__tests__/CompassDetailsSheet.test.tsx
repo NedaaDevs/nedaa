@@ -1,5 +1,5 @@
 import React from "react";
-import renderer, { act } from "react-test-renderer";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { CompassDetailsSheet } from "@/components/compass/CompassDetailsSheet";
 
@@ -7,13 +7,17 @@ jest.mock("lucide-react-native", () => ({ RefreshCw: "RefreshCw" }));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-jest.mock("tamagui", () => {
+// gorhom's modal needs reanimated, which cannot load under jest.
+const mockSheet = jest.fn();
+jest.mock("@/components/ui/actionsheet", () => {
   const { View } = jest.requireActual("react-native");
-  const Sheet = ({ children }: { children: React.ReactNode }) => <View>{children}</View>;
-  Sheet.Overlay = View;
-  Sheet.Handle = View;
-  Sheet.Frame = View;
-  return { Sheet };
+  return {
+    Actionsheet: (props: { children: React.ReactNode }) => {
+      mockSheet(props);
+      return <View>{props.children}</View>;
+    },
+    ActionsheetContent: View,
+  };
 });
 jest.mock("@/components/ui/button", () => {
   const { Pressable, Text, View } = jest.requireActual("react-native");
@@ -21,12 +25,20 @@ jest.mock("@/components/ui/button", () => {
     children,
     onPress,
     disabled,
+    accessibilityRole,
+    accessibilityLabel,
   }: {
     children: React.ReactNode;
     onPress?: () => void;
     disabled?: boolean;
+    accessibilityRole?: "button";
+    accessibilityLabel?: string;
   }) => (
-    <Pressable onPress={onPress} disabled={disabled}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}>
       {children}
     </Pressable>
   );
@@ -63,20 +75,32 @@ const baseProps = {
   onRefreshLocation: jest.fn(),
 };
 
-const renderSheet = (props: Partial<typeof baseProps> = {}) => {
-  let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<CompassDetailsSheet {...baseProps} {...props} />);
-  });
-  return tree;
-};
-
-const hasText = (tree: renderer.ReactTestRenderer, text: string) =>
-  tree.root.findAll((node) => node.props.children === text).length > 0;
+const renderSheet = (props: Partial<typeof baseProps> = {}) =>
+  render(<CompassDetailsSheet {...baseProps} {...props} />);
 
 describe("CompassDetailsSheet", () => {
-  it("renders all detail rows", () => {
-    const tree = renderSheet();
+  beforeEach(() => mockSheet.mockClear());
+
+  it("opens as a sheet sized to its content", async () => {
+    await renderSheet();
+
+    expect(mockSheet).toHaveBeenLastCalledWith(
+      expect.objectContaining({ isOpen: true, fitContent: true })
+    );
+  });
+
+  // The sheet reports a swipe or backdrop dismissal; the screen owns the open state.
+  it("tells the screen when the sheet is dismissed", async () => {
+    const onOpenChange = jest.fn();
+    await renderSheet({ onOpenChange });
+
+    await act(() => mockSheet.mock.lastCall?.[0].onClose());
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("renders all detail rows", async () => {
+    await renderSheet();
     for (const label of [
       "compass.details.heading",
       "compass.details.qibla",
@@ -85,25 +109,21 @@ describe("CompassDetailsSheet", () => {
       "compass.details.northReference",
       "compass.details.location",
     ]) {
-      expect(hasText(tree, label)).toBe(true);
+      expect(screen.getByText(label)).toBeOnTheScreen();
     }
-    act(() => tree.unmount());
   });
 
-  it("omits qibla rows without a qibla", () => {
-    const tree = renderSheet({ qiblaText: null, distanceText: null, locationText: null });
-    expect(hasText(tree, "compass.details.qibla")).toBe(false);
-    expect(hasText(tree, "compass.details.distance")).toBe(false);
-    expect(hasText(tree, "compass.details.location")).toBe(false);
-    act(() => tree.unmount());
+  it("omits qibla rows without a qibla", async () => {
+    await renderSheet({ qiblaText: null, distanceText: null, locationText: null });
+    expect(screen.queryByText("compass.details.qibla")).not.toBeOnTheScreen();
+    expect(screen.queryByText("compass.details.distance")).not.toBeOnTheScreen();
+    expect(screen.queryByText("compass.details.location")).not.toBeOnTheScreen();
   });
 
-  it("triggers a location refresh", () => {
+  it("triggers a location refresh", async () => {
     const onRefreshLocation = jest.fn();
-    const tree = renderSheet({ onRefreshLocation });
-    const button = tree.root.findAllByProps({ accessibilityRole: "button" })[0];
-    act(() => button.props.onPress());
+    await renderSheet({ onRefreshLocation });
+    await fireEvent.press(screen.getByRole("button", { name: "compass.details.refreshLocation" }));
     expect(onRefreshLocation).toHaveBeenCalled();
-    act(() => tree.unmount());
   });
 });

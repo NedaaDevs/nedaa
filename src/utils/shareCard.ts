@@ -1,11 +1,11 @@
 import type { RefObject } from "react";
-import type { View } from "react-native";
+import type { ViewInstance } from "react-native";
 import { captureRef } from "react-native-view-shot";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
 interface ShareCardArgs {
-  ref: RefObject<View | null>;
+  ref: RefObject<ViewInstance | null>;
   // Basename for the shared file, without extension.
   fileName: string;
   dialogTitle?: string;

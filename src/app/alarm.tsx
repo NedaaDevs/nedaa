@@ -1,53 +1,65 @@
-import { useEffect, useMemo, useState } from "react";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AccessibilityInfo, ScrollView, View, type ViewInstance } from "react-native";
 import { useLocalSearchParams, Stack, Redirect } from "expo-router";
 import * as ExpoAlarm from "expo-alarm";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { Theme } from "tamagui";
-import { format, parseISO } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Background } from "@/components/ui/background";
-import { Icon } from "@/components/ui/icon";
-import { Clock } from "lucide-react-native";
+import { COUNT_DIRECTION, Countdown } from "@/components/ui/countdown";
 
-import { ALARM_TYPE_META } from "@/constants/Alarm";
-import { useAlarmScreen, formatTimeRemaining } from "@/hooks/useAlarmScreen";
+import { useAlarmScreen, type EmergencyQuietControl } from "@/hooks/useAlarmScreen";
+import { useAlarmPrayer } from "@/hooks/useAlarmPrayer";
+import { useClockTime } from "@/hooks/useClockTime";
 import { useMinuteClock } from "@/hooks/useMinuteClock";
-import { ChallengeWrapper } from "@/components/alarm/challenges";
-import { ChallengeConfig } from "@/types/alarm";
-import { DayPrayerTimes, PrayerName } from "@/types/prayerTimes";
+import { useQuietOffer } from "@/hooks/useQuietOffer";
+import { TaskShell, TaskStart } from "@/components/alarm/challenges";
+import EmergencyQuiet from "@/components/alarm/challenges/EmergencyQuiet";
+import QuietBanner, { QuietStatus } from "@/components/alarm/challenges/QuietBanner";
+import RingingHalo from "@/components/alarm/challenges/RingingHalo";
+import SolvedPanel from "@/components/alarm/challenges/SolvedPanel";
+import type { WakeTask } from "@/types/alarm";
+import { PRESENTATION } from "@/constants/Navigation";
+import {
+  RINGING_MAX_WIDTH,
+  RINGING_PART,
+  RINGING_TYPE,
+  SNOOZE_PLACE,
+} from "@/constants/AlarmRinging";
+import { COUNT_WIDEST } from "@/constants/Countdown";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { useAlarmStore } from "@/stores/alarm";
-import { usePrayerTimesStore } from "@/stores/prayerTimes";
 import { useAppStore } from "@/stores/app";
-import { clockFormat, formatPrayerTime, getDateLocale } from "@/utils/date";
 import { usePreferencesStore } from "@/stores/preferences";
-import { formatNumberToLocale } from "@/utils/number";
+import { deviceTimeZone } from "@/utils/date";
+import { canSnoozeWith } from "@/utils/emergencyQuiet";
+import { localizeDigits } from "@/utils/digits";
+import { focusOn } from "@/utils/accessibilityFocus";
 import { isAlarmDue } from "@/utils/alarmDue";
+import { ringingHeader, ringingTypeOf, snoozePlace } from "@/utils/alarmRinging";
+import { formatTimeRemaining } from "@/utils/timeRemaining";
+import { wayOutShown } from "@/utils/taskClock";
+import { isNonEmpty, type TaskRunSnapshot } from "@/utils/taskRun";
 
-// Prayer whose time heads the ringing screen, per alarm type. Jumu'ah is the
-// Friday Dhuhr occurrence; custom alarms have no associated prayer.
-const PRAYER_BY_ALARM: Partial<Record<string, { nameKey: string; timing: PrayerName }>> = {
-  [ScheduledAlarmType.FAJR]: { nameKey: "prayerTimes.fajr", timing: "fajr" },
-  [ScheduledAlarmType.JUMMAH]: { nameKey: "prayerTimes.jumuah", timing: "dhuhr" },
-};
-
-const localeTime = (
-  date: Date,
-  locale: ReturnType<typeof useAppStore.getState>["locale"],
-  use24HourTime: boolean
-) =>
-  formatNumberToLocale(format(date, clockFormat(use24HourTime), { locale: getDateLocale(locale) }));
+const SECONDS_PER_MINUTE = 60;
 
 const DUE_STATUS = { CHECKING: "checking", DUE: "due", NOT_DUE: "notDue" } as const;
 type DueStatus = (typeof DUE_STATUS)[keyof typeof DUE_STATUS];
+
+type TaskRun = Readonly<{
+  /** When the task screen last opened, in epoch ms. */
+  openedAt: number;
+  snoozed: boolean;
+  open: boolean;
+  /** Where Back left the run, so reopening resumes it. */
+  saved?: TaskRunSnapshot;
+}>;
 
 // Links reach this route before the alarm rings (the status bar's next-alarm
 // entry, a stale Live Activity); only a ringing alarm may open the challenge.
@@ -68,7 +80,7 @@ export default function AlarmRoute() {
         const record = useAlarmStore.getState().scheduledAlarms[alarmId];
         const due = isAlarmDue({
           alarmId,
-          triggerTime: record?.triggerTime ?? null,
+          record,
           pendingAlarmId: pending?.alarmId ?? null,
           now: Date.now(),
         });
@@ -81,26 +93,43 @@ export default function AlarmRoute() {
 
   if (status === DUE_STATUS.CHECKING) return null;
   if (status === DUE_STATUS.NOT_DUE) return <Redirect href="/" />;
-  return <AlarmTriggeredScreen alarmId={alarmId} alarmType={alarmType} />;
+  // Keyed, so the next alarm starts with none of this one's state.
+  return <AlarmTriggeredScreen key={alarmId} alarmId={alarmId} alarmType={alarmType} />;
 }
 
 function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmType: string }) {
   const {
     isSnoozed,
+    isDismissed,
     snoozeEndTime,
     snoozeTimeRemaining,
-    canSnooze,
+    snoozeIsOpen,
+    snoozeEnabled,
+    snoozeMinutes,
     remainingSnoozes,
-    challengeConfig,
+    tasks,
     handleChallengeComplete,
+    handlePlainStop,
+    handleClose,
+    handleStop,
     handleSnooze,
-    handleGraceStart,
-    handleGraceExpire,
+    handleQuietStart,
+    handleQuietEnd,
+    emergency,
   } = useAlarmScreen(alarmId, alarmType);
+  const insets = useSafeAreaInsets();
 
-  const meta =
-    ALARM_TYPE_META[(alarmType as keyof typeof ALARM_TYPE_META) ?? ScheduledAlarmType.CUSTOM] ??
-    ALARM_TYPE_META[ScheduledAlarmType.CUSTOM];
+  const type = ringingTypeOf(alarmType);
+
+  // The task run of this ring; Back keeps it, a snooze starting or ending
+  // drops it.
+  const [run, setRun] = useState<TaskRun | null>(null);
+  if (run && run.snoozed !== isSnoozed) setRun(null);
+  const openTask = () =>
+    setRun({ openedAt: Date.now(), snoozed: isSnoozed, open: true, saved: run?.saved });
+  const closeTask = (saved: TaskRunSnapshot) => {
+    if (run) setRun({ ...run, open: false, saved });
+  };
 
   return (
     <>
@@ -108,7 +137,7 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
         options={{
           gestureEnabled: false,
           headerShown: false,
-          presentation: "fullScreenModal",
+          presentation: PRESENTATION.FULL_SCREEN_MODAL,
         }}
       />
       <Theme name="dark">
@@ -119,228 +148,283 @@ function AlarmTriggeredScreen({ alarmId, alarmType }: { alarmId: string; alarmTy
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             automaticallyAdjustKeyboardInsets>
-            {isSnoozed && snoozeEndTime ? (
+            {run?.open && isNonEmpty(tasks) ? (
+              <VStack
+                flex={1}
+                paddingTop={insets.top}
+                paddingBottom={insets.bottom}
+                paddingHorizontal="$screen">
+                <VStack flex={1} paddingVertical="$section">
+                  <TaskShell
+                    tasks={tasks}
+                    openedAt={run.openedAt}
+                    resume={run.saved}
+                    audible={!run.snoozed && emergency.quietUntil === null}
+                    onComplete={handleChallengeComplete}
+                    onStop={handleStop}
+                    onBack={closeTask}
+                    onQuietStart={handleQuietStart}
+                    onQuietEnd={handleQuietEnd}
+                    emergency={emergency}
+                    solved={
+                      <SolvedPanel alarmId={alarmId} alarmType={type} onClose={handleClose} />
+                    }
+                  />
+                </VStack>
+              </VStack>
+            ) : isSnoozed && snoozeEndTime ? (
               <SnoozedView
                 snoozeTimeRemaining={snoozeTimeRemaining}
-                challengeConfig={challengeConfig}
-                onChallengeComplete={handleChallengeComplete}
-                onGraceStart={handleGraceStart}
-                onGraceExpire={handleGraceExpire}
+                tasks={tasks}
+                onStart={openTask}
+                onStop={handlePlainStop}
               />
             ) : (
               <ActiveAlarmView
                 alarmId={alarmId}
-                alarmType={alarmType}
-                metaTitle={meta.title}
-                challengeConfig={challengeConfig}
-                canSnooze={canSnooze}
-                remainingSnoozes={remainingSnoozes}
-                onChallengeComplete={handleChallengeComplete}
+                alarmType={type}
+                tasks={tasks}
+                snooze={{
+                  open: snoozeIsOpen,
+                  enabled: snoozeEnabled,
+                  minutes: snoozeMinutes,
+                  left: remainingSnoozes,
+                }}
+                emergency={emergency}
+                // A run Back left with the way out showing keeps the quiet hidden.
+                wayOut={run?.saved ? wayOutShown(run.saved.clock) : false}
+                onStart={openTask}
+                onStop={handlePlainStop}
                 onSnooze={handleSnooze}
-                onGraceStart={handleGraceStart}
-                onGraceExpire={handleGraceExpire}
               />
             )}
           </ScrollView>
+          <QuietStatus
+            quietUntil={emergency.quietUntil}
+            used={emergency.used && !emergency.snoozed && !isDismissed}
+          />
         </Background>
       </Theme>
     </>
   );
 }
 
-function SnoozedView({
-  snoozeTimeRemaining,
-  challengeConfig,
-  onChallengeComplete,
-  onGraceStart,
-  onGraceExpire,
-}: {
-  snoozeTimeRemaining: number;
-  challengeConfig: ChallengeConfig;
-  onChallengeComplete: () => void;
-  onGraceStart: () => void;
-  onGraceExpire: () => void;
-}) {
-  const { t } = useTranslation();
+/** The ringing column: one width at most, inside the safe area. */
+const RingingColumn = ({ children }: { children: ReactNode }) => {
+  const insets = useSafeAreaInsets();
   return (
-    <VStack flex={1} alignItems="center" justifyContent="center" padding="$6" gap="$5">
-      <Card padding="$8" width="100%" maxWidth={384} alignItems="center">
-        <VStack gap="$4" alignItems="center" width="100%">
-          <Icon as={Clock} size="xl" color="$info" />
-
-          <Text size="2xl" bold color="$typography" accessibilityRole="header">
-            {t("alarm.snoozed")}
-          </Text>
-
-          <Text
-            size="4xl"
-            bold
-            color="$info"
-            accessibilityLabel={t("a11y.alarm.countdown", {
-              time: formatTimeRemaining(snoozeTimeRemaining),
-            })}
-            accessibilityLiveRegion="polite">
-            {formatTimeRemaining(snoozeTimeRemaining)}
-          </Text>
-          <Text size="sm" color="$typographySecondary">
-            {t("alarm.untilRingsAgain")}
-          </Text>
-
-          <VStack marginTop="$6" width="100%" gap="$2">
-            <ChallengeWrapper
-              config={challengeConfig}
-              onAllComplete={onChallengeComplete}
-              onGraceStart={onGraceStart}
-              onGraceExpire={onGraceExpire}
-            />
-          </VStack>
-        </VStack>
-      </Card>
+    <VStack
+      flex={1}
+      width="100%"
+      maxWidth={RINGING_MAX_WIDTH}
+      alignSelf="center"
+      paddingHorizontal="$screen"
+      paddingTop={insets.top}
+      paddingBottom={insets.bottom}>
+      {children}
     </VStack>
   );
+};
+
+function SnoozedView({
+  snoozeTimeRemaining,
+  tasks,
+  onStart,
+  onStop,
+}: {
+  snoozeTimeRemaining: number;
+  tasks: readonly WakeTask[];
+  onStart: () => void;
+  onStop: () => void;
+}) {
+  const { t } = useTranslation();
+  const locale = useAppStore((state) => state.locale);
+  const western = usePreferencesStore((state) => state.useWesternNumerals);
+  const digits = (text: string) => localizeDigits(text, locale, western);
+  // Said in whole minutes, so the label changes once a minute, not each second.
+  const minutesLeft = Math.ceil(snoozeTimeRemaining / SECONDS_PER_MINUTE);
+
+  return (
+    <RingingColumn>
+      <VStack
+        flex={1}
+        alignItems="center"
+        justifyContent="center"
+        gap="$inline"
+        paddingVertical="$section">
+        <Text size="lg" fontWeight="500" color="$muted" accessibilityRole="header">
+          {t("alarm.snoozed")}
+        </Text>
+        <View
+          accessible
+          accessibilityLabel={t("a11y.alarm.countdown", {
+            time: t("common.minute", { count: minutesLeft }),
+          })}>
+          <Countdown
+            value={digits(formatTimeRemaining(snoozeTimeRemaining))}
+            reserve={digits(COUNT_WIDEST.minutes)}
+            counting={COUNT_DIRECTION.DOWN}
+            openKey={0}
+            switchKey=""
+            fontSize={RINGING_TYPE.COUNT.fontSize}
+            lineHeight={RINGING_TYPE.COUNT.lineHeight}
+            fontWeight="600"
+            color="$fg"
+          />
+        </View>
+        <Text size="lg" fontWeight="500" color="$muted" textAlign="center">
+          {t("alarm.untilRingsAgain")}
+        </Text>
+      </VStack>
+      <VStack paddingBottom="$section">
+        <TaskStart tasks={tasks} onStart={onStart} onStop={onStop} />
+      </VStack>
+    </RingingColumn>
+  );
 }
+
+type Snooze = Readonly<{
+  /** A snooze is left. */
+  open: boolean;
+  enabled: boolean;
+  minutes: number;
+  left: number;
+}>;
 
 function ActiveAlarmView({
   alarmId,
   alarmType,
-  metaTitle,
-  challengeConfig,
-  canSnooze,
-  remainingSnoozes,
-  onChallengeComplete,
+  tasks,
+  snooze,
+  emergency,
+  wayOut,
+  onStart,
+  onStop,
   onSnooze,
-  onGraceStart,
-  onGraceExpire,
 }: {
   alarmId: string;
-  alarmType: string;
-  metaTitle: string;
-  challengeConfig: ChallengeConfig;
-  canSnooze: boolean;
-  remainingSnoozes: number;
-  onChallengeComplete: () => void;
+  alarmType: ScheduledAlarmType;
+  tasks: readonly WakeTask[];
+  snooze: Snooze;
+  emergency: EmergencyQuietControl;
+  wayOut: boolean;
+  onStart: () => void;
+  onStop: () => void;
   onSnooze: () => void;
-  onGraceStart: () => void;
-  onGraceExpire: () => void;
 }) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const locale = useAppStore((state) => state.locale);
-  const use24HourTime = usePreferencesStore((state) => state.use24HourTime);
   const now = useMinuteClock();
+  const clockTime = useClockTime();
+  const quietOffer = useQuietOffer(emergency, wayOut);
+  const { alarm, prayer, moment } = useAlarmPrayer(alarmId, alarmType);
+  const quiet = emergency.quietUntil !== null;
 
-  const triggerTime = useAlarmStore((state) => state.getAlarm(alarmId)?.triggerTime);
-  const todayTimings = usePrayerTimesStore((state) => state.todayTimings);
-  const tomorrowTimings = usePrayerTimesStore((state) => state.tomorrowTimings);
+  const header = ringingHeader(alarmType, moment !== null);
+  const time = moment ? clockTime(moment.time, moment.timezone) : clockTime(now, deviceTimeZone());
+  const name = t(header.nameKey);
+  const heading = t(header.headingKey, { alarm, time: time.spoken });
 
-  const prayer = PRAYER_BY_ALARM[alarmType];
-  const prayerName = prayer
-    ? t(prayer.nameKey)
-    : t(`alarm.types.${alarmType}`, { defaultValue: metaTitle });
-
-  // Prayer time nearest the alarm's trigger — picks the today/tomorrow
-  // occurrence closest to when the alarm fired; null when data is unavailable
-  // so a wrong time is never shown.
-  const prayerTime = useMemo(() => {
-    if (!prayer) return null;
-    const candidates = [todayTimings, tomorrowTimings]
-      .filter((day): day is DayPrayerTimes => !!day)
-      .map((day) => ({ iso: day.timings[prayer.timing], tz: day.timezone }))
-      .filter((entry) => !!entry.iso);
-    if (candidates.length === 0) return null;
-
-    const reference = triggerTime ?? now.getTime();
-    const best = candidates.reduce((closest, entry) =>
-      Math.abs(parseISO(entry.iso).getTime() - reference) <
-      Math.abs(parseISO(closest.iso).getTime() - reference)
-        ? entry
-        : closest
-    );
-    return formatNumberToLocale(formatPrayerTime(best.iso, best.tz, { locale, use24HourTime }));
-  }, [prayer, todayTimings, tomorrowTimings, triggerTime, now, locale, use24HourTime]);
-
-  const clock = localeTime(now, locale, use24HourTime);
-
+  // Announced and focused once per screen; a re-render must not repeat it.
+  const announced = useRef(false);
+  const mainButton = useRef<ViewInstance>(null);
   useEffect(() => {
-    AccessibilityInfo.announceForAccessibility(
-      t("a11y.alarm.ringingAnnouncement", { prayer: prayerName })
-    );
-  }, [t, prayerName]);
+    if (announced.current) return;
+    announced.current = true;
+    AccessibilityInfo.announceForAccessibility(t(header.announcementKey, { prayer }));
+    focusOn(mainButton.current);
+  }, [t, prayer, header.announcementKey]);
 
   return (
-    <VStack
-      flex={1}
-      paddingHorizontal="$6"
-      paddingTop={insets.top + 32}
-      paddingBottom={insets.bottom + 24}>
-      <VStack gap="$3" alignItems="center">
-        <Text
-          fontSize={64}
-          bold
-          color="$typography"
-          accessibilityRole="header"
-          accessibilityLabel={t("a11y.alarm.currentTime", { time: clock })}>
-          {clock}
-        </Text>
-
-        <Text
-          size="xl"
-          fontWeight="600"
-          color="$typographySecondary"
-          textAlign="center"
-          accessibilityRole="header"
-          accessibilityLabel={
-            prayerTime
-              ? t("a11y.alarm.prayerAt", { prayer: prayerName, time: prayerTime })
-              : prayerName
-          }>
-          {prayerTime ? `${prayerName} · ${prayerTime}` : prayerName}
-        </Text>
-
-        {alarmType === ScheduledAlarmType.FAJR && (
-          <Text
-            size="sm"
-            color="$typographySecondary"
-            textAlign="center"
-            fontStyle="italic"
-            opacity={0.8}>
-            {t("alarm.prayerBetterThanSleep")}
-          </Text>
-        )}
-      </VStack>
-
-      <VStack flex={1} minHeight="$6" />
-
-      <VStack gap="$3" width="100%" maxWidth={420} alignSelf="center">
-        <ChallengeWrapper
-          config={challengeConfig}
-          onAllComplete={onChallengeComplete}
-          onGraceStart={onGraceStart}
-          onGraceExpire={onGraceExpire}
-        />
-
-        {canSnooze && (
-          <Button
-            size="sm"
-            action="default"
-            variant="outline"
-            alignSelf="center"
-            height={44}
-            minHeight={44}
-            paddingHorizontal="$5"
-            borderColor="$typographySecondary"
-            marginTop="$2"
-            onPress={onSnooze}
-            accessibilityLabel={t("a11y.alarm.snoozeButton", { count: remainingSnoozes })}>
-            <HStack gap="$2" alignItems="center">
-              <Icon as={Clock} size="sm" color="$typographySecondary" />
-              <Button.Text color="$typographySecondary">
-                {t("alarm.snoozeWithCount", { count: remainingSnoozes })}
-              </Button.Text>
+    <RingingColumn>
+      <VStack flex={1} alignItems="center" justifyContent="center" paddingVertical="$section">
+        <RingingHalo breathing={!quiet} />
+        <View accessible accessibilityRole="header" accessibilityLabel={heading}>
+          <VStack alignItems="center" gap="$tight">
+            {prayer ? (
+              <Text size="lg" fontWeight="500" color="$muted" textAlign="center">
+                {t("alarm.ringing.prayerAlarm")}
+              </Text>
+            ) : null}
+            <Text
+              fontSize={RINGING_TYPE.NAME.fontSize}
+              lineHeight={RINGING_TYPE.NAME.lineHeight}
+              bold
+              color="$fg"
+              textAlign="center">
+              {name}
+            </Text>
+            <HStack alignItems="baseline" justifyContent="center" gap="$inline">
+              <Text
+                fontSize={RINGING_TYPE.TIME.fontSize}
+                lineHeight={RINGING_TYPE.TIME.lineHeight}
+                fontWeight="600"
+                color="$fg"
+                numeric
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                flexShrink={1}
+                minWidth={0}>
+                {time.figure}
+              </Text>
+              {time.period ? (
+                <Text size="headline" fontWeight="600" color="$fg" flexShrink={0}>
+                  {time.period}
+                </Text>
+              ) : null}
             </HStack>
-          </Button>
-        )}
+          </VStack>
+        </View>
       </VStack>
-    </VStack>
+
+      <VStack gap="$stack" paddingBottom="$section">
+        {emergency.quietUntil !== null && <QuietBanner until={emergency.quietUntil} />}
+        <TaskStart ref={mainButton} tasks={tasks} onStart={onStart} onStop={onStop} />
+        {/* The confirm stands in snooze's place; a running quiet holds none. */}
+        {canSnoozeWith(!quietOffer.confirmOpen, emergency.quietUntil) && (
+          <SnoozeSlot snooze={snooze} onSnooze={onSnooze} />
+        )}
+        <EmergencyQuiet control={emergency} offer={quietOffer} />
+      </VStack>
+    </RingingColumn>
   );
 }
+
+/** Snooze, or one line in its place, so the main button keeps its place. */
+const SnoozeSlot = ({ snooze, onSnooze }: { snooze: Snooze; onSnooze: () => void }) => {
+  const { t } = useTranslation();
+
+  const place = snoozePlace(snooze.open, snooze.enabled);
+  if (place !== SNOOZE_PLACE.BUTTON) {
+    return (
+      <VStack testID={RINGING_PART.SNOOZE_OFF} minHeight="$16" justifyContent="center">
+        <Text size="lg" fontWeight="500" color="$muted" textAlign="center">
+          {t(place)}
+        </Text>
+      </VStack>
+    );
+  }
+
+  const title = t("alarm.ringing.snooze", { count: snooze.minutes });
+  const left = t("alarm.ringing.snoozesLeft", { count: snooze.left });
+  return (
+    <Button
+      size="xl"
+      action="default"
+      variant="outline"
+      borderWidth={1.5}
+      borderColor="$hairline"
+      backgroundColor="$surface"
+      borderRadius="$control"
+      onPress={onSnooze}
+      accessibilityLabel={t("a11y.join", { first: title, second: left })}>
+      <VStack alignItems="center" gap="$0.5">
+        <Button.Text size="xl" fontWeight="600" color="$fg">
+          {title}
+        </Button.Text>
+        <Button.Text size="md" fontWeight="500" color="$muted">
+          {left}
+        </Button.Text>
+      </VStack>
+    </Button>
+  );
+};

@@ -1,29 +1,33 @@
 import { useEffect } from "react";
 
-import { AthkarDB } from "@/services/athkar-db";
 import { useMyAthkarStore } from "@/stores/my-athkar";
 import { useCustomAthkarStore } from "@/stores/custom-athkar";
 
-/**
- * Serializes initialization of my-athkar and custom-athkar stores to prevent
- * concurrent SQLite write transactions from contending on the shared DB connection.
- *
- * Execution order: AthkarDB.initialize (cached) → my-athkar → custom-athkar.
- * Each step awaits the previous, ensuring only one transaction runs at a time.
- */
+let loading: Promise<void> | null = null;
+
+// In turn, so their writes never contend; each store flags its own failure.
+// Callers during a load share it.
+const loadAthkarStores = () =>
+  (loading ??= (async () => {
+    await useMyAthkarStore.getState().initialize();
+    await useCustomAthkarStore.getState().initialize();
+  })().finally(() => {
+    loading = null;
+  }));
+
+// After a load already running, whose finished steps would miss a store that failed in it.
+const retryAthkarStores = () => (loading ? loading.then(loadAthkarStores) : loadAthkarStores());
+
+/** Loads both stores on mount; `retry` loads again any that failed. */
 export const useInitializeAthkarStores = () => {
-  const myAthkarInit = useMyAthkarStore((s) => s.initialize);
-  const customInit = useCustomAthkarStore((s) => s.initialize);
   const isMyAthkarInit = useMyAthkarStore((s) => s.isInitialized);
   const isCustomInit = useCustomAthkarStore((s) => s.isInitialized);
+  const myAthkarFailed = useMyAthkarStore((s) => s.loadFailed);
+  const customFailed = useCustomAthkarStore((s) => s.loadFailed);
 
   useEffect(() => {
-    (async () => {
-      await AthkarDB.initialize();
-      await myAthkarInit();
-      await customInit();
-    })();
-  }, [myAthkarInit, customInit]);
+    void loadAthkarStores();
+  }, []);
 
-  return { isMyAthkarInit, isCustomInit };
+  return { isMyAthkarInit, isCustomInit, myAthkarFailed, customFailed, retry: retryAthkarStores };
 };

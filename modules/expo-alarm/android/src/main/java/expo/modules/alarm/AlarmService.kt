@@ -6,15 +6,11 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.provider.Settings
 
 class AlarmService : Service() {
 
     companion object {
         private const val WAKE_LOCK_TAG = "nedaa:alarm_wake_lock"
-        // Must outlast AlarmOverlayService.AUTO_SNOOZE_TIMEOUT_MS (15 min); without
-        // overlay permission nothing else keeps the CPU awake for auto-snooze.
-        private const val WAKE_LOCK_TIMEOUT_MS = 16L * 60 * 1000 // 16 minutes
 
         const val ACTION_START = "expo.modules.alarm.ACTION_START"
         const val ACTION_STOP = "expo.modules.alarm.ACTION_STOP"
@@ -25,6 +21,11 @@ class AlarmService : Service() {
 
         @Volatile
         var isRunning = false
+            private set
+
+        // The alarm being rung, null when silent; changes with isRunning.
+        @Volatile
+        var ringingAlarmId: String? = null
             private set
 
         fun start(context: Context, alarmId: String, alarmType: String, title: String, soundName: String) {
@@ -51,7 +52,6 @@ class AlarmService : Service() {
     }
 
     private var wakeLock: PowerManager.WakeLock? = null
-    private var currentAlarmId: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -63,7 +63,14 @@ class AlarmService : Service() {
 
         if (intent?.action == ACTION_START) {
             val alarmId = intent.getStringExtra(EXTRA_ALARM_ID)
-            if (alarmId != null) {
+            val record = alarmId?.let { AlarmDatabase.getInstance(this).getAlarm(it) }
+            val redelivered = flags and START_FLAG_REDELIVERY != 0
+            val action = RedeliveredStart.actionFor(redelivered, RedeliveredStart.isEnded(record?.completed), isRunning)
+            if (alarmId != null && action != RedeliveredStart.Action.RING) {
+                AlarmLogger.getInstance(this).w("AlarmService", "Skipping ended alarm: id=$alarmId")
+                if (action == RedeliveredStart.Action.SKIP_AND_STOP_THIS_START) endSkippedStart(startId)
+                return START_NOT_STICKY
+            } else if (alarmId != null) {
                 val alarmType = intent.getStringExtra(EXTRA_ALARM_TYPE) ?: "custom"
                 val title = intent.getStringExtra(EXTRA_ALARM_TITLE) ?: "Alarm"
                 val soundName = intent.getStringExtra(EXTRA_SOUND_NAME) ?: "beep"
@@ -82,8 +89,16 @@ class AlarmService : Service() {
         return START_NOT_STICKY
     }
 
+    // The foreground start the system requires, then this start alone ends.
+    private fun endSkippedStart(startId: Int) {
+        val notification = AlarmNotificationManager(this).buildSilentStartNotification()
+        startForeground(AlarmNotificationManager.NOTIFICATION_ID, notification)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf(startId)
+    }
+
     private fun startAlarm(alarmId: String, alarmType: String, title: String, soundName: String) {
-        currentAlarmId = alarmId
+        ringingAlarmId = alarmId
         isRunning = true
 
         acquireWakeLock()
@@ -112,7 +127,7 @@ class AlarmService : Service() {
 
         AlarmLogger.getInstance(this).d("AlarmService", "Alarm ringing: id=$alarmId type=$alarmType sound=$sound")
 
-        if (Settings.canDrawOverlays(this)) {
+        if (AlarmOverlayService.usesNativeOverlay(this)) {
             AlarmOverlayService.start(this, alarmId, alarmType, title)
         } else {
             AlarmLogger.getInstance(this).w("AlarmService", "Overlay permission missing — skipping full-screen challenge overlay for id=$alarmId type=$alarmType")
@@ -120,7 +135,7 @@ class AlarmService : Service() {
     }
 
     private fun stopAlarm() {
-        AlarmOverlayService.stop(this)
+        AlarmOverlayService.stopRinging(this)
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
@@ -128,7 +143,7 @@ class AlarmService : Service() {
         AlarmNotificationManager(this).cancelNotification()
         releaseWakeLock()
 
-        currentAlarmId = null
+        ringingAlarmId = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         isRunning = false
@@ -141,7 +156,10 @@ class AlarmService : Service() {
                 PowerManager.PARTIAL_WAKE_LOCK,
                 WAKE_LOCK_TAG
             ).apply {
-                acquire(WAKE_LOCK_TIMEOUT_MS)
+                // Held for the whole ring; stopAlarm and onDestroy release it.
+                // A sleeping CPU would stall the overlay's grace timer.
+                @Suppress("WakelockTimeout")
+                acquire()
             }
         }
     }
@@ -159,7 +177,7 @@ class AlarmService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         // Covers alarms with no overlay permission, where this service is the only one alive.
-        currentAlarmId?.let { AlarmScheduler(this).rearmUnsolvedAlarm(it) }
+        ringingAlarmId?.let { AlarmScheduler(this).rearmUnsolvedAlarm(it) }
         super.onTaskRemoved(rootIntent)
     }
 
@@ -167,8 +185,9 @@ class AlarmService : Service() {
         super.onDestroy()
         if (isRunning) {
             AlarmAudioManager.getInstance(this).stopAll()
-            releaseWakeLock()
+            ringingAlarmId = null
             isRunning = false
         }
+        releaseWakeLock()
     }
 }

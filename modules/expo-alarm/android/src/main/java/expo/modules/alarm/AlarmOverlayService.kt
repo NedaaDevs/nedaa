@@ -8,10 +8,9 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.res.ColorStateList
+import android.database.SQLException
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
@@ -19,94 +18,44 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
-import android.text.InputType
-import android.text.TextWatcher
-import android.text.Editable
-import android.view.ActionMode
 import android.view.Gravity
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
-import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.TextClock
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import java.util.UUID
-import kotlin.random.Random
 
 class AlarmOverlayService : Service() {
 
     companion object {
-        private const val NOTIFICATION_ID = 9002
-        private const val CHANNEL_ID = "alarm_overlay_channel"
 
-        // Tap counts per difficulty
-        private const val TAPS_EASY = 5
-        private const val TAPS_MEDIUM = 10
-        private const val TAPS_HARD = 20
-
-        // Wrong-submission tolerance before the input clears + a fresh problem/phrase.
-        // Mirrors STRIKE_THRESHOLD in MathChallenge.tsx / DhikrChallenge.tsx — keep in sync.
-        private const val STRIKE_THRESHOLD = 3
-
-        // Grace period seconds (must match JS GRACE_PERIOD_SECONDS)
-        private val GRACE_TAP = mapOf("easy" to 10, "medium" to 15, "hard" to 20)
-        private val GRACE_MATH = mapOf("easy" to 15, "medium" to 20, "hard" to 30)
-        private val GRACE_DHIKR = mapOf("easy" to 20, "medium" to 30, "hard" to 45)
-
-        // Dhikr typing challenge pool (must match JS DHIKR_PHRASES)
-        private val DHIKR_EASY = listOf(
-            DhikrPhrase("سبحان الله", "Subhanallah"),
-            DhikrPhrase("الحمد لله", "Alhamdulillah"),
-            DhikrPhrase("الله أكبر", "Allahu Akbar")
-        )
-        private val DHIKR_MEDIUM = listOf(
-            DhikrPhrase("سبحان الله وبحمده", "Subhanallahi wa bihamdihi"),
-            DhikrPhrase("لا إله إلا الله", "La ilaha illa Allah"),
-            DhikrPhrase("أستغفر الله", "Astaghfirullah"),
-            DhikrPhrase("أعوذ بالله من الشيطان الرجيم", "A'udhu billahi minash shaytanir rajim")
-        )
-        private val DHIKR_HARD = listOf(
-            DhikrPhrase("لا حول ولا قوة إلا بالله", "La hawla wa la quwwata illa billah"),
-            DhikrPhrase(
-                "سبحان الله وبحمده سبحان الله العظيم",
-                "Subhanallahi wa bihamdihi subhanallahil azim"
-            )
-        )
-
-        // UI colors — Nedaa dark brand (tamagui.config.ts dark theme), always-dark overlay
-        private const val COLOR_BG = "#F0222831"            // darkBackground scrim
-        private const val COLOR_CARD_BG = "#FF393E46"       // darkBackgroundElevated
-        private const val COLOR_PRIMARY = "#FFE6C469"        // darkPrimary (gold)
-        private const val COLOR_PRIMARY_LIGHT = "#FFF0D89A"  // lighter gold
-        private const val COLOR_SUCCESS = "#FF22C55E"        // darkBorderSuccess
-        private const val COLOR_SUCCESS_LIGHT = "#FF4ADE80"  // tap success flash
-        private const val COLOR_WARNING = "#FFFCD34D"        // darkWarning
-        private const val COLOR_ERROR = "#FFEF4444"          // darkBorderError
-        private const val COLOR_SNOOZE = "#FF4B5563"         // darkSurfaceActive (secondary)
-        private const val COLOR_TEXT = "#FFFFFFFF"           // primary text on dark surfaces
-        private const val COLOR_TEXT_SECONDARY = "#FFE3E2CE" // darkTypographySecondary (off-white)
-        private const val COLOR_TEXT_ON_ACCENT = "#FF222831" // dark text on gold/green fills
-        private const val COLOR_TEXT_MUTED = "#FFB4B3A1"     // muted body text
-        private const val COLOR_INPUT_BG = "#FF4B5563"       // darkSurfaceActive input well
-        private const val COLOR_DISABLED = "#FF374151"       // darkSurfaceHover (disabled)
-
-        private const val GRACE_UPDATE_INTERVAL_MS = 50L
-        private const val AUTO_SNOOZE_TIMEOUT_MS = 15 * 60 * 1000L
+        // How long past the re-ring the overlay waits before sounding itself.
+        private const val QUIET_LATE_MS = 10_000L
 
         @Volatile
         var isRunning = false
             private set
 
+        // The running quiet's re-ring id; null while no quiet runs.
+        @Volatile
+        private var quietRingId: String? = null
+
+        // The solved panel outlives the ring; a stopped ring leaves it up.
+        @Volatile
+        var solvedShowing = false
+            private set
+
+        // With draw-over-apps, this overlay draws each ringing alarm.
+        fun usesNativeOverlay(context: Context): Boolean = Settings.canDrawOverlays(context)
+
         fun start(context: Context, alarmId: String, alarmType: String, title: String) {
-            if (!Settings.canDrawOverlays(context)) return
-            if (isRunning) return
+            if (!usesNativeOverlay(context)) return
+            if (!EmergencyQuiet.reachesOverlay(isRunning, quietRingId, alarmId)) return
 
             val intent = Intent(context, AlarmOverlayService::class.java).apply {
                 putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
@@ -124,6 +73,11 @@ class AlarmOverlayService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, AlarmOverlayService::class.java))
         }
+
+        // The ring's end, which leaves a shown solved panel for its Close.
+        fun stopRinging(context: Context) {
+            if (!solvedShowing) stop(context)
+        }
     }
 
     private var windowManager: WindowManager? = null
@@ -133,73 +87,72 @@ class AlarmOverlayService : Service() {
     private var alarmType: String = ""
     private var title: String = ""
 
-    // Challenge state
-    private var challengeType: String = "tap"
-    private var challengeDifficulty: String = "easy"
-    private var challengeCount: Int = 1
-    private var requiredTaps: Int = TAPS_EASY
-    private var challengeStarted = false
+    // An alarm with no task: a start gate, then its dismiss.
     private var startSolvingContainer: LinearLayout? = null
     private var challengeContainer: LinearLayout? = null
 
-    // Tap challenge state
-    private var tapCount = 0
-    private var tapsPerRound: Int = TAPS_EASY
-    private var tapRoundsCompleted: Int = 0
-    private var tapButton: Button? = null
-    private var tapCountText: TextView? = null
+    // A stack NativeBoards.runsShell takes runs the task shell instead.
+    private var stack: List<WakeTasks.Task> = emptyList()
+    private var taskShell: TaskShellView? = null
+    private var card: LinearLayout? = null
+    private var header: RingingHeaderView? = null
+    private var snoozeSlot: View? = null
+    private var lastStartId = 0
+    private var shellRunning = false
 
-    // Math challenge state
-    private var mathProblemText: TextView? = null
-    private var mathAnswerInput: EditText? = null
-    private var mathSubmitButton: Button? = null
-    private var mathProgressText: TextView? = null
-    private var currentMathAnswer: Int = 0
-    private var completedMathChallenges: Int = 0
-    private var mathStrikeCount: Int = 0
+    // The emergency quiet, as JS useAlarmScreen's emergency control.
+    private var quietView: EmergencyQuietView? = null
+    private var quietBanner: QuietBannerView? = null
+    private var ringBannerSlot: FrameLayout? = null
+    private var ringOfferSlot: FrameLayout? = null
+    private var quietConfirming = false
+    private var quietFailed = false
+    private var quieting = false
+    // When the alarm rings again; null while no quiet runs.
+    private var quietUntil: Long? = null
+    private val quietHandler = Handler(Looper.getMainLooper())
 
-    // Dhikr challenge state
-    private var dhikrArabicText: TextView? = null
-    private var dhikrTranslitText: TextView? = null
-    private var dhikrInput: EditText? = null
-    private var dhikrSubmitButton: Button? = null
-    private var dhikrProgressText: TextView? = null
-    private var currentDhikrPhrase: DhikrPhrase? = null
-    private var completedDhikrChallenges: Int = 0
-    private var dhikrStrikeCount: Int = 0
-    private var lastDhikrIndex: Int = -1
-
-    private var autoSnoozeRunnable: Runnable? = null
-
-    // Grace period state
-    private var graceRow: LinearLayout? = null
-    private var graceProgressBar: ProgressBar? = null
-    private var graceSecondsText: TextView? = null
-    private var graceExpiredText: TextView? = null
-    private var graceDurationMs: Long = 0
-    private var graceStartTime: Long = 0
-    private var graceActive = false
-    private var graceExpired = false
-    private var graceTimerRunning = false
-    private val graceHandler = Handler(Looper.getMainLooper())
-    private val graceRunnable = object : Runnable {
-        override fun run() {
-            if (!graceActive) return
-            val elapsed = System.currentTimeMillis() - graceStartTime
-            val remaining = graceDurationMs - elapsed
-            if (remaining <= 0) {
-                onGraceExpired()
-            } else {
-                val progress = ((remaining.toFloat() / graceDurationMs) * 10000).toInt()
-                graceProgressBar?.progress = progress
-                updateGraceBarColor(remaining.toFloat() / graceDurationMs)
-                updateGraceSeconds(remaining)
-                graceHandler.postDelayed(this, GRACE_UPDATE_INTERVAL_MS)
-            }
+    // As JS: the ring screen gives way to the task and comes back on Back.
+    private val shellListener = object : TaskShellView.Listener {
+        override fun onStart() {
+            shellRunning = true
+            header?.hide()
+            moveQuiet()
+            renderQuiet()
         }
+
+        override fun onBack() {
+            shellRunning = false
+            header?.show()
+            moveQuiet()
+            renderQuiet()
+        }
+
+        override fun onSilence() = silenceAlarm()
+        override fun onSound() = soundAtVolume()
+        override fun onSolved() = completeAlarm()
+        override fun onStop() = completeAlarm(AlarmDatabase.OUTCOME_STOPPED)
+        override fun onWayOut() = renderQuiet()
+        override fun onTyping(typing: Boolean) = takeTyping(typing)
     }
 
-    // Settings for restarting sound after grace
+    private val quietListener = object : EmergencyQuietView.Listener {
+        override fun onOpen() {
+            quietConfirming = true
+            quietFailed = false
+            renderQuiet()
+        }
+
+        override fun onBack() {
+            quietConfirming = false
+            quietFailed = false
+            renderQuiet()
+        }
+
+        override fun onConfirm() = startQuiet()
+    }
+
+    // The sound a late quiet re-ring and the shell's quiet end play.
     private var alarmSound: String = "beep"
     private var alarmVolume: Float = 1.0f
     private var gentleWakeUpEnabled: Boolean = false
@@ -217,6 +170,16 @@ class AlarmOverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        lastStartId = startId
+        // A new ring replaces a shown solved panel.
+        if (solvedShowing) closeSolved(stopService = false)
+        // A second start keeps the shell showing and its progress; the ringing alarm's notice stays.
+        if (taskShell != null) {
+            // The quiet's re-ring: AlarmService has started the sound.
+            if (intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_ID) == alarmId) endQuiet(sound = false)
+            startForeground(AlarmNotificationManager.OVERLAY_NOTIFICATION_ID, createNotification())
+            return START_NOT_STICKY
+        }
 
         alarmId = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_ID) ?: ""
         alarmType = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_TYPE) ?: ""
@@ -225,38 +188,15 @@ class AlarmOverlayService : Service() {
         loadChallengeSettings()
         loadSoundSettings()
 
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+        AlarmNotificationManager(this).createOverlayChannel()
+        startForeground(AlarmNotificationManager.OVERLAY_NOTIFICATION_ID, createNotification())
         showOverlay()
-        startAutoSnoozeTimeout()
-
         return START_NOT_STICKY
     }
 
     private fun loadChallengeSettings() {
-        val db = AlarmDatabase.getInstance(this)
-        val (type, difficulty, count) = db.getChallengeConfig(alarmType)
-        challengeType = type
-        challengeDifficulty = difficulty
-        challengeCount = count
-
-        tapsPerRound = when (difficulty) {
-            "easy" -> TAPS_EASY
-            "medium" -> TAPS_MEDIUM
-            "hard" -> TAPS_HARD
-            else -> TAPS_EASY
-        }
-        requiredTaps = tapsPerRound * count
-
-        // Calculate grace period
-        graceDurationMs = when (type) {
-            "tap" -> (GRACE_TAP[difficulty] ?: 10) * 1000L
-            "math" -> (GRACE_MATH[difficulty] ?: 15) * 1000L
-            "dhikr" -> (GRACE_DHIKR[difficulty] ?: 20) * 1000L
-            else -> 0L
-        }
-
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge settings: type=$challengeType, difficulty=$challengeDifficulty, count=$challengeCount, requiredTaps=$requiredTaps, graceDuration=${graceDurationMs}ms")
+        stack = AlarmDatabase.getInstance(this).getAlarmSettings(alarmType).tasks
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Wake-up tasks: ${WakeTasks.encode(stack)}")
     }
 
     private fun loadSoundSettings() {
@@ -276,125 +216,35 @@ class AlarmOverlayService : Service() {
     }
 
     override fun onDestroy() {
-        graceHandler.removeCallbacksAndMessages(null)
+        releaseQuiet()
+        taskShell?.release()
         removeOverlay()
         isRunning = false
+        solvedShowing = false
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // --- Grace Period ---
+    // --- Sound ---
 
-    private fun onInteraction() {
-        if (graceDurationMs <= 0) return
-
-        // Reset the countdown
-        graceStartTime = System.currentTimeMillis()
-        graceProgressBar?.progress = 10000
-        updateGraceSeconds(graceDurationMs)
-        graceSecondsText?.visibility = View.VISIBLE
-        graceRow?.visibility = View.VISIBLE
-
-        // If expired, silence alarm again
-        if (graceExpired) {
-            graceExpired = false
-            graceExpiredText?.visibility = View.GONE
-            val audioManager = AlarmAudioManager.getInstance(this)
-            audioManager.stopAlarmSound()
-            audioManager.stopVibration()
-        }
-
-        graceActive = true
-
-        // Only start the interval loop once
-        if (!graceTimerRunning) {
-            graceTimerRunning = true
-
-            // Silence alarm on first interaction
-            val audioManager = AlarmAudioManager.getInstance(this)
-            audioManager.stopAlarmSound()
-            audioManager.stopVibration()
-
-            graceHandler.post(graceRunnable)
-            AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period started: ${graceDurationMs}ms")
-        }
+    private fun silenceAlarm() {
+        val audioManager = AlarmAudioManager.getInstance(this)
+        audioManager.stopAlarmSound()
+        audioManager.stopVibration()
     }
 
-    private fun onGraceExpired() {
-        graceActive = false
-        graceExpired = true
-        graceTimerRunning = false
-        graceHandler.removeCallbacksAndMessages(null)
-
-        graceProgressBar?.progress = 0
-        updateGraceBarColor(0f)
-        graceSecondsText?.visibility = View.GONE
-        graceExpiredText?.visibility = View.VISIBLE
-
-        // Restart alarm sound
+    // The shell's sound after quiet time: the set volume at once, as the JS task does.
+    private fun soundAtVolume() {
+        if (quietUntil != null) return
         val audioManager = AlarmAudioManager.getInstance(this)
-        audioManager.startAlarmSound(alarmSound, alarmVolume, gentleWakeUpEnabled, gentleWakeUpDuration)
+        audioManager.startAlarmSound(alarmSound, alarmVolume, false, 0)
         if (vibrationEnabled) {
             audioManager.startVibration(vibrationPattern)
         }
-
-        startAutoSnoozeTimeout()
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "Grace period expired, sound restarted")
-    }
-
-    private fun resetGraceForNextRound() {
-        graceHandler.removeCallbacksAndMessages(null)
-        graceActive = false
-        graceExpired = false
-        graceTimerRunning = false
-        graceStartTime = 0
-        graceRow?.visibility = View.GONE
-        graceSecondsText?.visibility = View.GONE
-        graceProgressBar?.progress = 10000
-        graceExpiredText?.visibility = View.GONE
-
-        // User already started solving — keep challenge visible, restart grace on next interaction
-        startAutoSnoozeTimeout()
-    }
-
-    private fun updateGraceBarColor(fraction: Float) {
-        val color = when {
-            fraction > 0.30f -> Color.parseColor(COLOR_PRIMARY)
-            fraction > 0.10f -> Color.parseColor(COLOR_WARNING)
-            else -> Color.parseColor(COLOR_ERROR)
-        }
-        graceProgressBar?.progressTintList = ColorStateList.valueOf(color)
-    }
-
-    // Numeric seconds readout beside the bar: muted, then warning/error in the final 5s.
-    private fun updateGraceSeconds(remainingMs: Long) {
-        val seconds = ((remainingMs + 999) / 1000).toInt()
-        val color = when {
-            remainingMs > 5000 -> Color.parseColor(COLOR_TEXT_MUTED)
-            remainingMs > 2000 -> Color.parseColor(COLOR_WARNING)
-            else -> Color.parseColor(COLOR_ERROR)
-        }
-        graceSecondsText?.text = "${seconds}s"
-        graceSecondsText?.setTextColor(color)
     }
 
     // --- Notification ---
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Alarm Overlay",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Shows alarm overlay"
-                setShowBadge(false)
-            }
-            val nm = getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(channel)
-        }
-    }
 
     private fun createNotification(): Notification {
         val openIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -408,23 +258,14 @@ class AlarmOverlayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val contentText = when (challengeType) {
-            "math" -> if (challengeCount == 1) {
-                getString(R.string.overlay_notification_math_one)
-            } else {
-                getString(R.string.overlay_notification_math_many, challengeCount)
-            }
-            "dhikr" -> if (challengeCount == 1) {
-                getString(R.string.overlay_dhikr_instruction_one)
-            } else {
-                getString(R.string.overlay_dhikr_instruction_many, challengeCount)
-            }
-            "none" -> getString(R.string.overlay_notification_dismiss)
-            else -> getString(R.string.overlay_notification_tap, requiredTaps)
+        val contentText = if (NativeBoards.runsShell(stack)) {
+            resources.getQuantityString(R.plurals.overlay_task_start_count, stack.size, stack.size)
+        } else {
+            getString(R.string.overlay_notification_dismiss)
         }
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
+            Notification.Builder(this, AlarmNotificationManager.OVERLAY_CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle(getString(R.string.overlay_notification_title))
                 .setContentText(contentText)
@@ -477,137 +318,37 @@ class AlarmOverlayService : Service() {
             layoutParams = params
         }
 
-        // Header clock — native, self-updating; follows device 12/24-hour setting
-        val clockView = TextClock(this).apply {
-            format12Hour = "h:mm"
-            format24Hour = "HH:mm"
-            textSize = 56f
-            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            setPadding(0, 0, 0, (4 * dp).toInt())
-        }
-        card.addView(clockView)
+        // Read from the row, so a snooze, a redelivered start or a restart shows the same time.
+        val moment = AlarmDatabase.getInstance(this).getAlarm(alarmId)?.moment
+        header = RingingHeaderView(this, RingingScreen.typeOf(alarmType), moment).also { card.addView(it.view) }
 
-        // Title
-        val titleView = TextView(this).apply {
-            text = title
-            textSize = 28f
-            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-            setPadding(0, 0, 0, (8 * dp).toInt())
+        if (NativeBoards.runsShell(stack)) {
+            ringBannerSlot = quietSlot(this).also { card.addView(it) }
+            taskShell = TaskShellView(this, stack, shellListener).also { card.addView(it.view) }
+        } else {
+            buildDismissUI(card, dp)
         }
-        card.addView(titleView)
 
-        // Grace period bar + numeric seconds readout (hidden until first interaction)
-        graceProgressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 10000
-            progress = 10000
-            progressTintList = ColorStateList.valueOf(Color.parseColor(COLOR_PRIMARY))
-            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#33FFFFFF"))
-            layoutParams = LinearLayout.LayoutParams(0, (4 * dp).toInt(), 1f)
-        }
-        graceSecondsText = TextView(this).apply {
-            textSize = 12f
-            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
-            gravity = Gravity.CENTER
-            minWidth = (28 * dp).toInt()
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { marginStart = (8 * dp).toInt() }
-        }
-        graceRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            visibility = View.GONE
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = (8 * dp).toInt()
-                bottomMargin = (4 * dp).toInt()
-            }
-            addView(graceProgressBar)
-            addView(graceSecondsText)
-        }
-        card.addView(graceRow)
-
-        // Grace expired text (hidden initially)
-        graceExpiredText = TextView(this).apply {
-            text = getString(R.string.overlay_grace_expired)
-            textSize = 12f
-            setTextColor(Color.parseColor(COLOR_ERROR))
-            gravity = Gravity.CENTER
-            visibility = View.GONE
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = (8 * dp).toInt() }
-            layoutParams = params
-        }
-        card.addView(graceExpiredText)
-
-        // "Start Solving" gate (shown initially)
-        startSolvingContainer = buildStartSolvingUI(dp)
-        card.addView(startSolvingContainer)
-
-        // Challenge-specific UI (hidden until Start Solving pressed)
-        challengeContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            visibility = View.GONE
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        }
-        when (challengeType) {
-            "math" -> buildMathChallengeUI(challengeContainer!!, dp)
-            "dhikr" -> buildDhikrChallengeUI(challengeContainer!!, dp)
-            "none" -> buildDirectDismissUI(challengeContainer!!, dp)
-            else -> buildTapChallengeUI(challengeContainer!!, dp)
-        }
-        card.addView(challengeContainer)
-
-        // Snooze button
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDurationMinutes) = db.getSnoozeConfig(alarmType)
-        val currentSnoozeCount = db.getSnoozeCount(alarmId)
-        val remainingSnoozes = snoozeMaxCount - currentSnoozeCount
-        val canSnooze = snoozeEnabled && remainingSnoozes > 0
-
-        AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - enabled=$snoozeEnabled, maxCount=$snoozeMaxCount, duration=$snoozeDurationMinutes, current=$currentSnoozeCount, remaining=$remainingSnoozes")
-
-        if (snoozeEnabled) {
-            val snoozeButton = Button(this).apply {
-                text = if (canSnooze) getString(R.string.overlay_snooze_button, remainingSnoozes) else getString(R.string.overlay_snooze_none)
-                textSize = 15f
-                isAllCaps = false
-                setTextColor(if (canSnooze) Color.parseColor(COLOR_TEXT) else Color.parseColor(COLOR_TEXT_MUTED))
-                background = GradientDrawable().apply {
-                    if (canSnooze) {
-                        setColor(Color.parseColor(COLOR_SNOOZE))
-                    } else {
-                        setColor(Color.parseColor(COLOR_DISABLED))
-                    }
-                    cornerRadius = 12 * dp
-                }
-                setPadding((24 * dp).toInt(), (14 * dp).toInt(), (24 * dp).toInt(), (14 * dp).toInt())
-                isEnabled = canSnooze
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = (12 * dp).toInt() }
-                layoutParams = params
-                setOnClickListener { onSnoozeClicked() }
-            }
-            card.addView(snoozeButton)
-        }
+        val snoozeUse = RingingScreen.SnoozeUse(snoozeEnabled, db.getSnoozeCount(alarmId), snoozeMaxCount)
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Snooze settings - $snoozeUse, duration=$snoozeDurationMinutes")
+        snoozeSlot = SnoozeSlotView(this, snoozeUse, snoozeDurationMinutes) { onSnoozeClicked() }.view
+        card.addView(snoozeSlot)
+        if (taskShell != null) buildQuiet(card, db)
+        this.card = card
 
         rootLayout.addView(card)
-        overlayView = rootLayout
+        // Scrolls when the card is taller than the screen, as with the keyboard open; centred when it fits.
+        val scroller = ScrollView(this).apply {
+            isFillViewport = true
+            setBackgroundColor(Color.parseColor(COLOR_BG))
+            addView(
+                rootLayout,
+                FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT),
+            )
+        }
+        overlayView = scroller
 
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -616,18 +357,11 @@ class AlarmOverlayService : Service() {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
         }
 
-        val windowFlags = if (challengeType == "math" || challengeType == "dhikr") {
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-        } else {
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-        }
+        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -637,12 +371,36 @@ class AlarmOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
+        // Shrinks above the keyboard; the scroller keeps the focused field in view.
+        params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 
         try {
             windowManager?.addView(overlayView, params)
+            header?.announce()
+            taskShell?.focusStart()
         } catch (e: Exception) {
-            AlarmLogger.getInstance(this).d("AlarmOverlay", "showOverlay addView failed: ${e.message}")
+            AlarmLogger.getInstance(this).w("AlarmOverlay", "showOverlay addView failed: ${e.message}")
+            // A running service with no view would refuse the banner tap.
+            stopSelf()
         }
+    }
+
+    // An alarm with no task: a "Start Solving" gate, then its dismiss.
+    private fun buildDismissUI(card: LinearLayout, dp: Float) {
+        startSolvingContainer = buildStartSolvingUI(dp)
+        card.addView(startSolvingContainer)
+
+        challengeContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            visibility = View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        buildDirectDismissUI(challengeContainer!!, dp)
+        card.addView(challengeContainer)
     }
 
     private fun buildStartSolvingUI(dp: Float): LinearLayout {
@@ -655,23 +413,8 @@ class AlarmOverlayService : Service() {
             )
         }
 
-        val instructionText = when (challengeType) {
-            "math" -> if (challengeCount == 1) {
-                getString(R.string.overlay_math_instruction_one)
-            } else {
-                getString(R.string.overlay_math_instruction_many, challengeCount)
-            }
-            "dhikr" -> if (challengeCount == 1) {
-                getString(R.string.overlay_dhikr_instruction_one)
-            } else {
-                getString(R.string.overlay_dhikr_instruction_many, challengeCount)
-            }
-            "none" -> getString(R.string.overlay_dismiss_instruction)
-            else -> getString(R.string.overlay_tap_instruction, requiredTaps)
-        }
-
         val instruction = TextView(this).apply {
-            text = instructionText
+            text = getString(R.string.overlay_dismiss_instruction)
             textSize = 15f
             setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
             gravity = Gravity.CENTER
@@ -702,63 +445,9 @@ class AlarmOverlayService : Service() {
     }
 
     private fun onStartSolving() {
-        challengeStarted = true
-
-        // Always silence alarm when user starts solving
-        val audioManager = AlarmAudioManager.getInstance(this)
-        audioManager.stopAlarmSound()
-        audioManager.stopVibration()
-
-        // Start grace timer if configured
-        if (graceDurationMs > 0) {
-            onInteraction()
-        }
-
-        // Swap UI: hide start button, show challenge
         startSolvingContainer?.visibility = View.GONE
         challengeContainer?.visibility = View.VISIBLE
-
         AlarmLogger.getInstance(this).d("AlarmOverlay", "Challenge started by user")
-    }
-
-    private fun buildTapChallengeUI(card: LinearLayout, dp: Float) {
-        val subtitleView = TextView(this).apply {
-            text = getString(R.string.overlay_tap_instruction, requiredTaps)
-            textSize = 15f
-            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
-            gravity = Gravity.CENTER
-            setPadding(0, (8 * dp).toInt(), 0, (24 * dp).toInt())
-        }
-        card.addView(subtitleView)
-
-        tapCountText = TextView(this).apply {
-            text = getString(R.string.overlay_tap_progress, 0, requiredTaps)
-            textSize = 56f
-            setTextColor(Color.parseColor(COLOR_TEXT))
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            setPadding(0, 0, 0, (24 * dp).toInt())
-        }
-        card.addView(tapCountText)
-
-        tapButton = Button(this).apply {
-            text = getString(R.string.overlay_tap_button)
-            textSize = 18f
-            isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_SUCCESS))
-                cornerRadius = 16 * dp
-            }
-            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            layoutParams = params
-            setOnClickListener { onTapButtonClicked() }
-        }
-        card.addView(tapButton)
     }
 
     private fun buildDirectDismissUI(card: LinearLayout, dp: Float) {
@@ -791,463 +480,10 @@ class AlarmOverlayService : Service() {
         card.addView(dismissButton)
     }
 
-    private fun buildMathChallengeUI(card: LinearLayout, dp: Float) {
-        val subtitleView = TextView(this).apply {
-            text = if (challengeCount == 1) {
-                getString(R.string.overlay_math_instruction_one)
-            } else {
-                getString(R.string.overlay_math_instruction_many, challengeCount)
-            }
-            textSize = 15f
-            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
-            gravity = Gravity.CENTER
-            setPadding(0, (8 * dp).toInt(), 0, (16 * dp).toInt())
-        }
-        card.addView(subtitleView)
-
-        if (challengeCount > 1) {
-            mathProgressText = TextView(this).apply {
-                text = getString(R.string.overlay_math_progress, 1, challengeCount)
-                textSize = 13f
-                setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
-                gravity = Gravity.CENTER
-                setPadding(0, 0, 0, (12 * dp).toInt())
-            }
-            card.addView(mathProgressText)
-        }
-
-        // Problem display in a rounded box
-        val problemContainer = LinearLayout(this).apply {
-            gravity = Gravity.CENTER
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_INPUT_BG))
-                cornerRadius = 16 * dp
-            }
-            setPadding((24 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt(), (20 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = (20 * dp).toInt() }
-            layoutParams = params
-        }
-
-        mathProblemText = TextView(this).apply {
-            textSize = 36f
-            setTextColor(Color.parseColor(COLOR_TEXT))
-            gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-        }
-        problemContainer.addView(mathProblemText)
-        card.addView(problemContainer)
-
-        mathAnswerInput = EditText(this).apply {
-            hint = getString(R.string.overlay_math_hint)
-            textSize = 28f
-            setTextColor(Color.parseColor(COLOR_TEXT))
-            setHintTextColor(Color.parseColor("#FF8A897A"))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_INPUT_BG))
-                cornerRadius = 12 * dp
-            }
-            gravity = Gravity.CENTER
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
-            imeOptions = EditorInfo.IME_ACTION_DONE
-            // Block long-press select/paste menu and the floating paste bubble.
-            isLongClickable = false
-            customInsertionActionModeCallback = object : ActionMode.Callback {
-                override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = false
-                override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = false
-                override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?) = false
-                override fun onDestroyActionMode(mode: ActionMode?) {}
-            }
-            setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = (16 * dp).toInt() }
-            layoutParams = params
-            setOnEditorActionListener { _, actionId, _ ->
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    onMathAnswerSubmitted()
-                    true
-                } else {
-                    false
-                }
-            }
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    if (!s.isNullOrEmpty()) onInteraction()
-                }
-            })
-        }
-        card.addView(mathAnswerInput)
-
-        mathSubmitButton = Button(this).apply {
-            text = getString(R.string.overlay_math_submit)
-            textSize = 18f
-            isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_PRIMARY))
-                cornerRadius = 16 * dp
-            }
-            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            layoutParams = params
-            setOnClickListener { onMathAnswerSubmitted() }
-        }
-        card.addView(mathSubmitButton)
-
-        generateMathProblem()
-    }
-
-    private fun buildDhikrChallengeUI(card: LinearLayout, dp: Float) {
-        val subtitleView = TextView(this).apply {
-            text = if (challengeCount == 1) {
-                getString(R.string.overlay_dhikr_instruction_one)
-            } else {
-                getString(R.string.overlay_dhikr_instruction_many, challengeCount)
-            }
-            textSize = 15f
-            setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
-            gravity = Gravity.CENTER
-            setPadding(0, (8 * dp).toInt(), 0, (16 * dp).toInt())
-        }
-        card.addView(subtitleView)
-
-        if (challengeCount > 1) {
-            dhikrProgressText = TextView(this).apply {
-                text = getString(R.string.overlay_dhikr_progress, 1, challengeCount)
-                textSize = 13f
-                setTextColor(Color.parseColor(COLOR_TEXT_MUTED))
-                gravity = Gravity.CENTER
-                setPadding(0, 0, 0, (12 * dp).toInt())
-            }
-            card.addView(dhikrProgressText)
-        }
-
-        // Phrase display: Arabic large + transliteration beneath (copy target)
-        val phraseContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_INPUT_BG))
-                cornerRadius = 16 * dp
-            }
-            setPadding((24 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt(), (20 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = (20 * dp).toInt() }
-            layoutParams = params
-        }
-
-        dhikrArabicText = TextView(this).apply {
-            textSize = 34f
-            setTextColor(Color.parseColor(COLOR_TEXT))
-            gravity = Gravity.CENTER
-            textDirection = View.TEXT_DIRECTION_RTL
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setPadding(0, 0, 0, (8 * dp).toInt())
-        }
-        phraseContainer.addView(dhikrArabicText)
-
-        dhikrTranslitText = TextView(this).apply {
-            textSize = 18f
-            setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY))
-            gravity = Gravity.CENTER
-        }
-        phraseContainer.addView(dhikrTranslitText)
-        card.addView(phraseContainer)
-
-        dhikrInput = EditText(this).apply {
-            hint = getString(R.string.overlay_dhikr_hint)
-            textSize = 22f
-            setTextColor(Color.parseColor(COLOR_TEXT))
-            setHintTextColor(Color.parseColor("#FF8A897A"))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_INPUT_BG))
-                cornerRadius = 12 * dp
-            }
-            gravity = Gravity.CENTER
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-            imeOptions = EditorInfo.IME_ACTION_DONE
-            // Block long-press select/paste menu and the floating paste bubble.
-            // IME predictive-word taps still insert normally (not an OS paste path).
-            isLongClickable = false
-            customInsertionActionModeCallback = object : ActionMode.Callback {
-                override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = false
-                override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = false
-                override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?) = false
-                override fun onDestroyActionMode(mode: ActionMode?) {}
-            }
-            setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (16 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = (16 * dp).toInt() }
-            layoutParams = params
-            setOnEditorActionListener { _, actionId, _ ->
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    onDhikrSubmitted()
-                    true
-                } else {
-                    false
-                }
-            }
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    if (!s.isNullOrEmpty()) onInteraction()
-                }
-            })
-        }
-        card.addView(dhikrInput)
-
-        dhikrSubmitButton = Button(this).apply {
-            text = getString(R.string.overlay_math_submit)
-            textSize = 18f
-            isAllCaps = false
-            setTextColor(Color.parseColor(COLOR_TEXT_ON_ACCENT))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(COLOR_PRIMARY))
-                cornerRadius = 16 * dp
-            }
-            setPadding((24 * dp).toInt(), (18 * dp).toInt(), (24 * dp).toInt(), (18 * dp).toInt())
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            layoutParams = params
-            setOnClickListener { onDhikrSubmitted() }
-        }
-        card.addView(dhikrSubmitButton)
-
-        generateDhikrPhrase()
-    }
-
-    // --- Challenge Logic ---
-
-    private fun generateMathProblem() {
-        val maxNum = when (challengeDifficulty) {
-            "easy" -> 10
-            "medium" -> 50
-            "hard" -> 100
-            else -> 10
-        }
-
-        val operations = if (challengeDifficulty == "hard") {
-            listOf("+", "-", "*")
-        } else {
-            listOf("+", "-")
-        }
-
-        val op = operations.random()
-        var a = Random.nextInt(1, maxNum + 1)
-        var b = Random.nextInt(1, maxNum + 1)
-
-        if (op == "-" && a < b) {
-            val temp = a
-            a = b
-            b = temp
-        }
-
-        currentMathAnswer = when (op) {
-            "+" -> a + b
-            "-" -> a - b
-            "*" -> a * b
-            else -> a + b
-        }
-
-        val displayOp = when (op) {
-            "-" -> "\u2212"
-            "*" -> "\u00D7"
-            else -> op
-        }
-
-        mathProblemText?.text = "$a $displayOp $b = ?"
-        mathAnswerInput?.setText("")
-        mathProgressText?.text = getString(R.string.overlay_math_progress, completedMathChallenges + 1, challengeCount)
-    }
-
-    private fun onMathAnswerSubmitted() {
-        onInteraction()
-        val userAnswer = mathAnswerInput?.text?.toString()?.trim()?.toIntOrNull()
-
-        if (userAnswer == null) {
-            showMathError(getString(R.string.overlay_math_invalid))
-            return
-        }
-
-        if (userAnswer == currentMathAnswer) {
-            completedMathChallenges++
-
-            if (completedMathChallenges >= challengeCount) {
-                completeAlarm()
-            } else {
-                // Success feedback then next problem
-                mathStrikeCount = 0
-                setButtonColor(mathSubmitButton, COLOR_SUCCESS)
-                graceHandler.postDelayed({
-                    setButtonColor(mathSubmitButton, COLOR_PRIMARY)
-                    resetGraceForNextRound()
-                    generateMathProblem()
-                }, 300)
-            }
-        } else {
-            showMathError(getString(R.string.overlay_math_wrong))
-            mathStrikeCount++
-            if (mathStrikeCount >= STRIKE_THRESHOLD) {
-                // Give up on this problem: fresh start.
-                mathStrikeCount = 0
-                mathAnswerInput?.setText("")
-                generateMathProblem()
-            }
-        }
-    }
-
-    private fun showMathError(message: String) {
-        setButtonColor(mathSubmitButton, COLOR_ERROR)
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        graceHandler.postDelayed({
-            setButtonColor(mathSubmitButton, COLOR_PRIMARY)
-        }, 500)
-    }
-
-    private fun dhikrPool(): List<DhikrPhrase> = when (challengeDifficulty) {
-        "medium" -> DHIKR_MEDIUM
-        "hard" -> DHIKR_HARD
-        else -> DHIKR_EASY
-    }
-
-    // Random phrase from the difficulty pool, avoiding an immediate repeat.
-    private fun generateDhikrPhrase() {
-        val pool = dhikrPool()
-        var index = Random.nextInt(pool.size)
-        if (pool.size > 1) {
-            while (index == lastDhikrIndex) index = Random.nextInt(pool.size)
-        }
-        lastDhikrIndex = index
-        val phrase = pool[index]
-        currentDhikrPhrase = phrase
-        dhikrArabicText?.text = phrase.arabic
-        dhikrTranslitText?.text = phrase.transliteration
-        dhikrInput?.setText("")
-        dhikrProgressText?.text = getString(R.string.overlay_dhikr_progress, completedDhikrChallenges + 1, challengeCount)
-    }
-
-    private fun onDhikrSubmitted() {
-        onInteraction()
-        val phrase = currentDhikrPhrase ?: return
-        val input = dhikrInput?.text?.toString() ?: ""
-
-        if (DhikrMatcher.matches(input, phrase)) {
-            completedDhikrChallenges++
-
-            if (completedDhikrChallenges >= challengeCount) {
-                completeAlarm()
-            } else {
-                dhikrStrikeCount = 0
-                setButtonColor(dhikrSubmitButton, COLOR_SUCCESS)
-                graceHandler.postDelayed({
-                    setButtonColor(dhikrSubmitButton, COLOR_PRIMARY)
-                    resetGraceForNextRound()
-                    generateDhikrPhrase()
-                }, 300)
-            }
-        } else {
-            showDhikrError(getString(R.string.overlay_math_wrong))
-            dhikrStrikeCount++
-            if (dhikrStrikeCount >= STRIKE_THRESHOLD) {
-                // Give up on this phrase: fresh start.
-                dhikrStrikeCount = 0
-                dhikrInput?.setText("")
-                generateDhikrPhrase()
-            }
-        }
-    }
-
-    private fun showDhikrError(message: String) {
-        setButtonColor(dhikrSubmitButton, COLOR_ERROR)
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        graceHandler.postDelayed({
-            setButtonColor(dhikrSubmitButton, COLOR_PRIMARY)
-        }, 500)
-    }
-
-    private fun onTapButtonClicked() {
-        onInteraction()
-        tapCount++
-        tapCountText?.text = getString(R.string.overlay_tap_progress, tapCount, requiredTaps)
-
-        if (tapCount >= requiredTaps) {
-            completeAlarm()
-        } else {
-            val nextRoundBoundary = (tapRoundsCompleted + 1) * tapsPerRound
-            if (tapCount >= nextRoundBoundary) {
-                tapRoundsCompleted++
-                setButtonColor(tapButton, COLOR_SUCCESS_LIGHT)
-                graceHandler.postDelayed({
-                    setButtonColor(tapButton, COLOR_SUCCESS)
-                    resetGraceForNextRound()
-                }, 200)
-            } else {
-                setButtonColor(tapButton, COLOR_SUCCESS_LIGHT)
-                graceHandler.postDelayed({
-                    setButtonColor(tapButton, COLOR_SUCCESS)
-                }, 100)
-            }
-        }
-    }
-
-    private fun setButtonColor(button: Button?, colorHex: String) {
-        val bg = button?.background
-        if (bg is GradientDrawable) {
-            bg.setColor(Color.parseColor(colorHex))
-        } else {
-            button?.setBackgroundColor(Color.parseColor(colorHex))
-        }
-    }
-
-    // --- Auto-Snooze Timeout ---
-
-    private fun startAutoSnoozeTimeout() {
-        cancelAutoSnoozeTimeout()
-        autoSnoozeRunnable = Runnable {
-            AlarmLogger.getInstance(this).d("AlarmOverlay", "Auto-snooze timeout reached")
-            performAutoSnooze()
-        }
-        graceHandler.postDelayed(autoSnoozeRunnable!!, AUTO_SNOOZE_TIMEOUT_MS)
-    }
-
-    private fun cancelAutoSnoozeTimeout() {
-        autoSnoozeRunnable?.let { graceHandler.removeCallbacks(it) }
-        autoSnoozeRunnable = null
-    }
-
-    private fun performAutoSnooze() {
-        val db = AlarmDatabase.getInstance(this)
-        val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
-        val currentSnoozeCount = db.getSnoozeCount(alarmId)
-
-        if (snoozeEnabled && currentSnoozeCount < snoozeMaxCount) {
-            scheduleSnooze(db, snoozeMaxCount, snoozeDuration, currentSnoozeCount)
-        } else {
-            finishAlarm(AlarmDatabase.OUTCOME_ABANDONED)
-        }
-    }
-
     // --- Snooze & Complete ---
 
     private fun onSnoozeClicked() {
-        cancelAutoSnoozeTimeout()
-
+        if (!EmergencyQuiet.canSnooze(snoozeOpen = true, quietUntil = quietUntil)) return
         val db = AlarmDatabase.getInstance(this)
         val (snoozeEnabled, snoozeMaxCount, snoozeDuration) = db.getSnoozeConfig(alarmType)
         val currentSnoozeCount = db.getSnoozeCount(alarmId)
@@ -1270,33 +506,49 @@ class AlarmOverlayService : Service() {
 
         // The replacement is secured first; a failed snooze leaves this alarm ringing.
         val scheduler = AlarmScheduler(this)
-        if (!scheduler.scheduleAlarm(snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount)) {
+        val record = db.getAlarm(alarmId)
+        val quietUsed = record?.quietUsed == true
+        val scheduled = scheduler.scheduleAlarm(
+            snoozeId, snoozeTime, alarmType, snoozeTitle, alarmSound, newSnoozeCount,
+            quietUsed = quietUsed, preview = record?.preview == true, moment = record?.moment,
+        )
+        if (!scheduled) {
             AlarmLogger.getInstance(this).e("AlarmOverlay", "Snooze scheduling failed; alarm keeps ringing: id=$alarmId")
+            return
+        }
+
+        // Without its queue row the app cannot cancel the snooze, so none is set.
+        try {
+            db.addToSnoozeQueue(
+                originalAlarmId = alarmId,
+                snoozeAlarmId = snoozeId,
+                alarmType = alarmType,
+                title = snoozeTitle,
+                snoozeCount = newSnoozeCount,
+                snoozeEndTime = snoozeTime.toDouble(),
+                quietUsed = quietUsed
+            )
+        } catch (e: SQLException) {
+            scheduler.cancelAlarm(snoozeId)
+            runCatching { db.deleteAlarm(snoozeId) }
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Snooze queue save failed; alarm keeps ringing: ${e.message}")
             return
         }
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 
-        db.clearPendingChallenge()
+        db.clearPendingChallenge(alarmId)
         db.markCompleted(alarmId)
         // Also removes the abandoned-challenge re-arm scheduled under this id.
         scheduler.cancelAlarm(alarmId)
-
-        db.addToSnoozeQueue(
-            originalAlarmId = alarmId,
-            snoozeAlarmId = snoozeId,
-            alarmType = alarmType,
-            title = snoozeTitle,
-            snoozeCount = newSnoozeCount,
-            snoozeEndTime = snoozeTime.toDouble()
-        )
 
         AlarmService.stop(this)
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
-        graceHandler.removeCallbacksAndMessages(null)
+        releaseQuiet()
+        taskShell?.release()
         removeOverlay()
 
         try {
@@ -1314,35 +566,52 @@ class AlarmOverlayService : Service() {
         stopSelf()
     }
 
-    private fun completeAlarm() = finishAlarm(AlarmDatabase.OUTCOME_SOLVED)
-
-    private fun finishAlarm(outcome: String) {
-        cancelAutoSnoozeTimeout()
-        graceHandler.removeCallbacksAndMessages(null)
+    private fun completeAlarm(outcome: String = AlarmDatabase.OUTCOME_SOLVED) {
+        releaseQuiet()
+        taskShell?.release()
 
         val audioManager = AlarmAudioManager.getInstance(this)
         audioManager.stopAll()
 
         val db = AlarmDatabase.getInstance(this)
         db.addToCompletedQueue(alarmId, alarmType, title, outcome)
-        db.clearPendingChallenge()
+        db.clearPendingChallenge(alarmId)
         db.markCompleted(alarmId)
 
         // Drops any re-arm placed by onTaskRemoved during this challenge.
         AlarmScheduler(this).cancelAlarm(alarmId)
+
+        val solved = outcome == AlarmDatabase.OUTCOME_SOLVED
+        // Set before the ring stops, so AlarmService leaves the panel up.
+        if (solved && RingingScreen.solvedShowsPanel(stack)) {
+            solvedShowing = true
+            isRunning = false
+        }
 
         AlarmService.stop(this)
 
         val nm = getSystemService(NotificationManager::class.java)
         nm.cancel(AlarmNotificationManager.NOTIFICATION_ID)
 
-        removeOverlay()
+        when {
+            solvedShowing -> {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                showSolved()
+            }
+            solved -> closeSolved(stopService = true)
+            else -> {
+                removeOverlay()
+                openApp()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
+        }
+    }
 
-        // The completion screen congratulates a wake-up; a timed-out challenge gets none.
-        if (outcome == AlarmDatabase.OUTCOME_SOLVED) try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("dev.nedaa.app://alarm-complete?alarmType=$alarmType")
-                component = ComponentName(packageName, "$packageName.MainActivity")
+    // A stopped alarm opens the app, as snooze does.
+    private fun openApp() {
+        try {
+            val intent = Intent(this, Class.forName("$packageName.MainActivity")).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
                         Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -1351,9 +620,229 @@ class AlarmOverlayService : Service() {
         } catch (e: Exception) {
             AlarmLogger.getInstance(this).d("AlarmOverlay", "completeAlarm startActivity failed: ${e.message}")
         }
+    }
 
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+    // As JS: the panel stands where the task was, and the screen may sleep.
+    private fun showSolved() {
+        val panel = SolvedPanelView(this) { closeSolved(stopService = true) }
+        header?.hide()
+        snoozeSlot?.visibility = View.GONE
+        // Only a ring with a task shows the panel, so the shell is there.
+        taskShell?.showSolved(panel.view)
+        updateWindow { it.flags = it.flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv() }
+        panel.shown()
+    }
+
+    // Ends the panel; a new ring keeps the service and draws afresh.
+    private fun closeSolved(stopService: Boolean) {
+        solvedShowing = false
+        removeOverlay()
+        resetRing()
+        if (stopService) {
+            // The app drains the completed queue when it comes to the front.
+            openApp()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            // A ring that started after the last one seen keeps the service.
+            stopSelfResult(lastStartId)
+        } else {
+            isRunning = true
+        }
+    }
+
+    // The state one ring leaves, cleared so the next draws as new.
+    private fun resetRing() {
+        shellRunning = false
+        quietView = null
+        quietBanner = null
+        ringBannerSlot = null
+        ringOfferSlot = null
+        quietConfirming = false
+        quietFailed = false
+        quieting = false
+        quietUntil = null
+        taskShell = null
+        card = null
+        header = null
+        snoozeSlot = null
+        startSolvingContainer = null
+        challengeContainer = null
+    }
+
+    // --- Emergency quiet ---
+
+    // A restarted overlay picks up a quiet whose re-ring is still ahead.
+    private fun buildQuiet(card: LinearLayout, db: AlarmDatabase) {
+        quietBanner = QuietBannerView(this)
+        quietView = EmergencyQuietView(this, quietListener)
+        ringOfferSlot = quietSlot(this).also { card.addView(it) }
+        moveQuiet()
+        val record = db.getAlarm(alarmId)
+        val now = System.currentTimeMillis()
+        val until = record?.let {
+            EmergencyQuiet.runningQuietEnd(alarmId, alarmType, it.triggerTime.toLong(), it.quietUsed, now)
+        }
+        if (until != null) holdQuiet(until, now)
+        renderQuiet()
+    }
+
+    // The ring screen's slots, or the open run's.
+    private fun moveQuiet() {
+        val shell = taskShell ?: return
+        val bannerSlot = if (shellRunning) shell.bannerSlot else ringBannerSlot
+        val offerSlot = if (shellRunning) shell.offerSlot else ringOfferSlot
+        bannerSlot?.let { quietBanner?.view?.moveTo(it) }
+        offerSlot?.let { quietView?.view?.moveTo(it) }
+    }
+
+    // As JS useQuietOffer, read from the alarm database at each change.
+    private fun renderQuiet() {
+        val shell = taskShell ?: return
+        val view = quietView ?: return
+        val db = AlarmDatabase.getInstance(this)
+        val record = db.getAlarm(alarmId)
+        val saved = db.quietLedgerOrNull()
+        val ledger = saved ?: EmergencyQuiet.NEW_LEDGER
+        val now = System.currentTimeMillis()
+        // Until the app writes the ledger no allowance is known, so it reads as off.
+        val allowance = if (saved == null) EmergencyQuiet.ALLOWANCE_OFF else EmergencyQuiet.allowanceInEffect(ledger, now)
+        val offer = EmergencyQuiet.offerFor(
+            EmergencyQuiet.OfferInput(
+                hasTask = true,
+                preview = record?.preview == true,
+                snoozed = false,
+                wayOut = shell.wayOutShown,
+                used = record?.quietUsed == true,
+                quietUntil = quietUntil,
+                allowance = allowance,
+                left = if (saved == null) 0 else EmergencyQuiet.usesLeft(ledger, now),
+            )
+        )
+        val confirmOpen = EmergencyQuiet.confirmOpen(quietConfirming, offer)
+        view.show(QuietShown(offer, confirmOpen, quietFailed, quieting, EmergencyQuiet.refillDate(ledger, now)))
+        quietUntil?.let { quietBanner?.show(it) }
+        shell.setQuiet(heard = quietUntil == null, confirmOpen = confirmOpen)
+        // The confirm stands in snooze's place; a running quiet holds none.
+        val snoozeShown = EmergencyQuiet.canSnooze(!shellRunning && !confirmOpen, quietUntil)
+        snoozeSlot?.visibility = if (snoozeShown) View.VISIBLE else View.GONE
+    }
+
+    // The re-ring is armed first; a failed save cancels it and counts nothing.
+    private fun startQuiet() {
+        if (quieting || quietUntil != null) return
+        quieting = true
+        renderQuiet()
+        val db = AlarmDatabase.getInstance(this)
+        val record = db.getAlarm(alarmId)
+        val now = System.currentTimeMillis()
+        val ringsAt = EmergencyQuiet.quietEndsAt(now)
+        val quietId = EmergencyQuiet.quietIdFor(alarmType, ringsAt)
+        val snoozeCount = record?.snoozeCount ?: 0
+        val scheduler = AlarmScheduler(this)
+        // The count and the hand-over to the re-ring are saved together or not at all.
+        val counted = try {
+            scheduler.scheduleAlarm(
+                quietId, ringsAt, alarmType, title, alarmSound, snoozeCount,
+                quietUsed = true, preview = record?.preview == true, moment = record?.moment,
+            ) && db.recordQuietUse(now) {
+                db.markCompleted(alarmId)
+                // The re-ring owns the ring, so it is not deferred behind this alarm.
+                db.setPendingChallenge(quietId, alarmType, title)
+                db.addToSnoozeQueue(
+                    originalAlarmId = alarmId,
+                    snoozeAlarmId = quietId,
+                    alarmType = alarmType,
+                    title = title,
+                    snoozeCount = snoozeCount,
+                    snoozeEndTime = ringsAt.toDouble(),
+                    quietUsed = true
+                )
+            } != null
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Quiet save failed: ${e.message}")
+            false
+        }
+        quieting = false
+        if (!counted) {
+            scheduler.cancelAlarm(quietId)
+            runCatching { db.deleteAlarm(quietId) }
+            AlarmLogger.getInstance(this).w("AlarmOverlay", "Quiet failed: id=$alarmId")
+            quietFailed = true
+            renderQuiet()
+            return
+        }
+        scheduler.cancelAlarm(alarmId)
+        AlarmLogger.getInstance(this).d("AlarmOverlay", "Quiet until $ringsAt: $alarmId -> $quietId")
+        alarmId = quietId
+        quietConfirming = false
+        holdQuiet(ringsAt, now)
+        startForeground(AlarmNotificationManager.OVERLAY_NOTIFICATION_ID, createNotification())
+        renderQuiet()
+    }
+
+    // The sound stops until the re-ring; the overlay sounds it if that is late.
+    private fun holdQuiet(until: Long, now: Long) {
+        quietUntil = until
+        quietRingId = alarmId
+        silenceAlarm()
+        header?.breathing = false
+        quietHandler.removeCallbacksAndMessages(null)
+        quietHandler.postDelayed({ endQuiet(sound = true) }, until - now + QUIET_LATE_MS)
+    }
+
+    private fun endQuiet(sound: Boolean) {
+        if (quietUntil == null) return
+        quietHandler.removeCallbacksAndMessages(null)
+        quietUntil = null
+        quietRingId = null
+        header?.breathing = true
+        quietBanner?.hide()
+        if (sound) ringLate()
+        renderQuiet()
+    }
+
+    // The late re-ring rings through AlarmService, as an on-time one does:
+    // the gentle wake-up, the service's ringing id and a fresh pending row.
+    private fun ringLate() {
+        AlarmScheduler(this).cancelAlarm(alarmId)
+        try {
+            AlarmDatabase.getInstance(this).setPendingChallenge(alarmId, alarmType, title)
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(this).e("AlarmOverlay", "Pending challenge save failed: ${e.message}")
+        }
+        AlarmService.start(this, alarmId, alarmType, title, alarmSound)
+    }
+
+    private fun releaseQuiet() {
+        quietRingId = null
+        quietHandler.removeCallbacksAndMessages(null)
+        quietView?.release()
+    }
+
+    // The window takes focus, and so the keyboard, only while a board types.
+    private fun takeTyping(typing: Boolean) {
+        if (!typing) {
+            overlayView?.let {
+                getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(it.windowToken, 0)
+            }
+        }
+        updateWindow { params ->
+            params.flags = if (typing) {
+                params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+            } else {
+                params.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            }
+        }
+    }
+
+    private fun updateWindow(change: (WindowManager.LayoutParams) -> Unit) {
+        val view = overlayView ?: return
+        val params = view.layoutParams as? WindowManager.LayoutParams ?: return
+        change(params)
+        try {
+            windowManager?.updateViewLayout(view, params)
+        } catch (e: IllegalArgumentException) {
+            AlarmLogger.getInstance(this).w("AlarmOverlay", "updateViewLayout failed: ${e.message}")
+        }
     }
 
     private fun removeOverlay() {

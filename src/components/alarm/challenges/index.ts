@@ -1,4 +1,2 @@
-export { default as ChallengeWrapper } from "./ChallengeWrapper";
-export { default as TapChallenge } from "./TapChallenge";
-export { default as MathChallenge } from "./MathChallenge";
-export { default as DhikrChallenge } from "./DhikrChallenge";
+export { default as TaskShell } from "@/components/alarm/challenges/TaskShell";
+export { default as TaskStart } from "@/components/alarm/challenges/TaskStart";

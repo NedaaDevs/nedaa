@@ -14,6 +14,10 @@ const dateOnlyUTC = (iso: string): number => {
   return Date.UTC(year, month - 1, day);
 };
 
+/** Whole days from one YYYY-MM-DD date to another; negative when earlier. */
+export const daysBetweenISO = (fromISO: string, toISO: string): number =>
+  Math.round((dateOnlyUTC(toISO) - dateOnlyUTC(fromISO)) / MS_PER_DAY);
+
 // Whole days between two YYYYMMDD integers. Subtracting them directly reads as a day
 // count only within one month: 20260901 - 20260831 is 70, and 20260101 - 20251231 is 8870.
 export const daysBetweenDateInts = (from: number, to: number): number => {
@@ -30,7 +34,7 @@ export const computeNextStreak = (
   current: number
 ): number => {
   if (!lastDateISO) return 1;
-  const diffDays = Math.round((dateOnlyUTC(todayISO) - dateOnlyUTC(lastDateISO)) / MS_PER_DAY);
+  const diffDays = daysBetweenISO(lastDateISO, todayISO);
   if (diffDays === 0) return current;
   if (diffDays === 1) return current + 1;
   return 1;

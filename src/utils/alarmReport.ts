@@ -5,7 +5,8 @@ import * as Device from "expo-device";
 import { File, Paths } from "expo-file-system";
 import { Platform, Share } from "react-native";
 
-import { AppLogger } from "./appLogger";
+import { AppLogger } from "@/utils/appLogger";
+import { writeFileSync } from "@/utils/writeFileSync";
 
 const log = AppLogger.create("alarm");
 export { log as alarmLog };
@@ -202,7 +203,7 @@ export async function shareAlarmReport(category?: IssueCategory): Promise<void> 
     } catch {
       // file may already exist
     }
-    file.write(report);
+    writeFileSync(file, report);
 
     if (Platform.OS === "ios") {
       await Share.share({ url: file.uri });

@@ -44,6 +44,11 @@ jest.mock("@/stores/prayerTimes", () => ({
     }),
   },
 }));
+// The stored times are for a verified place.
+jest.mock("@/utils/timesPlace", () => {
+  const { TIMES_PLACE } = jest.requireActual("@/constants/Location");
+  return { readTimesPlace: async () => TIMES_PLACE.VERIFIED };
+});
 
 beforeEach(() => {
   jest.useFakeTimers({ now: NOW });

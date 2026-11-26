@@ -1,16 +1,8 @@
-import { useColorScheme } from "react-native";
-
 import { DownloadStatus, QuranThemeType } from "@/enums/quran";
 import { isDarkPaper } from "@/constants/Quran";
-import { useAppStore } from "@/stores/app";
+import { useAppIsDark } from "@/hooks/useAppIsDark";
 import { useQuranStore } from "@/stores/quran";
 import { resolveQuranTheme } from "@/utils/quranTheme";
-
-const useAppIsDark = (): boolean => {
-  const mode = useAppStore((s) => s.mode);
-  const systemScheme = useColorScheme();
-  return mode === "system" ? systemScheme === "dark" : mode === "dark";
-};
 
 // Effective reader theme: no override → Nedaa brand paper following the app
 // scheme; otherwise the picked theme. The colored-edition dark fallback lives in

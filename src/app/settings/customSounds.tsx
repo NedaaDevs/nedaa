@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
-import { Pressable } from "@/components/ui/pressable";
 import { Background } from "@/components/ui/background";
-import TopBar from "@/components/TopBar";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { SoundPreview } from "@/components/ui/sound-preview";
 import AddCustomSoundModal from "@/components/AddCustomSoundModal";
 
 // Icons
-import { Plus, Trash2, Info, Volume2, Play, Square } from "lucide-react-native";
+import { Plus, Trash2, Info, Volume2 } from "lucide-react-native";
 
 // Enums
 import { PlatformType } from "@/enums/app";
@@ -29,20 +29,23 @@ import { useNotificationStore } from "@/stores/notification";
 // Utils
 import {
   deleteCustomSoundFromMediaStore,
-  formatFileSize,
   calculateTotalStorage,
   getCustomSoundUsages,
+  describeCustomSoundUsages,
   replaceCustomSoundInSettings,
   getAlarmUsagesForUri,
   releaseCustomSoundFromAlarms,
   CUSTOM_SOUND_REPLACEMENT,
 } from "@/utils/customSoundManager";
+import { LTR_ISOLATE } from "@/utils/digits";
+import { formatFileSizeLocale } from "@/utils/number";
 
 // Hooks
 import { useHaptic } from "@/hooks/useHaptic";
-import { useSoundPreview } from "@/hooks/useSoundPreview";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 // Constants
+import { CUSTOM_SOUND_MAX_MB } from "@/constants/CustomSound";
 import { NOTIFICATION_TYPE } from "@/constants/Notification";
 
 // Types
@@ -50,10 +53,8 @@ import type { AddCustomSoundResult, CustomSound } from "@/types/customSound";
 
 export default function CustomSoundsScreen() {
   const { t } = useTranslation();
-  const hapticMedium = useHaptic("medium");
-  const hapticSuccess = useHaptic("success");
-  const hapticLight = useHaptic("light");
-  const { playPreview, stopPreview, isPlayingSound } = useSoundPreview();
+  const hapticMedium = useHaptic(HAPTIC_FEEDBACK.MEDIUM);
+  const hapticSuccess = useHaptic(HAPTIC_FEEDBACK.SUCCESS);
 
   const { customSounds, isInitialized, initialize, addCustomSound, deleteCustomSound } =
     useCustomSoundsStore();
@@ -72,7 +73,7 @@ export default function CustomSoundsScreen() {
   if (Platform.OS !== PlatformType.ANDROID) {
     return (
       <Background>
-        <TopBar title={t("notification.customSound.title")} backOnClick />
+        <ScreenHeader title={t("notification.customSound.title")} back />
         <Box flex={1} justifyContent="center" alignItems="center" padding="$6">
           <VStack gap="$3" alignItems="center" maxWidth={400}>
             <Box
@@ -99,19 +100,6 @@ export default function CustomSoundsScreen() {
     if (result.success) {
       await addCustomSound(result.sound);
       hapticSuccess();
-    }
-  };
-
-  const handleSoundPreview = async (sound: CustomSound) => {
-    hapticLight();
-    // Use the first available notification type for preview
-    // Custom sounds can be used for any type they're available for
-    const previewType = sound.availableFor[0] || NOTIFICATION_TYPE.PRAYER;
-
-    if (isPlayingSound(previewType, sound.id)) {
-      await stopPreview();
-    } else {
-      await playPreview(previewType, sound.id);
     }
   };
 
@@ -208,22 +196,12 @@ export default function CustomSoundsScreen() {
     const isInUse = usedSounds.has(id) || alarmUsages.length > 0;
 
     if (isInUse && usages.length + alarmUsages.length > 0) {
-      // Format usages
-      const usageLabels = [
-        ...usages.map((usage) =>
-          usage.prayerId
-            ? t(`notification.customSound.usage.${usage.type}`, { prayer: usage.prayerId })
-            : t(`notification.customSound.usage.default.${usage.type}`)
-        ),
-        ...alarmUsages.map((alarmType) => t(`alarm.types.${alarmType}`)),
-      ];
-
       // Show alert with auto-replacement option
       await confirmThen(
         t("notification.customSound.deleteInUseTitle"),
         t("notification.customSound.deleteInUseMessage", {
           name: sound.name,
-          usages: usageLabels.join(", "),
+          usages: describeCustomSoundUsages(usages, alarmUsages, t),
           replacement: t("notification.sound.beep"),
         }),
         t("notification.customSound.replaceAndDelete"),
@@ -261,7 +239,7 @@ export default function CustomSoundsScreen() {
 
   return (
     <Background>
-      <TopBar title={t("notification.customSound.title")} backOnClick />
+      <ScreenHeader title={t("notification.customSound.title")} back />
 
       <ScrollView style={{ flex: 1 }}>
         <VStack gap="$4" padding="$4">
@@ -279,7 +257,7 @@ export default function CustomSoundsScreen() {
               </Box>
               <VStack gap="$2" flex={1}>
                 <Text size="sm" color="$typography">
-                  {t("notification.customSound.info")}
+                  {t("notification.customSound.info", { maxMb: CUSTOM_SOUND_MAX_MB })}
                 </Text>
                 <HStack gap="$2" marginTop="$2" flexWrap="wrap">
                   <Badge
@@ -290,7 +268,8 @@ export default function CustomSoundsScreen() {
                     paddingHorizontal="$3"
                     paddingVertical="$1">
                     <Badge.Text size="sm" color="$typographySecondary" fontWeight="500">
-                      {t("notification.customSound.storage")}: {formatFileSize(totalStorage)}
+                      {t("notification.customSound.storage")}:{" "}
+                      {formatFileSizeLocale(totalStorage, t)}
                     </Badge.Text>
                   </Badge>
                   <Badge
@@ -301,7 +280,7 @@ export default function CustomSoundsScreen() {
                     paddingHorizontal="$3"
                     paddingVertical="$1">
                     <Badge.Text size="sm" color="$primary" fontWeight="500">
-                      {customSounds.length} {t("notification.customSound.sounds")}
+                      {t("notification.customSound.sounds", { count: customSounds.length })}
                     </Badge.Text>
                   </Badge>
                 </HStack>
@@ -350,32 +329,19 @@ export default function CustomSoundsScreen() {
               {customSounds.map((sound) => (
                 <Card key={sound.id} borderWidth={1} borderColor="$outline">
                   <HStack gap="$3" alignItems="flex-start">
-                    <Pressable
-                      onPress={() => handleSoundPreview(sound)}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("a11y.customSound.previewSound", { name: sound.name })}
-                      width={48}
-                      height={48}
-                      borderRadius="$6"
-                      backgroundColor="$backgroundInfo"
-                      alignItems="center"
-                      justifyContent="center">
-                      {isPlayingSound(
-                        sound.availableFor[0] || NOTIFICATION_TYPE.PRAYER,
-                        sound.id
-                      ) ? (
-                        <Icon as={Square} size="lg" color="$primary" />
-                      ) : (
-                        <Icon as={Play} size="lg" color="$primary" />
-                      )}
-                    </Pressable>
+                    <SoundPreview
+                      source={sound.contentUri}
+                      playLabel={t("a11y.customSound.previewSound", { name: sound.name })}
+                      stopLabel={t("a11y.customSound.stopSound", { name: sound.name })}
+                    />
 
                     <VStack gap="$2" flex={1}>
                       <Text bold color="$typography">
                         {sound.name}
                       </Text>
+                      {/* A Latin name's dots and dashes would reorder in an Arabic row. */}
                       <Text size="sm" color="$typographySecondary">
-                        {sound.fileName}
+                        {`${LTR_ISOLATE.OPEN}${sound.fileName}${LTR_ISOLATE.CLOSE}`}
                       </Text>
                       <HStack gap="$2" flexWrap="wrap" marginTop="$0.5">
                         {sound.availableFor.map((type) => (
@@ -394,7 +360,7 @@ export default function CustomSoundsScreen() {
                         ))}
                       </HStack>
                       <Text size="sm" color="$typographySecondary" marginTop="$0.5">
-                        {formatFileSize(sound.fileSize)}
+                        {formatFileSizeLocale(sound.fileSize, t)}
                       </Text>
                     </VStack>
 
@@ -403,7 +369,7 @@ export default function CustomSoundsScreen() {
                       variant="outline"
                       borderColor="$error"
                       borderRadius="$4"
-                      accessibilityLabel={t("common.delete")}
+                      accessibilityLabel={t("a11y.customSound.deleteSound", { name: sound.name })}
                       onPress={() => handleDelete(sound.id)}>
                       <Icon as={Trash2} size="sm" color="$error" />
                     </Button>

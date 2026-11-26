@@ -1,0 +1,95 @@
+import { createElement, useEffect, useRef, useState, type ComponentType } from "react";
+import { View } from "react-native";
+
+/** Reanimated without the worklets runtime jest lacks; Views keep the props. */
+const Animated = {
+  View,
+  // Gesture Handler wraps its detector's child through this at import.
+  // Animated props land as plain ones, so a test reads what the view is given.
+  createAnimatedComponent:
+    <P extends object>(component: ComponentType<P>) =>
+    ({ animatedProps, ...props }: P & { animatedProps?: Partial<P> }) =>
+      createElement(component, { ...(props as P), ...animatedProps }),
+};
+
+export default Animated;
+
+/** A shared value that lands an animation at once and redraws its readers. */
+export const useSharedValue = <T>(initial: T) => {
+  const [, redraw] = useState(0);
+  const current = useRef(initial);
+  const [box] = useState(() => ({
+    get: () => current.current,
+    set: (next: T) => {
+      current.current = next;
+      redraw((n) => n + 1);
+    },
+  }));
+  return box;
+};
+/** Gesture Handler asks this of each config value; the box above is one. */
+export const isSharedValue = (value: unknown): boolean =>
+  typeof value === "object" && value !== null && "get" in value && "set" in value;
+export const useAnimatedStyle = <T>(style: () => T) => style();
+export const useAnimatedProps = <T>(props: () => T) => props();
+/** Runs `react` once a render changes what `prepare` returns. */
+export const useAnimatedReaction = <T>(
+  prepare: () => T,
+  react: (now: T, before: T | null) => void
+) => {
+  const before = useRef<T | null>(null);
+  const now = prepare();
+  useEffect(() => {
+    if (Object.is(now, before.current)) return;
+    const previous = before.current;
+    before.current = now;
+    react(now, previous);
+  });
+};
+/** Gesture Handler's detector asks for these; jest-utils drives callbacks. */
+export const useEvent = () => () => undefined;
+export const useComposedEventHandler = () => () => undefined;
+export const withTiming = jest.fn((value: unknown) => value);
+// Linear between the first and last points, clamped to the output range.
+export const interpolate = (value: number, input: number[], output: number[]) => {
+  const [inFrom, inTo] = [input[0], input[input.length - 1]];
+  const [outFrom, outTo] = [output[0], output[output.length - 1]];
+  const t = inTo === inFrom ? 0 : Math.min(1, Math.max(0, (value - inFrom) / (inTo - inFrom)));
+  return outFrom + (outTo - outFrom) * t;
+};
+export const withSpring = jest.fn((value: unknown) => value);
+export const withSequence = (...steps: unknown[]) => steps[steps.length - 1];
+export const withDelay = jest.fn((_delay: number, animation: unknown) => animation);
+export const withRepeat = jest.fn((animation: unknown) => animation);
+export const cancelAnimation = jest.fn();
+export const ReduceMotion = { System: "system", Always: "always", Never: "never" } as const;
+export const Easing = {
+  in: (easing: unknown) => easing,
+  out: (easing: unknown) => easing,
+  inOut: (easing: unknown) => easing,
+  cubic: (t: number) => t,
+  linear: (t: number) => t,
+  bezier: (...points: number[]) => ({ bezier: points }),
+};
+
+/** A layout transition's builder chain, kept as one object the tests can spot. */
+export const LinearTransition = {
+  duration: () => LinearTransition,
+  easing: () => LinearTransition,
+};
+
+/** Motion on, so an entering animation is built; the View ignores it. */
+export const useReducedMotion = () => false;
+
+/** An entering animation's builder chain. */
+export const FadeInDown = {
+  duration: () => FadeInDown,
+  delay: () => FadeInDown,
+};
+export const FadeIn = {
+  duration: () => FadeIn,
+  easing: () => FadeIn,
+};
+export const FadeOut = {
+  duration: () => FadeOut,
+};

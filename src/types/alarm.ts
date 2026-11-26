@@ -1,10 +1,20 @@
-export type AlarmType = "fajr" | "friday";
+import { CHALLENGE_DIFFICULTY, CHALLENGE_TYPE } from "expo-alarm";
 
-export type TimingMode = "atPrayerTime" | "beforePrayerTime";
+import { ALARM_TIMING_MODE, type ALARM_TYPE } from "@/constants/Alarm";
+import {
+  DEFAULT_WAKE_TASKS,
+  type ChallengeCount,
+  type WAKE_TASK_OPTIONS,
+  type WakeTaskId,
+} from "@/constants/WakeTask";
 
-export type ChallengeType = "tap" | "math" | "dhikr" | "none";
+export type AlarmType = (typeof ALARM_TYPE)[keyof typeof ALARM_TYPE];
 
-export type ChallengeDifficulty = "easy" | "medium" | "hard";
+export type TimingMode = (typeof ALARM_TIMING_MODE)[keyof typeof ALARM_TIMING_MODE];
+
+export type ChallengeType = (typeof CHALLENGE_TYPE)[keyof typeof CHALLENGE_TYPE];
+
+export type ChallengeDifficulty = (typeof CHALLENGE_DIFFICULTY)[keyof typeof CHALLENGE_DIFFICULTY];
 
 export type VibrationPattern = "default" | "gentle" | "aggressive";
 
@@ -14,13 +24,23 @@ export type SnoozeDuration = 1 | 3 | 5 | 10;
 
 export type SnoozeMaxCount = 1 | 2 | 3;
 
-export type ChallengeCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-
 export interface ChallengeConfig {
   type: ChallengeType;
   difficulty: ChallengeDifficulty;
   count: ChallengeCount;
 }
+
+type WakeTaskFields<Id extends WakeTaskId> = {
+  id: Id;
+} & ((typeof WAKE_TASK_OPTIONS)[Id]["hasDifficulty"] extends true
+  ? { difficulty: ChallengeDifficulty }
+  : unknown) &
+  ((typeof WAKE_TASK_OPTIONS)[Id]["stepChoices"] extends readonly (infer Steps)[]
+    ? { steps: Steps }
+    : unknown);
+
+/** One board in a stack, carrying exactly the options that board offers. */
+export type WakeTask = { [Id in WakeTaskId]: WakeTaskFields<Id> }[WakeTaskId];
 
 export interface GentleWakeUpConfig {
   enabled: boolean;
@@ -43,12 +63,22 @@ export interface TimingConfig {
   minutesBefore: number;
 }
 
+export interface AlarmTimingChoices {
+  /** Modes offered, in display order. */
+  modes: readonly TimingMode[];
+  /** Offsets a before-prayer alarm may take, in minutes, each above zero. */
+  minuteSteps: readonly number[];
+  /** The offset a switch to before-prayer starts at; one of minuteSteps. */
+  defaultMinutesBefore: number;
+}
+
 export interface AlarmTypeSettings {
   enabled: boolean;
   sound: string;
   volume: number;
   timing: TimingConfig;
   challenge: ChallengeConfig;
+  tasks: readonly WakeTask[];
   gentleWakeUp: GentleWakeUpConfig;
   vibration: VibrationConfig;
   snooze: SnoozeConfig;
@@ -59,9 +89,10 @@ export interface AlarmSettings {
   friday: AlarmTypeSettings;
 }
 
+/** Tap ×1 at medium: the overlay's 10 presses, as many as the Tap board asks. */
 export const DEFAULT_CHALLENGE_CONFIG: ChallengeConfig = {
-  type: "tap",
-  difficulty: "easy",
+  type: CHALLENGE_TYPE.TAP,
+  difficulty: CHALLENGE_DIFFICULTY.MEDIUM,
   count: 1,
 };
 
@@ -82,7 +113,7 @@ export const DEFAULT_SNOOZE_CONFIG: SnoozeConfig = {
 };
 
 export const DEFAULT_TIMING_CONFIG: TimingConfig = {
-  mode: "atPrayerTime",
+  mode: ALARM_TIMING_MODE.AT_PRAYER_TIME,
   minutesBefore: 0,
 };
 
@@ -93,34 +124,20 @@ export const DEFAULT_TIMING_CONFIG: TimingConfig = {
  */
 export const MIN_ALARM_VOLUME = 0.25;
 
+/** The volume levels the pickers offer; the lowest is the floor. */
+export const ALARM_VOLUME_STEPS: readonly number[] = [MIN_ALARM_VOLUME, 0.5, 0.75, 1];
+
 export const DEFAULT_ALARM_TYPE_SETTINGS: AlarmTypeSettings = {
   enabled: false,
   sound: "beep",
   volume: 1.0,
   timing: DEFAULT_TIMING_CONFIG,
   challenge: DEFAULT_CHALLENGE_CONFIG,
+  tasks: DEFAULT_WAKE_TASKS,
   gentleWakeUp: DEFAULT_GENTLE_WAKEUP_CONFIG,
   vibration: DEFAULT_VIBRATION_CONFIG,
   snooze: DEFAULT_SNOOZE_CONFIG,
 };
-
-export const TIMING_WINDOW_MINUTES = {
-  fajr: 90,
-  friday: 120,
-} as const;
-
-export const CHALLENGE_DIFFICULTY_CONFIG = {
-  tap: {
-    easy: { taps: 5 },
-    medium: { taps: 10 },
-    hard: { taps: 20 },
-  },
-  math: {
-    easy: { maxNumber: 10, operations: ["+", "-"] as const },
-    medium: { maxNumber: 50, operations: ["+", "-"] as const },
-    hard: { maxNumber: 100, operations: ["+", "-", "*"] as const },
-  },
-} as const;
 
 export const VIBRATION_PATTERNS = {
   default: [0, 800, 200, 800, 200, 800, 200, 800],
@@ -134,28 +151,17 @@ export const SNOOZE_DURATIONS: SnoozeDuration[] = [1, 3, 5, 10];
 
 export const SNOOZE_MAX_COUNTS: SnoozeMaxCount[] = [1, 2, 3];
 
-export const CHALLENGE_COUNTS: ChallengeCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+export const CHALLENGE_TYPES: ChallengeType[] = Object.values(CHALLENGE_TYPE);
 
-export const CHALLENGE_TYPES: ChallengeType[] = ["none", "tap", "math", "dhikr"];
-
-export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = ["easy", "medium", "hard"];
-
-export const GRACE_PERIOD_SECONDS: Record<
-  Exclude<ChallengeType, "none">,
-  Record<ChallengeDifficulty, number>
-> = {
-  tap: { easy: 10, medium: 15, hard: 20 },
-  math: { easy: 15, medium: 20, hard: 30 },
-  dhikr: { easy: 20, medium: 30, hard: 45 },
-};
+export const CHALLENGE_DIFFICULTIES: ChallengeDifficulty[] = Object.values(CHALLENGE_DIFFICULTY);
 
 export interface DhikrPhrase {
   arabic: string;
   transliteration: string;
 }
 
-// Dhikr typing challenge pool by difficulty. Arabic + transliteration are
-// locale-independent content; the Android overlay mirrors this pool in Kotlin.
+// Dhikr typing challenge pool by difficulty; locale-independent content.
+// DhikrTypedRun.kt holds the same pool, pinned by fixtures/dhikr-phrases.tsv.
 export const DHIKR_PHRASES: Record<ChallengeDifficulty, DhikrPhrase[]> = {
   easy: [
     { arabic: "سبحان الله", transliteration: "Subhanallah" },

@@ -4,28 +4,29 @@
  */
 export type ApplyStep = "prayerTimes" | "notifications" | "alarms";
 
-export type ApplyProviderSettingsDeps = {
-  saveSettings: () => Promise<void>;
-  loadPrayerTimes: (forceGetAndStore: boolean) => Promise<void>;
-  // Result intentionally unused here; the apply flow only needs completion.
+export type ApplyProviderSettingsDeps<Saved> = {
+  saveSettings: () => Promise<Saved>;
+  /** Resolves false while a year it fetched is still owed. */
+  loadPrayerTimes: (forceGetAndStore: boolean) => Promise<boolean>;
+  // The alert steps' results are unused here; the apply needs only completion.
   scheduleAllNotifications: () => Promise<unknown>;
-  rescheduleAllAlarms: () => Promise<void>;
+  rescheduleAllAlarms: () => Promise<unknown>;
   reloadPrayerWidgets: () => void;
-  markSettingsApplied: () => void;
+  markSettingsApplied: (saved: Saved) => void;
 };
 
 /**
  * Every step must succeed before the edit counts as applied. Throws on the first
- * failure, leaving the settings dirty for a retry.
+ * failure, leaving the settings dirty for a retry; resolves whether it applied.
  */
-export const applyProviderSettings = async (
-  deps: ApplyProviderSettingsDeps,
+export const applyProviderSettings = async <Saved>(
+  deps: ApplyProviderSettingsDeps<Saved>,
   onStep: (step: ApplyStep) => void
-): Promise<void> => {
-  await deps.saveSettings();
+): Promise<boolean> => {
+  const saved = await deps.saveSettings();
 
   onStep("prayerTimes");
-  await deps.loadPrayerTimes(true);
+  const landed = await deps.loadPrayerTimes(true);
 
   onStep("notifications");
   await deps.scheduleAllNotifications();
@@ -35,5 +36,7 @@ export const applyProviderSettings = async (
 
   deps.reloadPrayerWidgets();
 
-  deps.markSettingsApplied();
+  // A year the load still owes keeps the edit pending for a later load.
+  if (landed) deps.markSettingsApplied(saved);
+  return landed;
 };

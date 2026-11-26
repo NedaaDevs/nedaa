@@ -1,6 +1,7 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect } from "react";
+import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo } from "react-native";
+
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -20,33 +21,40 @@ import { Play, Pause, X } from "lucide-react-native";
 import { useAthkarStore } from "@/stores/athkar";
 import { useAthkarAudioStore } from "@/stores/athkar-audio";
 import { athkarPlayer } from "@/services/athkar-player";
+import { ATHKAR_GROUP_ORDER, type AthkarGroupOrder } from "@/constants/Athkar";
 import { AUDIO_UI, DEFAULT_PLAYBACK_RATE, PLAYBACK_RATE_OPTIONS } from "@/constants/AthkarAudio";
 import { formatNumberToLocale } from "@/utils/number";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const DISMISS_THRESHOLD = 60;
+
+/** How a group's turn reads: a round, or a repeat of the one text. */
+const GROUP_TURN = {
+  [ATHKAR_GROUP_ORDER.BY_ROUND]: "athkar.focus.round",
+  [ATHKAR_GROUP_ORDER.EACH_IN_FULL]: "athkar.audio.repeatCount",
+} as const satisfies Record<AthkarGroupOrder, ParseKeys>;
 
 const MiniPlayerBar: FC = () => {
   const { t } = useTranslation();
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   const reduceMotionShared = useSharedValue(false);
   useEffect(() => {
-    reduceMotionShared.value = reduceMotion;
+    reduceMotionShared.set(reduceMotion);
   }, [reduceMotion, reduceMotionShared]);
 
   const playerState = useAthkarStore((s) => s.playerState);
   const sessionProgress = useAthkarStore((s) => s.sessionProgress);
   const groupProgress = useAthkarStore((s) => s.groupProgress);
+  const groupOrder = useAthkarStore((s) => s.settings.groupOrder);
   const comfortMode = useAthkarAudioStore((s) => s.comfortMode);
   const audioDuration = useAthkarAudioStore((s) => s.duration);
   const audioPosition = useAthkarAudioStore((s) => s.position);
   const playbackRate = useAthkarAudioStore((s) => s.playbackRate);
-  const hapticSelection = useHaptic("selection");
+  const hapticSelection = useHaptic(HAPTIC_FEEDBACK.SELECTION);
 
   const isActive =
     playerState === "playing" || playerState === "paused" || playerState === "loading";
@@ -57,15 +65,15 @@ const MiniPlayerBar: FC = () => {
 
   useEffect(() => {
     if (isActive) {
-      heightAnim.value = height;
-      opacity.value = 1;
+      heightAnim.set(height);
+      opacity.set(1);
     }
   }, [isActive, height, heightAnim, opacity]);
 
   const containerStyle = useAnimatedStyle(() => ({
-    height: heightAnim.value,
+    height: heightAnim.get(),
     overflow: "hidden" as const,
-    opacity: opacity.value,
+    opacity: opacity.get(),
   }));
 
   if (!isActive) return null;
@@ -110,20 +118,20 @@ const MiniPlayerBar: FC = () => {
     .onUpdate((e) => {
       const clamped = Math.max(0, e.translationY);
       const progress = Math.min(clamped / DISMISS_THRESHOLD, 1);
-      heightAnim.value = height * (1 - progress);
-      opacity.value = 1 - progress;
+      heightAnim.set(height * (1 - progress));
+      opacity.set(1 - progress);
     })
     .onEnd((e) => {
       if (e.translationY > DISMISS_THRESHOLD) {
-        heightAnim.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
-        opacity.value = withTiming(0, { duration: reduceMotionShared.value ? 0 : 150 });
+        heightAnim.set(withTiming(0, { duration: reduceMotionShared.get() ? 0 : 150 }));
+        opacity.set(withTiming(0, { duration: reduceMotionShared.get() ? 0 : 150 }));
         scheduleOnRN(handleDismiss);
-      } else if (reduceMotionShared.value) {
-        heightAnim.value = withTiming(height, { duration: 0 });
-        opacity.value = withTiming(1, { duration: 0 });
+      } else if (reduceMotionShared.get()) {
+        heightAnim.set(withTiming(height, { duration: 0 }));
+        opacity.set(withTiming(1, { duration: 0 }));
       } else {
-        heightAnim.value = withSpring(height, { damping: 20, stiffness: 300 });
-        opacity.value = withSpring(1);
+        heightAnim.set(withSpring(height, { damping: 20, stiffness: 300 }));
+        opacity.set(withSpring(1));
       }
     });
 
@@ -131,6 +139,8 @@ const MiniPlayerBar: FC = () => {
     <GestureDetector gesture={swipeDismiss}>
       <Animated.View style={containerStyle}>
         <Pressable
+          // Holds text or a control the reader must reach; as one element iOS would hide them.
+          accessible={false}
           onPress={handleTap}
           accessibilityLabel={t("a11y.athkar.nowPlaying", {
             current: sessionProgress.current,
@@ -169,7 +179,7 @@ const MiniPlayerBar: FC = () => {
                 </Text>
                 <Text size="xs" color="$typographySecondary">
                   {groupProgress
-                    ? t("athkar.focus.round", {
+                    ? t(GROUP_TURN[groupOrder], {
                         current: formatNumberToLocale(`${groupProgress.round}`),
                         total: formatNumberToLocale(`${groupProgress.totalRounds}`),
                       })

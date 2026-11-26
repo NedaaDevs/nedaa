@@ -1,4 +1,5 @@
-import { ATHKAR_TYPE } from "@/constants/Athkar";
+import { ATHKAR_TYPE, type AthkarGroupOrder } from "@/constants/Athkar";
+import type { AthkarLookId } from "@/constants/AthkarLook";
 import type { PlayerState } from "@/types/athkar-audio";
 
 export type AthkarType = (typeof ATHKAR_TYPE)[keyof typeof ATHKAR_TYPE];
@@ -40,12 +41,17 @@ export type AthkarState = {
   eveningAthkarList: Athkar[];
   currentProgress: AthkarProgress[];
   streak: Streak;
-  focusMode: boolean;
   currentAthkarIndex: number;
+  /** A finished dhikr is held on screen before the next one opens. Taps do not count. */
+  advancePending: boolean;
+  /** The day the counts in memory belong to; null before the first load. */
+  progressDay: number | null;
   lastMorningIndex: number;
   lastEveningIndex: number;
   currentType: Exclude<AthkarType, "all">;
   shortVersion: boolean;
+  /** The Focus gesture marks have been shown and touched away. */
+  focusHintSeen: boolean;
   todayCompleted: {
     morning: boolean;
     evening: boolean;
@@ -54,6 +60,10 @@ export type AthkarState = {
     autoMoveToNext: boolean;
     showStreak: boolean;
     showTranslation: boolean;
+    /** The look a person chose for the reader; null until they choose. */
+    look: AthkarLookId | null;
+    /** Which text each count of a grouped dhikr shows. */
+    groupOrder: AthkarGroupOrder;
   };
 
   // Audio playback state (merged from athkar-audio store for atomic updates)
@@ -68,6 +78,7 @@ export type AthkarState = {
   groupProgress: {
     groupIndex: number;
     itemsPerRound: number;
+    /** The shown text's turn of its turns, from 1; by round, the round. */
     round: number;
     totalRounds: number;
     count: number;
@@ -102,11 +113,15 @@ export type AthkarActions = {
   incrementCount: (athkarId: string, skipAutoMove?: boolean) => void;
   incrementCountBy: (athkarId: string, by: number) => void;
   decrementCount: (athkarId: string) => void;
-  toggleFocusMode: () => void;
+  markFocusHintSeen: () => void;
+  setLook: (look: AthkarLookId) => void;
+  setGroupOrder: (groupOrder: AthkarGroupOrder) => void;
   findOptimalAthkarIndex: (type: Exclude<AthkarType, "all">) => number;
   moveToNext: () => void;
   moveToPrevious: () => void;
   setCurrentAthkarIndex: (index: number) => void;
+  /** Moves to a dhikr of the current period. An index outside the list changes nothing. */
+  jumpToIndex: (index: number) => void;
   setCurrentType: (type: Exclude<AthkarType, "all">) => void;
   toggleAutoMove: () => void;
   toggleShowStreak: () => void;
@@ -118,6 +133,10 @@ export type AthkarActions = {
   // Asynchronous
   initializeStore: () => Promise<void>;
   initializeTodayData: () => Promise<void>;
+  /** Loads the new day's counts when the day has changed since the last load. */
+  syncDay: () => Promise<void>;
+  /** Writes the pending counts at once, for when the app or the screen goes away. */
+  flushCounts: () => Promise<void>;
   updateAthkarLists: (morningList: Athkar[], eveningList: Athkar[]) => Promise<void>;
   initializeSession: (type: Exclude<AthkarType, "all">) => Promise<void>;
   loadTodayProgress: () => Promise<void>;
@@ -154,6 +173,8 @@ export type CustomAthkarProgress = {
 };
 
 export type CustomAthkarItemDraft = {
+  /** The stored row this draft edits; absent for a new row. */
+  id?: number;
   arabicText: string;
   userCount: number;
 };

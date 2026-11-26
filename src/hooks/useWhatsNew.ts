@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { PixelRatio } from "react-native";
 
+import { UPGRADE_PATH_STATE } from "@/constants/UpgradePath";
 import { getApplicableEntries, getUnseenEntries } from "@/constants/WhatsNew";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -11,7 +12,14 @@ import { readPendingReport, isPendingReportActionable } from "@/utils/crashHandl
 // user with unseen announcements. The crash-report prompt takes priority —
 // if one is pending, What's New waits for a later launch.
 export const useWhatsNew = () => {
-  const { isFirstRun, hasHydrated, dismissedFeatureCards, dismissFeatureCards } = useAppStore();
+  const {
+    isFirstRun,
+    hasHydrated,
+    dismissedFeatureCards,
+    dismissFeatureCards,
+    upgradePath,
+    upgradeShownThisLaunch,
+  } = useAppStore();
   const umrahInProgress = useUmrahGuideStore((s) => !!s.activeProgress);
   const textSizeOfferHandled = usePreferencesStore((s) => s.textSizeOfferHandled);
 
@@ -25,7 +33,7 @@ export const useWhatsNew = () => {
     [dismissedFeatureCards, ctx]
   );
 
-  // Opening from Settings shows every applicable entry, seen or not — the
+  // Opening from About shows every applicable entry, seen or not — the
   // unseen set is empty for anyone who already dismissed the sheet.
   const allEntries = useMemo(() => getApplicableEntries(ctx), [ctx]);
 
@@ -36,6 +44,9 @@ export const useWhatsNew = () => {
   const shouldPresent =
     hasHydrated &&
     !isFirstRun &&
+    // The upgrade path covers the new look: wait for it, and skip its launch.
+    upgradePath === UPGRADE_PATH_STATE.DONE &&
+    !upgradeShownThisLaunch &&
     entries.length > 0 &&
     (pendingReport === null || !isPendingReportActionable(pendingReport));
 

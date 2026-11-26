@@ -1,3 +1,4 @@
+import { DHIKR_STRIKE_LIMIT, DHIKR_TYPED, type DhikrTypedOutcome } from "@/constants/DhikrTask";
 import { ChallengeDifficulty, DhikrPhrase, DHIKR_PHRASES } from "@/types/alarm";
 
 const DIACRITICS = /[\u064B-\u0652\u0670\u0640]/g;
@@ -39,6 +40,21 @@ export const matchesDhikr = (input: string, phrase: DhikrPhrase): boolean => {
     normalized === normalizeDhikr(phrase.transliteration) ||
     normalized === normalizeDhikr(phrase.arabic)
   );
+};
+
+// One submission against the shown phrase, given the misses so far on it.
+// A miss keeps the phrase so a typo is fixed in place; the limit's miss asks
+// for a fresh one. Mirrored in DhikrTypedRun.kt.
+export const submitDhikr = (
+  input: string,
+  phrase: DhikrPhrase,
+  strikes: number
+): { outcome: DhikrTypedOutcome; strikes: number } => {
+  if (matchesDhikr(input, phrase)) return { outcome: DHIKR_TYPED.SOLVED, strikes };
+  const missed = strikes + 1;
+  return missed >= DHIKR_STRIKE_LIMIT
+    ? { outcome: DHIKR_TYPED.NEXT, strikes: 0 }
+    : { outcome: DHIKR_TYPED.WRONG, strikes: missed };
 };
 
 // Random phrase from the difficulty pool, avoiding an immediate repeat.

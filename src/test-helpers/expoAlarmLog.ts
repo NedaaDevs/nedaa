@@ -4,7 +4,8 @@
 // Every native call as [name, args], in order.
 export const nativeCalls: [string, unknown[]][] = [];
 
-// Per function: a value, or a function of the call's args. Default true.
+// Per function: a value, or a function of the call's args. An async function
+// defaults to true; a sync one answers as the real module does without native.
 export const nativeResults: Record<string, unknown> = {};
 
 export const resetNativeLog = (): void => {
@@ -15,12 +16,23 @@ export const resetNativeLog = (): void => {
 export const argsOf = (name: string): unknown[][] =>
   nativeCalls.filter(([called]) => called === name).map(([, args]) => args);
 
+const answer = (name: string, args: unknown[], fallback: unknown): unknown => {
+  const stub = name in nativeResults ? nativeResults[name] : fallback;
+  return typeof stub === "function" ? stub(...args) : stub;
+};
+
+// The real call tells a sync read from an async one; a sync read stays sync,
+// so a falsy answer is not hidden behind a truthy promise.
 const logged =
-  (name: string) =>
-  (...args: unknown[]): Promise<unknown> => {
+  (name: string, real: (...args: unknown[]) => unknown) =>
+  (...args: unknown[]): unknown => {
     nativeCalls.push([name, args]);
-    const stub = name in nativeResults ? nativeResults[name] : true;
-    return Promise.resolve(typeof stub === "function" ? stub(...args) : stub);
+    const realResult = real(...args);
+    if (realResult instanceof Promise) {
+      realResult.catch(() => undefined);
+      return Promise.resolve(answer(name, args, true));
+    }
+    return answer(name, args, realResult);
   };
 
 // Constants such as ALARM_OUTCOME come from the real module.
@@ -31,7 +43,8 @@ export const expoAlarmLogModule = new Proxy(
       if (property === "__esModule") return true;
       const name = String(property);
       const real = (jest.requireActual("expo-alarm") as Record<string, unknown>)[name];
-      return real !== undefined && typeof real !== "function" ? real : logged(name);
+      if (typeof real === "function") return logged(name, real as (...args: unknown[]) => unknown);
+      return real !== undefined ? real : logged(name, () => Promise.resolve());
     },
   }
 );

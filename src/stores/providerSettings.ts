@@ -7,6 +7,7 @@ import { PRAYER_TIME_PROVIDERS, ProviderKey } from "@/constants/providers";
 
 // Types
 import type { AladhanSettings } from "@/types/providers/aladhan";
+import type { ApplyStep } from "@/services/applyProviderSettings";
 
 // Utils
 import { waitForHydration } from "@/utils/storeHydration";
@@ -24,8 +25,11 @@ interface AllProviderSettings {
 interface ProviderSettingsState {
   currentProviderId: string;
 
-  // Settings for all providers by Id
+  /** Applied settings by provider Id: what the fetched times were calculated with. */
   allSettings: AllProviderSettings;
+
+  /** Unapplied edits to the current provider; null when there are none. Never persisted. */
+  draft: ProviderSettings | null;
 
   isModified: boolean;
   isLoading: boolean;
@@ -36,13 +40,25 @@ interface ProviderSettingsState {
    * reflect them. Persisted so it survives a launch that fails or is killed early.
    */
   pendingReapply: boolean;
+
+  /**
+   * The settings the provider reported for the stored times, so a choice left to
+   * it can be named. Null until a response carries them.
+   */
+  inEffect: ProviderSettings | null;
+
+  /** True while an apply runs, on every screen that offers one. Never persisted. */
+  applying: boolean;
+  /** The running apply's step; null between steps and outside an apply. */
+  applyStep: ApplyStep | null;
 }
 
 interface ProviderSettingsActions {
-  /**
-   * Get current provider settings
-   */
+  /** The current provider's applied settings. */
   getCurrentSettings: <T = ProviderSettings>() => T | undefined;
+
+  /** The current provider's settings as edited: the draft, else the applied ones. */
+  getDraftSettings: () => ProviderSettings | undefined;
 
   /**
    * Get current provider key
@@ -59,28 +75,36 @@ interface ProviderSettingsActions {
    */
   selectProviderByKey: (providerKey: ProviderKey) => void;
 
-  /**
-   * Update settings for current provider
-   */
+  /** Edits the current provider's draft; the applied settings wait for Apply. */
   updateCurrentSettings: (updates: Partial<ProviderSettings>) => void;
 
-  /**
-   * Save current provider settings
-   */
-  saveSettings: () => Promise<void>;
+  /** Drops the unapplied draft; a no-op while an apply runs, which saves it. */
+  discardDraft: () => void;
+
+  /** Promotes the draft to the applied settings, requests a refetch, returns them. */
+  saveSettings: () => Promise<ProviderSettings>;
 
   /**
    * Reset current provider to defaults
    */
   resetCurrentSettings: () => void;
 
-  /** Clears the dirty flag once the settings have reached the times. */
-  markSettingsApplied: () => void;
+  /** Drops the draft once `saved` has reached the times; a newer draft stays. */
+  markSettingsApplied: (saved: ProviderSettings) => void;
+
+  /**
+   * Runs `run` as the one apply in flight, tracking its step. Resolves false
+   * without running while another apply is in flight.
+   */
+  runApply: (run: (onStep: (step: ApplyStep) => void) => Promise<void>) => Promise<boolean>;
 
   /**
    * Clear the reapply flag once the forced refetch has succeeded.
    */
   clearPendingReapply: () => void;
+
+  /** Records what the provider used for the stored times; null if unreported. */
+  setInEffect: (settings: ProviderSettings | null) => void;
 }
 
 type ProviderSettingsStore = ProviderSettingsState & ProviderSettingsActions;
@@ -110,15 +134,44 @@ const getProviderDefaultsById = (providerId: string): ProviderSettings => {
   }
 };
 
+// Unset and null both leave the choice to the provider.
+const unset = (value: unknown) => value ?? undefined;
+
+const sameValues = (a: unknown, b: unknown): boolean => {
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
+    return unset(a) === unset(b);
+  }
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  return [...new Set([...Object.keys(left), ...Object.keys(right)])].every((key) =>
+    sameValues(left[key], right[key])
+  );
+};
+
+// A timing at zero moves nothing, the same as a timing left out.
+const movedTimings = (tune: ProviderSettings["tune"]) =>
+  Object.fromEntries(Object.entries(tune ?? {}).filter(([, minutes]) => minutes !== 0));
+
+/** Whether two settings ask the provider for the same times. */
+const sameSettings = (a: ProviderSettings | undefined, b: ProviderSettings | undefined) => {
+  const { tune: leftTune, ...left } = a ?? {};
+  const { tune: rightTune, ...right } = b ?? {};
+  return sameValues(movedTimings(leftTune), movedTimings(rightTune)) && sameValues(left, right);
+};
+
 const initialState: ProviderSettingsState = {
   currentProviderId: PRAYER_TIME_PROVIDERS.ALADHAN.id,
   allSettings: {
     [PRAYER_TIME_PROVIDERS.ALADHAN.id]: getProviderDefaultsById(PRAYER_TIME_PROVIDERS.ALADHAN.id),
   },
+  draft: null,
   isModified: false,
   isLoading: false,
   error: null,
   pendingReapply: false,
+  inEffect: null,
+  applying: false,
+  applyStep: null,
 };
 
 type PersistedProviderSettings = {
@@ -162,6 +215,11 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
           return state.allSettings[state.currentProviderId] as T | undefined;
         },
 
+        getDraftSettings: () => {
+          const state = get();
+          return state.draft ?? state.allSettings[state.currentProviderId];
+        },
+
         getCurrentProviderKey: () => {
           const state = get();
           return getProviderKeyById(state.currentProviderId);
@@ -179,6 +237,7 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
                 ...state.allSettings,
                 [providerId]: newSettings,
               },
+              draft: null,
               isModified: false,
               error: null,
             };
@@ -193,20 +252,23 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
         },
 
         updateCurrentSettings: (updates: Partial<ProviderSettings>) => {
-          set((state) => ({
-            allSettings: {
-              ...state.allSettings,
-              [state.currentProviderId]: {
-                ...state.allSettings[state.currentProviderId],
-                ...updates,
-              } as ProviderSettings,
-            },
-            isModified: true,
-            // The edit is on disk the moment it is made, so the times are out of
-            // step with it until the apply pipeline runs — including across a kill.
-            pendingReapply: true,
-            error: null,
-          }));
+          set((state) => {
+            const applied = state.allSettings[state.currentProviderId];
+            const draft = {
+              ...(state.draft ?? applied ?? getProviderDefaultsById(state.currentProviderId)),
+              ...updates,
+            };
+            // An edit back to the applied settings leaves nothing to apply, unless
+            // those have not reached the times yet.
+            return sameSettings(draft, applied) && !state.pendingReapply
+              ? { draft: null, isModified: false, error: null }
+              : { draft, isModified: true, error: null };
+          });
+        },
+
+        discardDraft: () => {
+          if (get().applying) return;
+          set({ draft: null, isModified: false, error: null });
         },
 
         saveSettings: async () => {
@@ -214,20 +276,23 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
 
           try {
             const state = get();
-            const currentSettings = state.allSettings[state.currentProviderId];
+            const edited = state.draft ?? state.allSettings[state.currentProviderId];
 
-            if (!currentSettings) {
+            if (!edited) {
               throw new Error("No settings found for current provider");
             }
 
-            // isModified is the caller's to clear, once the apply pipeline lands.
+            // The draft stays until the times land, so a failed fetch leaves it to retry;
+            // the reapply request carries the change across a kill mid-apply.
             set({
               allSettings: {
                 ...state.allSettings,
-                [state.currentProviderId]: currentSettings,
+                [state.currentProviderId]: edited,
               },
+              pendingReapply: true,
               isLoading: false,
             });
+            return edited;
           } catch (error) {
             set({
               error: (error as Error).message || "Failed to save settings",
@@ -248,18 +313,39 @@ export const useProviderSettingsStore = create<ProviderSettingsStore>()(
           }));
         },
 
-        markSettingsApplied: () => set({ isModified: false, pendingReapply: false }),
+        markSettingsApplied: (saved) =>
+          set((state) =>
+            // The draft is the saved object until an edit replaces it.
+            state.draft === null || state.draft === saved
+              ? { draft: null, isModified: false, pendingReapply: false }
+              : { pendingReapply: false }
+          ),
+
+        runApply: async (run) => {
+          if (get().applying) return false;
+          set({ applying: true });
+          try {
+            await run((step) => set({ applyStep: step }));
+            return true;
+          } finally {
+            set({ applying: false, applyStep: null });
+          }
+        },
 
         clearPendingReapply: () => set({ pendingReapply: false }),
+
+        setInEffect: (settings) => set({ inEffect: settings }),
       }),
       {
         name: "provider-settings",
-        version: 2,
+        // 3: `inEffect`, which the migration's refetch fills.
+        version: 3,
         storage: createJSONStorage(() => Storage),
         partialize: (state) => ({
           currentProviderId: state.currentProviderId,
           allSettings: state.allSettings,
           pendingReapply: state.pendingReapply,
+          inEffect: state.inEffect,
         }),
         migrate: migrateProviderSettings,
       }

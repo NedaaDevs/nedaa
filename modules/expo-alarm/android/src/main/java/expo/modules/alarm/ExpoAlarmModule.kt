@@ -31,7 +31,38 @@ class ScheduleAlarmOptions : Record {
     @Field val dismissText: String = ""
     @Field val openText: String = ""
     @Field val countdown: Boolean = false
+    @Field val snoozeCount: Int = 0
+    @Field val quietUsed: Boolean = false
+    @Field val isPreview: Boolean = false
+    @Field val prayerMomentAt: Double? = null
+    @Field val prayerTimezone: String? = null
 }
+
+// The emergency quiet ledger as utils/emergencyQuiet.ts QuietLedger holds it.
+class QuietLedgerRecord : Record {
+    @Field var allowance: Int = EmergencyQuiet.DEFAULT_ALLOWANCE
+    @Field var raiseTo: Int? = null
+    @Field var raiseFrom: Int? = null
+    @Field var month: Int? = null
+    @Field var used: Int = 0
+    @Field var lastWriteAt: Double? = null
+
+    fun toLedger(): EmergencyQuiet.Ledger = EmergencyQuiet.Ledger(
+        allowance = allowance,
+        raise = raiseTo?.let { to -> raiseFrom?.let { EmergencyQuiet.Raise(to, it) } },
+        month = month,
+        used = used,
+        lastWriteAt = lastWriteAt?.toLong(),
+    )
+}
+
+private fun EmergencyQuiet.Ledger.toMap(): Map<String, Any?> = mapOf(
+    "allowance" to allowance,
+    "raise" to raise?.let { mapOf("to" to it.to, "from" to it.from) },
+    "month" to month,
+    "used" to used,
+    "lastWriteAt" to lastWriteAt?.toDouble(),
+)
 
 class ExpoAlarmModule : Module() {
 
@@ -59,6 +90,11 @@ class ExpoAlarmModule : Module() {
             promise.resolve(getAuthStatus())
         }
 
+        // Live Activities are iOS only; nothing here silences an alarm.
+        AsyncFunction("areLiveActivitiesEnabled") {
+            true
+        }
+
         AsyncFunction("getAuthorizationStatus") { promise: Promise ->
             promise.resolve(getAuthStatus())
         }
@@ -78,7 +114,11 @@ class ExpoAlarmModule : Module() {
                 val triggerMs = options.triggerTimestamp.toLong()
                 val soundName = if (options.sound.isNotEmpty()) options.sound else "beep"
 
-                val scheduled = scheduler.scheduleAlarm(options.id, triggerMs, options.alarmType, options.title, soundName)
+                val scheduled = scheduler.scheduleAlarm(
+                    options.id, triggerMs, options.alarmType, options.title, soundName, options.snoozeCount,
+                    quietUsed = options.quietUsed, preview = options.isPreview,
+                    moment = RingingScreen.momentOf(options.prayerMomentAt?.toLong(), options.prayerTimezone)
+                )
                 promise.resolve(scheduled)
             } catch (e: Exception) {
                 promise.reject("SCHEDULE_ERROR", e.message, e)
@@ -117,6 +157,10 @@ class ExpoAlarmModule : Module() {
             db.getAllAlarmIds().toTypedArray()
         }
 
+        AsyncFunction("getFutureAlarmIds") {
+            db.getFutureAlarmIds(System.currentTimeMillis()).toTypedArray()
+        }
+
         // -- Database --
 
         Function("markAlarmCompleted") { id: String ->
@@ -141,8 +185,8 @@ class ExpoAlarmModule : Module() {
             )
         }
 
-        AsyncFunction("clearPendingChallenge") {
-            db.clearPendingChallenge()
+        AsyncFunction("clearPendingChallenge") { ownerId: String? ->
+            db.clearPendingChallenge(ownerId)
             true
         }
 
@@ -194,9 +238,28 @@ class ExpoAlarmModule : Module() {
                     "alarmType" to record.alarmType,
                     "title" to record.title,
                     "snoozeCount" to record.snoozeCount,
-                    "snoozeEndTime" to record.snoozeEndTime
+                    "snoozeEndTime" to record.snoozeEndTime,
+                    "quietUsed" to record.quietUsed
                 )
             }
+        }
+
+        // -- Emergency quiet ledger: this database is its one truth on Android --
+
+        Function("getQuietLedger") {
+            db.getQuietLedger().toMap()
+        }
+
+        Function("seedQuietLedger") { app: QuietLedgerRecord, now: Double ->
+            db.seedQuietLedger(app.toLedger(), now.toLong()).toMap()
+        }
+
+        Function("recordQuietUse") { now: Double ->
+            db.recordQuietUse(now.toLong())?.toMap()
+        }
+
+        Function("setQuietAllowance") { allowance: Int, now: Double ->
+            db.setQuietAllowance(allowance, now.toLong())?.toMap()
         }
 
         AsyncFunction("clearSnoozeQueue") {
@@ -222,6 +285,16 @@ class ExpoAlarmModule : Module() {
 
         Function("isAlarmSoundPlaying") {
             audioManager.isPlaying()
+        }
+
+        Function("stopAlarmVibration") {
+            audioManager.stopVibration()
+            true
+        }
+
+        Function("startAlarmVibration") { pattern: String ->
+            audioManager.startVibration(pattern)
+            true
         }
 
         Function("stopAllAlarmEffects") {
@@ -425,6 +498,18 @@ class ExpoAlarmModule : Module() {
             true
         }
 
+        Function("usesNativeOverlay") {
+            AlarmOverlayService.usesNativeOverlay(context)
+        }
+
+        Function("isOverlayShowing") {
+            AlarmOverlayService.isRunning
+        }
+
+        Function("getRingingAlarmId") {
+            AlarmService.ringingAlarmId
+        }
+
         Function("canDrawOverlays") {
             Settings.canDrawOverlays(context)
         }
@@ -483,7 +568,8 @@ class ExpoAlarmModule : Module() {
                 "vibrationPattern" to settings.vibrationPattern,
                 "snoozeEnabled" to settings.snoozeEnabled,
                 "snoozeMaxCount" to settings.snoozeMaxCount,
-                "snoozeDuration" to settings.snoozeDuration
+                "snoozeDuration" to settings.snoozeDuration,
+                "tasks" to WakeTasks.toBridge(settings.tasks)
             )
         }
 
@@ -494,18 +580,28 @@ class ExpoAlarmModule : Module() {
                 enabled = (settingsMap["enabled"] as? Boolean) ?: currentSettings.enabled,
                 sound = (settingsMap["sound"] as? String) ?: currentSettings.sound,
                 volume = ((settingsMap["volume"] as? Number)?.toFloat()) ?: currentSettings.volume,
-                challengeType = (settingsMap["challengeType"] as? String) ?: currentSettings.challengeType,
-                challengeDifficulty = (settingsMap["challengeDifficulty"] as? String) ?: currentSettings.challengeDifficulty,
-                challengeCount = ((settingsMap["challengeCount"] as? Number)?.toInt()) ?: currentSettings.challengeCount,
+                challengeType = currentSettings.challengeType,
+                challengeDifficulty = currentSettings.challengeDifficulty,
+                challengeCount = currentSettings.challengeCount,
                 gentleWakeUpEnabled = (settingsMap["gentleWakeUpEnabled"] as? Boolean) ?: currentSettings.gentleWakeUpEnabled,
                 gentleWakeUpDuration = ((settingsMap["gentleWakeUpDuration"] as? Number)?.toInt()) ?: currentSettings.gentleWakeUpDuration,
                 vibrationEnabled = (settingsMap["vibrationEnabled"] as? Boolean) ?: currentSettings.vibrationEnabled,
                 vibrationPattern = (settingsMap["vibrationPattern"] as? String) ?: currentSettings.vibrationPattern,
                 snoozeEnabled = (settingsMap["snoozeEnabled"] as? Boolean) ?: currentSettings.snoozeEnabled,
                 snoozeMaxCount = ((settingsMap["snoozeMaxCount"] as? Number)?.toInt()) ?: currentSettings.snoozeMaxCount,
-                snoozeDuration = ((settingsMap["snoozeDuration"] as? Number)?.toInt()) ?: currentSettings.snoozeDuration
+                snoozeDuration = ((settingsMap["snoozeDuration"] as? Number)?.toInt()) ?: currentSettings.snoozeDuration,
+                tasks = currentSettings.tasks
             )
-            db.saveAlarmSettings(newSettings)
+            val current = currentSettings.stored.challenge
+            val sentChallenge = if (CHALLENGE_KEYS.any(settingsMap::containsKey)) {
+                WakeTasks.Challenge(
+                    type = (settingsMap[KEY_CHALLENGE_TYPE] as? String) ?: current.type,
+                    difficulty = (settingsMap[KEY_CHALLENGE_DIFFICULTY] as? String) ?: current.difficulty,
+                    count = ((settingsMap[KEY_CHALLENGE_COUNT] as? Number)?.toInt()) ?: current.count
+                )
+            } else null
+            val written = WakeTasks.write(currentSettings.stored, settingsMap[KEY_TASKS], sentChallenge)
+            db.saveAlarmSettings(newSettings.with(written))
         }
 
         Function("isAlarmTypeEnabled") { alarmType: String ->
@@ -690,5 +786,14 @@ class ExpoAlarmModule : Module() {
         }
 
         return "authorized"
+    }
+
+    // Keys of the settings map; NativeAlarmSettings in src/index.ts.
+    private companion object {
+        const val KEY_TASKS = "tasks"
+        const val KEY_CHALLENGE_TYPE = "challengeType"
+        const val KEY_CHALLENGE_DIFFICULTY = "challengeDifficulty"
+        const val KEY_CHALLENGE_COUNT = "challengeCount"
+        val CHALLENGE_KEYS = listOf(KEY_CHALLENGE_TYPE, KEY_CHALLENGE_DIFFICULTY, KEY_CHALLENGE_COUNT)
     }
 }

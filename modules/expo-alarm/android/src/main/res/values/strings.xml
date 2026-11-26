@@ -60,29 +60,7 @@
     <!-- Duration formats -->
     <string name="minute_format">%d min</string>
 
-    <!-- Overlay - Tap Challenge -->
-    <string name="overlay_tap_instruction">Tap the button %d times to dismiss</string>
-    <string name="overlay_tap_progress">%1$d / %2$d</string>
-    <string name="overlay_tap_button">TAP TO DISMISS</string>
-
-    <!-- Overlay - Math Challenge -->
-    <string name="overlay_math_instruction_one">Solve 1 math problem to dismiss</string>
-    <string name="overlay_math_instruction_many">Solve %d math problems to dismiss</string>
-    <string name="overlay_math_progress">Problem %1$d of %2$d</string>
-    <string name="overlay_math_hint">Enter answer</string>
-    <string name="overlay_math_submit">SUBMIT</string>
-    <string name="overlay_math_wrong">Wrong answer, try again!</string>
-    <string name="overlay_math_invalid">Please enter a number</string>
-
-    <!-- Overlay - Dhikr Challenge -->
-    <string name="overlay_dhikr_instruction_one">Type 1 dhikr to dismiss</string>
-    <string name="overlay_dhikr_instruction_many">Type %d dhikr to dismiss</string>
-    <string name="overlay_dhikr_progress">Dhikr %1$d of %2$d</string>
-    <string name="overlay_dhikr_hint">Type here</string>
-
     <!-- Overlay - Snooze -->
-    <string name="overlay_snooze_button">SNOOZE (%d left)</string>
-    <string name="overlay_snooze_none">NO SNOOZES LEFT</string>
     <string name="overlay_snooze_max_reached">Maximum snoozes reached</string>
 
     <!-- Overlay - Direct Dismiss (No Challenge) -->
@@ -92,13 +70,155 @@
     <!-- Overlay - Start Solving -->
     <string name="overlay_start_solving">START SOLVING</string>
 
-    <!-- Overlay - Grace Period -->
-    <string name="overlay_grace_expired">Time\'s up — solve to silence</string>
-
     <!-- Overlay - Notification -->
     <string name="overlay_notification_title">Alarm Active</string>
-    <string name="overlay_notification_tap">Tap %d times to dismiss</string>
-    <string name="overlay_notification_math_one">Solve 1 math problem to dismiss</string>
-    <string name="overlay_notification_math_many">Solve %d math problems to dismiss</string>
     <string name="overlay_notification_dismiss">Tap to dismiss</string>
+
+    <!-- Overlay - Wake-up task shell -->
+    <string name="overlay_task_start">Start wake-up task</string>
+    <plurals name="overlay_task_start_count">
+        <item quantity="one">Start wake-up task</item>
+        <item quantity="other">Start %d wake-up tasks</item>
+    </plurals>
+    <plurals name="overlay_task_with_steps">
+        <item quantity="one">%1$s · 1 step</item>
+        <item quantity="other">%1$s · %2$d steps</item>
+    </plurals>
+    <string name="overlay_task_pair">%1$s, then %2$s</string>
+    <string name="overlay_task_back">Alarm</string>
+    <string name="overlay_back_to">Back to %1$s</string>
+    <string name="overlay_task_of">Task %1$d of %2$d</string>
+    <string name="overlay_task_step_of">Step %1$d of %2$d</string>
+    <string name="overlay_task_next">Next: %s</string>
+    <string name="overlay_task_handover">%1$s. %2$s.</string>
+    <string name="overlay_task_name_math">Math</string>
+    <string name="overlay_task_name_pattern">Repeat the pattern</string>
+    <string name="overlay_task_name_dhikr">Complete the dhikr</string>
+    <string name="overlay_task_name_prayers">Prayers in order</string>
+    <string name="overlay_task_name_tap">Tapping</string>
+    <string name="overlay_task_title_math">What is the answer?</string>
+    <string name="overlay_quiet_paused">Sound paused</string>
+    <string name="overlay_quiet_soon">Sound returns soon</string>
+    <string name="overlay_quiet_on">Sound is on</string>
+    <string name="overlay_quiet_on_help">A correct answer pauses it</string>
+    <plurals name="overlay_quiet_ending">
+        <item quantity="one">Sound returns in 1 second</item>
+        <item quantity="other">Sound returns in %d seconds</item>
+    </plurals>
+    <plurals name="overlay_quiet_left">
+        <item quantity="one">%1$s, 1 second left</item>
+        <item quantity="other">%1$s, %2$d seconds left</item>
+    </plurals>
+    <string name="overlay_task_way_out">You can stop the alarm without finishing.</string>
+    <string name="overlay_task_stop">Stop alarm</string>
+    <plurals name="overlay_task_tap_ask">
+        <item quantity="one">Tap the large button once.</item>
+        <item quantity="other">Tap the large button %d times.</item>
+    </plurals>
+    <string name="overlay_task_tap_count">%1$d of %2$d</string>
+    <string name="overlay_task_tap_here">Tap here</string>
+    <string name="overlay_task_math_wrong">Not that one. A new question follows.</string>
+    <string name="overlay_task_math_new">This is a new question.</string>
+    <string name="overlay_task_math_add">%1$s plus %2$s</string>
+    <string name="overlay_task_math_multiply">%1$s times %2$s</string>
+    <string name="overlay_task_math_after_miss">Not that one. New question. %1$s</string>
+    <string name="overlay_task_card">%1$s, %2$s</string>
+    <string name="overlay_task_card_wrong">%1$s, wrong</string>
+    <string name="overlay_task_card_place_first">card 1 of 4</string>
+    <string name="overlay_task_card_place_second">card 2 of 4</string>
+    <string name="overlay_task_card_place_third">card 3 of 4</string>
+    <string name="overlay_task_card_place_fourth">card 4 of 4</string>
+    <string name="overlay_task_dhikr_ask">Which word completes this dhikr as it is narrated?</string>
+    <string name="overlay_task_dhikr_completed">This dhikr is completed with:</string>
+    <string name="overlay_task_dhikr_another">This is another dhikr.</string>
+    <string name="overlay_task_dhikr_completed_spoken">This dhikr is completed with: %1$s. %2$s</string>
+    <string name="overlay_task_dhikr_gap">missing word</string>
+    <string name="overlay_task_dhikr_another_spoken">Another dhikr. %1$s</string>
+    <string name="overlay_task_dhikr_type_hint">Type it in Arabic or in Latin letters</string>
+    <string name="overlay_task_dhikr_type_field">Type here</string>
+    <string name="overlay_task_dhikr_type_submit">Submit</string>
+    <string name="overlay_task_dhikr_type_wrong">Wrong answer, try again</string>
+    <string name="overlay_task_dhikr_type_phrase">Dhikr to type: %2$s</string>
+    <string name="overlay_task_dhikr_type_new">Wrong answer. New dhikr to type: %2$s</string>
+    <string name="overlay_task_prayers_ask">Tap from %1$s to %2$s.</string>
+    <string name="overlay_task_prayers_wrong">Not %1$s yet.</string>
+    <string name="overlay_task_prayers_dealt">The cards were dealt again.</string>
+    <string name="overlay_task_prayers_dealt_next">The cards were dealt again. Next is the prayer after %1$s.</string>
+    <string name="overlay_task_prayers_after_miss">Not %1$s yet. The cards were dealt again.</string>
+    <string name="overlay_task_prayers_empty_fajr">Place 1 of 5 is empty.</string>
+    <string name="overlay_task_prayers_empty_dhuhr">Place 2 of 5 is empty.</string>
+    <string name="overlay_task_prayers_empty_asr">Place 3 of 5 is empty.</string>
+    <string name="overlay_task_prayers_empty_maghrib">Place 4 of 5 is empty.</string>
+    <string name="overlay_task_prayers_empty_isha">Place 5 of 5 is empty.</string>
+    <string name="overlay_task_prayers_filled_fajr">%1$s, place 1.</string>
+    <string name="overlay_task_prayers_filled_dhuhr">%1$s, place 2.</string>
+    <string name="overlay_task_prayers_filled_asr">%1$s, place 3.</string>
+    <string name="overlay_task_prayers_filled_maghrib">%1$s, place 4.</string>
+    <string name="overlay_task_prayers_filled_isha">%1$s, place 5.</string>
+    <string name="overlay_prayer_fajr">Fajr</string>
+    <string name="overlay_prayer_dhuhr">Dhuhr</string>
+    <string name="overlay_prayer_asr">Asr</string>
+    <string name="overlay_prayer_maghrib">Maghrib</string>
+    <string name="overlay_prayer_isha">Isha</string>
+    <string name="overlay_task_pattern_watch_ask">Watch the buttons light up.</string>
+    <string name="overlay_task_pattern_turn_ask">Tap the buttons in the same order.</string>
+    <string name="overlay_task_pattern_showing">Showing %1$d of %2$d</string>
+    <string name="overlay_task_pattern_showing_new">New order: showing %1$d of %2$d</string>
+    <string name="overlay_task_pattern_turn">Your turn: %1$d of %2$d</string>
+    <string name="overlay_task_pattern_wrong">Not that button. A new order follows.</string>
+    <string name="overlay_task_pattern_done">Order repeated</string>
+    <string name="overlay_task_pattern_watch">Watch the order: %1$s. Your turn.</string>
+    <string name="overlay_task_pattern_after_miss">Not that button. New order: %1$s. Your turn.</string>
+    <string name="overlay_task_pattern_again">The order: %1$s.</string>
+    <string name="overlay_task_pattern_hear_again">Hear the order again</string>
+    <string name="overlay_task_pattern_pad_circle">Circle</string>
+    <string name="overlay_task_pattern_pad_triangle">Triangle</string>
+    <string name="overlay_task_pattern_pad_square">Square</string>
+    <string name="overlay_task_pattern_pad_lines">Two lines</string>
+    <string name="overlay_task_pattern_place_top_left">top left</string>
+    <string name="overlay_task_pattern_place_top_right">top right</string>
+    <string name="overlay_task_pattern_place_bottom_left">bottom left</string>
+    <string name="overlay_task_pattern_place_bottom_right">bottom right</string>
+    <string name="overlay_sentences">%1$s. %2$s</string>
+    <string name="overlay_list_separator">", "</string>
+
+    <!-- Overlay - Ringing screen and solved panel -->
+    <string name="overlay_ringing_prayer_alarm">Prayer alarm</string>
+    <string name="overlay_ringing_jumuah">Jumu\'ah</string>
+    <string name="overlay_ringing_fajr_alarm">Fajr Alarm</string>
+    <string name="overlay_ringing_friday_alarm">Friday Alarm</string>
+    <string name="overlay_ringing_alarm">Alarm</string>
+    <string name="overlay_ringing_current_time">Current time, %1$s</string>
+    <string name="overlay_ringing_at">%1$s, %2$s</string>
+    <string name="overlay_ringing_announcement">%1$s alarm. Time to wake up for prayer.</string>
+    <string name="overlay_ringing_custom">Alarm ringing.</string>
+    <string name="overlay_ringing_snooze_off">Snooze is off for this alarm.</string>
+    <string name="overlay_ringing_snooze_used_up">No snoozes left for this alarm.</string>
+    <string name="overlay_join">%1$s, %2$s</string>
+    <string name="overlay_solved_title">Alarm stopped</string>
+    <string name="overlay_close">Close</string>
+    <plurals name="overlay_ringing_snooze">
+        <item quantity="one">Snooze %d minute</item>
+        <item quantity="other">Snooze %d minutes</item>
+    </plurals>
+    <plurals name="overlay_ringing_snoozes_left">
+        <item quantity="one">Last snooze</item>
+        <item quantity="other">%d snoozes left</item>
+    </plurals>
+    <!-- Emergency quiet, as alarm.quiet.* -->
+    <string name="overlay_quiet_button">Emergency quiet</string>
+    <string name="overlay_quiet_hint">Asks to confirm before the sound stops.</string>
+    <string name="overlay_quiet_confirm_title">Quiet the alarm?</string>
+    <plurals name="overlay_quiet_confirm_body">
+        <item quantity="one">The sound stops for 1 minute. The task stays, and finishing it ends the alarm.</item>
+        <item quantity="other">The sound stops for %d minutes. The task stays, and finishing it ends the alarm.</item>
+    </plurals>
+    <string name="overlay_quiet_confirm_cost">Uses one of this month\'s emergency quiets.</string>
+    <string name="overlay_quiet_confirm_go">Quiet now</string>
+    <string name="overlay_quiet_failed">The alarm could not be quieted. Nothing was counted.</string>
+    <string name="overlay_quiet_none_left">No emergency quiet left until %1$s.</string>
+    <string name="overlay_quiet_used">Emergency quiet was used for this alarm.</string>
+    <string name="overlay_quiet_banner">Sound off. Rings again at %1$s.</string>
+    <string name="overlay_quiet_ready">The \"%1$s\" button is available.</string>
+    <string name="overlay_quiet_back">Back</string>
 </resources>

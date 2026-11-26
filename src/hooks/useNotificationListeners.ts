@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
 
+// Constants
+import { APP_STATE } from "@/constants/AppState";
+
 // Services
 import { cleanupManager } from "@/services/cleanup";
 
@@ -21,16 +24,14 @@ export const useNotificationListeners = () => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       const previousState = appState.current;
 
-      if (previousState.match(/inactive|background/) && nextAppState === "active") {
-        // App has come to the foreground
+      const wasAway =
+        previousState === APP_STATE.INACTIVE || previousState === APP_STATE.BACKGROUND;
+      if (wasAway && nextAppState === APP_STATE.ACTIVE) {
         console.log("[Notifications] App has come to the foreground");
-        // Could re-setup listeners here if needed
-      } else if (nextAppState === "background") {
-        // App is going to background
+      } else if (nextAppState === APP_STATE.BACKGROUND) {
         console.log("[Notifications] App is going to background");
-        // Execute cleanup when app goes to background
         await cleanupManager.executeAll("app-background");
-      } else if (nextAppState === "inactive") {
+      } else if (nextAppState === APP_STATE.INACTIVE) {
         // App is becoming inactive (user switching apps, receiving call, etc.)
         console.log("[Notifications] App is becoming inactive");
       }

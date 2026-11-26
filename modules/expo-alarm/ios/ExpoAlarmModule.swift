@@ -102,6 +102,13 @@ public class ExpoAlarmModule: Module {
             return false
         }
 
+        AsyncFunction("areLiveActivitiesEnabled") { () -> Bool in
+            if #available(iOS 16.1, *) {
+                return ActivityAuthorizationInfo().areActivitiesEnabled
+            }
+            return false
+        }
+
         Function("getBackgroundRefreshStatus") { () -> String in
             let status = UIApplication.shared.backgroundRefreshStatus
             switch status {
@@ -547,6 +554,17 @@ public class ExpoAlarmModule: Module {
 
         Function("setAlarmCopy") { (copy: [String: String]) -> Bool in
             AlarmCopy.save(copy)
+            return true
+        }
+
+        Function("stopAlarmVibration") { () -> Bool in
+            AlarmAudioManager.shared.stopContinuousVibration()
+            return true
+        }
+
+        // The pattern is Android's; iOS has one system vibration.
+        Function("startAlarmVibration") { (_: String) -> Bool in
+            AlarmAudioManager.shared.startContinuousVibration()
             return true
         }
 

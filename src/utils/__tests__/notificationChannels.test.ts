@@ -1,10 +1,16 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { NOTIFICATION_TYPE } from "@/constants/Notification";
+import {
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_TYPE,
+  RETIRED_CHANNEL_ID,
+} from "@/constants/Notification";
+import { PRAYER_ID } from "@/constants/Prayer";
 import type { NotificationSettings } from "@/types/notification";
 import {
   createNotificationChannels,
+  getActiveChannelMappings,
   getNotificationChannelId,
   shouldUpdateChannels,
 } from "@/utils/notificationChannels";
@@ -62,24 +68,6 @@ describe("notification channels", () => {
     expect(on).not.toBe(off);
   });
 
-  it("schedules on exactly the channels it creates", async () => {
-    await createNotificationChannels(settings(true));
-    const made = new Set(created.mock.calls.map(([id]) => id));
-    const config = settings(true).defaults;
-
-    for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const) {
-      expect(made).toContain(
-        getNotificationChannelId(prayer, NOTIFICATION_TYPE.PRAYER, config.prayer)
-      );
-      expect(made).toContain(
-        getNotificationChannelId(prayer, NOTIFICATION_TYPE.IQAMA, config.iqama)
-      );
-      expect(made).toContain(
-        getNotificationChannelId(prayer, NOTIFICATION_TYPE.PRE_ATHAN, config.preAthan)
-      );
-    }
-  });
-
   it("deletes the pre-Athan channels it made before", async () => {
     const stale = getNotificationChannelId("fajr", NOTIFICATION_TYPE.PRE_ATHAN, PRE_ATHAN);
     channels.mockResolvedValue([{ id: stale }]);
@@ -89,11 +77,69 @@ describe("notification channels", () => {
     expect(deleted).toHaveBeenCalledWith(stale);
   });
 
+  it.each(Object.values(NOTIFICATION_CHANNEL_ID))("deletes the fixed channel %s", async (id) => {
+    channels.mockResolvedValue([{ id }]);
+
+    await createNotificationChannels(settings(true));
+
+    expect(deleted).toHaveBeenCalledWith(id);
+  });
+
+  // Nothing posts on a retired channel, so the device's settings drop it.
+  it.each(Object.values(RETIRED_CHANNEL_ID))("deletes the retired channel %s", async (id) => {
+    channels.mockResolvedValue([{ id }]);
+
+    await createNotificationChannels(settings(true));
+
+    expect(deleted).toHaveBeenCalledWith(id);
+  });
+
+  it.each(Object.values(RETIRED_CHANNEL_ID))("never makes the retired channel %s", async (id) => {
+    await createNotificationChannels(settings(true));
+
+    expect(created.mock.calls.map(([made]) => made)).not.toContain(id);
+  });
+
+  it.each(Object.values(RETIRED_CHANNEL_ID))(
+    "asks for an update while the retired channel %s is on the device",
+    async (id) => {
+      await createNotificationChannels(settings(true));
+      channels.mockResolvedValue([
+        ...created.mock.calls.map(([made, { sound }]) => ({ id: made, sound })),
+        { id },
+      ]);
+
+      expect(await shouldUpdateChannels(settings(true))).toBe(true);
+    }
+  );
+
   it("asks for new channels once a vibration setting changes, and only then", async () => {
     await createNotificationChannels(settings(true));
     channels.mockResolvedValue(created.mock.calls.map(([id, { sound }]) => ({ id, sound })));
 
     expect(await shouldUpdateChannels(settings(true))).toBe(false);
     expect(await shouldUpdateChannels(settings(false))).toBe(true);
+  });
+
+  it("reads each prayer channel back to its type, prayer and sound", async () => {
+    await createNotificationChannels(settings(true));
+    channels.mockResolvedValue(created.mock.calls.map(([id]) => ({ id })));
+
+    const mappings = await getActiveChannelMappings();
+
+    expect(mappings).toContainEqual(
+      expect.objectContaining({
+        prayerName: PRAYER_ID.FAJR,
+        notificationType: NOTIFICATION_TYPE.PRE_ATHAN,
+        soundKey: PRE_ATHAN.sound,
+      })
+    );
+    expect(mappings).toContainEqual(
+      expect.objectContaining({
+        prayerName: PRAYER_ID.FAJR,
+        notificationType: NOTIFICATION_TYPE.PRAYER,
+        soundKey: settings(true).defaults.prayer.sound,
+      })
+    );
   });
 });

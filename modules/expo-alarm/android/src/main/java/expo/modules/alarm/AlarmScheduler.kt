@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.database.SQLException
 import android.net.Uri
 import android.os.Build
 
@@ -13,6 +14,13 @@ class AlarmScheduler(private val context: Context) {
 
     companion object {
         const val REARM_DELAY_MS = 15_000L
+
+        // A re-ring still ahead, such as a quiet's, keeps its own time.
+        fun rearmAt(now: Long, delayMs: Long, savedTriggerAt: Long): Long = maxOf(now + delayMs, savedTriggerAt)
+
+        // After a failed save, an open row still rings the entry, as AlarmReceiver
+        // checks; with no row, or a completed one, the entry rings nothing.
+        fun keepsArmedAfterFailedSave(savedCompleted: Boolean?): Boolean = savedCompleted == false
     }
 
     private val alarmManager: AlarmManager
@@ -35,11 +43,14 @@ class AlarmScheduler(private val context: Context) {
         val sound = db.getAlarmSettings(record.alarmType).sound.ifEmpty { "beep" }
         val armed = scheduleAlarm(
             id = alarmId,
-            triggerTimeMs = System.currentTimeMillis() + delayMs,
+            triggerTimeMs = rearmAt(System.currentTimeMillis(), delayMs, record.triggerTime.toLong()),
             alarmType = record.alarmType,
             title = record.title,
             soundName = sound,
-            snoozeCount = record.snoozeCount
+            snoozeCount = record.snoozeCount,
+            quietUsed = record.quietUsed,
+            preview = record.preview,
+            moment = record.moment
         )
         AlarmLogger.getInstance(context).w(
             "AlarmScheduler",
@@ -71,7 +82,11 @@ class AlarmScheduler(private val context: Context) {
         alarmType: String,
         title: String,
         soundName: String,
-        snoozeCount: Int = 0
+        snoozeCount: Int = 0,
+        quietUsed: Boolean = false,
+        preview: Boolean = false,
+        // Required: a row rewritten without its moment would ring on the clock.
+        moment: RingingScreen.Moment?
     ): Boolean {
         if (!canScheduleExactAlarms()) {
             AlarmLogger.getInstance(context).e("AlarmScheduler", "Exact alarm permission denied — cannot schedule id=$id type=$alarmType")
@@ -124,11 +139,36 @@ class AlarmScheduler(private val context: Context) {
         }
 
         // Saved after arming, so BootReceiver never restores an unarmed alarm.
-        AlarmDatabase.getInstance(context)
-            .saveAlarm(id, alarmType, title, triggerTimeMs.toDouble(), isBackup = false, snoozeCount = snoozeCount)
+        val db = AlarmDatabase.getInstance(context)
+        val saved = try {
+            db.saveAlarm(
+                id, alarmType, title, triggerTimeMs.toDouble(),
+                isBackup = false, snoozeCount = snoozeCount, quietUsed = quietUsed, preview = preview,
+                moment = moment
+            )
+        } catch (e: SQLException) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save threw id=$id: ${e.message}")
+            false
+        }
+        if (!saved && keepsArmedAfterFailedSave(savedCompleted(db, id))) {
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save failed; armed on its saved row: id=$id")
+            return true
+        }
+        if (!saved) {
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+            AlarmLogger.getInstance(context).e("AlarmScheduler", "Alarm save failed; disarmed id=$id")
+            return false
+        }
         AlarmLogger.getInstance(context).d("AlarmScheduler", "Alarm scheduled: id=$id triggerTime=$triggerTimeMs")
 
         return true
+    }
+
+    private fun savedCompleted(db: AlarmDatabase, id: String): Boolean? = try {
+        db.getAlarm(id)?.completed
+    } catch (e: SQLException) {
+        null
     }
 
     fun cancelAlarm(id: String) {

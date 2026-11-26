@@ -17,11 +17,16 @@ jest.mock("@/utils/alarmReport", () => ({
   alarmLog: { i: jest.fn(), w: jest.fn(), e: jest.fn() },
 }));
 jest.mock("@/stores/alarmStreak", () => ({
-  useAlarmStreakStore: { getState: () => ({ recordFajrSuccess: mockRecordFajrSuccess }) },
+  useAlarmStreakStore: { getState: () => ({ recordFajrOutcome: mockRecordFajrOutcome }) },
 }));
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: { getState: () => mockSettings },
 }));
+// The planner arms only for a verified place.
+jest.mock("@/utils/timesPlace", () => {
+  const { TIMES_PLACE } = jest.requireActual("@/constants/Location");
+  return { readTimesPlace: async () => TIMES_PLACE.VERIFIED };
+});
 jest.mock("@/stores/prayerTimes", () => ({
   usePrayerTimesStore: { getState: () => mockTimes },
 }));
@@ -29,12 +34,13 @@ jest.mock("@/stores/prayerTimes", () => ({
 const { FAJR, JUMMAH } = ScheduledAlarmType;
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
+const SOLVED = { outcome: ALARM_OUTCOME.SOLVED };
 
 type TypeSettings = { enabled: boolean; timing: TimingConfig };
 type PrayerDay = { timings: { fajr?: string; dhuhr?: string }; timezone: string };
 type NativeAlarm = { id: string; triggerDate: Date; alarmType: ScheduledAlarmType };
 
-const mockRecordFajrSuccess = jest.fn();
+const mockRecordFajrOutcome = jest.fn();
 const settingsOf = (): { fajr: TypeSettings; friday: TypeSettings } => ({
   fajr: { enabled: true, timing: DEFAULT_TIMING_CONFIG },
   friday: { enabled: false, timing: { mode: "beforePrayerTime", minutesBefore: 30 } },
@@ -115,7 +121,7 @@ const KARACHI = [
 beforeEach(() => {
   resetNativeLog();
   resetMemoryKv();
-  mockRecordFajrSuccess.mockClear();
+  mockRecordFajrOutcome.mockClear();
   nativeResults.getPendingChallenge = null;
   useAlarmStore.setState({ scheduledAlarms: {} });
   Object.assign(mockSettings, settingsOf());
@@ -168,10 +174,12 @@ describe("2.x alarm id migration", () => {
       seed(rung, next);
       jest.setSystemTime(rung.triggerTime + solvedAfter);
 
-      await completeAndRescheduleAlarm(rung.alarmId);
+      await completeAndRescheduleAlarm(rung.alarmId, SOLVED);
       await ensureAlarmsScheduled();
 
-      expect(mockRecordFajrSuccess.mock.calls).toEqual([[rung.triggerTime]]);
+      // An early solve ends the morning at the solve, inside the streak's hour.
+      const endedAt = Math.min(rung.triggerTime, Date.now());
+      expect(mockRecordFajrOutcome.mock.calls).toEqual([[endedAt, ALARM_OUTCOME.SOLVED]]);
       expect(stored()).toEqual([
         [idAt(FAJR, RIYADH[1]), RIYADH[1]],
         [idAt(FAJR, RIYADH[2]), RIYADH[2]],

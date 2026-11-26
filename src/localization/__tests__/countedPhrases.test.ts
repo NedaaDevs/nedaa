@@ -1,0 +1,764 @@
+import { AppLocale } from "@/enums/app";
+import i18n from "@/localization/i18n";
+import ar from "@/localization/locales/ar.json";
+import en from "@/localization/locales/en.json";
+import ms from "@/localization/locales/ms.json";
+import ur from "@/localization/locales/ur.json";
+import { ZONE_COPY_KEY, ZONE_DIRECTION, ZONE_NOTE_KEY, ZONE_UNIT } from "@/constants/CityOffer";
+import { CUSTOM_SOUND_MAX_MB } from "@/constants/CustomSound";
+import { usePreferencesStore } from "@/stores/preferences";
+import { hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
+
+const LOCALES = { ar, en, ms, ur } as const;
+const ARABIC_COUNTS = [0, 1, 2, 3, 11, 100] as const;
+
+const sayAr = (key: string, count: number) => i18n.t(key, { count, lng: AppLocale.AR });
+const sayEn = (key: string, count: number) => i18n.t(key, { count, lng: AppLocale.EN });
+
+// Western digits keep the expected strings readable; the forms are what is under test.
+beforeAll(() => usePreferencesStore.setState({ useWesternNumerals: true }));
+
+// Each Arabic form is a whole phrase; the count never lands in a fixed noun.
+describe("counted phrases", () => {
+  it.each([
+    [
+      "alarm.complete.sunriseIn",
+      [
+        "الشروق بعد أقل من دقيقة",
+        "الشروق بعد دقيقة واحدة",
+        "الشروق بعد دقيقتين",
+        "الشروق بعد 3 دقائق",
+        "الشروق بعد 11 دقيقة",
+        "الشروق بعد 100 دقيقة",
+      ],
+    ],
+    [
+      "notification.customSettings",
+      [
+        "لا إعدادات مخصصة",
+        "إعداد مخصص واحد",
+        "إعدادان مخصصان",
+        "3 إعدادات مخصصة",
+        "11 إعدادًا مخصصًا",
+        "100 إعداد مخصص",
+      ],
+    ],
+    [
+      "notification.customSound.sounds",
+      ["لا أصوات", "صوت واحد", "صوتان", "3 أصوات", "11 صوتًا", "100 صوت"],
+    ],
+    [
+      "a11y.alarm.quiet.perMonth",
+      [
+        "لا مرات في الشهر",
+        "مرة واحدة في الشهر",
+        "مرتان في الشهر",
+        "3 مرات في الشهر",
+        "11 مرة في الشهر",
+        "100 مرة في الشهر",
+      ],
+    ],
+    [
+      "alarm.guide.wayOut.quiet",
+      [
+        "في الحالات الطارئة لا يمكن إيقاف الصوت.",
+        "في الحالات الطارئة يمكن إيقاف الصوت دقيقة واحدة، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت دقيقتين، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت 3 دقائق، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت 11 دقيقة، وتبقى المهمة.",
+        "في الحالات الطارئة يمكن إيقاف الصوت 100 دقيقة، وتبقى المهمة.",
+      ],
+    ],
+    [
+      "alarm.quiet.confirm.body",
+      [
+        "لا يتوقف الصوت، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت دقيقة واحدة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت دقيقتين، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت 3 دقائق، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت 11 دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+        "يتوقف الصوت 100 دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.",
+      ],
+    ],
+    [
+      "alarm.quiet.settings.help",
+      [
+        "لا يتوقف صوت المنبّه، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه دقيقة واحدة، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه دقيقتين، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه 3 دقائق، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه 11 دقيقة، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+        "يتوقف صوت المنبّه 100 دقيقة، وتبقى المهمة. تشترك جميع المنبّهات في العدد نفسه، ويبدأ من جديد في اليوم الأول من كل شهر ميلادي.",
+      ],
+    ],
+    [
+      "alarm.quiet.settings.left",
+      [
+        "لم يبقَ لك إسكات طارئ هذا الشهر.",
+        "بقيت لك مرة واحدة من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك مرتان من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك 3 مرات من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك 11 مرة من الإسكات الطارئ هذا الشهر.",
+        "بقيت لك 100 مرة من الإسكات الطارئ هذا الشهر.",
+      ],
+    ],
+    [
+      "notification.qada.ramadanIn",
+      [
+        "يبدأ رمضان اليوم.",
+        "بقي يوم واحد على رمضان.",
+        "بقي يومان على رمضان.",
+        "بقي 3 أيام على رمضان.",
+        "بقي 11 يومًا على رمضان.",
+        "بقي 100 يوم على رمضان.",
+      ],
+    ],
+    [
+      "notification.qada.fastsOwed",
+      [
+        "لم يبقَ عليك شيء من صيام القضاء.",
+        "عليك يوم واحد من صيام القضاء.",
+        "عليك يومان من صيام القضاء.",
+        "عليك 3 أيام من صيام القضاء.",
+        "عليك 11 يومًا من صيام القضاء.",
+        "عليك 100 يوم من صيام القضاء.",
+      ],
+    ],
+    [
+      "quran.highlight.verseCount",
+      ["لا آيات بعد", "آية واحدة", "آيتان", "3 آيات", "11 آية", "100 آية"],
+    ],
+    ["quran.surah.ayahCount", ["لا آيات", "آية واحدة", "آيتان", "3 آيات", "11 آية", "100 آية"]],
+    // The hero draws the figure before each form but the dual, which stands alone.
+    ["qada.home.remainingUnit", ["يوم", "يوم", "يومان", "أيام", "يومًا", "يوم"]],
+    [
+      "a11y.qada.returnDaysHint",
+      [
+        "يلغي تسجيل هذا اليوم",
+        "يعيد هذا اليوم إلى المتبقي من صيام القضاء",
+        "يعيد هذين اليومين إلى المتبقي من صيام القضاء",
+        "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
+        "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
+        "يعيد هذه الأيام إلى المتبقي من صيام القضاء",
+      ],
+    ],
+    [
+      "alarm.task.startCount",
+      [
+        "بدء مهام الاستيقاظ",
+        "بدء مهمة الاستيقاظ",
+        "بدء مهمتَي الاستيقاظ",
+        "بدء 3 مهام استيقاظ",
+        "بدء 11 مهمة استيقاظ",
+        "بدء 100 مهمة استيقاظ",
+      ],
+    ],
+    [
+      "alarm.task.tapAsk",
+      [
+        "النقر على الزر الكبير.",
+        "النقر على الزر الكبير مرة واحدة.",
+        "النقر على الزر الكبير مرتين.",
+        "النقر على الزر الكبير 3 مرات.",
+        "النقر على الزر الكبير 11 مرة.",
+        "النقر على الزر الكبير 100 مرة.",
+      ],
+    ],
+    [
+      "alarm.task.quiet.ending",
+      [
+        "يعود الصوت الآن",
+        "يعود الصوت بعد ثانية واحدة",
+        "يعود الصوت بعد ثانيتين",
+        "يعود الصوت بعد 3 ثوانٍ",
+        "يعود الصوت بعد 11 ثانية",
+        "يعود الصوت بعد 100 ثانية",
+      ],
+    ],
+    [
+      "alarm.task.about.tap",
+      [
+        "النقر على الزر.",
+        "النقر على الزر مرة واحدة.",
+        "النقر على الزر مرتين.",
+        "النقر على الزر 3 مرات.",
+        "النقر على الزر 11 مرة.",
+        "النقر على الزر 100 مرة.",
+      ],
+    ],
+    [
+      "alarm.guide.task.quiet",
+      [
+        "لا يتوقف الصوت عند بدء المهمة ولا بعد إكمال أي خطوة.",
+        "يتوقف الصوت ثانية واحدة عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت ثانيتين عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت 3 ثوانٍ عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت 11 ثانية عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+        "يتوقف الصوت 100 ثانية عند بدء المهمة أول مرة، وكذلك بعد إكمال كل خطوة.",
+      ],
+    ],
+    [
+      "alarm.guide.try.stack",
+      [
+        "لا يمكن اختيار أي مهمة للمنبّه.",
+        "يمكن اختيار مهمة واحدة فقط للمنبّه.",
+        "يمكن اختيار مهمتين على الأكثر للمنبّه، تُؤدّى إحداهما بعد الأخرى.",
+        "يمكن اختيار 3 مهام على الأكثر للمنبّه، تُؤدّى واحدة تلو الأخرى.",
+        "يمكن اختيار 11 مهمة على الأكثر للمنبّه، تُؤدّى واحدة تلو الأخرى.",
+        "يمكن اختيار 100 مهمة على الأكثر للمنبّه، تُؤدّى واحدة تلو الأخرى.",
+      ],
+    ],
+    ["alarm.task.count", ["بلا مهام", "مهمة واحدة", "مهمتان", "3 مهام", "11 مهمة", "100 مهمة"]],
+    [
+      "alarm.task.full",
+      [
+        "لا يمكن إضافة مهام",
+        "مهمة واحدة على الأكثر",
+        "مهمتان على الأكثر",
+        "3 مهام على الأكثر",
+        "11 مهمة على الأكثر",
+        "100 مهمة على الأكثر",
+      ],
+    ],
+    [
+      "a11y.alarm.task.steps",
+      ["بلا خطوات", "خطوة واحدة", "خطوتان", "3 خطوات", "11 خطوة", "100 خطوة"],
+    ],
+  ])("says %s in Arabic with all six forms", (key, sentences) => {
+    ARABIC_COUNTS.forEach((count, i) => expect(sayAr(key, count)).toBe(sentences[i]));
+  });
+
+  // The name or state is filled in; the count picks the form.
+  it.each([
+    [
+      "alarm.task.withSteps",
+      { name: "مسألة حسابية" },
+      [
+        "مسألة حسابية",
+        "مسألة حسابية · خطوة واحدة",
+        "مسألة حسابية · خطوتان",
+        "مسألة حسابية · 3 خطوات",
+        "مسألة حسابية · 11 خطوة",
+        "مسألة حسابية · 100 خطوة",
+      ],
+    ],
+    [
+      "a11y.alarm.task.withSteps",
+      { name: "مسألة حسابية" },
+      [
+        "مسألة حسابية",
+        "مسألة حسابية، خطوة واحدة",
+        "مسألة حسابية، خطوتان",
+        "مسألة حسابية، 3 خطوات",
+        "مسألة حسابية، 11 خطوة",
+        "مسألة حسابية، 100 خطوة",
+      ],
+    ],
+    [
+      "a11y.alarm.task.quietLeft",
+      { state: "الصوت متوقف مؤقتًا" },
+      [
+        "الصوت متوقف مؤقتًا، لم يبقَ وقت",
+        "الصوت متوقف مؤقتًا، بقيت ثانية واحدة",
+        "الصوت متوقف مؤقتًا، بقيت ثانيتان",
+        "الصوت متوقف مؤقتًا، بقيت 3 ثوانٍ",
+        "الصوت متوقف مؤقتًا، بقيت 11 ثانية",
+        "الصوت متوقف مؤقتًا، بقيت 100 ثانية",
+      ],
+    ],
+    [
+      "alarm.task.wayOutAfter",
+      { stop: "إيقاف المنبّه" },
+      [
+        'يظهر زر "إيقاف المنبّه" فورًا.',
+        'بعد دقيقة واحدة يظهر زر "إيقاف المنبّه".',
+        'بعد دقيقتين يظهر زر "إيقاف المنبّه".',
+        'بعد 3 دقائق يظهر زر "إيقاف المنبّه".',
+        'بعد 11 دقيقة يظهر زر "إيقاف المنبّه".',
+        'بعد 100 دقيقة يظهر زر "إيقاف المنبّه".',
+      ],
+    ],
+  ])("says %s in Arabic with all six forms around its filler", (key, filler, sentences) => {
+    ARABIC_COUNTS.forEach((count, i) =>
+      expect(i18n.t(key, { ...filler, count, lng: AppLocale.AR })).toBe(sentences[i])
+    );
+  });
+
+  it.each([
+    ["alarm.complete.sunriseIn", "Sunrise in 1 min", "Sunrise in 5 min"],
+    ["notification.customSettings", "1 custom setting", "5 custom settings"],
+    ["notification.customSound.sounds", "1 sound", "5 sounds"],
+    ["notification.qada.ramadanIn", "Ramadan begins in 1 day.", "Ramadan begins in 5 days."],
+    [
+      "notification.qada.fastsOwed",
+      "You have 1 missed fast to make up.",
+      "You have 5 missed fasts to make up.",
+    ],
+    ["quran.highlight.verseCount", "1 verse", "5 verses"],
+    ["alarm.task.startCount", "Start wake-up task", "Start 5 wake-up tasks"],
+    ["alarm.task.tapAsk", "Tap the large button once.", "Tap the large button 5 times."],
+    ["alarm.task.quiet.ending", "Sound returns in 1 second", "Sound returns in 5 seconds"],
+    ["alarm.task.about.tap", "Tap a button once.", "Tap a button 5 times."],
+    ["alarm.task.count", "1 task", "5 tasks"],
+    ["alarm.task.full", "Up to 1 task", "Up to 5 tasks"],
+    [
+      "alarm.guide.task.quiet",
+      "The sound pauses for 1 second when the task first starts, and again after each step.",
+      "The sound pauses for 5 seconds when the task first starts, and again after each step.",
+    ],
+    [
+      "alarm.guide.try.stack",
+      "An alarm can have only 1 task.",
+      "An alarm can have up to 5 tasks, done one after another.",
+    ],
+    ["a11y.alarm.task.steps", "1 step", "5 steps"],
+    ["a11y.alarm.quiet.perMonth", "Once a month", "5 times a month"],
+    [
+      "alarm.guide.wayOut.quiet",
+      "In an emergency the sound can be turned off for one minute. The task stays.",
+      "In an emergency the sound can be turned off for 5 minutes. The task stays.",
+    ],
+    [
+      "alarm.quiet.confirm.body",
+      "The sound stops for 1 minute. The task stays, and finishing it ends the alarm.",
+      "The sound stops for 5 minutes. The task stays, and finishing it ends the alarm.",
+    ],
+    [
+      "alarm.quiet.settings.help",
+      "Turns the sound off for 1 minute while the task stays. All alarms share one count, which starts again on the first day of each month.",
+      "Turns the sound off for 5 minutes while the task stays. All alarms share one count, which starts again on the first day of each month.",
+    ],
+    [
+      "alarm.quiet.settings.left",
+      "1 emergency quiet left this month.",
+      "5 emergency quiets left this month.",
+    ],
+    ["quran.surah.ayahCount", "1 ayah", "5 ayahs"],
+    [
+      "a11y.qada.returnDaysHint",
+      "Counts this day as remaining again",
+      "Counts these 5 days as remaining again",
+    ],
+  ])("says %s in English", (key, one, five) => {
+    expect(sayEn(key, 1)).toBe(one);
+    expect(sayEn(key, 5)).toBe(five);
+  });
+
+  it.each([
+    [AppLocale.MS, "5 tetapan tersuai"],
+    [AppLocale.UR, "5 حسبِ ضرورت ترتیبات"],
+  ])("fills the count in %s", (lng, phrase) => {
+    expect(i18n.t("notification.customSettings", { count: 5, lng })).toBe(phrase);
+  });
+
+  // The total picks the form; the completed count is only filled in.
+  it("inflects the completed-days line by its total", () => {
+    const line = (total: number) =>
+      i18n.t("qada.home.completedOf", { count: total, completed: 1, lng: AppLocale.AR });
+
+    expect(ARABIC_COUNTS.map(line)).toEqual([
+      "لم تُضف أيامًا بعد",
+      "أكملت 1 من أصل يوم واحد",
+      "أكملت 1 من أصل يومين",
+      "أكملت 1 من أصل 3 أيام",
+      "أكملت 1 من أصل 11 يومًا",
+      "أكملت 1 من أصل 100 يوم",
+    ]);
+    expect(i18n.t("qada.home.completedOf", { count: 5, completed: 2, lng: AppLocale.EN })).toBe(
+      "2 of 5 days completed"
+    );
+  });
+
+  it("gives a year of qada days the form 365 takes", () => {
+    expect(sayAr("qada.days", 365)).toBe("365 يومًا");
+  });
+});
+
+describe("the compass dial's spoken heading", () => {
+  const reference = "R";
+  const sayDial = (count: number, lng: AppLocale) =>
+    i18n.t("a11y.compass.dial", { count, reference, lng });
+
+  it("inflects the degrees in Arabic with all six forms", () => {
+    expect(ARABIC_COUNTS.map((count) => sayDial(count, AppLocale.AR))).toEqual([
+      "اتجاه البوصلة 0 درجة، R",
+      "اتجاه البوصلة درجة واحدة، R",
+      "اتجاه البوصلة درجتان، R",
+      "اتجاه البوصلة 3 درجات، R",
+      "اتجاه البوصلة 11 درجة، R",
+      "اتجاه البوصلة 100 درجة، R",
+    ]);
+  });
+
+  it("says one degree in English", () => {
+    expect(sayDial(1, AppLocale.EN)).toBe("Compass heading 1 degree, R");
+  });
+});
+
+describe("the Hijri converter's offset note", () => {
+  it.each([
+    [AppLocale.AR, -1, "التاريخ معدَّل حسب إعداداتك: ناقص يوم واحد"],
+    [AppLocale.AR, 3, "التاريخ معدَّل حسب إعداداتك: زائد 3 أيام"],
+    [AppLocale.EN, 2, "Adjusted per your settings: Plus 2 days"],
+  ])("states the %s offset %i as one phrase", (lng, offset, sentence) => {
+    const adjustment = hijriAdjustmentLabel(offset, i18n.getFixedT(lng));
+    expect(i18n.t("tools.hijriConverter.offsetNote", { adjustment, lng })).toBe(sentence);
+  });
+});
+
+describe("the night timings note", () => {
+  const NIGHT = "notification.otherTiming.group.night.description";
+
+  it.each(Object.entries(LOCALES))("has one line per midnight mode in %s", (_, locale) => {
+    const strings: Record<string, unknown> = locale;
+    expect(strings[`${NIGHT}.standard`]).toEqual(expect.any(String));
+    expect(strings[`${NIGHT}.jafari`]).toEqual(expect.any(String));
+    expect(strings[NIGHT]).toBeUndefined();
+  });
+
+  it.each([
+    ["standard", "تُحسب أوقات الليل من المدة بين غروب الشمس وشروقها."],
+    ["jafari", "تُحسب أوقات الليل من المدة بين غروب الشمس والفجر."],
+  ])("names the %s span in Arabic by sunset", (mode, sentence) => {
+    expect(i18n.t(`${NIGHT}.${mode}`, { lng: AppLocale.AR })).toBe(sentence);
+  });
+});
+
+describe("the dhikr challenge's spoken phrase", () => {
+  const values = { arabic: "سبحان الله", transliteration: "SubhanAllah" };
+
+  it("reads the Arabic phrase to an Arabic voice", () => {
+    expect(i18n.t("a11y.alarm.dhikrPhrase", { ...values, lng: AppLocale.AR })).toBe(
+      "الذِّكر المطلوب كتابته: سبحان الله"
+    );
+  });
+
+  it("reads the transliteration in English", () => {
+    expect(i18n.t("a11y.alarm.dhikrPhrase", { ...values, lng: AppLocale.EN })).toBe(
+      "Dhikr to type: SubhanAllah"
+    );
+  });
+});
+
+describe("the custom sound size limit", () => {
+  it.each(Object.entries(LOCALES))("states the enforced limit in %s", (_, locale) => {
+    const strings: Record<string, unknown> = locale;
+    expect(strings["notification.customSound.info"]).toContain("{{maxMb}}");
+    expect(strings["notification.customSound.fileTooLarge"]).toContain("{{maxMb}}");
+  });
+
+  it("names the limit's number", () => {
+    expect(
+      i18n.t("notification.customSound.fileTooLarge", {
+        maxMb: CUSTOM_SOUND_MAX_MB,
+        lng: AppLocale.EN,
+      })
+    ).toContain(`${CUSTOM_SOUND_MAX_MB} MB`);
+  });
+});
+
+describe("the list separator", () => {
+  it.each([
+    [AppLocale.AR, "، "],
+    [AppLocale.EN, ", "],
+    [AppLocale.MS, ", "],
+    [AppLocale.UR, "، "],
+  ])("joins a %s list with its own comma", (lng, separator) => {
+    expect(i18n.t("common.listSeparator", { lng })).toBe(separator);
+  });
+});
+
+describe("retired keys", () => {
+  const RETIRED = /^(common\.nedaa|qada\.daysCount|notification\.qada\.bodyRamadan)(_|$)/;
+
+  it.each(Object.entries(LOCALES))("are gone from %s", (_, locale) => {
+    expect(Object.keys(locale).filter((key) => RETIRED.test(key))).toEqual([]);
+  });
+});
+
+// The Location screen's refresh row: how long ago the device found the place.
+describe("the last time the device found the place", () => {
+  it.each([
+    [
+      "location.device.lastFound.minutes",
+      [
+        "آخر تحديد للموقع قبل أقل من دقيقة",
+        "آخر تحديد للموقع قبل دقيقة",
+        "آخر تحديد للموقع قبل دقيقتين",
+        "آخر تحديد للموقع قبل 3 دقائق",
+        "آخر تحديد للموقع قبل 11 دقيقة",
+        "آخر تحديد للموقع قبل 100 دقيقة",
+      ],
+    ],
+    [
+      "location.device.lastFound.hours",
+      [
+        "آخر تحديد للموقع قبل أقل من ساعة",
+        "آخر تحديد للموقع قبل ساعة",
+        "آخر تحديد للموقع قبل ساعتين",
+        "آخر تحديد للموقع قبل 3 ساعات",
+        "آخر تحديد للموقع قبل 11 ساعة",
+        "آخر تحديد للموقع قبل 100 ساعة",
+      ],
+    ],
+    [
+      "location.device.lastFound.days",
+      [
+        "آخر تحديد للموقع قبل أقل من يوم",
+        "آخر تحديد للموقع قبل يوم",
+        "آخر تحديد للموقع قبل يومين",
+        "آخر تحديد للموقع قبل 3 أيام",
+        "آخر تحديد للموقع قبل 11 يومًا",
+        "آخر تحديد للموقع قبل 100 يوم",
+      ],
+    ],
+  ])("says %s in Arabic with all six forms", (key, sentences) => {
+    expect(ARABIC_COUNTS.map((count) => sayAr(key, count))).toEqual(sentences);
+  });
+
+  it.each([
+    ["location.device.lastFound.minutes", "Last found 1 minute ago", "Last found 5 minutes ago"],
+    ["location.device.lastFound.hours", "Last found 1 hour ago", "Last found 5 hours ago"],
+    ["location.device.lastFound.days", "Last found 1 day ago", "Last found 5 days ago"],
+  ])("says %s in English", (key, one, five) => {
+    expect(sayEn(key, 1)).toBe(one);
+    expect(sayEn(key, 5)).toBe(five);
+  });
+});
+
+// The compass's saved fix can be a chosen city's, days old.
+describe("the age of the compass's saved fix in days", () => {
+  it("says it in Arabic with all six forms", () => {
+    expect(ARABIC_COUNTS.map((count) => sayAr("compass.locationSavedAge.days", count))).toEqual([
+      "محفوظ منذ أقل من يوم",
+      "محفوظ منذ يوم",
+      "محفوظ منذ يومين",
+      "محفوظ منذ 3 أيام",
+      "محفوظ منذ 11 يومًا",
+      "محفوظ منذ 100 يوم",
+    ]);
+  });
+
+  it("says it in English", () => {
+    expect(sayEn("compass.locationSavedAge.days", 1)).toBe("Saved 1 day ago");
+    expect(sayEn("compass.locationSavedAge.days", 5)).toBe("Saved 5 days ago");
+  });
+});
+
+// The city picker's counts: its results, its reach and the full list's size.
+describe("the city picker's counts", () => {
+  // A list's size is said as a grouped `amount`; `count` picks the form.
+  const sayCities = (key: string, count: number, lng: AppLocale) =>
+    i18n.t(key, { count, amount: String(count), size: "6.1", lng });
+
+  it.each([
+    [
+      "location.picker.resultCount",
+      [
+        "لم يُعثر على أي مدينة",
+        "عُثر على مدينة واحدة",
+        "عُثر على مدينتين",
+        "عُثر على 3 مدن",
+        "عُثر على 11 مدينة",
+        "عُثر على 100 مدينة",
+      ],
+    ],
+    [
+      "location.picker.resultCountCapped",
+      [
+        "لم يُعثر على أي مدينة",
+        "تعرض القائمة أول مدينة مطابقة للبحث",
+        "تعرض القائمة أول مدينتين مطابقتين للبحث",
+        "تعرض القائمة أول 3 مدن مطابقة للبحث",
+        "تعرض القائمة أول 11 مدينة مطابقة للبحث",
+        "تعرض القائمة أول 100 مدينة مطابقة للبحث",
+      ],
+    ],
+    [
+      "location.picker.seedCoverage",
+      [
+        "لا يشمل البحث أي مدينة بعد.",
+        "يقتصر البحث حاليًا على مدينة رئيسية واحدة.",
+        "يقتصر البحث حاليًا على مدينتين رئيسيتين.",
+        "يقتصر البحث حاليًا على 3 مدن رئيسية.",
+        "يقتصر البحث حاليًا على 11 مدينة رئيسية.",
+        "يقتصر البحث حاليًا على 100 مدينة رئيسية.",
+      ],
+    ],
+    [
+      "location.picker.packDetail",
+      [
+        "لا تضم أي مدينة، وحجمها 6.1 ميغابايت",
+        "تضم مدينة واحدة، وحجمها 6.1 ميغابايت",
+        "تضم مدينتين، وحجمها 6.1 ميغابايت",
+        "تضم 3 مدن، وحجمها 6.1 ميغابايت",
+        "تضم 11 مدينة، وحجمها 6.1 ميغابايت",
+        "تضم 100 مدينة، وحجمها 6.1 ميغابايت",
+      ],
+    ],
+  ])("says %s in Arabic with all six forms", (key, sentences) => {
+    expect(ARABIC_COUNTS.map((count) => sayCities(key, count, AppLocale.AR))).toEqual(sentences);
+  });
+
+  it.each([
+    ["location.picker.resultCount", "1 city found", "5 cities found"],
+    [
+      "location.picker.resultCountCapped",
+      "Showing the first city that matches",
+      "Showing the first 5 cities that match",
+    ],
+    [
+      "location.picker.seedCoverage",
+      "Search covers 1 major city for now.",
+      "Search covers 5 major cities for now.",
+    ],
+    ["location.picker.packDetail", "1 city, 6.1 MB", "5 cities, 6.1 MB"],
+  ])("says %s in English", (key, one, five) => {
+    expect(sayCities(key, 1, AppLocale.EN)).toBe(one);
+    expect(sayCities(key, 5, AppLocale.EN)).toBe(five);
+  });
+});
+
+// The zone sentences carry the place names and the count in every Arabic form.
+describe("the time-zone sentences", () => {
+  const params = { place: "دبي", other: "الرياض", saved: "الرياض" } as const;
+
+  it.each([
+    [
+      ZONE_COPY_KEY[ZONE_DIRECTION.AHEAD][ZONE_UNIT.HOURS],
+      [
+        "\u2068دبي\u2069 و\u2068الرياض\u2069 على التوقيت نفسه.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بساعة واحدة.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بساعتين.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ3 ساعات.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ11 ساعة.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ100 ساعة.",
+      ],
+    ],
+    [
+      ZONE_COPY_KEY[ZONE_DIRECTION.AHEAD][ZONE_UNIT.HALF_HOURS],
+      [
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بنصف ساعة.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بساعة ونصف.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بساعتين ونصف.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ3 ساعات ونصف.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ11 ساعة ونصف.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ100 ساعة ونصف.",
+      ],
+    ],
+    [
+      ZONE_COPY_KEY[ZONE_DIRECTION.AHEAD][ZONE_UNIT.MINUTES],
+      [
+        "\u2068دبي\u2069 و\u2068الرياض\u2069 على التوقيت نفسه.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بدقيقة واحدة.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بدقيقتين.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ3 دقائق.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ11 دقيقة.",
+        "\u2068دبي\u2069 تسبق \u2068الرياض\u2069 بـ100 دقيقة.",
+      ],
+    ],
+    [
+      ZONE_COPY_KEY[ZONE_DIRECTION.BEHIND][ZONE_UNIT.HOURS],
+      [
+        "\u2068دبي\u2069 و\u2068الرياض\u2069 على التوقيت نفسه.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بساعة واحدة.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بساعتين.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ3 ساعات.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ11 ساعة.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ100 ساعة.",
+      ],
+    ],
+    [
+      ZONE_COPY_KEY[ZONE_DIRECTION.BEHIND][ZONE_UNIT.HALF_HOURS],
+      [
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بنصف ساعة.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بساعة ونصف.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بساعتين ونصف.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ3 ساعات ونصف.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ11 ساعة ونصف.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ100 ساعة ونصف.",
+      ],
+    ],
+    [
+      ZONE_COPY_KEY[ZONE_DIRECTION.BEHIND][ZONE_UNIT.MINUTES],
+      [
+        "\u2068دبي\u2069 و\u2068الرياض\u2069 على التوقيت نفسه.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بدقيقة واحدة.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بدقيقتين.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ3 دقائق.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ11 دقيقة.",
+        "\u2068دبي\u2069 تتأخر عن \u2068الرياض\u2069 بـ100 دقيقة.",
+      ],
+    ],
+    [
+      ZONE_NOTE_KEY[ZONE_DIRECTION.AHEAD][ZONE_UNIT.HOURS],
+      [
+        "المواقيت حسب \u2068الرياض\u2069، التي توقيتها مثل توقيت \u2068دبي\u2069.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بساعة واحدة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بساعتين.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ3 ساعات.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ11 ساعة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ100 ساعة.",
+      ],
+    ],
+    [
+      ZONE_NOTE_KEY[ZONE_DIRECTION.AHEAD][ZONE_UNIT.HALF_HOURS],
+      [
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بنصف ساعة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بساعة ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بساعتين ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ3 ساعات ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ11 ساعة ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ100 ساعة ونصف.",
+      ],
+    ],
+    [
+      ZONE_NOTE_KEY[ZONE_DIRECTION.AHEAD][ZONE_UNIT.MINUTES],
+      [
+        "المواقيت حسب \u2068الرياض\u2069، التي توقيتها مثل توقيت \u2068دبي\u2069.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بدقيقة واحدة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بدقيقتين.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ3 دقائق.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ11 دقيقة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تسبق \u2068دبي\u2069 بـ100 دقيقة.",
+      ],
+    ],
+    [
+      ZONE_NOTE_KEY[ZONE_DIRECTION.BEHIND][ZONE_UNIT.HOURS],
+      [
+        "المواقيت حسب \u2068الرياض\u2069، التي توقيتها مثل توقيت \u2068دبي\u2069.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بساعة واحدة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بساعتين.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ3 ساعات.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ11 ساعة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ100 ساعة.",
+      ],
+    ],
+    [
+      ZONE_NOTE_KEY[ZONE_DIRECTION.BEHIND][ZONE_UNIT.HALF_HOURS],
+      [
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بنصف ساعة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بساعة ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بساعتين ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ3 ساعات ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ11 ساعة ونصف.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ100 ساعة ونصف.",
+      ],
+    ],
+    [
+      ZONE_NOTE_KEY[ZONE_DIRECTION.BEHIND][ZONE_UNIT.MINUTES],
+      [
+        "المواقيت حسب \u2068الرياض\u2069، التي توقيتها مثل توقيت \u2068دبي\u2069.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بدقيقة واحدة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بدقيقتين.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ3 دقائق.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ11 دقيقة.",
+        "المواقيت حسب \u2068الرياض\u2069، التي تتأخر عن \u2068دبي\u2069 بـ100 دقيقة.",
+      ],
+    ],
+  ])("says %s in Arabic with all six forms", (key, sentences) => {
+    ARABIC_COUNTS.forEach((count, i) =>
+      expect(i18n.t(key, { count, lng: AppLocale.AR, ...params })).toBe(sentences[i])
+    );
+  });
+});

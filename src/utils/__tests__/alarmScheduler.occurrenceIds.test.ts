@@ -1,3 +1,4 @@
+import { ALARM_OUTCOME } from "expo-alarm";
 import { ScheduledAlarmType } from "@/enums/alarm";
 import { type ScheduledAlarm, useAlarmStore } from "@/stores/alarm";
 import { argsOf, nativeCalls, nativeResults, resetNativeLog } from "@/test-helpers/expoAlarmLog";
@@ -24,11 +25,16 @@ jest.mock("@/utils/alarmReport", () => ({
   alarmLog: { i: jest.fn(), w: jest.fn(), e: jest.fn() },
 }));
 jest.mock("@/stores/alarmStreak", () => ({
-  useAlarmStreakStore: { getState: () => ({ recordFajrSuccess: jest.fn() }) },
+  useAlarmStreakStore: { getState: () => ({ recordFajrOutcome: jest.fn() }) },
 }));
 jest.mock("@/stores/alarmSettings", () => ({
   useAlarmSettingsStore: { getState: () => mockSettings },
 }));
+// The planner arms only for a verified place.
+jest.mock("@/utils/timesPlace", () => {
+  const { TIMES_PLACE } = jest.requireActual("@/constants/Location");
+  return { readTimesPlace: async () => TIMES_PLACE.VERIFIED };
+});
 jest.mock("@/stores/prayerTimes", () => ({
   usePrayerTimesStore: { getState: () => mockTimes },
 }));
@@ -37,6 +43,7 @@ const { FAJR, JUMMAH } = ScheduledAlarmType;
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+const SOLVED = { outcome: ALARM_OUTCOME.SOLVED };
 
 type TypeSettings = { enabled: boolean; timing: TimingConfig };
 type PrayerDay = { timings: { fajr?: string; dhuhr?: string }; timezone: string };
@@ -274,7 +281,7 @@ describe("alarm ids per occurrence", () => {
         jest.setSystemTime(triggers[ring] + solvedAfter);
         const rungId = recordIdAt(type, triggers[ring]);
         const callsBefore = nativeCalls.length;
-        await completeAndRescheduleAlarm(rungId);
+        await completeAndRescheduleAlarm(rungId, SOLVED);
         completed.push(rungId);
         const rearmed = armedNatively(nativeCalls.slice(callsBefore)).map((alarm) => alarm.id);
         rearmedCompleted.push(...rearmed.filter((id) => completed.includes(id)));
@@ -308,8 +315,8 @@ describe("alarm ids per occurrence", () => {
     jest.setSystemTime(new Date(KARACHI[0]).getTime() + 30_000);
     const rungId = idAt(FAJR, KARACHI[0]);
 
-    await completeAndRescheduleAlarm(rungId);
-    await completeAndRescheduleAlarm(rungId);
+    await completeAndRescheduleAlarm(rungId, SOLVED);
+    await completeAndRescheduleAlarm(rungId, SOLVED);
 
     expect(argsOf("cancelAlarm")).toEqual([[rungId], [rungId]]);
     expect(armedAt(FAJR)).toEqual([KARACHI[1], KARACHI[2]]);

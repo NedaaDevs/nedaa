@@ -1,4 +1,9 @@
-import { requireOptionalNativeModule, EventEmitter, Subscription } from "expo-modules-core";
+import { Platform } from "react-native";
+import {
+  requireOptionalNativeModule,
+  EventEmitter,
+  type EventSubscription,
+} from "expo-modules-core";
 
 export type AuthorizationStatus = "notDetermined" | "authorized" | "denied";
 
@@ -15,50 +20,84 @@ export interface ScheduleAlarmParams {
   // iOS only: present a live countdown (Dynamic Island / lock screen) before the
   // alarm fires. Used by the preview alarm; ignored on Android.
   countdown?: boolean;
+  // Snoozes already taken; Android caps the overlay's snooze with it.
+  snoozeCount?: number;
+  // Android: this alarm has had its emergency quiet, so the overlay offers none.
+  quietUsed?: boolean;
+  // Android: a preview ring, which the overlay offers no quiet on.
+  isPreview?: boolean;
+  // Android: the prayer's moment the ringing screen shows; null shows the clock.
+  prayerMoment?: PrayerMomentParams | null;
+}
+
+/** An instant in epoch ms and the IANA zone its clock is read in. */
+export interface PrayerMomentParams {
+  at: number;
+  timezone: string;
 }
 
 const NativeModule = requireOptionalNativeModule("ExpoAlarm");
 const isAvailable = NativeModule !== null;
-const emitter = NativeModule ? new EventEmitter(NativeModule) : null;
+// Events the native module declares with `Events(...)`.
+type ExpoAlarmEvents = {
+  onPlaybackFinished: () => void;
+};
 
-// Event listener for native events
-export function addListener(eventName: string, listener: () => void): Subscription {
+const emitter = NativeModule ? new EventEmitter<ExpoAlarmEvents>(NativeModule) : null;
+
+export const addListener = <EventName extends keyof ExpoAlarmEvents>(
+  eventName: EventName,
+  listener: ExpoAlarmEvents[EventName]
+): EventSubscription => {
   if (!emitter) {
     return { remove: () => {} };
   }
   return emitter.addListener(eventName, listener);
-}
+};
 
-export function isNativeModuleAvailable(): boolean {
+export const isNativeModuleAvailable = (): boolean => {
   return isAvailable;
-}
+};
 
-export async function isAlarmKitAvailable(): Promise<boolean> {
+export const isAlarmKitAvailable = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.isAlarmKitAvailable();
-}
+};
 
 export type BackgroundRefreshStatus = "available" | "denied" | "restricted" | "unknown";
 
-export function getBackgroundRefreshStatus(): BackgroundRefreshStatus {
+export const getBackgroundRefreshStatus = (): BackgroundRefreshStatus => {
   if (!isAvailable) return "unknown";
   return NativeModule.getBackgroundRefreshStatus();
-}
+};
 
-export async function requestAuthorization(): Promise<AuthorizationStatus> {
+export const requestAuthorization = async (): Promise<AuthorizationStatus> => {
   if (!isAvailable) {
     console.warn("[expo-alarm] Native module not available");
     return "denied";
   }
   return NativeModule.requestAuthorization();
-}
+};
 
-export async function getAuthorizationStatus(): Promise<AuthorizationStatus> {
+export const getAuthorizationStatus = async (): Promise<AuthorizationStatus> => {
   if (!isAvailable) return "denied";
   return NativeModule.getAuthorizationStatus();
-}
+};
 
-export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolean> {
+// Only iOS needs Live Activities, so only iOS reads a failed check as "off".
+const liveActivitiesWhenUnknown = () => Platform.select({ ios: false, default: true });
+
+/** Whether Live Activities show; AlarmKit alarms are silent without them. */
+export const areLiveActivitiesEnabled = async (): Promise<boolean> => {
+  if (!isAvailable) return liveActivitiesWhenUnknown();
+  try {
+    return await NativeModule.areLiveActivitiesEnabled();
+  } catch {
+    return liveActivitiesWhenUnknown();
+  }
+};
+
+export const scheduleAlarm = async (params: ScheduleAlarmParams): Promise<boolean> => {
   if (!isAvailable) {
     console.warn("[expo-alarm] Native module not available");
     return false;
@@ -73,33 +112,49 @@ export async function scheduleAlarm(params: ScheduleAlarmParams): Promise<boolea
     dismissText: params.dismissText ?? "",
     openText: params.openText ?? "",
     countdown: params.countdown ?? false,
+    snoozeCount: params.snoozeCount ?? 0,
+    quietUsed: params.quietUsed ?? false,
+    isPreview: params.isPreview ?? false,
+    prayerMomentAt: params.prayerMoment?.at ?? null,
+    prayerTimezone: params.prayerMoment?.timezone ?? null,
   });
-}
+};
 
-export async function cancelAlarm(id: string): Promise<boolean> {
+export const cancelAlarm = async (id: string): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.cancelAlarm(id);
-}
+};
 
-export async function cancelAllAlarms(): Promise<void> {
+export const cancelAllAlarms = async (): Promise<void> => {
   if (!isAvailable) return;
   return NativeModule.cancelAllAlarms();
-}
+};
 
-export async function getScheduledAlarmIds(): Promise<string[]> {
+export const getScheduledAlarmIds = async (): Promise<string[]> => {
   if (!isAvailable) return [];
   return NativeModule.getScheduledAlarmIds();
-}
+};
 
-export function markAlarmCompleted(id: string): boolean {
+// Android: uncompleted alarms native will ring later, a deferred re-arm
+// included. iOS and a failed read give an empty list.
+export const getFutureAlarmIds = async (): Promise<string[]> => {
+  if (Platform.OS !== "android" || !isAvailable) return [];
+  try {
+    return await NativeModule.getFutureAlarmIds();
+  } catch {
+    return [];
+  }
+};
+
+export const markAlarmCompleted = (id: string): boolean => {
   if (!isAvailable) return false;
   return NativeModule.markAlarmCompleted(id);
-}
+};
 
-export function deleteAlarmFromDB(id: string): boolean {
+export const deleteAlarmFromDB = (id: string): boolean => {
   if (!isAvailable) return false;
   return NativeModule.deleteAlarmFromDB(id);
-}
+};
 
 export interface StartLiveActivityParams {
   alarmId: string;
@@ -109,7 +164,9 @@ export interface StartLiveActivityParams {
   state?: "countdown" | "snoozed";
 }
 
-export async function startLiveActivity(params: StartLiveActivityParams): Promise<string | null> {
+export const startLiveActivity = async (
+  params: StartLiveActivityParams
+): Promise<string | null> => {
   if (!isAvailable) return null;
   return NativeModule.startLiveActivity(
     params.alarmId,
@@ -118,25 +175,25 @@ export async function startLiveActivity(params: StartLiveActivityParams): Promis
     params.triggerDate.getTime(),
     params.state ?? "countdown"
   );
-}
+};
 
-export async function updateLiveActivity(
+export const updateLiveActivity = async (
   activityId: string,
   state: "countdown" | "firing" | "snoozed"
-): Promise<boolean> {
+): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.updateLiveActivity(activityId, state);
-}
+};
 
-export async function endLiveActivity(activityId: string): Promise<boolean> {
+export const endLiveActivity = async (activityId: string): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.endLiveActivity(activityId);
-}
+};
 
-export async function endAllLiveActivities(): Promise<boolean> {
+export const endAllLiveActivities = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.endAllLiveActivities();
-}
+};
 
 export interface PendingChallenge {
   alarmId: string;
@@ -146,7 +203,7 @@ export interface PendingChallenge {
   timestamp: number;
 }
 
-export async function getPendingChallenge(): Promise<PendingChallenge | null> {
+export const getPendingChallenge = async (): Promise<PendingChallenge | null> => {
   if (!isAvailable) return null;
   const result = await NativeModule.getPendingChallenge();
   if (!result) return null;
@@ -156,31 +213,40 @@ export async function getPendingChallenge(): Promise<PendingChallenge | null> {
     title: result.title,
     timestamp: result.timestamp * 1000,
   };
-}
+};
 
-export async function clearPendingChallenge(): Promise<boolean> {
+// Android clears the row only when it names ownerId, or ownerId is omitted;
+// the iOS function takes no argument.
+export const clearPendingChallenge = async (ownerId?: string): Promise<boolean> => {
   if (!isAvailable) return false;
-  return NativeModule.clearPendingChallenge();
-}
+  return Platform.OS === "android" && ownerId !== undefined
+    ? NativeModule.clearPendingChallenge(ownerId)
+    : NativeModule.clearPendingChallenge();
+};
 
-export async function clearCompletedChallenges(): Promise<boolean> {
+export const clearCompletedChallenges = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.clearCompletedChallenges();
-}
+};
 
 // Ids of alarms flagged completed — the cross-platform record that an alarm finished,
 // cleared when the id is scheduled again. The Android completed queue is narrower: the
 // work list of overlay completions still awaiting recurrence rescheduling.
-export async function getCompletedAlarmIds(): Promise<string[]> {
+export const getCompletedAlarmIds = async (): Promise<string[]> => {
   if (!isAvailable) return [];
   return NativeModule.getCompletedAlarmIds();
-}
+};
 
-// Completed queue (alarms completed via Android overlay, need JS processing)
-// How an Android overlay challenge ended; only a solved one is a wake-up.
-export const ALARM_OUTCOME = { SOLVED: "solved", ABANDONED: "abandoned" } as const;
+// How an alarm ended; only a solved one is a wake-up. The overlay writes
+// SOLVED or ABANDONED; STOPPED is the task screen's way out.
+export const ALARM_OUTCOME = {
+  SOLVED: "solved",
+  ABANDONED: "abandoned",
+  STOPPED: "stopped",
+} as const;
 export type AlarmOutcome = (typeof ALARM_OUTCOME)[keyof typeof ALARM_OUTCOME];
 
+// Completed queue (alarms completed via Android overlay, need JS processing)
 export interface CompletedAlarm {
   id: number;
   alarmId: string;
@@ -190,15 +256,15 @@ export interface CompletedAlarm {
   outcome: AlarmOutcome;
 }
 
-export async function getCompletedQueue(): Promise<CompletedAlarm[]> {
+export const getCompletedQueue = async (): Promise<CompletedAlarm[]> => {
   if (!isAvailable) return [];
   return NativeModule.getCompletedQueue();
-}
+};
 
 // Clears the given queue row ids so concurrent overlay inserts survive to the
 // next drain. Falls back to clearing the whole table if the native module
 // predates the id-scoped variant, or when no ids are supplied.
-export async function clearCompletedQueue(ids?: number[]): Promise<boolean> {
+export const clearCompletedQueue = async (ids?: number[]): Promise<boolean> => {
   if (!isAvailable) return false;
   if (ids && ids.length > 0) {
     try {
@@ -208,7 +274,7 @@ export async function clearCompletedQueue(ids?: number[]): Promise<boolean> {
     }
   }
   return NativeModule.clearCompletedQueue();
-}
+};
 
 // Snooze queue (alarms snoozed via Android overlay, need JS processing)
 export interface SnoozedAlarm {
@@ -219,17 +285,19 @@ export interface SnoozedAlarm {
   title: string;
   snoozeCount: number;
   snoozeEndTime: number;
+  // The new alarm is an emergency quiet's re-ring, or a snooze after one.
+  quietUsed: boolean;
 }
 
-export async function getSnoozeQueue(): Promise<SnoozedAlarm[]> {
+export const getSnoozeQueue = async (): Promise<SnoozedAlarm[]> => {
   if (!isAvailable) return [];
   return NativeModule.getSnoozeQueue();
-}
+};
 
 // Clears the given queue row ids so concurrent overlay inserts survive to the
 // next drain. Falls back to clearing the whole table if the native module
 // predates the id-scoped variant, or when no ids are supplied.
-export async function clearSnoozeQueue(ids?: number[]): Promise<boolean> {
+export const clearSnoozeQueue = async (ids?: number[]): Promise<boolean> => {
   if (!isAvailable) return false;
   if (ids && ids.length > 0) {
     try {
@@ -239,66 +307,115 @@ export async function clearSnoozeQueue(ids?: number[]): Promise<boolean> {
     }
   }
   return NativeModule.clearSnoozeQueue();
+};
+
+// The emergency quiet count as the alarm database holds it; the app reads it
+// with its own ledger reader.
+export interface NativeQuietLedger {
+  allowance: number;
+  raise: { to: number; from: number } | null;
+  month: number | null;
+  used: number;
+  lastWriteAt: number | null;
 }
 
-export async function cancelAllBackups(): Promise<number> {
+// Android keeps the count in the alarm database, so the overlay spends it with
+// the app closed; iOS keeps it in the app alone.
+export const hasNativeQuietLedger = (): boolean => Platform.OS === "android" && isAvailable;
+
+export const getQuietLedger = (): NativeQuietLedger => NativeModule.getQuietLedger();
+
+// Writes the app's saved ledger unless a seed already wrote one; returns the row.
+export const seedQuietLedger = (ledger: NativeQuietLedger, now: number): NativeQuietLedger =>
+  NativeModule.seedQuietLedger(
+    {
+      allowance: ledger.allowance,
+      used: ledger.used,
+      ...(ledger.raise && { raiseTo: ledger.raise.to, raiseFrom: ledger.raise.from }),
+      ...(ledger.month !== null && { month: ledger.month }),
+      ...(ledger.lastWriteAt !== null && { lastWriteAt: ledger.lastWriteAt }),
+    },
+    now
+  );
+
+// Null, with nothing counted, when none is left or no seed wrote a ledger yet.
+export const recordQuietUse = (now: number): NativeQuietLedger | null =>
+  NativeModule.recordQuietUse(now);
+
+// Null, with nothing written, when no seed wrote a ledger yet.
+export const setQuietAllowance = (allowance: number, now: number): NativeQuietLedger | null =>
+  NativeModule.setQuietAllowance(allowance, now);
+
+export const cancelAllBackups = async (): Promise<number> => {
   if (!isAvailable) return 0;
   return NativeModule.cancelAllBackups();
-}
+};
 
-export async function startAlarmSound(soundName: string = "beep"): Promise<boolean> {
+export const startAlarmSound = async (soundName: string = "beep"): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.startAlarmSound(soundName);
-}
+};
 
-export async function stopAlarmSound(): Promise<boolean> {
+export const stopAlarmSound = async (): Promise<boolean> => {
   if (!isAvailable) return false;
   return NativeModule.stopAlarmSound();
-}
+};
 
-export function isAlarmSoundPlaying(): boolean {
+export const isAlarmSoundPlaying = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.isAlarmSoundPlaying();
-}
+};
 
 // Saves the text native code shows while an alarm rings, in the app's language.
-export function setAlarmCopy(copy: Record<string, string>): boolean {
+export const setAlarmCopy = (copy: Record<string, string>): boolean => {
   if (!isAvailable) return false;
   return NativeModule.setAlarmCopy(copy);
-}
+};
 
-export function stopAllAlarmEffects(): boolean {
+/** Stops the alarm's vibration and leaves its sound and volume alone. */
+export const stopAlarmVibration = (): boolean => {
+  if (!isAvailable) return false;
+  return NativeModule.stopAlarmVibration();
+};
+
+/** Starts the alarm's vibration and leaves its sound and volume alone. iOS has one vibration. */
+export const startAlarmVibration = (pattern: NativeAlarmSettings["vibrationPattern"]): boolean => {
+  if (!isAvailable) return false;
+  return NativeModule.startAlarmVibration(pattern);
+};
+
+export const stopAllAlarmEffects = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.stopAllAlarmEffects();
-}
+};
 
-export function setAlarmVolume(volume: number): boolean {
+export const setAlarmVolume = (volume: number): boolean => {
   if (!isAvailable) return false;
   return NativeModule.setAlarmVolume(Math.max(0, Math.min(1, volume)));
-}
+};
 
-export function getAlarmVolume(): number {
+export const getAlarmVolume = (): number => {
   if (!isAvailable) return 1.0;
   return NativeModule.getAlarmVolume();
-}
+};
 
-export function saveSystemVolume(): boolean {
+export const saveSystemVolume = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.saveSystemVolume();
   } catch {
     return false;
   }
-}
+};
 
-export function restoreSystemVolume(): boolean {
+export const restoreSystemVolume = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.restoreSystemVolume();
   } catch {
     return false;
   }
-}
+};
 
 export interface AlarmKitAlarm {
   id: string;
@@ -309,10 +426,10 @@ export interface AlarmKitAlarm {
   minute?: number;
 }
 
-export async function getAlarmKitAlarms(): Promise<AlarmKitAlarm[]> {
+export const getAlarmKitAlarms = async (): Promise<AlarmKitAlarm[]> => {
   if (!isAvailable) return [];
   return NativeModule.getAlarmKitAlarms();
-}
+};
 
 export interface NativeLogEntry {
   timestamp: string;
@@ -322,128 +439,179 @@ export interface NativeLogEntry {
   error?: string;
 }
 
-export async function getNativeLogs(): Promise<NativeLogEntry[]> {
+export const getNativeLogs = async (): Promise<NativeLogEntry[]> => {
   if (!isAvailable) return [];
   return NativeModule.getNativeLogs();
-}
+};
 
-export function getPersistentLog(): string {
+export const getPersistentLog = (): string => {
   if (!isAvailable) return "";
   return NativeModule.getPersistentLog();
-}
+};
 
-export function clearPersistentLog(): boolean {
+export const clearPersistentLog = (): boolean => {
   if (!isAvailable) return false;
   return NativeModule.clearPersistentLog();
-}
+};
 
-export function getNextAlarmTime(): number | null {
+export const getNextAlarmTime = (): number | null => {
   if (!isAvailable) return null;
   return NativeModule.getNextAlarmTime();
-}
+};
+
+// Android grant reads: one that cannot answer counts as not granted.
 
 // Android-specific: battery optimization exemption
-export function isBatteryOptimizationExempt(): boolean {
+export const isBatteryOptimizationExempt = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.isBatteryOptimizationExempt();
   } catch {
     return false;
   }
-}
+};
 
-export function requestBatteryOptimizationExemption(): boolean {
+export const requestBatteryOptimizationExemption = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestBatteryOptimizationExemption();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: exact alarm permission (API 31+)
-export function canScheduleExactAlarms(): boolean {
-  if (!isAvailable) return true;
+export const canScheduleExactAlarms = (): boolean => {
+  if (!isAvailable) return false;
   try {
     return NativeModule.canScheduleExactAlarms();
   } catch {
-    return true;
+    return false;
   }
-}
+};
 
-export function requestExactAlarmPermission(): boolean {
+export const requestExactAlarmPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestExactAlarmPermission();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: full-screen intent permission (API 34+)
-export function canUseFullScreenIntent(): boolean {
-  if (!isAvailable) return true;
+export const canUseFullScreenIntent = (): boolean => {
+  if (!isAvailable) return false;
   try {
     return NativeModule.canUseFullScreenIntent();
   } catch {
-    return true;
+    return false;
   }
-}
+};
 
-export function requestFullScreenIntentPermission(): boolean {
+export const requestFullScreenIntentPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestFullScreenIntentPermission();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: draw over apps (SYSTEM_ALERT_WINDOW)
-export function canDrawOverlays(): boolean {
-  if (!isAvailable) return true;
+export const canDrawOverlays = (): boolean => {
+  if (!isAvailable) return false;
   try {
     return NativeModule.canDrawOverlays();
   } catch {
-    return true;
+    return false;
   }
-}
+};
 
-export function requestDrawOverlaysPermission(): boolean {
+// A read only Android answers; iOS, a missing module and a throw give fallback.
+const readAndroid = <T>(read: () => T, fallback: T): T => {
+  if (Platform.OS !== "android" || !isAvailable) return fallback;
+  try {
+    return read();
+  } catch {
+    return fallback;
+  }
+};
+
+// Android: whether draw-over-apps lets the native overlay draw each ringing
+// alarm. Native owns the rule; iOS always uses the app's screen.
+export const usesNativeOverlay = (): boolean =>
+  readAndroid(() => NativeModule.usesNativeOverlay(), false);
+
+// Android: whether the overlay's service runs, from its start until its
+// destroy; a failed draw stops it.
+export const isOverlayShowing = (): boolean =>
+  readAndroid(() => NativeModule.isOverlayShowing(), false);
+
+// Android: the id the alarm service is ringing, null when it is silent.
+export const getRingingAlarmId = (): string | null =>
+  readAndroid(() => NativeModule.getRingingAlarmId() ?? null, null);
+
+export const requestDrawOverlaysPermission = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.requestDrawOverlaysPermission();
   } catch {
     return false;
   }
-}
+};
 
 // Android-specific: auto-start (OEM-specific)
-export function getDeviceManufacturer(): string {
+export const getDeviceManufacturer = (): string => {
   if (!isAvailable) return "unknown";
   try {
     return NativeModule.getDeviceManufacturer();
   } catch {
     return "unknown";
   }
-}
+};
 
-export function hasAutoStartSettings(): boolean {
+export const hasAutoStartSettings = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.hasAutoStartSettings();
   } catch {
     return false;
   }
-}
+};
 
-export function openAutoStartSettings(): boolean {
+export const openAutoStartSettings = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.openAutoStartSettings();
   } catch {
     return false;
   }
+};
+
+// Challenge values the native overlay reads from stored alarm settings.
+export const CHALLENGE_TYPE = {
+  NONE: "none",
+  TAP: "tap",
+  MATH: "math",
+  DHIKR: "dhikr",
+} as const;
+
+export type ChallengeType = (typeof CHALLENGE_TYPE)[keyof typeof CHALLENGE_TYPE];
+
+export const CHALLENGE_DIFFICULTY = {
+  EASY: "easy",
+  MEDIUM: "medium",
+  HARD: "hard",
+} as const;
+
+export type ChallengeDifficulty = (typeof CHALLENGE_DIFFICULTY)[keyof typeof CHALLENGE_DIFFICULTY];
+
+/** One wake-up task; a board's absent options are left out. */
+export interface NativeWakeTask {
+  id: string;
+  difficulty?: ChallengeDifficulty;
+  steps?: number;
 }
 
 // Native alarm settings (Android only)
@@ -451,8 +619,8 @@ export interface NativeAlarmSettings {
   enabled: boolean;
   sound: string;
   volume: number;
-  challengeType: "tap" | "math";
-  challengeDifficulty: "easy" | "medium" | "hard";
+  challengeType: ChallengeType;
+  challengeDifficulty: ChallengeDifficulty;
   challengeCount: number;
   gentleWakeUpEnabled: boolean;
   gentleWakeUpDuration: number;
@@ -461,48 +629,50 @@ export interface NativeAlarmSettings {
   snoozeEnabled: boolean;
   snoozeMaxCount: number;
   snoozeDuration: number;
+  /** Android only; rebuilt from the challenge fields when the two disagree. */
+  tasks?: readonly NativeWakeTask[];
 }
 
-export function openNativeSettings(alarmType: "fajr" | "jummah"): boolean {
+export const openNativeSettings = (alarmType: "fajr" | "jummah"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.openNativeSettings(alarmType);
   } catch {
     return false;
   }
-}
+};
 
-export async function getAlarmSettings(
+export const getAlarmSettings = async (
   alarmType: "fajr" | "jummah"
-): Promise<NativeAlarmSettings | null> {
+): Promise<NativeAlarmSettings | null> => {
   if (!isAvailable) return null;
   try {
     return await NativeModule.getAlarmSettings(alarmType);
   } catch {
     return null;
   }
-}
+};
 
-export async function setAlarmSettings(
+export const setAlarmSettings = async (
   alarmType: "fajr" | "jummah",
   settings: Partial<NativeAlarmSettings>
-): Promise<boolean> {
+): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.setAlarmSettings(alarmType, settings);
   } catch {
     return false;
   }
-}
+};
 
-export function isAlarmTypeEnabled(alarmType: "fajr" | "jummah"): boolean {
+export const isAlarmTypeEnabled = (alarmType: "fajr" | "jummah"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.isAlarmTypeEnabled(alarmType);
   } catch {
     return false;
   }
-}
+};
 
 // System alarm sounds
 export interface SystemSound {
@@ -511,7 +681,7 @@ export interface SystemSound {
   isSystem: boolean;
 }
 
-export async function getSystemAlarmSounds(): Promise<SystemSound[]> {
+export const getSystemAlarmSounds = async (): Promise<SystemSound[]> => {
   if (!isAvailable) return [];
   try {
     const sounds = await NativeModule.getSystemAlarmSounds();
@@ -523,7 +693,7 @@ export async function getSystemAlarmSounds(): Promise<SystemSound[]> {
   } catch {
     return [];
   }
-}
+};
 
 // -- Athan Playback Service (Android) --
 
@@ -536,7 +706,7 @@ export interface ScheduleAthanParams {
   stopLabel: string;
 }
 
-export async function scheduleAthan(params: ScheduleAthanParams): Promise<boolean> {
+export const scheduleAthan = async (params: ScheduleAthanParams): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.scheduleAthan(
@@ -550,61 +720,61 @@ export async function scheduleAthan(params: ScheduleAthanParams): Promise<boolea
   } catch {
     return false;
   }
-}
+};
 
-export async function cancelAthan(id: string): Promise<boolean> {
+export const cancelAthan = async (id: string): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.cancelAthan(id);
   } catch {
     return false;
   }
-}
+};
 
-export async function cancelAllAthans(ids: string[]): Promise<boolean> {
+export const cancelAllAthans = async (ids: string[]): Promise<boolean> => {
   if (!isAvailable) return false;
   try {
     return await NativeModule.cancelAllAthans(ids);
   } catch {
     return false;
   }
-}
+};
 
-export function stopAthan(): boolean {
+export const stopAthan = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.stopAthan();
   } catch {
     return false;
   }
-}
+};
 
-export function isAthanPlaying(): boolean {
+export const isAthanPlaying = (): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.isAthanPlaying();
   } catch {
     return false;
   }
-}
+};
 
-export function setAthanAudioStream(stream: "media" | "ringer"): boolean {
+export const setAthanAudioStream = (stream: "media" | "ringer"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.setAthanAudioStream(stream);
   } catch {
     return false;
   }
-}
+};
 
-export function setIqamaAudioStream(stream: "media" | "ringer"): boolean {
+export const setIqamaAudioStream = (stream: "media" | "ringer"): boolean => {
   if (!isAvailable) return false;
   try {
     return NativeModule.setIqamaAudioStream(stream);
   } catch {
     return false;
   }
-}
+};
 
 export default {
   isNativeModuleAvailable,
@@ -612,10 +782,12 @@ export default {
   getBackgroundRefreshStatus,
   requestAuthorization,
   getAuthorizationStatus,
+  areLiveActivitiesEnabled,
   scheduleAlarm,
   cancelAlarm,
   cancelAllAlarms,
   getScheduledAlarmIds,
+  getFutureAlarmIds,
   markAlarmCompleted,
   deleteAlarmFromDB,
   startLiveActivity,
@@ -630,11 +802,18 @@ export default {
   clearCompletedQueue,
   getSnoozeQueue,
   clearSnoozeQueue,
+  hasNativeQuietLedger,
+  getQuietLedger,
+  seedQuietLedger,
+  recordQuietUse,
+  setQuietAllowance,
   cancelAllBackups,
   startAlarmSound,
   stopAlarmSound,
   isAlarmSoundPlaying,
   setAlarmCopy,
+  stopAlarmVibration,
+  startAlarmVibration,
   stopAllAlarmEffects,
   setAlarmVolume,
   getAlarmVolume,
@@ -652,6 +831,9 @@ export default {
   canUseFullScreenIntent,
   requestFullScreenIntentPermission,
   canDrawOverlays,
+  usesNativeOverlay,
+  isOverlayShowing,
+  getRingingAlarmId,
   requestDrawOverlaysPermission,
   getDeviceManufacturer,
   hasAutoStartSettings,

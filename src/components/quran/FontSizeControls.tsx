@@ -6,6 +6,7 @@ import { Minus, Plus } from "lucide-react-native";
 import { Text } from "@/components/ui/text";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_STEP } from "@/constants/Quran";
 import { useHaptic } from "@/hooks/useHaptic";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
 
 interface FontSizeControlsProps {
   fontSize: number;
@@ -23,7 +24,7 @@ const FontSizeControls = ({
   vertical,
 }: FontSizeControlsProps) => {
   const { t } = useTranslation();
-  const haptic = useHaptic("light");
+  const haptic = useHaptic(HAPTIC_FEEDBACK.LIGHT);
 
   const canDecrease = fontSize > FONT_SIZE_MIN;
   const canIncrease = fontSize < FONT_SIZE_MAX;

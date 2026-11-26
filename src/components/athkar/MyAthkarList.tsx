@@ -1,202 +1,183 @@
-import { FC, useState, useCallback, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { ViewInstance } from "react-native";
 import { useRouter } from "expo-router";
+import { BookOpen, PenLine, Plus, Search } from "lucide-react-native";
 
-import { Box } from "@/components/ui/box";
-import { Card } from "@/components/ui/card";
-import { Text } from "@/components/ui/text";
-import { HStack } from "@/components/ui/hstack";
-import { VStack } from "@/components/ui/vstack";
-import { Pressable } from "@/components/ui/pressable";
-import { Button, ButtonIcon } from "@/components/ui/button";
-import { Icon } from "@/components/ui/icon";
-
-import { Plus, ChevronRight, ChevronLeft } from "lucide-react-native";
-
-import { useMyAthkarStore, groupMyAthkarByCategory } from "@/stores/my-athkar";
-import { useCustomAthkarStore } from "@/stores/custom-athkar";
-import { useInitializeAthkarStores } from "@/hooks/useInitializeAthkarStores";
-
-import MyAthkarEmpty from "@/components/athkar/MyAthkarEmpty";
-import MyAthkarCategoryDetail from "@/components/athkar/MyAthkarCategoryDetail";
-import CustomAthkarDetail from "@/components/athkar/CustomAthkarDetail";
 import AthkarSearchSheet from "@/components/athkar/AthkarSearchSheet";
+import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { ListGroup } from "@/components/ui/list-group";
+import { LIST_ROW_VARIANT, ListRow } from "@/components/ui/list-row";
+import { Pill } from "@/components/ui/pill";
+import { Section } from "@/components/ui/section";
+import { StatePanel } from "@/components/ui/state-panel";
+import { Text } from "@/components/ui/text";
+import { TextAction } from "@/components/ui/text-action";
+import { VStack } from "@/components/ui/vstack";
+import { CUSTOM_ATHKAR_HREF } from "@/constants/Athkar";
+import { SESSION_SOURCE, type CollectionSource } from "@/constants/AthkarSession";
+import { SECTION_KIND } from "@/constants/Section";
+import { AppLocale } from "@/enums/app";
+import { useInitializeAthkarStores } from "@/hooks/useInitializeAthkarStores";
+import { useRatioText } from "@/hooks/useRatioText";
+import { useCustomAthkarStore } from "@/stores/custom-athkar";
+import { groupMyAthkarByCategory, useMyAthkarStore } from "@/stores/my-athkar";
 
-import type { MyAthkarCategoryGroup } from "@/types/hisnMuslim";
-import type { CustomAthkarGroup } from "@/types/athkar";
+type Props = {
+  /** Opens a collection as a session. */
+  onOpen: (source: CollectionSource) => void;
+};
 
-type SelectedGroup =
-  | { type: "hisn"; group: MyAthkarCategoryGroup }
-  | { type: "custom"; group: CustomAthkarGroup }
-  | null;
-
-const MyAthkarList: FC = () => {
+/** My Athkar: Hisn al-Muslim search, the saved groups, a new group. */
+const MyAthkarList = ({ onOpen }: Props) => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-
-  const { isMyAthkarInit: hisnInitialized, isCustomInit: customInitialized } =
+  const ratioText = useRatioText();
+  const { isMyAthkarInit, isCustomInit, myAthkarFailed, customFailed, retry } =
     useInitializeAthkarStores();
+  const searchRow = useRef<ViewInstance>(null);
 
   const hisnItems = useMyAthkarStore((s) => s.items);
   const hisnProgress = useMyAthkarStore((s) => s.progress);
   const hisnDisplayData = useMyAthkarStore((s) => s.displayData);
-
   const customGroups = useCustomAthkarStore((s) => s.groups);
   const customItems = useCustomAthkarStore((s) => s.items);
   const customProgress = useCustomAthkarStore((s) => s.progress);
 
-  const [showSearch, setShowSearch] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<SelectedGroup>(null);
+  const [searching, setSearching] = useState(false);
 
-  const isArabic = i18n.language === "ar";
-  const isRTL = i18n.dir() === "rtl";
-
-  const handleBack = useCallback(() => setSelectedGroup(null), []);
-
-  // Grouping builds a fresh array, so it is memoized on its inputs rather than
-  // selected; the getter alone is a stable reference and would never recompute.
+  // Grouping builds a fresh array, so it is memoized, not selected.
   const hisnGroups = useMemo(
     () => groupMyAthkarByCategory(hisnItems, hisnDisplayData),
     [hisnItems, hisnDisplayData]
   );
 
-  if (!hisnInitialized || !customInitialized) {
+  const failed = myAthkarFailed || customFailed;
+  if ((!isMyAthkarInit && !myAthkarFailed) || (!isCustomInit && !customFailed)) {
     return (
-      <Box padding="$4">
-        <Text color="$typographySecondary">{t("athkar.loading.initializing")}</Text>
-      </Box>
+      <Text size="label" color="$muted">
+        {t("athkar.loading.initializing")}
+      </Text>
     );
   }
 
-  // Detail views
-  if (selectedGroup?.type === "hisn") {
-    return (
-      <MyAthkarCategoryDetail
-        group={selectedGroup.group}
-        onBack={handleBack}
-        onOpenSearch={() => setShowSearch(true)}
-        showSearch={showSearch}
-        onCloseSearch={() => setShowSearch(false)}
-      />
-    );
-  }
-
-  if (selectedGroup?.type === "custom") {
-    return <CustomAthkarDetail group={selectedGroup.group} onBack={handleBack} />;
-  }
-
-  const isEmpty = hisnItems.length === 0 && customGroups.length === 0;
-
-  if (isEmpty) {
-    return (
-      <>
-        <MyAthkarEmpty onOpenSearch={() => setShowSearch(true)} />
-        {showSearch && (
-          <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
-        )}
-      </>
-    );
-  }
+  const groupCount = hisnGroups.length + customGroups.length;
+  const opens = (name: string) => ({ title: name, hint: t("a11y.opens", { name }) });
+  const today = (done: number, total: number) => ({
+    status: ratioText(done, total),
+    spokenStatus: t("a11y.customAthkar.cardProgress", { current: done, total }),
+  });
 
   return (
-    <>
-      {/* Header */}
-      <HStack justifyContent="flex-start" alignItems="center" gap="$2" marginBottom="$3">
-        <Button
-          size="sm"
-          variant="solid"
-          action="primary"
-          onPress={() => setShowSearch(true)}
-          accessibilityRole="button"
-          accessibilityLabel={t("athkar.myAthkar.add")}>
-          <ButtonIcon as={Plus} />
-          <Button.Text>{t("athkar.myAthkar.add")}</Button.Text>
-        </Button>
-
-        <Button
-          size="sm"
-          variant="solid"
-          action="primary"
-          onPress={() => router.push("/custom-athkar/new")}
-          accessibilityRole="button"
-          accessibilityLabel={t("a11y.customAthkar.createButton")}>
-          <ButtonIcon as={Plus} />
-          <Button.Text>{t("athkar.customAthkar.create")}</Button.Text>
-        </Button>
+    <VStack gap="$section">
+      <HStack alignItems="flex-end" gap="$stack">
+        <VStack flex={1} gap="$tight">
+          <Text size="headline" bold typography="title" color="$fg" accessibilityRole="header">
+            {t("athkar.myAthkar")}
+          </Text>
+          <Text size="label" color="$muted">
+            {t("athkar.library.subtitle")}
+          </Text>
+        </VStack>
+        {groupCount > 0 ? (
+          // Its own box, so the row aligns it to the bottom, not the centre.
+          <Box>
+            <Pill>{t("athkar.library.groups", { count: groupCount })}</Pill>
+          </Box>
+        ) : null}
       </HStack>
 
-      <VStack gap="$3">
-        {/* Hisn Muslim Groups */}
-        {hisnGroups.map((group) => {
-          const completedCount = group.items.filter((item) => {
-            const prog = hisnProgress.find((p) => p.myAthkarId === item.id);
-            return prog?.completed;
-          }).length;
+      <ListRow
+        ref={searchRow}
+        variant={LIST_ROW_VARIANT.CARD}
+        icon={Search}
+        tile
+        {...opens(t("athkar.library.searchHisn"))}
+        status={t("athkar.library.searchHisnHint")}
+        onPress={() => setSearching(true)}
+      />
 
-          return (
-            <Pressable
-              key={group.categoryId}
-              onPress={() => setSelectedGroup({ type: "hisn", group })}
-              accessibilityRole="button"
-              accessibilityLabel={isArabic ? group.titleAr : group.titleEn}>
-              <Card>
-                <HStack justifyContent="space-between" alignItems="center">
-                  <VStack flex={1} gap="$1">
-                    <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>
-                      {isArabic ? group.titleAr : group.titleEn}
-                    </Text>
-                    <Text size="sm" color="$typographySecondary">
-                      {completedCount}/{group.items.length} {t("athkar.todayProgress")}
-                    </Text>
-                  </VStack>
-                  <Icon
-                    as={isRTL ? ChevronLeft : ChevronRight}
-                    size="md"
-                    color="$typographySecondary"
-                  />
-                </HStack>
-              </Card>
-            </Pressable>
-          );
-        })}
+      <Section
+        title={t("athkar.library.saved")}
+        kind={SECTION_KIND.LABEL}
+        accessory={
+          groupCount > 0 ? (
+            <Text size="helper" color="$muted">
+              {t("athkar.library.today")}
+            </Text>
+          ) : undefined
+        }>
+        {failed ? (
+          <StatePanel
+            title={t("athkar.library.loadFailed.title")}
+            body={t("athkar.library.loadFailed.body")}
+            action={{ label: t("common.retry"), onPress: () => void retry() }}
+          />
+        ) : null}
+        {groupCount === 0 && !failed ? (
+          <Text size="label" color="$muted">
+            {t("athkar.library.empty")}
+          </Text>
+        ) : null}
+        {groupCount > 0 ? (
+          <ListGroup>
+            {hisnGroups.map((group) => {
+              const done = group.items.filter(
+                (item) => hisnProgress.find((p) => p.myAthkarId === item.id)?.completed
+              ).length;
+              return (
+                <ListRow
+                  key={`hisn-${group.categoryId}`}
+                  variant={LIST_ROW_VARIANT.GROUPED}
+                  icon={BookOpen}
+                  tile
+                  {...opens(i18n.language === AppLocale.AR ? group.titleAr : group.titleEn)}
+                  {...today(done, group.items.length)}
+                  onPress={() =>
+                    onOpen({ kind: SESSION_SOURCE.HISN, categoryId: group.categoryId })
+                  }
+                />
+              );
+            })}
+            {customGroups.map((group) => {
+              const ids = new Set(
+                customItems.filter((i) => i.groupId === group.id).map((i) => i.id)
+              );
+              const done = customProgress.filter(
+                (p) => ids.has(p.customItemId) && p.completed
+              ).length;
+              return (
+                <ListRow
+                  key={`custom-${group.id}`}
+                  variant={LIST_ROW_VARIANT.GROUPED}
+                  icon={PenLine}
+                  tile
+                  {...opens(group.title)}
+                  {...today(done, ids.size)}
+                  value={t("athkar.library.custom")}
+                  onPress={() => onOpen({ kind: SESSION_SOURCE.CUSTOM, groupId: group.id })}
+                />
+              );
+            })}
+          </ListGroup>
+        ) : null}
+      </Section>
 
-        {/* Custom Groups */}
-        {customGroups.map((group) => {
-          const items = customItems.filter((i) => i.groupId === group.id);
-          const itemIds = new Set(items.map((i) => i.id));
-          const progressList = customProgress.filter((p) => itemIds.has(p.customItemId));
-          const completedCount = progressList.filter((p) => p.completed).length;
+      <HStack justifyContent="center">
+        <TextAction
+          label={t("athkar.library.createGroup")}
+          icon={Plus}
+          onPress={() => router.push(CUSTOM_ATHKAR_HREF.NEW)}
+        />
+      </HStack>
 
-          return (
-            <Pressable
-              key={`custom-${group.id}`}
-              onPress={() => setSelectedGroup({ type: "custom", group })}
-              accessibilityRole="button"
-              accessibilityLabel={group.title}>
-              <Card>
-                <HStack justifyContent="space-between" alignItems="center">
-                  <VStack flex={1} gap="$1">
-                    <Text size="lg" fontWeight="600" color="$typography" numberOfLines={2}>
-                      {group.title}
-                    </Text>
-                    <Text size="sm" color="$typographySecondary">
-                      {completedCount}/{items.length} {t("athkar.todayProgress")}
-                    </Text>
-                  </VStack>
-                  <Icon
-                    as={isRTL ? ChevronLeft : ChevronRight}
-                    size="md"
-                    color="$typographySecondary"
-                  />
-                </HStack>
-              </Card>
-            </Pressable>
-          );
-        })}
-      </VStack>
-
-      {showSearch && <AthkarSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />}
-    </>
+      <AthkarSearchSheet
+        isOpen={searching}
+        onClose={() => setSearching(false)}
+        finalFocusRef={searchRow}
+      />
+    </VStack>
   );
 };
 

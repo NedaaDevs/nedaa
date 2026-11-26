@@ -4,6 +4,7 @@ import { createJSONStorage, devtools, persist } from "zustand/middleware";
 
 // Services
 import { QadaDB } from "@/services/qada-db";
+import { QADA_ENTRY_STATUS, QADA_ENTRY_TYPE } from "@/constants/Qada";
 
 // Utils
 import { mapSnakeToCamel } from "@/utils/caseConversion";
@@ -81,6 +82,10 @@ export type QadaState = {
   totalOriginal: number;
   history: QadaHistory[];
   pendingEntries: QadaHistory[];
+  /** Writes that changed the data this session; a reader holding a result checks it. */
+  writes: number;
+  /** Whether the batches have been read this session; they are not persisted. */
+  loaded: boolean;
   isLoading: boolean;
   hasError: boolean;
   errorMessage: string;
@@ -99,10 +104,13 @@ export type QadaState = {
   ) => Promise<boolean>;
   loadHistory: (limit?: number) => Promise<void>;
   loadPendingEntries: () => Promise<void>;
-  completeEntry: (id: number) => Promise<boolean>;
+  /** Makes up one day; resolves to its ledger id, or null when nothing was recorded. */
+  completeEntry: (id: number) => Promise<number | null>;
   completeSpecificEntry: (id: number) => Promise<boolean>;
   completeAllEntries: () => Promise<boolean>;
   deleteEntry: (id: number) => Promise<boolean>;
+  /** Unrecords a made-up day; the day is owed again. */
+  restoreDay: (completionId: number) => Promise<boolean>;
   resetAll: () => Promise<boolean>;
   clearError: () => void;
   seedScreenshotState: (counts: {
@@ -115,8 +123,9 @@ export type QadaState = {
 
   // Computed
   getRemaining: () => number;
-  getCompletionPercentage: () => number;
 };
+
+const wrote = (state: QadaState) => ({ writes: state.writes + 1 });
 
 export const useQadaStore = create<QadaState>()(
   devtools(
@@ -128,6 +137,8 @@ export const useQadaStore = create<QadaState>()(
         totalOriginal: 0,
         history: [],
         pendingEntries: [],
+        writes: 0,
+        loaded: false,
         isLoading: false,
         hasError: false,
         errorMessage: "",
@@ -185,13 +196,13 @@ export const useQadaStore = create<QadaState>()(
               });
             }
 
-            // Load recent history
-            const history = await QadaDB.getHistory(50); // Last 50 entries
+            // Every batch: the open ones and the counts read from it span all of them.
+            const history = await QadaDB.getHistory();
             set({ history });
 
             // Load pending entries
             const pendingEntries = await QadaDB.getPendingEntries();
-            set({ pendingEntries });
+            set({ pendingEntries, loaded: true });
 
             // Sync notifications after loading data
             await syncQadaNotifications();
@@ -220,6 +231,8 @@ export const useQadaStore = create<QadaState>()(
               const state = get();
               set({
                 totalMissed: state.totalMissed + count,
+                totalOriginal: state.totalOriginal + count,
+                ...wrote(state),
               });
 
               // Reload history and pending entries
@@ -333,8 +346,9 @@ export const useQadaStore = create<QadaState>()(
               state.getRemaining()
             );
 
-            const success = await QadaDB.completeOneDayFromEntry(id);
-            if (success) {
+            const completionId = await QadaDB.completeOneDayFromEntry(id);
+            if (completionId !== null) {
+              set(wrote);
               // Reload data to update totals and entries
               await get().loadData();
 
@@ -353,17 +367,18 @@ export const useQadaStore = create<QadaState>()(
               // Sync notifications with new count
               await syncQadaNotifications();
             }
-            return success;
+            return completionId;
           } catch (error) {
             console.error("[Qada Store] Error completing entry:", error);
-            return false;
+            return null;
           }
         },
 
         completeSpecificEntry: async (id: number) => {
           try {
-            const success = await QadaDB.updateEntryStatus(id, "completed");
+            const success = await QadaDB.updateEntryStatus(id, QADA_ENTRY_STATUS.COMPLETED);
             if (success) {
+              set(wrote);
               // Reload data to update totals and entries
               await get().loadData();
 
@@ -387,8 +402,9 @@ export const useQadaStore = create<QadaState>()(
 
             // Complete all pending entries
             for (const entry of pendingEntries) {
-              await QadaDB.updateEntryStatus(entry.id, "completed");
+              await QadaDB.updateEntryStatus(entry.id, QADA_ENTRY_STATUS.COMPLETED);
             }
+            set(wrote);
 
             // Reload data to update totals and entries
             await get().loadData();
@@ -417,8 +433,9 @@ export const useQadaStore = create<QadaState>()(
               state.getRemaining()
             );
 
-            const success = await QadaDB.updateEntryStatus(id, "deleted");
+            const success = await QadaDB.updateEntryStatus(id, QADA_ENTRY_STATUS.DELETED);
             if (success) {
+              set(wrote);
               // Reload data to update totals and entries
               await get().loadData();
 
@@ -444,6 +461,20 @@ export const useQadaStore = create<QadaState>()(
           }
         },
 
+        restoreDay: async (completionId: number) => {
+          try {
+            const success = await QadaDB.restoreCompletion(completionId);
+            if (success) {
+              set(wrote);
+              await get().loadData();
+            }
+            return success;
+          } catch (error) {
+            log.e("Store", "restoreDay failed", error instanceof Error ? error : undefined);
+            return false;
+          }
+        },
+
         /**
          * Reset all Qada data
          */
@@ -453,12 +484,14 @@ export const useQadaStore = create<QadaState>()(
 
             const success = await QadaDB.resetAll();
             if (success) {
-              set({
+              set((state) => ({
                 totalMissed: 0,
                 totalCompleted: 0,
                 totalOriginal: 0,
                 history: [],
-              });
+                pendingEntries: [],
+                ...wrote(state),
+              }));
 
               // Cancel notifications since all data is reset
               await cancelAllQadaNotifications();
@@ -514,8 +547,8 @@ export const useQadaStore = create<QadaState>()(
             return {
               id: index + 1,
               count,
-              type: "added",
-              status: "pending",
+              type: QADA_ENTRY_TYPE.ADDED,
+              status: QADA_ENTRY_STATUS.PENDING,
               notes: null,
               created_at: createdAt,
               updated_at: createdAt,
@@ -528,6 +561,7 @@ export const useQadaStore = create<QadaState>()(
             totalOriginal,
             pendingEntries,
             history: pendingEntries,
+            loaded: true,
             isLoading: false,
             hasError: false,
             errorMessage: "",
@@ -540,15 +574,6 @@ export const useQadaStore = create<QadaState>()(
         getRemaining: () => {
           const state = get();
           return Math.max(0, state.totalMissed);
-        },
-
-        /**
-         * Get completion percentage
-         */
-        getCompletionPercentage: () => {
-          const state = get();
-          if (state.totalOriginal === 0) return 0;
-          return Math.round((state.totalCompleted / state.totalOriginal) * 100);
         },
       }),
       {

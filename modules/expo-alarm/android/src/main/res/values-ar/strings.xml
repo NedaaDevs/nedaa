@@ -60,32 +60,10 @@
     <!-- Duration formats -->
     <string name="minute_format">%d دقيقة</string>
 
-    <!-- Overlay - Tap Challenge -->
-    <string name="overlay_tap_instruction">انقر الزر %d مرة للإيقاف</string>
-    <string name="overlay_tap_progress">%1$d / %2$d</string>
-    <string name="overlay_tap_button">انقر للإيقاف</string>
-
-    <!-- Overlay - Math Challenge -->
-    <string name="overlay_math_instruction_one">حل مسألة رياضية واحدة للإيقاف</string>
-    <string name="overlay_math_instruction_many">حل %d مسائل رياضية للإيقاف</string>
-    <string name="overlay_math_progress">المسألة %1$d من %2$d</string>
-    <string name="overlay_math_hint">أدخل الإجابة</string>
-    <string name="overlay_math_submit">إرسال</string>
-    <string name="overlay_math_wrong">إجابة خاطئة، حاول مرة أخرى</string>
-    <string name="overlay_math_invalid">الرجاء إدخال رقم</string>
-
-    <!-- Overlay - Dhikr Challenge -->
-    <string name="overlay_dhikr_instruction_one">اكتب ذِكراً واحداً للإيقاف</string>
-    <string name="overlay_dhikr_instruction_many">اكتب %d أذكار للإيقاف</string>
-    <string name="overlay_dhikr_progress">الذِكر %1$d من %2$d</string>
-    <string name="overlay_dhikr_hint">اكتب هنا</string>
-
     <!-- Overlay - Start Solving -->
     <string name="overlay_start_solving">ابدأ الحل</string>
 
     <!-- Overlay - Snooze -->
-    <string name="overlay_snooze_button">غفوة (%d متبقية)</string>
-    <string name="overlay_snooze_none">لا غفوات متبقية</string>
     <string name="overlay_snooze_max_reached">تم الوصول للحد الأقصى من الغفوات</string>
 
     <!-- Overlay - Direct Dismiss (No Challenge) -->
@@ -94,8 +72,185 @@
 
     <!-- Overlay - Notification -->
     <string name="overlay_notification_title">المنبه نشط</string>
-    <string name="overlay_notification_tap">انقر %d مرة للإيقاف</string>
-    <string name="overlay_notification_math_one">حل مسألة رياضية واحدة للإيقاف</string>
-    <string name="overlay_notification_math_many">حل %d مسائل رياضية للإيقاف</string>
     <string name="overlay_notification_dismiss">انقر للإيقاف</string>
+
+    <!-- Overlay - Wake-up task shell -->
+    <string name="overlay_task_start">بدء مهمة الاستيقاظ</string>
+    <plurals name="overlay_task_start_count">
+        <item quantity="zero">بدء مهام الاستيقاظ</item>
+        <item quantity="one">بدء مهمة الاستيقاظ</item>
+        <item quantity="two">بدء مهمتَي الاستيقاظ</item>
+        <item quantity="few">بدء %d مهام استيقاظ</item>
+        <item quantity="many">بدء %d مهمة استيقاظ</item>
+        <item quantity="other">بدء %d مهمة استيقاظ</item>
+    </plurals>
+    <plurals name="overlay_task_with_steps">
+        <item quantity="zero">%1$s</item>
+        <item quantity="one">%1$s · خطوة واحدة</item>
+        <item quantity="two">%1$s · خطوتان</item>
+        <item quantity="few">%1$s · %2$d خطوات</item>
+        <item quantity="many">%1$s · %2$d خطوة</item>
+        <item quantity="other">%1$s · %2$d خطوة</item>
+    </plurals>
+    <string name="overlay_task_pair">%1$s ثم %2$s</string>
+    <string name="overlay_task_back">المنبّه</string>
+    <string name="overlay_back_to">العودة إلى %1$s</string>
+    <string name="overlay_task_of">المهمة %1$d من %2$d</string>
+    <string name="overlay_task_step_of">الخطوة %1$d من %2$d</string>
+    <string name="overlay_task_next">التالي: %s</string>
+    <string name="overlay_task_handover">%1$s. %2$s.</string>
+    <string name="overlay_task_name_math">مسألة حسابية</string>
+    <string name="overlay_task_name_pattern">تكرار الترتيب</string>
+    <string name="overlay_task_name_dhikr">إكمال الذِّكر</string>
+    <string name="overlay_task_name_prayers">ترتيب الصلوات</string>
+    <string name="overlay_task_name_tap">النقر</string>
+    <string name="overlay_task_title_math">ما الناتج؟</string>
+    <string name="overlay_quiet_paused">الصوت متوقف مؤقتًا</string>
+    <string name="overlay_quiet_soon">يعود الصوت قريبًا</string>
+    <string name="overlay_quiet_on">عاد الصوت</string>
+    <string name="overlay_quiet_on_help">يتوقف مؤقتًا بعد الإجابة الصحيحة</string>
+    <plurals name="overlay_quiet_ending">
+        <item quantity="zero">يعود الصوت الآن</item>
+        <item quantity="one">يعود الصوت بعد ثانية واحدة</item>
+        <item quantity="two">يعود الصوت بعد ثانيتين</item>
+        <item quantity="few">يعود الصوت بعد %d ثوانٍ</item>
+        <item quantity="many">يعود الصوت بعد %d ثانية</item>
+        <item quantity="other">يعود الصوت بعد %d ثانية</item>
+    </plurals>
+    <plurals name="overlay_quiet_left">
+        <item quantity="zero">%1$s، لم يبقَ وقت</item>
+        <item quantity="one">%1$s، بقيت ثانية واحدة</item>
+        <item quantity="two">%1$s، بقيت ثانيتان</item>
+        <item quantity="few">%1$s، بقيت %2$d ثوانٍ</item>
+        <item quantity="many">%1$s، بقيت %2$d ثانية</item>
+        <item quantity="other">%1$s، بقيت %2$d ثانية</item>
+    </plurals>
+    <string name="overlay_task_way_out">يمكن إيقاف المنبّه دون إكمال المهمة.</string>
+    <string name="overlay_task_stop">إيقاف المنبّه</string>
+    <plurals name="overlay_task_tap_ask">
+        <item quantity="zero">النقر على الزر الكبير.</item>
+        <item quantity="one">النقر على الزر الكبير مرة واحدة.</item>
+        <item quantity="two">النقر على الزر الكبير مرتين.</item>
+        <item quantity="few">النقر على الزر الكبير %d مرات.</item>
+        <item quantity="many">النقر على الزر الكبير %d مرة.</item>
+        <item quantity="other">النقر على الزر الكبير %d مرة.</item>
+    </plurals>
+    <string name="overlay_task_tap_count">%1$d من %2$d</string>
+    <string name="overlay_task_tap_here">النقر هنا</string>
+    <string name="overlay_task_math_wrong">ليست هذه الإجابة. سيظهر سؤال جديد.</string>
+    <string name="overlay_task_math_new">هذا سؤال جديد.</string>
+    <string name="overlay_task_math_add">%1$s زائد %2$s</string>
+    <string name="overlay_task_math_multiply">%1$s ضرب %2$s</string>
+    <string name="overlay_task_math_after_miss">ليست هذه الإجابة. سؤال جديد. %1$s</string>
+    <string name="overlay_task_card">%1$s، %2$s</string>
+    <string name="overlay_task_card_wrong">%1$s، إجابة خاطئة</string>
+    <string name="overlay_task_card_place_first">البطاقة الأولى من أربع</string>
+    <string name="overlay_task_card_place_second">البطاقة الثانية من أربع</string>
+    <string name="overlay_task_card_place_third">البطاقة الثالثة من أربع</string>
+    <string name="overlay_task_card_place_fourth">البطاقة الرابعة من أربع</string>
+    <string name="overlay_task_dhikr_ask">ما الكلمة التي تُتمّ هذا الذِّكر كما ورد؟</string>
+    <string name="overlay_task_dhikr_completed">تتمة هذا الذِّكر:</string>
+    <string name="overlay_task_dhikr_another">هذا ذِكر آخر.</string>
+    <string name="overlay_task_dhikr_completed_spoken">تتمة هذا الذِّكر: %1$s. %2$s</string>
+    <string name="overlay_task_dhikr_gap">كلمة ناقصة</string>
+    <string name="overlay_task_dhikr_another_spoken">ذِكر آخر. %1$s</string>
+    <string name="overlay_task_dhikr_type_hint">كتابة الذِّكر بالعربية أو بالحروف اللاتينية</string>
+    <string name="overlay_task_dhikr_type_field">اكتب هنا</string>
+    <string name="overlay_task_dhikr_type_submit">إرسال</string>
+    <string name="overlay_task_dhikr_type_wrong">إجابة خاطئة، حاول مرة أخرى</string>
+    <string name="overlay_task_dhikr_type_phrase">الذِّكر المطلوب كتابته: %1$s</string>
+    <string name="overlay_task_dhikr_type_new">إجابة خاطئة. الذِّكر الجديد المطلوب كتابته: %1$s</string>
+    <string name="overlay_task_prayers_ask">من %1$s إلى %2$s.</string>
+    <string name="overlay_task_prayers_wrong">لم يحن دور %1$s.</string>
+    <string name="overlay_task_prayers_dealt">وُزّعت البطاقات من جديد.</string>
+    <string name="overlay_task_prayers_dealt_next">وُزّعت البطاقات من جديد. المطلوب الصلاة التي تلي %1$s.</string>
+    <string name="overlay_task_prayers_after_miss">لم يحن دور %1$s. وُزّعت البطاقات من جديد.</string>
+    <string name="overlay_task_prayers_empty_fajr">الموضع الأول فارغ.</string>
+    <string name="overlay_task_prayers_empty_dhuhr">الموضع الثاني فارغ.</string>
+    <string name="overlay_task_prayers_empty_asr">الموضع الثالث فارغ.</string>
+    <string name="overlay_task_prayers_empty_maghrib">الموضع الرابع فارغ.</string>
+    <string name="overlay_task_prayers_empty_isha">الموضع الخامس فارغ.</string>
+    <string name="overlay_task_prayers_filled_fajr">%1$s في الموضع الأول.</string>
+    <string name="overlay_task_prayers_filled_dhuhr">%1$s في الموضع الثاني.</string>
+    <string name="overlay_task_prayers_filled_asr">%1$s في الموضع الثالث.</string>
+    <string name="overlay_task_prayers_filled_maghrib">%1$s في الموضع الرابع.</string>
+    <string name="overlay_task_prayers_filled_isha">%1$s في الموضع الخامس.</string>
+    <string name="overlay_prayer_fajr">الفجر</string>
+    <string name="overlay_prayer_dhuhr">الظهر</string>
+    <string name="overlay_prayer_asr">العصر</string>
+    <string name="overlay_prayer_maghrib">المغرب</string>
+    <string name="overlay_prayer_isha">العشاء</string>
+    <string name="overlay_task_pattern_watch_ask">الأزرار تضيء الآن بالترتيب.</string>
+    <string name="overlay_task_pattern_turn_ask">النقر على الأزرار بالترتيب نفسه.</string>
+    <string name="overlay_task_pattern_showing">يُعرض الآن: %1$d من %2$d</string>
+    <string name="overlay_task_pattern_showing_new">ترتيب جديد: يُعرض %1$d من %2$d</string>
+    <string name="overlay_task_pattern_turn">دورك الآن: %1$d من %2$d</string>
+    <string name="overlay_task_pattern_wrong">ليس هذا الزر. سيُعرض ترتيب جديد.</string>
+    <string name="overlay_task_pattern_done">اكتمل الترتيب</string>
+    <string name="overlay_task_pattern_watch">الترتيب: %1$s. دورك الآن.</string>
+    <string name="overlay_task_pattern_after_miss">ليس هذا الزر. ترتيب جديد: %1$s. دورك الآن.</string>
+    <string name="overlay_task_pattern_again">الترتيب: %1$s.</string>
+    <string name="overlay_task_pattern_hear_again">سماع الترتيب مرة أخرى</string>
+    <string name="overlay_task_pattern_pad_circle">دائرة</string>
+    <string name="overlay_task_pattern_pad_triangle">مثلث</string>
+    <string name="overlay_task_pattern_pad_square">مربّع</string>
+    <string name="overlay_task_pattern_pad_lines">خطّان</string>
+    <string name="overlay_task_pattern_place_top_left">أعلى اليسار</string>
+    <string name="overlay_task_pattern_place_top_right">أعلى اليمين</string>
+    <string name="overlay_task_pattern_place_bottom_left">أسفل اليسار</string>
+    <string name="overlay_task_pattern_place_bottom_right">أسفل اليمين</string>
+    <string name="overlay_sentences">%1$s. %2$s</string>
+    <string name="overlay_list_separator">"، "</string>
+
+    <!-- Overlay - Ringing screen and solved panel -->
+    <string name="overlay_ringing_prayer_alarm">منبّه الصلاة</string>
+    <string name="overlay_ringing_jumuah">الجمعة</string>
+    <string name="overlay_ringing_fajr_alarm">منبّه الفجر</string>
+    <string name="overlay_ringing_friday_alarm">منبّه الجمعة</string>
+    <string name="overlay_ringing_alarm">منبّه</string>
+    <string name="overlay_ringing_current_time">الوقت الآن، %1$s</string>
+    <string name="overlay_ringing_at">%1$s، الساعة %2$s</string>
+    <string name="overlay_ringing_announcement">منبّه %1$s. حان وقت الاستيقاظ للصلاة.</string>
+    <string name="overlay_ringing_custom">المنبّه يرنّ.</string>
+    <string name="overlay_ringing_snooze_off">الغفوة غير مفعّلة لهذا المنبّه.</string>
+    <string name="overlay_ringing_snooze_used_up">لم تبقَ غفوات لهذا المنبّه.</string>
+    <string name="overlay_join">%1$s، %2$s</string>
+    <string name="overlay_solved_title">توقّف المنبّه</string>
+    <string name="overlay_close">إغلاق</string>
+    <plurals name="overlay_ringing_snooze">
+        <item quantity="zero">غفوة</item>
+        <item quantity="one">غفوة دقيقة واحدة</item>
+        <item quantity="two">غفوة دقيقتين</item>
+        <item quantity="few">غفوة %d دقائق</item>
+        <item quantity="many">غفوة %d دقيقة</item>
+        <item quantity="other">غفوة %d دقيقة</item>
+    </plurals>
+    <plurals name="overlay_ringing_snoozes_left">
+        <item quantity="zero">لم تبقَ غفوات</item>
+        <item quantity="one">الغفوة الأخيرة</item>
+        <item quantity="two">بقيت غفوتان</item>
+        <item quantity="few">بقيت %d غفوات</item>
+        <item quantity="many">بقيت %d غفوة</item>
+        <item quantity="other">بقيت %d غفوة</item>
+    </plurals>
+    <!-- Emergency quiet, as alarm.quiet.* -->
+    <string name="overlay_quiet_button">إسكات طارئ</string>
+    <string name="overlay_quiet_hint">يطلب التأكيد قبل إيقاف الصوت.</string>
+    <string name="overlay_quiet_confirm_title">إسكات المنبّه؟</string>
+    <plurals name="overlay_quiet_confirm_body">
+        <item quantity="zero">لا يتوقف الصوت، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="one">يتوقف الصوت دقيقة واحدة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="two">يتوقف الصوت دقيقتين، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="few">يتوقف الصوت %d دقائق، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="many">يتوقف الصوت %d دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+        <item quantity="other">يتوقف الصوت %d دقيقة، وتبقى المهمة. ينتهي المنبّه عند إكمالها.</item>
+    </plurals>
+    <string name="overlay_quiet_confirm_cost">يُحتسب من مرات الإسكات الطارئ لهذا الشهر.</string>
+    <string name="overlay_quiet_confirm_go">إسكات الآن</string>
+    <string name="overlay_quiet_failed">تعذّر إسكات المنبّه. لم تُحتسب أي مرة.</string>
+    <string name="overlay_quiet_none_left">لا يتوفر الإسكات الطارئ قبل %1$s.</string>
+    <string name="overlay_quiet_used">استُخدم الإسكات الطارئ لهذا المنبّه.</string>
+    <string name="overlay_quiet_banner">الصوت متوقف. يرنّ المنبّه مجددًا الساعة %1$s.</string>
+    <string name="overlay_quiet_ready">أصبح زر \"%1$s\" متاحًا.</string>
+    <string name="overlay_quiet_back">رجوع</string>
 </resources>

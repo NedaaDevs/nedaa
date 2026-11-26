@@ -538,7 +538,7 @@ export const SURAH_NAMES: readonly string[] = [
 
 // Transliterated surah names (for Latin-script app locales: en, ms). Indexed by
 // surah number; index 0 is a placeholder to align with SURAH_NAMES.
-// Vocalized names for the running header, genitive after «سُورَةُ» per the
+// Vocalized names for the running header, genitive after "سُورَةُ" per the
 // Madinah print; quoted-title plurals stay nominative, letter-names bare.
 // User-reviewed list. 1-indexed like SURAH_NAMES.
 export const SURAH_NAMES_VOCALIZED: readonly string[] = [
@@ -781,3 +781,13 @@ export const DOWNLOAD_CONCURRENCY = 6;
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_DELAYS_MS = [1000, 3000, 10000];
 export const MIN_PAGES_BEFORE_READING = 5;
+
+// Library hub tabs; the drawer shows every tab, the full-screen library a subset.
+export const QURAN_LIBRARY_TAB = {
+  INDEX: "index",
+  HIGHLIGHTS: "highlights",
+  BOOKMARKS: "bookmarks",
+  KHATMAH: "khatmah",
+  REMINDERS: "reminders",
+  GUIDE: "guide",
+} as const;

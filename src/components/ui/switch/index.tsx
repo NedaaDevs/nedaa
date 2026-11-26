@@ -1,5 +1,9 @@
 import React from "react";
-import { Switch as TSwitch, useTheme, useThemeName } from "tamagui";
+import { I18nManager, Platform, type StyleProp, type ViewStyle } from "react-native";
+import { Switch as TSwitch } from "tamagui";
+import { useTheme } from "@/components/ui/theme-color";
+import { useRTL } from "@/contexts/RTLContext";
+import { PlatformType } from "@/enums/app";
 
 type SwitchSize = "sm" | "md" | "lg";
 
@@ -12,21 +16,24 @@ type SwitchProps = {
   accessibilityRole?: "switch";
   accessibilityState?: { checked?: boolean; disabled?: boolean };
   accessibilityHint?: string;
-  style?: any;
+  testID?: string;
+  style?: StyleProp<Omit<ViewStyle, "transform">>;
 };
 
-const SCALE: Record<SwitchSize, { transform: { scale: number }[] } | undefined> = {
-  sm: { transform: [{ scale: 0.75 }] },
-  md: undefined,
-  lg: { transform: [{ scale: 1.25 }] },
-};
+const SCALE: Record<SwitchSize, number> = { sm: 0.75, md: 1, lg: 1.25 };
+
+// iOS draws the UISwitch by the phone's direction; Android by the app's.
+const drawsAgainstApp = (appIsRTL: boolean) =>
+  Platform.OS === PlatformType.IOS && appIsRTL !== I18nManager.isRTL;
 
 const Switch = React.forwardRef<any, SwitchProps>(
-  ({ value, onValueChange, size = "md", disabled, style, ...props }, ref) => {
+  ({ value, onValueChange, size = "md", disabled, style, ...nativeOnly }, ref) => {
     const theme = useTheme();
-    const themeName = useThemeName();
-    const isDark = themeName === "dark";
+    const { isRTL } = useRTL();
+    const mirror = drawsAgainstApp(isRTL) ? -1 : 1;
 
+    // On a phone Tamagui renders the platform switch from `nativeProps` alone,
+    // so its name, state, testID and look travel there too.
     return (
       <TSwitch
         ref={ref}
@@ -35,19 +42,17 @@ const Switch = React.forwardRef<any, SwitchProps>(
         onCheckedChange={onValueChange}
         disabled={disabled}
         nativeProps={{
-          trackColor: {
-            false: theme.outline.val,
-            true: theme.primary.val,
-          },
-          thumbColor: value
-            ? isDark
-              ? theme.background.val
-              : theme.typographyContrast.val
-            : theme.typographyContrast.val,
-          ios_backgroundColor: theme.outline.val,
+          ...nativeOnly,
+          disabled,
+          style: [
+            { transform: [{ scale: SCALE[size] }, { scaleX: mirror }] },
+            disabled && { opacity: 0.4 },
+            style,
+          ],
+          trackColor: { false: theme.track.val, true: theme.accent.val },
+          thumbColor: theme.thumb.val,
+          ios_backgroundColor: theme.track.val,
         }}
-        style={[SCALE[size], disabled && { opacity: 0.4 }, style]}
-        {...props}
       />
     );
   }

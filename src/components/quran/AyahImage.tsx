@@ -11,6 +11,7 @@ import {
   isColoredVersion,
   quranImageDirSegment,
 } from "@/constants/Quran";
+import { VStack } from "@/components/ui/vstack";
 import { useQuranStore } from "@/stores/quran";
 import { QuranContentDB } from "@/services/quran-content-db";
 import { QuranDownload } from "@/services/quran-download";
@@ -32,7 +33,7 @@ interface AyahImageProps {
 const pad3 = (n: number) => String(n).padStart(3, "0");
 // A short ayah's line height; a word wider than the card scales down.
 const TARGET_LINE_HEIGHT = 46;
-const ROW_GAP = 4;
+export const AYAH_IMAGE_ROW = "ayah-image-row";
 
 // An ayah in the edition's own ink, its words cut from the line or page images
 // by glyph bounds and flowed as one run across the card.
@@ -95,11 +96,12 @@ const AyahImage = ({
   const rowHeight = srcLineHeight * scale;
 
   return (
-    <View style={{ alignItems: "center", gap: ROW_GAP }}>
+    <VStack alignItems="center" spacing="tight">
       {rows.map((row) => (
         // A row reads from the right in every app direction.
         <View
           key={`${row[0].line}:${row[0].x}`}
+          testID={AYAH_IMAGE_ROW}
           style={{ flexDirection: "row-reverse", direction: "ltr" }}>
           {row.map((run) => (
             <View
@@ -131,7 +133,7 @@ const AyahImage = ({
           ))}
         </View>
       ))}
-    </View>
+    </VStack>
   );
 };
 

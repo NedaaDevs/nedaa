@@ -1,8 +1,15 @@
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, Animated, Easing, Image, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
-import { useTheme } from "tamagui";
+import {
+  Animated,
+  Easing,
+  GestureResponderEvent,
+  Image,
+  View,
+  useAnimatedValue,
+} from "react-native";
+import Svg, { Circle, type CircleProps } from "react-native-svg";
+import { useTheme } from "@/components/ui/theme-color";
 
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -14,8 +21,10 @@ import { Check, Play, Pause, Download, Loader } from "lucide-react-native";
 
 import { reciterRegistry } from "@/services/athkar-reciter-registry";
 import { formatFileSize } from "@/utils/customSoundManager";
+import { formatFileSizeLocale } from "@/utils/number";
 
 import type { ReciterCatalogEntry } from "@/types/athkar-audio";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 type Props = {
   reciter: ReciterCatalogEntry;
@@ -33,6 +42,8 @@ const PLAY_BTN = 44;
 const RING_RADIUS = 19;
 const RING_STROKE = 2.5;
 const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+// rotate(-90) about the button's centre, so the ring fills from 12 o'clock.
+const RING_FROM_TOP: CircleProps["transform"] = [0, -1, 1, 0, 0, PLAY_BTN];
 
 const ReciterCard: FC<Props> = ({
   reciter,
@@ -48,13 +59,17 @@ const ReciterCard: FC<Props> = ({
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const name = reciterRegistry.getLocalizedName(reciter.name, i18n.language);
+  const size = formatFileSize(reciter.totalSize);
+  const downloadedNote = downloaded === true ? t("athkar.audio.downloaded") : null;
+  // A label hides the text inside the radio, and the badge has no words.
+  // The radio state says the choice; a progress bar says the download.
+  const label = [name, formatFileSizeLocale(reciter.totalSize, t), downloadedNote]
+    .filter((part) => part !== null)
+    .reduce((first, second) => t("a11y.join", { first, second }));
 
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim = useAnimatedValue(0);
 
   useEffect(() => {
     if (isDownloading && !reduceMotion) {
@@ -73,11 +88,8 @@ const ReciterCard: FC<Props> = ({
   }, [isDownloading, reduceMotion, spinAnim]);
 
   return (
-    <Pressable
-      onPress={() => onSelect(reciter.id)}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={selected ? t("a11y.athkar.reciterSelected", { name }) : name}>
+    // The card holds the sample button, so the radio is the name area inside it.
+    <Pressable accessible={false} onPress={() => onSelect(reciter.id)}>
       <Box
         padding="$3"
         borderRadius="$6"
@@ -85,34 +97,45 @@ const ReciterCard: FC<Props> = ({
         borderWidth={selected ? 2 : 1}
         borderColor={selected ? "$primary" : "$outline"}>
         <HStack alignItems="center" gap="$3">
-          {reciter.avatar ? (
-            <Image
-              source={{ uri: reciter.avatar }}
-              style={{ width: 48, height: 48, borderRadius: 24 }}
-            />
-          ) : (
-            <Box
-              width={48}
-              height={48}
-              borderRadius={24}
-              backgroundColor={selected ? "$backgroundSecondary" : "$backgroundMuted"}
-              alignItems="center"
-              justifyContent="center">
-              <Text size="lg" fontWeight="600" color="$typography">
-                {name.charAt(0)}
-              </Text>
-            </Box>
-          )}
+          <Pressable
+            flex={1}
+            flexDirection="row"
+            alignItems="center"
+            gap="$3"
+            onPress={() => onSelect(reciter.id)}
+            accessible
+            role="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={label}>
+            {reciter.avatar ? (
+              <Image
+                source={{ uri: reciter.avatar }}
+                style={{ width: 48, height: 48, borderRadius: 24 }}
+              />
+            ) : (
+              <Box
+                width={48}
+                height={48}
+                borderRadius={24}
+                backgroundColor={selected ? "$backgroundSecondary" : "$backgroundMuted"}
+                alignItems="center"
+                justifyContent="center">
+                <Text size="lg" fontWeight="600" color="$typography">
+                  {name.charAt(0)}
+                </Text>
+              </Box>
+            )}
 
-          <VStack flex={1}>
-            <Text fontWeight="600" color={selected ? "$typographyContrast" : "$typography"}>
-              {name}
-            </Text>
-            <Text size="sm" color={selected ? "$typographyContrast" : "$typographySecondary"}>
-              {formatFileSize(reciter.totalSize)}
-              {downloaded === true ? ` · ${t("athkar.audio.downloaded")}` : ""}
-            </Text>
-          </VStack>
+            <VStack flex={1}>
+              <Text fontWeight="600" color={selected ? "$typographyContrast" : "$typography"}>
+                {name}
+              </Text>
+              <Text size="sm" color={selected ? "$typographyContrast" : "$typographySecondary"}>
+                {size}
+                {downloadedNote === null ? "" : ` · ${downloadedNote}`}
+              </Text>
+            </VStack>
+          </Pressable>
 
           {onPlaySample && reciter.sampleUrl && (
             <View style={{ width: PLAY_BTN, height: PLAY_BTN }}>
@@ -128,13 +151,12 @@ const ReciterCard: FC<Props> = ({
                     strokeDasharray={`${CIRCUMFERENCE}`}
                     strokeDashoffset={`${CIRCUMFERENCE * (1 - sampleProgress)}`}
                     strokeLinecap="round"
-                    rotation={-90}
-                    origin={`${PLAY_BTN / 2}, ${PLAY_BTN / 2}`}
+                    transform={RING_FROM_TOP}
                   />
                 </Svg>
               )}
               <Pressable
-                onPress={(e: any) => {
+                onPress={(e: GestureResponderEvent) => {
                   e.stopPropagation();
                   if (isSamplePlaying) {
                     onStopSample?.();
@@ -148,9 +170,12 @@ const ReciterCard: FC<Props> = ({
                 backgroundColor={selected ? "$backgroundSecondary" : "$backgroundMuted"}
                 alignItems="center"
                 justifyContent="center"
-                accessibilityLabel={
-                  isSamplePlaying ? t("a11y.athkar.stopSample") : t("a11y.athkar.playSample")
-                }
+                accessibilityLabel={t("a11y.join", {
+                  first: isSamplePlaying
+                    ? t("a11y.athkar.stopSample")
+                    : t("a11y.athkar.playSample"),
+                  second: name,
+                })}
                 accessibilityRole="button">
                 <Icon as={isSamplePlaying ? Pause : Play} size="sm" color="$typography" />
               </Pressable>

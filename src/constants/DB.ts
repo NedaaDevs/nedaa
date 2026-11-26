@@ -28,3 +28,13 @@ export const FTS_DB_OPEN_OPTIONS = {
   useNewConnection: true,
   finalizeUnusedStatementsBeforeClosing: false,
 } as const;
+
+// expo-sqlite's key-value file for the city-check memory, kept out of backup.
+export const CITY_CHECK_STORAGE_DB_NAME = "CityCheckStorage" as const;
+export const CITY_CHECK_STORE_KEY = "city-check-storage" as const;
+
+// The alarm guide's seen mark, in the shared kv-store file.
+export const ALARM_GUIDE_STORE_KEY = "alarm-guide-storage" as const;
+
+// Emergency quiet's monthly allowance and uses, in the shared kv-store file.
+export const EMERGENCY_QUIET_STORE_KEY = "emergency-quiet-storage" as const;

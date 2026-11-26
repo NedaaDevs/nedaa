@@ -1,0 +1,17 @@
+hasTask	preview	snoozed	wayOut	used	running	allowance	left	confirming	offer	confirmOpen
+yes	no	no	no	no	no	2	2	no	offer	no
+yes	no	no	no	no	no	2	1	yes	offer	yes
+yes	no	no	no	no	no	2	0	no	noneLeft	no
+yes	no	no	no	no	no	2	0	yes	noneLeft	no
+yes	no	no	no	yes	no	2	2	no	used	no
+yes	no	no	no	yes	no	2	0	yes	used	no
+yes	no	no	no	yes	no	0	0	no	used	no
+yes	no	no	no	no	no	0	0	no	hidden	no
+yes	no	no	yes	no	no	2	2	yes	hidden	no
+yes	no	no	yes	yes	no	2	2	no	hidden	no
+yes	no	yes	no	no	no	2	2	no	hidden	no
+yes	yes	no	no	no	no	2	2	no	hidden	no
+no	no	no	no	no	no	2	2	no	hidden	no
+yes	no	no	no	yes	yes	2	1	yes	on	no
+yes	no	no	yes	yes	yes	2	1	no	on	no
+no	no	no	no	yes	yes	2	1	no	on	no

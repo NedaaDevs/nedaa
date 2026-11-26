@@ -1,215 +1,349 @@
-import { useMemo, useState } from "react";
-import { ScrollView } from "react-native";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import {
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  SlidersHorizontal,
+} from "lucide-react-native";
 
-import { Background } from "@/components/ui/background";
-import { Card } from "@/components/ui/card";
-import { Box } from "@/components/ui/box";
-import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
+import { DayDetail } from "@/components/hijri/DayDetail";
+import { HijriMonthGrid } from "@/components/hijri/HijriMonthGrid";
+import { ObservanceGlyph } from "@/components/hijri/ObservanceGlyph";
 import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
-import TopBar from "@/components/TopBar";
-import HijriMonthGrid from "@/components/hijri/HijriMonthGrid";
-import DayObservanceSheet from "@/components/hijri/DayObservanceSheet";
-
-import { useAppStore } from "@/stores/app";
-import { useLocationStore } from "@/stores/location";
-import usePreferencesStore from "@/stores/preferences";
-import { HijriNative, getDateLocale } from "@/utils/date";
-import { buildMonthGrid, stepMonth, type MonthCell } from "@/utils/hijriMonthGrid";
+import { ScreenContent } from "@/components/ui/screen-content";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { ScreenSky, SkyOccluder, SkyScrollView } from "@/components/ui/sky-background";
+import { Box } from "@/components/ui/box";
+import { isCursiveLocale, Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
+import { BACK_DESTINATION } from "@/constants/BackDestinations";
+import { HAPTIC_FEEDBACK } from "@/constants/Haptics";
+import { HIJRI_YEAR_MAX, HIJRI_YEAR_MIN } from "@/constants/Hijri";
+import { MONTH_CHANGE_MS, MONTH_SLIDE, NAV_ICON_SIZE } from "@/constants/HijriCalendar";
+import { SHEET_CURVE } from "@/constants/Motion";
+import { MARK_ORDER, OBSERVANCE_MARK } from "@/constants/ObservanceMarks";
 import { MONTH_NOTES } from "@/constants/Observances";
-import { ObservanceClass } from "@/enums/observances";
-import { formatNumberToLocale } from "@/utils/number";
 import { useRTL } from "@/contexts/RTLContext";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useHijriCalendarText } from "@/hooks/useHijriCalendarText";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useTodayClock } from "@/hooks/useTodayClock";
+import { useAppStore } from "@/stores/app";
+import { useLocationStore } from "@/stores/location";
+import { usePreferencesStore } from "@/stores/preferences";
+import { HijriNative } from "@/utils/date";
+import { HIJRI_NO_OFFSET, hijriAdjustmentLabel } from "@/utils/hijriAdjustment";
+import {
+  buildMonthGrid,
+  clampHijriMonth,
+  hijriMonthIndex,
+  stepMonth,
+  type HijriYearMonth,
+  type MonthCell,
+} from "@/utils/hijriMonthGrid";
+import { isWeekly, monthWeeklyObservances } from "@/utils/observances";
 
-const LEGEND_LABEL: Record<string, string> = {
-  [ObservanceClass.RECOMMENDED_FAST]: "hijriCalendar.legend.recommendedFast",
-  [ObservanceClass.FASTING_FORBIDDEN]: "hijriCalendar.legend.fastingForbidden",
-  [ObservanceClass.BLESSED_DAY]: "hijriCalendar.legend.blessedDay",
-  [ObservanceClass.NIGHT_WORSHIP]: "hijriCalendar.legend.nightWorship",
-};
-const LEGEND_COLOR: Record<string, "$success" | "$error" | "$accentPrimary"> = {
-  [ObservanceClass.RECOMMENDED_FAST]: "$success",
-  [ObservanceClass.FASTING_FORBIDDEN]: "$error",
-  [ObservanceClass.BLESSED_DAY]: "$accentPrimary",
-  [ObservanceClass.NIGHT_WORSHIP]: "$accentPrimary",
-};
+type PickedDay = HijriYearMonth & { day: number };
 
+const CURVE = Easing.bezier(...SHEET_CURVE);
+const LEGEND_GLYPH_SIZE = 16;
+
+const sameMonth = (a: HijriYearMonth, b: HijriYearMonth) =>
+  a.year === b.year && a.month === b.month;
+
+/** One Hijri month at a time, its marks, and the selected day. */
 const HijriCalendarScreen = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { isRTL } = useRTL();
-  const selectionHaptic = useHaptic("selection");
-
-  const hijriDaysOffset = useAppStore((s) => s.hijriDaysOffset);
-  const locale = useAppStore((s) => s.locale);
-  const { locationDetails } = useLocationStore();
+  const text = useHijriCalendarText();
+  const reduceMotion = useReducedMotion();
+  const selectionHaptic = useHaptic(HAPTIC_FEEDBACK.SELECTION);
+  const offset = useAppStore((s) => s.hijriDaysOffset);
   const weekStartsOn = usePreferencesStore((s) => s.weekStartsOn);
+  const timezone = useLocationStore((s) => s.locationDetails.timezone);
+  const now = useTodayClock();
 
-  const today = useMemo(() => {
-    const raw = HijriNative.today(locationDetails.timezone);
-    return hijriDaysOffset !== 0 ? HijriNative.addDays(raw, hijriDaysOffset) : raw;
-  }, [locationDetails.timezone, hijriDaysOffset]);
+  const calculated = HijriNative.fromTimestamp(now.getTime() / 1000, timezone);
+  const today = offset === HIJRI_NO_OFFSET ? calculated : HijriNative.addDays(calculated, offset);
 
-  const [view, setView] = useState({ year: today.year, month: today.month });
-  const [selected, setSelected] = useState<MonthCell | null>(null);
+  // Null follows today's month, so midnight at a month's end moves the view.
+  const [chosen, setChosen] = useState<HijriYearMonth | null>(null);
+  const [picked, setPicked] = useState<PickedDay | null>(null);
+  // A clock outside the table opens on its nearest end.
+  const home = clampHijriMonth(today);
+  const shown = chosen ?? home;
+  const isTodayMonth = sameMonth(today, shown);
+  const pickedHere = picked !== null && sameMonth(picked, shown);
+  const selectedDay = pickedHere ? picked.day : isTodayMonth ? today.day : null;
 
-  const grid = useMemo(
-    () => buildMonthGrid({ ...view, hijriDaysOffset, weekStartsOn }),
-    [view, hijriDaysOffset, weekStartsOn]
+  const grid = buildMonthGrid({ ...shown, hijriDaysOffset: offset, weekStartsOn });
+  const selected = selectedDay === null ? null : grid.cells[selectedDay - 1];
+  const previous = stepMonth(shown.year, shown.month, -1);
+  const next = stepMonth(shown.year, shown.month, 1);
+  const note = MONTH_NOTES[shown.month];
+
+  const present = new Set(
+    [
+      ...monthWeeklyObservances(shown.month),
+      ...grid.cells.flatMap((cell) => cell.observances.filter((o) => !isWeekly(o))),
+    ].map((o) => o.observanceClass)
   );
+  const legend = MARK_ORDER.filter((observanceClass) => present.has(observanceClass));
 
-  const previous = stepMonth(view.year, view.month, -1);
-  const next = stepMonth(view.year, view.month, 1);
-  const isCurrentMonth = view.year === today.year && view.month === today.month;
-  const note = MONTH_NOTES[view.month];
+  const firstDate = grid.cells[0].gregorian;
+  const lastDate = grid.cells[grid.cells.length - 1].gregorian;
+  const oneMonth = firstDate.getMonth() === lastDate.getMonth();
+  const spanEnds = {
+    from: text.dated(
+      firstDate,
+      firstDate.getFullYear() === lastDate.getFullYear() ? "MMMM" : "MMMM yyyy"
+    ),
+    to: text.dated(lastDate, "MMMM yyyy"),
+  };
+  const span = oneMonth
+    ? text.dated(firstDate, "MMMM yyyy")
+    : t("hijriCalendar.monthSpan", spanEnds);
+  const spokenSpan = oneMonth ? span : t("a11y.hijriCalendar.monthSpan", spanEnds);
 
-  // Only the classes on this month. A legend entry for a marker that is nowhere
-  // on the grid is noise. The weekly columns are always marked, so their two
-  // classes are always listed.
-  const legend = useMemo(() => {
-    const present = new Set<string>([
-      ObservanceClass.RECOMMENDED_FAST,
-      ObservanceClass.BLESSED_DAY,
-    ]);
-    for (const cell of grid.cells) {
-      for (const observance of cell.observances) present.add(observance.observanceClass);
-    }
-    return [...present];
-  }, [grid]);
+  const shift = useSharedValue(0);
+  const fade = useSharedValue(1);
+  const slide = useAnimatedStyle(() => ({
+    opacity: fade.get(),
+    transform: [{ translateX: shift.get() }],
+  }));
 
-  const goTo = async (target: { year: number; month: number } | null) => {
-    if (!target) return;
-    await selectionHaptic();
-    setView(target);
+  // Set by a page turn; a month change from the clock or the offset stays still.
+  const direction = useRef(0);
+  const shownIndex = hijriMonthIndex(shown);
+  // Before paint, so the new month never shows at rest before it slides.
+  useLayoutEffect(() => {
+    const sign = direction.current;
+    direction.current = 0;
+    if (sign === 0 || reduceMotion) return;
+    // The new month enters from the side it lies on, mirrored under RTL.
+    shift.set(sign * MONTH_SLIDE * (isRTL ? -1 : 1));
+    shift.set(withTiming(0, { duration: MONTH_CHANGE_MS, easing: CURVE }));
+    fade.set(0);
+    fade.set(withTiming(1, { duration: MONTH_CHANGE_MS, easing: CURVE }));
+  }, [shownIndex, reduceMotion, isRTL, shift, fade]);
+
+  // Not awaited: the month is stored against the `home` of this render.
+  const show = (destination: HijriYearMonth) => {
+    void selectionHaptic();
+    direction.current = Math.sign(hijriMonthIndex(destination) - shownIndex);
+    setChosen(sameMonth(destination, home) ? null : destination);
+    setPicked(null);
   };
 
-  const PrevIcon = isRTL ? ChevronRight : ChevronLeft;
+  const PreviousIcon = isRTL ? ChevronRight : ChevronLeft;
   const NextIcon = isRTL ? ChevronLeft : ChevronRight;
-
-  // A Hijri month always spans two Gregorian ones, so the header names both ends.
-  const gregorianRange = useMemo(() => {
-    const dateLocale = getDateLocale(locale);
-    const first = grid.cells[0].gregorian;
-    const last = grid.cells[grid.cells.length - 1].gregorian;
-    return `${format(first, "d MMM", { locale: dateLocale })} \u2013 ${format(last, "d MMM yyyy", { locale: dateLocale })}`;
-  }, [grid, locale]);
+  /** The line at either end of the table, with the year said by `year`. */
+  const edgeLine = (year: (value: number) => string) =>
+    !previous
+      ? t("hijriCalendar.rangeStart", { year: year(HIJRI_YEAR_MIN) })
+      : !next
+        ? t("hijriCalendar.rangeEnd", { year: year(HIJRI_YEAR_MAX) })
+        : null;
+  const edge = edgeLine(text.yearAh);
 
   return (
-    <Background>
-      <TopBar title="hijriCalendar.title" backOnClick />
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <VStack paddingHorizontal="$4" paddingTop="$2" gap="$3">
-          <HStack justifyContent="space-between" alignItems="center">
-            <VStack flexShrink={1}>
-              <Text size="xl" fontWeight="700" color="$typography" accessibilityRole="header">
-                {`${t(`hijriMonths.${view.month - 1}`)} ${formatNumberToLocale(String(view.year))}`}
-              </Text>
-              <Text size="sm" color="$typographySecondary">
-                {formatNumberToLocale(gregorianRange)}
-              </Text>
-            </VStack>
-            <HStack gap="$2" alignItems="center">
+    <ScreenSky>
+      <SkyScrollView
+        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+        <SkyOccluder>
+          <ScreenHeader
+            title={t("hijriCalendar.title")}
+            back={{ fallback: BACK_DESTINATION.TOOLS }}
+            action={
+              isTodayMonth || !sameMonth(today, home)
+                ? undefined
+                : {
+                    icon: CalendarCheck,
+                    label: t("a11y.hijriCalendar.today"),
+                    onPress: () => show(home),
+                  }
+            }
+          />
+        </SkyOccluder>
+
+        <ScreenContent paddingBottom="$section">
+          <SkyOccluder>
+            <HStack alignItems="center" gap="$tight">
               <Pressable
-                onPress={() => goTo(previous)}
+                onPress={() => previous && show(previous)}
                 disabled={!previous}
-                opacity={previous ? 1 : 0.4}
-                minWidth={44}
-                minHeight={44}
                 alignItems="center"
                 justifyContent="center"
-                borderRadius="$4"
-                backgroundColor="$backgroundMuted"
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !previous }}
+                borderRadius="$control"
                 accessibilityLabel={t("a11y.hijriCalendar.previousMonth")}>
-                <Icon as={PrevIcon} size="md" color="$accentPrimary" />
+                <Icon as={PreviousIcon} size={NAV_ICON_SIZE} color="$accent" />
               </Pressable>
-              {!isCurrentMonth && (
+              <VStack flex={1} alignItems="center">
+                <Text
+                  size={isCursiveLocale(i18n.language) ? "heading" : "3xl"}
+                  bold
+                  typography="title"
+                  color="$fg"
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  accessibilityRole="header">
+                  {text.monthName(shown.month)}
+                </Text>
+                <Text
+                  size="md"
+                  fontWeight="500"
+                  color="$muted"
+                  textAlign="center"
+                  accessibilityLabel={t("a11y.join", {
+                    first: text.spokenYearAh(shown.year),
+                    second: spokenSpan,
+                  })}>
+                  {t("hijriCalendar.monthCaption", { year: text.yearAh(shown.year), span })}
+                </Text>
+              </VStack>
+              <Pressable
+                onPress={() => next && show(next)}
+                disabled={!next}
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="$control"
+                accessibilityLabel={t("a11y.hijriCalendar.nextMonth")}>
+                <Icon as={NextIcon} size={NAV_ICON_SIZE} color="$accent" />
+              </Pressable>
+            </HStack>
+
+            {edge && (
+              <HStack
+                marginTop="$inline"
+                gap="$inline"
+                paddingVertical="$2.5"
+                paddingHorizontal="$stack"
+                borderRadius="$control"
+                backgroundColor="$surface"
+                borderWidth={1}
+                borderColor="$track">
+                <Box marginTop={1}>
+                  <Icon as={Info} size="md" color="$muted" />
+                </Box>
+                <Text
+                  size="md"
+                  color="$fg"
+                  flex={1}
+                  accessibilityLabel={edgeLine(text.spokenYearAh) ?? undefined}>
+                  {edge}
+                </Text>
+              </HStack>
+            )}
+
+            {offset !== HIJRI_NO_OFFSET && (
+              <HStack
+                marginTop="$stack"
+                alignItems="center"
+                gap="$inline"
+                paddingVertical="$tight"
+                paddingStart="$stack"
+                paddingEnd="$tight"
+                borderRadius="$control"
+                backgroundColor="$surface"
+                borderWidth={1.5}
+                borderColor="$accent">
+                <Icon as={SlidersHorizontal} size="md" color="$accent" />
+                <Text size="md" fontWeight="600" color="$fg" flex={1}>
+                  {t("hijriCalendar.offsetLine", { value: hijriAdjustmentLabel(offset, t) })}
+                </Text>
                 <Pressable
-                  onPress={() => goTo({ year: today.year, month: today.month })}
-                  minHeight={44}
-                  paddingHorizontal="$3"
+                  onPress={() => router.push(BACK_DESTINATION.SETTINGS_HIJRI.href)}
+                  paddingHorizontal="$stack"
                   alignItems="center"
                   justifyContent="center"
-                  borderRadius="$4"
-                  backgroundColor="$backgroundMuted"
-                  accessibilityRole="button"
-                  accessibilityLabel={t("a11y.hijriCalendar.today")}>
-                  <Text size="sm" fontWeight="600" color="$accentPrimary">
-                    {t("hijriCalendar.today")}
+                  borderRadius="$control"
+                  accessibilityLabel={t("a11y.hijriCalendar.changeOffset")}
+                  accessibilityHint={t("a11y.opens", {
+                    name: t(BACK_DESTINATION.SETTINGS_HIJRI.title),
+                  })}>
+                  <Text size="lg" fontWeight="600" color="$accent">
+                    {t("hijriCalendar.change")}
                   </Text>
                 </Pressable>
-              )}
-              <Pressable
-                onPress={() => goTo(next)}
-                disabled={!next}
-                opacity={next ? 1 : 0.4}
-                minWidth={44}
-                minHeight={44}
-                alignItems="center"
-                justifyContent="center"
-                borderRadius="$4"
-                backgroundColor="$backgroundMuted"
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !next }}
-                accessibilityLabel={t("a11y.hijriCalendar.nextMonth")}>
-                <Icon as={NextIcon} size="md" color="$accentPrimary" />
-              </Pressable>
-            </HStack>
-          </HStack>
+              </HStack>
+            )}
 
-          {note && (
-            <HStack
-              gap="$2"
-              alignItems="flex-start"
-              backgroundColor="$backgroundWarning"
-              borderRadius="$4"
-              padding="$3">
-              <Icon as={Info} size="xs" color="$warning" />
-              <Text size="xs" color="$warning" flex={1}>
-                {t(note)}
-              </Text>
-            </HStack>
-          )}
+            <Animated.View style={slide}>
+              <HijriMonthGrid
+                grid={grid}
+                todayDay={isTodayMonth ? today.day : null}
+                selectedDay={selectedDay}
+                onSelect={(cell: MonthCell) => setPicked({ ...shown, day: cell.hijriDay })}
+              />
+            </Animated.View>
 
-          <Card padding="$3">
-            <HijriMonthGrid
-              grid={grid}
-              todayHijriDay={isCurrentMonth ? today.day : null}
-              selectedDay={selected?.hijriDay ?? null}
-              onSelectDay={setSelected}
-            />
-            <HStack flexWrap="wrap" gap="$3" paddingTop="$3">
+            <HStack flexWrap="wrap" rowGap="$tight" columnGap="$group" marginTop="$stack">
               {legend.map((observanceClass) => (
-                <HStack key={observanceClass} gap="$1.5" alignItems="center">
-                  <Box
-                    width={6}
-                    height={6}
-                    borderRadius="$10"
-                    backgroundColor={LEGEND_COLOR[observanceClass]}
-                  />
-                  <Text size="xs" color="$typographySecondary">
-                    {t(LEGEND_LABEL[observanceClass])}
+                <HStack key={observanceClass} alignItems="center" gap="$1.5" minHeight="$6">
+                  <ObservanceGlyph observanceClass={observanceClass} size={LEGEND_GLYPH_SIZE} />
+                  <Text size="helper" color="$fg">
+                    {t(OBSERVANCE_MARK[observanceClass].labelKey)}
                   </Text>
                 </HStack>
               ))}
             </HStack>
-          </Card>
-        </VStack>
-      </ScrollView>
 
-      <DayObservanceSheet
-        cell={selected}
-        hijriMonth={view.month}
-        hijriYear={view.year}
-        onClose={() => setSelected(null)}
-      />
-    </Background>
+            <HStack gap="$inline" marginTop="$stack" alignItems="flex-start">
+              <Box marginTop="$0.5">
+                <Icon as={Info} size="sm" color="$muted" />
+              </Box>
+              <Text size="helper" color="$muted" flex={1}>
+                {t("hijriCalendar.sighting")}
+              </Text>
+            </HStack>
+          </SkyOccluder>
+
+          {note && (
+            <VStack
+              marginTop="$group"
+              paddingVertical="$stack"
+              paddingHorizontal="$cardPad"
+              borderRadius="$card"
+              backgroundColor="$surface"
+              borderWidth={1}
+              borderColor="$track">
+              <Text size="sm" fontWeight="600" color="$muted">
+                {t("hijriCalendar.thisMonth")}
+              </Text>
+              <Text size="label" color="$fg">
+                {t(note)}
+              </Text>
+            </VStack>
+          )}
+
+          {selected && (
+            <VStack marginTop="$group">
+              <DayDetail
+                cell={selected}
+                year={shown.year}
+                month={shown.month}
+                isToday={isTodayMonth && selected.hijriDay === today.day}
+                announce={pickedHere}
+              />
+            </VStack>
+          )}
+        </ScreenContent>
+      </SkyScrollView>
+    </ScreenSky>
   );
 };
 
