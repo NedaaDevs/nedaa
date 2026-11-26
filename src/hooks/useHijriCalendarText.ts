@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { OBSERVANCE_MARK } from "@/constants/ObservanceMarks";
 import type { ObservanceDef } from "@/constants/Observances";
 import { useDayMonth } from "@/hooks/useDayMonth";
+import { I18N_NAMESPACE } from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { getDateLocale } from "@/utils/date";
@@ -13,7 +14,7 @@ import type { MonthCell } from "@/utils/hijriMonthGrid";
 
 /** The calendar's dates and spoken names, in the reader's digits. */
 export const useHijriCalendarText = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const locale = useAppStore((s) => s.locale);
   const western = usePreferencesStore((s) => s.useWesternNumerals);
   const dayMonth = useDayMonth();
@@ -22,6 +23,14 @@ export const useHijriCalendarText = () => {
   const dated = (date: Date, pattern: string) =>
     localizeDigits(format(date, pattern, { locale: getDateLocale(locale) }), locale, western);
   const monthName = (month: number) => t(`hijriMonths.${month - 1}`);
+  // Read without fallback: a locale lacking the list keeps its own month names.
+  const inDate: readonly string[] | undefined = i18n.getResource(
+    locale,
+    I18N_NAMESPACE,
+    "hijriMonthsInDate"
+  );
+  /** The month's name as written after a day number. */
+  const monthInDate = (month: number) => inDate?.[month - 1] ?? monthName(month);
   const weekday = (date: Date) => dated(date, "EEEE");
   const yearAh = (year: number) => t("hijriCalendar.yearAh", { year: digits(year) });
   const spokenYearAh = (year: number) => t("a11y.hijriCalendar.yearAh", { year: digits(year) });
@@ -44,7 +53,7 @@ export const useHijriCalendarText = () => {
       t("a11y.hijriCalendar.cellDate", {
         weekday: weekday(cell.gregorian),
         day: digits(cell.hijriDay),
-        month: monthName(month),
+        month: monthInDate(month),
         gregorian: dayMonth(cell.gregorian),
       }),
       ...(isToday ? [t("hijriCalendar.today")] : []),
@@ -55,7 +64,7 @@ export const useHijriCalendarText = () => {
     t("hijriCalendar.dayTitle", {
       weekday: weekday(cell.gregorian),
       day: digits(cell.hijriDay),
-      month: monthName(month),
+      month: monthInDate(month),
       year,
     });
 
