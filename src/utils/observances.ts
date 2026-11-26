@@ -32,26 +32,47 @@ const matches = (recurrence: Recurrence, args: ResolveDayArgs): boolean => {
   }
 };
 
+type WeeklyObservance = ObservanceDef & {
+  recurrence: Extract<Recurrence, { kind: "weekday" }>;
+};
+
+/** Observances that belong to a weekday, drawn on the column header. */
+export const isWeekly = (observance: ObservanceDef): observance is WeeklyObservance =>
+  observance.recurrence.kind === "weekday";
+
+const withoutRecommendedFasts = (observances: readonly ObservanceDef[]) =>
+  observances.filter((o) => o.observanceClass !== ObservanceClass.RECOMMENDED_FAST);
+
+// The whole of Ramadan is an obligatory fast, so a recommendation to fast
+// tells the reader nothing.
+const forMonth = (observances: readonly ObservanceDef[], month: number) =>
+  month === RAMADAN_MONTH ? withoutRecommendedFasts(observances) : [...observances];
+
 /**
  * Every observance that applies to one day, with the fasting rules resolved.
  * Pure: the caller supplies the offset-adjusted Gregorian date and the month
  * length, so nothing here touches the native calendar.
  */
 export const resolveDay = (args: ResolveDayArgs): ObservanceDef[] => {
-  let matched = OBSERVANCES.filter((o) => matches(o.recurrence, args));
-
-  const dropRecommendedFasts = () =>
-    matched.filter((o) => o.observanceClass !== ObservanceClass.RECOMMENDED_FAST);
-
-  // The whole of Ramadan is an obligatory fast, so a recommendation to fast
-  // tells the reader nothing.
-  if (args.hijri.month === RAMADAN_MONTH) matched = dropRecommendedFasts();
+  const matched = forMonth(
+    OBSERVANCES.filter((o) => matches(o.recurrence, args)),
+    args.hijri.month
+  );
 
   // A prohibition clears every fasting recommendation on the same day. It never
   // moves one to another date: that substitution is one school's position.
-  if (matched.some((o) => o.observanceClass === ObservanceClass.FASTING_FORBIDDEN)) {
-    matched = dropRecommendedFasts();
-  }
-
-  return matched;
+  return matched.some((o) => o.observanceClass === ObservanceClass.FASTING_FORBIDDEN)
+    ? withoutRecommendedFasts(matched)
+    : matched;
 };
+
+/** The weekly observances of one weekday (0 = Sunday) in a Hijri month. */
+export const weekdayObservances = (weekday: number, month: number): ObservanceDef[] =>
+  forMonth(
+    OBSERVANCES.filter(isWeekly).filter((o) => o.recurrence.weekdays.includes(weekday)),
+    month
+  );
+
+/** Every weekly observance a Hijri month keeps, each once. */
+export const monthWeeklyObservances = (month: number): ObservanceDef[] =>
+  forMonth(OBSERVANCES.filter(isWeekly), month);

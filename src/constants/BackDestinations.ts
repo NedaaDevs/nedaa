@@ -168,6 +168,7 @@ export const BACK_DESTINATION = {
     route: "hijri-calendar",
     href: "/hijri-calendar",
     title: "hijriCalendar.title",
+    sky: true,
   },
   HIJRI_CONVERTER: {
     route: "hijri-converter",

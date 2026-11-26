@@ -7,3 +7,4 @@ export const HIJRI_YEAR_MIN = 1400;
 export const HIJRI_YEAR_MAX = 1500;
 
 export const RAMADAN_MONTH = 9;
+export const HIJRI_MONTHS_PER_YEAR = 12;

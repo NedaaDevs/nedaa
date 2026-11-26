@@ -19,10 +19,13 @@ import i18n from "@/localization/i18n";
 // and React Native spaces glyphs uniformly with no cursive-elongation fallback.
 const CURSIVE_LOCALES: readonly string[] = [AppLocale.AR, AppLocale.UR];
 
+/** Whether a locale writes in a joined script, which takes no tracking. */
+export const isCursiveLocale = (language: string) => CURSIVE_LOCALES.includes(language);
+
 // Large type set at zero tracking reads untuned, so tighten as size grows.
 // Keyed off the resolved pixel size so an explicit `fontSize` is covered too.
 const resolveLetterSpacing = (fontSize: number | undefined): number | undefined => {
-  if (fontSize == null || CURSIVE_LOCALES.includes(i18n.language)) return undefined;
+  if (fontSize == null || isCursiveLocale(i18n.language)) return undefined;
   if (fontSize >= 48) return -1;
   if (fontSize >= 36) return -0.6;
   if (fontSize >= 30) return -0.4;

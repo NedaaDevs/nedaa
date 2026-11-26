@@ -1,7 +1,7 @@
 import { HijriNative } from "@/utils/date";
 import { resolveDay } from "@/utils/observances";
 import type { ObservanceDef } from "@/constants/Observances";
-import { HIJRI_YEAR_MIN, HIJRI_YEAR_MAX } from "@/constants/Hijri";
+import { HIJRI_MONTHS_PER_YEAR, HIJRI_YEAR_MAX, HIJRI_YEAR_MIN } from "@/constants/Hijri";
 
 export type MonthCell = {
   hijriDay: number;
@@ -54,14 +54,27 @@ export const buildMonthGrid = (args: {
   };
 };
 
+export type HijriYearMonth = { year: number; month: number };
+
+/** Months since 1 Muharram of year 0, so months compare and step as numbers. */
+export const hijriMonthIndex = ({ year, month }: HijriYearMonth) =>
+  year * HIJRI_MONTHS_PER_YEAR + (month - 1);
+
+const fromMonthIndex = (index: number): HijriYearMonth => ({
+  year: Math.floor(index / HIJRI_MONTHS_PER_YEAR),
+  month: (index % HIJRI_MONTHS_PER_YEAR) + 1,
+});
+
 /** The next or previous month, or null at the bounds of the Umm al-Qura table. */
-export const stepMonth = (
-  year: number,
-  month: number,
-  delta: 1 | -1
-): { year: number; month: number } | null => {
-  const index = year * 12 + (month - 1) + delta;
-  const next = { year: Math.floor(index / 12), month: (index % 12) + 1 };
+export const stepMonth = (year: number, month: number, delta: 1 | -1): HijriYearMonth | null => {
+  const next = fromMonthIndex(hijriMonthIndex({ year, month }) + delta);
   if (next.year < HIJRI_YEAR_MIN || next.year > HIJRI_YEAR_MAX) return null;
   return next;
+};
+
+/** The month itself, or the table's first or last month when it lies outside. */
+export const clampHijriMonth = (target: HijriYearMonth): HijriYearMonth => {
+  if (target.year < HIJRI_YEAR_MIN) return { year: HIJRI_YEAR_MIN, month: 1 };
+  if (target.year > HIJRI_YEAR_MAX) return { year: HIJRI_YEAR_MAX, month: HIJRI_MONTHS_PER_YEAR };
+  return { year: target.year, month: target.month };
 };

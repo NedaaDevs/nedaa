@@ -1,152 +1,204 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
 
+import { ObservanceGlyph } from "@/components/hijri/ObservanceGlyph";
 import { Box } from "@/components/ui/box";
+import { HStack } from "@/components/ui/hstack";
+import { Pressable } from "@/components/ui/pressable";
+import { useElevationShadow } from "@/components/ui/material/edge";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
-import { Pressable } from "@/components/ui/pressable";
-
+import {
+  DAY_CELL_HEIGHT,
+  DAYS_PER_WEEK,
+  HIJRI_CALENDAR_TEST_ID,
+  TODAY_BAR,
+  WEEKDAYS,
+} from "@/constants/HijriCalendar";
+import { ELEVATION_LEVEL } from "@/constants/Elevation";
 import { ObservanceClass } from "@/enums/observances";
+import { useHijriCalendarText } from "@/hooks/useHijriCalendarText";
 import type { MonthCell, MonthGrid } from "@/utils/hijriMonthGrid";
-import { formatNumberToLocale } from "@/utils/number";
-import { getDateLocale } from "@/utils/date";
-import { useAppStore } from "@/stores/app";
+import { isWeekly, monthWeeklyObservances, weekdayObservances } from "@/utils/observances";
 
-// One dot per cell. A day never carries two marks: prohibition already
-// suppressed any recommendation, and night worship never coincides with either.
-// Values stay literal tokens: a widened string is not assignable to Tamagui's
-// backgroundColor type.
-const DOT_COLOR: Record<string, "$success" | "$error" | "$accentPrimary"> = {
-  [ObservanceClass.RECOMMENDED_FAST]: "$success",
-  [ObservanceClass.FASTING_FORBIDDEN]: "$error",
-  [ObservanceClass.NIGHT_WORSHIP]: "$accentPrimary",
-};
+const WEEK_MARK_SIZE = 12;
+const NIGHT_MARK_SIZE = 13;
 
-// Weekly observances belong to a whole column, so they mark the header rather
-// than every cell beneath it.
-const WEEKLY_MARK: Record<number, "fast" | "blessed"> = { 1: "fast", 4: "fast", 5: "blessed" };
-
-type HijriMonthGridProps = {
+type Props = {
   grid: MonthGrid;
-  todayHijriDay: number | null;
+  todayDay: number | null;
   selectedDay: number | null;
-  onSelectDay: (cell: MonthCell) => void;
+  onSelect: (cell: MonthCell) => void;
 };
 
-const HijriMonthGrid = ({ grid, todayHijriDay, selectedDay, onSelectDay }: HijriMonthGridProps) => {
-  const { t } = useTranslation();
-  const locale = useAppStore((s) => s.locale);
+type CellProps = {
+  cell: MonthCell;
+  label: string;
+  numeral: string;
+  dateLine: string;
+  /** The selected cell's shadow, shared by every cell of the grid. */
+  lift: string | undefined;
+  isToday: boolean;
+  isSelected: boolean;
+  onSelect: (cell: MonthCell) => void;
+};
 
-  const weekdayNames = t("weekdaysShort", { returnObjects: true }) as string[];
-
-  // Column order starts at the user's first weekday, then flips for RTL.
-  // Columns run from the user's first weekday in logical order. React Native
-  // flips the row itself under RTL, so reversing here would cancel that out and
-  // render the week backwards.
-  const columns = useMemo(() => {
-    const start = grid.cells[0].weekday - grid.leadingPad;
-    return Array.from({ length: 7 }, (_, i) => (((start + i) % 7) + 7) % 7);
-  }, [grid]);
-
-  const cellFor = (columnIndex: number, row: number): MonthCell | null => {
-    const position = row * 7 + columnIndex;
-    const dayIndex = position - grid.leadingPad;
-    return dayIndex >= 0 && dayIndex < grid.cells.length ? grid.cells[dayIndex] : null;
-  };
-
-  const rows = Math.ceil((grid.leadingPad + grid.cells.length) / 7);
+const DayCell = ({
+  cell,
+  label,
+  numeral,
+  dateLine,
+  lift,
+  isToday,
+  isSelected,
+  onSelect,
+}: CellProps) => {
+  const has = (observanceClass: ObservanceClass) =>
+    cell.observances.some((o) => !isWeekly(o) && o.observanceClass === observanceClass);
+  const forbidden = has(ObservanceClass.FASTING_FORBIDDEN);
+  const recommended = has(ObservanceClass.RECOMMENDED_FAST);
+  const first = cell.gregorian.getDate() === 1;
 
   return (
-    <VStack>
-      <Box flexDirection="row">
-        {columns.map((weekday) => (
-          <VStack key={weekday} flex={1} alignItems="center" paddingBottom="$2" gap="$1">
-            <Text size="xs" fontWeight="600" color="$typographySecondary">
-              {weekdayNames[weekday]}
-            </Text>
-            <Box
-              width={6}
-              height={6}
-              borderRadius={WEEKLY_MARK[weekday] === "blessed" ? "$1" : "$10"}
-              transform={WEEKLY_MARK[weekday] === "blessed" ? [{ rotate: "45deg" }] : undefined}
-              backgroundColor={
-                WEEKLY_MARK[weekday] === "fast"
-                  ? "$success"
-                  : WEEKLY_MARK[weekday] === "blessed"
-                    ? "$accentPrimary"
-                    : "transparent"
-              }
-            />
-          </VStack>
-        ))}
-      </Box>
-
-      {Array.from({ length: rows }, (_, row) => (
-        <Box key={row} flexDirection="row">
-          {columns.map((_weekday, columnIndex) => {
-            const cell = cellFor(columnIndex, row);
-            if (!cell) return <Box key={columnIndex} flex={1} height={54} />;
-
-            const isToday = cell.hijriDay === todayHijriDay;
-            const isSelected = cell.hijriDay === selectedDay;
-            const marker = cell.observances.find((o) => DOT_COLOR[o.observanceClass]);
-            const names = cell.observances.map((o) => t(o.nameKey)).join(", ");
-
-            return (
-              <Pressable
-                key={columnIndex}
-                flex={1}
-                minHeight={54}
-                alignItems="center"
-                justifyContent="center"
-                borderRadius="$4"
-                backgroundColor={isSelected ? "$accentPrimary" : "transparent"}
-                borderWidth={isToday && !isSelected ? 2 : 0}
-                borderColor="$accentPrimary"
-                onPress={() => onSelectDay(cell)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                accessibilityLabel={[
-                  formatNumberToLocale(String(cell.hijriDay)),
-                  t(`hijriMonths.${grid.month - 1}`),
-                  formatNumberToLocale(String(grid.year)),
-                  format(cell.gregorian, "EEEE d MMMM yyyy", { locale: getDateLocale(locale) }),
-                  isToday ? t("hijriCalendar.today") : "",
-                  names,
-                ]
-                  .filter(Boolean)
-                  .join(", ")}>
-                <Text
-                  size="md"
-                  fontWeight={isToday ? "700" : "600"}
-                  color={
-                    isSelected ? "$typographyContrast" : isToday ? "$accentPrimary" : "$typography"
-                  }>
-                  {formatNumberToLocale(String(cell.hijriDay))}
-                </Text>
-                <Text size="xs" color={isSelected ? "$typographyContrast" : "$typographySecondary"}>
-                  {/* A Hijri month spans two Gregorian ones, so the 1st names its month. */}
-                  {formatNumberToLocale(
-                    format(cell.gregorian, cell.gregorian.getDate() === 1 ? "MMM d" : "d", {
-                      locale: getDateLocale(locale),
-                    })
-                  )}
-                </Text>
-                <Box
-                  width={5}
-                  height={5}
-                  marginTop="$0.5"
-                  borderRadius="$10"
-                  backgroundColor={marker ? DOT_COLOR[marker.observanceClass] : "transparent"}
-                />
-              </Pressable>
-            );
-          })}
+    <Pressable
+      flex={1}
+      height={DAY_CELL_HEIGHT}
+      alignItems="center"
+      paddingTop="$tight"
+      borderRadius="$control"
+      backgroundColor={isSelected ? "$raised" : "transparent"}
+      style={isSelected ? { boxShadow: lift } : undefined}
+      onPress={() => onSelect(cell)}
+      accessibilityState={{ selected: isSelected }}
+      accessibilityLabel={label}>
+      {isSelected && (
+        <Box
+          position="absolute"
+          inset={0}
+          borderRadius="$control"
+          borderWidth={2}
+          borderColor="$fg"
+          pointerEvents="none"
+        />
+      )}
+      {has(ObservanceClass.NIGHT_WORSHIP) && (
+        <Box position="absolute" top="$0.5" end="$0.5">
+          <ObservanceGlyph observanceClass={ObservanceClass.NIGHT_WORSHIP} size={NIGHT_MARK_SIZE} />
         </Box>
-      ))}
-    </VStack>
+      )}
+      <Box
+        width="$9"
+        height="$9"
+        alignItems="center"
+        justifyContent="center"
+        borderRadius={forbidden ? "$chip" : "$pill"}
+        backgroundColor={forbidden ? "$warn" : "transparent"}
+        borderWidth={recommended ? 2 : 0}
+        borderColor="$accent">
+        <Text
+          size="xl"
+          fontWeight={isToday ? "700" : "600"}
+          color={forbidden ? "$bg" : "$fg"}
+          numeric>
+          {numeral}
+        </Text>
+      </Box>
+      <Text
+        size="xs"
+        fontWeight={first ? "600" : "500"}
+        color={first ? "$fg" : "$muted"}
+        numberOfLines={1}>
+        {dateLine}
+      </Text>
+      {isToday && (
+        <Box
+          position="absolute"
+          bottom={TODAY_BAR.INSET}
+          width={TODAY_BAR.WIDTH}
+          height={TODAY_BAR.HEIGHT}
+          borderRadius="$pill"
+          backgroundColor="$fg"
+        />
+      )}
+    </Pressable>
   );
 };
 
-export default HijriMonthGrid;
+/** The weekday row with its weekly marks, then the month's days. */
+export const HijriMonthGrid = ({ grid, todayDay, selectedDay, onSelect }: Props) => {
+  const { t } = useTranslation();
+  const text = useHijriCalendarText();
+  const lift = useElevationShadow(ELEVATION_LEVEL.E1);
+  const weekdayNames = t("weekdaysShort", { returnObjects: true }) as string[];
+
+  // Columns run from the first weekday in logical order; React Native mirrors
+  // the row under RTL, so reversing them here would draw the week backwards.
+  const columns = WEEKDAYS.map(
+    (i) => (grid.cells[0].weekday - grid.leadingPad + i + DAYS_PER_WEEK) % DAYS_PER_WEEK
+  );
+  const weekly = monthWeeklyObservances(grid.month);
+  const rows = Math.ceil((grid.leadingPad + grid.cells.length) / DAYS_PER_WEEK);
+  const cellAt = (row: number, column: number) =>
+    grid.cells[row * DAYS_PER_WEEK + column - grid.leadingPad] ?? null;
+
+  return (
+    <VStack>
+      <HStack
+        marginTop="$stack"
+        paddingBottom="$1.5"
+        borderBottomWidth={1}
+        borderColor="$track"
+        accessible={weekly.length > 0}
+        accessibilityLabel={text.sentences(weekly.map(text.marked))}>
+        {columns.map((weekday) => {
+          const mark = weekdayObservances(weekday, grid.month)[0];
+          return (
+            <VStack key={weekday} flex={1} alignItems="center" gap="$0.5" minHeight="$9">
+              <Text
+                testID={HIJRI_CALENDAR_TEST_ID.WEEKDAY}
+                size="sm"
+                fontWeight="600"
+                color={mark ? "$fg" : "$muted"}
+                numberOfLines={1}
+                adjustsFontSizeToFit>
+                {weekdayNames[weekday]}
+              </Text>
+              {mark && (
+                <ObservanceGlyph observanceClass={mark.observanceClass} size={WEEK_MARK_SIZE} />
+              )}
+            </VStack>
+          );
+        })}
+      </HStack>
+
+      <VStack marginTop="$tight">
+        {Array.from({ length: rows }, (_, row) => (
+          <HStack key={row}>
+            {columns.map((weekday, column) => {
+              const cell = cellAt(row, column);
+              if (!cell) return <Box key={weekday} flex={1} height={DAY_CELL_HEIGHT} />;
+              const isToday = cell.hijriDay === todayDay;
+              // A Hijri month spans two Gregorian ones, so the 1st names its month.
+              const dateLine =
+                cell.gregorian.getDate() === 1
+                  ? text.dated(cell.gregorian, "d MMM")
+                  : text.digits(cell.gregorian.getDate());
+              return (
+                <DayCell
+                  key={weekday}
+                  cell={cell}
+                  label={text.cellLabel(cell, grid.month, isToday)}
+                  numeral={text.digits(cell.hijriDay)}
+                  dateLine={dateLine}
+                  lift={lift}
+                  isToday={isToday}
+                  isSelected={cell.hijriDay === selectedDay}
+                  onSelect={onSelect}
+                />
+              );
+            })}
+          </HStack>
+        ))}
+      </VStack>
+    </VStack>
+  );
+};
