@@ -1028,6 +1028,20 @@
     "Dhu al-Qidah",
     "Dhu al-Hijjah"
   ],
+  "hijriMonthsInDate": [
+    "Muharram",
+    "Safar",
+    "Rabi' al-Awwal",
+    "Rabi' al-Thani",
+    "Jumada al-Awwal",
+    "Jumada al-Thani",
+    "Rajab",
+    "Sha'ban",
+    "Ramadan",
+    "Shawwal",
+    "Dhu al-Qidah",
+    "Dhu al-Hijjah"
+  ],
   "importantDays.arafah": "Day of Arafah",
   "importantDays.ashura": "Ashura",
   "importantDays.days_one": "day",

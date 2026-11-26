@@ -141,8 +141,9 @@ const HijriCalendarScreen = () => {
     fade.set(withTiming(1, { duration: MONTH_CHANGE_MS, easing: CURVE }));
   }, [shownIndex, reduceMotion, isRTL, shift, fade]);
 
-  const show = async (destination: HijriYearMonth) => {
-    await selectionHaptic();
+  // Not awaited: the month is stored against the `home` of this render.
+  const show = (destination: HijriYearMonth) => {
+    void selectionHaptic();
     direction.current = Math.sign(hijriMonthIndex(destination) - shownIndex);
     setChosen(sameMonth(destination, home) ? null : destination);
     setPicked(null);

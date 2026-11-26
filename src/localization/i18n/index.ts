@@ -12,11 +12,14 @@ import translationUR from "@/localization/locales/ur.json";
 import { AppLocale } from "@/enums/app";
 import { numeralPostProcessor } from "@/localization/numerals";
 
+/** The one namespace every locale file loads into. */
+export const I18N_NAMESPACE = "translation";
+
 const resources = {
-  ar: { translation: translationAR },
-  en: { translation: translationEN },
-  ms: { translation: translationMS },
-  ur: { translation: translationUR },
+  ar: { [I18N_NAMESPACE]: translationAR },
+  en: { [I18N_NAMESPACE]: translationEN },
+  ms: { [I18N_NAMESPACE]: translationMS },
+  ur: { [I18N_NAMESPACE]: translationUR },
 };
 
 const initI18n = () => {

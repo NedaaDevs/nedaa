@@ -15,6 +15,7 @@ import {
   WEEKDAYS,
 } from "@/constants/HijriCalendar";
 import { ELEVATION_LEVEL } from "@/constants/Elevation";
+import { OBSERVANCE_MARK } from "@/constants/ObservanceMarks";
 import { ObservanceClass } from "@/enums/observances";
 import { useHijriCalendarText } from "@/hooks/useHijriCalendarText";
 import type { MonthCell, MonthGrid } from "@/utils/hijriMonthGrid";
@@ -91,9 +92,11 @@ const DayCell = ({
         alignItems="center"
         justifyContent="center"
         borderRadius={forbidden ? "$chip" : "$pill"}
-        backgroundColor={forbidden ? "$warn" : "transparent"}
+        backgroundColor={
+          forbidden ? OBSERVANCE_MARK[ObservanceClass.FASTING_FORBIDDEN].color : "transparent"
+        }
         borderWidth={recommended ? 2 : 0}
-        borderColor="$accent">
+        borderColor={OBSERVANCE_MARK[ObservanceClass.RECOMMENDED_FAST].color}>
         <Text
           size="xl"
           fontWeight={isToday ? "700" : "600"}

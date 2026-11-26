@@ -12,7 +12,7 @@ import { HIJRI_YEAR_MAX, HIJRI_YEAR_MIN, RAMADAN_MONTH } from "@/constants/Hijri
 import { HIJRI_CALENDAR_TEST_ID } from "@/constants/HijriCalendar";
 import { AppLocale } from "@/enums/app";
 import { SimulatedClockContext } from "@/hooks/useTodayClock";
-import i18n from "@/localization/i18n";
+import i18n, { I18N_NAMESPACE } from "@/localization/i18n";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 import { controlProblems } from "@/test-helpers/controls";
@@ -333,6 +333,21 @@ describe("Hijri calendar", () => {
   });
 
   // The renderer does not mirror, so logical order is what the props hold.
+  it.each([
+    [AppLocale.AR, "hijriMonthsInDate"],
+    [AppLocale.UR, "hijriMonths"],
+  ] as const)("writes a %s date with the month name from %s", async (locale, list) => {
+    await act(() => i18n.changeLanguage(locale));
+    useAppStore.setState({ locale });
+    usePreferencesStore.setState({ useWesternNumerals: true });
+    await renderAt(gregorianOf(1448, DHUL_HIJJAH, 20));
+
+    const name = i18n.getResource(locale, I18N_NAMESPACE, list)[DHUL_HIJJAH - 1];
+    expect(name).not.toBe(t(`hijriMonths.${DHUL_HIJJAH - 1}`, { lng: AppLocale.EN }));
+    expect(screen.getByText(new RegExp(` 20 ${name} `))).toBeTruthy();
+    expect(screen.getByRole("header", { name: t(`hijriMonths.${DHUL_HIJJAH - 1}`) })).toBeTruthy();
+  });
+
   it("runs the Arabic week from Saturday in logical order", async () => {
     await act(() => i18n.changeLanguage(AppLocale.AR));
     useAppStore.setState({ locale: AppLocale.AR });
